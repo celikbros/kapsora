@@ -33,11 +33,13 @@ const (
 	// AdminURLEnv names the administrative connection URL variable.
 	AdminURLEnv = "KAPSORA_TEST_ADMIN_DATABASE_URL"
 	// AppPasswordEnv overrides the password set on the application role.
-	AppPasswordEnv = "KAPSORA_TEST_APP_PASSWORD"
+	AppPasswordEnv = "KAPSORA_TEST_APP_PASSWORD" //nolint:gosec // environment variable name, not a credential
 	// AppRole is the non-privileged application role name.
 	AppRole = "kapsora_app"
 
-	defaultAppPassword = "kapsora_app_local"
+	// defaultAppPassword is a throw-away local test value matching .env.example; the
+	// test databases it protects are created and dropped by the harness itself.
+	defaultAppPassword = "kapsora_app_local" //nolint:gosec // local test default, never used outside throw-away databases
 )
 
 // SQLSTATE codes used in assertions.
