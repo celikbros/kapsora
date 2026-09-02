@@ -78,7 +78,7 @@ closing M1.
 | Needed by | Input | Status |
 |---|---|---|
 | M1 | Developers assigned to WP-I1-01..06 | open |
-| M1 | Decision: GitHub private repository for delegate access (recommended) or patch-based exchange | open |
+| M1 | Delegate access to the private repository `github.com/celikbros/kapsora` (owner invites collaborators) | repository created 2026-09-02; invitations open |
 | M8 | İşNet Nettefatura web-service application, NDA, test account, API documentation | open |
 | M9 | Name of the ledger-keeping accounting program of the pilot customer | open |
 | M10 | Pilot customer, program and beneficiary group; HR/policy source formats | open |

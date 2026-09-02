@@ -32,7 +32,7 @@ No Docker anywhere (ADR-021). Everything runs as native processes.
 Setup:
 
 ```sh
-git clone <repository-or-bundle> kapsora && cd kapsora
+git clone https://github.com/celikbros/kapsora.git && cd kapsora   # private; the owner grants access
 cp .env.example .env          # fill CHANGE_ME values with your local PostgreSQL credentials
 make tools                    # sqlc, oapi-codegen, oasdiff, golangci-lint, govulncheck
 make db-init                  # creates role kapsora_app and database kapsora
@@ -138,8 +138,9 @@ without discussion.
 
 ## 6. Submitting work
 
-Preferred: push branch `wp/<WP-ID>` to the shared repository and open a pull request titled
-`<WP-ID>: <short title>`; paste the report as the PR description.
+Preferred: push branch `wp/<WP-ID>` to `https://github.com/celikbros/kapsora` and open a
+pull request titled `<WP-ID>: <short title>`; the PR template asks for the report. Each WP
+also has a GitHub issue labelled `work-package`; reference it with `closes #<n>`.
 
 Alternative (no repository access): from your branch run
 `git format-patch main --stdout > <WP-ID>.patch`, put the patch and `REPORT.md` in a zip

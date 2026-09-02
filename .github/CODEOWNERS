@@ -1,0 +1,10 @@
+# Review ownership. The integrator reviews everything; security, data and contract paths
+# are listed explicitly so their changes are never merged without an integrator review.
+*                         @celikbros
+/db/migrations/           @celikbros
+/api/openapi/             @celikbros
+/internal/identity/       @celikbros
+/internal/platform/crypto/ @celikbros
+/internal/audit/          @celikbros
+/.github/                 @celikbros
+/docs/adr/                @celikbros
