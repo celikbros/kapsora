@@ -18,7 +18,8 @@ import (
 	"github.com/celikbros/kapsora/internal/platform/dbtest"
 )
 
-const testKey = "0123456789abcdef-key"
+// sampleIdempotencyKey is a deliberately low-entropy client key (16-128 chars), not a secret.
+const sampleIdempotencyKey = "request-0001-request-0001-request"
 
 type fixture struct {
 	h       *dbtest.Harness
@@ -85,12 +86,12 @@ func TestMissingKeyRequiredUnlessOptional(t *testing.T) {
 func TestReplayReturnsStoredResponseAndRunsHandlerOnce(t *testing.T) {
 	f := newFixture(t, Options{}, createdHandler)
 
-	first := f.do(http.MethodPost, `{"name":"alpha","n":1}`, testKey)
+	first := f.do(http.MethodPost, `{"name":"alpha","n":1}`, sampleIdempotencyKey)
 	if first.Code != http.StatusCreated {
 		t.Fatalf("first: %d %s", first.Code, first.Body.String())
 	}
 	// Same payload with different key order and whitespace replays.
-	second := f.do(http.MethodPost, ` { "n" : 1 , "name" : "alpha" } `, testKey)
+	second := f.do(http.MethodPost, ` { "n" : 1 , "name" : "alpha" } `, sampleIdempotencyKey)
 	if second.Code != http.StatusCreated {
 		t.Fatalf("replay status: %d %s", second.Code, second.Body.String())
 	}
@@ -108,7 +109,7 @@ func TestReplayReturnsStoredResponseAndRunsHandlerOnce(t *testing.T) {
 	}
 
 	// Different payload with the same key is rejected.
-	third := f.do(http.MethodPost, `{"name":"beta","n":1}`, testKey)
+	third := f.do(http.MethodPost, `{"name":"beta","n":1}`, sampleIdempotencyKey)
 	if third.Code != http.StatusConflict || !strings.Contains(third.Body.String(), "IDEMPOTENCY_KEY_REUSED") {
 		t.Fatalf("reuse: %d %s", third.Code, third.Body.String())
 	}
@@ -131,11 +132,11 @@ func TestConcurrentDuplicateGetsInProgress(t *testing.T) {
 	var firstCode int
 	go func() {
 		defer wg.Done()
-		firstCode = f.do(http.MethodPost, `{}`, testKey).Code
+		firstCode = f.do(http.MethodPost, `{}`, sampleIdempotencyKey).Code
 	}()
 	<-entered
 
-	dup := f.do(http.MethodPost, `{}`, testKey)
+	dup := f.do(http.MethodPost, `{}`, sampleIdempotencyKey)
 	if dup.Code != http.StatusConflict || !strings.Contains(dup.Body.String(), "IDEMPOTENCY_IN_PROGRESS") || dup.Header().Get("Retry-After") == "" {
 		t.Fatalf("duplicate while in progress: %d %s %v", dup.Code, dup.Body.String(), dup.Header())
 	}
@@ -144,7 +145,7 @@ func TestConcurrentDuplicateGetsInProgress(t *testing.T) {
 	if firstCode != http.StatusNoContent {
 		t.Fatalf("first request: %d", firstCode)
 	}
-	if replay := f.do(http.MethodPost, `{}`, testKey); replay.Code != http.StatusNoContent || replay.Header().Get(ReplayedHeader) != "true" {
+	if replay := f.do(http.MethodPost, `{}`, sampleIdempotencyKey); replay.Code != http.StatusNoContent || replay.Header().Get(ReplayedHeader) != "true" {
 		t.Fatalf("replay after completion: %d", replay.Code)
 	}
 	if f.calls.Load() != 1 {
@@ -162,11 +163,11 @@ func TestServerErrorsAreNotPinned(t *testing.T) {
 		}
 		w.WriteHeader(http.StatusNoContent)
 	})
-	if rec := f.do(http.MethodPost, `{}`, testKey); rec.Code != http.StatusInternalServerError {
+	if rec := f.do(http.MethodPost, `{}`, sampleIdempotencyKey); rec.Code != http.StatusInternalServerError {
 		t.Fatalf("first: %d", rec.Code)
 	}
 	fail.Store(false)
-	if rec := f.do(http.MethodPost, `{}`, testKey); rec.Code != http.StatusNoContent || rec.Header().Get(ReplayedHeader) != "" {
+	if rec := f.do(http.MethodPost, `{}`, sampleIdempotencyKey); rec.Code != http.StatusNoContent || rec.Header().Get(ReplayedHeader) != "" {
 		t.Fatalf("retry after 500 should execute again: %d replayed=%q", rec.Code, rec.Header().Get(ReplayedHeader))
 	}
 	if f.calls.Load() != 2 {
@@ -180,8 +181,8 @@ func TestClientErrorsAreReplayed(t *testing.T) {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		_, _ = w.Write([]byte(`{"code":"VALIDATION_FAILED"}`))
 	})
-	f.do(http.MethodPost, `{}`, testKey)
-	rec := f.do(http.MethodPost, `{}`, testKey)
+	f.do(http.MethodPost, `{}`, sampleIdempotencyKey)
+	rec := f.do(http.MethodPost, `{}`, sampleIdempotencyKey)
 	if rec.Code != http.StatusUnprocessableEntity || rec.Header().Get(ReplayedHeader) != "true" || !strings.Contains(rec.Body.String(), "VALIDATION_FAILED") {
 		t.Fatalf("422 replay: %d %s", rec.Code, rec.Body.String())
 	}
@@ -197,8 +198,8 @@ func TestStaleInProgressRecordIsTakenOver(t *testing.T) {
 	// Simulate a crashed process: an IN_PROGRESS row older than the stale window.
 	f.h.AdminExec(`INSERT INTO system.idempotency_record (tenant_id, actor_id, command_code, idempotency_key, request_hash, created_at)
 		VALUES ($1, $2, 'test.command', $3, $4, clock_timestamp() - interval '1 minute')`,
-		f.tenant, f.actor, testKey, requestHashForTest(f.tenant, `{}`))
-	rec := f.do(http.MethodPost, `{}`, testKey)
+		f.tenant, f.actor, sampleIdempotencyKey, requestHashForTest(f.tenant, `{}`))
+	rec := f.do(http.MethodPost, `{}`, sampleIdempotencyKey)
 	if rec.Code != http.StatusNoContent || f.calls.Load() != 1 {
 		t.Fatalf("stale takeover: %d calls=%d", rec.Code, f.calls.Load())
 	}
@@ -213,7 +214,7 @@ func TestPurgeExpired(t *testing.T) {
 	f := newFixture(t, Options{TTL: time.Millisecond}, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})
-	f.do(http.MethodPost, `{}`, testKey)
+	f.do(http.MethodPost, `{}`, sampleIdempotencyKey)
 	time.Sleep(5 * time.Millisecond)
 	n, err := PurgeExpired(context.Background(), f.h.App, f.tenant, time.Now())
 	if err != nil || n != 1 {
