@@ -22,6 +22,12 @@
 3. **Uygulama modeli değişti.** v1.2 paralel ekipler ve 8-12 aylık takvim varsayıyordu. v2.0'da tek geliştirici-ajan artımlı teslim yapar: her artım çalışan, test edilmiş ve belgelenmiş yazılımla biter. Takvim yerine sıra ve bitti kriteri verilir. Ayrıntı bölüm 5.
 4. **v1.2 dosyaları değiştirilmez.** Düzeltmeler yeni repo yapısında (`db/migrations`, `api/openapi`, `docs/architecture`) uygulanır. Kök dizindeki v1.2 dosyaları `docs/baseline-v1.2/` altına taşınır.
 5. **Ürün adı** repo kurulumundan önce kesinleşmelidir. Ayrıntı bölüm 4.
+6. **Konteyner yok (02.09.2026).** Docker Compose, Dockerfile, Kubernetes ve Helm kaldırıldı;
+   yerel ve üretim ortamı doğal süreçler + systemd; Valkey yerine PostgreSQL tabanlı oturum ve
+   sayaçlar. Ayrıntı ADR-021. I0 satırındaki Compose kalemi geçersizdir.
+7. **Delegasyon modeli (02.09.2026).** Artımlar iş paketlerine (WP) bölünür; dış geliştiriciler
+   İngilizce iş paketi ve rapor şablonuyla çalışır, iş sahibi kurye rolündedir, Claude mimar,
+   entegratör ve reviewer'dır. Ayrıntı `ROADMAP.md` ve `docs/delegation/`.
 
 ## 2. Mali entegrasyon: GİB e-Belge ve muhasebe
 

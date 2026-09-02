@@ -1,26 +1,29 @@
+// Package dbtests runs the schema against a real PostgreSQL 18 (v1.2 section 44.1)
+// through the shared dbtest harness.
 package dbtests
 
 import (
 	"testing"
 
 	"github.com/celikbros/kapsora/internal/platform/dbmigrate"
+	"github.com/celikbros/kapsora/internal/platform/dbtest"
 )
 
 // expectedSchemaVersion is the number of the newest migration file.
-const expectedSchemaVersion = 8
+const expectedSchemaVersion = 9
 
 func TestMigrateUpFromEmptyDatabase(t *testing.T) {
-	h := newHarness(t)
+	h := dbtest.New(t)
 
-	if h.migration.Dirty {
+	if h.Migration.Dirty {
 		t.Fatalf("schema is dirty after migrate up")
 	}
-	if h.migration.Version != expectedSchemaVersion {
-		t.Fatalf("schema version = %d, want %d", h.migration.Version, expectedSchemaVersion)
+	if h.Migration.Version != expectedSchemaVersion {
+		t.Fatalf("schema version = %d, want %d", h.Migration.Version, expectedSchemaVersion)
 	}
 
 	// Re-running must be a no-op.
-	again, err := dbmigrate.Up(h.adminURL)
+	again, err := dbmigrate.Up(h.AdminURL)
 	if err != nil {
 		t.Fatalf("second migrate up: %v", err)
 	}
@@ -30,8 +33,8 @@ func TestMigrateUpFromEmptyDatabase(t *testing.T) {
 }
 
 func TestEveryTenantTableHasRLSAndTenantColumn(t *testing.T) {
-	h := newHarness(t)
-	ctx, cancel := h.ctx()
+	h := dbtest.New(t)
+	ctx, cancel := h.Ctx()
 	defer cancel()
 
 	// Every table with a tenant_id column in a business schema must have RLS forced,
@@ -42,7 +45,7 @@ func TestEveryTenantTableHasRLSAndTenantColumn(t *testing.T) {
 		"audit.access_event":  true,
 	}
 
-	rows, err := h.admin.Query(ctx, `
+	rows, err := h.Admin.Query(ctx, `
 		SELECT n.nspname || '.' || c.relname AS tbl, c.relrowsecurity, c.relforcerowsecurity
 		  FROM pg_attribute a
 		  JOIN pg_class c ON c.oid = a.attrelid
@@ -78,12 +81,12 @@ func TestEveryTenantTableHasRLSAndTenantColumn(t *testing.T) {
 }
 
 func TestPermissionCatalogSeeded(t *testing.T) {
-	h := newHarness(t)
-	ctx, cancel := h.ctx()
+	h := dbtest.New(t)
+	ctx, cancel := h.Ctx()
 	defer cancel()
 
 	var n int
-	if err := h.admin.QueryRow(ctx, `SELECT count(*) FROM iam.permission`).Scan(&n); err != nil {
+	if err := h.Admin.QueryRow(ctx, `SELECT count(*) FROM iam.permission`).Scan(&n); err != nil {
 		t.Fatalf("count permissions: %v", err)
 	}
 	if n < 80 {
@@ -91,7 +94,7 @@ func TestPermissionCatalogSeeded(t *testing.T) {
 	}
 	for _, code := range []string{"security.break_glass", "fiscal.response.send", "accounting.posting.send"} {
 		var sensitivity string
-		if err := h.admin.QueryRow(ctx, `SELECT sensitivity FROM iam.permission WHERE code = $1`, code).Scan(&sensitivity); err != nil {
+		if err := h.Admin.QueryRow(ctx, `SELECT sensitivity FROM iam.permission WHERE code = $1`, code).Scan(&sensitivity); err != nil {
 			t.Fatalf("permission %s missing: %v", code, err)
 		}
 		if sensitivity != "PRIVILEGED" {

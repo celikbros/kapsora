@@ -35,3 +35,6 @@ Thumbs.db
 
 # Embedded PostgreSQL cache used by db tests on machines without Docker
 .embedded-postgres-go/
+
+# Native local tool binaries (Keycloak, MinIO, ClamAV, Mailpit) live outside git
+/tools/

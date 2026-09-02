@@ -1,34 +1,25 @@
-# KAPSORA developer entry points. Works with GNU make on Linux/macOS/Git Bash.
-# On Windows without make, run the underlying commands from scripts/dev.ps1.
+# KAPSORA developer entry points (GNU make on Linux/macOS/Git Bash).
+# Container-free runtime (ADR-021): PostgreSQL, Keycloak and the other services run as
+# native processes; see docs/runbooks/local-native-environment.md.
+# On Windows without make, scripts/dev.ps1 mirrors these targets.
 
 SHELL := /bin/sh
 GO ?= go
 GOBIN ?= $(shell $(GO) env GOPATH)/bin
-DOCKER_COMPOSE ?= docker compose
+PSQL ?= psql
 -include .env
 export
 
-.PHONY: help dev-up dev-down dev-logs migrate-up migrate-version build run-api run-worker run-scheduler \
+.PHONY: help db-init migrate-up migrate-version build run-api run-worker run-scheduler \
         test test-unit test-db lint vet fmt openapi-lint openapi-generate openapi-diff sqlc tools ci
 
 help: ## List targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-18s %s\n", $$1, $$2}'
 
-## --- local stack -------------------------------------------------------------------
-dev-up: ## Start infrastructure and apply migrations
-	$(DOCKER_COMPOSE) up -d postgres keycloak valkey minio minio-init clamav mailpit otel-collector
-	$(DOCKER_COMPOSE) --profile migrate run --rm migrate
-
-dev-up-all: ## Start infrastructure plus api/worker/scheduler containers
-	$(DOCKER_COMPOSE) --profile app up -d --build
-
-dev-down: ## Stop the stack (keeps volumes)
-	$(DOCKER_COMPOSE) --profile app --profile migrate down
-
-dev-logs: ## Tail stack logs
-	$(DOCKER_COMPOSE) logs -f --tail=200
-
 ## --- database ----------------------------------------------------------------------
+db-init: ## Create the kapsora_app role and kapsora database on a local PostgreSQL 18 (needs KAPSORA_TEST_ADMIN_DATABASE_URL)
+	$(PSQL) "$(KAPSORA_TEST_ADMIN_DATABASE_URL)" -v ON_ERROR_STOP=1 -f scripts/db-init.sql
+
 migrate-up: ## Apply migrations with the owner role from .env
 	KAPSORA_DATABASE_URL="$(KAPSORA_MIGRATE_DATABASE_URL)" $(GO) run ./cmd/migrate up
 
@@ -60,8 +51,8 @@ lint: ## golangci-lint (install with `make tools`)
 
 test: test-unit test-db ## Unit + schema tests
 
-test-unit: ## Unit tests with race detector
-	$(GO) test -race -count=1 ./internal/... ./cmd/...
+test-unit: ## Unit tests (CI adds -race on Linux)
+	$(GO) test -count=1 ./internal/... ./cmd/...
 
 test-db: ## PostgreSQL schema tests (needs KAPSORA_TEST_ADMIN_DATABASE_URL)
 	$(GO) test -count=1 -v ./db/tests/...
@@ -71,7 +62,7 @@ openapi-lint: ## Spectral lint of the OpenAPI contract
 	npx --yes @stoplight/spectral-cli lint api/openapi/kapsora-v1.yaml --ruleset .spectral.yaml
 
 openapi-generate: ## Generate Go server types from the contract
-	$(GOBIN)/oapi-codegen -config api/openapi/oapi-codegen.yaml api/openapi/kapsora-v1.yaml
+	cd api/openapi && $(GOBIN)/oapi-codegen -config oapi-codegen.yaml kapsora-v1.yaml
 
 openapi-diff: ## Breaking-change check against main
 	git show main:api/openapi/kapsora-v1.yaml > /tmp/kapsora-v1.main.yaml 2>/dev/null && \
@@ -87,5 +78,5 @@ tools: ## Install Go-based developer tools into GOPATH/bin
 	$(GO) install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
 	$(GO) install golang.org/x/vuln/cmd/govulncheck@latest
 
-ci: fmt vet lint test-unit openapi-generate ## What CI runs locally (db tests need a database)
-	git diff --exit-code -- api/generated
+ci: fmt vet lint test-unit openapi-generate sqlc ## What CI runs locally (db tests need a database)
+	git diff --exit-code -- api/generated internal/platform/sqlcgen

@@ -94,7 +94,7 @@ jobs:
           oasdiff breaking /tmp/base.yaml api/openapi/kapsora-v1.yaml --fail-on ERR
 
   security:
-    name: secrets, dependencies, container
+    name: secrets and dependencies
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -112,13 +112,26 @@ jobs:
           severity: CRITICAL,HIGH
           exit-code: "1"
           ignore-unfixed: true
-      - name: container build
-        run: docker build -f deploy/docker/Dockerfile -t kapsora:ci .
-      - name: trivy image scan
-        uses: aquasecurity/trivy-action@0.28.0
+
+  release-binaries:
+    name: static binaries (container-free runtime, ADR-021)
+    runs-on: ubuntu-latest
+    needs: [go]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
-          scan-type: image
-          image-ref: kapsora:ci
-          severity: CRITICAL,HIGH
-          exit-code: "1"
-          ignore-unfixed: true
+          go-version-file: go.mod
+          cache: true
+      - name: build linux/amd64 and windows/amd64
+        run: |
+          mkdir -p dist
+          for bin in api worker scheduler migrate; do
+            CGO_ENABLED=0 GOOS=linux   GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o dist/linux-amd64/kapsora-$bin   ./cmd/$bin
+            CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o dist/windows-amd64/kapsora-$bin.exe ./cmd/$bin
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kapsora-binaries-${{ github.sha }}
+          path: dist/
+          retention-days: 14

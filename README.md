@@ -13,30 +13,31 @@ muhasebe kaydına kadar tek platformda yönetir.
 ## Teknoloji
 
 Go 1.27 modüler monolith (api / worker / scheduler), PostgreSQL 18 (UUIDv7, composite tenant FK,
-RLS), Keycloak OIDC + Go BFF, React 19 / TypeScript, Valkey, S3 uyumlu obje deposu, transactional
-outbox. Ayrıntı: v1.2 bölüm 13-16 ve ADR-020.
+RLS), Keycloak OIDC + Go BFF, React 19 / TypeScript, S3 uyumlu obje deposu, transactional outbox.
+**Konteyner yok:** tüm servisler yerelde ve üretimde doğal süreç olarak çalışır (ADR-021).
+Ayrıntı: v1.2 bölüm 13-16, ADR-020, ADR-021.
 
 ## Hızlı başlangıç
 
-Gereksinimler: Go 1.27+, Docker (compose) **veya** yerel PostgreSQL 18, Node 24 (frontend, I1'den itibaren).
+Gereksinimler: Go 1.27+, yerel PostgreSQL 18, Node 24 (frontend, I1'den itibaren).
+Keycloak, MinIO, ClamAV ve Mailpit doğal kurulumları için
+[docs/runbooks/local-native-environment.md](docs/runbooks/local-native-environment.md).
 
 ```sh
-cp .env.example .env            # yerel değerler; .env git'e girmez
+cp .env.example .env            # CHANGE_ME değerlerini kendi PostgreSQL bilgilerinizle doldurun
 make tools                      # sqlc, oapi-codegen, oasdiff, golangci-lint, govulncheck
-make dev-up                     # Docker: postgres, keycloak, valkey, minio, clamav, mailpit, otel + migration
+make db-init                    # kapsora_app rolü + kapsora veritabanı
+make migrate-up                 # şema sürüm 8
+make test-db                    # gerçek PostgreSQL üzerinde şema testleri
 make run-api                    # http://localhost:8080/health/ready
 ```
 
-Docker olmayan makinede (yerel PostgreSQL 18):
-
-```sh
-# .env içinde KAPSORA_MIGRATE_DATABASE_URL ve KAPSORA_TEST_ADMIN_DATABASE_URL'i kendi
-# sahip/superuser bağlantınıza göre düzenleyin; kapsora_app rolünü testler kendileri oluşturur.
-make migrate-up
-make test-db
-```
-
 Windows'ta GNU make yoksa: `.\scripts\dev.ps1 <hedef>` aynı hedefleri çalıştırır.
+
+## Yol haritası ve delegasyon
+
+- [ROADMAP.md](ROADMAP.md): kilometre taşları, durum ve iş paketleri.
+- [docs/delegation/](docs/delegation/README.md): dış geliştiriciler için el kitabı, iş paketleri (WP) ve rapor şablonu (İngilizce).
 
 ## Sık kullanılan hedefler
 
@@ -57,8 +58,8 @@ cmd/            api, worker, scheduler, migrate binary'leri
 internal/       modüller (platform, identity, party, benefit, ... fiscal, accounting)
 api/openapi     sözleşme; api/generated üretilen kod
 db/migrations   forward-only SQL; db/queries sqlc; db/tests şema testleri
-deploy/         docker, compose, helm
-docs/           plan, adr, baseline-v1.2, integration, runbooks
+deploy/         systemd birimleri ve reverse proxy örnekleri (I1'de, WP-I1-06)
+docs/           plan, adr, delegation, baseline-v1.2, integration, runbooks
 web/            pnpm workspace: backoffice, provider, member (I1'den itibaren)
 ```
 

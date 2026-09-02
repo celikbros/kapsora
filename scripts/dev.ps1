@@ -2,8 +2,8 @@
 # Usage: .\scripts\dev.ps1 <target>   e.g. .\scripts\dev.ps1 test-unit
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet("build", "vet", "fmt", "lint", "test-unit", "test-db", "migrate-up", "migrate-version",
-                 "run-api", "run-worker", "run-scheduler", "openapi-generate", "sqlc", "dev-up", "dev-down")]
+    [ValidateSet("build", "vet", "fmt", "lint", "test-unit", "test-db", "db-init", "migrate-up", "migrate-version",
+                 "run-api", "run-worker", "run-scheduler", "openapi-generate", "sqlc")]
     [string]$Target
 )
 
@@ -35,8 +35,11 @@ switch ($Target) {
     "run-api"          { go run ./cmd/api }
     "run-worker"       { go run ./cmd/worker }
     "run-scheduler"    { go run ./cmd/scheduler }
-    "openapi-generate" { & (Join-Path $gobin "oapi-codegen.exe") -config api/openapi/oapi-codegen.yaml api/openapi/kapsora-v1.yaml }
+    "openapi-generate" { Push-Location api/openapi; try { & (Join-Path $gobin "oapi-codegen.exe") -config oapi-codegen.yaml kapsora-v1.yaml } finally { Pop-Location } }
     "sqlc"             { & (Join-Path $gobin "sqlc.exe") generate }
-    "dev-up"           { docker compose up -d postgres keycloak valkey minio minio-init clamav mailpit otel-collector; docker compose --profile migrate run --rm migrate }
-    "dev-down"         { docker compose --profile app --profile migrate down }
+    "db-init"          {
+        $psql = Get-Command psql -ErrorAction SilentlyContinue
+        if (-not $psql) { $psql = "C:\Program Files\PostgreSQL\18\bin\psql.exe" }
+        & $psql $env:KAPSORA_TEST_ADMIN_DATABASE_URL -v ON_ERROR_STOP=1 -f scripts/db-init.sql
+    }
 }

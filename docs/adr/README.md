@@ -26,3 +26,4 @@ ilgili v1.2 bölümüne referans verir; plan v2.0 ile gelen kararlar ayrıntıl�
 | 018 | Özel entegratör adapter modeli; ilk adapter İşNet Nettefatura | Accepted | Plan v2.0 2.2, 2.12 |
 | 019 | Muhasebe kanonik modeli ve ERP adapter'ları | Accepted | Plan v2.0 2.7 |
 | 020 | I0 araç ve sürüm sapmaları (Go 1.27, decimal, XML doğrulama, TS istemci, CI servis konteyneri) | Accepted | 02.09.2026 onayı |
+| 021 | Konteynersiz çalışma zamanı: Docker/Kubernetes yok, systemd + doğal servisler, Valkey ertelendi | Accepted | İş sahibi kararı 02.09.2026 |

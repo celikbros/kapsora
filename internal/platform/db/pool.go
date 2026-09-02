@@ -80,6 +80,31 @@ func WithTenantTx(ctx context.Context, pool *pgxpool.Pool, tc TenantContext, fn 
 	return nil
 }
 
+// WithActorTx runs fn in a transaction bound to an actor but no tenant. It serves the
+// pre-tenant phase of a request (login, listing the actor's own tenants): the
+// actor_self_membership policy exposes only that actor's membership rows.
+func WithActorTx(ctx context.Context, pool *pgxpool.Pool, actorID uuid.UUID, fn func(ctx context.Context, tx pgx.Tx) error) error {
+	if actorID == uuid.Nil {
+		return errors.New("actor transaction requires an actor id")
+	}
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin actor tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	if _, err := tx.Exec(ctx, `SELECT set_config('app.actor_id', $1, true)`, actorID.String()); err != nil {
+		return fmt.Errorf("bind actor context: %w", err)
+	}
+	if err := fn(ctx, tx); err != nil {
+		return err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit actor tx: %w", err)
+	}
+	return nil
+}
+
 // BindTenant sets the RLS session variables on an already open transaction.
 func BindTenant(ctx context.Context, tx pgx.Tx, tc TenantContext) error {
 	actor := ""
