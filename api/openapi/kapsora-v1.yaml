@@ -244,6 +244,8 @@ paths:
           $ref: '#/components/responses/Conflict'
         '422':
           $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /api/v1/organizations/{organizationId}:
     get:
       tags: [Organizations]
@@ -341,6 +343,8 @@ paths:
           $ref: '#/components/responses/Conflict'
         '422':
           $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /api/v1/people/{personId}:
     get:
       tags: [People]
@@ -385,6 +389,8 @@ paths:
                 $ref: '#/components/schemas/EligibilityCheckResult'
         '422':
           $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /api/v1/service-requests:
     get:
       tags: [Service Requests]
@@ -451,6 +457,8 @@ paths:
           $ref: '#/components/responses/Conflict'
         '422':
           $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /api/v1/service-requests/{requestId}:
     get:
       tags: [Service Requests]
@@ -535,6 +543,8 @@ paths:
           $ref: '#/components/responses/Conflict'
         '422':
           $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /api/v1/service-requests/{requestId}/cancel:
     post:
       tags: [Service Requests]
@@ -562,6 +572,8 @@ paths:
                 $ref: '#/components/schemas/ServiceRequest'
         '409':
           $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
 components:
   securitySchemes:
     sessionCookie:
@@ -612,14 +624,6 @@ components:
         type: string
         minLength: 16
         maxLength: 256
-    RequestIdHeader:
-      name: X-Request-ID
-      in: header
-      required: false
-      description: Client correlation id (UUID). Echoed back; replaced when not a UUID.
-      schema:
-        type: string
-        format: uuid
     IfMatch:
       name: If-Match
       in: header

@@ -1,0 +1,20 @@
+# Normalise line endings to LF for everything git treats as text. Shell scripts, SQL
+# and YAML must stay LF: CRLF breaks them inside Linux containers and CI.
+* text=auto eol=lf
+
+*.sh   text eol=lf
+*.sql  text eol=lf
+*.go   text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+*.md   text eol=lf
+Makefile text eol=lf
+
+# Windows-only helper keeps CRLF so PowerShell 5.1 parses it predictably.
+*.ps1  text eol=crlf
+
+# Binary baseline documents
+*.docx binary
+*.pptx binary
+*.png  binary
+*.jpg  binary
