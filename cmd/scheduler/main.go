@@ -1,5 +1,6 @@
 // kapsora-scheduler triggers periodic jobs. Several replicas may run; exactly one
-// becomes leader by holding a PostgreSQL advisory lock on a dedicated connection.
+// becomes leader by holding a PostgreSQL advisory lock on a dedicated connection, and
+// every (job, slot) executes at most once cluster-wide through system.job_run.
 package main
 
 import (
@@ -14,13 +15,18 @@ import (
 
 	"github.com/celikbros/kapsora/internal/platform/config"
 	"github.com/celikbros/kapsora/internal/platform/db"
+	"github.com/celikbros/kapsora/internal/platform/idempotency"
 	"github.com/celikbros/kapsora/internal/platform/logging"
+	"github.com/celikbros/kapsora/internal/platform/outbox"
+	"github.com/celikbros/kapsora/internal/platform/ratelimit"
+	"github.com/celikbros/kapsora/internal/platform/scheduler"
 )
 
 const (
 	serviceName = "kapsora-scheduler"
 	// leaderLockKey is the advisory lock id; stable across releases.
 	leaderLockKey = int64(7301_0001)
+	tickInterval  = time.Minute
 )
 
 func main() {
@@ -43,16 +49,25 @@ func run() error {
 
 	pool, err := db.NewPool(ctx, cfg.DatabaseURL, db.PoolOptions{
 		ApplicationName: serviceName,
-		MaxConns:        2,
+		MaxConns:        4,
 	})
 	if err != nil {
 		return err
 	}
 	defer pool.Close()
 
-	logger.Info("scheduler started, waiting for leadership")
+	registry := scheduler.NewRegistry()
+	registry.Register(scheduler.AuditEnsurePartitions(pool))
+	registry.Register(scheduler.OutboxRecoverStale(outbox.New(pool, outbox.Options{Logger: logger})))
+	registry.Register(scheduler.IdempotencyPurge(pool, idempotency.PurgeExpired))
+	registry.Register(scheduler.RateLimitPurge(ratelimit.NewPostgres(pool)))
+	// scheduler.SessionCleanup(store) is registered once the identity session store
+	// (WP-I1-01) exists.
+	runner := scheduler.NewRunner(pool, registry, logger, 10*time.Minute)
+
+	logger.Info("scheduler started, waiting for leadership", "jobs", len(registry.Jobs()))
 	for {
-		if err := leadOnce(ctx, logger, pool); err != nil && ctx.Err() == nil {
+		if err := leadOnce(ctx, logger, pool, runner); err != nil && ctx.Err() == nil {
 			logger.Warn("leadership loop ended with error; retrying", "error", err)
 		}
 		select {
@@ -64,10 +79,10 @@ func run() error {
 	}
 }
 
-// leadOnce holds the lock on one connection and runs the tick loop until the
-// context ends or the connection breaks. Advisory locks are session-scoped, so
-// losing the connection releases leadership automatically.
-func leadOnce(ctx context.Context, logger *slog.Logger, pool *pgxpool.Pool) error {
+// leadOnce holds the lock on one connection and runs the tick loop until the context
+// ends or the connection breaks. Advisory locks are session-scoped, so losing the
+// connection releases leadership automatically.
+func leadOnce(ctx context.Context, logger *slog.Logger, pool *pgxpool.Pool, runner *scheduler.Runner) error {
 	conn, err := pool.Acquire(ctx)
 	if err != nil {
 		return err
@@ -89,20 +104,27 @@ func leadOnce(ctx context.Context, logger *slog.Logger, pool *pgxpool.Pool) erro
 		logger.Info("leadership released")
 	}()
 
-	ticker := time.NewTicker(time.Minute)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		case <-ticker.C:
-			// Job registry (hold expiry, SLA escalation, partition creation, ...) is
-			// wired from increment I2 onwards. The heartbeat also proves the lock
-			// connection is alive.
-			if err := conn.Ping(ctx); err != nil {
-				return err
+	leaderCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	go func() {
+		// Heartbeat on the lock connection: if it breaks, leadership is gone and the
+		// tick loop must stop until the lock is re-acquired.
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-leaderCtx.Done():
+				return
+			case <-ticker.C:
+				if err := conn.Ping(leaderCtx); err != nil {
+					logger.Warn("leader connection lost", "error", err)
+					cancel()
+					return
+				}
 			}
-			logger.Debug("scheduler tick")
 		}
-	}
+	}()
+
+	runner.Loop(leaderCtx, tickInterval)
+	return nil
 }

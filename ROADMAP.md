@@ -50,12 +50,12 @@ milestones close when their exit criteria are verified by the integrator.
 
 | WP | Title | Depends on | Parallel with | Size | Owner |
 |---|---|---|---|---|---|
-| [WP-I1-01](docs/delegation/WP-I1-01-identity-oidc-bff-session.md) | Identity: OIDC/BFF login, PostgreSQL sessions, CSRF, step-up | ports in repo | 02, 03, 04, 05, 06 | L | _unassigned_ |
-| [WP-I1-02](docs/delegation/WP-I1-02-authorization-tenant-context.md) | Authorization: tenant context, permissions, /me, /tenants, switch-tenant, role templates, seed | ports in repo | 01, 03, 04, 05, 06 | L | _unassigned_ |
-| [WP-I1-03](docs/delegation/WP-I1-03-organizations.md) | Organizations: directory CRUD, VKN/TCKN validation, blind-index dedup, ETag, cursor paging | ports in repo | 01, 02, 04, 05, 06 | M | _unassigned_ |
-| [WP-I1-04](docs/delegation/WP-I1-04-platform-audit-outbox-idempotency.md) | Platform services: audit recorder, outbox dispatcher, idempotency middleware, rate limit, scheduler jobs, keygen | ports in repo | 01, 02, 03, 05, 06 | L | _unassigned_ |
-| [WP-I1-05](docs/delegation/WP-I1-05-frontend-foundation.md) | Frontend foundation: pnpm workspace, three app shells, generated client, first screens with mocks | OpenAPI only | all | L | _unassigned_ |
-| [WP-I1-06](docs/delegation/WP-I1-06-native-environment-ops.md) | Native environment and ops: install/run scripts for Keycloak, MinIO, ClamAV, Mailpit; systemd units; runbooks | none | all | M | _unassigned_ |
+| [WP-I1-01](docs/delegation/WP-I1-01-identity-oidc-bff-session.md) | Identity: OIDC/BFF login, PostgreSQL sessions, CSRF, step-up | ports in repo | 02, 03, 04, 05, 06 | L | Claude |
+| [WP-I1-02](docs/delegation/WP-I1-02-authorization-tenant-context.md) | Authorization: tenant context, permissions, /me, /tenants, switch-tenant, role templates, seed | ports in repo | 01, 03, 04, 05, 06 | L | Claude |
+| [WP-I1-03](docs/delegation/WP-I1-03-organizations.md) | Organizations: directory CRUD, VKN/TCKN validation, blind-index dedup, ETag, cursor paging | ports in repo | 01, 02, 04, 05, 06 | M | Claude |
+| [WP-I1-04](docs/delegation/WP-I1-04-platform-audit-outbox-idempotency.md) | Platform services: audit recorder, outbox dispatcher, idempotency middleware, rate limit, scheduler jobs, keygen | ports in repo | 01, 02, 03, 05, 06 | L | Claude |
+| [WP-I1-05](docs/delegation/WP-I1-05-frontend-foundation.md) | Frontend foundation: pnpm workspace, three app shells, generated client, first screens with mocks | OpenAPI only | all | L | Claude |
+| [WP-I1-06](docs/delegation/WP-I1-06-native-environment-ops.md) | Native environment and ops: install/run scripts for Keycloak, MinIO, ClamAV, Mailpit; systemd units; runbooks | none | all | M | Claude |
 
 Integration order once packages return: 04 → 01 → 02 → 03 → 05 (06 any time). The
 integrator wires middlewares and routes in `cmd/api` and runs the full test suite before
@@ -77,8 +77,7 @@ closing M1.
 
 | Needed by | Input | Status |
 |---|---|---|
-| M1 | Developers assigned to WP-I1-01..06 | open |
-| M1 | Delegate access to the private repository `github.com/celikbros/kapsora` (owner invites collaborators) | repository created 2026-09-02; invitations open |
+| M1 | External developers for WP-I1-01..06 | paused by the owner 2026-09-02; Claude implements in order 04 → 01 → 02 → 03 → 05; delegation can resume later with the same WP files |
 | M8 | İşNet Nettefatura web-service application, NDA, test account, API documentation | open |
 | M9 | Name of the ledger-keeping accounting program of the pilot customer | open |
 | M10 | Pilot customer, program and beneficiary group; HR/policy source formats | open |
@@ -89,3 +88,4 @@ closing M1.
 - 2026-09-02 · Docker/Kubernetes removed (ADR-021); Valkey deferred, PostgreSQL-backed sessions.
 - 2026-09-02 · M1 work packages WP-I1-01..06 issued; shared ports (`identity`, `audit`, `crypto`, `dbtest`) and migration 000009 merged.
 - 2026-09-02 · Private repository `github.com/celikbros/kapsora` created; issues #1-#6 track the M1 work packages; CI green on `main` (build/lint/unit, PostgreSQL 18 schema tests, OpenAPI lint, secrets + dependency scan, static binaries). M0 exit criteria fully met.
+- 2026-09-02 · Owner paused external developers; WP files remain the specifications and Claude implements them in-house. Migration numbers renumbered: WP-I1-04 → 000010, outbox dedupe fix → 000011, WP-I1-01 → 000012.

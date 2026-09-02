@@ -7,9 +7,9 @@ package sqlcgen
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const getTenantByCode = `-- name: GetTenantByCode :one
@@ -29,8 +29,8 @@ type GetTenantByCodeRow struct {
 	DefaultTimeZone string
 	DefaultCurrency string
 	DataRegion      *string
-	CreatedAt       pgtype.Timestamptz
-	UpdatedAt       pgtype.Timestamptz
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 	RowVersion      int64
 }
 
@@ -72,8 +72,8 @@ type GetTenantByIDRow struct {
 	DefaultTimeZone string
 	DefaultCurrency string
 	DataRegion      *string
-	CreatedAt       pgtype.Timestamptz
-	UpdatedAt       pgtype.Timestamptz
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 	RowVersion      int64
 }
 
@@ -122,8 +122,8 @@ type ListTenantsForActorRow struct {
 	DefaultTimeZone string
 	DefaultCurrency string
 	DataRegion      *string
-	CreatedAt       pgtype.Timestamptz
-	UpdatedAt       pgtype.Timestamptz
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 	RowVersion      int64
 }
 

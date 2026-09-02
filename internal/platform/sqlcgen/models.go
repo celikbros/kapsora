@@ -6,6 +6,7 @@ package sqlcgen
 
 import (
 	"net/netip"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -13,7 +14,7 @@ import (
 
 type AuditAccessEvent struct {
 	ID                 uuid.UUID
-	OccurredAt         pgtype.Timestamptz
+	OccurredAt         time.Time
 	TenantID           uuid.UUID
 	ActorID            uuid.UUID
 	MembershipID       uuid.NullUUID
@@ -32,7 +33,7 @@ type AuditAccessEvent struct {
 
 type AuditAccessEventDefault struct {
 	ID                 uuid.UUID
-	OccurredAt         pgtype.Timestamptz
+	OccurredAt         time.Time
 	TenantID           uuid.UUID
 	ActorID            uuid.UUID
 	MembershipID       uuid.NullUUID
@@ -51,7 +52,7 @@ type AuditAccessEventDefault struct {
 
 type AuditEvent struct {
 	ID            uuid.UUID
-	OccurredAt    pgtype.Timestamptz
+	OccurredAt    time.Time
 	TenantID      uuid.NullUUID
 	ActorID       uuid.NullUUID
 	MembershipID  uuid.NullUUID
@@ -73,7 +74,7 @@ type AuditEvent struct {
 
 type AuditEventDefault struct {
 	ID            uuid.UUID
-	OccurredAt    pgtype.Timestamptz
+	OccurredAt    time.Time
 	TenantID      uuid.NullUUID
 	ActorID       uuid.NullUUID
 	MembershipID  uuid.NullUUID
@@ -103,8 +104,8 @@ type BenefitEnrollment struct {
 	EnrollmentReason    *string
 	SourceSystem        *string
 	SourceRecordID      *string
-	CreatedAt           pgtype.Timestamptz
-	UpdatedAt           pgtype.Timestamptz
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
 	RowVersion          int64
 }
 
@@ -120,8 +121,8 @@ type BenefitEntitlementAccount struct {
 	ConsumedQuantity        pgtype.Numeric
 	ExpiredQuantity         pgtype.Numeric
 	Status                  string
-	CreatedAt               pgtype.Timestamptz
-	UpdatedAt               pgtype.Timestamptz
+	CreatedAt               time.Time
+	UpdatedAt               time.Time
 	RowVersion              int64
 }
 
@@ -141,7 +142,7 @@ type BenefitEntitlementDefinition struct {
 	RolloverCap     pgtype.Numeric
 	FamilyShared    bool
 	Status          string
-	CreatedAt       pgtype.Timestamptz
+	CreatedAt       time.Time
 }
 
 type BenefitEntitlementLedger struct {
@@ -149,7 +150,7 @@ type BenefitEntitlementLedger struct {
 	TenantID             uuid.UUID
 	EntitlementAccountID uuid.UUID
 	MovementType         string
-	EffectiveAt          pgtype.Timestamptz
+	EffectiveAt          time.Time
 	DeltaTotal           pgtype.Numeric
 	DeltaAvailable       pgtype.Numeric
 	DeltaReserved        pgtype.Numeric
@@ -160,7 +161,7 @@ type BenefitEntitlementLedger struct {
 	IdempotencyKey       string
 	ReasonCode           *string
 	ReasonText           *string
-	CreatedAt            pgtype.Timestamptz
+	CreatedAt            time.Time
 	CreatedBy            uuid.NullUUID
 }
 
@@ -171,8 +172,8 @@ type BenefitPlan struct {
 	Code       string
 	Name       string
 	Status     string
-	CreatedAt  pgtype.Timestamptz
-	UpdatedAt  pgtype.Timestamptz
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 	RowVersion int64
 }
 
@@ -184,9 +185,9 @@ type BenefitPlanVersion struct {
 	Status            string
 	ValidPeriod       pgtype.Range[pgtype.Date]
 	ConfigurationHash []byte
-	PublishedAt       pgtype.Timestamptz
+	PublishedAt       *time.Time
 	PublishedBy       uuid.NullUUID
-	CreatedAt         pgtype.Timestamptz
+	CreatedAt         time.Time
 	CreatedBy         uuid.NullUUID
 }
 
@@ -200,8 +201,8 @@ type BenefitProgram struct {
 	ProgramType                 string
 	Status                      string
 	ValidPeriod                 pgtype.Range[pgtype.Date]
-	CreatedAt                   pgtype.Timestamptz
-	UpdatedAt                   pgtype.Timestamptz
+	CreatedAt                   time.Time
+	UpdatedAt                   time.Time
 	RowVersion                  int64
 }
 
@@ -211,8 +212,8 @@ type BenefitProgramType struct {
 	DisplayName string
 	Status      string
 	Metadata    []byte
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 type CatalogServiceCategory struct {
@@ -223,7 +224,7 @@ type CatalogServiceCategory struct {
 	Name       string
 	DomainCode string
 	Active     bool
-	CreatedAt  pgtype.Timestamptz
+	CreatedAt  time.Time
 }
 
 type CatalogServiceDefinition struct {
@@ -237,8 +238,8 @@ type CatalogServiceDefinition struct {
 	DefaultUnitType  string
 	RequiresProvider bool
 	Active           bool
-	CreatedAt        pgtype.Timestamptz
-	UpdatedAt        pgtype.Timestamptz
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 	RowVersion       int64
 }
 
@@ -251,8 +252,8 @@ type DirectoryOrganization struct {
 	TaxNumberCipher  []byte
 	TaxNumberHash    []byte
 	Status           string
-	CreatedAt        pgtype.Timestamptz
-	UpdatedAt        pgtype.Timestamptz
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 	RowVersion       int64
 }
 
@@ -264,7 +265,7 @@ type DirectoryOrganizationIdentifier struct {
 	IssuingCountry  *string
 	ValidPeriod     pgtype.Range[pgtype.Date]
 	IsPrimary       bool
-	CreatedAt       pgtype.Timestamptz
+	CreatedAt       time.Time
 }
 
 type DirectoryTenantOrganization struct {
@@ -275,8 +276,8 @@ type DirectoryTenantOrganization struct {
 	TenantCode       *string
 	Status           string
 	ValidPeriod      pgtype.Range[pgtype.Date]
-	CreatedAt        pgtype.Timestamptz
-	UpdatedAt        pgtype.Timestamptz
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 	RowVersion       int64
 }
 
@@ -290,7 +291,7 @@ type IamAccessGrant struct {
 	ValidPeriod        pgtype.Range[pgtype.Timestamptz]
 	GrantedBy          uuid.NullUUID
 	GrantReason        *string
-	CreatedAt          pgtype.Timestamptz
+	CreatedAt          time.Time
 }
 
 type IamActor struct {
@@ -301,8 +302,8 @@ type IamActor struct {
 	DisplayName     string
 	Email           *string
 	Status          string
-	CreatedAt       pgtype.Timestamptz
-	UpdatedAt       pgtype.Timestamptz
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
 type IamPermission struct {
@@ -318,7 +319,7 @@ type IamRole struct {
 	Name         string
 	Description  *string
 	IsSystemRole bool
-	CreatedAt    pgtype.Timestamptz
+	CreatedAt    time.Time
 }
 
 type IamRolePermission struct {
@@ -333,9 +334,9 @@ type IamTenantMembership struct {
 	ActorID          uuid.UUID
 	MembershipStatus string
 	ValidPeriod      pgtype.Range[pgtype.Date]
-	CreatedAt        pgtype.Timestamptz
+	CreatedAt        time.Time
 	CreatedBy        uuid.NullUUID
-	UpdatedAt        pgtype.Timestamptz
+	UpdatedAt        time.Time
 	RowVersion       int64
 }
 
@@ -347,8 +348,8 @@ type PartyIdentifierType struct {
 	UniquenessScope string
 	Status          string
 	Metadata        []byte
-	CreatedAt       pgtype.Timestamptz
-	UpdatedAt       pgtype.Timestamptz
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
 type PartyMembershipType struct {
@@ -358,8 +359,8 @@ type PartyMembershipType struct {
 	RequiresPrincipal bool
 	Status            string
 	Metadata          []byte
-	CreatedAt         pgtype.Timestamptz
-	UpdatedAt         pgtype.Timestamptz
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
 }
 
 type PartyPerson struct {
@@ -374,9 +375,9 @@ type PartyPerson struct {
 	PreferredLocale *string
 	Status          string
 	MergedIntoID    uuid.NullUUID
-	CreatedAt       pgtype.Timestamptz
+	CreatedAt       time.Time
 	CreatedBy       uuid.NullUUID
-	UpdatedAt       pgtype.Timestamptz
+	UpdatedAt       time.Time
 	UpdatedBy       uuid.NullUUID
 	RowVersion      int64
 }
@@ -393,7 +394,7 @@ type PartyPersonIdentifier struct {
 	IssuingCountry   *string
 	ValidPeriod      pgtype.Range[pgtype.Date]
 	IsPrimary        bool
-	CreatedAt        pgtype.Timestamptz
+	CreatedAt        time.Time
 }
 
 type PartyPersonRelationship struct {
@@ -404,7 +405,7 @@ type PartyPersonRelationship struct {
 	RelationshipType string
 	ValidPeriod      pgtype.Range[pgtype.Date]
 	Status           string
-	CreatedAt        pgtype.Timestamptz
+	CreatedAt        time.Time
 }
 
 type PartyRelationshipType struct {
@@ -414,8 +415,8 @@ type PartyRelationshipType struct {
 	IsDirectional bool
 	Status        string
 	Metadata      []byte
-	CreatedAt     pgtype.Timestamptz
-	UpdatedAt     pgtype.Timestamptz
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }
 
 type PartySponsorMembership struct {
@@ -430,8 +431,8 @@ type PartySponsorMembership struct {
 	ValidPeriod                 pgtype.Range[pgtype.Date]
 	SourceSystem                *string
 	SourceRecordID              *string
-	CreatedAt                   pgtype.Timestamptz
-	UpdatedAt                   pgtype.Timestamptz
+	CreatedAt                   time.Time
+	UpdatedAt                   time.Time
 	RowVersion                  int64
 }
 
@@ -440,8 +441,8 @@ type PlatformFeatureFlag struct {
 	FlagKey     string
 	Enabled     bool
 	RolloutJson []byte
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 type PlatformNumberSequence struct {
@@ -451,7 +452,7 @@ type PlatformNumberSequence struct {
 	Prefix       string
 	NextValue    int64
 	PaddingWidth int16
-	UpdatedAt    pgtype.Timestamptz
+	UpdatedAt    time.Time
 }
 
 type PlatformTenant struct {
@@ -464,9 +465,9 @@ type PlatformTenant struct {
 	DefaultTimeZone string
 	DefaultCurrency string
 	DataRegion      *string
-	CreatedAt       pgtype.Timestamptz
+	CreatedAt       time.Time
 	CreatedBy       uuid.NullUUID
-	UpdatedAt       pgtype.Timestamptz
+	UpdatedAt       time.Time
 	UpdatedBy       uuid.NullUUID
 	RowVersion      int64
 }
@@ -476,8 +477,8 @@ type PlatformTenantSetting struct {
 	SettingKey  string
 	ValueJson   []byte
 	IsSensitive bool
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 type ServiceServiceRequest struct {
@@ -490,17 +491,17 @@ type ServiceServiceRequest struct {
 	EnrollmentID                 uuid.UUID
 	ProviderTenantOrganizationID uuid.NullUUID
 	ServiceDate                  pgtype.Date
-	RequestedStartAt             pgtype.Timestamptz
-	RequestedEndAt               pgtype.Timestamptz
+	RequestedStartAt             *time.Time
+	RequestedEndAt               *time.Time
 	Channel                      string
 	Status                       string
 	CurrentVersionNo             int32
 	SupersedesRequestID          uuid.NullUUID
-	SubmittedAt                  pgtype.Timestamptz
-	ClosedAt                     pgtype.Timestamptz
-	CreatedAt                    pgtype.Timestamptz
+	SubmittedAt                  *time.Time
+	ClosedAt                     *time.Time
+	CreatedAt                    time.Time
 	CreatedBy                    uuid.NullUUID
-	UpdatedAt                    pgtype.Timestamptz
+	UpdatedAt                    time.Time
 	UpdatedBy                    uuid.NullUUID
 	RowVersion                   int64
 }
@@ -519,8 +520,8 @@ type ServiceServiceRequestItem struct {
 	ApprovedQuantity        pgtype.Numeric
 	ApprovedAmount          pgtype.Numeric
 	DecisionReasonCode      *string
-	CreatedAt               pgtype.Timestamptz
-	UpdatedAt               pgtype.Timestamptz
+	CreatedAt               time.Time
+	UpdatedAt               time.Time
 	RowVersion              int64
 }
 
@@ -531,9 +532,9 @@ type ServiceServiceRequestVersion struct {
 	VersionNo        int32
 	Status           string
 	SnapshotJson     []byte
-	SubmittedAt      pgtype.Timestamptz
+	SubmittedAt      *time.Time
 	SubmittedBy      uuid.NullUUID
-	CreatedAt        pgtype.Timestamptz
+	CreatedAt        time.Time
 	CreatedBy        uuid.NullUUID
 }
 
@@ -549,9 +550,20 @@ type SystemIdempotencyRecord struct {
 	ResponseBody   []byte
 	ResourceType   *string
 	ResourceID     uuid.NullUUID
-	CreatedAt      pgtype.Timestamptz
-	CompletedAt    pgtype.Timestamptz
-	ExpiresAt      pgtype.Timestamptz
+	CreatedAt      time.Time
+	CompletedAt    *time.Time
+	ExpiresAt      time.Time
+}
+
+type SystemJobRun struct {
+	ID           uuid.UUID
+	JobCode      string
+	ScheduledFor time.Time
+	StartedAt    time.Time
+	FinishedAt   *time.Time
+	Status       string
+	ErrorCode    *string
+	MetricsJson  []byte
 }
 
 type SystemOutboxEvent struct {
@@ -563,16 +575,22 @@ type SystemOutboxEvent struct {
 	EventSchemaVersion int32
 	PayloadJson        []byte
 	HeadersJson        []byte
-	OccurredAt         pgtype.Timestamptz
-	AvailableAt        pgtype.Timestamptz
+	OccurredAt         time.Time
+	AvailableAt        time.Time
 	Status             string
 	AttemptCount       int32
-	LockedAt           pgtype.Timestamptz
+	LockedAt           *time.Time
 	LockedBy           *string
 	LastErrorCode      *string
 	LastErrorMessage   *string
-	ProcessedAt        pgtype.Timestamptz
+	ProcessedAt        *time.Time
 	DeduplicationKey   *string
+}
+
+type SystemRateLimitBucket struct {
+	BucketKey string
+	Tokens    float64
+	UpdatedAt time.Time
 }
 
 type WorkflowStatusEvent struct {
@@ -585,7 +603,7 @@ type WorkflowStatusEvent struct {
 	TransitionCode string
 	ReasonCode     *string
 	ReasonText     *string
-	OccurredAt     pgtype.Timestamptz
+	OccurredAt     time.Time
 	ActorID        uuid.NullUUID
 	RequestID      uuid.NullUUID
 	MetadataJson   []byte

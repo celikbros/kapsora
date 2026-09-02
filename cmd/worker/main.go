@@ -1,6 +1,5 @@
-// kapsora-worker dispatches outbox events and runs asynchronous jobs.
-// In increment I0 it only verifies its dependencies and reports the outbox backlog;
-// handlers are registered by modules from I1 onwards.
+// kapsora-worker dispatches outbox events and runs asynchronous jobs. Handlers are
+// registered by modules as they land (notification delivery, import processing, ...).
 package main
 
 import (
@@ -11,11 +10,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-
 	"github.com/celikbros/kapsora/internal/platform/config"
 	"github.com/celikbros/kapsora/internal/platform/db"
 	"github.com/celikbros/kapsora/internal/platform/logging"
+	"github.com/celikbros/kapsora/internal/platform/outbox"
 )
 
 const serviceName = "kapsora-worker"
@@ -47,35 +45,32 @@ func run() error {
 	}
 	defer pool.Close()
 
-	logger.Info("worker started")
-	ticker := time.NewTicker(30 * time.Second)
-	defer ticker.Stop()
+	dispatcher := outbox.New(pool, outbox.Options{Logger: logger})
+	// Module handlers are registered here from increment I1 onwards, e.g.
+	// dispatcher.Handle("notification.message.requested", notification.Deliver)
 
+	go reportBacklog(ctx, logger, dispatcher)
+
+	logger.Info("worker started")
+	err = dispatcher.Run(ctx)
+	logger.Info("worker stopped")
+	return err
+}
+
+func reportBacklog(ctx context.Context, logger *slog.Logger, d *outbox.Dispatcher) {
+	ticker := time.NewTicker(time.Minute)
+	defer ticker.Stop()
 	for {
-		reportBacklog(ctx, logger, pool)
+		pending, oldest, err := d.Backlog(ctx)
+		if err != nil && ctx.Err() == nil {
+			logger.Warn("outbox backlog query failed", "error", err)
+		} else if err == nil {
+			logger.Info("outbox backlog", "pending", pending, "oldest_age_seconds", int64(oldest.Seconds()))
+		}
 		select {
 		case <-ctx.Done():
-			logger.Info("worker stopped")
-			return nil
+			return
 		case <-ticker.C:
 		}
 	}
-}
-
-func reportBacklog(ctx context.Context, logger *slog.Logger, pool *pgxpool.Pool) {
-	var pending int64
-	var oldest *time.Time
-	err := pool.QueryRow(ctx,
-		`SELECT count(*), min(available_at)
-		   FROM system.outbox_event
-		  WHERE status IN ('PENDING','FAILED')`).Scan(&pending, &oldest)
-	if err != nil {
-		logger.Warn("outbox backlog query failed", "error", err)
-		return
-	}
-	age := time.Duration(0)
-	if oldest != nil {
-		age = time.Since(*oldest)
-	}
-	logger.Info("outbox backlog", "pending", pending, "oldest_age_seconds", int64(age.Seconds()))
 }

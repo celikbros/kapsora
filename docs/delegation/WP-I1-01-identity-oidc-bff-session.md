@@ -6,7 +6,7 @@
 | Size | L |
 | Depends on | Ports already in `main`: `internal/identity`, `internal/platform/crypto`, `internal/audit` |
 | Runs in parallel with | WP-I1-02, 03, 04, 05, 06 |
-| Migration numbers assigned | `000010_iam_session.up.sql` |
+| Migration numbers assigned | `000012_iam_session.up.sql` |
 | OpenAPI operations owned | `logout`, `stepUpSession` (to be replaced, see 6.3), new `getSession` |
 | Read first | Handbook; v1.2 sections 15.3, 18.1-18.4, 19.2; ADR-005, ADR-020, ADR-021 |
 
@@ -53,7 +53,7 @@ internal/identity/
   transport/http/handler.go        routes below
   transport/http/middleware.go     SessionMiddleware, RequireCSRF
   transport/http/cookies.go
-db/migrations/000010_iam_session.up.sql
+db/migrations/000012_iam_session.up.sql
 db/queries/identity.sql
 deploy/keycloak/realm-kapsora.json
 docs/runbooks/keycloak-local.md   (manual steps you used; WP-I1-06 automates them)
@@ -104,7 +104,7 @@ API (OpenAPI):
 
 ## 6. Data
 
-### 6.1 Migration `000010_iam_session.up.sql`
+### 6.1 Migration `000012_iam_session.up.sql`
 
 ```sql
 CREATE TABLE iam.session (

@@ -55,6 +55,9 @@ type SessionStore interface {
 	SetStepUp(ctx context.Context, id string, until time.Time) error
 	Delete(ctx context.Context, id string) error
 	DeleteByActor(ctx context.Context, actorID uuid.UUID) (int64, error)
+	// DeleteExpired removes sessions whose absolute expiry is before the given time; the
+	// scheduler job session.cleanup calls it.
+	DeleteExpired(ctx context.Context, before time.Time) (int64, error)
 }
 
 // Scope narrows a role grant (v1.2 6.3): ORGANIZATION, PROGRAM, PROVIDER_LOCATION, WORK_QUEUE.

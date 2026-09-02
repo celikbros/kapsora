@@ -6,7 +6,7 @@
 | Size | L |
 | Depends on | Ports in `main`: `internal/audit`, `internal/identity`, `internal/platform/{db,httpx,crypto}` |
 | Runs in parallel with | WP-I1-01, 02, 03, 05, 06 |
-| Migration numbers assigned | `000011_system_rate_limit.up.sql` (and `000012` if you need a second one; say so in the report) |
+| Migration numbers assigned | `000010_system_rate_limit_and_job_run.up.sql` (renumbered 2026-09-02: this package is implemented first) |
 | OpenAPI operations owned | none (you own the `TooManyRequests` and idempotency error semantics) |
 | Read first | Handbook; v1.2 sections 11.13, 14.6, 17.5, 21.1-21.3, 23.1-23.3; ADR-009, ADR-015; migration 000007 |
 
@@ -74,7 +74,7 @@ generator for local setups.
 - Interface `Limiter.Allow(ctx, key string, policy Policy) (Decision, error)` with token
   bucket semantics (`Rate` per minute, `Burst`).
 - Two implementations: in-memory (single process, tests) and PostgreSQL
-  (`system.rate_limit_bucket`, migration 000011: `key text PK, tokens numeric, updated_at
+  (`system.rate_limit_bucket`, migration 000010: `key text PK, tokens numeric, updated_at
   timestamptz`) updated atomically in one statement; the DB implementation is what
   production uses (ADR-021: no Valkey).
 - Middleware `httpx.RateLimit(limiter, keyFn, policy)`: key = tenant + actor (or client
@@ -87,7 +87,7 @@ generator for local setups.
 ### 2.5 Scheduler job registry (`internal/platform/scheduler`)
 
 - `Registry.Register(Job{Code, Every, Run func(ctx) error})`; the leader loop in
-  `cmd/scheduler` runs due jobs sequentially, records `system.job_run` (migration 000011
+  `cmd/scheduler` runs due jobs sequentially, records `system.job_run` (migration 000010
   may add this table: `id, job_code, scheduled_for, started_at, finished_at, status,
   error_code, metrics_json`, unique `(job_code, scheduled_for)`), and skips a job whose
   previous run is still running.

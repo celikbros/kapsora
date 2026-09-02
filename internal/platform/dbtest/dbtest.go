@@ -251,9 +251,22 @@ func appPassword() string {
 	return defaultAppPassword
 }
 
+// roleLockKey serialises role creation across test packages running in parallel;
+// concurrent ALTER ROLE statements otherwise fail with "tuple concurrently updated".
+const roleLockKey = int64(7301_0002)
+
 func ensureAppRole(ctx context.Context, t *testing.T, conn *pgx.Conn) {
 	t.Helper()
-	_, err := conn.Exec(ctx, fmt.Sprintf(`
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		t.Fatalf("dbtest: begin role tx: %v", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock($1)`, roleLockKey); err != nil {
+		t.Fatalf("dbtest: role lock: %v", err)
+	}
+	_, err = tx.Exec(ctx, fmt.Sprintf(`
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '%[1]s') THEN
@@ -263,8 +276,11 @@ END $$;`, AppRole))
 	if err != nil {
 		t.Fatalf("dbtest: create app role: %v", err)
 	}
-	if _, err := conn.Exec(ctx, fmt.Sprintf(`ALTER ROLE %s WITH LOGIN PASSWORD '%s'`, AppRole, appPassword())); err != nil {
+	if _, err := tx.Exec(ctx, fmt.Sprintf(`ALTER ROLE %s WITH LOGIN PASSWORD '%s'`, AppRole, appPassword())); err != nil {
 		t.Fatalf("dbtest: set app role password: %v", err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatalf("dbtest: commit role tx: %v", err)
 	}
 }
 
