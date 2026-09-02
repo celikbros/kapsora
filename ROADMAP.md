@@ -88,3 +88,4 @@ closing M1.
 - 2026-09-02 · M0 closed: migrations 1-9, 16 schema tests, health endpoints verified on local PostgreSQL 18.4.
 - 2026-09-02 · Docker/Kubernetes removed (ADR-021); Valkey deferred, PostgreSQL-backed sessions.
 - 2026-09-02 · M1 work packages WP-I1-01..06 issued; shared ports (`identity`, `audit`, `crypto`, `dbtest`) and migration 000009 merged.
+- 2026-09-02 · Private repository `github.com/celikbros/kapsora` created; issues #1-#6 track the M1 work packages; CI green on `main` (build/lint/unit, PostgreSQL 18 schema tests, OpenAPI lint, secrets + dependency scan, static binaries). M0 exit criteria fully met.
