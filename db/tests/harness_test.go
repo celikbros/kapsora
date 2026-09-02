@@ -28,10 +28,21 @@ import (
 )
 
 const (
-	adminURLEnv = "KAPSORA_TEST_ADMIN_DATABASE_URL"
-	appRole     = "kapsora_app"
-	appPassword = "kapsora_app_test"
+	adminURLEnv    = "KAPSORA_TEST_ADMIN_DATABASE_URL"
+	appPasswordEnv = "KAPSORA_TEST_APP_PASSWORD"
+	appRole        = "kapsora_app"
+	// Same default as docker-compose.yml and .env.example so a developer database and the
+	// test role share one local password; override with KAPSORA_TEST_APP_PASSWORD.
+	defaultAppPassword = "kapsora_app_local"
 )
+
+// appPassword is the password the harness sets on the application role.
+var appPassword = func() string {
+	if v := os.Getenv(appPasswordEnv); v != "" {
+		return v
+	}
+	return defaultAppPassword
+}()
 
 // harness bundles the admin and application pools for one throw-away database.
 type harness struct {
