@@ -1,0 +1,33 @@
+# Spectral ruleset for the KAPSORA OpenAPI contract.
+extends: ["spectral:oas"]
+rules:
+  operation-operationId: error
+  operation-tags: error
+  operation-description: warn
+  oas3-unused-component: error
+  no-$ref-siblings: off
+  kapsora-tenant-header-on-api-v1:
+    description: Tenant-scoped /api/v1 operations must declare the X-Tenant-ID header.
+    severity: error
+    given: "$.paths[?(@property.match(/^\\/api\\/v1\\/(organizations|people|eligibility|service-requests)/))][get,post,patch,put,delete]"
+    then:
+      field: parameters
+      function: schema
+      functionOptions:
+        schema:
+          type: array
+          contains:
+            type: object
+            properties:
+              $ref:
+                const: "#/components/parameters/TenantHeader"
+  kapsora-problem-json-errors:
+    description: 4xx/5xx responses must use application/problem+json.
+    severity: error
+    given: "$.paths[*][*].responses[?(@property.match(/^[45]\\d\\d$/))].content"
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          required: ["application/problem+json"]

@@ -1,0 +1,37 @@
+# Go
+/bin/
+/dist/
+*.exe
+*.test
+*.out
+coverage.*
+
+# Node / pnpm
+node_modules/
+web/**/dist/
+web/**/.vite/
+.pnpm-store/
+
+# Environment and secrets: never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+
+# Local tooling
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Generated Go code under api/generated and internal/platform/sqlcgen IS committed;
+# CI regenerates it and fails on drift.
+/tmp/
+/test-results/
+/playwright-report/
+
+# Embedded PostgreSQL cache used by db tests on machines without Docker
+.embedded-postgres-go/

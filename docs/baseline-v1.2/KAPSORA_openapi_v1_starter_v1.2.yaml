@@ -1,0 +1,1173 @@
+openapi: 3.1.0
+info:
+  title: KAPSORA Platform API
+  version: 1.0.0-alpha.1
+  summary: Kurumsal hak, fayda ve hizmet orkestrasyonu için başlangıç API sözleşmesi
+  description: |
+    Bu sözleşme ilk sprint ve çekirdek MVP için contract-first geliştirme başlangıç noktasıdır.
+    Tarayıcı uygulamaları BFF oturum çerezi kullanır; makineden makineye entegrasyonlar
+    OAuth 2.0 client credentials ve mTLS ile çalışır. Tüm tenant kapsamlı çağrılar X-Tenant-ID
+    başlığı taşır. POST komutlarında Idempotency-Key zorunludur.
+  contact:
+    name: KAPSORA Product Engineering
+servers:
+  - url: https://api.staging.kapsora.example
+    description: Staging
+  - url: https://api.kapsora.example
+    description: Production
+security:
+  - sessionCookie: []
+  - oauth2: [kapsora.api]
+tags:
+  - name: Health
+    description: Servis sağlık kontrolleri
+  - name: Identity
+    description: Oturum ve kullanıcı bağlamı
+  - name: Tenants
+    description: Tenant erişimi
+  - name: Organizations
+    description: Kurum ve sağlayıcı dizini
+  - name: People
+    description: Hak sahipleri ve ilişkiler
+  - name: Eligibility
+    description: Hak sahipliği ve plan uygunluğu
+  - name: Service Requests
+    description: Genel hizmet talebi ve durum geçişleri
+paths:
+  /health/live:
+    get:
+      tags: [Health]
+      operationId: getLiveness
+      security: []
+      responses:
+        '200':
+          description: Process is alive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+  /health/ready:
+    get:
+      tags: [Health]
+      operationId: getReadiness
+      security: []
+      responses:
+        '200':
+          description: Required dependencies are ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+        '503':
+          description: One or more required dependencies are unavailable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/me:
+    get:
+      tags: [Identity]
+      operationId: getCurrentUserContext
+      responses:
+        '200':
+          description: Authenticated actor and tenant memberships
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserContext'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/v1/tenants:
+    get:
+      tags: [Tenants]
+      operationId: listAccessibleTenants
+      responses:
+        '200':
+          description: Tenants accessible to the current actor
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TenantSummary'
+  /api/v1/organizations:
+    get:
+      tags: [Organizations]
+      operationId: listOrganizations
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [PAYER, SPONSOR, PROVIDER, VENDOR, PARTNER]
+        - name: q
+          in: query
+          description: Display name/code search; tenant scoped
+          schema:
+            type: string
+            maxLength: 120
+      responses:
+        '200':
+          description: Organization page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationPage'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Organizations]
+      operationId: createTenantOrganization
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrganizationRequest'
+      responses:
+        '201':
+          description: Organization relationship created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/organizations/{organizationId}:
+    get:
+      tags: [Organizations]
+      operationId: getOrganization
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/OrganizationId'
+      responses:
+        '200':
+          description: Organization detail
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Organizations]
+      operationId: updateOrganization
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/OrganizationId'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: '#/components/schemas/UpdateOrganizationRequest'
+      responses:
+        '200':
+          description: Updated organization
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/people:
+    get:
+      tags: [People]
+      operationId: listPeople
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: q
+          in: query
+          description: Name search. Exact sensitive identifier search uses identifierHash through a dedicated permission-protected endpoint.
+          schema:
+            type: string
+            maxLength: 120
+      responses:
+        '200':
+          description: Person page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonPage'
+    post:
+      tags: [People]
+      operationId: createPerson
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePersonRequest'
+      responses:
+        '201':
+          description: Person created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Person'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/people/{personId}:
+    get:
+      tags: [People]
+      operationId: getPerson
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PersonId'
+      responses:
+        '200':
+          description: Person detail filtered by field-level permission
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Person'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/eligibility/checks:
+    post:
+      tags: [Eligibility]
+      operationId: checkEligibility
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EligibilityCheckRequest'
+      responses:
+        '200':
+          description: Deterministic eligibility result and explanation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EligibilityCheckResult'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/service-requests:
+    get:
+      tags: [Service Requests]
+      operationId: listServiceRequests
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [DRAFT, SUBMITTED, ELIGIBILITY_FAILED, PENDING_DOCUMENT, PENDING_REVIEW, APPROVED, PARTIALLY_APPROVED, REJECTED, CANCELLED, EXPIRED, CLOSED]
+        - name: personId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: providerOrganizationId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: createdFrom
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: createdTo
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Service request page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequestPage'
+    post:
+      tags: [Service Requests]
+      operationId: createServiceRequest
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateServiceRequest'
+      responses:
+        '201':
+          description: Draft service request created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/service-requests/{requestId}:
+    get:
+      tags: [Service Requests]
+      operationId: getServiceRequest
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '200':
+          description: Service request detail
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Service Requests]
+      operationId: updateDraftServiceRequest
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: '#/components/schemas/UpdateServiceRequest'
+      responses:
+        '200':
+          description: Draft updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/service-requests/{requestId}/submit:
+    post:
+      tags: [Service Requests]
+      operationId: submitServiceRequest
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                comment:
+                  type: string
+                  maxLength: 1000
+      responses:
+        '200':
+          description: Submitted request after eligibility/rule evaluation
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/service-requests/{requestId}/cancel:
+    post:
+      tags: [Service Requests]
+      operationId: cancelServiceRequest
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonCommand'
+      responses:
+        '200':
+          description: Cancelled request
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: __Host-kapsora_session
+      description: BFF-managed opaque session. Browser never stores OAuth tokens.
+    oauth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://identity.kapsora.example/realms/kapsora/protocol/openid-connect/token
+          scopes:
+            kapsora.api: Call KAPSORA APIs
+  parameters:
+    TenantHeader:
+      name: X-Tenant-ID
+      in: header
+      required: true
+      description: Selected tenant UUID. It must be one of the actor's active memberships.
+      schema:
+        type: string
+        format: uuid
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Client-generated unique key retained for at least 24 hours.
+      schema:
+        type: string
+        minLength: 16
+        maxLength: 128
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      description: Optimistic concurrency token returned as ETag.
+      schema:
+        type: string
+    Cursor:
+      name: cursor
+      in: query
+      schema:
+        type: string
+      description: Opaque cursor from the previous response.
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 50
+    OrganizationId:
+      name: organizationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PersonId:
+      name: personId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    RequestId:
+      name: requestId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  headers:
+    ETag:
+      description: Strong optimistic concurrency tag based on row_version.
+      schema:
+        type: string
+  responses:
+    Unauthorized:
+      description: Authentication required or session expired
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Forbidden:
+      description: Authenticated actor lacks permission or scope
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    NotFound:
+      description: Resource does not exist or is not visible in the selected tenant
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Conflict:
+      description: Business state, duplicate idempotency key, or uniqueness conflict
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    ValidationError:
+      description: Request is syntactically valid but violates validation or business preconditions
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    HealthStatus:
+      type: object
+      additionalProperties: false
+      required: [status, timestamp]
+      properties:
+        status:
+          type: string
+          enum: [UP, DEGRADED, DOWN]
+        timestamp:
+          type: string
+          format: date-time
+        checks:
+          type: object
+          additionalProperties:
+            type: string
+    Problem:
+      type: object
+      additionalProperties: false
+      required: [type, title, status, code, traceId]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri-reference
+        code:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_.-]{2,79}$'
+        traceId:
+          type: string
+        errors:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [field, code]
+            properties:
+              field:
+                type: string
+              code:
+                type: string
+              message:
+                type: string
+    UserContext:
+      type: object
+      additionalProperties: false
+      required: [actorId, displayName, tenants]
+      properties:
+        actorId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        email:
+          type: string
+          format: email
+        tenants:
+          type: array
+          items:
+            $ref: '#/components/schemas/TenantContext'
+    TenantContext:
+      type: object
+      additionalProperties: false
+      required: [tenant, permissions]
+      properties:
+        tenant:
+          $ref: '#/components/schemas/TenantSummary'
+        permissions:
+          type: array
+          items:
+            type: string
+        scopes:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [type]
+            properties:
+              type:
+                type: string
+              id:
+                type: [string, 'null']
+                format: uuid
+    TenantSummary:
+      type: object
+      additionalProperties: false
+      required: [id, code, displayName, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        displayName:
+          type: string
+        status:
+          type: string
+          enum: [PROVISIONING, ACTIVE, SUSPENDED, CLOSED]
+        defaultLocale:
+          type: string
+        defaultTimeZone:
+          type: string
+    Organization:
+      allOf:
+        - $ref: '#/components/schemas/OrganizationSummary'
+        - type: object
+          additionalProperties: false
+          required: [legalName, relationshipRole, validFrom, rowVersion]
+          properties:
+            legalName:
+              type: string
+            relationshipRole:
+              type: string
+              enum: [PAYER, SPONSOR, PROVIDER, VENDOR, PARTNER]
+            tenantCode:
+              type: [string, 'null']
+            validFrom:
+              type: string
+              format: date
+            validTo:
+              type: [string, 'null']
+              format: date
+            rowVersion:
+              type: integer
+              minimum: 1
+    OrganizationSummary:
+      type: object
+      additionalProperties: false
+      required: [id, displayName, organizationKind, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        organizationKind:
+          type: string
+          enum: [BANK, INSURER, SPONSOR, PROVIDER, VENDOR, PUBLIC_BODY, OTHER]
+        status:
+          type: string
+          enum: [PENDING, ACTIVE, SUSPENDED, TERMINATED]
+    OrganizationPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrganizationSummary'
+        nextCursor:
+          type: [string, 'null']
+    CreateOrganizationRequest:
+      type: object
+      additionalProperties: false
+      required: [legalName, displayName, organizationKind, relationshipRole]
+      properties:
+        legalName:
+          type: string
+          minLength: 2
+          maxLength: 300
+        displayName:
+          type: string
+          minLength: 2
+          maxLength: 200
+        organizationKind:
+          type: string
+          enum: [BANK, INSURER, SPONSOR, PROVIDER, VENDOR, PUBLIC_BODY, OTHER]
+        relationshipRole:
+          type: string
+          enum: [PAYER, SPONSOR, PROVIDER, VENDOR, PARTNER]
+        countryCode:
+          type: string
+          pattern: '^[A-Z]{2}$'
+          default: TR
+        tenantCode:
+          type: string
+          maxLength: 80
+    UpdateOrganizationRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        displayName:
+          type: string
+          minLength: 2
+          maxLength: 200
+        status:
+          type: string
+          enum: [ACTIVE, SUSPENDED, TERMINATED]
+        tenantCode:
+          type: [string, 'null']
+          maxLength: 80
+    Person:
+      allOf:
+        - $ref: '#/components/schemas/PersonSummary'
+        - type: object
+          additionalProperties: false
+          required: [firstName, lastName, rowVersion]
+          properties:
+            firstName:
+              type: string
+            middleName:
+              type: [string, 'null']
+            lastName:
+              type: string
+            birthDate:
+              type: [string, 'null']
+              format: date
+            sexAtBirth:
+              type: [string, 'null']
+              enum: [FEMALE, MALE, INTERSEX, UNKNOWN, null]
+            identifiers:
+              type: array
+              description: Returned only with person.identifier.read permission; values are masked.
+              items:
+                $ref: '#/components/schemas/MaskedIdentifier'
+            rowVersion:
+              type: integer
+              minimum: 1
+    PersonSummary:
+      type: object
+      additionalProperties: false
+      required: [id, displayName, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        maskedPrimaryIdentifier:
+          type: [string, 'null']
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE, DECEASED, MERGED]
+    PersonPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PersonSummary'
+        nextCursor:
+          type: [string, 'null']
+    MaskedIdentifier:
+      type: object
+      additionalProperties: false
+      required: [type, maskedValue, primary]
+      properties:
+        type:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]{1,63}$'
+          description: Tenant tarafından tanımlanan identifier type kodu (örn. TCKN, PASSPORT, MEMBER_NO, CUSTOMER_NO).
+        maskedValue:
+          type: string
+        primary:
+          type: boolean
+    CreatePersonRequest:
+      type: object
+      additionalProperties: false
+      required: [firstName, lastName]
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        middleName:
+          type: string
+          maxLength: 100
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        birthDate:
+          type: string
+          format: date
+        sexAtBirth:
+          type: string
+          enum: [FEMALE, MALE, INTERSEX, UNKNOWN]
+        identifiers:
+          type: array
+          maxItems: 10
+          items:
+            type: object
+            additionalProperties: false
+            required: [type, value]
+            properties:
+              type:
+                type: string
+                pattern: '^[A-Z][A-Z0-9_]{1,63}$'
+                description: Tenant tarafından tanımlanan identifier type kodu.
+              value:
+                type: string
+                minLength: 1
+                maxLength: 80
+              primary:
+                type: boolean
+                default: false
+    EligibilityCheckRequest:
+      type: object
+      additionalProperties: false
+      required: [personId, serviceDate, serviceItems]
+      properties:
+        personId:
+          type: string
+          format: uuid
+        programId:
+          type: [string, 'null']
+          format: uuid
+        providerOrganizationId:
+          type: [string, 'null']
+          format: uuid
+        serviceDate:
+          type: string
+          format: date
+        serviceItems:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            type: object
+            additionalProperties: false
+            required: [serviceDefinitionId, quantity]
+            properties:
+              serviceDefinitionId:
+                type: string
+                format: uuid
+              quantity:
+                type: number
+                exclusiveMinimum: 0
+              requestedAmount:
+                type: number
+                minimum: 0
+              currencyCode:
+                type: string
+                pattern: '^[A-Z]{3}$'
+        context:
+          type: object
+          additionalProperties: true
+    EligibilityCheckResult:
+      type: object
+      additionalProperties: false
+      required: [eligible, outcome, evaluatedAt, explanations]
+      properties:
+        eligible:
+          type: boolean
+        outcome:
+          type: string
+          enum: [ELIGIBLE, PARTIALLY_ELIGIBLE, INELIGIBLE, REVIEW_REQUIRED, MISSING_DATA]
+        evaluatedAt:
+          type: string
+          format: date-time
+        planVersionId:
+          type: [string, 'null']
+          format: uuid
+        ruleSetVersionIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        explanations:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [code, message, severity]
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+              severity:
+                type: string
+                enum: [INFO, WARNING, ERROR]
+        balances:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [entitlementCode, available, unit]
+            properties:
+              entitlementCode:
+                type: string
+              available:
+                type: number
+              unit:
+                type: string
+    ServiceRequest:
+      type: object
+      additionalProperties: false
+      required: [id, reference, requestType, personId, programId, enrollmentId, serviceDate, channel, status, items, rowVersion, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        reference:
+          type: string
+        requestType:
+          type: string
+          enum: [DIRECT_SERVICE, PREAUTHORIZATION, RESERVATION, REIMBURSEMENT]
+        personId:
+          type: string
+          format: uuid
+        programId:
+          type: string
+          format: uuid
+        enrollmentId:
+          type: string
+          format: uuid
+        providerOrganizationId:
+          type: [string, 'null']
+          format: uuid
+        serviceDate:
+          type: string
+          format: date
+        requestedStartAt:
+          type: [string, 'null']
+          format: date-time
+        requestedEndAt:
+          type: [string, 'null']
+          format: date-time
+        channel:
+          type: string
+          enum: [BACKOFFICE, PROVIDER_PORTAL, MEMBER_PORTAL, API, BATCH_IMPORT, CALL_CENTER]
+        status:
+          type: string
+          enum: [DRAFT, SUBMITTED, ELIGIBILITY_FAILED, PENDING_DOCUMENT, PENDING_REVIEW, APPROVED, PARTIALLY_APPROVED, REJECTED, CANCELLED, EXPIRED, CLOSED]
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceRequestItem'
+        rowVersion:
+          type: integer
+          minimum: 1
+        createdAt:
+          type: string
+          format: date-time
+        submittedAt:
+          type: [string, 'null']
+          format: date-time
+    ServiceRequestItem:
+      type: object
+      additionalProperties: false
+      required: [id, lineNo, serviceDefinitionId, requestedQuantity, unitType, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        lineNo:
+          type: integer
+          minimum: 1
+        serviceDefinitionId:
+          type: string
+          format: uuid
+        requestedQuantity:
+          type: number
+          exclusiveMinimum: 0
+        unitType:
+          type: string
+        requestedAmount:
+          type: [number, 'null']
+        currencyCode:
+          type: [string, 'null']
+        status:
+          type: string
+          enum: [REQUESTED, APPROVED, PARTIALLY_APPROVED, REJECTED, CANCELLED]
+        approvedQuantity:
+          type: [number, 'null']
+        approvedAmount:
+          type: [number, 'null']
+        decisionReasonCode:
+          type: [string, 'null']
+    ServiceRequestPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceRequest'
+        nextCursor:
+          type: [string, 'null']
+    CreateServiceRequest:
+      type: object
+      additionalProperties: false
+      required: [requestType, personId, programId, enrollmentId, serviceDate, channel, items]
+      properties:
+        requestType:
+          type: string
+          enum: [DIRECT_SERVICE, PREAUTHORIZATION, RESERVATION, REIMBURSEMENT]
+        personId:
+          type: string
+          format: uuid
+        programId:
+          type: string
+          format: uuid
+        enrollmentId:
+          type: string
+          format: uuid
+        providerOrganizationId:
+          type: string
+          format: uuid
+        serviceDate:
+          type: string
+          format: date
+        requestedStartAt:
+          type: string
+          format: date-time
+        requestedEndAt:
+          type: string
+          format: date-time
+        channel:
+          type: string
+          enum: [BACKOFFICE, PROVIDER_PORTAL, MEMBER_PORTAL, API, BATCH_IMPORT, CALL_CENTER]
+        items:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            type: object
+            additionalProperties: false
+            required: [serviceDefinitionId, requestedQuantity, unitType]
+            properties:
+              serviceDefinitionId:
+                type: string
+                format: uuid
+              requestedQuantity:
+                type: number
+                exclusiveMinimum: 0
+              unitType:
+                type: string
+              requestedAmount:
+                type: number
+                minimum: 0
+              currencyCode:
+                type: string
+                pattern: '^[A-Z]{3}$'
+    UpdateServiceRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        providerOrganizationId:
+          type: [string, 'null']
+          format: uuid
+        serviceDate:
+          type: string
+          format: date
+        requestedStartAt:
+          type: [string, 'null']
+          format: date-time
+        requestedEndAt:
+          type: [string, 'null']
+          format: date-time
+        items:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            type: object
+            additionalProperties: false
+            required: [serviceDefinitionId, requestedQuantity, unitType]
+            properties:
+              serviceDefinitionId:
+                type: string
+                format: uuid
+              requestedQuantity:
+                type: number
+                exclusiveMinimum: 0
+              unitType:
+                type: string
+              requestedAmount:
+                type: number
+                minimum: 0
+              currencyCode:
+                type: string
+                pattern: '^[A-Z]{3}$'
+    ReasonCommand:
+      type: object
+      additionalProperties: false
+      required: [reasonCode]
+      properties:
+        reasonCode:
+          type: string
+          minLength: 2
+          maxLength: 80
+        reasonText:
+          type: string
+          maxLength: 1000

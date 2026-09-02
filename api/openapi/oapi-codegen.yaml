@@ -1,0 +1,10 @@
+# oapi-codegen v2 configuration: contract-first server types for /api/v1.
+package: kapsorav1
+output: ../generated/kapsorav1/kapsora_v1.gen.go
+generate:
+  models: true
+  chi-server: true
+  strict-server: true
+  embedded-spec: true
+output-options:
+  skip-prune: false

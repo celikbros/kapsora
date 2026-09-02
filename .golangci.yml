@@ -1,0 +1,59 @@
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  default: standard
+  enable:
+    - depguard
+    - errorlint
+    - gosec
+    - misspell
+    - nolintlint
+    - revive
+    - unconvert
+    - unparam
+  settings:
+    depguard:
+      rules:
+        # v1.2 section 13.4: domain code never depends on infrastructure or transport.
+        domain-purity:
+          files:
+            - "**/domain/**"
+          deny:
+            - pkg: "net/http"
+              desc: "domain must not depend on HTTP"
+            - pkg: "github.com/jackc/pgx"
+              desc: "domain must not depend on the database driver"
+            - pkg: "github.com/go-chi/chi"
+              desc: "domain must not depend on the router"
+        # Cross-module access goes through application ports, never repositories.
+        no-foreign-infrastructure:
+          files:
+            - "!**/infrastructure/**"
+            - "!**/*_test.go"
+          deny:
+            - pkg: "github.com/celikbros/kapsora/internal/**/infrastructure"
+              desc: "import the module's application port, not its infrastructure package"
+    gosec:
+      excludes:
+        - G104 # handled by errcheck
+    revive:
+      rules:
+        - name: exported
+          disabled: true
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters: [gosec, unparam]
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/celikbros/kapsora
