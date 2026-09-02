@@ -2,7 +2,7 @@
 
 | Alan | Değer |
 |---|---|
-| Durum | Onaylandı (iş sahibi, 02.09.2026). Ad: KAPSORA. I0 artımı devam ediyor. |
+| Durum | Onaylandı (iş sahibi, 02.09.2026). Ad: KAPSORA. I0 yerelde doğrulandı 02.09.2026 (migration, 15 şema testi, sağlık uç noktaları); Docker Compose ve CI doğrulaması Docker'lı ortam ve GitHub remote gelince. Sıradaki: I1. |
 | Tarih | 02.09.2026 |
 | Önceki baseline | Teknik Proje Şartnamesi v1.2 (08.08.2026) |
 | Bu planın rolü | v1.2 üzerine yazılan kapsam değişikliği ve düzeltme kaydı. Çelişki halinde bu plan geçerlidir; v1.2 dosyaları dondurulmuş tarihsel baseline olarak kalır. |
