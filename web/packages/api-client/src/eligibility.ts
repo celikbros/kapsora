@@ -1,12 +1,23 @@
 import type { KapsoraClient } from './client';
-import type { components } from './generated/kapsora-v1';
+import {
+  asDecimals,
+  type EligibilityCheckRequest as CheckBody,
+  type EligibilityCheckResult as CheckResult,
+  type EligibilityEvaluation as Evaluation,
+} from './decimals';
 import { unwrap } from './problem';
 
-export type EligibilityCheckRequest = components['schemas']['EligibilityCheckRequest'];
-export type EligibilityCheckResult = components['schemas']['EligibilityCheckResult'];
-export type EligibilityEvaluation = components['schemas']['EligibilityEvaluation'];
-export type EligibilityOutcome = EligibilityCheckResult['outcome'];
-export type EligibilityExplanation = EligibilityCheckResult['explanations'][number];
+// Quantities in the request and the result are decimal strings; see decimals.ts.
+export type {
+  EligibilityBalance,
+  EligibilityCheckRequest,
+  EligibilityCheckResult,
+  EligibilityEvaluation,
+  EligibilityItemResult,
+  EligibilityServiceItem,
+} from './decimals';
+export type EligibilityOutcome = CheckResult['outcome'];
+export type EligibilityExplanation = CheckResult['explanations'][number];
 
 /**
  * Eligibility checks. The call changes no business state but records an immutable
@@ -15,27 +26,27 @@ export type EligibilityExplanation = EligibilityCheckResult['explanations'][numb
  */
 export function eligibilityOperations(client: KapsoraClient) {
   return {
-    async check(
-      tenantId: string,
-      body: EligibilityCheckRequest,
-      idempotencyKey?: string,
-    ): Promise<EligibilityCheckResult> {
+    async check(tenantId: string, body: CheckBody, idempotencyKey?: string): Promise<CheckResult> {
       const header: { 'X-Tenant-ID': string; 'Idempotency-Key'?: string } = {
         'X-Tenant-ID': tenantId,
       };
       if (idempotencyKey) header['Idempotency-Key'] = idempotencyKey;
-      return (await unwrap(client.POST('/api/v1/eligibility/checks', { params: { header }, body })))
-        .data;
+      const r = await unwrap(
+        client.POST('/api/v1/eligibility/checks', {
+          params: { header },
+          body: asDecimals<never>(body),
+        }),
+      );
+      return asDecimals<CheckResult>(r.data);
     },
 
-    async getEvaluation(tenantId: string, evaluationId: string): Promise<EligibilityEvaluation> {
-      return (
-        await unwrap(
-          client.GET('/api/v1/eligibility/evaluations/{evaluationId}', {
-            params: { header: { 'X-Tenant-ID': tenantId }, path: { evaluationId } },
-          }),
-        )
-      ).data;
+    async getEvaluation(tenantId: string, evaluationId: string): Promise<Evaluation> {
+      const r = await unwrap(
+        client.GET('/api/v1/eligibility/evaluations/{evaluationId}', {
+          params: { header: { 'X-Tenant-ID': tenantId }, path: { evaluationId } },
+        }),
+      );
+      return asDecimals<Evaluation>(r.data);
     },
   };
 }

@@ -2,6 +2,11 @@ import type { KapsoraClient } from './client';
 import { randomId } from './client';
 import type { components } from './generated/kapsora-v1';
 import { unwrap } from './problem';
+import {
+  asDecimals,
+  type EntitlementDefinitionInput as DefinitionInput,
+  type PlanVersion as Version,
+} from './decimals';
 import { versioned, type Versioned } from './versioned';
 
 export type Program = components['schemas']['Program'];
@@ -11,12 +16,10 @@ export type UpdateProgramRequest = components['schemas']['UpdateProgramRequest']
 export type Plan = components['schemas']['Plan'];
 export type CreatePlanRequest = components['schemas']['CreatePlanRequest'];
 export type UpdatePlanRequest = components['schemas']['UpdatePlanRequest'];
-export type PlanVersion = components['schemas']['PlanVersion'];
+export type { EntitlementDefinition, EntitlementDefinitionInput, PlanVersion } from './decimals';
 export type PlanVersionSummary = components['schemas']['PlanVersionSummary'];
 export type CreatePlanVersionRequest = components['schemas']['CreatePlanVersionRequest'];
 export type UpdatePlanVersionRequest = components['schemas']['UpdatePlanVersionRequest'];
-export type EntitlementDefinition = components['schemas']['EntitlementDefinition'];
-export type EntitlementDefinitionInput = components['schemas']['EntitlementDefinitionInput'];
 export type ReviewComment = components['schemas']['ReviewComment'];
 export type ReasonCommand = components['schemas']['ReasonCommand'];
 export type Enrollment = components['schemas']['Enrollment'];
@@ -178,7 +181,7 @@ export function benefitOperations(client: KapsoraClient) {
       planId: string,
       body: CreatePlanVersionRequest,
       idempotencyKey: string = randomId(),
-    ): Promise<Versioned<PlanVersion>> {
+    ): Promise<Versioned<Version>> {
       const r = await unwrap(
         client.POST('/api/v1/plans/{planId}/versions', {
           params: {
@@ -188,16 +191,16 @@ export function benefitOperations(client: KapsoraClient) {
           body,
         }),
       );
-      return versioned(r.data, r.response);
+      return versioned(asDecimals<Version>(r.data), r.response);
     },
 
-    async getPlanVersion(tenantId: string, planVersionId: string): Promise<Versioned<PlanVersion>> {
+    async getPlanVersion(tenantId: string, planVersionId: string): Promise<Versioned<Version>> {
       const r = await unwrap(
         client.GET('/api/v1/plan-versions/{planVersionId}', {
           params: { header: header(tenantId), path: { planVersionId } },
         }),
       );
-      return versioned(r.data, r.response);
+      return versioned(asDecimals<Version>(r.data), r.response);
     },
 
     async patchPlanVersion(
@@ -205,7 +208,7 @@ export function benefitOperations(client: KapsoraClient) {
       planVersionId: string,
       etag: string,
       patch: UpdatePlanVersionRequest,
-    ): Promise<Versioned<PlanVersion>> {
+    ): Promise<Versioned<Version>> {
       const r = await unwrap(
         client.PATCH('/api/v1/plan-versions/{planVersionId}', {
           params: { header: withEtag(tenantId, etag), path: { planVersionId } },
@@ -213,7 +216,7 @@ export function benefitOperations(client: KapsoraClient) {
           ...mergePatch,
         }),
       );
-      return versioned(r.data, r.response);
+      return versioned(asDecimals<Version>(r.data), r.response);
     },
 
     /** Replaces the whole definition list of a draft version. */
@@ -221,15 +224,15 @@ export function benefitOperations(client: KapsoraClient) {
       tenantId: string,
       planVersionId: string,
       etag: string,
-      items: EntitlementDefinitionInput[],
-    ): Promise<Versioned<PlanVersion>> {
+      items: DefinitionInput[],
+    ): Promise<Versioned<Version>> {
       const r = await unwrap(
         client.PUT('/api/v1/plan-versions/{planVersionId}/entitlement-definitions', {
           params: { header: withEtag(tenantId, etag), path: { planVersionId } },
-          body: { items },
+          body: { items: asDecimals<never>(items) },
         }),
       );
-      return versioned(r.data, r.response);
+      return versioned(asDecimals<Version>(r.data), r.response);
     },
 
     async submitPlanVersion(
@@ -237,14 +240,14 @@ export function benefitOperations(client: KapsoraClient) {
       planVersionId: string,
       etag: string,
       body: ReviewComment = {},
-    ): Promise<Versioned<PlanVersion>> {
+    ): Promise<Versioned<Version>> {
       const r = await unwrap(
         client.POST('/api/v1/plan-versions/{planVersionId}/submit', {
           params: { header: withEtag(tenantId, etag), path: { planVersionId } },
           body,
         }),
       );
-      return versioned(r.data, r.response);
+      return versioned(asDecimals<Version>(r.data), r.response);
     },
 
     /** Needs a recent step-up and a different actor than the submitter. */
@@ -253,14 +256,14 @@ export function benefitOperations(client: KapsoraClient) {
       planVersionId: string,
       etag: string,
       body: ReviewComment = {},
-    ): Promise<Versioned<PlanVersion>> {
+    ): Promise<Versioned<Version>> {
       const r = await unwrap(
         client.POST('/api/v1/plan-versions/{planVersionId}/publish', {
           params: { header: withEtag(tenantId, etag), path: { planVersionId } },
           body,
         }),
       );
-      return versioned(r.data, r.response);
+      return versioned(asDecimals<Version>(r.data), r.response);
     },
 
     async retirePlanVersion(
@@ -268,14 +271,14 @@ export function benefitOperations(client: KapsoraClient) {
       planVersionId: string,
       etag: string,
       body: ReasonCommand,
-    ): Promise<Versioned<PlanVersion>> {
+    ): Promise<Versioned<Version>> {
       const r = await unwrap(
         client.POST('/api/v1/plan-versions/{planVersionId}/retire', {
           params: { header: withEtag(tenantId, etag), path: { planVersionId } },
           body,
         }),
       );
-      return versioned(r.data, r.response);
+      return versioned(asDecimals<Version>(r.data), r.response);
     },
 
     async listPersonEnrollments(tenantId: string, personId: string): Promise<Enrollment[]> {

@@ -4,7 +4,17 @@
  * with a valid checksum, nothing here refers to a real person or company.
  */
 import type { components } from '../generated/kapsora-v1';
-import { maskIdentifier, randomTCKN, randomVKN } from '../identifiers';
+import type {
+  EligibilityCheckRequest as DecimalEligibilityRequest,
+  EligibilityCheckResult as DecimalEligibilityResult,
+} from '../decimals';
+import {
+  isValidTCKN,
+  maskIdentifier,
+  normalizeDigits,
+  randomTCKN,
+  randomVKN,
+} from '../identifiers';
 
 type Schemas = components['schemas'];
 export type MockTenant = Schemas['TenantSummary'];
@@ -88,24 +98,368 @@ export interface StoredPerson {
 
 export type StoredServiceRequest = Schemas['ServiceRequest'] & { tenantId: string };
 
+/** Decimal quantity carried as a string on the wire (never a JS number, see entitlements.ts). */
+export type Decimal = string;
+
+/** Formats a JS number as the fixed 6-decimal string the mock uses for every balance. */
+export function toDecimal(n: number): Decimal {
+  return n.toFixed(6);
+}
+
+/** Adds two decimal-string quantities without floating point drift for the fixture data. */
+export function addDecimal(a: Decimal, b: Decimal): Decimal {
+  return toDecimal(Number(a) + Number(b));
+}
+
+/** Small, deterministic hex digest so `configurationHash` looks like a real sha256. */
+export function pseudoHash(seed: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  const hex = (h >>> 0).toString(16).padStart(8, '0');
+  return hex.repeat(8).slice(0, 64);
+}
+
+export interface StoredPersonRelationship {
+  id: string;
+  tenantId: string;
+  sourcePersonId: string;
+  targetPersonId: string;
+  relationshipType: string;
+  status: 'ACTIVE' | 'SUSPENDED' | 'ENDED';
+  validFrom: string;
+  validTo: string | null;
+  endReasonCode: string | null;
+  rowVersion: number;
+}
+
+export interface StoredMembership {
+  id: string;
+  tenantId: string;
+  personId: string;
+  /** Tenant organization relationship id (directory.tenant_organization) of the sponsor/payer. */
+  sponsorOrganizationId: string;
+  membershipType: string;
+  principalMembershipId: string | null;
+  externalMemberNo: string | null;
+  status: 'PENDING' | 'ACTIVE' | 'SUSPENDED' | 'ENDED';
+  validFrom: string;
+  validTo: string | null;
+  sourceSystem: string | null;
+  rowVersion: number;
+}
+
+export interface StoredProgram {
+  id: string;
+  tenantId: string;
+  code: string;
+  name: string;
+  programType: string;
+  sponsorOrganizationId: string;
+  payerOrganizationId: string;
+  status: 'DRAFT' | 'ACTIVE' | 'SUSPENDED' | 'CLOSED';
+  validFrom: string | null;
+  validTo: string | null;
+  rowVersion: number;
+}
+
+export interface StoredPlan {
+  id: string;
+  tenantId: string;
+  programId: string;
+  code: string;
+  name: string;
+  status: 'DRAFT' | 'ACTIVE' | 'RETIRED';
+  rowVersion: number;
+}
+
+export interface StoredEntitlementDefinition {
+  id: string;
+  code: string;
+  name: string;
+  unitType: 'MONEY' | 'COUNT' | 'NIGHT' | 'SESSION' | 'HOUR' | 'KILOMETER' | 'POINT';
+  currencyCode: string | null;
+  familyShared: boolean;
+  allowOverdraft: boolean;
+  initialQuantity: number;
+  periodType: 'CALENDAR_YEAR' | 'PLAN_YEAR' | 'ROLLING_DAYS' | 'LIFETIME' | 'CUSTOM';
+  periodLength: number | null;
+  rolloverPolicy: 'NONE' | 'FULL' | 'CAPPED';
+  rolloverCap: number | null;
+  status: 'ACTIVE' | 'INACTIVE';
+}
+
+export interface StoredPlanVersion {
+  id: string;
+  tenantId: string;
+  planId: string;
+  versionNo: number;
+  status: 'DRAFT' | 'UNDER_REVIEW' | 'PUBLISHED' | 'RETIRED';
+  validFrom: string | null;
+  validTo: string | null;
+  notes: string | null;
+  definitions: StoredEntitlementDefinition[];
+  configurationHash: string | null;
+  publishedAt: string | null;
+  publishedBy: string | null;
+  submittedAt: string | null;
+  submittedBy: string | null;
+  retireReasonCode: string | null;
+  reviewComment: string | null;
+  rowVersion: number;
+}
+
+export interface StoredEnrollment {
+  id: string;
+  tenantId: string;
+  personId: string;
+  planId: string;
+  planCode: string;
+  programId: string;
+  sponsorMembershipId: string;
+  status: 'PENDING' | 'ACTIVE' | 'SUSPENDED' | 'ENDED';
+  validFrom: string;
+  validTo: string | null;
+  enrollmentReason: string | null;
+  sourceSystem: string | null;
+  rowVersion: number;
+}
+
+/** Embedded definition summary of an entitlement account, matching the response shape. */
+export interface StoredAccountDefinition {
+  id: string;
+  code: string;
+  name: string;
+  unitType: StoredEntitlementDefinition['unitType'];
+  currencyCode: string | null;
+  familyShared: boolean;
+  allowOverdraft: boolean;
+}
+
+/**
+ * An entitlement account. Balances are kept as decimal strings (6 fraction digits) the
+ * whole way through the mock, exactly like the Go API's `decimal.Decimal` JSON encoding;
+ * see entitlements.ts for why these must never become JS numbers.
+ */
+export interface StoredEntitlementAccount {
+  id: string;
+  tenantId: string;
+  enrollmentId: string;
+  /** Owner of the enrollment; for family-shared accounts, the principal. */
+  personId: string;
+  definition: StoredAccountDefinition;
+  benefitPeriodFrom: string;
+  benefitPeriodTo: string | null;
+  totalGranted: Decimal;
+  available: Decimal;
+  consumed: Decimal;
+  reserved: Decimal;
+  expired: Decimal;
+  status: 'OPEN' | 'FROZEN' | 'CLOSED';
+  rowVersion: number;
+}
+
+export interface StoredLedgerEntry {
+  id: string;
+  tenantId: string;
+  accountId: string;
+  effectiveAt: string;
+  movementType: 'GRANT' | 'RESERVE' | 'RELEASE' | 'CONSUME' | 'REVERSE' | 'EXPIRE' | 'ADJUST';
+  deltaAvailable: Decimal;
+  deltaConsumed: Decimal;
+  deltaExpired: Decimal;
+  deltaReserved: Decimal;
+  deltaTotal: Decimal;
+  referenceType: string;
+  referenceId: string;
+  reservationId: string | null;
+  reasonCode: string | null;
+  reasonText: string | null;
+  createdBy: string | null;
+}
+
+export interface StoredAdjustment {
+  id: string;
+  tenantId: string;
+  accountId: string;
+  deltaQuantity: Decimal;
+  reasonCode: string;
+  reasonText: string | null;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  requestedBy: string;
+  requestedAt: string;
+  decidedBy: string | null;
+  decidedAt: string | null;
+  decisionComment: string | null;
+  ledgerEntryId: string | null;
+  rowVersion: number;
+}
+
+export interface StoredEvaluation {
+  id: string;
+  /** Set when the caller passed an Idempotency-Key, so a repeat replays this row. */
+  idempotencyKey?: string;
+  tenantId: string;
+  personId: string;
+  programId: string | null;
+  planVersionId: string | null;
+  enrollmentId: string | null;
+  serviceDate: string;
+  evaluatedAt: string;
+  evaluatedBy: string | null;
+  outcome: Schemas['EligibilityCheckResult']['outcome'];
+  // Quantities are decimal strings on the wire; see ../decimals.ts.
+  request: DecimalEligibilityRequest;
+  result: DecimalEligibilityResult;
+}
+
+export interface StoredImportBatch {
+  id: string;
+  tenantId: string;
+  sponsorOrganizationId: string;
+  sourceSystem: string;
+  sourceVersion: string;
+  fileName: string;
+  fileSha256: string;
+  format: 'CSV_V1';
+  planId: string | null;
+  status:
+    | 'RECEIVED'
+    | 'VALIDATING'
+    | 'REVIEW'
+    | 'READY'
+    | 'APPLYING'
+    | 'APPLIED'
+    | 'FAILED'
+    | 'CANCELLED';
+  rowCount: number;
+  counters: {
+    conflict: number;
+    created: number;
+    invalid: number;
+    matched: number;
+    skipped: number;
+    updated: number;
+    valid: number;
+  };
+  errorSummary: string | null;
+  createdAt: string;
+  appliedAt: string | null;
+  rowVersion: number;
+}
+
+export interface StoredImportRow {
+  id: string;
+  tenantId: string;
+  importId: string;
+  rowNo: number;
+  sourceRecordId: string;
+  displayName: string;
+  birthDate: string | null;
+  identifiers: { type: string; value: string; primary: boolean }[];
+  membershipType: string | null;
+  planCode: string | null;
+  principalSourceRecordId: string | null;
+  status: 'PENDING' | 'VALID' | 'INVALID' | 'MATCHED' | 'CONFLICT' | 'APPLIED' | 'SKIPPED';
+  errors: { code: string; field: string; message?: string }[];
+  candidatePersonIds: string[];
+  matchedPersonId: string | null;
+  decision: 'CREATE' | 'UPDATE' | 'SKIP' | null;
+  appliedPersonId: string | null;
+  rowVersion: number;
+}
+
+/** Reference catalogs; tenant-independent so every tenant sees the same options. */
+export const IDENTIFIER_TYPE_CATALOG: Schemas['PartyCatalogEntry'][] = [
+  {
+    code: 'TCKN',
+    displayName: 'T.C. Kimlik No',
+    status: 'ACTIVE',
+    isSensitive: true,
+    uniquenessScope: 'TENANT',
+  },
+  {
+    code: 'PASSPORT',
+    displayName: 'Pasaport No',
+    status: 'ACTIVE',
+    isSensitive: true,
+    uniquenessScope: 'TENANT',
+  },
+  {
+    code: 'MEMBER_NO',
+    displayName: 'Üye No',
+    status: 'ACTIVE',
+    isSensitive: false,
+    uniquenessScope: 'SPONSOR',
+  },
+  {
+    code: 'CUSTOMER_NO',
+    displayName: 'Müşteri No',
+    status: 'ACTIVE',
+    isSensitive: false,
+    uniquenessScope: 'SPONSOR',
+  },
+];
+export const RELATIONSHIP_TYPE_CATALOG: Schemas['PartyCatalogEntry'][] = [
+  { code: 'SPOUSE', displayName: 'Eş', status: 'ACTIVE', isDirectional: false },
+  { code: 'CHILD', displayName: 'Çocuk', status: 'ACTIVE', isDirectional: true },
+  { code: 'PARENT', displayName: 'Ebeveyn', status: 'ACTIVE', isDirectional: true },
+  {
+    code: 'DEPENDENT',
+    displayName: 'Bakmakla Yükümlü Kişi',
+    status: 'ACTIVE',
+    isDirectional: true,
+  },
+  { code: 'GUARDIAN', displayName: 'Vasi', status: 'ACTIVE', isDirectional: true },
+  { code: 'DELEGATE', displayName: 'Vekil', status: 'ACTIVE', isDirectional: true },
+];
+export const MEMBERSHIP_TYPE_CATALOG: Schemas['PartyCatalogEntry'][] = [
+  { code: 'EMPLOYEE', displayName: 'Çalışan', status: 'ACTIVE', requiresPrincipal: false },
+  { code: 'RETIREE', displayName: 'Emekli', status: 'ACTIVE', requiresPrincipal: false },
+  { code: 'MEMBER', displayName: 'Üye', status: 'ACTIVE', requiresPrincipal: false },
+  { code: 'CUSTOMER', displayName: 'Müşteri', status: 'ACTIVE', requiresPrincipal: false },
+  { code: 'INSURED', displayName: 'Sigortalı', status: 'ACTIVE', requiresPrincipal: false },
+  { code: 'STUDENT', displayName: 'Öğrenci', status: 'ACTIVE', requiresPrincipal: false },
+  { code: 'BENEFICIARY', displayName: 'Hak Sahibi', status: 'ACTIVE', requiresPrincipal: false },
+  { code: 'FAMILY', displayName: 'Aile Bireyi', status: 'ACTIVE', requiresPrincipal: true },
+];
+
+// The permission codes are the ones migration 000008 seeds, so a screen that hides a
+// control on the mock hides it against the real API too.
 const ADMIN_PERMISSIONS = [
   'organization.read',
   'organization.manage',
-  'person.read',
-  'person.manage',
+  'member.read',
+  'member.identifier.read',
+  'member.identifier.search',
+  'member.manage',
+  'member.relationship.manage',
+  'membership.manage',
+  'enrollment.manage',
   'eligibility.check',
+  'program.read',
+  'program.manage',
+  'plan.manage',
+  'plan.publish',
+  'entitlement.read',
+  'entitlement.adjust',
   'service_request.read',
   'service_request.manage',
-  'user.read',
-  'user.manage',
-  'role.manage',
+  'import.execute',
+  'identity.user.read',
+  'identity.user.manage',
+  'identity.role.manage',
   'audit.read',
   'report.read',
-  'integration.read',
+  'integration.manage',
 ];
 const REVIEWER_PERMISSIONS = [
   'organization.read',
-  'person.read',
+  'member.read',
+  'program.read',
+  'entitlement.read',
   'service_request.read',
   'service_request.review',
 ];
@@ -219,6 +573,18 @@ export interface MockWorld {
   relationships: StoredRelationship[];
   people: StoredPerson[];
   serviceRequests: StoredServiceRequest[];
+  personRelationships: StoredPersonRelationship[];
+  memberships: StoredMembership[];
+  programs: StoredProgram[];
+  plans: StoredPlan[];
+  planVersions: StoredPlanVersion[];
+  enrollments: StoredEnrollment[];
+  entitlementAccounts: StoredEntitlementAccount[];
+  ledgerEntries: StoredLedgerEntry[];
+  adjustments: StoredAdjustment[];
+  evaluations: Map<string, StoredEvaluation>;
+  importBatches: StoredImportBatch[];
+  importRows: StoredImportRow[];
   nextId: (offsetMs?: number) => string;
   random: () => number;
 }
@@ -433,6 +799,489 @@ export function buildWorld(
     }
   }
 
+  // --- Dedicated sponsor and payer organizations for the family and benefit fixtures below.
+  const demoA = tenants[0]!;
+  const sponsorOrgId = nextId();
+  organizations.set(sponsorOrgId, {
+    organizationId: sponsorOrgId,
+    legalName: 'Kapsora Mensupları Vakfı',
+    displayName: 'Kapsora Mensupları Vakfı',
+    organizationKind: 'SPONSOR',
+    countryCode: 'TR',
+    organizationStatus: 'ACTIVE',
+    taxNumber: { type: 'VKN', value: randomVKN(random) },
+    otherIdentifiers: [],
+  });
+  const sponsorRel: StoredRelationship = {
+    id: nextId(),
+    tenantId: demoA.id,
+    organizationId: sponsorOrgId,
+    relationshipRole: 'SPONSOR',
+    relationshipStatus: 'ACTIVE',
+    tenantCode: null,
+    validFrom: isoDaysAgo(base, 300).slice(0, 10),
+    validTo: null,
+    createdAt: isoDaysAgo(base, 300),
+    rowVersion: 1,
+  };
+  relationships.push(sponsorRel);
+
+  const payerOrgId = nextId();
+  organizations.set(payerOrgId, {
+    organizationId: payerOrgId,
+    legalName: 'Kapsora Ödeme Bankası A.Ş.',
+    displayName: 'Kapsora Ödeme Bankası',
+    organizationKind: 'BANK',
+    countryCode: 'TR',
+    organizationStatus: 'ACTIVE',
+    taxNumber: { type: 'VKN', value: randomVKN(random) },
+    otherIdentifiers: [],
+  });
+  const payerRel: StoredRelationship = {
+    id: nextId(),
+    tenantId: demoA.id,
+    organizationId: payerOrgId,
+    relationshipRole: 'PAYER',
+    relationshipStatus: 'ACTIVE',
+    tenantCode: null,
+    validFrom: isoDaysAgo(base, 300).slice(0, 10),
+    validTo: null,
+    createdAt: isoDaysAgo(base, 300),
+    rowVersion: 1,
+  };
+  relationships.push(payerRel);
+
+  // --- A demo family under DEMO_A: a principal, a spouse and two children.
+  const familyPrincipal: StoredPerson = {
+    id: nextId(),
+    tenantId: demoA.id,
+    firstName: 'Kaan',
+    middleName: null,
+    lastName: 'Aydemir',
+    birthDate: '1982-04-11',
+    sexAtBirth: 'MALE',
+    status: 'ACTIVE',
+    identifiers: [{ type: 'TCKN', value: randomTCKN(random), primary: true }],
+    rowVersion: 1,
+    createdAt: isoDaysAgo(base, 260),
+  };
+  const familySpouse: StoredPerson = {
+    id: nextId(),
+    tenantId: demoA.id,
+    firstName: 'Sevgi',
+    middleName: null,
+    lastName: 'Aydemir',
+    birthDate: '1985-07-02',
+    sexAtBirth: 'FEMALE',
+    status: 'ACTIVE',
+    identifiers: [{ type: 'TCKN', value: randomTCKN(random), primary: true }],
+    rowVersion: 1,
+    createdAt: isoDaysAgo(base, 260),
+  };
+  const familyChild1: StoredPerson = {
+    id: nextId(),
+    tenantId: demoA.id,
+    firstName: 'Deniz',
+    middleName: null,
+    lastName: 'Aydemir',
+    birthDate: '2012-03-15',
+    sexAtBirth: 'MALE',
+    status: 'ACTIVE',
+    identifiers: [{ type: 'TCKN', value: randomTCKN(random), primary: true }],
+    rowVersion: 1,
+    createdAt: isoDaysAgo(base, 260),
+  };
+  const familyChild2: StoredPerson = {
+    id: nextId(),
+    tenantId: demoA.id,
+    firstName: 'Ece',
+    middleName: null,
+    lastName: 'Aydemir',
+    birthDate: '2015-09-21',
+    sexAtBirth: 'FEMALE',
+    status: 'ACTIVE',
+    identifiers: [{ type: 'TCKN', value: randomTCKN(random), primary: true }],
+    rowVersion: 1,
+    createdAt: isoDaysAgo(base, 260),
+  };
+  people.push(familyPrincipal, familySpouse, familyChild1, familyChild2);
+
+  const familyValidFrom = isoDaysAgo(base, 260).slice(0, 10);
+  const personRelationships: StoredPersonRelationship[] = [
+    {
+      id: nextId(),
+      tenantId: demoA.id,
+      sourcePersonId: familyPrincipal.id,
+      targetPersonId: familySpouse.id,
+      relationshipType: 'SPOUSE',
+      status: 'ACTIVE',
+      validFrom: familyValidFrom,
+      validTo: null,
+      endReasonCode: null,
+      rowVersion: 1,
+    },
+    {
+      id: nextId(),
+      tenantId: demoA.id,
+      sourcePersonId: familyPrincipal.id,
+      targetPersonId: familyChild1.id,
+      relationshipType: 'CHILD',
+      status: 'ACTIVE',
+      validFrom: familyValidFrom,
+      validTo: null,
+      endReasonCode: null,
+      rowVersion: 1,
+    },
+    {
+      id: nextId(),
+      tenantId: demoA.id,
+      sourcePersonId: familyPrincipal.id,
+      targetPersonId: familyChild2.id,
+      relationshipType: 'CHILD',
+      status: 'ACTIVE',
+      validFrom: familyValidFrom,
+      validTo: null,
+      endReasonCode: null,
+      rowVersion: 1,
+    },
+  ];
+
+  const principalMembership: StoredMembership = {
+    id: nextId(),
+    tenantId: demoA.id,
+    personId: familyPrincipal.id,
+    sponsorOrganizationId: sponsorRel.id,
+    membershipType: 'EMPLOYEE',
+    principalMembershipId: null,
+    externalMemberNo: 'EMP-100001',
+    status: 'ACTIVE',
+    validFrom: familyValidFrom,
+    validTo: null,
+    sourceSystem: null,
+    rowVersion: 1,
+  };
+  const memberships: StoredMembership[] = [
+    principalMembership,
+    ...[familySpouse, familyChild1, familyChild2].map((p) => ({
+      id: nextId(),
+      tenantId: demoA.id,
+      personId: p.id,
+      sponsorOrganizationId: sponsorRel.id,
+      membershipType: 'FAMILY',
+      principalMembershipId: principalMembership.id,
+      externalMemberNo: null,
+      status: 'ACTIVE' as const,
+      validFrom: familyValidFrom,
+      validTo: null,
+      sourceSystem: null,
+      rowVersion: 1,
+    })),
+  ];
+
+  // --- Two programs, three plans; each plan gets one PUBLISHED and one DRAFT version.
+  const programHealth: StoredProgram = {
+    id: nextId(),
+    tenantId: demoA.id,
+    code: 'HEALTH',
+    name: 'Sağlık Yardımı Programı',
+    programType: 'HEALTH_BENEFIT',
+    sponsorOrganizationId: sponsorRel.id,
+    payerOrganizationId: payerRel.id,
+    status: 'ACTIVE',
+    validFrom: isoDaysAgo(base, 250).slice(0, 10),
+    validTo: null,
+    rowVersion: 1,
+  };
+  const programPhysio: StoredProgram = {
+    id: nextId(),
+    tenantId: demoA.id,
+    code: 'PHYSIO',
+    name: 'Fizik Tedavi Destek Programı',
+    programType: 'WELLNESS_BENEFIT',
+    sponsorOrganizationId: sponsorRel.id,
+    payerOrganizationId: payerRel.id,
+    status: 'ACTIVE',
+    validFrom: isoDaysAgo(base, 250).slice(0, 10),
+    validTo: null,
+    rowVersion: 1,
+  };
+  const programs: StoredProgram[] = [programHealth, programPhysio];
+
+  const planFamilyHealth: StoredPlan = {
+    id: nextId(),
+    tenantId: demoA.id,
+    programId: programHealth.id,
+    code: 'FAM-HEALTH',
+    name: 'Aile Sağlık Planı',
+    status: 'ACTIVE',
+    rowVersion: 1,
+  };
+  const planIndividualHealth: StoredPlan = {
+    id: nextId(),
+    tenantId: demoA.id,
+    programId: programHealth.id,
+    code: 'IND-HEALTH',
+    name: 'Bireysel Sağlık Planı',
+    status: 'ACTIVE',
+    rowVersion: 1,
+  };
+  const planPhysio: StoredPlan = {
+    id: nextId(),
+    tenantId: demoA.id,
+    programId: programPhysio.id,
+    code: 'PHYSIO-STD',
+    name: 'Fizik Tedavi Planı',
+    status: 'ACTIVE',
+    rowVersion: 1,
+  };
+  const plans: StoredPlan[] = [planFamilyHealth, planIndividualHealth, planPhysio];
+
+  function buildDefinitions(): StoredEntitlementDefinition[] {
+    return [
+      {
+        id: nextId(),
+        code: 'HEALTH_MONEY',
+        name: 'Sağlık Harcama Bakiyesi',
+        unitType: 'MONEY',
+        currencyCode: 'TRY',
+        familyShared: false,
+        allowOverdraft: false,
+        initialQuantity: 5000,
+        periodType: 'CALENDAR_YEAR',
+        periodLength: null,
+        rolloverPolicy: 'NONE',
+        rolloverCap: null,
+        status: 'ACTIVE',
+      },
+      {
+        id: nextId(),
+        code: 'PHYSIO_SESSION',
+        name: 'Fizyoterapi Seansı',
+        unitType: 'SESSION',
+        currencyCode: null,
+        familyShared: true,
+        allowOverdraft: false,
+        initialQuantity: 12,
+        periodType: 'PLAN_YEAR',
+        periodLength: null,
+        rolloverPolicy: 'NONE',
+        rolloverCap: null,
+        status: 'ACTIVE',
+      },
+    ];
+  }
+
+  function buildPlanVersions(plan: StoredPlan): StoredPlanVersion[] {
+    const published: StoredPlanVersion = {
+      id: nextId(),
+      tenantId: demoA.id,
+      planId: plan.id,
+      versionNo: 1,
+      status: 'PUBLISHED',
+      validFrom: isoDaysAgo(base, 200).slice(0, 10),
+      validTo: null,
+      notes: null,
+      definitions: buildDefinitions(),
+      configurationHash: pseudoHash(plan.code),
+      publishedAt: isoDaysAgo(base, 195),
+      publishedBy: accounts[3]!.actorId, // both.ab (checker)
+      submittedAt: isoDaysAgo(base, 197),
+      submittedBy: accounts[0]!.actorId, // admin.a (maker)
+      retireReasonCode: null,
+      reviewComment: null,
+      rowVersion: 3,
+    };
+    const draft: StoredPlanVersion = {
+      id: nextId(),
+      tenantId: demoA.id,
+      planId: plan.id,
+      versionNo: 2,
+      status: 'DRAFT',
+      validFrom: null,
+      validTo: null,
+      notes: 'Taslak güncelleme',
+      definitions: [],
+      configurationHash: null,
+      publishedAt: null,
+      publishedBy: null,
+      submittedAt: null,
+      submittedBy: null,
+      retireReasonCode: null,
+      reviewComment: null,
+      rowVersion: 1,
+    };
+    return [published, draft];
+  }
+
+  const planVersions: StoredPlanVersion[] = [
+    ...buildPlanVersions(planFamilyHealth),
+    ...buildPlanVersions(planIndividualHealth),
+    ...buildPlanVersions(planPhysio),
+  ];
+
+  // --- Enrollments: the principal in the family plan and, separately, the individual plan
+  // (whose account below is FROZEN to demonstrate that state).
+  const familyEnrollment: StoredEnrollment = {
+    id: nextId(),
+    tenantId: demoA.id,
+    personId: familyPrincipal.id,
+    planId: planFamilyHealth.id,
+    planCode: planFamilyHealth.code,
+    programId: programHealth.id,
+    sponsorMembershipId: principalMembership.id,
+    status: 'ACTIVE',
+    validFrom: isoDaysAgo(base, 190).slice(0, 10),
+    validTo: null,
+    enrollmentReason: 'İşe giriş',
+    sourceSystem: null,
+    rowVersion: 1,
+  };
+  const individualEnrollment: StoredEnrollment = {
+    id: nextId(),
+    tenantId: demoA.id,
+    personId: familyPrincipal.id,
+    planId: planIndividualHealth.id,
+    planCode: planIndividualHealth.code,
+    programId: programHealth.id,
+    sponsorMembershipId: principalMembership.id,
+    status: 'ACTIVE',
+    validFrom: isoDaysAgo(base, 190).slice(0, 10),
+    validTo: null,
+    enrollmentReason: null,
+    sourceSystem: null,
+    rowVersion: 1,
+  };
+  const enrollments: StoredEnrollment[] = [familyEnrollment, individualEnrollment];
+
+  const familyHealthDefs = planVersions.find(
+    (v) => v.planId === planFamilyHealth.id && v.status === 'PUBLISHED',
+  )!.definitions;
+  const moneyDef = familyHealthDefs.find((d) => d.unitType === 'MONEY')!;
+  const sessionDef = familyHealthDefs.find((d) => d.unitType === 'SESSION')!;
+  const individualHealthDefs = planVersions.find(
+    (v) => v.planId === planIndividualHealth.id && v.status === 'PUBLISHED',
+  )!.definitions;
+  const individualMoneyDef = individualHealthDefs.find((d) => d.unitType === 'MONEY')!;
+
+  const toAccountDefinition = (d: StoredEntitlementDefinition): StoredAccountDefinition => ({
+    id: d.id,
+    code: d.code,
+    name: d.name,
+    unitType: d.unitType,
+    currencyCode: d.currencyCode,
+    familyShared: d.familyShared,
+    allowOverdraft: d.allowOverdraft,
+  });
+
+  const familyMoneyAccount: StoredEntitlementAccount = {
+    id: nextId(),
+    tenantId: demoA.id,
+    enrollmentId: familyEnrollment.id,
+    personId: familyPrincipal.id,
+    definition: toAccountDefinition(moneyDef),
+    benefitPeriodFrom: isoDaysAgo(base, 190).slice(0, 10),
+    benefitPeriodTo: null,
+    totalGranted: '5000.000000',
+    available: '1250.000000',
+    consumed: '3750.000000',
+    reserved: '0.000000',
+    expired: '0.000000',
+    status: 'OPEN',
+    rowVersion: 1,
+  };
+  const familySessionAccount: StoredEntitlementAccount = {
+    id: nextId(),
+    tenantId: demoA.id,
+    enrollmentId: familyEnrollment.id,
+    personId: familyPrincipal.id,
+    definition: toAccountDefinition(sessionDef),
+    benefitPeriodFrom: isoDaysAgo(base, 190).slice(0, 10),
+    benefitPeriodTo: null,
+    totalGranted: '12.000000',
+    available: '9.000000',
+    consumed: '3.000000',
+    reserved: '0.000000',
+    expired: '0.000000',
+    status: 'OPEN',
+    rowVersion: 1,
+  };
+  const frozenAccount: StoredEntitlementAccount = {
+    id: nextId(),
+    tenantId: demoA.id,
+    enrollmentId: individualEnrollment.id,
+    personId: familyPrincipal.id,
+    definition: toAccountDefinition(individualMoneyDef),
+    benefitPeriodFrom: isoDaysAgo(base, 190).slice(0, 10),
+    benefitPeriodTo: null,
+    totalGranted: '5000.000000',
+    available: '5000.000000',
+    consumed: '0.000000',
+    reserved: '0.000000',
+    expired: '0.000000',
+    status: 'FROZEN',
+    rowVersion: 1,
+  };
+  const entitlementAccounts: StoredEntitlementAccount[] = [
+    familyMoneyAccount,
+    familySessionAccount,
+    frozenAccount,
+  ];
+
+  // --- ~30 ledger movements on the family MONEY account, newest first.
+  const MOVEMENT_TYPES: StoredLedgerEntry['movementType'][] = [
+    'CONSUME',
+    'RESERVE',
+    'RELEASE',
+    'ADJUST',
+  ];
+  const ledgerEntries: StoredLedgerEntry[] = [];
+  for (let i = 0; i < 29; i++) {
+    const movementType = MOVEMENT_TYPES[i % MOVEMENT_TYPES.length]!;
+    const amount = toDecimal(50 + (i % 5) * 25);
+    ledgerEntries.push({
+      id: nextId(),
+      tenantId: demoA.id,
+      accountId: familyMoneyAccount.id,
+      effectiveAt: isoDaysAgo(base, 5 + i * 6),
+      movementType,
+      deltaAvailable:
+        movementType === 'CONSUME' || movementType === 'RESERVE' ? `-${amount}` : amount,
+      deltaConsumed: movementType === 'CONSUME' ? amount : '0.000000',
+      deltaExpired: '0.000000',
+      deltaReserved:
+        movementType === 'RESERVE'
+          ? amount
+          : movementType === 'RELEASE'
+            ? `-${amount}`
+            : '0.000000',
+      deltaTotal: movementType === 'ADJUST' ? amount : '0.000000',
+      referenceType: movementType === 'ADJUST' ? 'MANUAL' : 'SERVICE_REQUEST',
+      referenceId: nextId(),
+      reservationId: null,
+      reasonCode: movementType === 'ADJUST' ? 'MANUAL_CORRECTION' : null,
+      reasonText: null,
+      createdBy: accounts[0]!.actorId,
+    });
+  }
+  ledgerEntries.push({
+    id: nextId(),
+    tenantId: demoA.id,
+    accountId: familyMoneyAccount.id,
+    effectiveAt: isoDaysAgo(base, 190),
+    movementType: 'GRANT',
+    deltaAvailable: '5000.000000',
+    deltaConsumed: '0.000000',
+    deltaExpired: '0.000000',
+    deltaReserved: '0.000000',
+    deltaTotal: '5000.000000',
+    referenceType: 'ENROLLMENT',
+    referenceId: familyEnrollment.id,
+    reservationId: null,
+    reasonCode: null,
+    reasonText: null,
+    createdBy: null,
+  });
+
   return {
     tenants,
     accounts,
@@ -440,6 +1289,18 @@ export function buildWorld(
     relationships,
     people,
     serviceRequests,
+    personRelationships,
+    memberships,
+    programs,
+    plans,
+    planVersions,
+    enrollments,
+    entitlementAccounts,
+    ledgerEntries,
+    adjustments: [],
+    evaluations: new Map(),
+    importBatches: [],
+    importRows: [],
     nextId,
     random,
   };
@@ -524,4 +1385,489 @@ export function toPerson(p: StoredPerson): Schemas['Person'] {
     })),
     rowVersion: p.rowVersion,
   };
+}
+
+export function toPersonRelationship(
+  world: MockWorld,
+  rel: StoredPersonRelationship,
+  viewpointPersonId: string,
+): Schemas['PersonRelationship'] {
+  const type = RELATIONSHIP_TYPE_CATALOG.find((t) => t.code === rel.relationshipType);
+  const otherId =
+    rel.sourcePersonId === viewpointPersonId ? rel.targetPersonId : rel.sourcePersonId;
+  const other = world.people.find((p) => p.id === otherId);
+  const direction: Schemas['PersonRelationship']['direction'] =
+    type?.isDirectional === false
+      ? 'MUTUAL'
+      : rel.sourcePersonId === viewpointPersonId
+        ? 'OUTGOING'
+        : 'INCOMING';
+  const otherPerson: Schemas['PersonSummary'] = other
+    ? toPersonSummary(other)
+    : {
+        id: otherId,
+        displayName: 'Bilinmeyen Kişi',
+        status: 'ACTIVE',
+        maskedPrimaryIdentifier: null,
+      };
+  return {
+    direction,
+    endReasonCode: rel.endReasonCode,
+    id: rel.id,
+    otherPerson,
+    relationshipType: rel.relationshipType,
+    rowVersion: rel.rowVersion,
+    status: rel.status,
+    validFrom: rel.validFrom,
+    validTo: rel.validTo,
+  };
+}
+
+export function toSponsorMembership(
+  world: MockWorld,
+  m: StoredMembership,
+): Schemas['SponsorMembership'] {
+  const rel = world.relationships.find((r) => r.id === m.sponsorOrganizationId);
+  const org = rel ? world.organizations.get(rel.organizationId) : undefined;
+  return {
+    externalMemberNo: m.externalMemberNo,
+    id: m.id,
+    membershipType: m.membershipType,
+    personId: m.personId,
+    principalMembershipId: m.principalMembershipId,
+    rowVersion: m.rowVersion,
+    sourceSystem: m.sourceSystem,
+    sponsorDisplayName: org?.displayName ?? 'Bilinmeyen Sponsor',
+    sponsorOrganizationId: m.sponsorOrganizationId,
+    status: m.status,
+    validFrom: m.validFrom,
+    validTo: m.validTo,
+  };
+}
+
+/** Definitions are typed exactly like the schema: `initialQuantity` is plan configuration, not a balance. */
+export function toEntitlementDefinition(
+  d: StoredEntitlementDefinition,
+): Schemas['EntitlementDefinition'] {
+  const out: Schemas['EntitlementDefinition'] = {
+    allowOverdraft: d.allowOverdraft,
+    code: d.code,
+    familyShared: d.familyShared,
+    id: d.id,
+    initialQuantity: d.initialQuantity,
+    name: d.name,
+    periodType: d.periodType,
+    rolloverPolicy: d.rolloverPolicy,
+    status: d.status,
+    unitType: d.unitType,
+  };
+  if (d.currencyCode !== null) out.currencyCode = d.currencyCode;
+  if (d.periodLength !== null) out.periodLength = d.periodLength;
+  if (d.rolloverCap !== null) out.rolloverCap = d.rolloverCap;
+  return out;
+}
+
+export function toProgram(world: MockWorld, p: StoredProgram): Schemas['Program'] {
+  const sponsorRel = world.relationships.find((r) => r.id === p.sponsorOrganizationId);
+  const payerRel = world.relationships.find((r) => r.id === p.payerOrganizationId);
+  const sponsorOrg = sponsorRel ? world.organizations.get(sponsorRel.organizationId) : undefined;
+  const payerOrg = payerRel ? world.organizations.get(payerRel.organizationId) : undefined;
+  return {
+    code: p.code,
+    id: p.id,
+    name: p.name,
+    payerDisplayName: payerOrg?.displayName ?? 'Bilinmeyen Ödeyen',
+    payerOrganizationId: p.payerOrganizationId,
+    planCount: world.plans.filter((pl) => pl.programId === p.id).length,
+    programType: p.programType,
+    rowVersion: p.rowVersion,
+    sponsorDisplayName: sponsorOrg?.displayName ?? 'Bilinmeyen Sponsor',
+    sponsorOrganizationId: p.sponsorOrganizationId,
+    status: p.status,
+    validFrom: p.validFrom,
+    validTo: p.validTo,
+  };
+}
+
+export function toPlanVersionSummary(v: StoredPlanVersion): Schemas['PlanVersionSummary'] {
+  return {
+    id: v.id,
+    planId: v.planId,
+    publishedAt: v.publishedAt,
+    rowVersion: v.rowVersion,
+    status: v.status,
+    validFrom: v.validFrom,
+    validTo: v.validTo,
+    versionNo: v.versionNo,
+  };
+}
+
+export function toPlanVersion(v: StoredPlanVersion): Schemas['PlanVersion'] {
+  return {
+    ...toPlanVersionSummary(v),
+    configurationHash: v.configurationHash,
+    definitions: v.definitions.map(toEntitlementDefinition),
+    notes: v.notes,
+    publishedBy: v.publishedBy,
+    retireReasonCode: v.retireReasonCode,
+    reviewComment: v.reviewComment,
+    submittedAt: v.submittedAt,
+    submittedBy: v.submittedBy,
+  };
+}
+
+export function toPlan(world: MockWorld, plan: StoredPlan): Schemas['Plan'] {
+  const versions = world.planVersions
+    .filter((v) => v.planId === plan.id)
+    .sort((a, b) => b.versionNo - a.versionNo)
+    .map(toPlanVersionSummary);
+  return {
+    code: plan.code,
+    id: plan.id,
+    name: plan.name,
+    programId: plan.programId,
+    rowVersion: plan.rowVersion,
+    status: plan.status,
+    versions,
+  };
+}
+
+export function toEnrollment(e: StoredEnrollment): Schemas['Enrollment'] {
+  return {
+    enrollmentReason: e.enrollmentReason,
+    id: e.id,
+    personId: e.personId,
+    planCode: e.planCode,
+    planId: e.planId,
+    programId: e.programId,
+    rowVersion: e.rowVersion,
+    sourceSystem: e.sourceSystem,
+    sponsorMembershipId: e.sponsorMembershipId,
+    status: e.status,
+    validFrom: e.validFrom,
+    validTo: e.validTo,
+  };
+}
+
+/**
+ * `EntitlementAccount` with its quantity fields kept as decimal strings; the checked-in
+ * generated schema types them `number`, but entitlements.ts documents (and the real Go
+ * API's `decimal.Decimal` JSON encoding produces) decimal strings on the wire. See the
+ * mocks README note in handlers.ts for the reasoning.
+ */
+export type MockEntitlementAccount = Omit<
+  Schemas['EntitlementAccount'],
+  'available' | 'consumed' | 'expired' | 'reserved' | 'totalGranted'
+> & {
+  available: Decimal;
+  consumed: Decimal;
+  expired: Decimal;
+  reserved: Decimal;
+  totalGranted: Decimal;
+};
+
+export function toEntitlementAccount(
+  a: StoredEntitlementAccount,
+  shared: boolean,
+): MockEntitlementAccount {
+  return {
+    available: a.available,
+    benefitPeriodFrom: a.benefitPeriodFrom,
+    benefitPeriodTo: a.benefitPeriodTo,
+    consumed: a.consumed,
+    definition: a.definition,
+    enrollmentId: a.enrollmentId,
+    expired: a.expired,
+    id: a.id,
+    personId: a.personId,
+    reserved: a.reserved,
+    rowVersion: a.rowVersion,
+    shared,
+    status: a.status,
+    totalGranted: a.totalGranted,
+  };
+}
+
+export interface ReachableAccount {
+  account: StoredEntitlementAccount;
+  shared: boolean;
+}
+
+/**
+ * Accounts a person can reach on a date: their own enrollments' accounts, plus
+ * family-shared accounts of the principal they are a FAMILY member under.
+ */
+export function reachableEntitlementAccounts(
+  world: MockWorld,
+  tenantId: string,
+  personId: string,
+  asOf: string,
+): ReachableAccount[] {
+  const inPeriod = (a: StoredEntitlementAccount) =>
+    a.benefitPeriodFrom <= asOf && (a.benefitPeriodTo === null || asOf < a.benefitPeriodTo);
+  const own = world.entitlementAccounts.filter(
+    (a) => a.tenantId === tenantId && a.personId === personId && inPeriod(a),
+  );
+  const out: ReachableAccount[] = own.map((account) => ({ account, shared: false }));
+  const ownIds = new Set(own.map((a) => a.id));
+  const dependentMemberships = world.memberships.filter(
+    (m) => m.tenantId === tenantId && m.personId === personId && m.principalMembershipId !== null,
+  );
+  for (const dependent of dependentMemberships) {
+    const principal = world.memberships.find((m) => m.id === dependent.principalMembershipId);
+    if (!principal) continue;
+    const shared = world.entitlementAccounts.filter(
+      (a) =>
+        a.tenantId === tenantId &&
+        a.personId === principal.personId &&
+        a.definition.familyShared &&
+        inPeriod(a) &&
+        !ownIds.has(a.id),
+    );
+    for (const account of shared) {
+      out.push({ account, shared: true });
+    }
+  }
+  return out;
+}
+
+export type MockLedgerEntry = Omit<
+  Schemas['LedgerEntry'],
+  'deltaAvailable' | 'deltaConsumed' | 'deltaExpired' | 'deltaReserved' | 'deltaTotal'
+> & {
+  deltaAvailable: Decimal;
+  deltaConsumed: Decimal;
+  deltaExpired: Decimal;
+  deltaReserved: Decimal;
+  deltaTotal: Decimal;
+};
+
+export function toLedgerEntry(e: StoredLedgerEntry): MockLedgerEntry {
+  return {
+    createdBy: e.createdBy,
+    deltaAvailable: e.deltaAvailable,
+    deltaConsumed: e.deltaConsumed,
+    deltaExpired: e.deltaExpired,
+    deltaReserved: e.deltaReserved,
+    deltaTotal: e.deltaTotal,
+    effectiveAt: e.effectiveAt,
+    id: e.id,
+    movementType: e.movementType,
+    reasonCode: e.reasonCode,
+    reasonText: e.reasonText,
+    referenceId: e.referenceId,
+    referenceType: e.referenceType,
+    reservationId: e.reservationId,
+  };
+}
+
+export type MockEntitlementAdjustment = Omit<Schemas['EntitlementAdjustment'], 'deltaQuantity'> & {
+  deltaQuantity: Decimal;
+};
+
+export function toEntitlementAdjustment(a: StoredAdjustment): MockEntitlementAdjustment {
+  return {
+    accountId: a.accountId,
+    decidedAt: a.decidedAt,
+    decidedBy: a.decidedBy,
+    decisionComment: a.decisionComment,
+    deltaQuantity: a.deltaQuantity,
+    id: a.id,
+    ledgerEntryId: a.ledgerEntryId,
+    reasonCode: a.reasonCode,
+    reasonText: a.reasonText,
+    requestedAt: a.requestedAt,
+    requestedBy: a.requestedBy,
+    rowVersion: a.rowVersion,
+    status: a.status,
+  };
+}
+
+export function toImportBatch(b: StoredImportBatch): Schemas['MemberImportBatch'] {
+  return {
+    appliedAt: b.appliedAt,
+    counters: b.counters,
+    createdAt: b.createdAt,
+    errorSummary: b.errorSummary,
+    fileName: b.fileName,
+    fileSha256: b.fileSha256,
+    format: b.format,
+    id: b.id,
+    planId: b.planId,
+    rowCount: b.rowCount,
+    rowVersion: b.rowVersion,
+    sourceSystem: b.sourceSystem,
+    sourceVersion: b.sourceVersion,
+    sponsorOrganizationId: b.sponsorOrganizationId,
+    status: b.status,
+  };
+}
+
+export function toImportRow(r: StoredImportRow): Schemas['MemberImportRow'] {
+  return {
+    appliedPersonId: r.appliedPersonId,
+    birthDate: r.birthDate,
+    candidatePersonIds: r.candidatePersonIds,
+    decision: r.decision,
+    displayName: r.displayName,
+    errors: r.errors,
+    id: r.id,
+    identifiers: r.identifiers.map((i) => ({
+      type: i.type,
+      maskedValue: maskIdentifier(i.type as 'TCKN', i.value),
+      primary: i.primary,
+    })),
+    matchedPersonId: r.matchedPersonId,
+    membershipType: r.membershipType,
+    planCode: r.planCode,
+    principalSourceRecordId: r.principalSourceRecordId,
+    rowNo: r.rowNo,
+    rowVersion: r.rowVersion,
+    sourceRecordId: r.sourceRecordId,
+    status: r.status,
+  };
+}
+
+export interface ImportCounters {
+  conflict: number;
+  created: number;
+  invalid: number;
+  matched: number;
+  skipped: number;
+  updated: number;
+  valid: number;
+}
+
+/**
+ * Parses the uploaded CSV_V1 file into rows, classifying each deterministically against
+ * the tenant's existing people so the review screen always has at least one CONFLICT
+ * (identifier matches an existing person with a different name) and one INVALID row
+ * (identifier fails validation) when the test data is built that way. Header:
+ * `sourceRecordId,firstName,lastName,birthDate,identifierType,identifierValue,membershipType,planCode,principalSourceRecordId`
+ */
+export function parseImportCsv(
+  world: MockWorld,
+  tenantId: string,
+  importId: string,
+  csvText: string,
+): { rows: StoredImportRow[]; counters: ImportCounters } {
+  const lines = csvText.split(/\r?\n/).filter((l) => l.trim().length > 0);
+  const rows: StoredImportRow[] = [];
+  const counters: ImportCounters = {
+    conflict: 0,
+    created: 0,
+    invalid: 0,
+    matched: 0,
+    skipped: 0,
+    updated: 0,
+    valid: 0,
+  };
+  if (lines.length === 0) return { rows, counters };
+  const header = lines[0]!.split(',').map((h) => h.trim());
+  const idx = (name: string) => header.indexOf(name);
+  const iSourceId = idx('sourceRecordId');
+  const iFirst = idx('firstName');
+  const iLast = idx('lastName');
+  const iBirth = idx('birthDate');
+  const iIdType = idx('identifierType');
+  const iIdValue = idx('identifierValue');
+  const iMembership = idx('membershipType');
+  const iPlanCode = idx('planCode');
+  const iPrincipalSource = idx('principalSourceRecordId');
+  for (let rowNo = 1; rowNo < lines.length; rowNo++) {
+    const cols = lines[rowNo]!.split(',').map((c) => c.trim());
+    const get = (i: number): string => (i >= 0 && i < cols.length ? (cols[i] ?? '') : '');
+    const sourceRecordId = get(iSourceId) || `ROW-${rowNo}`;
+    const firstName = get(iFirst);
+    const lastName = get(iLast);
+    const birthDate = get(iBirth);
+    const identifierType = get(iIdType) || 'TCKN';
+    const identifierValue = get(iIdValue);
+    const membershipType = get(iMembership);
+    const planCode = get(iPlanCode);
+    const principalSourceRecordId = get(iPrincipalSource);
+
+    const errors: { code: string; field: string; message?: string }[] = [];
+    if (!firstName || !lastName) {
+      errors.push({ field: 'firstName', code: 'REQUIRED', message: 'Ad ve soyad zorunlu' });
+    }
+    if (identifierType === 'TCKN' && !isValidTCKN(identifierValue)) {
+      errors.push({
+        field: 'identifiers[0].value',
+        code: 'IDENTIFIER_INVALID',
+        message: 'TCKN kontrol basamağı hatalı',
+      });
+    }
+
+    let status: StoredImportRow['status'];
+    let matchedPersonId: string | null = null;
+    const candidatePersonIds: string[] = [];
+    if (errors.length > 0) {
+      status = 'INVALID';
+    } else {
+      const existing = world.people.find(
+        (p) =>
+          p.tenantId === tenantId &&
+          p.identifiers.some(
+            (i) =>
+              i.type === identifierType &&
+              normalizeDigits(i.value) === normalizeDigits(identifierValue),
+          ),
+      );
+      if (!existing) {
+        status = 'VALID';
+      } else {
+        const sameName =
+          existing.firstName.toLocaleLowerCase('tr') === firstName.toLocaleLowerCase('tr') &&
+          existing.lastName.toLocaleLowerCase('tr') === lastName.toLocaleLowerCase('tr');
+        if (sameName) {
+          status = 'MATCHED';
+          matchedPersonId = existing.id;
+        } else {
+          status = 'CONFLICT';
+          candidatePersonIds.push(existing.id);
+        }
+      }
+    }
+    switch (status) {
+      case 'INVALID':
+        counters.invalid += 1;
+        break;
+      case 'VALID':
+        counters.valid += 1;
+        break;
+      case 'MATCHED':
+        counters.matched += 1;
+        break;
+      case 'CONFLICT':
+        counters.conflict += 1;
+        break;
+      default:
+        break;
+    }
+
+    rows.push({
+      id: world.nextId(),
+      tenantId,
+      importId,
+      rowNo,
+      sourceRecordId,
+      displayName: [firstName, lastName].filter(Boolean).join(' ') || sourceRecordId,
+      birthDate: birthDate || null,
+      identifiers: identifierValue
+        ? [{ type: identifierType, value: identifierValue, primary: true }]
+        : [],
+      membershipType: membershipType || null,
+      planCode: planCode || null,
+      principalSourceRecordId: principalSourceRecordId || null,
+      status,
+      errors,
+      candidatePersonIds,
+      matchedPersonId,
+      decision: null,
+      appliedPersonId: null,
+      rowVersion: 1,
+    });
+  }
+  return { rows, counters };
 }

@@ -3,30 +3,42 @@
  * enough that the screens behave the same with `VITE_API_MOCK=false`: same problem codes,
  * same header rules (tenant, CSRF, idempotency, If-Match), same masking and dedup.
  */
-import { HttpResponse, http, type HttpHandler } from 'msw';
+import { HttpResponse, http, type HttpHandler, type PathParams } from 'msw';
+
+import { benefitHandlers } from './benefit-handlers';
+import { eligibilityHandlers } from './eligibility-handlers';
+import { entitlementHandlers } from './entitlement-handlers';
+import { importHandlers } from './import-handlers';
 import type { components } from '../generated/kapsora-v1';
 import { isValidTCKN, isValidVKN, normalizeDigits } from '../identifiers';
 import {
+  IDENTIFIER_TYPE_CATALOG,
+  MEMBERSHIP_TYPE_CATALOG,
+  RELATIONSHIP_TYPE_CATALOG,
   buildWorld,
   toOrganization,
   toOrganizationSummary,
   toPerson,
+  toPersonRelationship,
   toPersonSummary,
+  toSponsorMembership,
   type MockAccount,
   type MockWorld,
+  type StoredMembership,
   type StoredOrganization,
+  type StoredPersonRelationship,
   type StoredRelationship,
 } from './data';
 
 // Handlers match any origin so the same list serves the browser worker and the node server.
-const ANY = '*';
+export const ANY = '*';
 
-type Schemas = components['schemas'];
+export type Schemas = components['schemas'];
 type Problem = Schemas['Problem'];
-type FieldError = NonNullable<Problem['errors']>[number];
+export type FieldError = NonNullable<Problem['errors']>[number];
 
 /** Session of the mock; one browser tab = one session (memory only, like the real cookie). */
-interface MockSession {
+export interface MockSession {
   account: MockAccount;
   activeTenantId: string | null;
   csrfToken: string;
@@ -126,7 +138,7 @@ export class MockApi {
 
 const PROBLEM_BASE = 'https://errors.kapsora.example/';
 
-function problem(
+export function problem(
   api: MockApi,
   status: number,
   code: string,
@@ -149,14 +161,14 @@ function problem(
   });
 }
 
-function unauthenticated(api: MockApi) {
+export function unauthenticated(api: MockApi) {
   return problem(api, 401, 'UNAUTHENTICATED', 'Oturum bulunamadı');
 }
 
-type Guarded = { session: MockSession; tenantId: string } | { error: Response };
+export type Guarded = { session: MockSession; tenantId: string } | { error: Response };
 
 /** Applies the same checks the Go middleware chain does, in the same order. */
-function guardTenant(
+export function guardTenant(
   api: MockApi,
   request: Request,
   permission: string,
@@ -193,7 +205,11 @@ function guardTenant(
   return { session, tenantId: header };
 }
 
-function guardSession(api: MockApi, request: Request, mutation: boolean): MockSession | Response {
+export function guardSession(
+  api: MockApi,
+  request: Request,
+  mutation: boolean,
+): MockSession | Response {
   const session = api.session;
   if (!session) return unauthenticated(api);
   if (mutation && request.headers.get('X-CSRF-Token') !== session.csrfToken) {
@@ -202,7 +218,14 @@ function guardSession(api: MockApi, request: Request, mutation: boolean): MockSe
   return session;
 }
 
-async function readJson<T>(request: Request): Promise<T | null> {
+// pathParam narrows one MSW path parameter to a string: the router types repeated
+// segments as an array, which none of these routes has.
+export function pathParam(params: PathParams, name: string): string {
+  const value = params[name];
+  return Array.isArray(value) ? (value[0] ?? '') : ((value as string | undefined) ?? '');
+}
+
+export async function readJson<T>(request: Request): Promise<T | null> {
   try {
     return (await request.json()) as T;
   } catch {
@@ -210,11 +233,11 @@ async function readJson<T>(request: Request): Promise<T | null> {
   }
 }
 
-function encodeCursor(offset: number): string {
+export function encodeCursor(offset: number): string {
   return btoa(`kapsora-mock:${offset}`).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
 }
 
-function decodeCursor(raw: string | null): number | null {
+export function decodeCursor(raw: string | null): number | null {
   if (!raw) return 0;
   try {
     const text = atob(raw.replace(/-/g, '+').replace(/_/g, '/'));
@@ -225,7 +248,7 @@ function decodeCursor(raw: string | null): number | null {
   }
 }
 
-function parseLimit(url: URL): number | 'invalid' {
+export function parseLimit(url: URL): number | 'invalid' {
   const raw = url.searchParams.get('limit');
   if (raw === null || raw === '') return 50;
   const n = Number(raw);
@@ -233,20 +256,59 @@ function parseLimit(url: URL): number | 'invalid' {
   return Math.min(n, 200);
 }
 
-async function wait(api: MockApi): Promise<void> {
+export async function wait(api: MockApi): Promise<void> {
   if (api.delayMs > 0) {
     await new Promise((r) => setTimeout(r, api.delayMs));
   }
 }
 
-function etagOf(version: number): string {
+export function etagOf(version: number): string {
   return `"${version}"`;
 }
 
-function parseIfMatch(raw: string | null): number | null {
+export function parseIfMatch(raw: string | null): number | null {
   if (!raw) return null;
   const m = /^(?:W\/)?"(\d+)"$/.exec(raw.trim());
   return m ? Number(m[1]) : null;
+}
+
+/** True while the session's step-up (password re-entry) is still fresh. */
+export function hasStepUp(session: MockSession): boolean {
+  return session.stepUpExpiresAt !== null && Date.parse(session.stepUpExpiresAt) > Date.now();
+}
+
+export function stepUpRequired(api: MockApi): Response {
+  return problem(
+    api,
+    403,
+    'STEP_UP_REQUIRED',
+    'Bu işlem için parola ile yeniden doğrulama gerekli',
+  );
+}
+
+/** Hex SHA-256 of a File/Blob's content, used to dedupe member import uploads. */
+export async function sha256Hex(file: File | Blob): Promise<string> {
+  const bytes = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
+  return [...new Uint8Array(bytes)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/** End of the benefit period a definition opens on `validFrom`, per its period type. */
+export function benefitPeriodEnd(
+  definition: { periodType: string; periodLength: number | null },
+  validFrom: string,
+): string | null {
+  const start = new Date(`${validFrom}T00:00:00.000Z`);
+  switch (definition.periodType) {
+    case 'CALENDAR_YEAR':
+      return `${start.getUTCFullYear() + 1}-01-01`;
+    case 'ROLLING_DAYS': {
+      const days = definition.periodLength ?? 365;
+      const end = new Date(start.getTime() + days * 86_400_000);
+      return end.toISOString().slice(0, 10);
+    }
+    default:
+      return null;
+  }
 }
 
 const ORGANIZATION_KINDS = new Set([
@@ -688,7 +750,7 @@ export function createHandlers(api: MockApi): HttpHandler[] {
   const peopleHandlers: HttpHandler[] = [
     http.get(`${ANY}/api/v1/people`, async ({ request }) => {
       await wait(api);
-      const g = guardTenant(api, request, 'person.read', false);
+      const g = guardTenant(api, request, 'member.read', false);
       if ('error' in g) return g.error;
       const url = new URL(request.url);
       const limit = parseLimit(url);
@@ -699,8 +761,21 @@ export function createHandlers(api: MockApi): HttpHandler[] {
       const offset = decodeCursor(url.searchParams.get('cursor'));
       if (offset === null) return problem(api, 400, 'CURSOR_INVALID', 'Sayfa imleci geçersiz');
       const q = (url.searchParams.get('q') ?? '').trim().toLocaleLowerCase('tr');
+      const status = url.searchParams.get('status');
+      const sponsorOrganizationId = url.searchParams.get('sponsorOrganizationId');
       const rows = world()
         .people.filter((p) => p.tenantId === g.tenantId)
+        .filter((p) => !status || p.status === status)
+        .filter(
+          (p) =>
+            !sponsorOrganizationId ||
+            world().memberships.some(
+              (m) =>
+                m.personId === p.id &&
+                m.sponsorOrganizationId === sponsorOrganizationId &&
+                m.status === 'ACTIVE',
+            ),
+        )
         .map(toPersonSummary)
         .filter((p) => !q || p.displayName.toLocaleLowerCase('tr').includes(q));
       const body: Schemas['PersonPage'] = {
@@ -711,7 +786,7 @@ export function createHandlers(api: MockApi): HttpHandler[] {
     }),
     http.post(`${ANY}/api/v1/people`, async ({ request }) => {
       await wait(api);
-      const g = guardTenant(api, request, 'person.manage', true);
+      const g = guardTenant(api, request, 'member.manage', true);
       if ('error' in g) return g.error;
       if (!request.headers.get('Idempotency-Key'))
         return problem(api, 400, 'IDEMPOTENCY_KEY_REQUIRED', 'Idempotency-Key başlığı gerekli');
@@ -743,7 +818,7 @@ export function createHandlers(api: MockApi): HttpHandler[] {
     }),
     http.get(`${ANY}/api/v1/people/:personId`, async ({ request, params }) => {
       await wait(api);
-      const g = guardTenant(api, request, 'person.read', false);
+      const g = guardTenant(api, request, 'member.read', false);
       if ('error' in g) return g.error;
       const p = world().people.find(
         (x) => x.id === params['personId'] && x.tenantId === g.tenantId,
@@ -751,46 +826,374 @@ export function createHandlers(api: MockApi): HttpHandler[] {
       if (!p) return problem(api, 404, 'RESOURCE_NOT_FOUND', 'Kaynak bulunamadı');
       return HttpResponse.json(toPerson(p), { headers: { ETag: etagOf(p.rowVersion) } });
     }),
-  ];
 
-  const eligibilityHandlers: HttpHandler[] = [
-    http.post(`${ANY}/api/v1/eligibility/checks`, async ({ request }) => {
+    http.patch(`${ANY}/api/v1/people/:personId`, async ({ request, params }) => {
       await wait(api);
-      const g = guardTenant(api, request, 'eligibility.check', true);
+      const g = guardTenant(api, request, 'member.manage', true);
       if ('error' in g) return g.error;
-      const body = await readJson<Schemas['EligibilityCheckRequest']>(request);
-      if (!body?.personId || !body.serviceDate)
-        return problem(api, 422, 'VALIDATION_FAILED', 'Doğrulama hatası', {
-          errors: [{ field: 'personId', code: 'REQUIRED' }],
-        });
+      const ct = request.headers.get('Content-Type') ?? '';
+      if (!ct.toLowerCase().startsWith('application/merge-patch+json')) {
+        return problem(
+          api,
+          415,
+          'UNSUPPORTED_MEDIA_TYPE',
+          'Content-Type application/merge-patch+json olmalı',
+        );
+      }
+      const expected = parseIfMatch(request.headers.get('If-Match'));
+      if (expected === null)
+        return problem(api, 428, 'IF_MATCH_REQUIRED', 'If-Match başlığı gerekli');
       const person = world().people.find(
-        (p) => p.id === body.personId && p.tenantId === g.tenantId,
+        (x) => x.id === params['personId'] && x.tenantId === g.tenantId,
       );
-      const evaluationId = world().nextId();
-      const result: Schemas['EligibilityCheckResult'] = person
-        ? {
-            evaluationId,
-            eligible: true,
-            outcome: 'ELIGIBLE',
-            evaluatedAt: new Date().toISOString(),
-            explanations: [
-              { code: 'ENROLLMENT_ACTIVE', message: 'Aktif kayıt bulundu', severity: 'INFO' },
-            ],
-            balances: [{ entitlementCode: 'PHYSIO_SESSION', available: 8, unit: 'SESSION' }],
-            planVersionId: null,
-            ruleSetVersionIds: [],
-          }
-        : {
-            evaluationId,
-            eligible: false,
-            outcome: 'MISSING_DATA',
-            evaluatedAt: new Date().toISOString(),
-            explanations: [
-              { code: 'PERSON_NOT_FOUND', message: 'Hak sahibi bulunamadı', severity: 'ERROR' },
-            ],
-          };
-      return HttpResponse.json(result);
+      if (!person) return problem(api, 404, 'RESOURCE_NOT_FOUND', 'Kaynak bulunamadı');
+      const patch = await readJson<Schemas['UpdatePersonRequest']>(request);
+      if (!patch || typeof patch !== 'object')
+        return problem(api, 400, 'INVALID_REQUEST_BODY', 'İstek gövdesi geçersiz');
+      const errors: FieldError[] = [];
+      if (patch.firstName !== undefined && patch.firstName.trim().length === 0)
+        errors.push({ field: 'firstName', code: 'REQUIRED', message: 'Ad zorunlu' });
+      if (patch.lastName !== undefined && patch.lastName.trim().length === 0)
+        errors.push({ field: 'lastName', code: 'REQUIRED', message: 'Soyad zorunlu' });
+      for (const [i, entry] of (patch.identifiers ?? []).entries()) {
+        if (entry.remove) continue;
+        if (entry.type === 'TCKN' && entry.value !== undefined && !isValidTCKN(entry.value)) {
+          errors.push({
+            field: `identifiers[${i}].value`,
+            code: 'IDENTIFIER_INVALID',
+            message: 'TCKN kontrol basamağı hatalı',
+          });
+        }
+      }
+      if (errors.length > 0)
+        return problem(api, 422, 'VALIDATION_FAILED', 'Doğrulama hatası', { errors });
+      if (person.rowVersion !== expected) {
+        return problem(api, 412, 'ETAG_MISMATCH', 'Kayıt bu arada değişti', {
+          detail: 'Güncel sürümü alıp değişikliğinizi yeniden uygulayın.',
+        });
+      }
+      for (const entry of patch.identifiers ?? []) {
+        if (entry.remove) {
+          person.identifiers = person.identifiers.filter((i) => i.type !== entry.type);
+          continue;
+        }
+        if (entry.value === undefined) continue;
+        if (entry.type === 'TCKN') {
+          const taken = world().people.some(
+            (other) =>
+              other.id !== person.id &&
+              other.tenantId === g.tenantId &&
+              other.identifiers.some(
+                (i) =>
+                  i.type === 'TCKN' && normalizeDigits(i.value) === normalizeDigits(entry.value!),
+              ),
+          );
+          if (taken)
+            return problem(api, 409, 'PERSON_IDENTIFIER_TAKEN', 'Kimlik başka bir kişide kayıtlı');
+        }
+        person.identifiers = person.identifiers.filter((i) => i.type !== entry.type);
+        person.identifiers.push({
+          type: entry.type,
+          value: entry.value,
+          primary: entry.primary ?? false,
+        });
+      }
+      if (patch.firstName !== undefined) person.firstName = patch.firstName;
+      if (patch.lastName !== undefined) person.lastName = patch.lastName;
+      if ('middleName' in patch) person.middleName = patch.middleName ?? null;
+      if ('birthDate' in patch) person.birthDate = patch.birthDate ?? null;
+      if ('sexAtBirth' in patch) person.sexAtBirth = patch.sexAtBirth ?? null;
+      if (patch.status !== undefined) person.status = patch.status;
+      person.rowVersion += 1;
+      return HttpResponse.json(toPerson(person), { headers: { ETag: etagOf(person.rowVersion) } });
     }),
+
+    http.post(`${ANY}/api/v1/people/search-by-identifier`, async ({ request }) => {
+      await wait(api);
+      const g = guardTenant(api, request, 'member.identifier.search', true);
+      if ('error' in g) return g.error;
+      if (!hasStepUp(g.session)) return stepUpRequired(api);
+      const body = await readJson<Schemas['IdentifierSearchRequest']>(request);
+      if (!body?.type || !body.value)
+        return problem(api, 422, 'VALIDATION_FAILED', 'Doğrulama hatası', {
+          errors: [{ field: 'value', code: 'REQUIRED' }],
+        });
+      const normalized = normalizeDigits(body.value);
+      const found = world().people.find(
+        (p) =>
+          p.tenantId === g.tenantId &&
+          p.identifiers.some(
+            (i) => i.type === body.type && normalizeDigits(i.value) === normalized,
+          ),
+      );
+      if (!found) return problem(api, 404, 'RESOURCE_NOT_FOUND', 'Kaynak bulunamadı');
+      return HttpResponse.json(toPersonSummary(found));
+    }),
+
+    http.get(`${ANY}/api/v1/party/catalogs`, async ({ request }) => {
+      await wait(api);
+      const g = guardTenant(api, request, 'member.read', false);
+      if ('error' in g) return g.error;
+      const body: Schemas['PartyCatalogs'] = {
+        identifierTypes: IDENTIFIER_TYPE_CATALOG,
+        membershipTypes: MEMBERSHIP_TYPE_CATALOG,
+        relationshipTypes: RELATIONSHIP_TYPE_CATALOG,
+      };
+      return HttpResponse.json(body);
+    }),
+
+    http.get(`${ANY}/api/v1/people/:personId/relationships`, async ({ request, params }) => {
+      await wait(api);
+      const g = guardTenant(api, request, 'member.read', false);
+      if ('error' in g) return g.error;
+      const personId = pathParam(params, 'personId');
+      const person = world().people.find((p) => p.id === personId && p.tenantId === g.tenantId);
+      if (!person) return problem(api, 404, 'RESOURCE_NOT_FOUND', 'Kaynak bulunamadı');
+      const items = world()
+        .personRelationships.filter(
+          (r) =>
+            r.tenantId === g.tenantId &&
+            (r.sourcePersonId === personId || r.targetPersonId === personId),
+        )
+        .map((r) => toPersonRelationship(world(), r, person.id));
+      return HttpResponse.json({ items });
+    }),
+
+    http.post(`${ANY}/api/v1/people/:personId/relationships`, async ({ request, params }) => {
+      await wait(api);
+      const g = guardTenant(api, request, 'member.manage', true);
+      if ('error' in g) return g.error;
+      if (!request.headers.get('Idempotency-Key'))
+        return problem(api, 400, 'IDEMPOTENCY_KEY_REQUIRED', 'Idempotency-Key başlığı gerekli');
+      const personId = pathParam(params, 'personId');
+      const person = world().people.find((p) => p.id === personId && p.tenantId === g.tenantId);
+      if (!person) return problem(api, 404, 'RESOURCE_NOT_FOUND', 'Kaynak bulunamadı');
+      const body = await readJson<Schemas['CreateRelationshipRequest']>(request);
+      if (!body?.relationshipType || !body.targetPersonId || !body.validFrom)
+        return problem(api, 422, 'VALIDATION_FAILED', 'Doğrulama hatası', {
+          errors: [{ field: 'relationshipType', code: 'REQUIRED' }],
+        });
+      if (body.targetPersonId === personId)
+        return problem(api, 422, 'VALIDATION_FAILED', 'Doğrulama hatası', {
+          errors: [{ field: 'targetPersonId', code: 'SELF_REFERENCE' }],
+        });
+      const type = RELATIONSHIP_TYPE_CATALOG.find((t) => t.code === body.relationshipType);
+      if (!type || type.status !== 'ACTIVE')
+        return problem(api, 422, 'VALIDATION_FAILED', 'Doğrulama hatası', {
+          errors: [{ field: 'relationshipType', code: 'ENUM' }],
+        });
+      const target = world().people.find(
+        (p) => p.id === body.targetPersonId && p.tenantId === g.tenantId,
+      );
+      if (!target) return problem(api, 404, 'RESOURCE_NOT_FOUND', 'Kaynak bulunamadı');
+      const overlap = world().personRelationships.some(
+        (r) =>
+          r.tenantId === g.tenantId &&
+          r.status !== 'ENDED' &&
+          r.relationshipType === body.relationshipType &&
+          ((r.sourcePersonId === personId && r.targetPersonId === body.targetPersonId) ||
+            (r.sourcePersonId === body.targetPersonId && r.targetPersonId === personId)) &&
+          (r.validTo === null || r.validTo > body.validFrom!) &&
+          (!body.validTo || r.validFrom < body.validTo),
+      );
+      if (overlap)
+        return problem(api, 409, 'RELATIONSHIP_OVERLAP', 'Bu dönem için ilişki zaten var');
+      const rel: StoredPersonRelationship = {
+        id: world().nextId(),
+        tenantId: g.tenantId,
+        sourcePersonId: personId,
+        targetPersonId: body.targetPersonId,
+        relationshipType: body.relationshipType,
+        status: 'ACTIVE',
+        validFrom: body.validFrom,
+        validTo: body.validTo ?? null,
+        endReasonCode: null,
+        rowVersion: 1,
+      };
+      world().personRelationships.push(rel);
+      return HttpResponse.json(toPersonRelationship(world(), rel, personId), {
+        status: 201,
+        headers: { ETag: etagOf(1) },
+      });
+    }),
+
+    http.post(
+      `${ANY}/api/v1/people/:personId/relationships/:relationshipId/end`,
+      async ({ request, params }) => {
+        await wait(api);
+        const g = guardTenant(api, request, 'member.manage', true);
+        if ('error' in g) return g.error;
+        const expected = parseIfMatch(request.headers.get('If-Match'));
+        if (expected === null)
+          return problem(api, 428, 'IF_MATCH_REQUIRED', 'If-Match başlığı gerekli');
+        const personId = pathParam(params, 'personId');
+        const rel = world().personRelationships.find(
+          (r) =>
+            r.id === params['relationshipId'] &&
+            r.tenantId === g.tenantId &&
+            (r.sourcePersonId === personId || r.targetPersonId === personId),
+        );
+        if (!rel) return problem(api, 404, 'RESOURCE_NOT_FOUND', 'Kaynak bulunamadı');
+        if (rel.rowVersion !== expected)
+          return problem(api, 412, 'ETAG_MISMATCH', 'Kayıt bu arada değişti');
+        const body = await readJson<Schemas['EndPeriodCommand']>(request);
+        if (!body?.endsOn || !body.reasonCode)
+          return problem(api, 422, 'VALIDATION_FAILED', 'Doğrulama hatası', {
+            errors: [{ field: 'reasonCode', code: 'REQUIRED' }],
+          });
+        rel.status = 'ENDED';
+        rel.validTo = body.endsOn;
+        rel.endReasonCode = body.reasonCode;
+        rel.rowVersion += 1;
+        return HttpResponse.json(toPersonRelationship(world(), rel, personId), {
+          headers: { ETag: etagOf(rel.rowVersion) },
+        });
+      },
+    ),
+
+    http.get(`${ANY}/api/v1/people/:personId/memberships`, async ({ request, params }) => {
+      await wait(api);
+      const g = guardTenant(api, request, 'member.read', false);
+      if ('error' in g) return g.error;
+      const person = world().people.find(
+        (p) => p.id === params['personId'] && p.tenantId === g.tenantId,
+      );
+      if (!person) return problem(api, 404, 'RESOURCE_NOT_FOUND', 'Kaynak bulunamadı');
+      const items = world()
+        .memberships.filter((m) => m.tenantId === g.tenantId && m.personId === person.id)
+        .sort((a, b) => (a.validFrom < b.validFrom ? 1 : -1))
+        .map((m) => toSponsorMembership(world(), m));
+      return HttpResponse.json({ items });
+    }),
+
+    http.post(`${ANY}/api/v1/people/:personId/memberships`, async ({ request, params }) => {
+      await wait(api);
+      const g = guardTenant(api, request, 'member.manage', true);
+      if ('error' in g) return g.error;
+      if (!request.headers.get('Idempotency-Key'))
+        return problem(api, 400, 'IDEMPOTENCY_KEY_REQUIRED', 'Idempotency-Key başlığı gerekli');
+      const person = world().people.find(
+        (p) => p.id === params['personId'] && p.tenantId === g.tenantId,
+      );
+      if (!person) return problem(api, 404, 'RESOURCE_NOT_FOUND', 'Kaynak bulunamadı');
+      const body = await readJson<Schemas['CreateMembershipRequest']>(request);
+      if (!body?.membershipType || !body.sponsorOrganizationId || !body.validFrom)
+        return problem(api, 422, 'VALIDATION_FAILED', 'Doğrulama hatası', {
+          errors: [{ field: 'membershipType', code: 'REQUIRED' }],
+        });
+      const type = MEMBERSHIP_TYPE_CATALOG.find((t) => t.code === body.membershipType);
+      if (!type || type.status !== 'ACTIVE')
+        return problem(api, 422, 'VALIDATION_FAILED', 'Doğrulama hatası', {
+          errors: [{ field: 'membershipType', code: 'ENUM' }],
+        });
+      if (type.requiresPrincipal && !body.principalMembershipId)
+        return problem(api, 422, 'VALIDATION_FAILED', 'Doğrulama hatası', {
+          errors: [{ field: 'principalMembershipId', code: 'REQUIRED' }],
+        });
+      if (body.principalMembershipId) {
+        const principal = world().memberships.find(
+          (m) => m.id === body.principalMembershipId && m.tenantId === g.tenantId,
+        );
+        if (!principal)
+          return problem(api, 422, 'VALIDATION_FAILED', 'Doğrulama hatası', {
+            errors: [{ field: 'principalMembershipId', code: 'INVALID_REFERENCE' }],
+          });
+      }
+      if (
+        body.externalMemberNo &&
+        world().memberships.some(
+          (m) =>
+            m.tenantId === g.tenantId &&
+            m.sponsorOrganizationId === body.sponsorOrganizationId &&
+            m.externalMemberNo === body.externalMemberNo,
+        )
+      ) {
+        return problem(api, 409, 'MEMBER_NO_TAKEN', 'Üye numarası zaten kullanılıyor');
+      }
+      const validTo = body.validTo ?? null;
+      const overlap = world().memberships.some(
+        (m) =>
+          m.tenantId === g.tenantId &&
+          m.personId === person.id &&
+          m.sponsorOrganizationId === body.sponsorOrganizationId &&
+          m.membershipType === body.membershipType &&
+          m.status !== 'ENDED' &&
+          (m.validTo === null || m.validTo > body.validFrom) &&
+          (!validTo || m.validFrom < validTo),
+      );
+      if (overlap) return problem(api, 409, 'MEMBERSHIP_OVERLAP', 'Bu dönem için üyelik zaten var');
+      const membership: StoredMembership = {
+        id: world().nextId(),
+        tenantId: g.tenantId,
+        personId: person.id,
+        sponsorOrganizationId: body.sponsorOrganizationId,
+        membershipType: body.membershipType,
+        principalMembershipId: body.principalMembershipId ?? null,
+        externalMemberNo: body.externalMemberNo ?? null,
+        status: body.status ?? 'ACTIVE',
+        validFrom: body.validFrom,
+        validTo,
+        sourceSystem: null,
+        rowVersion: 1,
+      };
+      world().memberships.push(membership);
+      return HttpResponse.json(toSponsorMembership(world(), membership), {
+        status: 201,
+        headers: { ETag: etagOf(1) },
+      });
+    }),
+
+    http.patch(
+      `${ANY}/api/v1/people/:personId/memberships/:membershipId`,
+      async ({ request, params }) => {
+        await wait(api);
+        const g = guardTenant(api, request, 'member.manage', true);
+        if ('error' in g) return g.error;
+        const ct = request.headers.get('Content-Type') ?? '';
+        if (!ct.toLowerCase().startsWith('application/merge-patch+json')) {
+          return problem(
+            api,
+            415,
+            'UNSUPPORTED_MEDIA_TYPE',
+            'Content-Type application/merge-patch+json olmalı',
+          );
+        }
+        const expected = parseIfMatch(request.headers.get('If-Match'));
+        if (expected === null)
+          return problem(api, 428, 'IF_MATCH_REQUIRED', 'If-Match başlığı gerekli');
+        const membership = world().memberships.find(
+          (m) =>
+            m.id === params['membershipId'] &&
+            m.personId === params['personId'] &&
+            m.tenantId === g.tenantId,
+        );
+        if (!membership) return problem(api, 404, 'RESOURCE_NOT_FOUND', 'Kaynak bulunamadı');
+        if (membership.rowVersion !== expected)
+          return problem(api, 412, 'ETAG_MISMATCH', 'Kayıt bu arada değişti');
+        const patch = (await readJson<Schemas['UpdateMembershipRequest']>(request)) ?? {};
+        if (
+          'externalMemberNo' in patch &&
+          patch.externalMemberNo &&
+          world().memberships.some(
+            (m) =>
+              m.id !== membership.id &&
+              m.tenantId === g.tenantId &&
+              m.sponsorOrganizationId === membership.sponsorOrganizationId &&
+              m.externalMemberNo === patch.externalMemberNo,
+          )
+        ) {
+          return problem(api, 409, 'MEMBER_NO_TAKEN', 'Üye numarası zaten kullanılıyor');
+        }
+        if ('externalMemberNo' in patch)
+          membership.externalMemberNo = patch.externalMemberNo ?? null;
+        if (patch.status !== undefined) membership.status = patch.status;
+        if ('validTo' in patch) membership.validTo = patch.validTo ?? null;
+        membership.rowVersion += 1;
+        return HttpResponse.json(toSponsorMembership(world(), membership), {
+          headers: { ETag: etagOf(membership.rowVersion) },
+        });
+      },
+    ),
   ];
 
   const findRequest = (id: string | readonly string[] | undefined, tenantId: string) =>
@@ -946,8 +1349,12 @@ export function createHandlers(api: MockApi): HttpHandler[] {
     ...sessionHandlers,
     ...organizationHandlers,
     ...peopleHandlers,
-    ...eligibilityHandlers,
+    ...eligibilityHandlers(api),
     ...serviceRequestHandlers,
+    // Programs, plans, plan versions and enrollments live in their own module.
+    ...benefitHandlers(api),
+    ...entitlementHandlers(api),
+    ...importHandlers(api),
   ];
 }
 

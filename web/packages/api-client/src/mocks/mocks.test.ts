@@ -60,7 +60,7 @@ describe('session flow', () => {
 });
 
 describe('organizations', () => {
-  it('pages 120 rows in three pages of 50 and filters', async () => {
+  it('pages every relationship of the tenant and filters', async () => {
     const { o, tenantId } = await signInAdminA();
     const seen = new Set<string>();
     let cursor: string | undefined;
@@ -71,8 +71,11 @@ describe('organizations', () => {
       for (const item of page.items) seen.add(item.id);
       cursor = page.nextCursor ?? undefined;
     } while (cursor);
-    expect(pages).toBe(3);
-    expect(seen.size).toBe(120);
+    // The world seeds `organizationsPerTenant` rows plus the sponsor, payer and provider
+    // relationships the benefit fixtures need, so the count comes from the world itself.
+    const expected = api.world.relationships.filter((r) => r.tenantId === tenantId).length;
+    expect(seen.size).toBe(expected);
+    expect(pages).toBe(Math.ceil(expected / 50));
 
     const providers = await o.organizations.list(tenantId, { role: 'PROVIDER', limit: 200 });
     expect(providers.items.every((i) => i.relationshipRole === 'PROVIDER')).toBe(true);

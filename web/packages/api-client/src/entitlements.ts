@@ -2,17 +2,27 @@ import type { KapsoraClient } from './client';
 import { randomId } from './client';
 import type { components } from './generated/kapsora-v1';
 import { unwrap } from './problem';
+import {
+  asDecimals,
+  type CreateAdjustmentRequest as AdjustmentBody,
+  type EntitlementAccount as Account,
+  type EntitlementAdjustment as Adjustment,
+  type LedgerPage as Ledger,
+} from './decimals';
 import { versioned, type Versioned } from './versioned';
 
-export type EntitlementAccount = components['schemas']['EntitlementAccount'];
-export type EntitlementReservation = components['schemas']['EntitlementReservation'];
-export type LedgerEntry = components['schemas']['LedgerEntry'];
-export type LedgerPage = components['schemas']['LedgerPage'];
-export type EntitlementAdjustment = components['schemas']['EntitlementAdjustment'];
-export type CreateAdjustmentRequest = components['schemas']['CreateAdjustmentRequest'];
+// Balances, deltas and adjustment amounts are decimal strings; see decimals.ts.
+export type {
+  CreateAdjustmentRequest,
+  EntitlementAccount,
+  EntitlementAdjustment,
+  EntitlementReservation,
+  LedgerEntry,
+  LedgerPage,
+} from './decimals';
 export type ReviewComment = components['schemas']['ReviewComment'];
 export type ReasonCommand = components['schemas']['ReasonCommand'];
-export type AdjustmentStatus = EntitlementAdjustment['status'];
+export type AdjustmentStatus = Adjustment['status'];
 
 /** Filters of the ledger page. */
 export interface LedgerQuery {
@@ -29,7 +39,7 @@ export interface AdjustmentListQuery {
 
 /** One page of adjustments. */
 export interface AdjustmentPage {
-  items: EntitlementAdjustment[];
+  items: Adjustment[];
   nextCursor?: string | null;
 }
 
@@ -47,7 +57,7 @@ export function entitlementOperations(client: KapsoraClient) {
       tenantId: string,
       personId: string,
       asOf?: string,
-    ): Promise<EntitlementAccount[]> {
+    ): Promise<Account[]> {
       return (
         await unwrap(
           client.GET('/api/v1/people/{personId}/entitlements', {
@@ -58,23 +68,23 @@ export function entitlementOperations(client: KapsoraClient) {
             },
           }),
         )
-      ).data.items;
+      ).data.items.map((a) => asDecimals<Account>(a));
     },
 
-    async getAccount(tenantId: string, accountId: string): Promise<Versioned<EntitlementAccount>> {
+    async getAccount(tenantId: string, accountId: string): Promise<Versioned<Account>> {
       const r = await unwrap(
         client.GET('/api/v1/entitlement-accounts/{accountId}', {
           params: { header: header(tenantId), path: { accountId } },
         }),
       );
-      return versioned(r.data, r.response);
+      return versioned(asDecimals<Account>(r.data), r.response);
     },
 
     async listLedger(
       tenantId: string,
       accountId: string,
       query: LedgerQuery = {},
-    ): Promise<LedgerPage> {
+    ): Promise<Ledger> {
       const q: LedgerQuery = {};
       if (query.cursor) q.cursor = query.cursor;
       if (query.limit) q.limit = query.limit;
@@ -84,15 +94,15 @@ export function entitlementOperations(client: KapsoraClient) {
             params: { header: header(tenantId), path: { accountId }, query: q },
           }),
         )
-      ).data;
+      ).data as unknown as Ledger;
     },
 
     async createAdjustment(
       tenantId: string,
       accountId: string,
-      body: CreateAdjustmentRequest,
+      body: AdjustmentBody,
       idempotencyKey: string = randomId(),
-    ): Promise<EntitlementAdjustment> {
+    ): Promise<Adjustment> {
       return (
         await unwrap(
           client.POST('/api/v1/entitlement-accounts/{accountId}/adjustments', {
@@ -100,10 +110,10 @@ export function entitlementOperations(client: KapsoraClient) {
               header: { ...header(tenantId), 'Idempotency-Key': idempotencyKey },
               path: { accountId },
             },
-            body,
+            body: asDecimals<never>(body),
           }),
         )
-      ).data;
+      ).data as unknown as Adjustment;
     },
 
     async listAdjustments(
@@ -120,7 +130,7 @@ export function entitlementOperations(client: KapsoraClient) {
             params: { header: header(tenantId), query: q },
           }),
         )
-      ).data;
+      ).data as unknown as AdjustmentPage;
     },
 
     /** Needs a recent step-up and a different actor than the requester. */
@@ -129,7 +139,7 @@ export function entitlementOperations(client: KapsoraClient) {
       adjustmentId: string,
       etag: string,
       body: ReviewComment = {},
-    ): Promise<EntitlementAdjustment> {
+    ): Promise<Adjustment> {
       return (
         await unwrap(
           client.POST('/api/v1/entitlement-adjustments/{adjustmentId}/approve', {
@@ -140,7 +150,7 @@ export function entitlementOperations(client: KapsoraClient) {
             body,
           }),
         )
-      ).data;
+      ).data as unknown as Adjustment;
     },
 
     async rejectAdjustment(
@@ -148,7 +158,7 @@ export function entitlementOperations(client: KapsoraClient) {
       adjustmentId: string,
       etag: string,
       body: ReasonCommand,
-    ): Promise<EntitlementAdjustment> {
+    ): Promise<Adjustment> {
       return (
         await unwrap(
           client.POST('/api/v1/entitlement-adjustments/{adjustmentId}/reject', {
@@ -159,7 +169,7 @@ export function entitlementOperations(client: KapsoraClient) {
             body,
           }),
         )
-      ).data;
+      ).data as unknown as Adjustment;
     },
   };
 }
