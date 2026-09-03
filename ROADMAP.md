@@ -31,8 +31,8 @@ See [docs/delegation/README.md](docs/delegation/README.md).
 | # | Milestone | Plan increment | Status | Exit criteria (summary) |
 |---|---|---|---|---|
 | M0 | Foundation | I0 | DONE (2026-09-02) | Repo, corrected migrations 1-9, OpenAPI v1, Go skeleton, CI, schema tests green on PostgreSQL 18.4 |
-| M1 | Identity, tenants, organizations | I1 | ACTIVE | Login with KAPSORA accounts (ADR-022), tenant switch, permissions enforced, organization CRUD with VKN dedup, audit and idempotency live, three web shells, native local environment documented |
-| M2 | People, plans, eligibility, entitlement ledger | I2 | PLANNED | Encrypted identifiers + HMAC search, member import, program/plan/version/enrollment, eligibility API, ledger with reservations; 100 concurrent reserves without double spend |
+| M1 | Identity, tenants, organizations | I1 | DONE (2026-09-03) | Login with KAPSORA accounts (ADR-022), tenant switch, permissions enforced, organization CRUD with VKN dedup, audit and idempotency live, three web shells, native local environment documented |
+| M2 | People, plans, eligibility, entitlement ledger | I2 | ACTIVE | Encrypted identifiers + HMAC search, member import, program/plan/version/enrollment, eligibility API, ledger with reservations; 100 concurrent reserves without double spend |
 | M3 | Catalog, providers, contracts, pricing, rules | I3 | PLANNED | Deterministic contract/price selection, published versions immutable, CEL rule sets with test cases and maker-checker publish |
 | M4 | Requests, workflow, documents, notifications | I4 | PLANNED | Explicit transitions only, work queues with SLA, quarantine-scan-secure document pipeline, PII-free notifications |
 | M5 | Health vertical | I5 | PLANNED | Outpatient claim invoice-ready end to end, inpatient preauthorization with medical review, clinical/financial visibility separation |
@@ -61,6 +61,20 @@ Integration order once packages return: 04 → 01 → 02 → 03 → 05 (06 any t
 integrator wires middlewares and routes in `cmd/api` and runs the full test suite before
 closing M1.
 
+## M2 work packages (issued 2026-09-03)
+
+| WP | Title | Depends on | Parallel with | Size | Owner |
+|---|---|---|---|---|---|
+| [WP-I2-01](docs/delegation/WP-I2-01-persons.md) | Persons: registry, encrypted identifiers, blind-index search, relationships, sponsor memberships | M1 | 02 | L | Claude |
+| [WP-I2-02](docs/delegation/WP-I2-02-programs-plans-enrollment.md) | Programs, plans, plan versions (maker-checker), entitlement definitions, enrollments | M1, 01 (enrollments) | 01 | L | Claude |
+| [WP-I2-03](docs/delegation/WP-I2-03-entitlement-ledger.md) | Entitlement accounts, ledger, reservations, adjustments, reconciliation | 02 | 01 | L | Claude |
+| [WP-I2-04](docs/delegation/WP-I2-04-eligibility.md) | Eligibility API with as-of resolution, explanations, evaluation snapshots | 01, 02, 03 | 05 | M | Claude |
+| [WP-I2-05](docs/delegation/WP-I2-05-member-import.md) | Member import: staging, validation, matching, review, idempotent apply | 01, 02 | 04 | L | Claude |
+| [WP-I2-06](docs/delegation/WP-I2-06-frontend-people-plans.md) | Backoffice screens: people, memberships, programs/plans, entitlements, eligibility, import | contracts of 01-05 | all | L | Claude |
+
+Integration order: 01 → 02 → 03 → 04 → 05 → 06 (06 starts on mocks as soon as each
+contract lands). Migrations: 000014 (02), 000015 (03), 000016 (04), 000017 (05).
+
 ## Cross-cutting tracks
 
 - **Security and privacy:** every WP carries the non-negotiable rules from the handbook
@@ -83,6 +97,8 @@ closing M1.
 | M10 | Pilot customer, program and beneficiary group; HR/policy source formats | open |
 
 ## Status log
+
+- 2026-09-03 · M1 closed (WP-I1-01..06 delivered; issue #7 tracks the Ubuntu VM run). M2 opened: six work packages WP-I2-01..06 written from plan v2.0 I2 and the v1.2 Phase 3 acceptance criteria; migration numbers 000014-000017 assigned.
 
 - 2026-09-02 · M0 closed: migrations 1-9, 16 schema tests, health endpoints verified on local PostgreSQL 18.4.
 - 2026-09-02 · Docker/Kubernetes removed (ADR-021); Valkey deferred, PostgreSQL-backed sessions.

@@ -529,6 +529,307 @@ paths:
                 $ref: '#/components/schemas/Person'
         '404':
           $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [People]
+      operationId: updatePerson
+      description: |
+        Merge-patch of names, birth date, sex at birth and status (ACTIVE, INACTIVE, DECEASED;
+        MERGED is only set by the merge command). Identifiers are added with `{type, value}`
+        and removed with `{type, remove: true}` under the same validation as create.
+        `If-Match` must carry the ETag of the version being edited; a stale value answers
+        412 ETAG_MISMATCH and the client reloads.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PersonId'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: '#/components/schemas/UpdatePersonRequest'
+      responses:
+        '200':
+          description: Person updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Person'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch, reload the record
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '415':
+          description: Body is not application/merge-patch+json
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/people/search-by-identifier:
+    post:
+      tags: [People]
+      operationId: searchPeopleByIdentifier
+      description: |
+        Finds the one person that carries an identifier value, through the tenant-salted
+        blind index; the value itself is never stored, logged or echoed. Requires the
+        `member.identifier.search` permission and a recent step-up. Every call is written to
+        the access audit with the identifier type only. Not idempotent and not cached.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IdentifierSearchRequest'
+      responses:
+        '200':
+          description: The person carrying the identifier
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonSummary'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/people/{personId}/relationships:
+    get:
+      tags: [People]
+      operationId: listPersonRelationships
+      description: Relationships in both directions with the other person as a summary.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PersonId'
+      responses:
+        '200':
+          description: Relationships of the person
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PersonRelationship'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [People]
+      operationId: createPersonRelationship
+      description: |
+        Links two persons of the tenant with a relationship type from the tenant catalog for
+        a validity period. Overlapping periods for the same pair and type answer 409
+        RELATIONSHIP_OVERLAP; a person cannot be related to itself.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PersonId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRelationshipRequest'
+      responses:
+        '201':
+          description: Relationship created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonRelationship'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/people/{personId}/relationships/{relationshipId}/end:
+    post:
+      tags: [People]
+      operationId: endPersonRelationship
+      description: Ends a relationship on a date with a reason; the row is kept for history.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PersonId'
+        - $ref: '#/components/parameters/RelationshipId'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EndPeriodCommand'
+      responses:
+        '200':
+          description: Relationship ended
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonRelationship'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/people/{personId}/memberships:
+    get:
+      tags: [People]
+      operationId: listSponsorMemberships
+      description: Sponsor memberships of the person, newest first.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PersonId'
+      responses:
+        '200':
+          description: Memberships of the person
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SponsorMembership'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [People]
+      operationId: createSponsorMembership
+      description: |
+        Adds a membership under a sponsor or payer organization of the tenant. Membership
+        types marked `requiresPrincipal` need `principalMembershipId`; an external member
+        number is unique per sponsor (409 MEMBER_NO_TAKEN); overlapping periods under the
+        same sponsor answer 409 MEMBERSHIP_OVERLAP.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PersonId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMembershipRequest'
+      responses:
+        '201':
+          description: Membership created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SponsorMembership'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/people/{personId}/memberships/{membershipId}:
+    patch:
+      tags: [People]
+      operationId: updateSponsorMembership
+      description: Merge-patch of status (ACTIVE, SUSPENDED, ENDED), validity end and external member number.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PersonId'
+        - $ref: '#/components/parameters/MembershipId'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: '#/components/schemas/UpdateMembershipRequest'
+      responses:
+        '200':
+          description: Membership updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SponsorMembership'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '415':
+          description: Body is not application/merge-patch+json
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/party/catalogs:
+    get:
+      tags: [People]
+      operationId: listPartyCatalogs
+      description: Identifier, relationship and membership types of the tenant, for forms and validation.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+      responses:
+        '200':
+          description: Party catalogs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartyCatalogs'
   /api/v1/eligibility/checks:
     post:
       tags: [Eligibility]
@@ -822,6 +1123,20 @@ components:
         format: uuid
     PersonId:
       name: personId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    RelationshipId:
+      name: relationshipId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    MembershipId:
+      name: membershipId
       in: path
       required: true
       schema:
@@ -1187,6 +1502,10 @@ components:
               description: Returned only with person.identifier.read permission; values are masked.
               items:
                 $ref: '#/components/schemas/MaskedIdentifier'
+            mergedIntoId:
+              type: [string, 'null']
+              format: uuid
+              description: Set when status is MERGED; the surviving person.
             rowVersion:
               type: integer
               minimum: 1
@@ -1270,6 +1589,251 @@ components:
               primary:
                 type: boolean
                 default: false
+    UpdatePersonRequest:
+      type: object
+      additionalProperties: false
+      description: Merge-patch; absent fields stay, null clears where the field is nullable.
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        middleName:
+          type: [string, 'null']
+          maxLength: 100
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        birthDate:
+          type: [string, 'null']
+          format: date
+        sexAtBirth:
+          type: [string, 'null']
+          enum: [FEMALE, MALE, INTERSEX, UNKNOWN, null]
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE, DECEASED]
+        identifiers:
+          type: array
+          maxItems: 10
+          description: Identifiers to add (type + value) or remove (type + remove).
+          items:
+            type: object
+            additionalProperties: false
+            required: [type]
+            properties:
+              type:
+                type: string
+                pattern: '^[A-Z][A-Z0-9_]{1,63}$'
+              value:
+                type: string
+                minLength: 1
+                maxLength: 80
+              primary:
+                type: boolean
+                default: false
+              remove:
+                type: boolean
+                default: false
+    IdentifierSearchRequest:
+      type: object
+      additionalProperties: false
+      required: [type, value]
+      properties:
+        type:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]{1,63}$'
+        value:
+          type: string
+          minLength: 1
+          maxLength: 80
+        sponsorOrganizationId:
+          type: string
+          format: uuid
+          description: Required for identifier types whose uniqueness scope is SPONSOR.
+    PersonRelationship:
+      type: object
+      additionalProperties: false
+      required: [id, relationshipType, direction, otherPerson, status, validFrom, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        relationshipType:
+          type: string
+        direction:
+          type: string
+          enum: [OUTGOING, INCOMING, MUTUAL]
+          description: OUTGOING when the person is the source, INCOMING when the target, MUTUAL for non-directional types.
+        otherPerson:
+          $ref: '#/components/schemas/PersonSummary'
+        status:
+          type: string
+          enum: [ACTIVE, SUSPENDED, ENDED]
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+        endReasonCode:
+          type: [string, 'null']
+        rowVersion:
+          type: integer
+          minimum: 1
+    CreateRelationshipRequest:
+      type: object
+      additionalProperties: false
+      required: [targetPersonId, relationshipType, validFrom]
+      properties:
+        targetPersonId:
+          type: string
+          format: uuid
+        relationshipType:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]{1,63}$'
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: string
+          format: date
+    EndPeriodCommand:
+      type: object
+      additionalProperties: false
+      required: [endsOn, reasonCode]
+      properties:
+        endsOn:
+          type: string
+          format: date
+        reasonCode:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]{1,63}$'
+        reasonText:
+          type: string
+          maxLength: 500
+    SponsorMembership:
+      type: object
+      additionalProperties: false
+      required: [id, personId, sponsorOrganizationId, sponsorDisplayName, membershipType, status, validFrom, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        personId:
+          type: string
+          format: uuid
+        sponsorOrganizationId:
+          type: string
+          format: uuid
+          description: Tenant organization relationship id of the sponsor or payer.
+        sponsorDisplayName:
+          type: string
+        membershipType:
+          type: string
+        principalMembershipId:
+          type: [string, 'null']
+          format: uuid
+        externalMemberNo:
+          type: [string, 'null']
+        status:
+          type: string
+          enum: [PENDING, ACTIVE, SUSPENDED, ENDED]
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+        sourceSystem:
+          type: [string, 'null']
+        rowVersion:
+          type: integer
+          minimum: 1
+    CreateMembershipRequest:
+      type: object
+      additionalProperties: false
+      required: [sponsorOrganizationId, membershipType, validFrom]
+      properties:
+        sponsorOrganizationId:
+          type: string
+          format: uuid
+        membershipType:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]{1,63}$'
+        principalMembershipId:
+          type: string
+          format: uuid
+        externalMemberNo:
+          type: string
+          minLength: 1
+          maxLength: 80
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [PENDING, ACTIVE]
+          default: ACTIVE
+    UpdateMembershipRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          enum: [ACTIVE, SUSPENDED, ENDED]
+        validTo:
+          type: [string, 'null']
+          format: date
+        externalMemberNo:
+          type: [string, 'null']
+          maxLength: 80
+    PartyCatalogEntry:
+      type: object
+      additionalProperties: false
+      required: [code, displayName, status]
+      properties:
+        code:
+          type: string
+        displayName:
+          type: string
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE]
+        isSensitive:
+          type: boolean
+          description: Identifier types only.
+        uniquenessScope:
+          type: string
+          enum: [TENANT, SPONSOR, NONE]
+          description: Identifier types only.
+        isDirectional:
+          type: boolean
+          description: Relationship types only.
+        requiresPrincipal:
+          type: boolean
+          description: Membership types only.
+    PartyCatalogs:
+      type: object
+      additionalProperties: false
+      required: [identifierTypes, relationshipTypes, membershipTypes]
+      properties:
+        identifierTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartyCatalogEntry'
+        relationshipTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartyCatalogEntry'
+        membershipTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartyCatalogEntry'
     EligibilityCheckRequest:
       type: object
       additionalProperties: false
