@@ -1,0 +1,37 @@
+# gitleaks configuration for KAPSORA.
+#
+# Starts from the upstream default rules and adds allowlists for files that are
+# high-entropy by construction and contain no secrets. Real credentials never enter the
+# repository: .env is git-ignored and every example value is a placeholder.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = """
+Generated code and lock files. api/generated/kapsorav1/kapsora_v1.gen.go embeds the whole
+OpenAPI document as base64 of a deflate stream (oapi-codegen), and the client types are
+generated the same way; those base64 chunks trip the generic high-entropy rules. Both files
+are reproduced from api/openapi/kapsora-v1.yaml by CI, which fails on any drift, so a
+secret could not survive there unnoticed.
+"""
+targets = ["path"]
+paths = [
+  '''^api/generated/''',
+  '''^web/packages/api-client/src/generated/''',
+  '''^pnpm-lock\.yaml$''',
+  '''^go\.sum$''',
+]
+
+[[allowlists]]
+description = """
+Documentation and examples: placeholder values such as CHANGE_ME, the sample keys in
+.env.example and the local-only passwords used by the runbooks and the native scripts.
+"""
+targets = ["path"]
+paths = [
+  '''^\.env\.example$''',
+  '''^docs/''',
+  '''^deploy/''',
+  '''^scripts/native/''',
+]

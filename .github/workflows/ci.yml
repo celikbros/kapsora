@@ -104,6 +104,8 @@ jobs:
         uses: gitleaks/gitleaks-action@v2.3.9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Allowlists for generated, high-entropy-by-construction files (see the file).
+          GITLEAKS_CONFIG: .gitleaks.toml
       - name: trivy filesystem scan
         uses: aquasecurity/trivy-action@v0.36.0
         with:

@@ -18,6 +18,7 @@ import (
 	auditpg "github.com/celikbros/kapsora/internal/audit/postgres"
 	audithttp "github.com/celikbros/kapsora/internal/audit/transport/http"
 	benefitapp "github.com/celikbros/kapsora/internal/benefit/application"
+	benefiteligibility "github.com/celikbros/kapsora/internal/benefit/eligibility"
 	benefitpg "github.com/celikbros/kapsora/internal/benefit/infrastructure/postgres"
 	benefitledger "github.com/celikbros/kapsora/internal/benefit/ledger"
 	benefithttp "github.com/celikbros/kapsora/internal/benefit/transport/http"
@@ -128,6 +129,14 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	// The eligibility service shares the entitlement movement engine, so a check that
+	// opens an account lazily and a reservation on the same account run the same code.
+	eligibilitySvc, err := benefiteligibility.New(benefiteligibility.Deps{
+		Pool: pool, Audit: auditpg.New(), Ledger: entitlementSvc.Ledger(), Logger: logger,
+	})
+	if err != nil {
+		return err
+	}
 
 	checker := health.NewChecker(2 * time.Second)
 	checker.Add("postgresql", health.PostgresCheck(pool))
@@ -142,6 +151,7 @@ func run() error {
 		party:        partySvc,
 		benefit:      benefitSvc,
 		entitlements: entitlementSvc,
+		eligibility:  eligibilitySvc,
 		limiter:      ratelimit.NewPostgres(pool),
 	})
 
@@ -217,6 +227,7 @@ type routerDeps struct {
 	party        *partyapp.Service
 	benefit      *benefitapp.Service
 	entitlements *benefitledger.Service
+	eligibility  *benefiteligibility.Service
 	limiter      ratelimit.Limiter
 }
 
@@ -310,6 +321,12 @@ func newRouter(d routerDeps) http.Handler {
 				entitlementHandler.AccountRoutes(r, entitlementMW)
 			})
 			tenant.Route("/entitlement-adjustments", entitlementHandler.AdjustmentRoutes)
+
+			// Eligibility checks change no business state and carry their own replay
+			// contract in benefit.eligibility_evaluation.idempotency_key, so the
+			// Idempotency-Key middleware is not applied to them.
+			eligibilityHandler := benefithttp.NewEligibilityHandler(d.eligibility, sessions, d.logger)
+			tenant.Route("/eligibility", eligibilityHandler.Routes)
 		})
 	})
 	return r

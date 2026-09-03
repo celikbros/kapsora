@@ -94,6 +94,26 @@ type AuditEventDefault struct {
 	AfterHash     []byte
 }
 
+type BenefitEligibilityEvaluation struct {
+	ID                           uuid.UUID
+	TenantID                     uuid.UUID
+	PersonID                     uuid.UUID
+	ProgramID                    uuid.NullUUID
+	EnrollmentID                 uuid.NullUUID
+	PlanVersionID                uuid.NullUUID
+	ProviderTenantOrganizationID uuid.NullUUID
+	ServiceDate                  pgtype.Date
+	Outcome                      string
+	RequestHash                  []byte
+	RequestSnapshot              []byte
+	ResultSnapshot               []byte
+	DataClassification           string
+	IdempotencyKey               *string
+	EvaluatedAt                  time.Time
+	EvaluatedBy                  uuid.NullUUID
+	CreatedAt                    time.Time
+}
+
 type BenefitEnrollment struct {
 	ID                  uuid.UUID
 	TenantID            uuid.UUID
