@@ -58,6 +58,115 @@ export interface paths {
         patch: operations["updateEnrollment"];
         trace?: never;
     };
+    "/api/v1/entitlement-accounts/{accountId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getEntitlementAccount"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/entitlement-accounts/{accountId}/adjustments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Requests a manual correction of the account (positive or negative quantity) with a
+         *     reason. Nothing moves until a different actor approves it (maker-checker); the
+         *     request itself is audited.
+         */
+        post: operations["createEntitlementAdjustment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/entitlement-accounts/{accountId}/ledger": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Ledger movements of the account, newest first, keyset paged. The ledger is append-only. */
+        get: operations["listEntitlementLedger"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/entitlement-adjustments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Adjustments of the tenant filtered by status (default PENDING), newest first. */
+        get: operations["listEntitlementAdjustments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/entitlement-adjustments/{adjustmentId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Approves a pending adjustment and writes the ADJUST ledger movement in the same
+         *     transaction. The approver must differ from the requester (403
+         *     MAKER_CHECKER_SAME_ACTOR) and must have re-entered their password (step-up).
+         */
+        post: operations["approveEntitlementAdjustment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/entitlement-adjustments/{adjustmentId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Rejects a pending adjustment with a reason; nothing moves. */
+        post: operations["rejectEntitlementAdjustment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me": {
         parameters: {
             query?: never;
@@ -223,6 +332,27 @@ export interface paths {
          *     answer 409 ENROLLMENT_OVERLAP. An outbox event opens the entitlement accounts.
          */
         post: operations["createEnrollment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/people/{personId}/entitlements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Entitlement accounts reachable by the person: accounts of their own enrollments and
+         *     family-shared accounts of their principal, with balances and the definition summary.
+         *     `asOf` (default today) selects the benefit periods that contain the date.
+         */
+        get: operations["listPersonEntitlements"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -772,6 +902,12 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        CreateAdjustmentRequest: {
+            /** @description Positive grants, negative removes from the available balance; never zero. */
+            deltaQuantity: number;
+            reasonCode: string;
+            reasonText?: string;
+        };
         CreateEnrollmentRequest: {
             enrollmentReason?: string;
             /** Format: uuid */
@@ -980,6 +1116,69 @@ export interface components {
             items: components["schemas"]["Enrollment"][];
             nextCursor?: string | null;
         };
+        EntitlementAccount: {
+            available: number;
+            /** Format: date */
+            benefitPeriodFrom: string;
+            /**
+             * Format: date
+             * @description Exclusive upper bound; null for lifetime accounts.
+             */
+            benefitPeriodTo: string | null;
+            consumed: number;
+            definition: {
+                allowOverdraft: boolean;
+                code: string;
+                currencyCode?: string | null;
+                familyShared: boolean;
+                /** Format: uuid */
+                id: string;
+                name: string;
+                /** @enum {string} */
+                unitType: "MONEY" | "COUNT" | "NIGHT" | "SESSION" | "HOUR" | "KILOMETER" | "POINT";
+            };
+            /** Format: uuid */
+            enrollmentId: string;
+            expired: number;
+            /** Format: uuid */
+            id: string;
+            openReservations?: components["schemas"]["EntitlementReservation"][];
+            /**
+             * Format: uuid
+             * @description Owner of the enrollment; for family-shared accounts the principal.
+             */
+            personId: string;
+            reserved: number;
+            rowVersion: number;
+            /** @description True when the caller reached this account through a principal membership. */
+            shared: boolean;
+            /** @enum {string} */
+            status: "OPEN" | "FROZEN" | "CLOSED";
+            totalGranted: number;
+        };
+        EntitlementAdjustment: {
+            /** Format: uuid */
+            accountId: string;
+            /** Format: date-time */
+            decidedAt?: string | null;
+            /** Format: uuid */
+            decidedBy?: string | null;
+            decisionComment?: string | null;
+            deltaQuantity: number;
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            ledgerEntryId?: string | null;
+            reasonCode: string;
+            reasonText?: string | null;
+            /** Format: date-time */
+            requestedAt: string;
+            /** Format: uuid */
+            requestedBy: string;
+            rowVersion: number;
+            /** @enum {string} */
+            status: "PENDING" | "APPROVED" | "REJECTED";
+        };
         EntitlementDefinition: components["schemas"]["EntitlementDefinitionInput"] & {
             /** Format: uuid */
             id: string;
@@ -1010,6 +1209,23 @@ export interface components {
             /** @enum {string} */
             unitType: "MONEY" | "COUNT" | "NIGHT" | "SESSION" | "HOUR" | "KILOMETER" | "POINT";
         };
+        EntitlementReservation: {
+            consumedQuantity: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            expiresAt?: string | null;
+            /** Format: uuid */
+            id: string;
+            quantity: number;
+            /** Format: uuid */
+            referenceId: string;
+            /** @enum {string} */
+            referenceType: "SERVICE_REQUEST" | "BOOKING" | "AUTHORIZATION" | "MANUAL";
+            releasedQuantity: number;
+            /** @enum {string} */
+            status: "HELD" | "PARTIALLY_CONSUMED" | "CONSUMED" | "RELEASED" | "EXPIRED";
+        };
         HealthStatus: {
             checks?: {
                 [key: string]: string;
@@ -1027,6 +1243,32 @@ export interface components {
             sponsorOrganizationId?: string;
             type: string;
             value: string;
+        };
+        LedgerEntry: {
+            /** Format: uuid */
+            createdBy?: string | null;
+            deltaAvailable: number;
+            deltaConsumed: number;
+            deltaExpired: number;
+            deltaReserved: number;
+            deltaTotal: number;
+            /** Format: date-time */
+            effectiveAt: string;
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            movementType: "GRANT" | "RESERVE" | "RELEASE" | "CONSUME" | "REVERSE" | "EXPIRE" | "ADJUST";
+            reasonCode?: string | null;
+            reasonText?: string | null;
+            /** Format: uuid */
+            referenceId: string;
+            referenceType: string;
+            /** Format: uuid */
+            reservationId?: string | null;
+        };
+        LedgerPage: {
+            items: components["schemas"]["LedgerEntry"][];
+            nextCursor?: string | null;
         };
         MaskedIdentifier: {
             maskedValue: string;
@@ -1505,6 +1747,8 @@ export interface components {
         };
     };
     parameters: {
+        AccountId: string;
+        AdjustmentId: string;
         /** @description Required when the request is authenticated with the BFF session cookie. */
         CsrfHeader: string;
         /** @description Opaque cursor from the previous response. */
@@ -1535,6 +1779,7 @@ export interface components {
     };
     pathItems: never;
 }
+export type SchemaCreateAdjustmentRequest = components['schemas']['CreateAdjustmentRequest'];
 export type SchemaCreateEnrollmentRequest = components['schemas']['CreateEnrollmentRequest'];
 export type SchemaCreateMembershipRequest = components['schemas']['CreateMembershipRequest'];
 export type SchemaCreateOrganizationRequest = components['schemas']['CreateOrganizationRequest'];
@@ -1549,10 +1794,15 @@ export type SchemaEligibilityCheckResult = components['schemas']['EligibilityChe
 export type SchemaEndPeriodCommand = components['schemas']['EndPeriodCommand'];
 export type SchemaEnrollment = components['schemas']['Enrollment'];
 export type SchemaEnrollmentPage = components['schemas']['EnrollmentPage'];
+export type SchemaEntitlementAccount = components['schemas']['EntitlementAccount'];
+export type SchemaEntitlementAdjustment = components['schemas']['EntitlementAdjustment'];
 export type SchemaEntitlementDefinition = components['schemas']['EntitlementDefinition'];
 export type SchemaEntitlementDefinitionInput = components['schemas']['EntitlementDefinitionInput'];
+export type SchemaEntitlementReservation = components['schemas']['EntitlementReservation'];
 export type SchemaHealthStatus = components['schemas']['HealthStatus'];
 export type SchemaIdentifierSearchRequest = components['schemas']['IdentifierSearchRequest'];
+export type SchemaLedgerEntry = components['schemas']['LedgerEntry'];
+export type SchemaLedgerPage = components['schemas']['LedgerPage'];
 export type SchemaMaskedIdentifier = components['schemas']['MaskedIdentifier'];
 export type SchemaOrganization = components['schemas']['Organization'];
 export type SchemaOrganizationIdentifier = components['schemas']['OrganizationIdentifier'];
@@ -1594,6 +1844,8 @@ export type ResponseNotFound = components['responses']['NotFound'];
 export type ResponseTooManyRequests = components['responses']['TooManyRequests'];
 export type ResponseUnauthorized = components['responses']['Unauthorized'];
 export type ResponseValidationError = components['responses']['ValidationError'];
+export type ParameterAccountId = components['parameters']['AccountId'];
+export type ParameterAdjustmentId = components['parameters']['AdjustmentId'];
 export type ParameterCsrfHeader = components['parameters']['CsrfHeader'];
 export type ParameterCursor = components['parameters']['Cursor'];
 export type ParameterEnrollmentId = components['parameters']['EnrollmentId'];
@@ -1753,6 +2005,226 @@ export interface operations {
             422: components["responses"]["ValidationError"];
             /** @description If-Match header missing */
             428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getEntitlementAccount: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                accountId: components["parameters"]["AccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Account with balances and open reservations */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntitlementAccount"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createEntitlementAdjustment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                accountId: components["parameters"]["AccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAdjustmentRequest"];
+            };
+        };
+        responses: {
+            /** @description Adjustment pending approval */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntitlementAdjustment"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    listEntitlementLedger: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                accountId: components["parameters"]["AccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ledger page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerPage"];
+                };
+            };
+            /** @description Cursor invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listEntitlementAdjustments: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                status?: "PENDING" | "APPROVED" | "REJECTED";
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Adjustment page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["EntitlementAdjustment"][];
+                        nextCursor?: string | null;
+                    };
+                };
+            };
+        };
+    };
+    approveEntitlementAdjustment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                adjustmentId: components["parameters"]["AdjustmentId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReviewComment"];
+            };
+        };
+        responses: {
+            /** @description Adjustment approved and applied */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntitlementAdjustment"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    rejectEntitlementAdjustment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                adjustmentId: components["parameters"]["AdjustmentId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonCommand"];
+            };
+        };
+        responses: {
+            /** @description Adjustment rejected */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntitlementAdjustment"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2185,6 +2657,36 @@ export interface operations {
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             422: components["responses"]["ValidationError"];
+        };
+    };
+    listPersonEntitlements: {
+        parameters: {
+            query?: {
+                asOf?: string;
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                personId: components["parameters"]["PersonId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accounts with balances */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["EntitlementAccount"][];
+                    };
+                };
+            };
+            404: components["responses"]["NotFound"];
         };
     };
     listSponsorMemberships: {
