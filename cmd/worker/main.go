@@ -14,8 +14,11 @@ import (
 	auditpg "github.com/celikbros/kapsora/internal/audit/postgres"
 	benefitapp "github.com/celikbros/kapsora/internal/benefit/application"
 	"github.com/celikbros/kapsora/internal/benefit/ledger"
+	"github.com/celikbros/kapsora/internal/party/memberimport"
 	"github.com/celikbros/kapsora/internal/platform/config"
+	"github.com/celikbros/kapsora/internal/platform/crypto/localkey"
 	"github.com/celikbros/kapsora/internal/platform/db"
+	"github.com/celikbros/kapsora/internal/platform/httpx"
 	"github.com/celikbros/kapsora/internal/platform/logging"
 	"github.com/celikbros/kapsora/internal/platform/outbox"
 )
@@ -54,11 +57,33 @@ func run() error {
 		return err
 	}
 
+	// The import jobs decrypt the staged identifiers of a row to write the person, so the
+	// worker needs the same key provider as the API. The cursor codec is only used by the
+	// paged reads of the HTTP layer, but the service requires one.
+	keys, err := localkey.NewFromEnv()
+	if err != nil {
+		return err
+	}
+	cursors, err := httpx.NewCursorCodec(cfg.Session.SigningKey)
+	if err != nil {
+		return err
+	}
+	memberImports, err := memberimport.New(memberimport.Deps{
+		Pool: pool, Cipher: keys, Index: keys, Audit: auditpg.New(), Cursors: cursors, Logger: logger,
+	})
+	if err != nil {
+		return err
+	}
+
 	dispatcher := outbox.New(pool, outbox.Options{Logger: logger})
 	// A new enrollment opens its entitlement accounts here rather than in the request
 	// that created it: the accounts follow the plan configuration, and the handler is
 	// idempotent, so a redelivery finds them already open.
 	dispatcher.Handle(benefitapp.EnrollmentCreatedEvent, entitlements.HandleEnrollmentCreated)
+	// Member import: a file too large to validate inside the upload request, and the
+	// apply of an accepted batch, both run here in resumable chunks.
+	dispatcher.Handle(memberimport.StagedEvent, memberImports.HandleStaged)
+	dispatcher.Handle(memberimport.ApplyEvent, memberImports.HandleApply)
 
 	go reportBacklog(ctx, logger, dispatcher)
 

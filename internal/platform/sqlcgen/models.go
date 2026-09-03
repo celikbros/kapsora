@@ -446,6 +446,53 @@ type PartyIdentifierType struct {
 	UpdatedAt       time.Time
 }
 
+type PartyImportBatch struct {
+	ID                          uuid.UUID
+	TenantID                    uuid.UUID
+	SponsorTenantOrganizationID uuid.UUID
+	PlanID                      uuid.NullUUID
+	SourceSystem                string
+	SourceVersion               string
+	FileName                    string
+	FileSha256                  []byte
+	Format                      string
+	RowCount                    int32
+	Status                      string
+	ValidCount                  int32
+	InvalidCount                int32
+	MatchedCount                int32
+	ConflictCount               int32
+	CreatedCount                int32
+	UpdatedCount                int32
+	SkippedCount                int32
+	ErrorSummary                *string
+	CreatedBy                   uuid.NullUUID
+	CreatedAt                   time.Time
+	UpdatedAt                   time.Time
+	AppliedAt                   *time.Time
+	RowVersion                  int64
+}
+
+type PartyImportRow struct {
+	ID               uuid.UUID
+	TenantID         uuid.UUID
+	BatchID          uuid.UUID
+	RowNo            int32
+	SourceRecordID   string
+	Payload          []byte
+	Identifiers      []byte
+	IdentifierCipher []byte
+	Status           string
+	MatchedPersonID  uuid.NullUUID
+	Decision         *string
+	DecidedBy        uuid.NullUUID
+	Errors           []byte
+	AppliedPersonID  uuid.NullUUID
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	RowVersion       int64
+}
+
 type PartyMembershipType struct {
 	TenantID          uuid.UUID
 	Code              string
@@ -474,6 +521,8 @@ type PartyPerson struct {
 	UpdatedAt       time.Time
 	UpdatedBy       uuid.NullUUID
 	RowVersion      int64
+	SourceSystem    *string
+	SourceRecordID  *string
 }
 
 type PartyPersonIdentifier struct {

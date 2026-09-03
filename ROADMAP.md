@@ -69,7 +69,7 @@ closing M1.
 | [WP-I2-02](docs/delegation/WP-I2-02-programs-plans-enrollment.md) | Programs, plans, plan versions (maker-checker), entitlement definitions, enrollments | M1, 01 (enrollments) | 01 | L | Claude · **DONE** |
 | [WP-I2-03](docs/delegation/WP-I2-03-entitlement-ledger.md) | Entitlement accounts, ledger, reservations, adjustments, reconciliation | 02 | 01 | L | Claude · **DONE** |
 | [WP-I2-04](docs/delegation/WP-I2-04-eligibility.md) | Eligibility API with as-of resolution, explanations, evaluation snapshots | 01, 02, 03 | 05 | M | Claude · **DONE** |
-| [WP-I2-05](docs/delegation/WP-I2-05-member-import.md) | Member import: staging, validation, matching, review, idempotent apply | 01, 02 | 04 | L | Claude |
+| [WP-I2-05](docs/delegation/WP-I2-05-member-import.md) | Member import: staging, validation, matching, review, idempotent apply | 01, 02 | 04 | L | Claude · **DONE** |
 | [WP-I2-06](docs/delegation/WP-I2-06-frontend-people-plans.md) | Backoffice screens: people, memberships, programs/plans, entitlements, eligibility, import | contracts of 01-05 | all | L | Claude |
 
 Integration order: 01 → 02 → 03 → 04 → 05 → 06 (06 starts on mocks as soon as each
@@ -98,6 +98,7 @@ contract lands). Migrations: 000014 (01, relationship versioning), 000015 (02), 
 
 ## Status log
 
+- 2026-09-03 · WP-I2-05 delivered: member import with CSV_V1 parsing (delimiter and byte-order-mark tolerant, line-accurate errors), staging that never holds a plaintext identifier, validation and blind-index matching, a review queue for conflicts and invalid rows, and idempotent apply in transactional chunks (re-applying changes nothing; a new source version updates instead of duplicating). Migration 000018; schema version 18.
 - 2026-09-03 · WP-I2-04 delivered: eligibility check with as-of resolution (person, membership, enrollment, published plan version, balances including family-shared accounts), eleven explanation codes, per-item results, immutable evaluation snapshots without identifiers, idempotent replay and provider-scope enforcement. Migration 000017; schema version 17.
 - 2026-09-03 · M2 in progress: WP-I2-01 persons (encrypted identifiers, blind-index search with step-up and access audit, relationships, sponsor memberships), WP-I2-02 programs/plans/plan versions with maker-checker publish and enrollments, WP-I2-03 entitlement accounts, append-only ledger, reservations, maker-checker adjustments, expiry and reconciliation jobs. 100 concurrent reserves: 50 succeed, 50 refused, no double spend; overdraft and same-key variants verified. Migrations 000014-000016; schema version 16.
 - 2026-09-03 · M1 closed (WP-I1-01..06 delivered; issue #7 tracks the Ubuntu VM run). M2 opened: six work packages WP-I2-01..06 written from plan v2.0 I2 and the v1.2 Phase 3 acceptance criteria; migration numbers 000014-000017 assigned.

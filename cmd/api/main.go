@@ -32,6 +32,7 @@ import (
 	organizationhttp "github.com/celikbros/kapsora/internal/organization/transport/http"
 	partyapp "github.com/celikbros/kapsora/internal/party/application"
 	partypg "github.com/celikbros/kapsora/internal/party/infrastructure/postgres"
+	"github.com/celikbros/kapsora/internal/party/memberimport"
 	partyhttp "github.com/celikbros/kapsora/internal/party/transport/http"
 	"github.com/celikbros/kapsora/internal/platform/config"
 	"github.com/celikbros/kapsora/internal/platform/crypto/localkey"
@@ -129,6 +130,13 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	memberImports, err := memberimport.New(memberimport.Deps{
+		Pool: pool, Cipher: keys, Index: keys, Audit: auditpg.New(), Cursors: cursors, Logger: logger,
+	})
+	if err != nil {
+		return err
+	}
+
 	// The eligibility service shares the entitlement movement engine, so a check that
 	// opens an account lazily and a reservation on the same account run the same code.
 	eligibilitySvc, err := benefiteligibility.New(benefiteligibility.Deps{
@@ -152,6 +160,7 @@ func run() error {
 		benefit:      benefitSvc,
 		entitlements: entitlementSvc,
 		eligibility:  eligibilitySvc,
+		imports:      memberImports,
 		limiter:      ratelimit.NewPostgres(pool),
 	})
 
@@ -228,6 +237,7 @@ type routerDeps struct {
 	benefit      *benefitapp.Service
 	entitlements *benefitledger.Service
 	eligibility  *benefiteligibility.Service
+	imports      *memberimport.Service
 	limiter      ratelimit.Limiter
 }
 
@@ -327,6 +337,13 @@ func newRouter(d routerDeps) http.Handler {
 			// Idempotency-Key middleware is not applied to them.
 			eligibilityHandler := benefithttp.NewEligibilityHandler(d.eligibility, sessions, d.logger)
 			tenant.Route("/eligibility", eligibilityHandler.Routes)
+
+			// Member import: the upload is idempotent by key as well as by file hash, so a
+			// retried browser submit cannot create a second batch.
+			importHandler := partyhttp.NewImportHandler(d.imports, sessions, d.logger)
+			tenant.Route("/imports/members", func(r chi.Router) {
+				importHandler.Routes(r, d.idempotent("member_import.create"))
+			})
 		})
 	})
 	return r

@@ -1,5 +1,13 @@
 # WP-I2-05 · Member import: staging, validation, matching, review queue, idempotent apply
 
+> **Delivered in-house on 2026-09-03.** Notes: the file's `membership_type` column carries
+> the role PRINCIPAL or DEPENDANT and the pipeline picks the tenant's catalog code from it;
+> identifiers and member numbers are stored normalised (a file's `M-1` becomes `M1`); the
+> staged row keeps only the blind index, the mask and one tenant-encrypted envelope, which
+> migration 000018 enforces with a CHECK on the payload; the upload answers 201 inline up
+> to 5 000 rows and 202 above it, with validation and apply running as resumable worker
+> jobs in chunks of 500.
+
 | Field | Value |
 |---|---|
 | Milestone | M2 (plan increment I2) |
