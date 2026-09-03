@@ -75,13 +75,20 @@ describe('organizations', () => {
   it('lists with paging, validates VKN instantly and creates a record', async () => {
     const { history } = mount('/organizations');
     await login('admin.a');
+    // The mock world seeds `organizationsPerTenant` rows plus the sponsor, payer and
+    // provider relationships the benefit fixtures need, so the second page size comes
+    // from the world rather than a hardcoded number. Rows include the header row.
+    const tenantId = api.world.tenants[0]!.id;
+    const total = api.world.relationships.filter((r) => r.tenantId === tenantId).length;
     const table = await screen.findByTestId('organization-table');
     await waitFor(() => expect(within(table).getAllByRole('row').length).toBe(51));
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Sonraki sayfa' }));
     await screen.findByText('Sayfa 2');
     await waitFor(() =>
-      expect(within(screen.getByTestId('organization-table')).getAllByRole('row').length).toBe(11),
+      expect(within(screen.getByTestId('organization-table')).getAllByRole('row').length).toBe(
+        Math.min(total - 50, 50) + 1,
+      ),
     );
 
     await user.click(screen.getByRole('link', { name: 'Yeni kurum' }));
