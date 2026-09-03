@@ -1,5 +1,13 @@
 # WP-I2-04 · Eligibility API with as-of resolution, explanations and evaluation snapshots
 
+> **Delivered in-house on 2026-09-03.** Decisions taken during delivery: the check runs in
+> one read-committed read-write transaction (it opens accounts lazily and writes the
+> snapshot), replay is unbounded in time rather than 24 h (the unique key plus append-only
+> rows make a second row impossible), audit classification is PERSONAL/HEALTH (the values
+> the audit table accepts), per-item entitlement hints travel in `context.entitlementCodes`
+> because `serviceItems` forbids extra properties, and only recognised context keys are
+> stored so free-form input cannot reach an immutable snapshot.
+
 | Field | Value |
 |---|---|
 | Milestone | M2 (plan increment I2) |

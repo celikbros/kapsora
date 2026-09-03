@@ -17,6 +17,7 @@ import (
 	kapsorav1 "github.com/celikbros/kapsora/api/generated/kapsorav1"
 	auditpg "github.com/celikbros/kapsora/internal/audit/postgres"
 	"github.com/celikbros/kapsora/internal/benefit/application"
+	"github.com/celikbros/kapsora/internal/benefit/eligibility"
 	benefitpg "github.com/celikbros/kapsora/internal/benefit/infrastructure/postgres"
 	"github.com/celikbros/kapsora/internal/benefit/ledger"
 	benefithttp "github.com/celikbros/kapsora/internal/benefit/transport/http"
@@ -32,9 +33,11 @@ const (
 	permsHeader  = "X-Test-Permissions"
 	stepUpHeader = "X-Test-StepUp"
 	actorHeader  = "X-Test-Actor"
+	// scopeHeader stands in for an ORGANIZATION-scoped role grant (a provider actor).
+	scopeHeader = "X-Test-Scope"
 
 	allPermissions = "program.read,program.manage,plan.manage,plan.publish,enrollment.manage," +
-		"entitlement.read,entitlement.adjust"
+		"entitlement.read,entitlement.adjust,eligibility.check"
 	patchType = "application/merge-patch+json"
 )
 
@@ -77,6 +80,12 @@ func newServer(t *testing.T) *server {
 	if err != nil {
 		t.Fatal(err)
 	}
+	eligibilitySvc, err := eligibility.New(eligibility.Deps{
+		Pool: h.App, Audit: auditpg.New(), Ledger: entitlements.Ledger(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	s := &server{
 		h: h, entitlements: entitlements, tenant: h.CreateTenant("HTTP_BENEFIT"),
 		maker:   h.CreateActor("benefit-http-maker", "Maker"),
@@ -95,6 +104,7 @@ func newServer(t *testing.T) *server {
 	logger := slog.New(slog.NewJSONHandler(s.logs, &slog.HandlerOptions{Level: slog.LevelDebug}))
 	handler := benefithttp.NewHandler(svc, s.denied, logger)
 	entitlementHandler := benefithttp.NewEntitlementHandler(entitlements, s.denied, logger)
+	eligibilityHandler := benefithttp.NewEligibilityHandler(eligibilitySvc, s.denied, logger)
 
 	// Stand-in for RequireTenantContext: actor, permissions and step-up come from headers.
 	fakeContext := func(next http.Handler) http.Handler {
@@ -113,6 +123,15 @@ func newServer(t *testing.T) *server {
 				if p != "" {
 					rc.Permissions[p] = struct{}{}
 				}
+			}
+			if raw := r.Header.Get(scopeHeader); raw != "" {
+				id, err := uuid.Parse(raw)
+				if err != nil {
+					t.Fatalf("test scope %q: %v", raw, err)
+				}
+				rc.Scopes = []identity.Scope{{
+					Type: "ORGANIZATION", ID: uuid.NullUUID{UUID: id, Valid: true},
+				}}
 			}
 			next.ServeHTTP(w, r.WithContext(identity.WithRequestContext(r.Context(), rc)))
 		})
@@ -138,6 +157,7 @@ func newServer(t *testing.T) *server {
 		entitlementHandler.AccountRoutes(rr, benefithttp.EntitlementMiddlewares{})
 	})
 	mount("/api/v1/entitlement-adjustments", entitlementHandler.AdjustmentRoutes)
+	mount("/api/v1/eligibility", eligibilityHandler.Routes)
 	s.handler = r
 	return s
 }
@@ -163,7 +183,11 @@ func (s *server) seedMember(t *testing.T) {
 
 type call struct {
 	method, path, body, contentType, ifMatch, perms, actor string
-	stepUp                                                 bool
+	// scope is the organization a provider-scoped actor is bound to; empty means a
+	// tenant-wide actor.
+	scope          string
+	idempotencyKey string
+	stepUp         bool
 }
 
 func (s *server) do(c call) *httptest.ResponseRecorder {
@@ -185,6 +209,12 @@ func (s *server) do(c call) *httptest.ResponseRecorder {
 	req.Header.Set(permsHeader, c.perms)
 	if c.actor != "" {
 		req.Header.Set(actorHeader, c.actor)
+	}
+	if c.scope != "" {
+		req.Header.Set(scopeHeader, c.scope)
+	}
+	if c.idempotencyKey != "" {
+		req.Header.Set("Idempotency-Key", c.idempotencyKey)
 	}
 	if c.stepUp {
 		req.Header.Set(stepUpHeader, "1")

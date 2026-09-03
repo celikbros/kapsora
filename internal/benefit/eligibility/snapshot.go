@@ -137,7 +137,8 @@ func newResultView(id uuid.UUID, evaluatedAt time.Time, r Result) ResultView {
 func explanationViews(in []Explanation) []ExplanationView {
 	out := make([]ExplanationView, 0, len(in))
 	for _, e := range in {
-		out = append(out, ExplanationView{Code: e.Code, Message: e.Message, Severity: e.Severity})
+		// The two shapes are the same three strings; only the JSON tags differ.
+		out = append(out, ExplanationView(e))
 	}
 	return out
 }
