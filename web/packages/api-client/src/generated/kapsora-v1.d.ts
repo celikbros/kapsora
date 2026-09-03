@@ -24,6 +24,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/eligibility/evaluations/{evaluationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The stored snapshot of an earlier check: the request as it was understood (ids,
+         *     dates, quantities), the result with explanations and the versions used. Evaluations
+         *     are immutable and never contain identifiers.
+         */
+        get: operations["getEligibilityEvaluation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/enrollments": {
         parameters: {
             query?: never;
@@ -1070,19 +1091,63 @@ export interface components {
                 unit: string;
             }[];
             eligible: boolean;
+            /** Format: uuid */
+            enrollmentId?: string | null;
             /** Format: date-time */
             evaluatedAt: string;
+            /**
+             * Format: uuid
+             * @description Id of the stored evaluation snapshot (GET /eligibility/evaluations/{id}).
+             */
+            evaluationId: string;
             explanations: {
                 code: string;
                 message: string;
                 /** @enum {string} */
                 severity: "INFO" | "WARNING" | "ERROR";
             }[];
+            /** @description Per requested item, in request order. */
+            items?: {
+                availableQuantity?: number | null;
+                entitlementCode?: string | null;
+                explanations: {
+                    code: string;
+                    message: string;
+                    /** @enum {string} */
+                    severity: "INFO" | "WARNING" | "ERROR";
+                }[];
+                index: number;
+                /** @enum {string} */
+                outcome: "ELIGIBLE" | "INELIGIBLE" | "REVIEW_REQUIRED";
+                requestedQuantity?: number;
+            }[];
             /** @enum {string} */
             outcome: "ELIGIBLE" | "PARTIALLY_ELIGIBLE" | "INELIGIBLE" | "REVIEW_REQUIRED" | "MISSING_DATA";
             /** Format: uuid */
             planVersionId?: string | null;
             ruleSetVersionIds?: string[];
+        };
+        EligibilityEvaluation: {
+            /** Format: uuid */
+            enrollmentId?: string | null;
+            /** Format: date-time */
+            evaluatedAt: string;
+            /** Format: uuid */
+            evaluatedBy?: string | null;
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            outcome: "ELIGIBLE" | "PARTIALLY_ELIGIBLE" | "INELIGIBLE" | "REVIEW_REQUIRED" | "MISSING_DATA";
+            /** Format: uuid */
+            personId: string;
+            /** Format: uuid */
+            planVersionId?: string | null;
+            /** Format: uuid */
+            programId?: string | null;
+            request: components["schemas"]["EligibilityCheckRequest"];
+            result: components["schemas"]["EligibilityCheckResult"];
+            /** Format: date */
+            serviceDate: string;
         };
         EndPeriodCommand: {
             /** Format: date */
@@ -1754,6 +1819,7 @@ export interface components {
         /** @description Opaque cursor from the previous response. */
         Cursor: string;
         EnrollmentId: string;
+        EvaluationId: string;
         /** @description Client-generated unique key retained for at least 24 hours. */
         IdempotencyKey: string;
         /** @description Optional on query-style POSTs; honoured when present. */
@@ -1791,6 +1857,7 @@ export type SchemaCreateRelationshipRequest = components['schemas']['CreateRelat
 export type SchemaCreateServiceRequest = components['schemas']['CreateServiceRequest'];
 export type SchemaEligibilityCheckRequest = components['schemas']['EligibilityCheckRequest'];
 export type SchemaEligibilityCheckResult = components['schemas']['EligibilityCheckResult'];
+export type SchemaEligibilityEvaluation = components['schemas']['EligibilityEvaluation'];
 export type SchemaEndPeriodCommand = components['schemas']['EndPeriodCommand'];
 export type SchemaEnrollment = components['schemas']['Enrollment'];
 export type SchemaEnrollmentPage = components['schemas']['EnrollmentPage'];
@@ -1849,6 +1916,7 @@ export type ParameterAdjustmentId = components['parameters']['AdjustmentId'];
 export type ParameterCsrfHeader = components['parameters']['CsrfHeader'];
 export type ParameterCursor = components['parameters']['Cursor'];
 export type ParameterEnrollmentId = components['parameters']['EnrollmentId'];
+export type ParameterEvaluationId = components['parameters']['EvaluationId'];
 export type ParameterIdempotencyKey = components['parameters']['IdempotencyKey'];
 export type ParameterIdempotencyKeyOptional = components['parameters']['IdempotencyKeyOptional'];
 export type ParameterIfMatch = components['parameters']['IfMatch'];
@@ -1894,6 +1962,32 @@ export interface operations {
             };
             422: components["responses"]["ValidationError"];
             429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getEligibilityEvaluation: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                evaluationId: components["parameters"]["EvaluationId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Stored evaluation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EligibilityEvaluation"];
+                };
+            };
+            404: components["responses"]["NotFound"];
         };
     };
     listEnrollments: {

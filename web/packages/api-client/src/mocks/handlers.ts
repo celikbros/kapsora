@@ -766,8 +766,10 @@ export function createHandlers(api: MockApi): HttpHandler[] {
       const person = world().people.find(
         (p) => p.id === body.personId && p.tenantId === g.tenantId,
       );
+      const evaluationId = world().nextId();
       const result: Schemas['EligibilityCheckResult'] = person
         ? {
+            evaluationId,
             eligible: true,
             outcome: 'ELIGIBLE',
             evaluatedAt: new Date().toISOString(),
@@ -779,6 +781,7 @@ export function createHandlers(api: MockApi): HttpHandler[] {
             ruleSetVersionIds: [],
           }
         : {
+            evaluationId,
             eligible: false,
             outcome: 'MISSING_DATA',
             evaluatedAt: new Date().toISOString(),

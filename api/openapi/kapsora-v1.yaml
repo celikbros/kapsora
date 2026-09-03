@@ -1767,6 +1767,26 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+  /api/v1/eligibility/evaluations/{evaluationId}:
+    get:
+      tags: [Eligibility]
+      operationId: getEligibilityEvaluation
+      description: |
+        The stored snapshot of an earlier check: the request as it was understood (ids,
+        dates, quantities), the result with explanations and the versions used. Evaluations
+        are immutable and never contain identifiers.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/EvaluationId'
+      responses:
+        '200':
+          description: Stored evaluation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EligibilityEvaluation'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /api/v1/service-requests:
     get:
       tags: [Service Requests]
@@ -2089,6 +2109,13 @@ components:
         format: uuid
     AdjustmentId:
       name: adjustmentId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    EvaluationId:
+      name: evaluationId
       in: path
       required: true
       schema:
@@ -3408,9 +3435,11 @@ components:
                 format: uuid
               quantity:
                 type: number
+                x-go-type: json.Number
                 exclusiveMinimum: 0
               requestedAmount:
                 type: number
+                x-go-type: json.Number
                 minimum: 0
               currencyCode:
                 type: string
@@ -3421,8 +3450,51 @@ components:
     EligibilityCheckResult:
       type: object
       additionalProperties: false
-      required: [eligible, outcome, evaluatedAt, explanations]
+      required: [evaluationId, eligible, outcome, evaluatedAt, explanations]
       properties:
+        evaluationId:
+          type: string
+          format: uuid
+          description: Id of the stored evaluation snapshot (GET /eligibility/evaluations/{id}).
+        enrollmentId:
+          type: [string, 'null']
+          format: uuid
+        items:
+          type: array
+          description: Per requested item, in request order.
+          items:
+            type: object
+            additionalProperties: false
+            required: [index, outcome, explanations]
+            properties:
+              index:
+                type: integer
+                minimum: 0
+              entitlementCode:
+                type: [string, 'null']
+              outcome:
+                type: string
+                enum: [ELIGIBLE, INELIGIBLE, REVIEW_REQUIRED]
+              requestedQuantity:
+                type: number
+                x-go-type: json.Number
+              availableQuantity:
+                type: [number, 'null']
+                x-go-type: json.Number
+              explanations:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: false
+                  required: [code, message, severity]
+                  properties:
+                    code:
+                      type: string
+                    message:
+                      type: string
+                    severity:
+                      type: string
+                      enum: [INFO, WARNING, ERROR]
         eligible:
           type: boolean
         outcome:
@@ -3464,8 +3536,45 @@ components:
                 type: string
               available:
                 type: number
+                x-go-type: json.Number
               unit:
                 type: string
+    EligibilityEvaluation:
+      type: object
+      additionalProperties: false
+      required: [id, personId, serviceDate, outcome, evaluatedAt, request, result]
+      properties:
+        id:
+          type: string
+          format: uuid
+        personId:
+          type: string
+          format: uuid
+        programId:
+          type: [string, 'null']
+          format: uuid
+        enrollmentId:
+          type: [string, 'null']
+          format: uuid
+        planVersionId:
+          type: [string, 'null']
+          format: uuid
+        serviceDate:
+          type: string
+          format: date
+        outcome:
+          type: string
+          enum: [ELIGIBLE, PARTIALLY_ELIGIBLE, INELIGIBLE, REVIEW_REQUIRED, MISSING_DATA]
+        evaluatedAt:
+          type: string
+          format: date-time
+        evaluatedBy:
+          type: [string, 'null']
+          format: uuid
+        request:
+          $ref: '#/components/schemas/EligibilityCheckRequest'
+        result:
+          $ref: '#/components/schemas/EligibilityCheckResult'
     ServiceRequest:
       type: object
       additionalProperties: false
