@@ -16,11 +16,11 @@ Authoritative sources: [docs/plan/KAPSORA_Master_Plan_v2.0.md](docs/plan/KAPSORA
 
 ## Working model
 
-| Role | Who | Responsibilities |
-|---|---|---|
-| Architect / integrator / reviewer | Claude (Claude Code) | Designs interfaces, writes work packages, reviews and merges delegate work, keeps the roadmap and ADRs current, builds cross-cutting pieces itself |
-| Product owner / courier | Business owner | Approves scope and decisions, hands work packages to developers, brings back their reports and code, provides external inputs (credentials, vendor documents, pilot data) |
-| Delegate developer | External developers | Implement one work package at a time exactly as specified, deliver code + tests + report |
+| Role                              | Who                  | Responsibilities                                                                                                                                                          |
+| --------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Architect / integrator / reviewer | Claude (Claude Code) | Designs interfaces, writes work packages, reviews and merges delegate work, keeps the roadmap and ADRs current, builds cross-cutting pieces itself                        |
+| Product owner / courier           | Business owner       | Approves scope and decisions, hands work packages to developers, brings back their reports and code, provides external inputs (credentials, vendor documents, pilot data) |
+| Delegate developer                | External developers  | Implement one work package at a time exactly as specified, deliver code + tests + report                                                                                  |
 
 Every work package (WP) is self-contained: goal, scope, interfaces to respect, tests required,
 acceptance criteria and the report format. Delegates never need the conversation history.
@@ -28,34 +28,34 @@ See [docs/delegation/README.md](docs/delegation/README.md).
 
 ## Milestones
 
-| # | Milestone | Plan increment | Status | Exit criteria (summary) |
-|---|---|---|---|---|
-| M0 | Foundation | I0 | DONE (2026-09-02) | Repo, corrected migrations 1-9, OpenAPI v1, Go skeleton, CI, schema tests green on PostgreSQL 18.4 |
-| M1 | Identity, tenants, organizations | I1 | DONE (2026-09-03) | Login with KAPSORA accounts (ADR-022), tenant switch, permissions enforced, organization CRUD with VKN dedup, audit and idempotency live, three web shells, native local environment documented |
-| M2 | People, plans, eligibility, entitlement ledger | I2 | ACTIVE | Encrypted identifiers + HMAC search, member import, program/plan/version/enrollment, eligibility API, ledger with reservations; 100 concurrent reserves without double spend |
-| M3 | Catalog, providers, contracts, pricing, rules | I3 | PLANNED | Deterministic contract/price selection, published versions immutable, CEL rule sets with test cases and maker-checker publish |
-| M4 | Requests, workflow, documents, notifications | I4 | PLANNED | Explicit transitions only, work queues with SLA, quarantine-scan-secure document pipeline, PII-free notifications |
-| M5 | Health vertical | I5 | PLANNED | Outpatient claim invoice-ready end to end, inpatient preauthorization with medical review, clinical/financial visibility separation |
-| M6 | Accommodation vertical | I6 | PLANNED | Inventory never negative under 500 concurrent holds, hold expiry releases entitlement, cancellation policy snapshots |
-| M7 | Claims, invoices, batches, settlement | I7 | PLANNED | Line-level decisions audited, submitted batches immutable, settlement never exceeds approved total |
-| M8 | Fiscal: GİB e-documents via İşNet Nettefatura | I8 | BLOCKED (vendor access) | 95% auto-match on mock inbox, real inbox + application response on Nettefatura test environment, 8-day SLA work items |
-| M9 | Accounting integration | I9 | BLOCKED (target ERP) | Approved settlement appears in the ERP as purchase invoice + voucher + payment order; ERP payment closes settlement; reconciliation diff zero or explained |
-| M10 | Integrations, hardening, pilot | I10 | PLANNED | HR/policy import adapters, load test targets, DR drill, pentest findings closed, UAT signed |
-| M11 | MVP+1 | I11 | PLANNED | Outbound e-Fatura/e-Arşiv, assistance and care verticals, push notifications |
+| #   | Milestone                                      | Plan increment | Status                  | Exit criteria (summary)                                                                                                                                                                         |
+| --- | ---------------------------------------------- | -------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M0  | Foundation                                     | I0             | DONE (2026-09-02)       | Repo, corrected migrations 1-9, OpenAPI v1, Go skeleton, CI, schema tests green on PostgreSQL 18.4                                                                                              |
+| M1  | Identity, tenants, organizations               | I1             | DONE (2026-09-03)       | Login with KAPSORA accounts (ADR-022), tenant switch, permissions enforced, organization CRUD with VKN dedup, audit and idempotency live, three web shells, native local environment documented |
+| M2  | People, plans, eligibility, entitlement ledger | I2             | ACTIVE                  | Encrypted identifiers + HMAC search, member import, program/plan/version/enrollment, eligibility API, ledger with reservations; 100 concurrent reserves without double spend                    |
+| M3  | Catalog, providers, contracts, pricing, rules  | I3             | PLANNED                 | Deterministic contract/price selection, published versions immutable, CEL rule sets with test cases and maker-checker publish                                                                   |
+| M4  | Requests, workflow, documents, notifications   | I4             | PLANNED                 | Explicit transitions only, work queues with SLA, quarantine-scan-secure document pipeline, PII-free notifications                                                                               |
+| M5  | Health vertical                                | I5             | PLANNED                 | Outpatient claim invoice-ready end to end, inpatient preauthorization with medical review, clinical/financial visibility separation                                                             |
+| M6  | Accommodation vertical                         | I6             | PLANNED                 | Inventory never negative under 500 concurrent holds, hold expiry releases entitlement, cancellation policy snapshots                                                                            |
+| M7  | Claims, invoices, batches, settlement          | I7             | PLANNED                 | Line-level decisions audited, submitted batches immutable, settlement never exceeds approved total                                                                                              |
+| M8  | Fiscal: GİB e-documents via İşNet Nettefatura  | I8             | BLOCKED (vendor access) | 95% auto-match on mock inbox, real inbox + application response on Nettefatura test environment, 8-day SLA work items                                                                           |
+| M9  | Accounting integration                         | I9             | BLOCKED (target ERP)    | Approved settlement appears in the ERP as purchase invoice + voucher + payment order; ERP payment closes settlement; reconciliation diff zero or explained                                      |
+| M10 | Integrations, hardening, pilot                 | I10            | PLANNED                 | HR/policy import adapters, load test targets, DR drill, pentest findings closed, UAT signed                                                                                                     |
+| M11 | MVP+1                                          | I11            | PLANNED                 | Outbound e-Fatura/e-Arşiv, assistance and care verticals, push notifications                                                                                                                    |
 
 Sizes are relative (L = several weeks of one developer). Calendar dates are not promised;
 milestones close when their exit criteria are verified by the integrator.
 
 ## M1 work packages (issued 2026-09-02)
 
-| WP | Title | Depends on | Parallel with | Size | Owner |
-|---|---|---|---|---|---|
-| [WP-I1-01](docs/delegation/WP-I1-01-identity-oidc-bff-session.md) | Identity: login, PostgreSQL sessions, CSRF, step-up | ports in repo | 02, 03, 04, 05, 06 | L | Claude · **DONE** |
-| [WP-I1-02](docs/delegation/WP-I1-02-authorization-tenant-context.md) | Authorization: tenant context, permissions, /me, /tenants, switch-tenant, role templates, seed | ports in repo | 01, 03, 04, 05, 06 | L | Claude · **DONE** |
-| [WP-I1-03](docs/delegation/WP-I1-03-organizations.md) | Organizations: directory CRUD, VKN/TCKN validation, blind-index dedup, ETag, cursor paging | ports in repo | 01, 02, 04, 05, 06 | M | Claude · **DONE** |
-| [WP-I1-04](docs/delegation/WP-I1-04-platform-audit-outbox-idempotency.md) | Platform services: audit recorder, outbox dispatcher, idempotency middleware, rate limit, scheduler jobs, keygen | ports in repo | 01, 02, 03, 05, 06 | L | Claude · **DONE** |
-| [WP-I1-05](docs/delegation/WP-I1-05-frontend-foundation.md) | Frontend foundation: pnpm workspace, three app shells, generated client, first screens with mocks | OpenAPI only | all | L | Claude · **DONE** |
-| [WP-I1-06](docs/delegation/WP-I1-06-native-environment-ops.md) | Native environment and ops: install/run scripts for MinIO, ClamAV, Mailpit; systemd units; runbooks | none | all | M | Claude · **DONE** (Ubuntu VM run open) |
+| WP                                                                        | Title                                                                                                            | Depends on    | Parallel with      | Size | Owner                                  |
+| ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------- | ------------------ | ---- | -------------------------------------- |
+| [WP-I1-01](docs/delegation/WP-I1-01-identity-oidc-bff-session.md)         | Identity: login, PostgreSQL sessions, CSRF, step-up                                                              | ports in repo | 02, 03, 04, 05, 06 | L    | Claude · **DONE**                      |
+| [WP-I1-02](docs/delegation/WP-I1-02-authorization-tenant-context.md)      | Authorization: tenant context, permissions, /me, /tenants, switch-tenant, role templates, seed                   | ports in repo | 01, 03, 04, 05, 06 | L    | Claude · **DONE**                      |
+| [WP-I1-03](docs/delegation/WP-I1-03-organizations.md)                     | Organizations: directory CRUD, VKN/TCKN validation, blind-index dedup, ETag, cursor paging                       | ports in repo | 01, 02, 04, 05, 06 | M    | Claude · **DONE**                      |
+| [WP-I1-04](docs/delegation/WP-I1-04-platform-audit-outbox-idempotency.md) | Platform services: audit recorder, outbox dispatcher, idempotency middleware, rate limit, scheduler jobs, keygen | ports in repo | 01, 02, 03, 05, 06 | L    | Claude · **DONE**                      |
+| [WP-I1-05](docs/delegation/WP-I1-05-frontend-foundation.md)               | Frontend foundation: pnpm workspace, three app shells, generated client, first screens with mocks                | OpenAPI only  | all                | L    | Claude · **DONE**                      |
+| [WP-I1-06](docs/delegation/WP-I1-06-native-environment-ops.md)            | Native environment and ops: install/run scripts for MinIO, ClamAV, Mailpit; systemd units; runbooks              | none          | all                | M    | Claude · **DONE** (Ubuntu VM run open) |
 
 Integration order once packages return: 04 → 01 → 02 → 03 → 05 (06 any time). The
 integrator wires middlewares and routes in `cmd/api` and runs the full test suite before
@@ -63,14 +63,14 @@ closing M1.
 
 ## M2 work packages (issued 2026-09-03)
 
-| WP | Title | Depends on | Parallel with | Size | Owner |
-|---|---|---|---|---|---|
-| [WP-I2-01](docs/delegation/WP-I2-01-persons.md) | Persons: registry, encrypted identifiers, blind-index search, relationships, sponsor memberships | M1 | 02 | L | Claude · **DONE** |
-| [WP-I2-02](docs/delegation/WP-I2-02-programs-plans-enrollment.md) | Programs, plans, plan versions (maker-checker), entitlement definitions, enrollments | M1, 01 (enrollments) | 01 | L | Claude · **DONE** |
-| [WP-I2-03](docs/delegation/WP-I2-03-entitlement-ledger.md) | Entitlement accounts, ledger, reservations, adjustments, reconciliation | 02 | 01 | L | Claude · **DONE** |
-| [WP-I2-04](docs/delegation/WP-I2-04-eligibility.md) | Eligibility API with as-of resolution, explanations, evaluation snapshots | 01, 02, 03 | 05 | M | Claude · **DONE** |
-| [WP-I2-05](docs/delegation/WP-I2-05-member-import.md) | Member import: staging, validation, matching, review, idempotent apply | 01, 02 | 04 | L | Claude · **DONE** |
-| [WP-I2-06](docs/delegation/WP-I2-06-frontend-people-plans.md) | Backoffice screens: people, memberships, programs/plans, entitlements, eligibility, import | contracts of 01-05 | all | L | Claude |
+| WP                                                                | Title                                                                                            | Depends on           | Parallel with | Size | Owner             |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | -------------------- | ------------- | ---- | ----------------- |
+| [WP-I2-01](docs/delegation/WP-I2-01-persons.md)                   | Persons: registry, encrypted identifiers, blind-index search, relationships, sponsor memberships | M1                   | 02            | L    | Claude · **DONE** |
+| [WP-I2-02](docs/delegation/WP-I2-02-programs-plans-enrollment.md) | Programs, plans, plan versions (maker-checker), entitlement definitions, enrollments             | M1, 01 (enrollments) | 01            | L    | Claude · **DONE** |
+| [WP-I2-03](docs/delegation/WP-I2-03-entitlement-ledger.md)        | Entitlement accounts, ledger, reservations, adjustments, reconciliation                          | 02                   | 01            | L    | Claude · **DONE** |
+| [WP-I2-04](docs/delegation/WP-I2-04-eligibility.md)               | Eligibility API with as-of resolution, explanations, evaluation snapshots                        | 01, 02, 03           | 05            | M    | Claude · **DONE** |
+| [WP-I2-05](docs/delegation/WP-I2-05-member-import.md)             | Member import: staging, validation, matching, review, idempotent apply                           | 01, 02               | 04            | L    | Claude · **DONE** |
+| [WP-I2-06](docs/delegation/WP-I2-06-frontend-people-plans.md)     | Backoffice screens: people, memberships, programs/plans, entitlements, eligibility, import       | contracts of 01-05   | all           | L    | Claude · **DONE** |
 
 Integration order: 01 → 02 → 03 → 04 → 05 → 06 (06 starts on mocks as soon as each
 contract lands). Migrations: 000014 (01, relationship versioning), 000015 (02), 000016 (03), 000017 (04), 000018 (05).
@@ -89,15 +89,16 @@ contract lands). Migrations: 000014 (01, relationship versioning), 000015 (02), 
 
 ## External inputs the owner provides
 
-| Needed by | Input | Status |
-|---|---|---|
-| M1 | External developers for WP-I1-01..06 | paused by the owner 2026-09-02; Claude implements in order 04 → 01 → 02 → 03 → 05; delegation can resume later with the same WP files |
-| M8 | İşNet Nettefatura web-service application, NDA, test account, API documentation | open |
-| M9 | Name of the ledger-keeping accounting program of the pilot customer | open |
-| M10 | Pilot customer, program and beneficiary group; HR/policy source formats | open |
+| Needed by | Input                                                                           | Status                                                                                                                                |
+| --------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| M1        | External developers for WP-I1-01..06                                            | paused by the owner 2026-09-02; Claude implements in order 04 → 01 → 02 → 03 → 05; delegation can resume later with the same WP files |
+| M8        | İşNet Nettefatura web-service application, NDA, test account, API documentation | open                                                                                                                                  |
+| M9        | Name of the ledger-keeping accounting program of the pilot customer             | open                                                                                                                                  |
+| M10       | Pilot customer, program and beneficiary group; HR/policy source formats         | open                                                                                                                                  |
 
 ## Status log
 
+- 2026-09-03 · WP-I2-06 delivered, closing M2: backoffice screens for members (list, create, detail tabs for identity, family, memberships, enrollments, entitlements with ledger, and eligibility), programs and plans, the plan version editor with maker-checker publishing, the entitlement adjustment approval queue, and member import from upload through review to apply. The identifier search and every publish, retire, approve, reject, upload and apply ask for the password again. Identity numbers stay in component state and are only ever shown masked; nothing goes into browser storage. Quantities stay decimal strings end to end. Two mock-versus-server divergences were corrected in the mock rather than worked around. 85 Vitest specs and 6 Playwright smoke flows pass, Impeccable reports no anti-patterns.
 - 2026-09-03 · WP-I2-05 delivered: member import with CSV_V1 parsing (delimiter and byte-order-mark tolerant, line-accurate errors), staging that never holds a plaintext identifier, validation and blind-index matching, a review queue for conflicts and invalid rows, and idempotent apply in transactional chunks (re-applying changes nothing; a new source version updates instead of duplicating). Migration 000018; schema version 18.
 - 2026-09-03 · WP-I2-04 delivered: eligibility check with as-of resolution (person, membership, enrollment, published plan version, balances including family-shared accounts), eleven explanation codes, per-item results, immutable evaluation snapshots without identifiers, idempotent replay and provider-scope enforcement. Migration 000017; schema version 17.
 - 2026-09-03 · M2 in progress: WP-I2-01 persons (encrypted identifiers, blind-index search with step-up and access audit, relationships, sponsor memberships), WP-I2-02 programs/plans/plan versions with maker-checker publish and enrollments, WP-I2-03 entitlement accounts, append-only ledger, reservations, maker-checker adjustments, expiry and reconciliation jobs. 100 concurrent reserves: 50 succeed, 50 refused, no double spend; overdraft and same-key variants verified. Migrations 000014-000016; schema version 16.
