@@ -316,6 +316,10 @@ paths:
     get:
       tags: [Organizations]
       operationId: listOrganizations
+      description: |
+        Lists the tenant's organization relationships newest first with keyset pagination.
+        `q` matches the display name (case-insensitive, 2-120 characters); `role` filters the
+        relationship role. Cursors are opaque and signed; a tampered one is rejected.
       parameters:
         - $ref: '#/components/parameters/TenantHeader'
         - $ref: '#/components/parameters/Cursor'
@@ -338,8 +342,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OrganizationPage'
+        '400':
+          description: Invalid cursor
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
     post:
       tags: [Organizations]
       operationId: createTenantOrganization
@@ -378,6 +390,9 @@ paths:
     get:
       tags: [Organizations]
       operationId: getOrganization
+      description: |
+        One relationship with the shared legal entity and its masked registry identifiers.
+        `organizationId` is the relationship id; ids of other tenants answer 404.
       parameters:
         - $ref: '#/components/parameters/TenantHeader'
         - $ref: '#/components/parameters/OrganizationId'
@@ -396,6 +411,12 @@ paths:
     patch:
       tags: [Organizations]
       operationId: updateOrganization
+      description: |
+        Merge-patch of the relationship (`relationshipStatus`, `tenantCode`, `null` clears it)
+        and of the shared display name. Renaming is refused with 409
+        ORGANIZATION_SHARED_READONLY once another tenant also holds a relationship with the
+        organization. `If-Match` must carry the ETag of the last read; a stale value answers
+        412 and a missing one 428.
       parameters:
         - $ref: '#/components/parameters/TenantHeader'
         - $ref: '#/components/parameters/OrganizationId'
@@ -416,10 +437,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Organization'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
         '412':
           description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '415':
+          description: Body is not application/merge-patch+json
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
           content:
             application/problem+json:
               schema:

@@ -1,5 +1,12 @@
 # WP-I1-03 · Organizations: directory CRUD, VKN/TCKN validation, blind-index dedup, ETag, cursor paging
 
+> **Delivered in-house on 2026-09-03.** Two notes for anyone reading this as a spec: the
+> handler is a plain chi handler that (un)marshals the generated contract types rather than
+> an implementation of the generated strict-server interface (the interface spans every
+> operation in the contract, and the shape is asserted in tests instead); and one migration
+> was needed after all — `000013` adds a SECURITY DEFINER count function so a tenant can learn
+> that an organization is shared without seeing other tenants' relationship rows.
+
 | Field | Value |
 |---|---|
 | Milestone | M1 (plan increment I1) |

@@ -22,10 +22,15 @@ import (
 	"github.com/celikbros/kapsora/internal/identity/domain"
 	identitypg "github.com/celikbros/kapsora/internal/identity/infrastructure/postgres"
 	identityhttp "github.com/celikbros/kapsora/internal/identity/transport/http"
+	orgapp "github.com/celikbros/kapsora/internal/organization/application"
+	organizationpg "github.com/celikbros/kapsora/internal/organization/infrastructure/postgres"
+	organizationhttp "github.com/celikbros/kapsora/internal/organization/transport/http"
 	"github.com/celikbros/kapsora/internal/platform/config"
+	"github.com/celikbros/kapsora/internal/platform/crypto/localkey"
 	"github.com/celikbros/kapsora/internal/platform/db"
 	"github.com/celikbros/kapsora/internal/platform/health"
 	"github.com/celikbros/kapsora/internal/platform/httpx"
+	"github.com/celikbros/kapsora/internal/platform/idempotency"
 	"github.com/celikbros/kapsora/internal/platform/logging"
 	"github.com/celikbros/kapsora/internal/platform/ratelimit"
 )
@@ -77,14 +82,34 @@ func run() error {
 		return err
 	}
 
+	// Field encryption and blind indexes for sensitive identifiers (ADR-020: local key
+	// for development and single-node pilots; a KMS-backed provider replaces it later).
+	keys, err := localkey.NewFromEnv()
+	if err != nil {
+		return err
+	}
+	cursors, err := httpx.NewCursorCodec(cfg.Session.SigningKey)
+	if err != nil {
+		return err
+	}
+	orgSvc, err := orgapp.New(orgapp.Deps{
+		Pool: pool, Repo: organizationpg.New(), Cipher: keys, Index: keys,
+		Audit: auditpg.New(), Cursors: cursors,
+	})
+	if err != nil {
+		return err
+	}
+
 	checker := health.NewChecker(2 * time.Second)
 	checker.Add("postgresql", health.PostgresCheck(pool))
 
 	router := newRouter(routerDeps{
 		cfg:     cfg,
+		pool:    pool,
 		logger:  logger,
 		checker: checker,
 		ident:   ident,
+		orgs:    orgSvc,
 		limiter: ratelimit.NewPostgres(pool),
 	})
 
@@ -152,9 +177,11 @@ func newIdentity(cfg config.Config, pool *pgxpool.Pool, logger *slog.Logger) (id
 
 type routerDeps struct {
 	cfg     config.Config
+	pool    *pgxpool.Pool
 	logger  *slog.Logger
 	checker *health.Checker
 	ident   identityDeps
+	orgs    *orgapp.Service
 	limiter ratelimit.Limiter
 }
 
@@ -201,13 +228,21 @@ func newRouter(d routerDeps) http.Handler {
 		})
 
 		// Tenant-scoped routes: everything above plus a validated X-Tenant-ID and a
-		// resolved identity.RequestContext. Organization, party, benefit and service
-		// modules mount here (WP-I1-03 onwards).
+		// resolved identity.RequestContext. Party, benefit and service modules mount
+		// here as they land.
 		api.Group(func(tenant chi.Router) {
 			tenant.Use(sessions.RequireCSRF)
 			tenant.Use(sessions.RequireTenantContext)
 			tenant.Use(ratelimit.Middleware(d.limiter, ratelimit.ScopedKey("api", tenantScope), apiRateLimit, d.logger))
-			_ = tenant
+
+			orgHandler := organizationhttp.NewHandler(d.orgs, sessions, d.logger)
+			tenant.Route("/organizations", func(r chi.Router) {
+				orgHandler.Routes(r, idempotency.Middleware(d.pool, idempotency.Options{
+					CommandCode: "organization.create",
+					Scope:       idempotencyScope,
+					Logger:      d.logger,
+				}))
+			})
 		})
 	})
 	return r
@@ -223,6 +258,15 @@ func sessionScope(r *http.Request) (ratelimit.Scope, bool) {
 		return ratelimit.Scope{}, false
 	}
 	return ratelimit.Scope{TenantID: s.ActorID, ActorID: s.ActorID}, true
+}
+
+// idempotencyScope binds Idempotency-Key records to the resolved tenant and actor.
+func idempotencyScope(r *http.Request) (idempotency.Scope, bool) {
+	rc, ok := identity.FromContext(r.Context())
+	if !ok {
+		return idempotency.Scope{}, false
+	}
+	return idempotency.Scope{TenantID: rc.TenantID, ActorID: rc.Principal.ActorID}, true
 }
 
 // tenantScope keys by tenant and actor for tenant-scoped routes.
