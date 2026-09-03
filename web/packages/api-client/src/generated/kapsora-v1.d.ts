@@ -188,6 +188,119 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/imports/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listMemberImports"];
+        put?: never;
+        /**
+         * @description Uploads a member file (CSV_V1, UTF-8, at most 20 MB / 50 000 rows) for a sponsor
+         *     organization and stages it. Identifiers are blind-indexed, masked and encrypted on
+         *     the way in; the plaintext file content is not kept. The same
+         *     `sourceSystem + sourceVersion + file hash` answers 409 IMPORT_DUPLICATE. Small files
+         *     are validated synchronously (201, status VALIDATING or REVIEW/READY); large files are
+         *     queued (202). Requires `import.execute` and step-up.
+         */
+        post: operations["createMemberImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/imports/members/{importId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Batch status, counters and the reconciliation summary. */
+        get: operations["getMemberImport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/imports/members/{importId}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Applies the batch in transactional chunks (worker job): persons, identifiers,
+         *     memberships (principals first), relationships and enrollments. Rows marked SKIP or
+         *     still INVALID are skipped and counted. Re-applying an APPLIED batch is a no-op.
+         *     Requires `import.execute` and step-up.
+         */
+        post: operations["applyMemberImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/imports/members/{importId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Cancels a batch that has not started applying. */
+        post: operations["cancelMemberImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/imports/members/{importId}/rows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listMemberImportRows"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/imports/members/{importId}/rows/{rowId}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Records the operator's decision for a CONFLICT or INVALID row. */
+        post: operations["reviewMemberImportRow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me": {
         parameters: {
             query?: never;
@@ -1341,6 +1454,68 @@ export interface components {
             /** @description Tenant tarafından tanımlanan identifier type kodu (örn. TCKN, PASSPORT, MEMBER_NO, CUSTOMER_NO). */
             type: string;
         };
+        MemberImportBatch: {
+            /** Format: date-time */
+            appliedAt?: string | null;
+            counters: {
+                conflict: number;
+                created: number;
+                invalid: number;
+                matched: number;
+                skipped: number;
+                updated: number;
+                valid: number;
+            };
+            /** Format: date-time */
+            createdAt: string;
+            errorSummary?: string | null;
+            fileName: string;
+            /** @description Hex SHA-256 of the uploaded file. */
+            fileSha256: string;
+            /** @enum {string} */
+            format: "CSV_V1";
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            planId?: string | null;
+            rowCount: number;
+            rowVersion: number;
+            sourceSystem: string;
+            sourceVersion: string;
+            /** Format: uuid */
+            sponsorOrganizationId: string;
+            /** @enum {string} */
+            status: "RECEIVED" | "VALIDATING" | "REVIEW" | "READY" | "APPLYING" | "APPLIED" | "FAILED" | "CANCELLED";
+        };
+        MemberImportRow: {
+            /** Format: uuid */
+            appliedPersonId?: string | null;
+            /** Format: date */
+            birthDate?: string | null;
+            /** @description Filled for CONFLICT rows. */
+            candidatePersonIds?: string[];
+            /** @enum {string|null} */
+            decision?: "CREATE" | "UPDATE" | "SKIP" | null;
+            displayName: string;
+            errors: {
+                code: string;
+                field: string;
+                message?: string;
+            }[];
+            /** Format: uuid */
+            id: string;
+            identifiers: components["schemas"]["MaskedIdentifier"][];
+            /** Format: uuid */
+            matchedPersonId?: string | null;
+            membershipType?: string | null;
+            planCode?: string | null;
+            principalSourceRecordId?: string | null;
+            rowNo: number;
+            rowVersion: number;
+            sourceRecordId: string;
+            /** @enum {string} */
+            status: "PENDING" | "VALID" | "INVALID" | "MATCHED" | "CONFLICT" | "APPLIED" | "SKIPPED";
+        };
         /**
          * @description Tenant relationship with a global organization. `id` identifies the relationship
          *     (tenant_organization); `organizationId` identifies the shared legal entity.
@@ -1826,6 +2001,8 @@ export interface components {
         IdempotencyKeyOptional: string;
         /** @description Optimistic concurrency token returned as ETag. */
         IfMatch: string;
+        ImportId: string;
+        ImportRowId: string;
         Limit: number;
         MembershipId: string;
         OrganizationId: string;
@@ -1871,6 +2048,8 @@ export type SchemaIdentifierSearchRequest = components['schemas']['IdentifierSea
 export type SchemaLedgerEntry = components['schemas']['LedgerEntry'];
 export type SchemaLedgerPage = components['schemas']['LedgerPage'];
 export type SchemaMaskedIdentifier = components['schemas']['MaskedIdentifier'];
+export type SchemaMemberImportBatch = components['schemas']['MemberImportBatch'];
+export type SchemaMemberImportRow = components['schemas']['MemberImportRow'];
 export type SchemaOrganization = components['schemas']['Organization'];
 export type SchemaOrganizationIdentifier = components['schemas']['OrganizationIdentifier'];
 export type SchemaOrganizationPage = components['schemas']['OrganizationPage'];
@@ -1920,6 +2099,8 @@ export type ParameterEvaluationId = components['parameters']['EvaluationId'];
 export type ParameterIdempotencyKey = components['parameters']['IdempotencyKey'];
 export type ParameterIdempotencyKeyOptional = components['parameters']['IdempotencyKeyOptional'];
 export type ParameterIfMatch = components['parameters']['IfMatch'];
+export type ParameterImportId = components['parameters']['ImportId'];
+export type ParameterImportRowId = components['parameters']['ImportRowId'];
 export type ParameterLimit = components['parameters']['Limit'];
 export type ParameterMembershipId = components['parameters']['MembershipId'];
 export type ParameterOrganizationId = components['parameters']['OrganizationId'];
@@ -2326,6 +2507,299 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+        };
+    };
+    listMemberImports: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                status?: "RECEIVED" | "VALIDATING" | "REVIEW" | "READY" | "APPLYING" | "APPLIED" | "FAILED" | "CANCELLED";
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Import batches, newest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["MemberImportBatch"][];
+                        nextCursor?: string | null;
+                    };
+                };
+            };
+        };
+    };
+    createMemberImport: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                    /**
+                     * Format: uuid
+                     * @description Default plan for rows without `plan_code`.
+                     */
+                    planId?: string;
+                    sourceSystem: string;
+                    sourceVersion: string;
+                    /** Format: uuid */
+                    sponsorOrganizationId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Batch staged and validated */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberImportBatch"];
+                };
+            };
+            /** @description Batch staged; validation queued */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberImportBatch"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            /** @description File too large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getMemberImport: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                importId: components["parameters"]["ImportId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Import batch */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberImportBatch"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    applyMemberImport: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                importId: components["parameters"]["ImportId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Apply queued */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberImportBatch"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    cancelMemberImport: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                importId: components["parameters"]["ImportId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonCommand"];
+            };
+        };
+        responses: {
+            /** @description Batch cancelled */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberImportBatch"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listMemberImportRows: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                status?: "PENDING" | "VALID" | "INVALID" | "MATCHED" | "CONFLICT" | "APPLIED" | "SKIPPED";
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                importId: components["parameters"]["ImportId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Rows of the batch in file order */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["MemberImportRow"][];
+                        nextCursor?: string | null;
+                    };
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    reviewMemberImportRow: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                importId: components["parameters"]["ImportId"];
+                rowId: components["parameters"]["ImportRowId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    decision: "CREATE" | "UPDATE" | "SKIP";
+                    /**
+                     * Format: uuid
+                     * @description Required for UPDATE when the row was a CONFLICT.
+                     */
+                    matchedPersonId?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Row updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberImportRow"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
         };
     };
     getCurrentUserContext: {

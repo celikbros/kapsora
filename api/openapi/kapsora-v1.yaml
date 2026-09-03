@@ -35,6 +35,8 @@ tags:
     description: Hak sahipleri ve ilişkiler
   - name: Benefit
     description: Program, plan, plan sürümü, kayıt ve haklar
+  - name: Imports
+    description: Toplu üye içe aktarma
   - name: Eligibility
     description: Hak sahipliği ve plan uygunluğu
   - name: Service Requests
@@ -1787,6 +1789,261 @@ paths:
                 $ref: '#/components/schemas/EligibilityEvaluation'
         '404':
           $ref: '#/components/responses/NotFound'
+  /api/v1/imports/members:
+    post:
+      tags: [Imports]
+      operationId: createMemberImport
+      description: |
+        Uploads a member file (CSV_V1, UTF-8, at most 20 MB / 50 000 rows) for a sponsor
+        organization and stages it. Identifiers are blind-indexed, masked and encrypted on
+        the way in; the plaintext file content is not kept. The same
+        `sourceSystem + sourceVersion + file hash` answers 409 IMPORT_DUPLICATE. Small files
+        are validated synchronously (201, status VALIDATING or REVIEW/READY); large files are
+        queued (202). Requires `import.execute` and step-up.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/CsrfHeader'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, sponsorOrganizationId, sourceSystem, sourceVersion]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                sponsorOrganizationId:
+                  type: string
+                  format: uuid
+                sourceSystem:
+                  type: string
+                  pattern: '^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$'
+                sourceVersion:
+                  type: string
+                  maxLength: 64
+                planId:
+                  type: string
+                  format: uuid
+                  description: Default plan for rows without `plan_code`.
+      responses:
+        '201':
+          description: Batch staged and validated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberImportBatch'
+        '202':
+          description: Batch staged; validation queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberImportBatch'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '413':
+          description: File too large
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    get:
+      tags: [Imports]
+      operationId: listMemberImports
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [RECEIVED, VALIDATING, REVIEW, READY, APPLYING, APPLIED, FAILED, CANCELLED]
+      responses:
+        '200':
+          description: Import batches, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MemberImportBatch'
+                  nextCursor:
+                    type: [string, 'null']
+  /api/v1/imports/members/{importId}:
+    get:
+      tags: [Imports]
+      operationId: getMemberImport
+      description: Batch status, counters and the reconciliation summary.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ImportId'
+      responses:
+        '200':
+          description: Import batch
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberImportBatch'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/imports/members/{importId}/rows:
+    get:
+      tags: [Imports]
+      operationId: listMemberImportRows
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ImportId'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PENDING, VALID, INVALID, MATCHED, CONFLICT, APPLIED, SKIPPED]
+      responses:
+        '200':
+          description: Rows of the batch in file order
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MemberImportRow'
+                  nextCursor:
+                    type: [string, 'null']
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/imports/members/{importId}/rows/{rowId}/review:
+    post:
+      tags: [Imports]
+      operationId: reviewMemberImportRow
+      description: Records the operator's decision for a CONFLICT or INVALID row.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ImportId'
+        - $ref: '#/components/parameters/ImportRowId'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [decision]
+              properties:
+                decision:
+                  type: string
+                  enum: [CREATE, UPDATE, SKIP]
+                matchedPersonId:
+                  type: string
+                  format: uuid
+                  description: Required for UPDATE when the row was a CONFLICT.
+      responses:
+        '200':
+          description: Row updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberImportRow'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/imports/members/{importId}/apply:
+    post:
+      tags: [Imports]
+      operationId: applyMemberImport
+      description: |
+        Applies the batch in transactional chunks (worker job): persons, identifiers,
+        memberships (principals first), relationships and enrollments. Rows marked SKIP or
+        still INVALID are skipped and counted. Re-applying an APPLIED batch is a no-op.
+        Requires `import.execute` and step-up.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ImportId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '202':
+          description: Apply queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberImportBatch'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/imports/members/{importId}/cancel:
+    post:
+      tags: [Imports]
+      operationId: cancelMemberImport
+      description: Cancels a batch that has not started applying.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ImportId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonCommand'
+      responses:
+        '200':
+          description: Batch cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberImportBatch'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
   /api/v1/service-requests:
     get:
       tags: [Service Requests]
@@ -2116,6 +2373,20 @@ components:
         format: uuid
     EvaluationId:
       name: evaluationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ImportId:
+      name: importId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ImportRowId:
+      name: rowId
       in: path
       required: true
       schema:
@@ -3575,6 +3846,128 @@ components:
           $ref: '#/components/schemas/EligibilityCheckRequest'
         result:
           $ref: '#/components/schemas/EligibilityCheckResult'
+    MemberImportBatch:
+      type: object
+      additionalProperties: false
+      required: [id, sponsorOrganizationId, sourceSystem, sourceVersion, fileName, fileSha256, format, rowCount, status, counters, createdAt, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        sponsorOrganizationId:
+          type: string
+          format: uuid
+        planId:
+          type: [string, 'null']
+          format: uuid
+        sourceSystem:
+          type: string
+        sourceVersion:
+          type: string
+        fileName:
+          type: string
+        fileSha256:
+          type: string
+          description: Hex SHA-256 of the uploaded file.
+        format:
+          type: string
+          enum: [CSV_V1]
+        rowCount:
+          type: integer
+        status:
+          type: string
+          enum: [RECEIVED, VALIDATING, REVIEW, READY, APPLYING, APPLIED, FAILED, CANCELLED]
+        counters:
+          type: object
+          additionalProperties: false
+          required: [valid, invalid, matched, conflict, created, updated, skipped]
+          properties:
+            valid:
+              type: integer
+            invalid:
+              type: integer
+            matched:
+              type: integer
+            conflict:
+              type: integer
+            created:
+              type: integer
+            updated:
+              type: integer
+            skipped:
+              type: integer
+        errorSummary:
+          type: [string, 'null']
+        createdAt:
+          type: string
+          format: date-time
+        appliedAt:
+          type: [string, 'null']
+          format: date-time
+        rowVersion:
+          type: integer
+          minimum: 1
+    MemberImportRow:
+      type: object
+      additionalProperties: false
+      required: [id, rowNo, sourceRecordId, status, displayName, identifiers, errors, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        rowNo:
+          type: integer
+        sourceRecordId:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, VALID, INVALID, MATCHED, CONFLICT, APPLIED, SKIPPED]
+        displayName:
+          type: string
+        birthDate:
+          type: [string, 'null']
+          format: date
+        membershipType:
+          type: [string, 'null']
+        principalSourceRecordId:
+          type: [string, 'null']
+        planCode:
+          type: [string, 'null']
+        identifiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/MaskedIdentifier'
+        matchedPersonId:
+          type: [string, 'null']
+          format: uuid
+        candidatePersonIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Filled for CONFLICT rows.
+        decision:
+          type: [string, 'null']
+          enum: [CREATE, UPDATE, SKIP, null]
+        errors:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [field, code]
+            properties:
+              field:
+                type: string
+              code:
+                type: string
+              message:
+                type: string
+        appliedPersonId:
+          type: [string, 'null']
+          format: uuid
+        rowVersion:
+          type: integer
+          minimum: 1
     ServiceRequest:
       type: object
       additionalProperties: false
