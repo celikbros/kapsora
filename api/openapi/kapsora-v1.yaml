@@ -33,6 +33,8 @@ tags:
     description: Kurum ve sağlayıcı dizini
   - name: People
     description: Hak sahipleri ve ilişkiler
+  - name: Benefit
+    description: Program, plan, plan sürümü, kayıt ve haklar
   - name: Eligibility
     description: Hak sahipliği ve plan uygunluğu
   - name: Service Requests
@@ -855,6 +857,681 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PartyCatalogs'
+  /api/v1/programs:
+    get:
+      tags: [Benefit]
+      operationId: listPrograms
+      description: Programs of the tenant, newest first, with keyset paging.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: q
+          in: query
+          description: Code or name search.
+          schema:
+            type: string
+            maxLength: 120
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [DRAFT, ACTIVE, SUSPENDED, CLOSED]
+      responses:
+        '200':
+          description: Program page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramPage'
+        '400':
+          description: Cursor invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+    post:
+      tags: [Benefit]
+      operationId: createProgram
+      description: |
+        Creates a program in DRAFT: a sponsor organization, a payer organization (both
+        relationships of the tenant with roles SPONSOR/PAYER), a program type from the tenant
+        catalog and a code unique within the tenant (409 PROGRAM_CODE_TAKEN).
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProgramRequest'
+      responses:
+        '201':
+          description: Program created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Program'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/programs/{programId}:
+    get:
+      tags: [Benefit]
+      operationId: getProgram
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ProgramId'
+      responses:
+        '200':
+          description: Program
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Program'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Benefit]
+      operationId: updateProgram
+      description: |
+        Merge-patch of name, validity and status. Allowed transitions: DRAFT→ACTIVE,
+        ACTIVE↔SUSPENDED, ACTIVE→CLOSED, SUSPENDED→CLOSED; anything else answers 409
+        PROGRAM_TRANSITION_INVALID.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ProgramId'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: '#/components/schemas/UpdateProgramRequest'
+      responses:
+        '200':
+          description: Program updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Program'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '415':
+          description: Body is not application/merge-patch+json
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/programs/{programId}/plans:
+    get:
+      tags: [Benefit]
+      operationId: listPlans
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ProgramId'
+      responses:
+        '200':
+          description: Plans of the program
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Plan'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Benefit]
+      operationId: createPlan
+      description: Creates a plan (DRAFT) under the program; code unique per program (409 PLAN_CODE_TAKEN).
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ProgramId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePlanRequest'
+      responses:
+        '201':
+          description: Plan created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Plan'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/plans/{planId}:
+    get:
+      tags: [Benefit]
+      operationId: getPlan
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PlanId'
+      responses:
+        '200':
+          description: Plan with its version summaries
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Plan'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Benefit]
+      operationId: updatePlan
+      description: Merge-patch of name and status (DRAFT→ACTIVE, ACTIVE→RETIRED).
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PlanId'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: '#/components/schemas/UpdatePlanRequest'
+      responses:
+        '200':
+          description: Plan updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Plan'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/plans/{planId}/versions:
+    get:
+      tags: [Benefit]
+      operationId: listPlanVersions
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PlanId'
+      responses:
+        '200':
+          description: Versions of the plan, highest number first
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PlanVersionSummary'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Benefit]
+      operationId: createPlanVersion
+      description: |
+        Creates the next DRAFT version (`versionNo` = highest + 1). `copyFromVersionId`
+        copies the entitlement definitions of an existing version of the same plan.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PlanId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePlanVersionRequest'
+      responses:
+        '201':
+          description: Draft version created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanVersion'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/plan-versions/{planVersionId}:
+    get:
+      tags: [Benefit]
+      operationId: getPlanVersion
+      description: Version with its entitlement definitions, review metadata and configuration hash.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PlanVersionId'
+      responses:
+        '200':
+          description: Plan version
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanVersion'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Benefit]
+      operationId: updatePlanVersion
+      description: Merge-patch of validity period and notes; DRAFT only (409 PLAN_VERSION_IMMUTABLE otherwise).
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PlanVersionId'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: '#/components/schemas/UpdatePlanVersionRequest'
+      responses:
+        '200':
+          description: Version updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanVersion'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/plan-versions/{planVersionId}/entitlement-definitions:
+    put:
+      tags: [Benefit]
+      operationId: replaceEntitlementDefinitions
+      description: |
+        Replaces the full list of entitlement definitions of a DRAFT version (codes unique
+        within the version). Database checks on currency, period length and rollover cap
+        surface as 422 field errors.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PlanVersionId'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [items]
+              properties:
+                items:
+                  type: array
+                  maxItems: 100
+                  items:
+                    $ref: '#/components/schemas/EntitlementDefinitionInput'
+      responses:
+        '200':
+          description: Version with the new definitions
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanVersion'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/plan-versions/{planVersionId}/submit:
+    post:
+      tags: [Benefit]
+      operationId: submitPlanVersion
+      description: DRAFT → UNDER_REVIEW by the maker; the version must have at least one definition and a validity start.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PlanVersionId'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewComment'
+      responses:
+        '200':
+          description: Version under review
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanVersion'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/plan-versions/{planVersionId}/publish:
+    post:
+      tags: [Benefit]
+      operationId: publishPlanVersion
+      description: |
+        UNDER_REVIEW → PUBLISHED by the checker (`plan.publish`, step-up). The checker must
+        differ from the submitter (403 MAKER_CHECKER_SAME_ACTOR). Overlapping published
+        validity within the plan answers 409 PLAN_VERSION_OVERLAP. The configuration hash is
+        computed and frozen; the version is immutable afterwards.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PlanVersionId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewComment'
+      responses:
+        '200':
+          description: Version published
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanVersion'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/plan-versions/{planVersionId}/retire:
+    post:
+      tags: [Benefit]
+      operationId: retirePlanVersion
+      description: PUBLISHED → RETIRED with a reason (`plan.publish`); the version stays readable.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PlanVersionId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonCommand'
+      responses:
+        '200':
+          description: Version retired
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanVersion'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/people/{personId}/enrollments:
+    get:
+      tags: [Benefit]
+      operationId: listPersonEnrollments
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PersonId'
+      responses:
+        '200':
+          description: Enrollments of the person, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Enrollment'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Benefit]
+      operationId: createEnrollment
+      description: |
+        Enrolls a sponsor membership of the person into a plan for a period. The membership
+        must be ACTIVE and the plan must have a PUBLISHED version covering `validFrom`
+        (422 PLAN_NOT_PUBLISHED). Overlapping enrollments of the same membership and plan
+        answer 409 ENROLLMENT_OVERLAP. An outbox event opens the entitlement accounts.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PersonId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEnrollmentRequest'
+      responses:
+        '201':
+          description: Enrollment created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Enrollment'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/enrollments:
+    get:
+      tags: [Benefit]
+      operationId: listEnrollments
+      description: Enrollments of the tenant filtered by plan and status, keyset paged.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: planId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PENDING, ACTIVE, SUSPENDED, ENDED]
+      responses:
+        '200':
+          description: Enrollment page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrollmentPage'
+        '400':
+          description: Cursor invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/enrollments/{enrollmentId}:
+    get:
+      tags: [Benefit]
+      operationId: getEnrollment
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/EnrollmentId'
+      responses:
+        '200':
+          description: Enrollment
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Enrollment'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Benefit]
+      operationId: updateEnrollment
+      description: Merge-patch of status (ACTIVE, SUSPENDED, ENDED) and validity end.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/EnrollmentId'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: '#/components/schemas/UpdateEnrollmentRequest'
+      responses:
+        '200':
+          description: Enrollment updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Enrollment'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
   /api/v1/eligibility/checks:
     post:
       tags: [Eligibility]
@@ -1162,6 +1839,34 @@ components:
         format: uuid
     MembershipId:
       name: membershipId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ProgramId:
+      name: programId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PlanId:
+      name: planId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PlanVersionId:
+      name: planVersionId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    EnrollmentId:
+      name: enrollmentId
       in: path
       required: true
       schema:
@@ -1859,6 +2564,381 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PartyCatalogEntry'
+    Program:
+      type: object
+      additionalProperties: false
+      required: [id, code, name, programType, sponsorOrganizationId, payerOrganizationId, status, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        programType:
+          type: string
+        sponsorOrganizationId:
+          type: string
+          format: uuid
+        sponsorDisplayName:
+          type: string
+        payerOrganizationId:
+          type: string
+          format: uuid
+        payerDisplayName:
+          type: string
+        status:
+          type: string
+          enum: [DRAFT, ACTIVE, SUSPENDED, CLOSED]
+        validFrom:
+          type: [string, 'null']
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+        planCount:
+          type: integer
+          minimum: 0
+        rowVersion:
+          type: integer
+          minimum: 1
+    ProgramPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Program'
+        nextCursor:
+          type: [string, 'null']
+    CreateProgramRequest:
+      type: object
+      additionalProperties: false
+      required: [code, name, programType, sponsorOrganizationId, payerOrganizationId]
+      properties:
+        code:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_-]{1,39}$'
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+        programType:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]{1,63}$'
+        sponsorOrganizationId:
+          type: string
+          format: uuid
+        payerOrganizationId:
+          type: string
+          format: uuid
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: string
+          format: date
+    UpdateProgramRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+        status:
+          type: string
+          enum: [ACTIVE, SUSPENDED, CLOSED]
+        validFrom:
+          type: [string, 'null']
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+    Plan:
+      type: object
+      additionalProperties: false
+      required: [id, programId, code, name, status, versions, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        programId:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum: [DRAFT, ACTIVE, RETIRED]
+        versions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlanVersionSummary'
+        rowVersion:
+          type: integer
+          minimum: 1
+    CreatePlanRequest:
+      type: object
+      additionalProperties: false
+      required: [code, name]
+      properties:
+        code:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_-]{1,39}$'
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+    UpdatePlanRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+        status:
+          type: string
+          enum: [ACTIVE, RETIRED]
+    PlanVersionSummary:
+      type: object
+      additionalProperties: false
+      required: [id, planId, versionNo, status, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        planId:
+          type: string
+          format: uuid
+        versionNo:
+          type: integer
+          minimum: 1
+        status:
+          type: string
+          enum: [DRAFT, UNDER_REVIEW, PUBLISHED, RETIRED]
+        validFrom:
+          type: [string, 'null']
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+        publishedAt:
+          type: [string, 'null']
+          format: date-time
+        rowVersion:
+          type: integer
+          minimum: 1
+    PlanVersion:
+      allOf:
+        - $ref: '#/components/schemas/PlanVersionSummary'
+        - type: object
+          additionalProperties: false
+          required: [definitions]
+          properties:
+            notes:
+              type: [string, 'null']
+            definitions:
+              type: array
+              items:
+                $ref: '#/components/schemas/EntitlementDefinition'
+            configurationHash:
+              type: [string, 'null']
+              description: Hex SHA-256 of the canonical configuration, set at publish.
+            submittedBy:
+              type: [string, 'null']
+              format: uuid
+            submittedAt:
+              type: [string, 'null']
+              format: date-time
+            publishedBy:
+              type: [string, 'null']
+              format: uuid
+            reviewComment:
+              type: [string, 'null']
+            retireReasonCode:
+              type: [string, 'null']
+    CreatePlanVersionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        copyFromVersionId:
+          type: string
+          format: uuid
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: string
+          format: date
+        notes:
+          type: string
+          maxLength: 2000
+    UpdatePlanVersionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        validFrom:
+          type: [string, 'null']
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+        notes:
+          type: [string, 'null']
+          maxLength: 2000
+    EntitlementDefinitionInput:
+      type: object
+      additionalProperties: false
+      required: [code, name, unitType, periodType, initialQuantity]
+      properties:
+        code:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]{1,63}$'
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+        unitType:
+          type: string
+          enum: [MONEY, COUNT, NIGHT, SESSION, HOUR, KILOMETER, POINT]
+        currencyCode:
+          type: string
+          pattern: '^[A-Z]{3}$'
+          description: Required when unitType is MONEY, forbidden otherwise.
+        periodType:
+          type: string
+          enum: [CALENDAR_YEAR, PLAN_YEAR, ROLLING_DAYS, LIFETIME, CUSTOM]
+        periodLength:
+          type: integer
+          minimum: 1
+          description: Days for ROLLING_DAYS; required only then.
+        initialQuantity:
+          type: number
+          minimum: 0
+        allowOverdraft:
+          type: boolean
+          default: false
+        rolloverPolicy:
+          type: string
+          enum: [NONE, FULL, CAPPED]
+          default: NONE
+        rolloverCap:
+          type: number
+          minimum: 0
+          description: Required when rolloverPolicy is CAPPED.
+        familyShared:
+          type: boolean
+          default: false
+    EntitlementDefinition:
+      allOf:
+        - $ref: '#/components/schemas/EntitlementDefinitionInput'
+        - type: object
+          additionalProperties: false
+          required: [id, status]
+          properties:
+            id:
+              type: string
+              format: uuid
+            status:
+              type: string
+              enum: [ACTIVE, INACTIVE]
+    ReviewComment:
+      type: object
+      additionalProperties: false
+      properties:
+        comment:
+          type: string
+          maxLength: 1000
+    Enrollment:
+      type: object
+      additionalProperties: false
+      required: [id, personId, sponsorMembershipId, planId, planCode, status, validFrom, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        personId:
+          type: string
+          format: uuid
+        sponsorMembershipId:
+          type: string
+          format: uuid
+        planId:
+          type: string
+          format: uuid
+        planCode:
+          type: string
+        programId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [PENDING, ACTIVE, SUSPENDED, ENDED]
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+        enrollmentReason:
+          type: [string, 'null']
+        sourceSystem:
+          type: [string, 'null']
+        rowVersion:
+          type: integer
+          minimum: 1
+    EnrollmentPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Enrollment'
+        nextCursor:
+          type: [string, 'null']
+    CreateEnrollmentRequest:
+      type: object
+      additionalProperties: false
+      required: [sponsorMembershipId, planId, validFrom]
+      properties:
+        sponsorMembershipId:
+          type: string
+          format: uuid
+        planId:
+          type: string
+          format: uuid
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: string
+          format: date
+        enrollmentReason:
+          type: string
+          maxLength: 200
+        status:
+          type: string
+          enum: [PENDING, ACTIVE]
+          default: ACTIVE
+    UpdateEnrollmentRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          enum: [ACTIVE, SUSPENDED, ENDED]
+        validTo:
+          type: [string, 'null']
+          format: date
     EligibilityCheckRequest:
       type: object
       additionalProperties: false

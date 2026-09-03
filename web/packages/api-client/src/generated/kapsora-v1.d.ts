@@ -24,6 +24,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/enrollments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Enrollments of the tenant filtered by plan and status, keyset paged. */
+        get: operations["listEnrollments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/enrollments/{enrollmentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getEnrollment"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Merge-patch of status (ACTIVE, SUSPENDED, ENDED) and validity end. */
+        patch: operations["updateEnrollment"];
+        trace?: never;
+    };
     "/api/v1/me": {
         parameters: {
             query?: never;
@@ -125,8 +159,19 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * @description Keyset page of the tenant's persons, newest first. `q` matches the folded
+         *     normalized name token by token; identifiers are never accepted here, an exact
+         *     lookup goes through the permission-protected search endpoint.
+         */
         get: operations["listPeople"];
         put?: never;
+        /**
+         * @description Registers a person. Identifier types come from the tenant catalog; a TCKN is
+         *     checksum-validated, every value is envelope-encrypted and indexed with a
+         *     tenant-salted HMAC, and only the masked form is ever returned. A value already
+         *     held by another person answers 409 PERSON_IDENTIFIER_TAKEN.
+         */
         post: operations["createPerson"];
         delete?: never;
         options?: never;
@@ -141,6 +186,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * @description One person with masked identifiers and the ETag to send back as `If-Match`. A
+         *     merged person answers 200 with status MERGED and the surviving person in
+         *     `mergedIntoId`.
+         */
         get: operations["getPerson"];
         put?: never;
         post?: never;
@@ -155,6 +205,28 @@ export interface paths {
          *     412 ETAG_MISMATCH and the client reloads.
          */
         patch: operations["updatePerson"];
+        trace?: never;
+    };
+    "/api/v1/people/{personId}/enrollments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listPersonEnrollments"];
+        put?: never;
+        /**
+         * @description Enrolls a sponsor membership of the person into a plan for a period. The membership
+         *     must be ACTIVE and the plan must have a PUBLISHED version covering `validFrom`
+         *     (422 PLAN_NOT_PUBLISHED). Overlapping enrollments of the same membership and plan
+         *     answer 409 ENROLLMENT_OVERLAP. An outbox event opens the entitlement accounts.
+         */
+        post: operations["createEnrollment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/people/{personId}/memberships": {
@@ -252,6 +324,198 @@ export interface paths {
          *     the access audit with the identifier type only. Not idempotent and not cached.
          */
         post: operations["searchPeopleByIdentifier"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plan-versions/{planVersionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Version with its entitlement definitions, review metadata and configuration hash. */
+        get: operations["getPlanVersion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Merge-patch of validity period and notes; DRAFT only (409 PLAN_VERSION_IMMUTABLE otherwise). */
+        patch: operations["updatePlanVersion"];
+        trace?: never;
+    };
+    "/api/v1/plan-versions/{planVersionId}/entitlement-definitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * @description Replaces the full list of entitlement definitions of a DRAFT version (codes unique
+         *     within the version). Database checks on currency, period length and rollover cap
+         *     surface as 422 field errors.
+         */
+        put: operations["replaceEntitlementDefinitions"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plan-versions/{planVersionId}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description UNDER_REVIEW → PUBLISHED by the checker (`plan.publish`, step-up). The checker must
+         *     differ from the submitter (403 MAKER_CHECKER_SAME_ACTOR). Overlapping published
+         *     validity within the plan answers 409 PLAN_VERSION_OVERLAP. The configuration hash is
+         *     computed and frozen; the version is immutable afterwards.
+         */
+        post: operations["publishPlanVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plan-versions/{planVersionId}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description PUBLISHED → RETIRED with a reason (`plan.publish`); the version stays readable. */
+        post: operations["retirePlanVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plan-versions/{planVersionId}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description DRAFT → UNDER_REVIEW by the maker; the version must have at least one definition and a validity start. */
+        post: operations["submitPlanVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{planId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getPlan"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Merge-patch of name and status (DRAFT→ACTIVE, ACTIVE→RETIRED). */
+        patch: operations["updatePlan"];
+        trace?: never;
+    };
+    "/api/v1/plans/{planId}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listPlanVersions"];
+        put?: never;
+        /**
+         * @description Creates the next DRAFT version (`versionNo` = highest + 1). `copyFromVersionId`
+         *     copies the entitlement definitions of an existing version of the same plan.
+         */
+        post: operations["createPlanVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/programs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Programs of the tenant, newest first, with keyset paging. */
+        get: operations["listPrograms"];
+        put?: never;
+        /**
+         * @description Creates a program in DRAFT: a sponsor organization, a payer organization (both
+         *     relationships of the tenant with roles SPONSOR/PAYER), a program type from the tenant
+         *     catalog and a code unique within the tenant (409 PROGRAM_CODE_TAKEN).
+         */
+        post: operations["createProgram"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/programs/{programId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getProgram"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Merge-patch of name, validity and status. Allowed transitions: DRAFT→ACTIVE,
+         *     ACTIVE↔SUSPENDED, ACTIVE→CLOSED, SUSPENDED→CLOSED; anything else answers 409
+         *     PROGRAM_TRANSITION_INVALID.
+         */
+        patch: operations["updateProgram"];
+        trace?: never;
+    };
+    "/api/v1/programs/{programId}/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listPlans"];
+        put?: never;
+        /** @description Creates a plan (DRAFT) under the program; code unique per program (409 PLAN_CODE_TAKEN). */
+        post: operations["createPlan"];
         delete?: never;
         options?: never;
         head?: never;
@@ -508,6 +772,22 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        CreateEnrollmentRequest: {
+            enrollmentReason?: string;
+            /** Format: uuid */
+            planId: string;
+            /** Format: uuid */
+            sponsorMembershipId: string;
+            /**
+             * @default ACTIVE
+             * @enum {string}
+             */
+            status?: "PENDING" | "ACTIVE";
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo?: string;
+        };
         CreateMembershipRequest: {
             externalMemberNo?: string;
             membershipType: string;
@@ -563,6 +843,32 @@ export interface components {
             middleName?: string;
             /** @enum {string} */
             sexAtBirth?: "FEMALE" | "MALE" | "INTERSEX" | "UNKNOWN";
+        };
+        CreatePlanRequest: {
+            code: string;
+            name: string;
+        };
+        CreatePlanVersionRequest: {
+            /** Format: uuid */
+            copyFromVersionId?: string;
+            notes?: string;
+            /** Format: date */
+            validFrom?: string;
+            /** Format: date */
+            validTo?: string;
+        };
+        CreateProgramRequest: {
+            code: string;
+            name: string;
+            /** Format: uuid */
+            payerOrganizationId: string;
+            programType: string;
+            /** Format: uuid */
+            sponsorOrganizationId: string;
+            /** Format: date */
+            validFrom?: string;
+            /** Format: date */
+            validTo?: string;
         };
         CreateRelationshipRequest: {
             relationshipType: string;
@@ -647,6 +953,62 @@ export interface components {
             endsOn: string;
             reasonCode: string;
             reasonText?: string;
+        };
+        Enrollment: {
+            enrollmentReason?: string | null;
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            personId: string;
+            planCode: string;
+            /** Format: uuid */
+            planId: string;
+            /** Format: uuid */
+            programId?: string;
+            rowVersion: number;
+            sourceSystem?: string | null;
+            /** Format: uuid */
+            sponsorMembershipId: string;
+            /** @enum {string} */
+            status: "PENDING" | "ACTIVE" | "SUSPENDED" | "ENDED";
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo?: string | null;
+        };
+        EnrollmentPage: {
+            items: components["schemas"]["Enrollment"][];
+            nextCursor?: string | null;
+        };
+        EntitlementDefinition: components["schemas"]["EntitlementDefinitionInput"] & {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "INACTIVE";
+        };
+        EntitlementDefinitionInput: {
+            /** @default false */
+            allowOverdraft?: boolean;
+            code: string;
+            /** @description Required when unitType is MONEY, forbidden otherwise. */
+            currencyCode?: string;
+            /** @default false */
+            familyShared?: boolean;
+            initialQuantity: number;
+            name: string;
+            /** @description Days for ROLLING_DAYS; required only then. */
+            periodLength?: number;
+            /** @enum {string} */
+            periodType: "CALENDAR_YEAR" | "PLAN_YEAR" | "ROLLING_DAYS" | "LIFETIME" | "CUSTOM";
+            /** @description Required when rolloverPolicy is CAPPED. */
+            rolloverCap?: number;
+            /**
+             * @default NONE
+             * @enum {string}
+             */
+            rolloverPolicy?: "NONE" | "FULL" | "CAPPED";
+            /** @enum {string} */
+            unitType: "MONEY" | "COUNT" | "NIGHT" | "SESSION" | "HOUR" | "KILOMETER" | "POINT";
         };
         HealthStatus: {
             checks?: {
@@ -794,6 +1156,48 @@ export interface components {
             /** @enum {string} */
             status: "ACTIVE" | "INACTIVE" | "DECEASED" | "MERGED";
         };
+        Plan: {
+            code: string;
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** Format: uuid */
+            programId: string;
+            rowVersion: number;
+            /** @enum {string} */
+            status: "DRAFT" | "ACTIVE" | "RETIRED";
+            versions: components["schemas"]["PlanVersionSummary"][];
+        };
+        PlanVersion: components["schemas"]["PlanVersionSummary"] & {
+            /** @description Hex SHA-256 of the canonical configuration, set at publish. */
+            configurationHash?: string | null;
+            definitions: components["schemas"]["EntitlementDefinition"][];
+            notes?: string | null;
+            /** Format: uuid */
+            publishedBy?: string | null;
+            retireReasonCode?: string | null;
+            reviewComment?: string | null;
+            /** Format: date-time */
+            submittedAt?: string | null;
+            /** Format: uuid */
+            submittedBy?: string | null;
+        };
+        PlanVersionSummary: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            planId: string;
+            /** Format: date-time */
+            publishedAt?: string | null;
+            rowVersion: number;
+            /** @enum {string} */
+            status: "DRAFT" | "UNDER_REVIEW" | "PUBLISHED" | "RETIRED";
+            /** Format: date */
+            validFrom?: string | null;
+            /** Format: date */
+            validTo?: string | null;
+            versionNo: number;
+        };
         Problem: {
             code: string;
             detail?: string;
@@ -810,9 +1214,37 @@ export interface components {
             /** Format: uri-reference */
             type: string;
         };
+        Program: {
+            code: string;
+            /** Format: uuid */
+            id: string;
+            name: string;
+            payerDisplayName?: string;
+            /** Format: uuid */
+            payerOrganizationId: string;
+            planCount?: number;
+            programType: string;
+            rowVersion: number;
+            sponsorDisplayName?: string;
+            /** Format: uuid */
+            sponsorOrganizationId: string;
+            /** @enum {string} */
+            status: "DRAFT" | "ACTIVE" | "SUSPENDED" | "CLOSED";
+            /** Format: date */
+            validFrom?: string | null;
+            /** Format: date */
+            validTo?: string | null;
+        };
+        ProgramPage: {
+            items: components["schemas"]["Program"][];
+            nextCursor?: string | null;
+        };
         ReasonCommand: {
             reasonCode: string;
             reasonText?: string;
+        };
+        ReviewComment: {
+            comment?: string;
         };
         ServiceRequest: {
             /** @enum {string} */
@@ -926,6 +1358,12 @@ export interface components {
             /** @enum {string} */
             status: "PROVISIONING" | "ACTIVE" | "SUSPENDED" | "CLOSED";
         };
+        UpdateEnrollmentRequest: {
+            /** @enum {string} */
+            status?: "ACTIVE" | "SUSPENDED" | "ENDED";
+            /** Format: date */
+            validTo?: string | null;
+        };
         UpdateMembershipRequest: {
             externalMemberNo?: string | null;
             /** @enum {string} */
@@ -959,6 +1397,27 @@ export interface components {
             sexAtBirth?: "FEMALE" | "MALE" | "INTERSEX" | "UNKNOWN" | null;
             /** @enum {string} */
             status?: "ACTIVE" | "INACTIVE" | "DECEASED";
+        };
+        UpdatePlanRequest: {
+            name?: string;
+            /** @enum {string} */
+            status?: "ACTIVE" | "RETIRED";
+        };
+        UpdatePlanVersionRequest: {
+            notes?: string | null;
+            /** Format: date */
+            validFrom?: string | null;
+            /** Format: date */
+            validTo?: string | null;
+        };
+        UpdateProgramRequest: {
+            name?: string;
+            /** @enum {string} */
+            status?: "ACTIVE" | "SUSPENDED" | "CLOSED";
+            /** Format: date */
+            validFrom?: string | null;
+            /** Format: date */
+            validTo?: string | null;
         };
         UpdateServiceRequest: {
             items?: {
@@ -1050,6 +1509,7 @@ export interface components {
         CsrfHeader: string;
         /** @description Opaque cursor from the previous response. */
         Cursor: string;
+        EnrollmentId: string;
         /** @description Client-generated unique key retained for at least 24 hours. */
         IdempotencyKey: string;
         /** @description Optional on query-style POSTs; honoured when present. */
@@ -1060,6 +1520,9 @@ export interface components {
         MembershipId: string;
         OrganizationId: string;
         PersonId: string;
+        PlanId: string;
+        PlanVersionId: string;
+        ProgramId: string;
         RelationshipId: string;
         RequestId: string;
         /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
@@ -1072,14 +1535,22 @@ export interface components {
     };
     pathItems: never;
 }
+export type SchemaCreateEnrollmentRequest = components['schemas']['CreateEnrollmentRequest'];
 export type SchemaCreateMembershipRequest = components['schemas']['CreateMembershipRequest'];
 export type SchemaCreateOrganizationRequest = components['schemas']['CreateOrganizationRequest'];
 export type SchemaCreatePersonRequest = components['schemas']['CreatePersonRequest'];
+export type SchemaCreatePlanRequest = components['schemas']['CreatePlanRequest'];
+export type SchemaCreatePlanVersionRequest = components['schemas']['CreatePlanVersionRequest'];
+export type SchemaCreateProgramRequest = components['schemas']['CreateProgramRequest'];
 export type SchemaCreateRelationshipRequest = components['schemas']['CreateRelationshipRequest'];
 export type SchemaCreateServiceRequest = components['schemas']['CreateServiceRequest'];
 export type SchemaEligibilityCheckRequest = components['schemas']['EligibilityCheckRequest'];
 export type SchemaEligibilityCheckResult = components['schemas']['EligibilityCheckResult'];
 export type SchemaEndPeriodCommand = components['schemas']['EndPeriodCommand'];
+export type SchemaEnrollment = components['schemas']['Enrollment'];
+export type SchemaEnrollmentPage = components['schemas']['EnrollmentPage'];
+export type SchemaEntitlementDefinition = components['schemas']['EntitlementDefinition'];
+export type SchemaEntitlementDefinitionInput = components['schemas']['EntitlementDefinitionInput'];
 export type SchemaHealthStatus = components['schemas']['HealthStatus'];
 export type SchemaIdentifierSearchRequest = components['schemas']['IdentifierSearchRequest'];
 export type SchemaMaskedIdentifier = components['schemas']['MaskedIdentifier'];
@@ -1093,8 +1564,14 @@ export type SchemaPerson = components['schemas']['Person'];
 export type SchemaPersonPage = components['schemas']['PersonPage'];
 export type SchemaPersonRelationship = components['schemas']['PersonRelationship'];
 export type SchemaPersonSummary = components['schemas']['PersonSummary'];
+export type SchemaPlan = components['schemas']['Plan'];
+export type SchemaPlanVersion = components['schemas']['PlanVersion'];
+export type SchemaPlanVersionSummary = components['schemas']['PlanVersionSummary'];
 export type SchemaProblem = components['schemas']['Problem'];
+export type SchemaProgram = components['schemas']['Program'];
+export type SchemaProgramPage = components['schemas']['ProgramPage'];
 export type SchemaReasonCommand = components['schemas']['ReasonCommand'];
+export type SchemaReviewComment = components['schemas']['ReviewComment'];
 export type SchemaServiceRequest = components['schemas']['ServiceRequest'];
 export type SchemaServiceRequestItem = components['schemas']['ServiceRequestItem'];
 export type SchemaServiceRequestPage = components['schemas']['ServiceRequestPage'];
@@ -1102,9 +1579,13 @@ export type SchemaSessionInfo = components['schemas']['SessionInfo'];
 export type SchemaSponsorMembership = components['schemas']['SponsorMembership'];
 export type SchemaTenantContext = components['schemas']['TenantContext'];
 export type SchemaTenantSummary = components['schemas']['TenantSummary'];
+export type SchemaUpdateEnrollmentRequest = components['schemas']['UpdateEnrollmentRequest'];
 export type SchemaUpdateMembershipRequest = components['schemas']['UpdateMembershipRequest'];
 export type SchemaUpdateOrganizationRequest = components['schemas']['UpdateOrganizationRequest'];
 export type SchemaUpdatePersonRequest = components['schemas']['UpdatePersonRequest'];
+export type SchemaUpdatePlanRequest = components['schemas']['UpdatePlanRequest'];
+export type SchemaUpdatePlanVersionRequest = components['schemas']['UpdatePlanVersionRequest'];
+export type SchemaUpdateProgramRequest = components['schemas']['UpdateProgramRequest'];
 export type SchemaUpdateServiceRequest = components['schemas']['UpdateServiceRequest'];
 export type SchemaUserContext = components['schemas']['UserContext'];
 export type ResponseConflict = components['responses']['Conflict'];
@@ -1115,6 +1596,7 @@ export type ResponseUnauthorized = components['responses']['Unauthorized'];
 export type ResponseValidationError = components['responses']['ValidationError'];
 export type ParameterCsrfHeader = components['parameters']['CsrfHeader'];
 export type ParameterCursor = components['parameters']['Cursor'];
+export type ParameterEnrollmentId = components['parameters']['EnrollmentId'];
 export type ParameterIdempotencyKey = components['parameters']['IdempotencyKey'];
 export type ParameterIdempotencyKeyOptional = components['parameters']['IdempotencyKeyOptional'];
 export type ParameterIfMatch = components['parameters']['IfMatch'];
@@ -1122,6 +1604,9 @@ export type ParameterLimit = components['parameters']['Limit'];
 export type ParameterMembershipId = components['parameters']['MembershipId'];
 export type ParameterOrganizationId = components['parameters']['OrganizationId'];
 export type ParameterPersonId = components['parameters']['PersonId'];
+export type ParameterPlanId = components['parameters']['PlanId'];
+export type ParameterPlanVersionId = components['parameters']['PlanVersionId'];
+export type ParameterProgramId = components['parameters']['ProgramId'];
 export type ParameterRelationshipId = components['parameters']['RelationshipId'];
 export type ParameterRequestId = components['parameters']['RequestId'];
 export type ParameterTenantHeader = components['parameters']['TenantHeader'];
@@ -1157,6 +1642,124 @@ export interface operations {
             };
             422: components["responses"]["ValidationError"];
             429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listEnrollments: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                planId?: string;
+                status?: "PENDING" | "ACTIVE" | "SUSPENDED" | "ENDED";
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Enrollment page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnrollmentPage"];
+                };
+            };
+            /** @description Cursor invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getEnrollment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                enrollmentId: components["parameters"]["EnrollmentId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Enrollment */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Enrollment"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateEnrollment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                enrollmentId: components["parameters"]["EnrollmentId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/merge-patch+json": components["schemas"]["UpdateEnrollmentRequest"];
+            };
+        };
+        responses: {
+            /** @description Enrollment updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Enrollment"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
         };
     };
     getCurrentUserContext: {
@@ -1374,6 +1977,10 @@ export interface operations {
                 limit?: components["parameters"]["Limit"];
                 /** @description Name search. Exact sensitive identifier search uses identifierHash through a dedicated permission-protected endpoint. */
                 q?: string;
+                /** @description Keeps only persons with an active membership under this sponsor or payer organization. */
+                sponsorOrganizationId?: string;
+                /** @description Keeps only persons in this registry status. */
+                status?: "ACTIVE" | "INACTIVE" | "DECEASED" | "MERGED";
             };
             header: {
                 /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
@@ -1515,6 +2122,69 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+        };
+    };
+    listPersonEnrollments: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                personId: components["parameters"]["PersonId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Enrollments of the person, newest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["Enrollment"][];
+                    };
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createEnrollment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                personId: components["parameters"]["PersonId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateEnrollmentRequest"];
+            };
+        };
+        responses: {
+            /** @description Enrollment created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Enrollment"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
         };
     };
     listSponsorMemberships: {
@@ -1781,6 +2451,632 @@ export interface operations {
             404: components["responses"]["NotFound"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getPlanVersion: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                planVersionId: components["parameters"]["PlanVersionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Plan version */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanVersion"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updatePlanVersion: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                planVersionId: components["parameters"]["PlanVersionId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/merge-patch+json": components["schemas"]["UpdatePlanVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description Version updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanVersion"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    replaceEntitlementDefinitions: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                planVersionId: components["parameters"]["PlanVersionId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    items: components["schemas"]["EntitlementDefinitionInput"][];
+                };
+            };
+        };
+        responses: {
+            /** @description Version with the new definitions */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanVersion"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    publishPlanVersion: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                planVersionId: components["parameters"]["PlanVersionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReviewComment"];
+            };
+        };
+        responses: {
+            /** @description Version published */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanVersion"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    retirePlanVersion: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                planVersionId: components["parameters"]["PlanVersionId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonCommand"];
+            };
+        };
+        responses: {
+            /** @description Version retired */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanVersion"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    submitPlanVersion: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                planVersionId: components["parameters"]["PlanVersionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReviewComment"];
+            };
+        };
+        responses: {
+            /** @description Version under review */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanVersion"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getPlan: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                planId: components["parameters"]["PlanId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Plan with its version summaries */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Plan"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updatePlan: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                planId: components["parameters"]["PlanId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/merge-patch+json": components["schemas"]["UpdatePlanRequest"];
+            };
+        };
+        responses: {
+            /** @description Plan updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Plan"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listPlanVersions: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                planId: components["parameters"]["PlanId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Versions of the plan, highest number first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["PlanVersionSummary"][];
+                    };
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createPlanVersion: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                planId: components["parameters"]["PlanId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePlanVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description Draft version created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanVersion"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    listPrograms: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                /** @description Code or name search. */
+                q?: string;
+                status?: "DRAFT" | "ACTIVE" | "SUSPENDED" | "CLOSED";
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Program page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgramPage"];
+                };
+            };
+            /** @description Cursor invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createProgram: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateProgramRequest"];
+            };
+        };
+        responses: {
+            /** @description Program created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Program"];
+                };
+            };
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getProgram: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                programId: components["parameters"]["ProgramId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Program */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Program"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateProgram: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                programId: components["parameters"]["ProgramId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/merge-patch+json": components["schemas"]["UpdateProgramRequest"];
+            };
+        };
+        responses: {
+            /** @description Program updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Program"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Body is not application/merge-patch+json */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listPlans: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                programId: components["parameters"]["ProgramId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Plans of the program */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["Plan"][];
+                    };
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createPlan: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                programId: components["parameters"]["ProgramId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePlanRequest"];
+            };
+        };
+        responses: {
+            /** @description Plan created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Plan"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
         };
     };
     listServiceRequests: {

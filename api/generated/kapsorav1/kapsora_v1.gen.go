@@ -24,6 +24,24 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for CreateEnrollmentRequestStatus.
+const (
+	CreateEnrollmentRequestStatusACTIVE  CreateEnrollmentRequestStatus = "ACTIVE"
+	CreateEnrollmentRequestStatusPENDING CreateEnrollmentRequestStatus = "PENDING"
+)
+
+// Valid indicates whether the value is a known member of the CreateEnrollmentRequestStatus enum.
+func (e CreateEnrollmentRequestStatus) Valid() bool {
+	switch e {
+	case CreateEnrollmentRequestStatusACTIVE:
+		return true
+	case CreateEnrollmentRequestStatusPENDING:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CreateMembershipRequestStatus.
 const (
 	CreateMembershipRequestStatusACTIVE  CreateMembershipRequestStatus = "ACTIVE"
@@ -249,6 +267,210 @@ func (e EligibilityCheckResultOutcome) Valid() bool {
 	case PARTIALLYELIGIBLE:
 		return true
 	case REVIEWREQUIRED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EnrollmentStatus.
+const (
+	EnrollmentStatusACTIVE    EnrollmentStatus = "ACTIVE"
+	EnrollmentStatusENDED     EnrollmentStatus = "ENDED"
+	EnrollmentStatusPENDING   EnrollmentStatus = "PENDING"
+	EnrollmentStatusSUSPENDED EnrollmentStatus = "SUSPENDED"
+)
+
+// Valid indicates whether the value is a known member of the EnrollmentStatus enum.
+func (e EnrollmentStatus) Valid() bool {
+	switch e {
+	case EnrollmentStatusACTIVE:
+		return true
+	case EnrollmentStatusENDED:
+		return true
+	case EnrollmentStatusPENDING:
+		return true
+	case EnrollmentStatusSUSPENDED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EntitlementDefinitionPeriodType.
+const (
+	EntitlementDefinitionPeriodTypeCALENDARYEAR EntitlementDefinitionPeriodType = "CALENDAR_YEAR"
+	EntitlementDefinitionPeriodTypeCUSTOM       EntitlementDefinitionPeriodType = "CUSTOM"
+	EntitlementDefinitionPeriodTypeLIFETIME     EntitlementDefinitionPeriodType = "LIFETIME"
+	EntitlementDefinitionPeriodTypePLANYEAR     EntitlementDefinitionPeriodType = "PLAN_YEAR"
+	EntitlementDefinitionPeriodTypeROLLINGDAYS  EntitlementDefinitionPeriodType = "ROLLING_DAYS"
+)
+
+// Valid indicates whether the value is a known member of the EntitlementDefinitionPeriodType enum.
+func (e EntitlementDefinitionPeriodType) Valid() bool {
+	switch e {
+	case EntitlementDefinitionPeriodTypeCALENDARYEAR:
+		return true
+	case EntitlementDefinitionPeriodTypeCUSTOM:
+		return true
+	case EntitlementDefinitionPeriodTypeLIFETIME:
+		return true
+	case EntitlementDefinitionPeriodTypePLANYEAR:
+		return true
+	case EntitlementDefinitionPeriodTypeROLLINGDAYS:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EntitlementDefinitionRolloverPolicy.
+const (
+	EntitlementDefinitionRolloverPolicyCAPPED EntitlementDefinitionRolloverPolicy = "CAPPED"
+	EntitlementDefinitionRolloverPolicyFULL   EntitlementDefinitionRolloverPolicy = "FULL"
+	EntitlementDefinitionRolloverPolicyNONE   EntitlementDefinitionRolloverPolicy = "NONE"
+)
+
+// Valid indicates whether the value is a known member of the EntitlementDefinitionRolloverPolicy enum.
+func (e EntitlementDefinitionRolloverPolicy) Valid() bool {
+	switch e {
+	case EntitlementDefinitionRolloverPolicyCAPPED:
+		return true
+	case EntitlementDefinitionRolloverPolicyFULL:
+		return true
+	case EntitlementDefinitionRolloverPolicyNONE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EntitlementDefinitionStatus.
+const (
+	EntitlementDefinitionStatusACTIVE   EntitlementDefinitionStatus = "ACTIVE"
+	EntitlementDefinitionStatusINACTIVE EntitlementDefinitionStatus = "INACTIVE"
+)
+
+// Valid indicates whether the value is a known member of the EntitlementDefinitionStatus enum.
+func (e EntitlementDefinitionStatus) Valid() bool {
+	switch e {
+	case EntitlementDefinitionStatusACTIVE:
+		return true
+	case EntitlementDefinitionStatusINACTIVE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EntitlementDefinitionUnitType.
+const (
+	EntitlementDefinitionUnitTypeCOUNT     EntitlementDefinitionUnitType = "COUNT"
+	EntitlementDefinitionUnitTypeHOUR      EntitlementDefinitionUnitType = "HOUR"
+	EntitlementDefinitionUnitTypeKILOMETER EntitlementDefinitionUnitType = "KILOMETER"
+	EntitlementDefinitionUnitTypeMONEY     EntitlementDefinitionUnitType = "MONEY"
+	EntitlementDefinitionUnitTypeNIGHT     EntitlementDefinitionUnitType = "NIGHT"
+	EntitlementDefinitionUnitTypePOINT     EntitlementDefinitionUnitType = "POINT"
+	EntitlementDefinitionUnitTypeSESSION   EntitlementDefinitionUnitType = "SESSION"
+)
+
+// Valid indicates whether the value is a known member of the EntitlementDefinitionUnitType enum.
+func (e EntitlementDefinitionUnitType) Valid() bool {
+	switch e {
+	case EntitlementDefinitionUnitTypeCOUNT:
+		return true
+	case EntitlementDefinitionUnitTypeHOUR:
+		return true
+	case EntitlementDefinitionUnitTypeKILOMETER:
+		return true
+	case EntitlementDefinitionUnitTypeMONEY:
+		return true
+	case EntitlementDefinitionUnitTypeNIGHT:
+		return true
+	case EntitlementDefinitionUnitTypePOINT:
+		return true
+	case EntitlementDefinitionUnitTypeSESSION:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EntitlementDefinitionInputPeriodType.
+const (
+	EntitlementDefinitionInputPeriodTypeCALENDARYEAR EntitlementDefinitionInputPeriodType = "CALENDAR_YEAR"
+	EntitlementDefinitionInputPeriodTypeCUSTOM       EntitlementDefinitionInputPeriodType = "CUSTOM"
+	EntitlementDefinitionInputPeriodTypeLIFETIME     EntitlementDefinitionInputPeriodType = "LIFETIME"
+	EntitlementDefinitionInputPeriodTypePLANYEAR     EntitlementDefinitionInputPeriodType = "PLAN_YEAR"
+	EntitlementDefinitionInputPeriodTypeROLLINGDAYS  EntitlementDefinitionInputPeriodType = "ROLLING_DAYS"
+)
+
+// Valid indicates whether the value is a known member of the EntitlementDefinitionInputPeriodType enum.
+func (e EntitlementDefinitionInputPeriodType) Valid() bool {
+	switch e {
+	case EntitlementDefinitionInputPeriodTypeCALENDARYEAR:
+		return true
+	case EntitlementDefinitionInputPeriodTypeCUSTOM:
+		return true
+	case EntitlementDefinitionInputPeriodTypeLIFETIME:
+		return true
+	case EntitlementDefinitionInputPeriodTypePLANYEAR:
+		return true
+	case EntitlementDefinitionInputPeriodTypeROLLINGDAYS:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EntitlementDefinitionInputRolloverPolicy.
+const (
+	EntitlementDefinitionInputRolloverPolicyCAPPED EntitlementDefinitionInputRolloverPolicy = "CAPPED"
+	EntitlementDefinitionInputRolloverPolicyFULL   EntitlementDefinitionInputRolloverPolicy = "FULL"
+	EntitlementDefinitionInputRolloverPolicyNONE   EntitlementDefinitionInputRolloverPolicy = "NONE"
+)
+
+// Valid indicates whether the value is a known member of the EntitlementDefinitionInputRolloverPolicy enum.
+func (e EntitlementDefinitionInputRolloverPolicy) Valid() bool {
+	switch e {
+	case EntitlementDefinitionInputRolloverPolicyCAPPED:
+		return true
+	case EntitlementDefinitionInputRolloverPolicyFULL:
+		return true
+	case EntitlementDefinitionInputRolloverPolicyNONE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EntitlementDefinitionInputUnitType.
+const (
+	EntitlementDefinitionInputUnitTypeCOUNT     EntitlementDefinitionInputUnitType = "COUNT"
+	EntitlementDefinitionInputUnitTypeHOUR      EntitlementDefinitionInputUnitType = "HOUR"
+	EntitlementDefinitionInputUnitTypeKILOMETER EntitlementDefinitionInputUnitType = "KILOMETER"
+	EntitlementDefinitionInputUnitTypeMONEY     EntitlementDefinitionInputUnitType = "MONEY"
+	EntitlementDefinitionInputUnitTypeNIGHT     EntitlementDefinitionInputUnitType = "NIGHT"
+	EntitlementDefinitionInputUnitTypePOINT     EntitlementDefinitionInputUnitType = "POINT"
+	EntitlementDefinitionInputUnitTypeSESSION   EntitlementDefinitionInputUnitType = "SESSION"
+)
+
+// Valid indicates whether the value is a known member of the EntitlementDefinitionInputUnitType enum.
+func (e EntitlementDefinitionInputUnitType) Valid() bool {
+	switch e {
+	case EntitlementDefinitionInputUnitTypeCOUNT:
+		return true
+	case EntitlementDefinitionInputUnitTypeHOUR:
+		return true
+	case EntitlementDefinitionInputUnitTypeKILOMETER:
+		return true
+	case EntitlementDefinitionInputUnitTypeMONEY:
+		return true
+	case EntitlementDefinitionInputUnitTypeNIGHT:
+		return true
+	case EntitlementDefinitionInputUnitTypePOINT:
+		return true
+	case EntitlementDefinitionInputUnitTypeSESSION:
 		return true
 	default:
 		return false
@@ -648,6 +870,99 @@ func (e PersonSummaryStatus) Valid() bool {
 	}
 }
 
+// Defines values for PlanStatus.
+const (
+	PlanStatusACTIVE  PlanStatus = "ACTIVE"
+	PlanStatusDRAFT   PlanStatus = "DRAFT"
+	PlanStatusRETIRED PlanStatus = "RETIRED"
+)
+
+// Valid indicates whether the value is a known member of the PlanStatus enum.
+func (e PlanStatus) Valid() bool {
+	switch e {
+	case PlanStatusACTIVE:
+		return true
+	case PlanStatusDRAFT:
+		return true
+	case PlanStatusRETIRED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PlanVersionStatus.
+const (
+	PlanVersionStatusDRAFT       PlanVersionStatus = "DRAFT"
+	PlanVersionStatusPUBLISHED   PlanVersionStatus = "PUBLISHED"
+	PlanVersionStatusRETIRED     PlanVersionStatus = "RETIRED"
+	PlanVersionStatusUNDERREVIEW PlanVersionStatus = "UNDER_REVIEW"
+)
+
+// Valid indicates whether the value is a known member of the PlanVersionStatus enum.
+func (e PlanVersionStatus) Valid() bool {
+	switch e {
+	case PlanVersionStatusDRAFT:
+		return true
+	case PlanVersionStatusPUBLISHED:
+		return true
+	case PlanVersionStatusRETIRED:
+		return true
+	case PlanVersionStatusUNDERREVIEW:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PlanVersionSummaryStatus.
+const (
+	PlanVersionSummaryStatusDRAFT       PlanVersionSummaryStatus = "DRAFT"
+	PlanVersionSummaryStatusPUBLISHED   PlanVersionSummaryStatus = "PUBLISHED"
+	PlanVersionSummaryStatusRETIRED     PlanVersionSummaryStatus = "RETIRED"
+	PlanVersionSummaryStatusUNDERREVIEW PlanVersionSummaryStatus = "UNDER_REVIEW"
+)
+
+// Valid indicates whether the value is a known member of the PlanVersionSummaryStatus enum.
+func (e PlanVersionSummaryStatus) Valid() bool {
+	switch e {
+	case PlanVersionSummaryStatusDRAFT:
+		return true
+	case PlanVersionSummaryStatusPUBLISHED:
+		return true
+	case PlanVersionSummaryStatusRETIRED:
+		return true
+	case PlanVersionSummaryStatusUNDERREVIEW:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProgramStatus.
+const (
+	ProgramStatusACTIVE    ProgramStatus = "ACTIVE"
+	ProgramStatusCLOSED    ProgramStatus = "CLOSED"
+	ProgramStatusDRAFT     ProgramStatus = "DRAFT"
+	ProgramStatusSUSPENDED ProgramStatus = "SUSPENDED"
+)
+
+// Valid indicates whether the value is a known member of the ProgramStatus enum.
+func (e ProgramStatus) Valid() bool {
+	switch e {
+	case ProgramStatusACTIVE:
+		return true
+	case ProgramStatusCLOSED:
+		return true
+	case ProgramStatusDRAFT:
+		return true
+	case ProgramStatusSUSPENDED:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ServiceRequestChannel.
 const (
 	ServiceRequestChannelAPI            ServiceRequestChannel = "API"
@@ -822,6 +1137,27 @@ func (e TenantSummaryStatus) Valid() bool {
 	}
 }
 
+// Defines values for UpdateEnrollmentRequestStatus.
+const (
+	UpdateEnrollmentRequestStatusACTIVE    UpdateEnrollmentRequestStatus = "ACTIVE"
+	UpdateEnrollmentRequestStatusENDED     UpdateEnrollmentRequestStatus = "ENDED"
+	UpdateEnrollmentRequestStatusSUSPENDED UpdateEnrollmentRequestStatus = "SUSPENDED"
+)
+
+// Valid indicates whether the value is a known member of the UpdateEnrollmentRequestStatus enum.
+func (e UpdateEnrollmentRequestStatus) Valid() bool {
+	switch e {
+	case UpdateEnrollmentRequestStatusACTIVE:
+		return true
+	case UpdateEnrollmentRequestStatusENDED:
+		return true
+	case UpdateEnrollmentRequestStatusSUSPENDED:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for UpdateMembershipRequestStatus.
 const (
 	UpdateMembershipRequestStatusACTIVE    UpdateMembershipRequestStatus = "ACTIVE"
@@ -912,6 +1248,69 @@ func (e UpdatePersonRequestStatus) Valid() bool {
 	}
 }
 
+// Defines values for UpdatePlanRequestStatus.
+const (
+	UpdatePlanRequestStatusACTIVE  UpdatePlanRequestStatus = "ACTIVE"
+	UpdatePlanRequestStatusRETIRED UpdatePlanRequestStatus = "RETIRED"
+)
+
+// Valid indicates whether the value is a known member of the UpdatePlanRequestStatus enum.
+func (e UpdatePlanRequestStatus) Valid() bool {
+	switch e {
+	case UpdatePlanRequestStatusACTIVE:
+		return true
+	case UpdatePlanRequestStatusRETIRED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpdateProgramRequestStatus.
+const (
+	UpdateProgramRequestStatusACTIVE    UpdateProgramRequestStatus = "ACTIVE"
+	UpdateProgramRequestStatusCLOSED    UpdateProgramRequestStatus = "CLOSED"
+	UpdateProgramRequestStatusSUSPENDED UpdateProgramRequestStatus = "SUSPENDED"
+)
+
+// Valid indicates whether the value is a known member of the UpdateProgramRequestStatus enum.
+func (e UpdateProgramRequestStatus) Valid() bool {
+	switch e {
+	case UpdateProgramRequestStatusACTIVE:
+		return true
+	case UpdateProgramRequestStatusCLOSED:
+		return true
+	case UpdateProgramRequestStatusSUSPENDED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListEnrollmentsParamsStatus.
+const (
+	ListEnrollmentsParamsStatusACTIVE    ListEnrollmentsParamsStatus = "ACTIVE"
+	ListEnrollmentsParamsStatusENDED     ListEnrollmentsParamsStatus = "ENDED"
+	ListEnrollmentsParamsStatusPENDING   ListEnrollmentsParamsStatus = "PENDING"
+	ListEnrollmentsParamsStatusSUSPENDED ListEnrollmentsParamsStatus = "SUSPENDED"
+)
+
+// Valid indicates whether the value is a known member of the ListEnrollmentsParamsStatus enum.
+func (e ListEnrollmentsParamsStatus) Valid() bool {
+	switch e {
+	case ListEnrollmentsParamsStatusACTIVE:
+		return true
+	case ListEnrollmentsParamsStatusENDED:
+		return true
+	case ListEnrollmentsParamsStatusPENDING:
+		return true
+	case ListEnrollmentsParamsStatusSUSPENDED:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListOrganizationsParamsRole.
 const (
 	ListOrganizationsParamsRolePARTNER  ListOrganizationsParamsRole = "PARTNER"
@@ -963,6 +1362,30 @@ func (e ListPeopleParamsStatus) Valid() bool {
 	}
 }
 
+// Defines values for ListProgramsParamsStatus.
+const (
+	ListProgramsParamsStatusACTIVE    ListProgramsParamsStatus = "ACTIVE"
+	ListProgramsParamsStatusCLOSED    ListProgramsParamsStatus = "CLOSED"
+	ListProgramsParamsStatusDRAFT     ListProgramsParamsStatus = "DRAFT"
+	ListProgramsParamsStatusSUSPENDED ListProgramsParamsStatus = "SUSPENDED"
+)
+
+// Valid indicates whether the value is a known member of the ListProgramsParamsStatus enum.
+func (e ListProgramsParamsStatus) Valid() bool {
+	switch e {
+	case ListProgramsParamsStatusACTIVE:
+		return true
+	case ListProgramsParamsStatusCLOSED:
+		return true
+	case ListProgramsParamsStatusDRAFT:
+		return true
+	case ListProgramsParamsStatusSUSPENDED:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListServiceRequestsParamsStatus.
 const (
 	ListServiceRequestsParamsStatusAPPROVED          ListServiceRequestsParamsStatus = "APPROVED"
@@ -1007,6 +1430,19 @@ func (e ListServiceRequestsParamsStatus) Valid() bool {
 		return false
 	}
 }
+
+// CreateEnrollmentRequest defines model for CreateEnrollmentRequest.
+type CreateEnrollmentRequest struct {
+	EnrollmentReason    *string                        `json:"enrollmentReason,omitempty"`
+	PlanId              openapi_types.UUID             `json:"planId"`
+	SponsorMembershipId openapi_types.UUID             `json:"sponsorMembershipId"`
+	Status              *CreateEnrollmentRequestStatus `json:"status,omitempty"`
+	ValidFrom           openapi_types.Date             `json:"validFrom"`
+	ValidTo             *openapi_types.Date            `json:"validTo,omitempty"`
+}
+
+// CreateEnrollmentRequestStatus defines model for CreateEnrollmentRequest.Status.
+type CreateEnrollmentRequestStatus string
 
 // CreateMembershipRequest defines model for CreateMembershipRequest.
 type CreateMembershipRequest struct {
@@ -1068,6 +1504,31 @@ type CreatePersonRequest struct {
 
 // CreatePersonRequestSexAtBirth defines model for CreatePersonRequest.SexAtBirth.
 type CreatePersonRequestSexAtBirth string
+
+// CreatePlanRequest defines model for CreatePlanRequest.
+type CreatePlanRequest struct {
+	Code string `json:"code"`
+	Name string `json:"name"`
+}
+
+// CreatePlanVersionRequest defines model for CreatePlanVersionRequest.
+type CreatePlanVersionRequest struct {
+	CopyFromVersionId *openapi_types.UUID `json:"copyFromVersionId,omitempty"`
+	Notes             *string             `json:"notes,omitempty"`
+	ValidFrom         *openapi_types.Date `json:"validFrom,omitempty"`
+	ValidTo           *openapi_types.Date `json:"validTo,omitempty"`
+}
+
+// CreateProgramRequest defines model for CreateProgramRequest.
+type CreateProgramRequest struct {
+	Code                  string              `json:"code"`
+	Name                  string              `json:"name"`
+	PayerOrganizationId   openapi_types.UUID  `json:"payerOrganizationId"`
+	ProgramType           string              `json:"programType"`
+	SponsorOrganizationId openapi_types.UUID  `json:"sponsorOrganizationId"`
+	ValidFrom             *openapi_types.Date `json:"validFrom,omitempty"`
+	ValidTo               *openapi_types.Date `json:"validTo,omitempty"`
+}
 
 // CreateRelationshipRequest defines model for CreateRelationshipRequest.
 type CreateRelationshipRequest struct {
@@ -1149,6 +1610,96 @@ type EndPeriodCommand struct {
 	ReasonCode string             `json:"reasonCode"`
 	ReasonText *string            `json:"reasonText,omitempty"`
 }
+
+// Enrollment defines model for Enrollment.
+type Enrollment struct {
+	EnrollmentReason    *string             `json:"enrollmentReason,omitempty"`
+	Id                  openapi_types.UUID  `json:"id"`
+	PersonId            openapi_types.UUID  `json:"personId"`
+	PlanCode            string              `json:"planCode"`
+	PlanId              openapi_types.UUID  `json:"planId"`
+	ProgramId           *openapi_types.UUID `json:"programId,omitempty"`
+	RowVersion          int                 `json:"rowVersion"`
+	SourceSystem        *string             `json:"sourceSystem,omitempty"`
+	SponsorMembershipId openapi_types.UUID  `json:"sponsorMembershipId"`
+	Status              EnrollmentStatus    `json:"status"`
+	ValidFrom           openapi_types.Date  `json:"validFrom"`
+	ValidTo             *openapi_types.Date `json:"validTo,omitempty"`
+}
+
+// EnrollmentStatus defines model for Enrollment.Status.
+type EnrollmentStatus string
+
+// EnrollmentPage defines model for EnrollmentPage.
+type EnrollmentPage struct {
+	Items      []Enrollment `json:"items"`
+	NextCursor *string      `json:"nextCursor,omitempty"`
+}
+
+// EntitlementDefinition defines model for EntitlementDefinition.
+type EntitlementDefinition struct {
+	AllowOverdraft *bool  `json:"allowOverdraft,omitempty"`
+	Code           string `json:"code"`
+
+	// CurrencyCode Required when unitType is MONEY, forbidden otherwise.
+	CurrencyCode    *string            `json:"currencyCode,omitempty"`
+	FamilyShared    *bool              `json:"familyShared,omitempty"`
+	Id              openapi_types.UUID `json:"id"`
+	InitialQuantity float32            `json:"initialQuantity"`
+	Name            string             `json:"name"`
+
+	// PeriodLength Days for ROLLING_DAYS; required only then.
+	PeriodLength *int                            `json:"periodLength,omitempty"`
+	PeriodType   EntitlementDefinitionPeriodType `json:"periodType"`
+
+	// RolloverCap Required when rolloverPolicy is CAPPED.
+	RolloverCap    *float32                             `json:"rolloverCap,omitempty"`
+	RolloverPolicy *EntitlementDefinitionRolloverPolicy `json:"rolloverPolicy,omitempty"`
+	Status         EntitlementDefinitionStatus          `json:"status"`
+	UnitType       EntitlementDefinitionUnitType        `json:"unitType"`
+}
+
+// EntitlementDefinitionPeriodType defines model for EntitlementDefinition.PeriodType.
+type EntitlementDefinitionPeriodType string
+
+// EntitlementDefinitionRolloverPolicy defines model for EntitlementDefinition.RolloverPolicy.
+type EntitlementDefinitionRolloverPolicy string
+
+// EntitlementDefinitionStatus defines model for EntitlementDefinition.Status.
+type EntitlementDefinitionStatus string
+
+// EntitlementDefinitionUnitType defines model for EntitlementDefinition.UnitType.
+type EntitlementDefinitionUnitType string
+
+// EntitlementDefinitionInput defines model for EntitlementDefinitionInput.
+type EntitlementDefinitionInput struct {
+	AllowOverdraft *bool  `json:"allowOverdraft,omitempty"`
+	Code           string `json:"code"`
+
+	// CurrencyCode Required when unitType is MONEY, forbidden otherwise.
+	CurrencyCode    *string `json:"currencyCode,omitempty"`
+	FamilyShared    *bool   `json:"familyShared,omitempty"`
+	InitialQuantity float32 `json:"initialQuantity"`
+	Name            string  `json:"name"`
+
+	// PeriodLength Days for ROLLING_DAYS; required only then.
+	PeriodLength *int                                 `json:"periodLength,omitempty"`
+	PeriodType   EntitlementDefinitionInputPeriodType `json:"periodType"`
+
+	// RolloverCap Required when rolloverPolicy is CAPPED.
+	RolloverCap    *float32                                  `json:"rolloverCap,omitempty"`
+	RolloverPolicy *EntitlementDefinitionInputRolloverPolicy `json:"rolloverPolicy,omitempty"`
+	UnitType       EntitlementDefinitionInputUnitType        `json:"unitType"`
+}
+
+// EntitlementDefinitionInputPeriodType defines model for EntitlementDefinitionInput.PeriodType.
+type EntitlementDefinitionInputPeriodType string
+
+// EntitlementDefinitionInputRolloverPolicy defines model for EntitlementDefinitionInput.RolloverPolicy.
+type EntitlementDefinitionInputRolloverPolicy string
+
+// EntitlementDefinitionInputUnitType defines model for EntitlementDefinitionInput.UnitType.
+type EntitlementDefinitionInputUnitType string
 
 // HealthStatus defines model for HealthStatus.
 type HealthStatus struct {
@@ -1352,6 +1903,59 @@ type PersonSummary struct {
 // PersonSummaryStatus defines model for PersonSummary.Status.
 type PersonSummaryStatus string
 
+// Plan defines model for Plan.
+type Plan struct {
+	Code       string               `json:"code"`
+	Id         openapi_types.UUID   `json:"id"`
+	Name       string               `json:"name"`
+	ProgramId  openapi_types.UUID   `json:"programId"`
+	RowVersion int                  `json:"rowVersion"`
+	Status     PlanStatus           `json:"status"`
+	Versions   []PlanVersionSummary `json:"versions"`
+}
+
+// PlanStatus defines model for Plan.Status.
+type PlanStatus string
+
+// PlanVersion defines model for PlanVersion.
+type PlanVersion struct {
+	// ConfigurationHash Hex SHA-256 of the canonical configuration, set at publish.
+	ConfigurationHash *string                 `json:"configurationHash,omitempty"`
+	Definitions       []EntitlementDefinition `json:"definitions"`
+	Id                openapi_types.UUID      `json:"id"`
+	Notes             *string                 `json:"notes,omitempty"`
+	PlanId            openapi_types.UUID      `json:"planId"`
+	PublishedAt       *time.Time              `json:"publishedAt,omitempty"`
+	PublishedBy       *openapi_types.UUID     `json:"publishedBy,omitempty"`
+	RetireReasonCode  *string                 `json:"retireReasonCode,omitempty"`
+	ReviewComment     *string                 `json:"reviewComment,omitempty"`
+	RowVersion        int                     `json:"rowVersion"`
+	Status            PlanVersionStatus       `json:"status"`
+	SubmittedAt       *time.Time              `json:"submittedAt,omitempty"`
+	SubmittedBy       *openapi_types.UUID     `json:"submittedBy,omitempty"`
+	ValidFrom         *openapi_types.Date     `json:"validFrom,omitempty"`
+	ValidTo           *openapi_types.Date     `json:"validTo,omitempty"`
+	VersionNo         int                     `json:"versionNo"`
+}
+
+// PlanVersionStatus defines model for PlanVersion.Status.
+type PlanVersionStatus string
+
+// PlanVersionSummary defines model for PlanVersionSummary.
+type PlanVersionSummary struct {
+	Id          openapi_types.UUID       `json:"id"`
+	PlanId      openapi_types.UUID       `json:"planId"`
+	PublishedAt *time.Time               `json:"publishedAt,omitempty"`
+	RowVersion  int                      `json:"rowVersion"`
+	Status      PlanVersionSummaryStatus `json:"status"`
+	ValidFrom   *openapi_types.Date      `json:"validFrom,omitempty"`
+	ValidTo     *openapi_types.Date      `json:"validTo,omitempty"`
+	VersionNo   int                      `json:"versionNo"`
+}
+
+// PlanVersionSummaryStatus defines model for PlanVersionSummary.Status.
+type PlanVersionSummaryStatus string
+
 // Problem defines model for Problem.
 type Problem struct {
 	Code   string  `json:"code"`
@@ -1368,10 +1972,41 @@ type Problem struct {
 	Type     string  `json:"type"`
 }
 
+// Program defines model for Program.
+type Program struct {
+	Code                  string              `json:"code"`
+	Id                    openapi_types.UUID  `json:"id"`
+	Name                  string              `json:"name"`
+	PayerDisplayName      *string             `json:"payerDisplayName,omitempty"`
+	PayerOrganizationId   openapi_types.UUID  `json:"payerOrganizationId"`
+	PlanCount             *int                `json:"planCount,omitempty"`
+	ProgramType           string              `json:"programType"`
+	RowVersion            int                 `json:"rowVersion"`
+	SponsorDisplayName    *string             `json:"sponsorDisplayName,omitempty"`
+	SponsorOrganizationId openapi_types.UUID  `json:"sponsorOrganizationId"`
+	Status                ProgramStatus       `json:"status"`
+	ValidFrom             *openapi_types.Date `json:"validFrom,omitempty"`
+	ValidTo               *openapi_types.Date `json:"validTo,omitempty"`
+}
+
+// ProgramStatus defines model for Program.Status.
+type ProgramStatus string
+
+// ProgramPage defines model for ProgramPage.
+type ProgramPage struct {
+	Items      []Program `json:"items"`
+	NextCursor *string   `json:"nextCursor,omitempty"`
+}
+
 // ReasonCommand defines model for ReasonCommand.
 type ReasonCommand struct {
 	ReasonCode string  `json:"reasonCode"`
 	ReasonText *string `json:"reasonText,omitempty"`
+}
+
+// ReviewComment defines model for ReviewComment.
+type ReviewComment struct {
+	Comment *string `json:"comment,omitempty"`
 }
 
 // ServiceRequest defines model for ServiceRequest.
@@ -1488,6 +2123,15 @@ type TenantSummary struct {
 // TenantSummaryStatus defines model for TenantSummary.Status.
 type TenantSummaryStatus string
 
+// UpdateEnrollmentRequest defines model for UpdateEnrollmentRequest.
+type UpdateEnrollmentRequest struct {
+	Status  *UpdateEnrollmentRequestStatus `json:"status,omitempty"`
+	ValidTo *openapi_types.Date            `json:"validTo,omitempty"`
+}
+
+// UpdateEnrollmentRequestStatus defines model for UpdateEnrollmentRequest.Status.
+type UpdateEnrollmentRequestStatus string
+
 // UpdateMembershipRequest defines model for UpdateMembershipRequest.
 type UpdateMembershipRequest struct {
 	ExternalMemberNo *string                        `json:"externalMemberNo,omitempty"`
@@ -1532,6 +2176,33 @@ type UpdatePersonRequestSexAtBirth string
 // UpdatePersonRequestStatus defines model for UpdatePersonRequest.Status.
 type UpdatePersonRequestStatus string
 
+// UpdatePlanRequest defines model for UpdatePlanRequest.
+type UpdatePlanRequest struct {
+	Name   *string                  `json:"name,omitempty"`
+	Status *UpdatePlanRequestStatus `json:"status,omitempty"`
+}
+
+// UpdatePlanRequestStatus defines model for UpdatePlanRequest.Status.
+type UpdatePlanRequestStatus string
+
+// UpdatePlanVersionRequest defines model for UpdatePlanVersionRequest.
+type UpdatePlanVersionRequest struct {
+	Notes     *string             `json:"notes,omitempty"`
+	ValidFrom *openapi_types.Date `json:"validFrom,omitempty"`
+	ValidTo   *openapi_types.Date `json:"validTo,omitempty"`
+}
+
+// UpdateProgramRequest defines model for UpdateProgramRequest.
+type UpdateProgramRequest struct {
+	Name      *string                     `json:"name,omitempty"`
+	Status    *UpdateProgramRequestStatus `json:"status,omitempty"`
+	ValidFrom *openapi_types.Date         `json:"validFrom,omitempty"`
+	ValidTo   *openapi_types.Date         `json:"validTo,omitempty"`
+}
+
+// UpdateProgramRequestStatus defines model for UpdateProgramRequest.Status.
+type UpdateProgramRequestStatus string
+
 // UpdateServiceRequest defines model for UpdateServiceRequest.
 type UpdateServiceRequest struct {
 	Items *[]struct {
@@ -1561,6 +2232,9 @@ type CsrfHeader = string
 // Cursor defines model for Cursor.
 type Cursor = string
 
+// EnrollmentId defines model for EnrollmentId.
+type EnrollmentId = openapi_types.UUID
+
 // IdempotencyKey defines model for IdempotencyKey.
 type IdempotencyKey = string
 
@@ -1581,6 +2255,15 @@ type OrganizationId = openapi_types.UUID
 
 // PersonId defines model for PersonId.
 type PersonId = openapi_types.UUID
+
+// PlanId defines model for PlanId.
+type PlanId = openapi_types.UUID
+
+// PlanVersionId defines model for PlanVersionId.
+type PlanVersionId = openapi_types.UUID
+
+// ProgramId defines model for ProgramId.
+type ProgramId = openapi_types.UUID
 
 // RelationshipId defines model for RelationshipId.
 type RelationshipId = openapi_types.UUID
@@ -1616,6 +2299,36 @@ type CheckEligibilityParams struct {
 
 	// IdempotencyKey Optional on query-style POSTs; honoured when present.
 	IdempotencyKey *IdempotencyKeyOptional `json:"Idempotency-Key,omitempty"`
+}
+
+// ListEnrollmentsParams defines parameters for ListEnrollments.
+type ListEnrollmentsParams struct {
+	// Cursor Opaque cursor from the previous response.
+	Cursor *Cursor                      `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit                       `form:"limit,omitempty" json:"limit,omitempty"`
+	PlanId *openapi_types.UUID          `form:"planId,omitempty" json:"planId,omitempty"`
+	Status *ListEnrollmentsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// ListEnrollmentsParamsStatus defines parameters for ListEnrollments.
+type ListEnrollmentsParamsStatus string
+
+// GetEnrollmentParams defines parameters for GetEnrollment.
+type GetEnrollmentParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// UpdateEnrollmentParams defines parameters for UpdateEnrollment.
+type UpdateEnrollmentParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
 }
 
 // ListOrganizationsParams defines parameters for ListOrganizations.
@@ -1720,6 +2433,21 @@ type UpdatePersonParams struct {
 	IfMatch IfMatch `json:"If-Match"`
 }
 
+// ListPersonEnrollmentsParams defines parameters for ListPersonEnrollments.
+type ListPersonEnrollmentsParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// CreateEnrollmentParams defines parameters for CreateEnrollment.
+type CreateEnrollmentParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
 // ListSponsorMembershipsParams defines parameters for ListSponsorMemberships.
 type ListSponsorMembershipsParams struct {
 	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
@@ -1766,6 +2494,154 @@ type EndPersonRelationshipParams struct {
 
 	// IfMatch Optimistic concurrency token returned as ETag.
 	IfMatch IfMatch `json:"If-Match"`
+}
+
+// GetPlanVersionParams defines parameters for GetPlanVersion.
+type GetPlanVersionParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// UpdatePlanVersionParams defines parameters for UpdatePlanVersion.
+type UpdatePlanVersionParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// ReplaceEntitlementDefinitionsJSONBody defines parameters for ReplaceEntitlementDefinitions.
+type ReplaceEntitlementDefinitionsJSONBody struct {
+	Items []EntitlementDefinitionInput `json:"items"`
+}
+
+// ReplaceEntitlementDefinitionsParams defines parameters for ReplaceEntitlementDefinitions.
+type ReplaceEntitlementDefinitionsParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// PublishPlanVersionParams defines parameters for PublishPlanVersion.
+type PublishPlanVersionParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// XCSRFToken Required when the request is authenticated with the BFF session cookie.
+	XCSRFToken *CsrfHeader `json:"X-CSRF-Token,omitempty"`
+}
+
+// RetirePlanVersionParams defines parameters for RetirePlanVersion.
+type RetirePlanVersionParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// XCSRFToken Required when the request is authenticated with the BFF session cookie.
+	XCSRFToken *CsrfHeader `json:"X-CSRF-Token,omitempty"`
+}
+
+// SubmitPlanVersionParams defines parameters for SubmitPlanVersion.
+type SubmitPlanVersionParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// GetPlanParams defines parameters for GetPlan.
+type GetPlanParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// UpdatePlanParams defines parameters for UpdatePlan.
+type UpdatePlanParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// ListPlanVersionsParams defines parameters for ListPlanVersions.
+type ListPlanVersionsParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// CreatePlanVersionParams defines parameters for CreatePlanVersion.
+type CreatePlanVersionParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ListProgramsParams defines parameters for ListPrograms.
+type ListProgramsParams struct {
+	// Cursor Opaque cursor from the previous response.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Q Code or name search.
+	Q      *string                   `form:"q,omitempty" json:"q,omitempty"`
+	Status *ListProgramsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// ListProgramsParamsStatus defines parameters for ListPrograms.
+type ListProgramsParamsStatus string
+
+// CreateProgramParams defines parameters for CreateProgram.
+type CreateProgramParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// GetProgramParams defines parameters for GetProgram.
+type GetProgramParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// UpdateProgramParams defines parameters for UpdateProgram.
+type UpdateProgramParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// ListPlansParams defines parameters for ListPlans.
+type ListPlansParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// CreatePlanParams defines parameters for CreatePlan.
+type CreatePlanParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
 // ListServiceRequestsParams defines parameters for ListServiceRequests.
@@ -1890,6 +2766,9 @@ type SwitchTenantParams struct {
 // CheckEligibilityJSONRequestBody defines body for CheckEligibility for application/json ContentType.
 type CheckEligibilityJSONRequestBody = EligibilityCheckRequest
 
+// UpdateEnrollmentApplicationMergePatchPlusJSONRequestBody defines body for UpdateEnrollment for application/merge-patch+json ContentType.
+type UpdateEnrollmentApplicationMergePatchPlusJSONRequestBody = UpdateEnrollmentRequest
+
 // CreateTenantOrganizationJSONRequestBody defines body for CreateTenantOrganization for application/json ContentType.
 type CreateTenantOrganizationJSONRequestBody = CreateOrganizationRequest
 
@@ -1905,6 +2784,9 @@ type SearchPeopleByIdentifierJSONRequestBody = IdentifierSearchRequest
 // UpdatePersonApplicationMergePatchPlusJSONRequestBody defines body for UpdatePerson for application/merge-patch+json ContentType.
 type UpdatePersonApplicationMergePatchPlusJSONRequestBody = UpdatePersonRequest
 
+// CreateEnrollmentJSONRequestBody defines body for CreateEnrollment for application/json ContentType.
+type CreateEnrollmentJSONRequestBody = CreateEnrollmentRequest
+
 // CreateSponsorMembershipJSONRequestBody defines body for CreateSponsorMembership for application/json ContentType.
 type CreateSponsorMembershipJSONRequestBody = CreateMembershipRequest
 
@@ -1916,6 +2798,36 @@ type CreatePersonRelationshipJSONRequestBody = CreateRelationshipRequest
 
 // EndPersonRelationshipJSONRequestBody defines body for EndPersonRelationship for application/json ContentType.
 type EndPersonRelationshipJSONRequestBody = EndPeriodCommand
+
+// UpdatePlanVersionApplicationMergePatchPlusJSONRequestBody defines body for UpdatePlanVersion for application/merge-patch+json ContentType.
+type UpdatePlanVersionApplicationMergePatchPlusJSONRequestBody = UpdatePlanVersionRequest
+
+// ReplaceEntitlementDefinitionsJSONRequestBody defines body for ReplaceEntitlementDefinitions for application/json ContentType.
+type ReplaceEntitlementDefinitionsJSONRequestBody ReplaceEntitlementDefinitionsJSONBody
+
+// PublishPlanVersionJSONRequestBody defines body for PublishPlanVersion for application/json ContentType.
+type PublishPlanVersionJSONRequestBody = ReviewComment
+
+// RetirePlanVersionJSONRequestBody defines body for RetirePlanVersion for application/json ContentType.
+type RetirePlanVersionJSONRequestBody = ReasonCommand
+
+// SubmitPlanVersionJSONRequestBody defines body for SubmitPlanVersion for application/json ContentType.
+type SubmitPlanVersionJSONRequestBody = ReviewComment
+
+// UpdatePlanApplicationMergePatchPlusJSONRequestBody defines body for UpdatePlan for application/merge-patch+json ContentType.
+type UpdatePlanApplicationMergePatchPlusJSONRequestBody = UpdatePlanRequest
+
+// CreatePlanVersionJSONRequestBody defines body for CreatePlanVersion for application/json ContentType.
+type CreatePlanVersionJSONRequestBody = CreatePlanVersionRequest
+
+// CreateProgramJSONRequestBody defines body for CreateProgram for application/json ContentType.
+type CreateProgramJSONRequestBody = CreateProgramRequest
+
+// UpdateProgramApplicationMergePatchPlusJSONRequestBody defines body for UpdateProgram for application/merge-patch+json ContentType.
+type UpdateProgramApplicationMergePatchPlusJSONRequestBody = UpdateProgramRequest
+
+// CreatePlanJSONRequestBody defines body for CreatePlan for application/json ContentType.
+type CreatePlanJSONRequestBody = CreatePlanRequest
 
 // CreateServiceRequestJSONRequestBody defines body for CreateServiceRequest for application/json ContentType.
 type CreateServiceRequestJSONRequestBody = CreateServiceRequest
@@ -1946,6 +2858,15 @@ type ServerInterface interface {
 
 	// (POST /api/v1/eligibility/checks)
 	CheckEligibility(w http.ResponseWriter, r *http.Request, params CheckEligibilityParams)
+
+	// (GET /api/v1/enrollments)
+	ListEnrollments(w http.ResponseWriter, r *http.Request, params ListEnrollmentsParams)
+
+	// (GET /api/v1/enrollments/{enrollmentId})
+	GetEnrollment(w http.ResponseWriter, r *http.Request, enrollmentId EnrollmentId, params GetEnrollmentParams)
+
+	// (PATCH /api/v1/enrollments/{enrollmentId})
+	UpdateEnrollment(w http.ResponseWriter, r *http.Request, enrollmentId EnrollmentId, params UpdateEnrollmentParams)
 
 	// (GET /api/v1/me)
 	GetCurrentUserContext(w http.ResponseWriter, r *http.Request)
@@ -1980,6 +2901,12 @@ type ServerInterface interface {
 	// (PATCH /api/v1/people/{personId})
 	UpdatePerson(w http.ResponseWriter, r *http.Request, personId PersonId, params UpdatePersonParams)
 
+	// (GET /api/v1/people/{personId}/enrollments)
+	ListPersonEnrollments(w http.ResponseWriter, r *http.Request, personId PersonId, params ListPersonEnrollmentsParams)
+
+	// (POST /api/v1/people/{personId}/enrollments)
+	CreateEnrollment(w http.ResponseWriter, r *http.Request, personId PersonId, params CreateEnrollmentParams)
+
 	// (GET /api/v1/people/{personId}/memberships)
 	ListSponsorMemberships(w http.ResponseWriter, r *http.Request, personId PersonId, params ListSponsorMembershipsParams)
 
@@ -1997,6 +2924,54 @@ type ServerInterface interface {
 
 	// (POST /api/v1/people/{personId}/relationships/{relationshipId}/end)
 	EndPersonRelationship(w http.ResponseWriter, r *http.Request, personId PersonId, relationshipId RelationshipId, params EndPersonRelationshipParams)
+
+	// (GET /api/v1/plan-versions/{planVersionId})
+	GetPlanVersion(w http.ResponseWriter, r *http.Request, planVersionId PlanVersionId, params GetPlanVersionParams)
+
+	// (PATCH /api/v1/plan-versions/{planVersionId})
+	UpdatePlanVersion(w http.ResponseWriter, r *http.Request, planVersionId PlanVersionId, params UpdatePlanVersionParams)
+
+	// (PUT /api/v1/plan-versions/{planVersionId}/entitlement-definitions)
+	ReplaceEntitlementDefinitions(w http.ResponseWriter, r *http.Request, planVersionId PlanVersionId, params ReplaceEntitlementDefinitionsParams)
+
+	// (POST /api/v1/plan-versions/{planVersionId}/publish)
+	PublishPlanVersion(w http.ResponseWriter, r *http.Request, planVersionId PlanVersionId, params PublishPlanVersionParams)
+
+	// (POST /api/v1/plan-versions/{planVersionId}/retire)
+	RetirePlanVersion(w http.ResponseWriter, r *http.Request, planVersionId PlanVersionId, params RetirePlanVersionParams)
+
+	// (POST /api/v1/plan-versions/{planVersionId}/submit)
+	SubmitPlanVersion(w http.ResponseWriter, r *http.Request, planVersionId PlanVersionId, params SubmitPlanVersionParams)
+
+	// (GET /api/v1/plans/{planId})
+	GetPlan(w http.ResponseWriter, r *http.Request, planId PlanId, params GetPlanParams)
+
+	// (PATCH /api/v1/plans/{planId})
+	UpdatePlan(w http.ResponseWriter, r *http.Request, planId PlanId, params UpdatePlanParams)
+
+	// (GET /api/v1/plans/{planId}/versions)
+	ListPlanVersions(w http.ResponseWriter, r *http.Request, planId PlanId, params ListPlanVersionsParams)
+
+	// (POST /api/v1/plans/{planId}/versions)
+	CreatePlanVersion(w http.ResponseWriter, r *http.Request, planId PlanId, params CreatePlanVersionParams)
+
+	// (GET /api/v1/programs)
+	ListPrograms(w http.ResponseWriter, r *http.Request, params ListProgramsParams)
+
+	// (POST /api/v1/programs)
+	CreateProgram(w http.ResponseWriter, r *http.Request, params CreateProgramParams)
+
+	// (GET /api/v1/programs/{programId})
+	GetProgram(w http.ResponseWriter, r *http.Request, programId ProgramId, params GetProgramParams)
+
+	// (PATCH /api/v1/programs/{programId})
+	UpdateProgram(w http.ResponseWriter, r *http.Request, programId ProgramId, params UpdateProgramParams)
+
+	// (GET /api/v1/programs/{programId}/plans)
+	ListPlans(w http.ResponseWriter, r *http.Request, programId ProgramId, params ListPlansParams)
+
+	// (POST /api/v1/programs/{programId}/plans)
+	CreatePlan(w http.ResponseWriter, r *http.Request, programId ProgramId, params CreatePlanParams)
 
 	// (GET /api/v1/service-requests)
 	ListServiceRequests(w http.ResponseWriter, r *http.Request, params ListServiceRequestsParams)
@@ -2050,6 +3025,21 @@ type Unimplemented struct{}
 
 // (POST /api/v1/eligibility/checks)
 func (_ Unimplemented) CheckEligibility(w http.ResponseWriter, r *http.Request, params CheckEligibilityParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/enrollments)
+func (_ Unimplemented) ListEnrollments(w http.ResponseWriter, r *http.Request, params ListEnrollmentsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/enrollments/{enrollmentId})
+func (_ Unimplemented) GetEnrollment(w http.ResponseWriter, r *http.Request, enrollmentId EnrollmentId, params GetEnrollmentParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PATCH /api/v1/enrollments/{enrollmentId})
+func (_ Unimplemented) UpdateEnrollment(w http.ResponseWriter, r *http.Request, enrollmentId EnrollmentId, params UpdateEnrollmentParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2108,6 +3098,16 @@ func (_ Unimplemented) UpdatePerson(w http.ResponseWriter, r *http.Request, pers
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// (GET /api/v1/people/{personId}/enrollments)
+func (_ Unimplemented) ListPersonEnrollments(w http.ResponseWriter, r *http.Request, personId PersonId, params ListPersonEnrollmentsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/people/{personId}/enrollments)
+func (_ Unimplemented) CreateEnrollment(w http.ResponseWriter, r *http.Request, personId PersonId, params CreateEnrollmentParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // (GET /api/v1/people/{personId}/memberships)
 func (_ Unimplemented) ListSponsorMemberships(w http.ResponseWriter, r *http.Request, personId PersonId, params ListSponsorMembershipsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -2135,6 +3135,86 @@ func (_ Unimplemented) CreatePersonRelationship(w http.ResponseWriter, r *http.R
 
 // (POST /api/v1/people/{personId}/relationships/{relationshipId}/end)
 func (_ Unimplemented) EndPersonRelationship(w http.ResponseWriter, r *http.Request, personId PersonId, relationshipId RelationshipId, params EndPersonRelationshipParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/plan-versions/{planVersionId})
+func (_ Unimplemented) GetPlanVersion(w http.ResponseWriter, r *http.Request, planVersionId PlanVersionId, params GetPlanVersionParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PATCH /api/v1/plan-versions/{planVersionId})
+func (_ Unimplemented) UpdatePlanVersion(w http.ResponseWriter, r *http.Request, planVersionId PlanVersionId, params UpdatePlanVersionParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PUT /api/v1/plan-versions/{planVersionId}/entitlement-definitions)
+func (_ Unimplemented) ReplaceEntitlementDefinitions(w http.ResponseWriter, r *http.Request, planVersionId PlanVersionId, params ReplaceEntitlementDefinitionsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/plan-versions/{planVersionId}/publish)
+func (_ Unimplemented) PublishPlanVersion(w http.ResponseWriter, r *http.Request, planVersionId PlanVersionId, params PublishPlanVersionParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/plan-versions/{planVersionId}/retire)
+func (_ Unimplemented) RetirePlanVersion(w http.ResponseWriter, r *http.Request, planVersionId PlanVersionId, params RetirePlanVersionParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/plan-versions/{planVersionId}/submit)
+func (_ Unimplemented) SubmitPlanVersion(w http.ResponseWriter, r *http.Request, planVersionId PlanVersionId, params SubmitPlanVersionParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/plans/{planId})
+func (_ Unimplemented) GetPlan(w http.ResponseWriter, r *http.Request, planId PlanId, params GetPlanParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PATCH /api/v1/plans/{planId})
+func (_ Unimplemented) UpdatePlan(w http.ResponseWriter, r *http.Request, planId PlanId, params UpdatePlanParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/plans/{planId}/versions)
+func (_ Unimplemented) ListPlanVersions(w http.ResponseWriter, r *http.Request, planId PlanId, params ListPlanVersionsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/plans/{planId}/versions)
+func (_ Unimplemented) CreatePlanVersion(w http.ResponseWriter, r *http.Request, planId PlanId, params CreatePlanVersionParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/programs)
+func (_ Unimplemented) ListPrograms(w http.ResponseWriter, r *http.Request, params ListProgramsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/programs)
+func (_ Unimplemented) CreateProgram(w http.ResponseWriter, r *http.Request, params CreateProgramParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/programs/{programId})
+func (_ Unimplemented) GetProgram(w http.ResponseWriter, r *http.Request, programId ProgramId, params GetProgramParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PATCH /api/v1/programs/{programId})
+func (_ Unimplemented) UpdateProgram(w http.ResponseWriter, r *http.Request, programId ProgramId, params UpdateProgramParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/programs/{programId}/plans)
+func (_ Unimplemented) ListPlans(w http.ResponseWriter, r *http.Request, programId ProgramId, params ListPlansParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/programs/{programId}/plans)
+func (_ Unimplemented) CreatePlan(w http.ResponseWriter, r *http.Request, programId ProgramId, params CreatePlanParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2277,6 +3357,234 @@ func (siw *ServerInterfaceWrapper) CheckEligibility(w http.ResponseWriter, r *ht
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CheckEligibility(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListEnrollments operation middleware
+func (siw *ServerInterfaceWrapper) ListEnrollments(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListEnrollmentsParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "planId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "planId", r.URL.Query(), &params.PlanId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "planId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "planId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListEnrollments(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetEnrollment operation middleware
+func (siw *ServerInterfaceWrapper) GetEnrollment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "enrollmentId" -------------
+	var enrollmentId EnrollmentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "enrollmentId", chi.URLParam(r, "enrollmentId"), &enrollmentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "enrollmentId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetEnrollmentParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetEnrollment(w, r, enrollmentId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateEnrollment operation middleware
+func (siw *ServerInterfaceWrapper) UpdateEnrollment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "enrollmentId" -------------
+	var enrollmentId EnrollmentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "enrollmentId", chi.URLParam(r, "enrollmentId"), &enrollmentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "enrollmentId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpdateEnrollmentParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateEnrollment(w, r, enrollmentId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3014,6 +4322,137 @@ func (siw *ServerInterfaceWrapper) UpdatePerson(w http.ResponseWriter, r *http.R
 	handler.ServeHTTP(w, r)
 }
 
+// ListPersonEnrollments operation middleware
+func (siw *ServerInterfaceWrapper) ListPersonEnrollments(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "personId" -------------
+	var personId PersonId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "personId", chi.URLParam(r, "personId"), &personId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "personId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListPersonEnrollmentsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListPersonEnrollments(w, r, personId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateEnrollment operation middleware
+func (siw *ServerInterfaceWrapper) CreateEnrollment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "personId" -------------
+	var personId PersonId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "personId", chi.URLParam(r, "personId"), &personId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "personId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateEnrollmentParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateEnrollment(w, r, personId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListSponsorMemberships operation middleware
 func (siw *ServerInterfaceWrapper) ListSponsorMemberships(w http.ResponseWriter, r *http.Request) {
 
@@ -3439,6 +4878,1172 @@ func (siw *ServerInterfaceWrapper) EndPersonRelationship(w http.ResponseWriter, 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.EndPersonRelationship(w, r, personId, relationshipId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetPlanVersion operation middleware
+func (siw *ServerInterfaceWrapper) GetPlanVersion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "planVersionId" -------------
+	var planVersionId PlanVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "planVersionId", chi.URLParam(r, "planVersionId"), &planVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "planVersionId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetPlanVersionParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetPlanVersion(w, r, planVersionId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdatePlanVersion operation middleware
+func (siw *ServerInterfaceWrapper) UpdatePlanVersion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "planVersionId" -------------
+	var planVersionId PlanVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "planVersionId", chi.URLParam(r, "planVersionId"), &planVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "planVersionId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpdatePlanVersionParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdatePlanVersion(w, r, planVersionId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReplaceEntitlementDefinitions operation middleware
+func (siw *ServerInterfaceWrapper) ReplaceEntitlementDefinitions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "planVersionId" -------------
+	var planVersionId PlanVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "planVersionId", chi.URLParam(r, "planVersionId"), &planVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "planVersionId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ReplaceEntitlementDefinitionsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReplaceEntitlementDefinitions(w, r, planVersionId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PublishPlanVersion operation middleware
+func (siw *ServerInterfaceWrapper) PublishPlanVersion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "planVersionId" -------------
+	var planVersionId PlanVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "planVersionId", chi.URLParam(r, "planVersionId"), &planVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "planVersionId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PublishPlanVersionParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CsrfHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = &XCSRFToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PublishPlanVersion(w, r, planVersionId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RetirePlanVersion operation middleware
+func (siw *ServerInterfaceWrapper) RetirePlanVersion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "planVersionId" -------------
+	var planVersionId PlanVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "planVersionId", chi.URLParam(r, "planVersionId"), &planVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "planVersionId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RetirePlanVersionParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CsrfHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = &XCSRFToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RetirePlanVersion(w, r, planVersionId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SubmitPlanVersion operation middleware
+func (siw *ServerInterfaceWrapper) SubmitPlanVersion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "planVersionId" -------------
+	var planVersionId PlanVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "planVersionId", chi.URLParam(r, "planVersionId"), &planVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "planVersionId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SubmitPlanVersionParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SubmitPlanVersion(w, r, planVersionId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetPlan operation middleware
+func (siw *ServerInterfaceWrapper) GetPlan(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "planId" -------------
+	var planId PlanId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "planId", chi.URLParam(r, "planId"), &planId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "planId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetPlanParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetPlan(w, r, planId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdatePlan operation middleware
+func (siw *ServerInterfaceWrapper) UpdatePlan(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "planId" -------------
+	var planId PlanId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "planId", chi.URLParam(r, "planId"), &planId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "planId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpdatePlanParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdatePlan(w, r, planId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListPlanVersions operation middleware
+func (siw *ServerInterfaceWrapper) ListPlanVersions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "planId" -------------
+	var planId PlanId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "planId", chi.URLParam(r, "planId"), &planId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "planId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListPlanVersionsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListPlanVersions(w, r, planId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreatePlanVersion operation middleware
+func (siw *ServerInterfaceWrapper) CreatePlanVersion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "planId" -------------
+	var planId PlanId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "planId", chi.URLParam(r, "planId"), &planId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "planId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreatePlanVersionParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreatePlanVersion(w, r, planId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListPrograms operation middleware
+func (siw *ServerInterfaceWrapper) ListPrograms(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListProgramsParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListPrograms(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateProgram operation middleware
+func (siw *ServerInterfaceWrapper) CreateProgram(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateProgramParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateProgram(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetProgram operation middleware
+func (siw *ServerInterfaceWrapper) GetProgram(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "programId" -------------
+	var programId ProgramId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "programId", chi.URLParam(r, "programId"), &programId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "programId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetProgramParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProgram(w, r, programId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateProgram operation middleware
+func (siw *ServerInterfaceWrapper) UpdateProgram(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "programId" -------------
+	var programId ProgramId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "programId", chi.URLParam(r, "programId"), &programId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "programId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpdateProgramParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateProgram(w, r, programId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListPlans operation middleware
+func (siw *ServerInterfaceWrapper) ListPlans(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "programId" -------------
+	var programId ProgramId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "programId", chi.URLParam(r, "programId"), &programId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "programId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListPlansParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListPlans(w, r, programId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreatePlan operation middleware
+func (siw *ServerInterfaceWrapper) CreatePlan(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "programId" -------------
+	var programId ProgramId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "programId", chi.URLParam(r, "programId"), &programId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "programId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreatePlanParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreatePlan(w, r, programId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4409,6 +7014,69 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/v1/party/catalogs", wrapper.ListPartyCatalogs)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/programs", wrapper.ListPrograms)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/programs", wrapper.CreateProgram)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/programs/{programId}", wrapper.GetProgram)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/api/v1/programs/{programId}", wrapper.UpdateProgram)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/programs/{programId}/plans", wrapper.ListPlans)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/programs/{programId}/plans", wrapper.CreatePlan)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/plans/{planId}", wrapper.GetPlan)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/api/v1/plans/{planId}", wrapper.UpdatePlan)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/plans/{planId}/versions", wrapper.ListPlanVersions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/plans/{planId}/versions", wrapper.CreatePlanVersion)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/plan-versions/{planVersionId}", wrapper.GetPlanVersion)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/api/v1/plan-versions/{planVersionId}", wrapper.UpdatePlanVersion)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/v1/plan-versions/{planVersionId}/entitlement-definitions", wrapper.ReplaceEntitlementDefinitions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/plan-versions/{planVersionId}/submit", wrapper.SubmitPlanVersion)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/plan-versions/{planVersionId}/publish", wrapper.PublishPlanVersion)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/plan-versions/{planVersionId}/retire", wrapper.RetirePlanVersion)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/people/{personId}/enrollments", wrapper.ListPersonEnrollments)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/people/{personId}/enrollments", wrapper.CreateEnrollment)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/enrollments", wrapper.ListEnrollments)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/enrollments/{enrollmentId}", wrapper.GetEnrollment)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/api/v1/enrollments/{enrollmentId}", wrapper.UpdateEnrollment)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/eligibility/checks", wrapper.CheckEligibility)
 	})
 	r.Group(func(r chi.Router) {
@@ -4506,6 +7174,201 @@ func (response CheckEligibility429ApplicationProblemPlusJSONResponse) VisitCheck
 		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
 	}
 	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListEnrollmentsRequestObject struct {
+	Params ListEnrollmentsParams
+}
+
+type ListEnrollmentsResponseObject interface {
+	VisitListEnrollmentsResponse(w http.ResponseWriter) error
+}
+
+type ListEnrollments200JSONResponse EnrollmentPage
+
+func (response ListEnrollments200JSONResponse) VisitListEnrollmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListEnrollments400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListEnrollments400ApplicationProblemPlusJSONResponse) VisitListEnrollmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEnrollmentRequestObject struct {
+	EnrollmentId EnrollmentId `json:"enrollmentId"`
+	Params       GetEnrollmentParams
+}
+
+type GetEnrollmentResponseObject interface {
+	VisitGetEnrollmentResponse(w http.ResponseWriter) error
+}
+
+type GetEnrollment200ResponseHeaders struct {
+	ETag *string
+}
+
+type GetEnrollment200JSONResponse struct {
+	Body    Enrollment
+	Headers GetEnrollment200ResponseHeaders
+}
+
+func (response GetEnrollment200JSONResponse) VisitGetEnrollmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEnrollment404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetEnrollment404ApplicationProblemPlusJSONResponse) VisitGetEnrollmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateEnrollmentRequestObject struct {
+	EnrollmentId EnrollmentId `json:"enrollmentId"`
+	Params       UpdateEnrollmentParams
+	Body         *UpdateEnrollmentApplicationMergePatchPlusJSONRequestBody
+}
+
+type UpdateEnrollmentResponseObject interface {
+	VisitUpdateEnrollmentResponse(w http.ResponseWriter) error
+}
+
+type UpdateEnrollment200ResponseHeaders struct {
+	ETag *string
+}
+
+type UpdateEnrollment200JSONResponse struct {
+	Body    Enrollment
+	Headers UpdateEnrollment200ResponseHeaders
+}
+
+func (response UpdateEnrollment200JSONResponse) VisitUpdateEnrollmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateEnrollment404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response UpdateEnrollment404ApplicationProblemPlusJSONResponse) VisitUpdateEnrollmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateEnrollment409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response UpdateEnrollment409ApplicationProblemPlusJSONResponse) VisitUpdateEnrollmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateEnrollment412ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateEnrollment412ApplicationProblemPlusJSONResponse) VisitUpdateEnrollmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateEnrollment422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response UpdateEnrollment422ApplicationProblemPlusJSONResponse) VisitUpdateEnrollmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateEnrollment428ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateEnrollment428ApplicationProblemPlusJSONResponse) VisitUpdateEnrollmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -5263,6 +8126,129 @@ func (response UpdatePerson428ApplicationProblemPlusJSONResponse) VisitUpdatePer
 	return err
 }
 
+type ListPersonEnrollmentsRequestObject struct {
+	PersonId PersonId `json:"personId"`
+	Params   ListPersonEnrollmentsParams
+}
+
+type ListPersonEnrollmentsResponseObject interface {
+	VisitListPersonEnrollmentsResponse(w http.ResponseWriter) error
+}
+
+type ListPersonEnrollments200JSONResponse struct {
+	Items []Enrollment `json:"items"`
+}
+
+func (response ListPersonEnrollments200JSONResponse) VisitListPersonEnrollmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPersonEnrollments404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ListPersonEnrollments404ApplicationProblemPlusJSONResponse) VisitListPersonEnrollmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEnrollmentRequestObject struct {
+	PersonId PersonId `json:"personId"`
+	Params   CreateEnrollmentParams
+	Body     *CreateEnrollmentJSONRequestBody
+}
+
+type CreateEnrollmentResponseObject interface {
+	VisitCreateEnrollmentResponse(w http.ResponseWriter) error
+}
+
+type CreateEnrollment201ResponseHeaders struct {
+	ETag *string
+}
+
+type CreateEnrollment201JSONResponse struct {
+	Body    Enrollment
+	Headers CreateEnrollment201ResponseHeaders
+}
+
+func (response CreateEnrollment201JSONResponse) VisitCreateEnrollmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEnrollment404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CreateEnrollment404ApplicationProblemPlusJSONResponse) VisitCreateEnrollmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEnrollment409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response CreateEnrollment409ApplicationProblemPlusJSONResponse) VisitCreateEnrollmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEnrollment422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CreateEnrollment422ApplicationProblemPlusJSONResponse) VisitCreateEnrollmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListSponsorMembershipsRequestObject struct {
 	PersonId PersonId `json:"personId"`
 	Params   ListSponsorMembershipsParams
@@ -5704,6 +8690,1196 @@ type EndPersonRelationship422ApplicationProblemPlusJSONResponse struct {
 }
 
 func (response EndPersonRelationship422ApplicationProblemPlusJSONResponse) VisitEndPersonRelationshipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPlanVersionRequestObject struct {
+	PlanVersionId PlanVersionId `json:"planVersionId"`
+	Params        GetPlanVersionParams
+}
+
+type GetPlanVersionResponseObject interface {
+	VisitGetPlanVersionResponse(w http.ResponseWriter) error
+}
+
+type GetPlanVersion200ResponseHeaders struct {
+	ETag *string
+}
+
+type GetPlanVersion200JSONResponse struct {
+	Body    PlanVersion
+	Headers GetPlanVersion200ResponseHeaders
+}
+
+func (response GetPlanVersion200JSONResponse) VisitGetPlanVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPlanVersion404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetPlanVersion404ApplicationProblemPlusJSONResponse) VisitGetPlanVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePlanVersionRequestObject struct {
+	PlanVersionId PlanVersionId `json:"planVersionId"`
+	Params        UpdatePlanVersionParams
+	Body          *UpdatePlanVersionApplicationMergePatchPlusJSONRequestBody
+}
+
+type UpdatePlanVersionResponseObject interface {
+	VisitUpdatePlanVersionResponse(w http.ResponseWriter) error
+}
+
+type UpdatePlanVersion200ResponseHeaders struct {
+	ETag *string
+}
+
+type UpdatePlanVersion200JSONResponse struct {
+	Body    PlanVersion
+	Headers UpdatePlanVersion200ResponseHeaders
+}
+
+func (response UpdatePlanVersion200JSONResponse) VisitUpdatePlanVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePlanVersion404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response UpdatePlanVersion404ApplicationProblemPlusJSONResponse) VisitUpdatePlanVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePlanVersion409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response UpdatePlanVersion409ApplicationProblemPlusJSONResponse) VisitUpdatePlanVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePlanVersion412ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdatePlanVersion412ApplicationProblemPlusJSONResponse) VisitUpdatePlanVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePlanVersion422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response UpdatePlanVersion422ApplicationProblemPlusJSONResponse) VisitUpdatePlanVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePlanVersion428ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdatePlanVersion428ApplicationProblemPlusJSONResponse) VisitUpdatePlanVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceEntitlementDefinitionsRequestObject struct {
+	PlanVersionId PlanVersionId `json:"planVersionId"`
+	Params        ReplaceEntitlementDefinitionsParams
+	Body          *ReplaceEntitlementDefinitionsJSONRequestBody
+}
+
+type ReplaceEntitlementDefinitionsResponseObject interface {
+	VisitReplaceEntitlementDefinitionsResponse(w http.ResponseWriter) error
+}
+
+type ReplaceEntitlementDefinitions200ResponseHeaders struct {
+	ETag *string
+}
+
+type ReplaceEntitlementDefinitions200JSONResponse struct {
+	Body    PlanVersion
+	Headers ReplaceEntitlementDefinitions200ResponseHeaders
+}
+
+func (response ReplaceEntitlementDefinitions200JSONResponse) VisitReplaceEntitlementDefinitionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceEntitlementDefinitions404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ReplaceEntitlementDefinitions404ApplicationProblemPlusJSONResponse) VisitReplaceEntitlementDefinitionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceEntitlementDefinitions409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response ReplaceEntitlementDefinitions409ApplicationProblemPlusJSONResponse) VisitReplaceEntitlementDefinitionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceEntitlementDefinitions412ApplicationProblemPlusJSONResponse Problem
+
+func (response ReplaceEntitlementDefinitions412ApplicationProblemPlusJSONResponse) VisitReplaceEntitlementDefinitionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceEntitlementDefinitions422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ReplaceEntitlementDefinitions422ApplicationProblemPlusJSONResponse) VisitReplaceEntitlementDefinitionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishPlanVersionRequestObject struct {
+	PlanVersionId PlanVersionId `json:"planVersionId"`
+	Params        PublishPlanVersionParams
+	Body          *PublishPlanVersionJSONRequestBody
+}
+
+type PublishPlanVersionResponseObject interface {
+	VisitPublishPlanVersionResponse(w http.ResponseWriter) error
+}
+
+type PublishPlanVersion200ResponseHeaders struct {
+	ETag *string
+}
+
+type PublishPlanVersion200JSONResponse struct {
+	Body    PlanVersion
+	Headers PublishPlanVersion200ResponseHeaders
+}
+
+func (response PublishPlanVersion200JSONResponse) VisitPublishPlanVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishPlanVersion403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response PublishPlanVersion403ApplicationProblemPlusJSONResponse) VisitPublishPlanVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishPlanVersion404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response PublishPlanVersion404ApplicationProblemPlusJSONResponse) VisitPublishPlanVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishPlanVersion409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response PublishPlanVersion409ApplicationProblemPlusJSONResponse) VisitPublishPlanVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishPlanVersion412ApplicationProblemPlusJSONResponse Problem
+
+func (response PublishPlanVersion412ApplicationProblemPlusJSONResponse) VisitPublishPlanVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RetirePlanVersionRequestObject struct {
+	PlanVersionId PlanVersionId `json:"planVersionId"`
+	Params        RetirePlanVersionParams
+	Body          *RetirePlanVersionJSONRequestBody
+}
+
+type RetirePlanVersionResponseObject interface {
+	VisitRetirePlanVersionResponse(w http.ResponseWriter) error
+}
+
+type RetirePlanVersion200ResponseHeaders struct {
+	ETag *string
+}
+
+type RetirePlanVersion200JSONResponse struct {
+	Body    PlanVersion
+	Headers RetirePlanVersion200ResponseHeaders
+}
+
+func (response RetirePlanVersion200JSONResponse) VisitRetirePlanVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RetirePlanVersion404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response RetirePlanVersion404ApplicationProblemPlusJSONResponse) VisitRetirePlanVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RetirePlanVersion409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response RetirePlanVersion409ApplicationProblemPlusJSONResponse) VisitRetirePlanVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RetirePlanVersion412ApplicationProblemPlusJSONResponse Problem
+
+func (response RetirePlanVersion412ApplicationProblemPlusJSONResponse) VisitRetirePlanVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitPlanVersionRequestObject struct {
+	PlanVersionId PlanVersionId `json:"planVersionId"`
+	Params        SubmitPlanVersionParams
+	Body          *SubmitPlanVersionJSONRequestBody
+}
+
+type SubmitPlanVersionResponseObject interface {
+	VisitSubmitPlanVersionResponse(w http.ResponseWriter) error
+}
+
+type SubmitPlanVersion200ResponseHeaders struct {
+	ETag *string
+}
+
+type SubmitPlanVersion200JSONResponse struct {
+	Body    PlanVersion
+	Headers SubmitPlanVersion200ResponseHeaders
+}
+
+func (response SubmitPlanVersion200JSONResponse) VisitSubmitPlanVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitPlanVersion404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response SubmitPlanVersion404ApplicationProblemPlusJSONResponse) VisitSubmitPlanVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitPlanVersion409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response SubmitPlanVersion409ApplicationProblemPlusJSONResponse) VisitSubmitPlanVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitPlanVersion412ApplicationProblemPlusJSONResponse Problem
+
+func (response SubmitPlanVersion412ApplicationProblemPlusJSONResponse) VisitSubmitPlanVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitPlanVersion422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response SubmitPlanVersion422ApplicationProblemPlusJSONResponse) VisitSubmitPlanVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPlanRequestObject struct {
+	PlanId PlanId `json:"planId"`
+	Params GetPlanParams
+}
+
+type GetPlanResponseObject interface {
+	VisitGetPlanResponse(w http.ResponseWriter) error
+}
+
+type GetPlan200ResponseHeaders struct {
+	ETag *string
+}
+
+type GetPlan200JSONResponse struct {
+	Body    Plan
+	Headers GetPlan200ResponseHeaders
+}
+
+func (response GetPlan200JSONResponse) VisitGetPlanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPlan404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetPlan404ApplicationProblemPlusJSONResponse) VisitGetPlanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePlanRequestObject struct {
+	PlanId PlanId `json:"planId"`
+	Params UpdatePlanParams
+	Body   *UpdatePlanApplicationMergePatchPlusJSONRequestBody
+}
+
+type UpdatePlanResponseObject interface {
+	VisitUpdatePlanResponse(w http.ResponseWriter) error
+}
+
+type UpdatePlan200ResponseHeaders struct {
+	ETag *string
+}
+
+type UpdatePlan200JSONResponse struct {
+	Body    Plan
+	Headers UpdatePlan200ResponseHeaders
+}
+
+func (response UpdatePlan200JSONResponse) VisitUpdatePlanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePlan404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response UpdatePlan404ApplicationProblemPlusJSONResponse) VisitUpdatePlanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePlan409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response UpdatePlan409ApplicationProblemPlusJSONResponse) VisitUpdatePlanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePlan412ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdatePlan412ApplicationProblemPlusJSONResponse) VisitUpdatePlanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePlan422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response UpdatePlan422ApplicationProblemPlusJSONResponse) VisitUpdatePlanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePlan428ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdatePlan428ApplicationProblemPlusJSONResponse) VisitUpdatePlanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPlanVersionsRequestObject struct {
+	PlanId PlanId `json:"planId"`
+	Params ListPlanVersionsParams
+}
+
+type ListPlanVersionsResponseObject interface {
+	VisitListPlanVersionsResponse(w http.ResponseWriter) error
+}
+
+type ListPlanVersions200JSONResponse struct {
+	Items []PlanVersionSummary `json:"items"`
+}
+
+func (response ListPlanVersions200JSONResponse) VisitListPlanVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPlanVersions404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ListPlanVersions404ApplicationProblemPlusJSONResponse) VisitListPlanVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePlanVersionRequestObject struct {
+	PlanId PlanId `json:"planId"`
+	Params CreatePlanVersionParams
+	Body   *CreatePlanVersionJSONRequestBody
+}
+
+type CreatePlanVersionResponseObject interface {
+	VisitCreatePlanVersionResponse(w http.ResponseWriter) error
+}
+
+type CreatePlanVersion201ResponseHeaders struct {
+	ETag *string
+}
+
+type CreatePlanVersion201JSONResponse struct {
+	Body    PlanVersion
+	Headers CreatePlanVersion201ResponseHeaders
+}
+
+func (response CreatePlanVersion201JSONResponse) VisitCreatePlanVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePlanVersion404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CreatePlanVersion404ApplicationProblemPlusJSONResponse) VisitCreatePlanVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePlanVersion422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CreatePlanVersion422ApplicationProblemPlusJSONResponse) VisitCreatePlanVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListProgramsRequestObject struct {
+	Params ListProgramsParams
+}
+
+type ListProgramsResponseObject interface {
+	VisitListProgramsResponse(w http.ResponseWriter) error
+}
+
+type ListPrograms200JSONResponse ProgramPage
+
+func (response ListPrograms200JSONResponse) VisitListProgramsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPrograms400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListPrograms400ApplicationProblemPlusJSONResponse) VisitListProgramsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProgramRequestObject struct {
+	Params CreateProgramParams
+	Body   *CreateProgramJSONRequestBody
+}
+
+type CreateProgramResponseObject interface {
+	VisitCreateProgramResponse(w http.ResponseWriter) error
+}
+
+type CreateProgram201ResponseHeaders struct {
+	ETag *string
+}
+
+type CreateProgram201JSONResponse struct {
+	Body    Program
+	Headers CreateProgram201ResponseHeaders
+}
+
+func (response CreateProgram201JSONResponse) VisitCreateProgramResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProgram409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response CreateProgram409ApplicationProblemPlusJSONResponse) VisitCreateProgramResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProgram422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CreateProgram422ApplicationProblemPlusJSONResponse) VisitCreateProgramResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProgramRequestObject struct {
+	ProgramId ProgramId `json:"programId"`
+	Params    GetProgramParams
+}
+
+type GetProgramResponseObject interface {
+	VisitGetProgramResponse(w http.ResponseWriter) error
+}
+
+type GetProgram200ResponseHeaders struct {
+	ETag *string
+}
+
+type GetProgram200JSONResponse struct {
+	Body    Program
+	Headers GetProgram200ResponseHeaders
+}
+
+func (response GetProgram200JSONResponse) VisitGetProgramResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProgram404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetProgram404ApplicationProblemPlusJSONResponse) VisitGetProgramResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProgramRequestObject struct {
+	ProgramId ProgramId `json:"programId"`
+	Params    UpdateProgramParams
+	Body      *UpdateProgramApplicationMergePatchPlusJSONRequestBody
+}
+
+type UpdateProgramResponseObject interface {
+	VisitUpdateProgramResponse(w http.ResponseWriter) error
+}
+
+type UpdateProgram200ResponseHeaders struct {
+	ETag *string
+}
+
+type UpdateProgram200JSONResponse struct {
+	Body    Program
+	Headers UpdateProgram200ResponseHeaders
+}
+
+func (response UpdateProgram200JSONResponse) VisitUpdateProgramResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProgram404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response UpdateProgram404ApplicationProblemPlusJSONResponse) VisitUpdateProgramResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProgram409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response UpdateProgram409ApplicationProblemPlusJSONResponse) VisitUpdateProgramResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProgram412ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateProgram412ApplicationProblemPlusJSONResponse) VisitUpdateProgramResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProgram415ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateProgram415ApplicationProblemPlusJSONResponse) VisitUpdateProgramResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(415)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProgram422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response UpdateProgram422ApplicationProblemPlusJSONResponse) VisitUpdateProgramResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProgram428ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateProgram428ApplicationProblemPlusJSONResponse) VisitUpdateProgramResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPlansRequestObject struct {
+	ProgramId ProgramId `json:"programId"`
+	Params    ListPlansParams
+}
+
+type ListPlansResponseObject interface {
+	VisitListPlansResponse(w http.ResponseWriter) error
+}
+
+type ListPlans200JSONResponse struct {
+	Items []Plan `json:"items"`
+}
+
+func (response ListPlans200JSONResponse) VisitListPlansResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPlans404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ListPlans404ApplicationProblemPlusJSONResponse) VisitListPlansResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePlanRequestObject struct {
+	ProgramId ProgramId `json:"programId"`
+	Params    CreatePlanParams
+	Body      *CreatePlanJSONRequestBody
+}
+
+type CreatePlanResponseObject interface {
+	VisitCreatePlanResponse(w http.ResponseWriter) error
+}
+
+type CreatePlan201ResponseHeaders struct {
+	ETag *string
+}
+
+type CreatePlan201JSONResponse struct {
+	Body    Plan
+	Headers CreatePlan201ResponseHeaders
+}
+
+func (response CreatePlan201JSONResponse) VisitCreatePlanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePlan404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CreatePlan404ApplicationProblemPlusJSONResponse) VisitCreatePlanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePlan409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response CreatePlan409ApplicationProblemPlusJSONResponse) VisitCreatePlanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePlan422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CreatePlan422ApplicationProblemPlusJSONResponse) VisitCreatePlanResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -6522,6 +10698,15 @@ type StrictServerInterface interface {
 	// (POST /api/v1/eligibility/checks)
 	CheckEligibility(ctx context.Context, request CheckEligibilityRequestObject) (CheckEligibilityResponseObject, error)
 
+	// (GET /api/v1/enrollments)
+	ListEnrollments(ctx context.Context, request ListEnrollmentsRequestObject) (ListEnrollmentsResponseObject, error)
+
+	// (GET /api/v1/enrollments/{enrollmentId})
+	GetEnrollment(ctx context.Context, request GetEnrollmentRequestObject) (GetEnrollmentResponseObject, error)
+
+	// (PATCH /api/v1/enrollments/{enrollmentId})
+	UpdateEnrollment(ctx context.Context, request UpdateEnrollmentRequestObject) (UpdateEnrollmentResponseObject, error)
+
 	// (GET /api/v1/me)
 	GetCurrentUserContext(ctx context.Context, request GetCurrentUserContextRequestObject) (GetCurrentUserContextResponseObject, error)
 
@@ -6555,6 +10740,12 @@ type StrictServerInterface interface {
 	// (PATCH /api/v1/people/{personId})
 	UpdatePerson(ctx context.Context, request UpdatePersonRequestObject) (UpdatePersonResponseObject, error)
 
+	// (GET /api/v1/people/{personId}/enrollments)
+	ListPersonEnrollments(ctx context.Context, request ListPersonEnrollmentsRequestObject) (ListPersonEnrollmentsResponseObject, error)
+
+	// (POST /api/v1/people/{personId}/enrollments)
+	CreateEnrollment(ctx context.Context, request CreateEnrollmentRequestObject) (CreateEnrollmentResponseObject, error)
+
 	// (GET /api/v1/people/{personId}/memberships)
 	ListSponsorMemberships(ctx context.Context, request ListSponsorMembershipsRequestObject) (ListSponsorMembershipsResponseObject, error)
 
@@ -6572,6 +10763,54 @@ type StrictServerInterface interface {
 
 	// (POST /api/v1/people/{personId}/relationships/{relationshipId}/end)
 	EndPersonRelationship(ctx context.Context, request EndPersonRelationshipRequestObject) (EndPersonRelationshipResponseObject, error)
+
+	// (GET /api/v1/plan-versions/{planVersionId})
+	GetPlanVersion(ctx context.Context, request GetPlanVersionRequestObject) (GetPlanVersionResponseObject, error)
+
+	// (PATCH /api/v1/plan-versions/{planVersionId})
+	UpdatePlanVersion(ctx context.Context, request UpdatePlanVersionRequestObject) (UpdatePlanVersionResponseObject, error)
+
+	// (PUT /api/v1/plan-versions/{planVersionId}/entitlement-definitions)
+	ReplaceEntitlementDefinitions(ctx context.Context, request ReplaceEntitlementDefinitionsRequestObject) (ReplaceEntitlementDefinitionsResponseObject, error)
+
+	// (POST /api/v1/plan-versions/{planVersionId}/publish)
+	PublishPlanVersion(ctx context.Context, request PublishPlanVersionRequestObject) (PublishPlanVersionResponseObject, error)
+
+	// (POST /api/v1/plan-versions/{planVersionId}/retire)
+	RetirePlanVersion(ctx context.Context, request RetirePlanVersionRequestObject) (RetirePlanVersionResponseObject, error)
+
+	// (POST /api/v1/plan-versions/{planVersionId}/submit)
+	SubmitPlanVersion(ctx context.Context, request SubmitPlanVersionRequestObject) (SubmitPlanVersionResponseObject, error)
+
+	// (GET /api/v1/plans/{planId})
+	GetPlan(ctx context.Context, request GetPlanRequestObject) (GetPlanResponseObject, error)
+
+	// (PATCH /api/v1/plans/{planId})
+	UpdatePlan(ctx context.Context, request UpdatePlanRequestObject) (UpdatePlanResponseObject, error)
+
+	// (GET /api/v1/plans/{planId}/versions)
+	ListPlanVersions(ctx context.Context, request ListPlanVersionsRequestObject) (ListPlanVersionsResponseObject, error)
+
+	// (POST /api/v1/plans/{planId}/versions)
+	CreatePlanVersion(ctx context.Context, request CreatePlanVersionRequestObject) (CreatePlanVersionResponseObject, error)
+
+	// (GET /api/v1/programs)
+	ListPrograms(ctx context.Context, request ListProgramsRequestObject) (ListProgramsResponseObject, error)
+
+	// (POST /api/v1/programs)
+	CreateProgram(ctx context.Context, request CreateProgramRequestObject) (CreateProgramResponseObject, error)
+
+	// (GET /api/v1/programs/{programId})
+	GetProgram(ctx context.Context, request GetProgramRequestObject) (GetProgramResponseObject, error)
+
+	// (PATCH /api/v1/programs/{programId})
+	UpdateProgram(ctx context.Context, request UpdateProgramRequestObject) (UpdateProgramResponseObject, error)
+
+	// (GET /api/v1/programs/{programId}/plans)
+	ListPlans(ctx context.Context, request ListPlansRequestObject) (ListPlansResponseObject, error)
+
+	// (POST /api/v1/programs/{programId}/plans)
+	CreatePlan(ctx context.Context, request CreatePlanRequestObject) (CreatePlanResponseObject, error)
 
 	// (GET /api/v1/service-requests)
 	ListServiceRequests(ctx context.Context, request ListServiceRequestsRequestObject) (ListServiceRequestsResponseObject, error)
@@ -6684,6 +10923,93 @@ func (sh *strictHandler) CheckEligibility(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(CheckEligibilityResponseObject); ok {
 		if err := validResponse.VisitCheckEligibilityResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListEnrollments operation middleware
+func (sh *strictHandler) ListEnrollments(w http.ResponseWriter, r *http.Request, params ListEnrollmentsParams) {
+	var request ListEnrollmentsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListEnrollments(ctx, request.(ListEnrollmentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListEnrollments")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListEnrollmentsResponseObject); ok {
+		if err := validResponse.VisitListEnrollmentsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetEnrollment operation middleware
+func (sh *strictHandler) GetEnrollment(w http.ResponseWriter, r *http.Request, enrollmentId EnrollmentId, params GetEnrollmentParams) {
+	var request GetEnrollmentRequestObject
+
+	request.EnrollmentId = enrollmentId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetEnrollment(ctx, request.(GetEnrollmentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetEnrollment")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetEnrollmentResponseObject); ok {
+		if err := validResponse.VisitGetEnrollmentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateEnrollment operation middleware
+func (sh *strictHandler) UpdateEnrollment(w http.ResponseWriter, r *http.Request, enrollmentId EnrollmentId, params UpdateEnrollmentParams) {
+	var request UpdateEnrollmentRequestObject
+
+	request.EnrollmentId = enrollmentId
+	request.Params = params
+
+	var body UpdateEnrollmentApplicationMergePatchPlusJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateEnrollment(ctx, request.(UpdateEnrollmentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateEnrollment")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateEnrollmentResponseObject); ok {
+		if err := validResponse.VisitUpdateEnrollmentResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -7014,6 +11340,67 @@ func (sh *strictHandler) UpdatePerson(w http.ResponseWriter, r *http.Request, pe
 	}
 }
 
+// ListPersonEnrollments operation middleware
+func (sh *strictHandler) ListPersonEnrollments(w http.ResponseWriter, r *http.Request, personId PersonId, params ListPersonEnrollmentsParams) {
+	var request ListPersonEnrollmentsRequestObject
+
+	request.PersonId = personId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListPersonEnrollments(ctx, request.(ListPersonEnrollmentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListPersonEnrollments")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListPersonEnrollmentsResponseObject); ok {
+		if err := validResponse.VisitListPersonEnrollmentsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateEnrollment operation middleware
+func (sh *strictHandler) CreateEnrollment(w http.ResponseWriter, r *http.Request, personId PersonId, params CreateEnrollmentParams) {
+	var request CreateEnrollmentRequestObject
+
+	request.PersonId = personId
+	request.Params = params
+
+	var body CreateEnrollmentJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateEnrollment(ctx, request.(CreateEnrollmentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateEnrollment")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateEnrollmentResponseObject); ok {
+		if err := validResponse.VisitCreateEnrollmentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListSponsorMemberships operation middleware
 func (sh *strictHandler) ListSponsorMemberships(w http.ResponseWriter, r *http.Request, personId PersonId, params ListSponsorMembershipsParams) {
 	var request ListSponsorMembershipsRequestObject
@@ -7199,6 +11586,512 @@ func (sh *strictHandler) EndPersonRelationship(w http.ResponseWriter, r *http.Re
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(EndPersonRelationshipResponseObject); ok {
 		if err := validResponse.VisitEndPersonRelationshipResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetPlanVersion operation middleware
+func (sh *strictHandler) GetPlanVersion(w http.ResponseWriter, r *http.Request, planVersionId PlanVersionId, params GetPlanVersionParams) {
+	var request GetPlanVersionRequestObject
+
+	request.PlanVersionId = planVersionId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetPlanVersion(ctx, request.(GetPlanVersionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetPlanVersion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetPlanVersionResponseObject); ok {
+		if err := validResponse.VisitGetPlanVersionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdatePlanVersion operation middleware
+func (sh *strictHandler) UpdatePlanVersion(w http.ResponseWriter, r *http.Request, planVersionId PlanVersionId, params UpdatePlanVersionParams) {
+	var request UpdatePlanVersionRequestObject
+
+	request.PlanVersionId = planVersionId
+	request.Params = params
+
+	var body UpdatePlanVersionApplicationMergePatchPlusJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdatePlanVersion(ctx, request.(UpdatePlanVersionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdatePlanVersion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdatePlanVersionResponseObject); ok {
+		if err := validResponse.VisitUpdatePlanVersionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReplaceEntitlementDefinitions operation middleware
+func (sh *strictHandler) ReplaceEntitlementDefinitions(w http.ResponseWriter, r *http.Request, planVersionId PlanVersionId, params ReplaceEntitlementDefinitionsParams) {
+	var request ReplaceEntitlementDefinitionsRequestObject
+
+	request.PlanVersionId = planVersionId
+	request.Params = params
+
+	var body ReplaceEntitlementDefinitionsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReplaceEntitlementDefinitions(ctx, request.(ReplaceEntitlementDefinitionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReplaceEntitlementDefinitions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReplaceEntitlementDefinitionsResponseObject); ok {
+		if err := validResponse.VisitReplaceEntitlementDefinitionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PublishPlanVersion operation middleware
+func (sh *strictHandler) PublishPlanVersion(w http.ResponseWriter, r *http.Request, planVersionId PlanVersionId, params PublishPlanVersionParams) {
+	var request PublishPlanVersionRequestObject
+
+	request.PlanVersionId = planVersionId
+	request.Params = params
+
+	var body PublishPlanVersionJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PublishPlanVersion(ctx, request.(PublishPlanVersionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PublishPlanVersion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PublishPlanVersionResponseObject); ok {
+		if err := validResponse.VisitPublishPlanVersionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RetirePlanVersion operation middleware
+func (sh *strictHandler) RetirePlanVersion(w http.ResponseWriter, r *http.Request, planVersionId PlanVersionId, params RetirePlanVersionParams) {
+	var request RetirePlanVersionRequestObject
+
+	request.PlanVersionId = planVersionId
+	request.Params = params
+
+	var body RetirePlanVersionJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RetirePlanVersion(ctx, request.(RetirePlanVersionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RetirePlanVersion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RetirePlanVersionResponseObject); ok {
+		if err := validResponse.VisitRetirePlanVersionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SubmitPlanVersion operation middleware
+func (sh *strictHandler) SubmitPlanVersion(w http.ResponseWriter, r *http.Request, planVersionId PlanVersionId, params SubmitPlanVersionParams) {
+	var request SubmitPlanVersionRequestObject
+
+	request.PlanVersionId = planVersionId
+	request.Params = params
+
+	var body SubmitPlanVersionJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SubmitPlanVersion(ctx, request.(SubmitPlanVersionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SubmitPlanVersion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SubmitPlanVersionResponseObject); ok {
+		if err := validResponse.VisitSubmitPlanVersionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetPlan operation middleware
+func (sh *strictHandler) GetPlan(w http.ResponseWriter, r *http.Request, planId PlanId, params GetPlanParams) {
+	var request GetPlanRequestObject
+
+	request.PlanId = planId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetPlan(ctx, request.(GetPlanRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetPlan")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetPlanResponseObject); ok {
+		if err := validResponse.VisitGetPlanResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdatePlan operation middleware
+func (sh *strictHandler) UpdatePlan(w http.ResponseWriter, r *http.Request, planId PlanId, params UpdatePlanParams) {
+	var request UpdatePlanRequestObject
+
+	request.PlanId = planId
+	request.Params = params
+
+	var body UpdatePlanApplicationMergePatchPlusJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdatePlan(ctx, request.(UpdatePlanRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdatePlan")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdatePlanResponseObject); ok {
+		if err := validResponse.VisitUpdatePlanResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListPlanVersions operation middleware
+func (sh *strictHandler) ListPlanVersions(w http.ResponseWriter, r *http.Request, planId PlanId, params ListPlanVersionsParams) {
+	var request ListPlanVersionsRequestObject
+
+	request.PlanId = planId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListPlanVersions(ctx, request.(ListPlanVersionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListPlanVersions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListPlanVersionsResponseObject); ok {
+		if err := validResponse.VisitListPlanVersionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreatePlanVersion operation middleware
+func (sh *strictHandler) CreatePlanVersion(w http.ResponseWriter, r *http.Request, planId PlanId, params CreatePlanVersionParams) {
+	var request CreatePlanVersionRequestObject
+
+	request.PlanId = planId
+	request.Params = params
+
+	var body CreatePlanVersionJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreatePlanVersion(ctx, request.(CreatePlanVersionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreatePlanVersion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreatePlanVersionResponseObject); ok {
+		if err := validResponse.VisitCreatePlanVersionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListPrograms operation middleware
+func (sh *strictHandler) ListPrograms(w http.ResponseWriter, r *http.Request, params ListProgramsParams) {
+	var request ListProgramsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListPrograms(ctx, request.(ListProgramsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListPrograms")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListProgramsResponseObject); ok {
+		if err := validResponse.VisitListProgramsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateProgram operation middleware
+func (sh *strictHandler) CreateProgram(w http.ResponseWriter, r *http.Request, params CreateProgramParams) {
+	var request CreateProgramRequestObject
+
+	request.Params = params
+
+	var body CreateProgramJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateProgram(ctx, request.(CreateProgramRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateProgram")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateProgramResponseObject); ok {
+		if err := validResponse.VisitCreateProgramResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetProgram operation middleware
+func (sh *strictHandler) GetProgram(w http.ResponseWriter, r *http.Request, programId ProgramId, params GetProgramParams) {
+	var request GetProgramRequestObject
+
+	request.ProgramId = programId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetProgram(ctx, request.(GetProgramRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetProgram")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetProgramResponseObject); ok {
+		if err := validResponse.VisitGetProgramResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateProgram operation middleware
+func (sh *strictHandler) UpdateProgram(w http.ResponseWriter, r *http.Request, programId ProgramId, params UpdateProgramParams) {
+	var request UpdateProgramRequestObject
+
+	request.ProgramId = programId
+	request.Params = params
+
+	var body UpdateProgramApplicationMergePatchPlusJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateProgram(ctx, request.(UpdateProgramRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateProgram")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateProgramResponseObject); ok {
+		if err := validResponse.VisitUpdateProgramResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListPlans operation middleware
+func (sh *strictHandler) ListPlans(w http.ResponseWriter, r *http.Request, programId ProgramId, params ListPlansParams) {
+	var request ListPlansRequestObject
+
+	request.ProgramId = programId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListPlans(ctx, request.(ListPlansRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListPlans")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListPlansResponseObject); ok {
+		if err := validResponse.VisitListPlansResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreatePlan operation middleware
+func (sh *strictHandler) CreatePlan(w http.ResponseWriter, r *http.Request, programId ProgramId, params CreatePlanParams) {
+	var request CreatePlanRequestObject
+
+	request.ProgramId = programId
+	request.Params = params
+
+	var body CreatePlanJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreatePlan(ctx, request.(CreatePlanRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreatePlan")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreatePlanResponseObject); ok {
+		if err := validResponse.VisitCreatePlanResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -7654,164 +12547,210 @@ func (sh *strictHandler) GetReadiness(w http.ResponseWriter, r *http.Request) {
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

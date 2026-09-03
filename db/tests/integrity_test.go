@@ -193,7 +193,10 @@ func TestPublishedPlanVersionIsImmutableAndNonOverlapping(t *testing.T) {
 	err = h.AdminExecErr(`DELETE FROM benefit.plan_version WHERE id = $1`, v1)
 	dbtest.ExpectSQLState(t, err, dbtest.SQLStateIntegrityConstraint, "delete published version")
 
-	h.AdminExec(`UPDATE benefit.plan_version SET status = 'RETIRED' WHERE id = $1`, v1)
+	// Retiring is the one allowed transition; migration 000015 requires a reason with it.
+	h.AdminExec(`UPDATE benefit.plan_version SET status = 'RETIRED', retire_reason_code = 'SUPERSEDED' WHERE id = $1`, v1)
+	err = h.AdminExecErr(`UPDATE benefit.plan_version SET notes = 'late edit' WHERE id = $1`, v1)
+	dbtest.ExpectSQLState(t, err, dbtest.SQLStateIntegrityConstraint, "edit retired version")
 }
 
 func TestEnrollmentOverlapRejected(t *testing.T) {

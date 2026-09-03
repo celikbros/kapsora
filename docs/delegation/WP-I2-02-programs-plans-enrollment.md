@@ -6,7 +6,7 @@
 | Size | L |
 | Depends on | M1; WP-I2-01 for memberships (enrollment needs a sponsor membership) |
 | Runs in parallel with | WP-I2-01 (except the enrollment endpoints) |
-| Migration numbers assigned | `000015_benefit_plan_version_review.up.sql` (adds `submitted_by`, `submitted_at`, `review_comment` to `benefit.plan_version`; `published_by <> submitted_by` CHECK) |
+| Migration numbers assigned | `000015_benefit_plan_version_review.up.sql` (already in the repo: review/retire columns, maker-checker and state CHECKs, guard trigger re-declared so retire may set the reason) |
 | OpenAPI operations owned | `listPrograms`, `createProgram`, `getProgram`, `updateProgram`, `listPlans`, `createPlan`, `getPlan`, `updatePlan`, `listPlanVersions`, `createPlanVersion`, `getPlanVersion`, `updatePlanVersion`, `submitPlanVersion`, `publishPlanVersion`, `retirePlanVersion`, `listEnrollments`, `createEnrollment`, `updateEnrollment` |
 | Read first | v1.2 11.3, 16.5 (benefit tables), 45; migrations 000004/000005; `benefit.tg_plan_version_guard` |
 
@@ -23,8 +23,9 @@ that was valid on the service date.
 ### 2.1 Programs and plans
 
 - Programs: CRUD with `program.read` / `program.manage`; fields code (unique per tenant,
-  `^[A-Z][A-Z0-9_-]{1,39}$`), name, program type (catalog `benefit.program_type`, baseline
-  provisioned: `HEALTH`, `WELLBEING`, `ACCOMMODATION`, `ASSISTANCE`, `MIXED`), sponsor and
+  `^[A-Z][A-Z0-9_-]{1,39}$`), name, program type (catalog `benefit.program_type`, baseline already
+  provisioned by WP-I1-02: `EMPLOYEE_BENEFIT`, `MEMBER_PROGRAM`, `SOCIAL_SUPPORT`,
+  `CUSTOMER_PRIVILEGE`, `INSURANCE_ASSISTANCE`, `STUDENT_SUPPORT`), sponsor and
   payer organizations (tenant_organization ids with roles SPONSOR/PAYER), `validFrom/To`,
   status transitions DRAFT→ACTIVE→SUSPENDED↔ACTIVE→CLOSED.
 - Plans: CRUD under a program with `plan.manage`; code unique per program; status
