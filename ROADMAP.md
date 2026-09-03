@@ -73,7 +73,7 @@ closing M1.
 | [WP-I2-06](docs/delegation/WP-I2-06-frontend-people-plans.md) | Backoffice screens: people, memberships, programs/plans, entitlements, eligibility, import | contracts of 01-05 | all | L | Claude |
 
 Integration order: 01 → 02 → 03 → 04 → 05 → 06 (06 starts on mocks as soon as each
-contract lands). Migrations: 000014 (02), 000015 (03), 000016 (04), 000017 (05).
+contract lands). Migrations: 000014 (01, relationship versioning), 000015 (02), 000016 (03), 000017 (04), 000018 (05).
 
 ## Cross-cutting tracks
 

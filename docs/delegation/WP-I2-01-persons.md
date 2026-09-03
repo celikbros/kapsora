@@ -1,12 +1,20 @@
 # WP-I2-01 · Persons: registry, encrypted identifiers, blind-index search, relationships, sponsor memberships
 
+> **Delivered in-house on 2026-09-03.** Decisions taken during delivery: identifier
+> search access events use classification `PERSONAL` (the audit enum has no SENSITIVE;
+> health-context reads use `HEALTH`); a PATCH identifier `{type, value}` replaces the
+> person's rows of that type (one value per type); `normalized_name` uses the
+> `last, first middle` form of section 3.2; non-directional relationships are stored with
+> the lower uuid as source so mirrored duplicates hit the same exclusion constraint; the
+> access event of a missed search is committed before the 404.
+
 | Field | Value |
 |---|---|
 | Milestone | M2 (plan increment I2) |
 | Size | L |
 | Depends on | M1 (identity, tenant context, organizations, audit, idempotency, crypto ports) |
 | Runs in parallel with | WP-I2-02 (programs/plans) |
-| Migration numbers assigned | none expected (tables exist in 000003); use 000014 only if a column is missing and say so in the report |
+| Migration numbers assigned | `000014_person_relationship_versioning.up.sql` (row_version, updated_at, end reason on `party.person_relationship`) |
 | OpenAPI operations owned | `listPeople`, `createPerson`, `getPerson`, new: `updatePerson`, `searchPeopleByIdentifier`, `listPersonRelationships`, `createPersonRelationship`, `endPersonRelationship`, `listSponsorMemberships`, `createSponsorMembership`, `updateSponsorMembership`, `listPartyCatalogs` |
 | Read first | Handbook; v1.2 11.2, 16.5 (party tables), 45 (member endpoints); ADR-017 (crypto), `internal/organization` as the reference module; the sqlc, RLS and audit conventions in `docs/delegation/README.md` |
 

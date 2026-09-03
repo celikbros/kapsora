@@ -6,7 +6,7 @@
 | Size | L |
 | Depends on | WP-I2-02 (plan versions, entitlement definitions, enrollments) |
 | Runs in parallel with | WP-I2-01 |
-| Migration numbers assigned | `000015_benefit_entitlement_reservation.up.sql` (D8) |
+| Migration numbers assigned | `000016_benefit_entitlement_reservation.up.sql` (D8) |
 | OpenAPI operations owned | `listPersonEntitlements`, `getEntitlementAccount`, `listEntitlementLedger`, `createEntitlementAdjustment`, `approveEntitlementAdjustment`; internal Go API for reserve/release/consume/reverse used by later increments |
 | Read first | v1.2 11.4, 13.5 (transaction sketch), 16.5 (`entitlement_*`), 31.2 (reconciliation); migration 000005 constraints (`ck_entitlement_account_balance`, `ck_entitlement_ledger_conservation`, append-only ledger) |
 
@@ -19,7 +19,7 @@ proves ledger sums equal account balances.
 
 ## 2. Scope
 
-### 2.1 Migration 000015
+### 2.1 Migration 000016
 
 ```sql
 CREATE TABLE benefit.entitlement_reservation (
@@ -80,7 +80,7 @@ the existing reservation when the key was seen with the same quantity, 409
 ### 2.4 Manual adjustments (maker-checker)
 
 - `POST /entitlement-accounts/{id}/adjustments` (`entitlement.adjust`): creates a
-  pending adjustment (`benefit.entitlement_adjustment` — add to migration 000015:
+  pending adjustment (`benefit.entitlement_adjustment` — add to migration 000016:
   quantity delta, reason, requested_by, status PENDING|APPROVED|REJECTED, approved_by).
 - `POST /entitlement-adjustments/{id}/approve|reject` (`entitlement.adjust`, step-up,
   approver ≠ requester): approve writes the `ADJUST` movement.
@@ -112,7 +112,7 @@ the existing reservation when the key was seen with the same quantity, 409
   injected drift (admin UPDATE of the account) and freezes the account.
 - Family-shared account resolution for a dependant.
 - Adjustment maker-checker: same actor rejected; approved adjustment appears in ledger.
-- db/tests: `expectedSchemaVersion` 15; new tables RLS; ledger still append-only.
+- db/tests: `expectedSchemaVersion` 16; new tables RLS; ledger still append-only.
 
 ## 4. Acceptance criteria
 

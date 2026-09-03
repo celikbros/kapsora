@@ -25,6 +25,9 @@ import (
 	orgapp "github.com/celikbros/kapsora/internal/organization/application"
 	organizationpg "github.com/celikbros/kapsora/internal/organization/infrastructure/postgres"
 	organizationhttp "github.com/celikbros/kapsora/internal/organization/transport/http"
+	partyapp "github.com/celikbros/kapsora/internal/party/application"
+	partypg "github.com/celikbros/kapsora/internal/party/infrastructure/postgres"
+	partyhttp "github.com/celikbros/kapsora/internal/party/transport/http"
 	"github.com/celikbros/kapsora/internal/platform/config"
 	"github.com/celikbros/kapsora/internal/platform/crypto/localkey"
 	"github.com/celikbros/kapsora/internal/platform/db"
@@ -42,6 +45,9 @@ const serviceName = "kapsora-api"
 var (
 	loginRateLimit = ratelimit.Policy{PerMinute: 10, Burst: 5}
 	apiRateLimit   = ratelimit.Policy{PerMinute: 120, Burst: 60}
+	// Identifier search is the only endpoint that turns a plaintext identifier into a
+	// person, so it gets its own per-actor budget on top of the tenant limit (WP-I2-01).
+	identifierSearchRateLimit = ratelimit.Policy{PerMinute: 20, Burst: 10}
 )
 
 func main() {
@@ -99,6 +105,13 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	partySvc, err := partyapp.New(partyapp.Deps{
+		Pool: pool, Repo: partypg.New(), Cipher: keys, Index: keys,
+		Audit: auditpg.New(), Cursors: cursors,
+	})
+	if err != nil {
+		return err
+	}
 
 	checker := health.NewChecker(2 * time.Second)
 	checker.Add("postgresql", health.PostgresCheck(pool))
@@ -110,6 +123,7 @@ func run() error {
 		checker: checker,
 		ident:   ident,
 		orgs:    orgSvc,
+		party:   partySvc,
 		limiter: ratelimit.NewPostgres(pool),
 	})
 
@@ -182,6 +196,7 @@ type routerDeps struct {
 	checker *health.Checker
 	ident   identityDeps
 	orgs    *orgapp.Service
+	party   *partyapp.Service
 	limiter ratelimit.Limiter
 }
 
@@ -237,15 +252,32 @@ func newRouter(d routerDeps) http.Handler {
 
 			orgHandler := organizationhttp.NewHandler(d.orgs, sessions, d.logger)
 			tenant.Route("/organizations", func(r chi.Router) {
-				orgHandler.Routes(r, idempotency.Middleware(d.pool, idempotency.Options{
-					CommandCode: "organization.create",
-					Scope:       idempotencyScope,
-					Logger:      d.logger,
-				}))
+				orgHandler.Routes(r, d.idempotent("organization.create"))
 			})
+
+			partyHandler := partyhttp.NewHandler(d.party, sessions, d.logger)
+			tenant.Route("/people", func(r chi.Router) {
+				partyHandler.Routes(r, partyhttp.Middlewares{
+					CreatePerson:       d.idempotent("person.create"),
+					CreateRelationship: d.idempotent("relationship.create"),
+					CreateMembership:   d.idempotent("membership.create"),
+					Search: ratelimit.Middleware(d.limiter,
+						ratelimit.ScopedKey("member.identifier.search", tenantScope), identifierSearchRateLimit, d.logger),
+				})
+			})
+			tenant.Route("/party", partyHandler.CatalogRoutes)
 		})
 	})
 	return r
+}
+
+// idempotent builds the Idempotency-Key middleware for one command code.
+func (d routerDeps) idempotent(commandCode string) func(http.Handler) http.Handler {
+	return idempotency.Middleware(d.pool, idempotency.Options{
+		CommandCode: commandCode,
+		Scope:       idempotencyScope,
+		Logger:      d.logger,
+	})
 }
 
 // anonymousScope keys the rate limiter by client address only (login).

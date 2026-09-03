@@ -465,6 +465,10 @@ paths:
     get:
       tags: [People]
       operationId: listPeople
+      description: |
+        Keyset page of the tenant's persons, newest first. `q` matches the folded
+        normalized name token by token; identifiers are never accepted here, an exact
+        lookup goes through the permission-protected search endpoint.
       parameters:
         - $ref: '#/components/parameters/TenantHeader'
         - $ref: '#/components/parameters/Cursor'
@@ -475,6 +479,18 @@ paths:
           schema:
             type: string
             maxLength: 120
+        - name: status
+          in: query
+          description: Keeps only persons in this registry status.
+          schema:
+            type: string
+            enum: [ACTIVE, INACTIVE, DECEASED, MERGED]
+        - name: sponsorOrganizationId
+          in: query
+          description: Keeps only persons with an active membership under this sponsor or payer organization.
+          schema:
+            type: string
+            format: uuid
       responses:
         '200':
           description: Person page
@@ -485,6 +501,11 @@ paths:
     post:
       tags: [People]
       operationId: createPerson
+      description: |
+        Registers a person. Identifier types come from the tenant catalog; a TCKN is
+        checksum-validated, every value is envelope-encrypted and indexed with a
+        tenant-salted HMAC, and only the masked form is ever returned. A value already
+        held by another person answers 409 PERSON_IDENTIFIER_TAKEN.
       parameters:
         - $ref: '#/components/parameters/TenantHeader'
         - $ref: '#/components/parameters/IdempotencyKey'
@@ -514,6 +535,10 @@ paths:
     get:
       tags: [People]
       operationId: getPerson
+      description: |
+        One person with masked identifiers and the ETag to send back as `If-Match`. A
+        merged person answers 200 with status MERGED and the surviving person in
+        `mergedIntoId`.
       parameters:
         - $ref: '#/components/parameters/TenantHeader'
         - $ref: '#/components/parameters/PersonId'

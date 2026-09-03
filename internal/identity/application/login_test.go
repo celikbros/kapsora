@@ -170,7 +170,9 @@ func TestLockoutAfterRepeatedFailuresAndResetOnSuccess(t *testing.T) {
 
 	// The lock lifts on its own once the window passes.
 	f.clock.Advance(lock.Duration + time.Minute)
-	f.h.AdminExec(`UPDATE iam.credential SET locked_until = clock_timestamp() - interval '1 minute' WHERE actor_id = $1`, f.actorID)
+	// The service compares locked_until with its (fake) clock, so the expiry must be expressed
+	// in that clock, not the database's; otherwise the test depends on the time of day.
+	f.h.AdminExec(`UPDATE iam.credential SET locked_until = $2 WHERE actor_id = $1`, f.actorID, f.clock.Now().Add(-time.Minute))
 	if _, err := f.login(t, "ahmet@example.test", testPassword); err != nil {
 		t.Fatalf("login after the lock expired: %v", err)
 	}

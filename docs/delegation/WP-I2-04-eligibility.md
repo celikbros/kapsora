@@ -6,7 +6,7 @@
 | Size | M |
 | Depends on | WP-I2-01, WP-I2-02, WP-I2-03 |
 | Runs in parallel with | WP-I2-05 |
-| Migration numbers assigned | `000016_benefit_eligibility_evaluation.up.sql` |
+| Migration numbers assigned | `000017_benefit_eligibility_evaluation.up.sql` |
 | OpenAPI operations owned | `checkEligibility` (exists), new: `getEligibilityEvaluation` |
 | Read first | v1.2 10.2, 11.4, 16.5 (`eligibility_evaluation`), contract `EligibilityCheckRequest/Result`; ADR-015 problem codes |
 
@@ -42,7 +42,7 @@ Steps, each producing explanation codes (severity INFO/WARNING/ERROR):
 The result carries `planVersionId`, `ruleSetVersionIds: []` (rules arrive in I3),
 `balances[]`, `explanations[]`, `evaluatedAt`, and a new `evaluationId`.
 
-### 2.2 Persistence (migration 000016)
+### 2.2 Persistence (migration 000017)
 
 `benefit.eligibility_evaluation`: id, tenant_id, person_id (composite FK), program_id,
 enrollment_id, plan_version_id (nullable composite FKs), service_date, outcome,

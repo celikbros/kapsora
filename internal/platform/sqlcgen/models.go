@@ -432,6 +432,10 @@ type PartyPersonRelationship struct {
 	ValidPeriod      pgtype.Range[pgtype.Date]
 	Status           string
 	CreatedAt        time.Time
+	EndReasonCode    *string
+	EndReasonText    *string
+	UpdatedAt        time.Time
+	RowVersion       int64
 }
 
 type PartyRelationshipType struct {

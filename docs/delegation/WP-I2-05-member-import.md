@@ -6,7 +6,7 @@
 | Size | L |
 | Depends on | WP-I2-01, WP-I2-02 |
 | Runs in parallel with | WP-I2-04 |
-| Migration numbers assigned | `000017_party_import_staging.up.sql` |
+| Migration numbers assigned | `000018_party_import_staging.up.sql` |
 | OpenAPI operations owned | `createMemberImport`, `getMemberImport`, `listMemberImportRows`, `reviewMemberImportRow`, `applyMemberImport`, `cancelMemberImport` |
 | Read first | v1.2 10.1 (bulk import), 11.2, 16.5; WP-I2-01 identifier rules; `internal/platform/outbox` and scheduler job runner |
 
@@ -19,7 +19,7 @@ newer version of it, never creates duplicates.
 
 ## 2. Scope
 
-### 2.1 Migration 000017
+### 2.1 Migration 000018
 
 - `party.import_batch`: id, tenant_id, sponsor_tenant_organization_id, plan_id (optional
   default enrollment plan), source_system text, source_version text, file_name, file_sha256
@@ -67,7 +67,7 @@ columns rejected; max 50 000 rows; max 20 MB.
    `plan_code`/`planId` present; every write carries `source_system`/`source_record_id`
    (memberships/enrollments have the columns; persons record it in `party.person_identifier`
    of type `SOURCE_RECORD`? — no: add `source_system`, `source_record_id` to
-   `party.person` in migration 000017). Re-applying the same batch is a no-op; a new
+   `party.person` in migration 000018). Re-applying the same batch is a no-op; a new
    `source_version` of the same file updates instead of duplicating.
 6. Report: `GET /imports/members/{id}` returns counters, per-status counts and the
    reconciliation summary (rows in file vs created/updated/skipped/conflict).

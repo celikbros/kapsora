@@ -6,7 +6,7 @@
 | Size | L |
 | Depends on | M1; WP-I2-01 for memberships (enrollment needs a sponsor membership) |
 | Runs in parallel with | WP-I2-01 (except the enrollment endpoints) |
-| Migration numbers assigned | `000014_benefit_plan_version_review.up.sql` (adds `submitted_by`, `submitted_at`, `review_comment` to `benefit.plan_version`; `published_by <> submitted_by` CHECK) |
+| Migration numbers assigned | `000015_benefit_plan_version_review.up.sql` (adds `submitted_by`, `submitted_at`, `review_comment` to `benefit.plan_version`; `published_by <> submitted_by` CHECK) |
 | OpenAPI operations owned | `listPrograms`, `createProgram`, `getProgram`, `updateProgram`, `listPlans`, `createPlan`, `getPlan`, `updatePlan`, `listPlanVersions`, `createPlanVersion`, `getPlanVersion`, `updatePlanVersion`, `submitPlanVersion`, `publishPlanVersion`, `retirePlanVersion`, `listEnrollments`, `createEnrollment`, `updateEnrollment` |
 | Read first | v1.2 11.3, 16.5 (benefit tables), 45; migrations 000004/000005; `benefit.tg_plan_version_guard` |
 
@@ -43,7 +43,7 @@ that was valid on the service date.
   `submitted_by`; `POST /plan-versions/{id}/publish` (`plan.publish`, step-up) sets
   PUBLISHED, `published_by`, `published_at`, `configuration_hash` (SHA-256 of the
   canonical JSON of definitions + period). The publisher must differ from the submitter
-  (CHECK in migration 000014 + 403 `MAKER_CHECKER_SAME_ACTOR`). Overlapping published
+  (CHECK in migration 000015 + 403 `MAKER_CHECKER_SAME_ACTOR`). Overlapping published
   periods → 409 `PLAN_VERSION_OVERLAP` (exclusion constraint). Any write to a PUBLISHED
   version other than retire → 409 `PLAN_VERSION_IMMUTABLE` (trigger errcode).
 - `POST /plan-versions/{id}/retire` (`plan.publish`): PUBLISHED→RETIRED with a reason;
@@ -76,7 +76,7 @@ that was valid on the service date.
 
 ## 4. Tests required
 
-- db/tests: migration 000014 applied, `expectedSchemaVersion` 14; publisher = submitter
+- db/tests: migration 000015 applied, `expectedSchemaVersion` 15; publisher = submitter
   rejected by CHECK.
 - Application (dbtest): full lifecycle draft→review→publish→retire; second publish for an
   overlapping period 409; editing a published version 409; hash stable across
