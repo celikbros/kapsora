@@ -1532,6 +1532,214 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+  /api/v1/people/{personId}/entitlements:
+    get:
+      tags: [Benefit]
+      operationId: listPersonEntitlements
+      description: |
+        Entitlement accounts reachable by the person: accounts of their own enrollments and
+        family-shared accounts of their principal, with balances and the definition summary.
+        `asOf` (default today) selects the benefit periods that contain the date.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PersonId'
+        - name: asOf
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Accounts with balances
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EntitlementAccount'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/entitlement-accounts/{accountId}:
+    get:
+      tags: [Benefit]
+      operationId: getEntitlementAccount
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/AccountId'
+      responses:
+        '200':
+          description: Account with balances and open reservations
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntitlementAccount'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/entitlement-accounts/{accountId}/ledger:
+    get:
+      tags: [Benefit]
+      operationId: listEntitlementLedger
+      description: Ledger movements of the account, newest first, keyset paged. The ledger is append-only.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/AccountId'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Ledger page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LedgerPage'
+        '400':
+          description: Cursor invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/entitlement-accounts/{accountId}/adjustments:
+    post:
+      tags: [Benefit]
+      operationId: createEntitlementAdjustment
+      description: |
+        Requests a manual correction of the account (positive or negative quantity) with a
+        reason. Nothing moves until a different actor approves it (maker-checker); the
+        request itself is audited.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/AccountId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAdjustmentRequest'
+      responses:
+        '201':
+          description: Adjustment pending approval
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntitlementAdjustment'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/entitlement-adjustments:
+    get:
+      tags: [Benefit]
+      operationId: listEntitlementAdjustments
+      description: Adjustments of the tenant filtered by status (default PENDING), newest first.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PENDING, APPROVED, REJECTED]
+      responses:
+        '200':
+          description: Adjustment page
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EntitlementAdjustment'
+                  nextCursor:
+                    type: [string, 'null']
+  /api/v1/entitlement-adjustments/{adjustmentId}/approve:
+    post:
+      tags: [Benefit]
+      operationId: approveEntitlementAdjustment
+      description: |
+        Approves a pending adjustment and writes the ADJUST ledger movement in the same
+        transaction. The approver must differ from the requester (403
+        MAKER_CHECKER_SAME_ACTOR) and must have re-entered their password (step-up).
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/AdjustmentId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewComment'
+      responses:
+        '200':
+          description: Adjustment approved and applied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntitlementAdjustment'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/entitlement-adjustments/{adjustmentId}/reject:
+    post:
+      tags: [Benefit]
+      operationId: rejectEntitlementAdjustment
+      description: Rejects a pending adjustment with a reason; nothing moves.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/AdjustmentId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonCommand'
+      responses:
+        '200':
+          description: Adjustment rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntitlementAdjustment'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
   /api/v1/eligibility/checks:
     post:
       tags: [Eligibility]
@@ -1867,6 +2075,20 @@ components:
         format: uuid
     EnrollmentId:
       name: enrollmentId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    AccountId:
+      name: accountId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    AdjustmentId:
+      name: adjustmentId
       in: path
       required: true
       schema:
@@ -2822,6 +3044,7 @@ components:
         initialQuantity:
           type: number
           minimum: 0
+          x-go-type: json.Number
         allowOverdraft:
           type: boolean
           default: false
@@ -2832,6 +3055,7 @@ components:
         rolloverCap:
           type: number
           minimum: 0
+          x-go-type: json.Number
           description: Required when rolloverPolicy is CAPPED.
         familyShared:
           type: boolean
@@ -2939,6 +3163,220 @@ components:
         validTo:
           type: [string, 'null']
           format: date
+    EntitlementAccount:
+      type: object
+      additionalProperties: false
+      required: [id, enrollmentId, personId, definition, benefitPeriodFrom, benefitPeriodTo, totalGranted, available, reserved, consumed, expired, status, shared, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        enrollmentId:
+          type: string
+          format: uuid
+        personId:
+          type: string
+          format: uuid
+          description: Owner of the enrollment; for family-shared accounts the principal.
+        definition:
+          type: object
+          additionalProperties: false
+          required: [id, code, name, unitType, familyShared, allowOverdraft]
+          properties:
+            id:
+              type: string
+              format: uuid
+            code:
+              type: string
+            name:
+              type: string
+            unitType:
+              type: string
+              enum: [MONEY, COUNT, NIGHT, SESSION, HOUR, KILOMETER, POINT]
+            currencyCode:
+              type: [string, 'null']
+            familyShared:
+              type: boolean
+            allowOverdraft:
+              type: boolean
+        benefitPeriodFrom:
+          type: string
+          format: date
+        benefitPeriodTo:
+          type: [string, 'null']
+          format: date
+          description: Exclusive upper bound; null for lifetime accounts.
+        totalGranted:
+          type: number
+          x-go-type: json.Number
+        available:
+          type: number
+          x-go-type: json.Number
+        reserved:
+          type: number
+          x-go-type: json.Number
+        consumed:
+          type: number
+          x-go-type: json.Number
+        expired:
+          type: number
+          x-go-type: json.Number
+        status:
+          type: string
+          enum: [OPEN, FROZEN, CLOSED]
+        shared:
+          type: boolean
+          description: True when the caller reached this account through a principal membership.
+        openReservations:
+          type: array
+          items:
+            $ref: '#/components/schemas/EntitlementReservation'
+        rowVersion:
+          type: integer
+          minimum: 1
+    EntitlementReservation:
+      type: object
+      additionalProperties: false
+      required: [id, referenceType, referenceId, quantity, consumedQuantity, releasedQuantity, status, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        referenceType:
+          type: string
+          enum: [SERVICE_REQUEST, BOOKING, AUTHORIZATION, MANUAL]
+        referenceId:
+          type: string
+          format: uuid
+        quantity:
+          type: number
+          x-go-type: json.Number
+        consumedQuantity:
+          type: number
+          x-go-type: json.Number
+        releasedQuantity:
+          type: number
+          x-go-type: json.Number
+        status:
+          type: string
+          enum: [HELD, PARTIALLY_CONSUMED, CONSUMED, RELEASED, EXPIRED]
+        expiresAt:
+          type: [string, 'null']
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    LedgerEntry:
+      type: object
+      additionalProperties: false
+      required: [id, movementType, effectiveAt, deltaTotal, deltaAvailable, deltaReserved, deltaConsumed, deltaExpired, referenceType, referenceId]
+      properties:
+        id:
+          type: string
+          format: uuid
+        movementType:
+          type: string
+          enum: [GRANT, RESERVE, RELEASE, CONSUME, REVERSE, EXPIRE, ADJUST]
+        effectiveAt:
+          type: string
+          format: date-time
+        deltaTotal:
+          type: number
+          x-go-type: json.Number
+        deltaAvailable:
+          type: number
+          x-go-type: json.Number
+        deltaReserved:
+          type: number
+          x-go-type: json.Number
+        deltaConsumed:
+          type: number
+          x-go-type: json.Number
+        deltaExpired:
+          type: number
+          x-go-type: json.Number
+        referenceType:
+          type: string
+        referenceId:
+          type: string
+          format: uuid
+        reservationId:
+          type: [string, 'null']
+          format: uuid
+        reasonCode:
+          type: [string, 'null']
+        reasonText:
+          type: [string, 'null']
+        createdBy:
+          type: [string, 'null']
+          format: uuid
+    LedgerPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LedgerEntry'
+        nextCursor:
+          type: [string, 'null']
+    CreateAdjustmentRequest:
+      type: object
+      additionalProperties: false
+      required: [deltaQuantity, reasonCode]
+      properties:
+        deltaQuantity:
+          type: number
+          x-go-type: json.Number
+          description: Positive grants, negative removes from the available balance; never zero.
+        reasonCode:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]{1,63}$'
+        reasonText:
+          type: string
+          maxLength: 500
+    EntitlementAdjustment:
+      type: object
+      additionalProperties: false
+      required: [id, accountId, deltaQuantity, reasonCode, status, requestedBy, requestedAt, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        accountId:
+          type: string
+          format: uuid
+        deltaQuantity:
+          type: number
+          x-go-type: json.Number
+        reasonCode:
+          type: string
+        reasonText:
+          type: [string, 'null']
+        status:
+          type: string
+          enum: [PENDING, APPROVED, REJECTED]
+        requestedBy:
+          type: string
+          format: uuid
+        requestedAt:
+          type: string
+          format: date-time
+        decidedBy:
+          type: [string, 'null']
+          format: uuid
+        decidedAt:
+          type: [string, 'null']
+          format: date-time
+        decisionComment:
+          type: [string, 'null']
+        ledgerEntryId:
+          type: [string, 'null']
+          format: uuid
+        rowVersion:
+          type: integer
+          minimum: 1
     EligibilityCheckRequest:
       type: object
       additionalProperties: false

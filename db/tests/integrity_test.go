@@ -280,20 +280,34 @@ func TestLedgerConservationAndAppendOnly(t *testing.T) {
 	h.AdminExec(`UPDATE benefit.entitlement_account SET reserved_quantity = 2, available_quantity = 5 WHERE id = $1`, acct)
 
 	// Ledger conservation and append-only.
+	// Migration 000016: RESERVE/RELEASE/CONSUME movements must point at a reservation.
 	err = h.AdminExecErr(`
 		INSERT INTO benefit.entitlement_ledger (tenant_id, entitlement_account_id, movement_type, effective_at, delta_available, delta_reserved, reference_type, reference_id, idempotency_key)
-		VALUES ($1, $2, 'RESERVE', clock_timestamp(), -2, 1, 'TEST', $3, 'k1')`, s.tenant, acct, uuid.New())
+		VALUES ($1, $2, 'RESERVE', clock_timestamp(), -2, 2, 'TEST', $3, 'k0')`, s.tenant, acct, uuid.New())
+	dbtest.ExpectSQLState(t, err, dbtest.SQLStateCheckViolation, "reserve without reservation")
+
+	var reservation uuid.UUID
+	reference := uuid.New()
+	if err := h.Admin.QueryRow(ctx, `
+		INSERT INTO benefit.entitlement_reservation (tenant_id, entitlement_account_id, reference_type, reference_id, quantity, idempotency_key)
+		VALUES ($1, $2, 'MANUAL', $3, 2, 'k1') RETURNING id`, s.tenant, acct, reference).Scan(&reservation); err != nil {
+		t.Fatalf("reservation insert: %v", err)
+	}
+
+	err = h.AdminExecErr(`
+		INSERT INTO benefit.entitlement_ledger (tenant_id, entitlement_account_id, movement_type, effective_at, delta_available, delta_reserved, reference_type, reference_id, idempotency_key, reservation_id)
+		VALUES ($1, $2, 'RESERVE', clock_timestamp(), -2, 1, 'TEST', $3, 'k1', $4)`, s.tenant, acct, reference, reservation)
 	dbtest.ExpectSQLState(t, err, dbtest.SQLStateCheckViolation, "ledger conservation")
 
 	var ledgerID uuid.UUID
 	if err := h.Admin.QueryRow(ctx, `
-		INSERT INTO benefit.entitlement_ledger (tenant_id, entitlement_account_id, movement_type, effective_at, delta_available, delta_reserved, reference_type, reference_id, idempotency_key)
-		VALUES ($1, $2, 'RESERVE', clock_timestamp(), -2, 2, 'TEST', $3, 'k1') RETURNING id`, s.tenant, acct, uuid.New()).Scan(&ledgerID); err != nil {
+		INSERT INTO benefit.entitlement_ledger (tenant_id, entitlement_account_id, movement_type, effective_at, delta_available, delta_reserved, reference_type, reference_id, idempotency_key, reservation_id)
+		VALUES ($1, $2, 'RESERVE', clock_timestamp(), -2, 2, 'TEST', $3, 'k1', $4) RETURNING id`, s.tenant, acct, reference, reservation).Scan(&ledgerID); err != nil {
 		t.Fatalf("ledger insert: %v", err)
 	}
 	err = h.AdminExecErr(`
-		INSERT INTO benefit.entitlement_ledger (tenant_id, entitlement_account_id, movement_type, effective_at, delta_available, delta_reserved, reference_type, reference_id, idempotency_key)
-		VALUES ($1, $2, 'RESERVE', clock_timestamp(), -2, 2, 'TEST', $3, 'k1')`, s.tenant, acct, uuid.New())
+		INSERT INTO benefit.entitlement_ledger (tenant_id, entitlement_account_id, movement_type, effective_at, delta_available, delta_reserved, reference_type, reference_id, idempotency_key, reservation_id)
+		VALUES ($1, $2, 'RESERVE', clock_timestamp(), -2, 2, 'TEST', $3, 'k1', $4)`, s.tenant, acct, reference, reservation)
 	dbtest.ExpectSQLState(t, err, dbtest.SQLStateUniqueViolation, "ledger idempotency")
 
 	err = h.AdminExecErr(`UPDATE benefit.entitlement_ledger SET reason_text = 'x' WHERE id = $1`, ledgerID)

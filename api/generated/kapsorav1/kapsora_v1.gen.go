@@ -297,6 +297,81 @@ func (e EnrollmentStatus) Valid() bool {
 	}
 }
 
+// Defines values for EntitlementAccountDefinitionUnitType.
+const (
+	EntitlementAccountDefinitionUnitTypeCOUNT     EntitlementAccountDefinitionUnitType = "COUNT"
+	EntitlementAccountDefinitionUnitTypeHOUR      EntitlementAccountDefinitionUnitType = "HOUR"
+	EntitlementAccountDefinitionUnitTypeKILOMETER EntitlementAccountDefinitionUnitType = "KILOMETER"
+	EntitlementAccountDefinitionUnitTypeMONEY     EntitlementAccountDefinitionUnitType = "MONEY"
+	EntitlementAccountDefinitionUnitTypeNIGHT     EntitlementAccountDefinitionUnitType = "NIGHT"
+	EntitlementAccountDefinitionUnitTypePOINT     EntitlementAccountDefinitionUnitType = "POINT"
+	EntitlementAccountDefinitionUnitTypeSESSION   EntitlementAccountDefinitionUnitType = "SESSION"
+)
+
+// Valid indicates whether the value is a known member of the EntitlementAccountDefinitionUnitType enum.
+func (e EntitlementAccountDefinitionUnitType) Valid() bool {
+	switch e {
+	case EntitlementAccountDefinitionUnitTypeCOUNT:
+		return true
+	case EntitlementAccountDefinitionUnitTypeHOUR:
+		return true
+	case EntitlementAccountDefinitionUnitTypeKILOMETER:
+		return true
+	case EntitlementAccountDefinitionUnitTypeMONEY:
+		return true
+	case EntitlementAccountDefinitionUnitTypeNIGHT:
+		return true
+	case EntitlementAccountDefinitionUnitTypePOINT:
+		return true
+	case EntitlementAccountDefinitionUnitTypeSESSION:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EntitlementAccountStatus.
+const (
+	EntitlementAccountStatusCLOSED EntitlementAccountStatus = "CLOSED"
+	EntitlementAccountStatusFROZEN EntitlementAccountStatus = "FROZEN"
+	EntitlementAccountStatusOPEN   EntitlementAccountStatus = "OPEN"
+)
+
+// Valid indicates whether the value is a known member of the EntitlementAccountStatus enum.
+func (e EntitlementAccountStatus) Valid() bool {
+	switch e {
+	case EntitlementAccountStatusCLOSED:
+		return true
+	case EntitlementAccountStatusFROZEN:
+		return true
+	case EntitlementAccountStatusOPEN:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EntitlementAdjustmentStatus.
+const (
+	EntitlementAdjustmentStatusAPPROVED EntitlementAdjustmentStatus = "APPROVED"
+	EntitlementAdjustmentStatusPENDING  EntitlementAdjustmentStatus = "PENDING"
+	EntitlementAdjustmentStatusREJECTED EntitlementAdjustmentStatus = "REJECTED"
+)
+
+// Valid indicates whether the value is a known member of the EntitlementAdjustmentStatus enum.
+func (e EntitlementAdjustmentStatus) Valid() bool {
+	switch e {
+	case EntitlementAdjustmentStatusAPPROVED:
+		return true
+	case EntitlementAdjustmentStatusPENDING:
+		return true
+	case EntitlementAdjustmentStatusREJECTED:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for EntitlementDefinitionPeriodType.
 const (
 	EntitlementDefinitionPeriodTypeCALENDARYEAR EntitlementDefinitionPeriodType = "CALENDAR_YEAR"
@@ -477,6 +552,57 @@ func (e EntitlementDefinitionInputUnitType) Valid() bool {
 	}
 }
 
+// Defines values for EntitlementReservationReferenceType.
+const (
+	AUTHORIZATION  EntitlementReservationReferenceType = "AUTHORIZATION"
+	BOOKING        EntitlementReservationReferenceType = "BOOKING"
+	MANUAL         EntitlementReservationReferenceType = "MANUAL"
+	SERVICEREQUEST EntitlementReservationReferenceType = "SERVICE_REQUEST"
+)
+
+// Valid indicates whether the value is a known member of the EntitlementReservationReferenceType enum.
+func (e EntitlementReservationReferenceType) Valid() bool {
+	switch e {
+	case AUTHORIZATION:
+		return true
+	case BOOKING:
+		return true
+	case MANUAL:
+		return true
+	case SERVICEREQUEST:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EntitlementReservationStatus.
+const (
+	EntitlementReservationStatusCONSUMED          EntitlementReservationStatus = "CONSUMED"
+	EntitlementReservationStatusEXPIRED           EntitlementReservationStatus = "EXPIRED"
+	EntitlementReservationStatusHELD              EntitlementReservationStatus = "HELD"
+	EntitlementReservationStatusPARTIALLYCONSUMED EntitlementReservationStatus = "PARTIALLY_CONSUMED"
+	EntitlementReservationStatusRELEASED          EntitlementReservationStatus = "RELEASED"
+)
+
+// Valid indicates whether the value is a known member of the EntitlementReservationStatus enum.
+func (e EntitlementReservationStatus) Valid() bool {
+	switch e {
+	case EntitlementReservationStatusCONSUMED:
+		return true
+	case EntitlementReservationStatusEXPIRED:
+		return true
+	case EntitlementReservationStatusHELD:
+		return true
+	case EntitlementReservationStatusPARTIALLYCONSUMED:
+		return true
+	case EntitlementReservationStatusRELEASED:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for HealthStatusStatus.
 const (
 	DEGRADED HealthStatusStatus = "DEGRADED"
@@ -492,6 +618,39 @@ func (e HealthStatusStatus) Valid() bool {
 	case DOWN:
 		return true
 	case UP:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LedgerEntryMovementType.
+const (
+	ADJUST  LedgerEntryMovementType = "ADJUST"
+	CONSUME LedgerEntryMovementType = "CONSUME"
+	EXPIRE  LedgerEntryMovementType = "EXPIRE"
+	GRANT   LedgerEntryMovementType = "GRANT"
+	RELEASE LedgerEntryMovementType = "RELEASE"
+	RESERVE LedgerEntryMovementType = "RESERVE"
+	REVERSE LedgerEntryMovementType = "REVERSE"
+)
+
+// Valid indicates whether the value is a known member of the LedgerEntryMovementType enum.
+func (e LedgerEntryMovementType) Valid() bool {
+	switch e {
+	case ADJUST:
+		return true
+	case CONSUME:
+		return true
+	case EXPIRE:
+		return true
+	case GRANT:
+		return true
+	case RELEASE:
+		return true
+	case RESERVE:
+		return true
+	case REVERSE:
 		return true
 	default:
 		return false
@@ -1311,6 +1470,27 @@ func (e ListEnrollmentsParamsStatus) Valid() bool {
 	}
 }
 
+// Defines values for ListEntitlementAdjustmentsParamsStatus.
+const (
+	ListEntitlementAdjustmentsParamsStatusAPPROVED ListEntitlementAdjustmentsParamsStatus = "APPROVED"
+	ListEntitlementAdjustmentsParamsStatusPENDING  ListEntitlementAdjustmentsParamsStatus = "PENDING"
+	ListEntitlementAdjustmentsParamsStatusREJECTED ListEntitlementAdjustmentsParamsStatus = "REJECTED"
+)
+
+// Valid indicates whether the value is a known member of the ListEntitlementAdjustmentsParamsStatus enum.
+func (e ListEntitlementAdjustmentsParamsStatus) Valid() bool {
+	switch e {
+	case ListEntitlementAdjustmentsParamsStatusAPPROVED:
+		return true
+	case ListEntitlementAdjustmentsParamsStatusPENDING:
+		return true
+	case ListEntitlementAdjustmentsParamsStatusREJECTED:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListOrganizationsParamsRole.
 const (
 	ListOrganizationsParamsRolePARTNER  ListOrganizationsParamsRole = "PARTNER"
@@ -1429,6 +1609,14 @@ func (e ListServiceRequestsParamsStatus) Valid() bool {
 	default:
 		return false
 	}
+}
+
+// CreateAdjustmentRequest defines model for CreateAdjustmentRequest.
+type CreateAdjustmentRequest struct {
+	// DeltaQuantity Positive grants, negative removes from the available balance; never zero.
+	DeltaQuantity json.Number `json:"deltaQuantity"`
+	ReasonCode    string      `json:"reasonCode"`
+	ReasonText    *string     `json:"reasonText,omitempty"`
 }
 
 // CreateEnrollmentRequest defines model for CreateEnrollmentRequest.
@@ -1636,6 +1824,65 @@ type EnrollmentPage struct {
 	NextCursor *string      `json:"nextCursor,omitempty"`
 }
 
+// EntitlementAccount defines model for EntitlementAccount.
+type EntitlementAccount struct {
+	Available         json.Number        `json:"available"`
+	BenefitPeriodFrom openapi_types.Date `json:"benefitPeriodFrom"`
+
+	// BenefitPeriodTo Exclusive upper bound; null for lifetime accounts.
+	BenefitPeriodTo *openapi_types.Date `json:"benefitPeriodTo"`
+	Consumed        json.Number         `json:"consumed"`
+	Definition      struct {
+		AllowOverdraft bool                                 `json:"allowOverdraft"`
+		Code           string                               `json:"code"`
+		CurrencyCode   *string                              `json:"currencyCode,omitempty"`
+		FamilyShared   bool                                 `json:"familyShared"`
+		Id             openapi_types.UUID                   `json:"id"`
+		Name           string                               `json:"name"`
+		UnitType       EntitlementAccountDefinitionUnitType `json:"unitType"`
+	} `json:"definition"`
+	EnrollmentId     openapi_types.UUID        `json:"enrollmentId"`
+	Expired          json.Number               `json:"expired"`
+	Id               openapi_types.UUID        `json:"id"`
+	OpenReservations *[]EntitlementReservation `json:"openReservations,omitempty"`
+
+	// PersonId Owner of the enrollment; for family-shared accounts the principal.
+	PersonId   openapi_types.UUID `json:"personId"`
+	Reserved   json.Number        `json:"reserved"`
+	RowVersion int                `json:"rowVersion"`
+
+	// Shared True when the caller reached this account through a principal membership.
+	Shared       bool                     `json:"shared"`
+	Status       EntitlementAccountStatus `json:"status"`
+	TotalGranted json.Number              `json:"totalGranted"`
+}
+
+// EntitlementAccountDefinitionUnitType defines model for EntitlementAccount.Definition.UnitType.
+type EntitlementAccountDefinitionUnitType string
+
+// EntitlementAccountStatus defines model for EntitlementAccount.Status.
+type EntitlementAccountStatus string
+
+// EntitlementAdjustment defines model for EntitlementAdjustment.
+type EntitlementAdjustment struct {
+	AccountId       openapi_types.UUID          `json:"accountId"`
+	DecidedAt       *time.Time                  `json:"decidedAt,omitempty"`
+	DecidedBy       *openapi_types.UUID         `json:"decidedBy,omitempty"`
+	DecisionComment *string                     `json:"decisionComment,omitempty"`
+	DeltaQuantity   json.Number                 `json:"deltaQuantity"`
+	Id              openapi_types.UUID          `json:"id"`
+	LedgerEntryId   *openapi_types.UUID         `json:"ledgerEntryId,omitempty"`
+	ReasonCode      string                      `json:"reasonCode"`
+	ReasonText      *string                     `json:"reasonText,omitempty"`
+	RequestedAt     time.Time                   `json:"requestedAt"`
+	RequestedBy     openapi_types.UUID          `json:"requestedBy"`
+	RowVersion      int                         `json:"rowVersion"`
+	Status          EntitlementAdjustmentStatus `json:"status"`
+}
+
+// EntitlementAdjustmentStatus defines model for EntitlementAdjustment.Status.
+type EntitlementAdjustmentStatus string
+
 // EntitlementDefinition defines model for EntitlementDefinition.
 type EntitlementDefinition struct {
 	AllowOverdraft *bool  `json:"allowOverdraft,omitempty"`
@@ -1645,7 +1892,7 @@ type EntitlementDefinition struct {
 	CurrencyCode    *string            `json:"currencyCode,omitempty"`
 	FamilyShared    *bool              `json:"familyShared,omitempty"`
 	Id              openapi_types.UUID `json:"id"`
-	InitialQuantity float32            `json:"initialQuantity"`
+	InitialQuantity json.Number        `json:"initialQuantity"`
 	Name            string             `json:"name"`
 
 	// PeriodLength Days for ROLLING_DAYS; required only then.
@@ -1653,7 +1900,7 @@ type EntitlementDefinition struct {
 	PeriodType   EntitlementDefinitionPeriodType `json:"periodType"`
 
 	// RolloverCap Required when rolloverPolicy is CAPPED.
-	RolloverCap    *float32                             `json:"rolloverCap,omitempty"`
+	RolloverCap    *json.Number                         `json:"rolloverCap,omitempty"`
 	RolloverPolicy *EntitlementDefinitionRolloverPolicy `json:"rolloverPolicy,omitempty"`
 	Status         EntitlementDefinitionStatus          `json:"status"`
 	UnitType       EntitlementDefinitionUnitType        `json:"unitType"`
@@ -1677,17 +1924,17 @@ type EntitlementDefinitionInput struct {
 	Code           string `json:"code"`
 
 	// CurrencyCode Required when unitType is MONEY, forbidden otherwise.
-	CurrencyCode    *string `json:"currencyCode,omitempty"`
-	FamilyShared    *bool   `json:"familyShared,omitempty"`
-	InitialQuantity float32 `json:"initialQuantity"`
-	Name            string  `json:"name"`
+	CurrencyCode    *string     `json:"currencyCode,omitempty"`
+	FamilyShared    *bool       `json:"familyShared,omitempty"`
+	InitialQuantity json.Number `json:"initialQuantity"`
+	Name            string      `json:"name"`
 
 	// PeriodLength Days for ROLLING_DAYS; required only then.
 	PeriodLength *int                                 `json:"periodLength,omitempty"`
 	PeriodType   EntitlementDefinitionInputPeriodType `json:"periodType"`
 
 	// RolloverCap Required when rolloverPolicy is CAPPED.
-	RolloverCap    *float32                                  `json:"rolloverCap,omitempty"`
+	RolloverCap    *json.Number                              `json:"rolloverCap,omitempty"`
 	RolloverPolicy *EntitlementDefinitionInputRolloverPolicy `json:"rolloverPolicy,omitempty"`
 	UnitType       EntitlementDefinitionInputUnitType        `json:"unitType"`
 }
@@ -1700,6 +1947,25 @@ type EntitlementDefinitionInputRolloverPolicy string
 
 // EntitlementDefinitionInputUnitType defines model for EntitlementDefinitionInput.UnitType.
 type EntitlementDefinitionInputUnitType string
+
+// EntitlementReservation defines model for EntitlementReservation.
+type EntitlementReservation struct {
+	ConsumedQuantity json.Number                         `json:"consumedQuantity"`
+	CreatedAt        time.Time                           `json:"createdAt"`
+	ExpiresAt        *time.Time                          `json:"expiresAt,omitempty"`
+	Id               openapi_types.UUID                  `json:"id"`
+	Quantity         json.Number                         `json:"quantity"`
+	ReferenceId      openapi_types.UUID                  `json:"referenceId"`
+	ReferenceType    EntitlementReservationReferenceType `json:"referenceType"`
+	ReleasedQuantity json.Number                         `json:"releasedQuantity"`
+	Status           EntitlementReservationStatus        `json:"status"`
+}
+
+// EntitlementReservationReferenceType defines model for EntitlementReservation.ReferenceType.
+type EntitlementReservationReferenceType string
+
+// EntitlementReservationStatus defines model for EntitlementReservation.Status.
+type EntitlementReservationStatus string
 
 // HealthStatus defines model for HealthStatus.
 type HealthStatus struct {
@@ -1717,6 +1983,33 @@ type IdentifierSearchRequest struct {
 	SponsorOrganizationId *openapi_types.UUID `json:"sponsorOrganizationId,omitempty"`
 	Type                  string              `json:"type"`
 	Value                 string              `json:"value"`
+}
+
+// LedgerEntry defines model for LedgerEntry.
+type LedgerEntry struct {
+	CreatedBy      *openapi_types.UUID     `json:"createdBy,omitempty"`
+	DeltaAvailable json.Number             `json:"deltaAvailable"`
+	DeltaConsumed  json.Number             `json:"deltaConsumed"`
+	DeltaExpired   json.Number             `json:"deltaExpired"`
+	DeltaReserved  json.Number             `json:"deltaReserved"`
+	DeltaTotal     json.Number             `json:"deltaTotal"`
+	EffectiveAt    time.Time               `json:"effectiveAt"`
+	Id             openapi_types.UUID      `json:"id"`
+	MovementType   LedgerEntryMovementType `json:"movementType"`
+	ReasonCode     *string                 `json:"reasonCode,omitempty"`
+	ReasonText     *string                 `json:"reasonText,omitempty"`
+	ReferenceId    openapi_types.UUID      `json:"referenceId"`
+	ReferenceType  string                  `json:"referenceType"`
+	ReservationId  *openapi_types.UUID     `json:"reservationId,omitempty"`
+}
+
+// LedgerEntryMovementType defines model for LedgerEntry.MovementType.
+type LedgerEntryMovementType string
+
+// LedgerPage defines model for LedgerPage.
+type LedgerPage struct {
+	Items      []LedgerEntry `json:"items"`
+	NextCursor *string       `json:"nextCursor,omitempty"`
 }
 
 // MaskedIdentifier defines model for MaskedIdentifier.
@@ -2226,6 +2519,12 @@ type UserContext struct {
 	Tenants     []TenantContext      `json:"tenants"`
 }
 
+// AccountId defines model for AccountId.
+type AccountId = openapi_types.UUID
+
+// AdjustmentId defines model for AdjustmentId.
+type AdjustmentId = openapi_types.UUID
+
 // CsrfHeader defines model for CsrfHeader.
 type CsrfHeader = string
 
@@ -2329,6 +2628,69 @@ type UpdateEnrollmentParams struct {
 
 	// IfMatch Optimistic concurrency token returned as ETag.
 	IfMatch IfMatch `json:"If-Match"`
+}
+
+// GetEntitlementAccountParams defines parameters for GetEntitlementAccount.
+type GetEntitlementAccountParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// CreateEntitlementAdjustmentParams defines parameters for CreateEntitlementAdjustment.
+type CreateEntitlementAdjustmentParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ListEntitlementLedgerParams defines parameters for ListEntitlementLedger.
+type ListEntitlementLedgerParams struct {
+	// Cursor Opaque cursor from the previous response.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// ListEntitlementAdjustmentsParams defines parameters for ListEntitlementAdjustments.
+type ListEntitlementAdjustmentsParams struct {
+	// Cursor Opaque cursor from the previous response.
+	Cursor *Cursor                                 `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit                                  `form:"limit,omitempty" json:"limit,omitempty"`
+	Status *ListEntitlementAdjustmentsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// ListEntitlementAdjustmentsParamsStatus defines parameters for ListEntitlementAdjustments.
+type ListEntitlementAdjustmentsParamsStatus string
+
+// ApproveEntitlementAdjustmentParams defines parameters for ApproveEntitlementAdjustment.
+type ApproveEntitlementAdjustmentParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// XCSRFToken Required when the request is authenticated with the BFF session cookie.
+	XCSRFToken *CsrfHeader `json:"X-CSRF-Token,omitempty"`
+}
+
+// RejectEntitlementAdjustmentParams defines parameters for RejectEntitlementAdjustment.
+type RejectEntitlementAdjustmentParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// XCSRFToken Required when the request is authenticated with the BFF session cookie.
+	XCSRFToken *CsrfHeader `json:"X-CSRF-Token,omitempty"`
 }
 
 // ListOrganizationsParams defines parameters for ListOrganizations.
@@ -2446,6 +2808,14 @@ type CreateEnrollmentParams struct {
 
 	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ListPersonEntitlementsParams defines parameters for ListPersonEntitlements.
+type ListPersonEntitlementsParams struct {
+	AsOf *openapi_types.Date `form:"asOf,omitempty" json:"asOf,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
 }
 
 // ListSponsorMembershipsParams defines parameters for ListSponsorMemberships.
@@ -2769,6 +3139,15 @@ type CheckEligibilityJSONRequestBody = EligibilityCheckRequest
 // UpdateEnrollmentApplicationMergePatchPlusJSONRequestBody defines body for UpdateEnrollment for application/merge-patch+json ContentType.
 type UpdateEnrollmentApplicationMergePatchPlusJSONRequestBody = UpdateEnrollmentRequest
 
+// CreateEntitlementAdjustmentJSONRequestBody defines body for CreateEntitlementAdjustment for application/json ContentType.
+type CreateEntitlementAdjustmentJSONRequestBody = CreateAdjustmentRequest
+
+// ApproveEntitlementAdjustmentJSONRequestBody defines body for ApproveEntitlementAdjustment for application/json ContentType.
+type ApproveEntitlementAdjustmentJSONRequestBody = ReviewComment
+
+// RejectEntitlementAdjustmentJSONRequestBody defines body for RejectEntitlementAdjustment for application/json ContentType.
+type RejectEntitlementAdjustmentJSONRequestBody = ReasonCommand
+
 // CreateTenantOrganizationJSONRequestBody defines body for CreateTenantOrganization for application/json ContentType.
 type CreateTenantOrganizationJSONRequestBody = CreateOrganizationRequest
 
@@ -2868,6 +3247,24 @@ type ServerInterface interface {
 	// (PATCH /api/v1/enrollments/{enrollmentId})
 	UpdateEnrollment(w http.ResponseWriter, r *http.Request, enrollmentId EnrollmentId, params UpdateEnrollmentParams)
 
+	// (GET /api/v1/entitlement-accounts/{accountId})
+	GetEntitlementAccount(w http.ResponseWriter, r *http.Request, accountId AccountId, params GetEntitlementAccountParams)
+
+	// (POST /api/v1/entitlement-accounts/{accountId}/adjustments)
+	CreateEntitlementAdjustment(w http.ResponseWriter, r *http.Request, accountId AccountId, params CreateEntitlementAdjustmentParams)
+
+	// (GET /api/v1/entitlement-accounts/{accountId}/ledger)
+	ListEntitlementLedger(w http.ResponseWriter, r *http.Request, accountId AccountId, params ListEntitlementLedgerParams)
+
+	// (GET /api/v1/entitlement-adjustments)
+	ListEntitlementAdjustments(w http.ResponseWriter, r *http.Request, params ListEntitlementAdjustmentsParams)
+
+	// (POST /api/v1/entitlement-adjustments/{adjustmentId}/approve)
+	ApproveEntitlementAdjustment(w http.ResponseWriter, r *http.Request, adjustmentId AdjustmentId, params ApproveEntitlementAdjustmentParams)
+
+	// (POST /api/v1/entitlement-adjustments/{adjustmentId}/reject)
+	RejectEntitlementAdjustment(w http.ResponseWriter, r *http.Request, adjustmentId AdjustmentId, params RejectEntitlementAdjustmentParams)
+
 	// (GET /api/v1/me)
 	GetCurrentUserContext(w http.ResponseWriter, r *http.Request)
 
@@ -2906,6 +3303,9 @@ type ServerInterface interface {
 
 	// (POST /api/v1/people/{personId}/enrollments)
 	CreateEnrollment(w http.ResponseWriter, r *http.Request, personId PersonId, params CreateEnrollmentParams)
+
+	// (GET /api/v1/people/{personId}/entitlements)
+	ListPersonEntitlements(w http.ResponseWriter, r *http.Request, personId PersonId, params ListPersonEntitlementsParams)
 
 	// (GET /api/v1/people/{personId}/memberships)
 	ListSponsorMemberships(w http.ResponseWriter, r *http.Request, personId PersonId, params ListSponsorMembershipsParams)
@@ -3043,6 +3443,36 @@ func (_ Unimplemented) UpdateEnrollment(w http.ResponseWriter, r *http.Request, 
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// (GET /api/v1/entitlement-accounts/{accountId})
+func (_ Unimplemented) GetEntitlementAccount(w http.ResponseWriter, r *http.Request, accountId AccountId, params GetEntitlementAccountParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/entitlement-accounts/{accountId}/adjustments)
+func (_ Unimplemented) CreateEntitlementAdjustment(w http.ResponseWriter, r *http.Request, accountId AccountId, params CreateEntitlementAdjustmentParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/entitlement-accounts/{accountId}/ledger)
+func (_ Unimplemented) ListEntitlementLedger(w http.ResponseWriter, r *http.Request, accountId AccountId, params ListEntitlementLedgerParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/entitlement-adjustments)
+func (_ Unimplemented) ListEntitlementAdjustments(w http.ResponseWriter, r *http.Request, params ListEntitlementAdjustmentsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/entitlement-adjustments/{adjustmentId}/approve)
+func (_ Unimplemented) ApproveEntitlementAdjustment(w http.ResponseWriter, r *http.Request, adjustmentId AdjustmentId, params ApproveEntitlementAdjustmentParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/entitlement-adjustments/{adjustmentId}/reject)
+func (_ Unimplemented) RejectEntitlementAdjustment(w http.ResponseWriter, r *http.Request, adjustmentId AdjustmentId, params RejectEntitlementAdjustmentParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // (GET /api/v1/me)
 func (_ Unimplemented) GetCurrentUserContext(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -3105,6 +3535,11 @@ func (_ Unimplemented) ListPersonEnrollments(w http.ResponseWriter, r *http.Requ
 
 // (POST /api/v1/people/{personId}/enrollments)
 func (_ Unimplemented) CreateEnrollment(w http.ResponseWriter, r *http.Request, personId PersonId, params CreateEnrollmentParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/people/{personId}/entitlements)
+func (_ Unimplemented) ListPersonEntitlements(w http.ResponseWriter, r *http.Request, personId PersonId, params ListPersonEntitlementsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -3585,6 +4020,493 @@ func (siw *ServerInterfaceWrapper) UpdateEnrollment(w http.ResponseWriter, r *ht
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateEnrollment(w, r, enrollmentId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetEntitlementAccount operation middleware
+func (siw *ServerInterfaceWrapper) GetEntitlementAccount(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "accountId" -------------
+	var accountId AccountId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "accountId", chi.URLParam(r, "accountId"), &accountId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "accountId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetEntitlementAccountParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetEntitlementAccount(w, r, accountId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateEntitlementAdjustment operation middleware
+func (siw *ServerInterfaceWrapper) CreateEntitlementAdjustment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "accountId" -------------
+	var accountId AccountId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "accountId", chi.URLParam(r, "accountId"), &accountId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "accountId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateEntitlementAdjustmentParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateEntitlementAdjustment(w, r, accountId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListEntitlementLedger operation middleware
+func (siw *ServerInterfaceWrapper) ListEntitlementLedger(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "accountId" -------------
+	var accountId AccountId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "accountId", chi.URLParam(r, "accountId"), &accountId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "accountId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListEntitlementLedgerParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListEntitlementLedger(w, r, accountId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListEntitlementAdjustments operation middleware
+func (siw *ServerInterfaceWrapper) ListEntitlementAdjustments(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListEntitlementAdjustmentsParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListEntitlementAdjustments(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ApproveEntitlementAdjustment operation middleware
+func (siw *ServerInterfaceWrapper) ApproveEntitlementAdjustment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "adjustmentId" -------------
+	var adjustmentId AdjustmentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "adjustmentId", chi.URLParam(r, "adjustmentId"), &adjustmentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "adjustmentId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ApproveEntitlementAdjustmentParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CsrfHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = &XCSRFToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ApproveEntitlementAdjustment(w, r, adjustmentId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RejectEntitlementAdjustment operation middleware
+func (siw *ServerInterfaceWrapper) RejectEntitlementAdjustment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "adjustmentId" -------------
+	var adjustmentId AdjustmentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "adjustmentId", chi.URLParam(r, "adjustmentId"), &adjustmentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "adjustmentId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RejectEntitlementAdjustmentParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CsrfHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = &XCSRFToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RejectEntitlementAdjustment(w, r, adjustmentId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4444,6 +5366,73 @@ func (siw *ServerInterfaceWrapper) CreateEnrollment(w http.ResponseWriter, r *ht
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateEnrollment(w, r, personId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListPersonEntitlements operation middleware
+func (siw *ServerInterfaceWrapper) ListPersonEntitlements(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "personId" -------------
+	var personId PersonId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "personId", chi.URLParam(r, "personId"), &personId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "personId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListPersonEntitlementsParams
+
+	// ------------- Optional query parameter "asOf" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "asOf", r.URL.Query(), &params.AsOf, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "asOf"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "asOf", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListPersonEntitlements(w, r, personId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7077,6 +8066,27 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Patch(options.BaseURL+"/api/v1/enrollments/{enrollmentId}", wrapper.UpdateEnrollment)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/people/{personId}/entitlements", wrapper.ListPersonEntitlements)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/entitlement-accounts/{accountId}", wrapper.GetEntitlementAccount)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/entitlement-accounts/{accountId}/ledger", wrapper.ListEntitlementLedger)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/entitlement-accounts/{accountId}/adjustments", wrapper.CreateEntitlementAdjustment)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/entitlement-adjustments", wrapper.ListEntitlementAdjustments)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/entitlement-adjustments/{adjustmentId}/approve", wrapper.ApproveEntitlementAdjustment)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/entitlement-adjustments/{adjustmentId}/reject", wrapper.RejectEntitlementAdjustment)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/eligibility/checks", wrapper.CheckEligibility)
 	})
 	r.Group(func(r chi.Router) {
@@ -7369,6 +8379,361 @@ func (response UpdateEnrollment428ApplicationProblemPlusJSONResponse) VisitUpdat
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEntitlementAccountRequestObject struct {
+	AccountId AccountId `json:"accountId"`
+	Params    GetEntitlementAccountParams
+}
+
+type GetEntitlementAccountResponseObject interface {
+	VisitGetEntitlementAccountResponse(w http.ResponseWriter) error
+}
+
+type GetEntitlementAccount200ResponseHeaders struct {
+	ETag *string
+}
+
+type GetEntitlementAccount200JSONResponse struct {
+	Body    EntitlementAccount
+	Headers GetEntitlementAccount200ResponseHeaders
+}
+
+func (response GetEntitlementAccount200JSONResponse) VisitGetEntitlementAccountResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEntitlementAccount404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetEntitlementAccount404ApplicationProblemPlusJSONResponse) VisitGetEntitlementAccountResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEntitlementAdjustmentRequestObject struct {
+	AccountId AccountId `json:"accountId"`
+	Params    CreateEntitlementAdjustmentParams
+	Body      *CreateEntitlementAdjustmentJSONRequestBody
+}
+
+type CreateEntitlementAdjustmentResponseObject interface {
+	VisitCreateEntitlementAdjustmentResponse(w http.ResponseWriter) error
+}
+
+type CreateEntitlementAdjustment201JSONResponse EntitlementAdjustment
+
+func (response CreateEntitlementAdjustment201JSONResponse) VisitCreateEntitlementAdjustmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEntitlementAdjustment404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CreateEntitlementAdjustment404ApplicationProblemPlusJSONResponse) VisitCreateEntitlementAdjustmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEntitlementAdjustment422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CreateEntitlementAdjustment422ApplicationProblemPlusJSONResponse) VisitCreateEntitlementAdjustmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListEntitlementLedgerRequestObject struct {
+	AccountId AccountId `json:"accountId"`
+	Params    ListEntitlementLedgerParams
+}
+
+type ListEntitlementLedgerResponseObject interface {
+	VisitListEntitlementLedgerResponse(w http.ResponseWriter) error
+}
+
+type ListEntitlementLedger200JSONResponse LedgerPage
+
+func (response ListEntitlementLedger200JSONResponse) VisitListEntitlementLedgerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListEntitlementLedger400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListEntitlementLedger400ApplicationProblemPlusJSONResponse) VisitListEntitlementLedgerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListEntitlementLedger404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ListEntitlementLedger404ApplicationProblemPlusJSONResponse) VisitListEntitlementLedgerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListEntitlementAdjustmentsRequestObject struct {
+	Params ListEntitlementAdjustmentsParams
+}
+
+type ListEntitlementAdjustmentsResponseObject interface {
+	VisitListEntitlementAdjustmentsResponse(w http.ResponseWriter) error
+}
+
+type ListEntitlementAdjustments200JSONResponse struct {
+	Items      []EntitlementAdjustment `json:"items"`
+	NextCursor *string                 `json:"nextCursor,omitempty"`
+}
+
+func (response ListEntitlementAdjustments200JSONResponse) VisitListEntitlementAdjustmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveEntitlementAdjustmentRequestObject struct {
+	AdjustmentId AdjustmentId `json:"adjustmentId"`
+	Params       ApproveEntitlementAdjustmentParams
+	Body         *ApproveEntitlementAdjustmentJSONRequestBody
+}
+
+type ApproveEntitlementAdjustmentResponseObject interface {
+	VisitApproveEntitlementAdjustmentResponse(w http.ResponseWriter) error
+}
+
+type ApproveEntitlementAdjustment200JSONResponse EntitlementAdjustment
+
+func (response ApproveEntitlementAdjustment200JSONResponse) VisitApproveEntitlementAdjustmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveEntitlementAdjustment403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ApproveEntitlementAdjustment403ApplicationProblemPlusJSONResponse) VisitApproveEntitlementAdjustmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveEntitlementAdjustment404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ApproveEntitlementAdjustment404ApplicationProblemPlusJSONResponse) VisitApproveEntitlementAdjustmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveEntitlementAdjustment409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response ApproveEntitlementAdjustment409ApplicationProblemPlusJSONResponse) VisitApproveEntitlementAdjustmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveEntitlementAdjustment412ApplicationProblemPlusJSONResponse Problem
+
+func (response ApproveEntitlementAdjustment412ApplicationProblemPlusJSONResponse) VisitApproveEntitlementAdjustmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectEntitlementAdjustmentRequestObject struct {
+	AdjustmentId AdjustmentId `json:"adjustmentId"`
+	Params       RejectEntitlementAdjustmentParams
+	Body         *RejectEntitlementAdjustmentJSONRequestBody
+}
+
+type RejectEntitlementAdjustmentResponseObject interface {
+	VisitRejectEntitlementAdjustmentResponse(w http.ResponseWriter) error
+}
+
+type RejectEntitlementAdjustment200JSONResponse EntitlementAdjustment
+
+func (response RejectEntitlementAdjustment200JSONResponse) VisitRejectEntitlementAdjustmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectEntitlementAdjustment403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RejectEntitlementAdjustment403ApplicationProblemPlusJSONResponse) VisitRejectEntitlementAdjustmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectEntitlementAdjustment404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response RejectEntitlementAdjustment404ApplicationProblemPlusJSONResponse) VisitRejectEntitlementAdjustmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectEntitlementAdjustment409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response RejectEntitlementAdjustment409ApplicationProblemPlusJSONResponse) VisitRejectEntitlementAdjustmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectEntitlementAdjustment412ApplicationProblemPlusJSONResponse Problem
+
+func (response RejectEntitlementAdjustment412ApplicationProblemPlusJSONResponse) VisitRejectEntitlementAdjustmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -8245,6 +9610,47 @@ func (response CreateEnrollment422ApplicationProblemPlusJSONResponse) VisitCreat
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPersonEntitlementsRequestObject struct {
+	PersonId PersonId `json:"personId"`
+	Params   ListPersonEntitlementsParams
+}
+
+type ListPersonEntitlementsResponseObject interface {
+	VisitListPersonEntitlementsResponse(w http.ResponseWriter) error
+}
+
+type ListPersonEntitlements200JSONResponse struct {
+	Items []EntitlementAccount `json:"items"`
+}
+
+func (response ListPersonEntitlements200JSONResponse) VisitListPersonEntitlementsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPersonEntitlements404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ListPersonEntitlements404ApplicationProblemPlusJSONResponse) VisitListPersonEntitlementsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -10707,6 +12113,24 @@ type StrictServerInterface interface {
 	// (PATCH /api/v1/enrollments/{enrollmentId})
 	UpdateEnrollment(ctx context.Context, request UpdateEnrollmentRequestObject) (UpdateEnrollmentResponseObject, error)
 
+	// (GET /api/v1/entitlement-accounts/{accountId})
+	GetEntitlementAccount(ctx context.Context, request GetEntitlementAccountRequestObject) (GetEntitlementAccountResponseObject, error)
+
+	// (POST /api/v1/entitlement-accounts/{accountId}/adjustments)
+	CreateEntitlementAdjustment(ctx context.Context, request CreateEntitlementAdjustmentRequestObject) (CreateEntitlementAdjustmentResponseObject, error)
+
+	// (GET /api/v1/entitlement-accounts/{accountId}/ledger)
+	ListEntitlementLedger(ctx context.Context, request ListEntitlementLedgerRequestObject) (ListEntitlementLedgerResponseObject, error)
+
+	// (GET /api/v1/entitlement-adjustments)
+	ListEntitlementAdjustments(ctx context.Context, request ListEntitlementAdjustmentsRequestObject) (ListEntitlementAdjustmentsResponseObject, error)
+
+	// (POST /api/v1/entitlement-adjustments/{adjustmentId}/approve)
+	ApproveEntitlementAdjustment(ctx context.Context, request ApproveEntitlementAdjustmentRequestObject) (ApproveEntitlementAdjustmentResponseObject, error)
+
+	// (POST /api/v1/entitlement-adjustments/{adjustmentId}/reject)
+	RejectEntitlementAdjustment(ctx context.Context, request RejectEntitlementAdjustmentRequestObject) (RejectEntitlementAdjustmentResponseObject, error)
+
 	// (GET /api/v1/me)
 	GetCurrentUserContext(ctx context.Context, request GetCurrentUserContextRequestObject) (GetCurrentUserContextResponseObject, error)
 
@@ -10745,6 +12169,9 @@ type StrictServerInterface interface {
 
 	// (POST /api/v1/people/{personId}/enrollments)
 	CreateEnrollment(ctx context.Context, request CreateEnrollmentRequestObject) (CreateEnrollmentResponseObject, error)
+
+	// (GET /api/v1/people/{personId}/entitlements)
+	ListPersonEntitlements(ctx context.Context, request ListPersonEntitlementsRequestObject) (ListPersonEntitlementsResponseObject, error)
 
 	// (GET /api/v1/people/{personId}/memberships)
 	ListSponsorMemberships(ctx context.Context, request ListSponsorMembershipsRequestObject) (ListSponsorMembershipsResponseObject, error)
@@ -11010,6 +12437,191 @@ func (sh *strictHandler) UpdateEnrollment(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateEnrollmentResponseObject); ok {
 		if err := validResponse.VisitUpdateEnrollmentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetEntitlementAccount operation middleware
+func (sh *strictHandler) GetEntitlementAccount(w http.ResponseWriter, r *http.Request, accountId AccountId, params GetEntitlementAccountParams) {
+	var request GetEntitlementAccountRequestObject
+
+	request.AccountId = accountId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetEntitlementAccount(ctx, request.(GetEntitlementAccountRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetEntitlementAccount")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetEntitlementAccountResponseObject); ok {
+		if err := validResponse.VisitGetEntitlementAccountResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateEntitlementAdjustment operation middleware
+func (sh *strictHandler) CreateEntitlementAdjustment(w http.ResponseWriter, r *http.Request, accountId AccountId, params CreateEntitlementAdjustmentParams) {
+	var request CreateEntitlementAdjustmentRequestObject
+
+	request.AccountId = accountId
+	request.Params = params
+
+	var body CreateEntitlementAdjustmentJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateEntitlementAdjustment(ctx, request.(CreateEntitlementAdjustmentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateEntitlementAdjustment")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateEntitlementAdjustmentResponseObject); ok {
+		if err := validResponse.VisitCreateEntitlementAdjustmentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListEntitlementLedger operation middleware
+func (sh *strictHandler) ListEntitlementLedger(w http.ResponseWriter, r *http.Request, accountId AccountId, params ListEntitlementLedgerParams) {
+	var request ListEntitlementLedgerRequestObject
+
+	request.AccountId = accountId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListEntitlementLedger(ctx, request.(ListEntitlementLedgerRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListEntitlementLedger")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListEntitlementLedgerResponseObject); ok {
+		if err := validResponse.VisitListEntitlementLedgerResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListEntitlementAdjustments operation middleware
+func (sh *strictHandler) ListEntitlementAdjustments(w http.ResponseWriter, r *http.Request, params ListEntitlementAdjustmentsParams) {
+	var request ListEntitlementAdjustmentsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListEntitlementAdjustments(ctx, request.(ListEntitlementAdjustmentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListEntitlementAdjustments")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListEntitlementAdjustmentsResponseObject); ok {
+		if err := validResponse.VisitListEntitlementAdjustmentsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ApproveEntitlementAdjustment operation middleware
+func (sh *strictHandler) ApproveEntitlementAdjustment(w http.ResponseWriter, r *http.Request, adjustmentId AdjustmentId, params ApproveEntitlementAdjustmentParams) {
+	var request ApproveEntitlementAdjustmentRequestObject
+
+	request.AdjustmentId = adjustmentId
+	request.Params = params
+
+	var body ApproveEntitlementAdjustmentJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ApproveEntitlementAdjustment(ctx, request.(ApproveEntitlementAdjustmentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ApproveEntitlementAdjustment")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ApproveEntitlementAdjustmentResponseObject); ok {
+		if err := validResponse.VisitApproveEntitlementAdjustmentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RejectEntitlementAdjustment operation middleware
+func (sh *strictHandler) RejectEntitlementAdjustment(w http.ResponseWriter, r *http.Request, adjustmentId AdjustmentId, params RejectEntitlementAdjustmentParams) {
+	var request RejectEntitlementAdjustmentRequestObject
+
+	request.AdjustmentId = adjustmentId
+	request.Params = params
+
+	var body RejectEntitlementAdjustmentJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RejectEntitlementAdjustment(ctx, request.(RejectEntitlementAdjustmentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RejectEntitlementAdjustment")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RejectEntitlementAdjustmentResponseObject); ok {
+		if err := validResponse.VisitRejectEntitlementAdjustmentResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -11394,6 +13006,33 @@ func (sh *strictHandler) CreateEnrollment(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(CreateEnrollmentResponseObject); ok {
 		if err := validResponse.VisitCreateEnrollmentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListPersonEntitlements operation middleware
+func (sh *strictHandler) ListPersonEntitlements(w http.ResponseWriter, r *http.Request, personId PersonId, params ListPersonEntitlementsParams) {
+	var request ListPersonEntitlementsRequestObject
+
+	request.PersonId = personId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListPersonEntitlements(ctx, request.(ListPersonEntitlementsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListPersonEntitlements")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListPersonEntitlementsResponseObject); ok {
+		if err := validResponse.VisitListPersonEntitlementsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -12547,210 +14186,234 @@ func (sh *strictHandler) GetReadiness(w http.ResponseWriter, r *http.Request) {
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,
