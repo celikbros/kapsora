@@ -26,11 +26,13 @@ import {
   decodeCursor,
   etagOf,
   guardTenant,
+  hasStepUp,
   parseIfMatch,
   parseLimit,
   pathParam,
   problem,
   readJson,
+  stepUpRequired,
   wait,
   type Schemas,
 } from './handlers';
@@ -492,6 +494,7 @@ export function benefitHandlers(api: MockApi): HttpHandler[] {
       await wait(api);
       const g = guardTenant(api, request, 'plan.publish', true);
       if ('error' in g) return g.error;
+      if (!hasStepUp(g.session)) return stepUpRequired(api);
       const expected = parseIfMatch(request.headers.get('If-Match'));
       if (expected === null)
         return problem(api, 428, 'IF_MATCH_REQUIRED', 'If-Match başlığı gerekli');
@@ -550,6 +553,7 @@ export function benefitHandlers(api: MockApi): HttpHandler[] {
       await wait(api);
       const g = guardTenant(api, request, 'plan.publish', true);
       if ('error' in g) return g.error;
+      if (!hasStepUp(g.session)) return stepUpRequired(api);
       const expected = parseIfMatch(request.headers.get('If-Match'));
       if (expected === null)
         return problem(api, 428, 'IF_MATCH_REQUIRED', 'If-Match başlığı gerekli');

@@ -1,6 +1,10 @@
 import { validateIdentifier, type IdentifierType } from '@kapsora/api-client';
 import { z } from 'zod';
 
+// The issue-code parser lives with the other problem helpers; re-exported here because
+// every person form imports its schema and its message parser together.
+export { parseIssueMessage } from '../problems';
+
 /** Identifier types a person form offers; the tenant catalog narrows this at runtime. */
 export const IDENTIFIER_TYPES = ['TCKN', 'PASSPORT', 'MEMBER_NO', 'CUSTOMER_NO'] as const;
 export const SEXES = ['FEMALE', 'MALE', 'INTERSEX', 'UNKNOWN'] as const;
@@ -97,15 +101,3 @@ export const membershipFormSchema = z.object({
 });
 
 export type MembershipFormValues = z.infer<typeof membershipFormSchema>;
-
-/** "MAX_LENGTH:100" → { code, params } for the i18n lookup. */
-export function parseIssueMessage(message: string): {
-  code: string;
-  params: Record<string, unknown>;
-} {
-  const [code, argument] = message.split(':');
-  if (!code) return { code: 'FORMAT', params: {} };
-  if (code === 'MIN_LENGTH') return { code, params: { min: Number(argument) } };
-  if (code === 'MAX_LENGTH') return { code, params: { max: Number(argument) } };
-  return { code, params: {} };
-}

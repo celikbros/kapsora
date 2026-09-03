@@ -220,14 +220,33 @@
   },
   "programs": {
     "title": "Programs and plans",
-    "new": "New program"
+    "new": "New program",
+    "statusFilter": "Status",
+    "allStatuses": "All statuses",
+    "changeStatus": "Change status…",
+    "types": {
+      "EMPLOYEE_BENEFIT": "Employee benefit",
+      "INSURANCE": "Insurance",
+      "MEMBERSHIP": "Membership",
+      "SOCIAL_AID": "Social aid",
+      "OTHER": "Other"
+    }
   },
   "plans": {
     "title": "Plans",
     "versions": {
       "submit": "Submit for review",
       "publish": "Publish",
-      "retire": "Retire"
+      "retire": "Retire",
+      "submitConfirm": "The version goes to review and can no longer be changed. Someone else approves publishing.",
+      "publishConfirm": "The version goes live. Entitlements from this date on are granted from it, and it can never be changed again.",
+      "retireConfirm": "The version is taken out of use. Entitlements already granted from it stay as they are.",
+      "retireReasons": {
+        "SUPERSEDED": "Superseded by a newer version",
+        "SPONSOR_REQUEST": "Sponsor request",
+        "ERROR": "Misconfiguration",
+        "REGULATORY": "Regulatory requirement"
+      }
     }
   },
   "entitlements": {

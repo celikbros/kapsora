@@ -57,6 +57,7 @@ export function useProgram(programId: string) {
   return useQuery({
     queryKey: benefitKeys.program(tenantId, programId),
     queryFn: () => ops.benefit.getProgram(tenantId, programId),
+    enabled: programId !== '',
   });
 }
 
@@ -91,6 +92,7 @@ export function usePlans(programId: string) {
   return useQuery({
     queryKey: benefitKeys.plans(tenantId, programId),
     queryFn: () => ops.benefit.listPlans(tenantId, programId),
+    enabled: programId !== '',
   });
 }
 
@@ -100,6 +102,7 @@ export function usePlan(planId: string) {
   return useQuery({
     queryKey: benefitKeys.plan(tenantId, planId),
     queryFn: () => ops.benefit.getPlan(tenantId, planId),
+    enabled: planId !== '',
   });
 }
 
@@ -122,6 +125,16 @@ export function useUpdatePlan(planId: string) {
     mutationFn: (input: { etag: string; patch: UpdatePlanRequest }) =>
       ops.benefit.patchPlan(tenantId, planId, input.etag, input.patch),
     onSuccess: () => void qc.invalidateQueries({ queryKey: benefitKeys.all(tenantId) }),
+  });
+}
+
+export function usePlanVersions(planId: string) {
+  const ops = useOps();
+  const tenantId = useTenantId();
+  return useQuery({
+    queryKey: benefitKeys.versions(tenantId, planId),
+    queryFn: () => ops.benefit.listPlanVersions(tenantId, planId),
+    enabled: planId !== '',
   });
 }
 

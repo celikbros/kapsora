@@ -138,7 +138,15 @@ describe('programs and plans', () => {
     );
     expect(submitted.data.status).toBe('UNDER_REVIEW');
 
-    // The maker may not publish their own submission.
+    // Publishing needs a fresh password re-entry, before anything else is judged.
+    const withoutStepUp = (await maker.o.benefit
+      .publishPlanVersion(maker.tenantId, version.data.id, submitted.etag)
+      .catch((e: unknown) => e)) as ApiError;
+    expect(withoutStepUp.status).toBe(403);
+    expect(withoutStepUp.problem.code).toBe('STEP_UP_REQUIRED');
+
+    // The maker may not publish their own submission, even after stepping up.
+    await maker.o.session.stepUp(PASSWORD);
     const sameActor = (await maker.o.benefit
       .publishPlanVersion(maker.tenantId, version.data.id, submitted.etag)
       .catch((e: unknown) => e)) as ApiError;
@@ -146,6 +154,7 @@ describe('programs and plans', () => {
     expect(sameActor.problem.code).toBe('MAKER_CHECKER_SAME_ACTOR');
 
     const checker = await signIn('both.ab');
+    await checker.o.session.stepUp(PASSWORD);
     const published = await checker.o.benefit.publishPlanVersion(
       checker.tenantId,
       version.data.id,

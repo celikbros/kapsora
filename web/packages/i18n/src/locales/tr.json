@@ -424,7 +424,17 @@
       "CLOSED": "Kapalı"
     },
     "created": "Program oluşturuldu.",
-    "updated": "Program güncellendi."
+    "updated": "Program güncellendi.",
+    "statusFilter": "Durum",
+    "allStatuses": "Tüm durumlar",
+    "changeStatus": "Durumu değiştir…",
+    "types": {
+      "EMPLOYEE_BENEFIT": "Çalışan yan hakkı",
+      "INSURANCE": "Sigorta",
+      "MEMBERSHIP": "Üyelik",
+      "SOCIAL_AID": "Sosyal yardım",
+      "OTHER": "Diğer"
+    }
   },
   "plans": {
     "title": "Planlar",
@@ -487,7 +497,16 @@
       "retired": "Sürüm kullanımdan çıkarıldı.",
       "readOnly": "Yayınlanmış sürüm değiştirilemez. Yeni bir taslak açıp değişikliği orada yapın.",
       "sameActorBlocked": "Bir sürümü inceleyip yayınlayan kişi, onu gönderen kişi olamaz. Başka bir yetkili yayınlamalı.",
-      "retireReason": "Kullanımdan çıkarma sebebi"
+      "retireReason": "Kullanımdan çıkarma sebebi",
+      "submitConfirm": "Sürüm incelemeye gönderilir ve bundan sonra değiştirilemez. Yayına almayı başka biri onaylar.",
+      "publishConfirm": "Sürüm yayına alınır. Bu tarihten sonraki haklar bu sürüme göre verilir ve sürüm bir daha değiştirilemez.",
+      "retireConfirm": "Sürüm kullanımdan çıkarılır. Geçmişte bu sürüme göre verilmiş haklar olduğu gibi kalır.",
+      "retireReasons": {
+        "SUPERSEDED": "Yerine yeni sürüm geldi",
+        "SPONSOR_REQUEST": "Sponsor talebi",
+        "ERROR": "Hatalı yapılandırma",
+        "REGULATORY": "Mevzuat gereği"
+      }
     },
     "definitions": {
       "title": "Hak tanımları",

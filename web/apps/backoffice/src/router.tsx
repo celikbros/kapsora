@@ -6,7 +6,13 @@ import {
   createRouter,
   type RouterHistory,
 } from '@tanstack/react-router';
+import { AdjustmentQueuePage } from './adjustments/AdjustmentQueuePage';
 import type { AppServices } from './api';
+import { PlanDetailPage } from './benefit/PlanDetailPage';
+import { PlanVersionPage } from './benefit/PlanVersionPage';
+import { ProgramCreatePage } from './benefit/ProgramCreatePage';
+import { ProgramDetailPage } from './benefit/ProgramDetailPage';
+import { ProgramListPage, type ProgramListSearch } from './benefit/ProgramListPage';
 import { AppLayout } from './layout/AppLayout';
 import { SOON_PATHS } from './nav';
 import { OrganizationDetailPage } from './organizations/OrganizationDetailPage';
@@ -166,6 +172,50 @@ const personDetailRoute = createRoute({
   component: PersonDetailPage,
 });
 
+function programListSearch(raw: Record<string, unknown>): ProgramListSearch {
+  const out: ProgramListSearch = {};
+  const status = raw['status'];
+  if (status === 'DRAFT' || status === 'ACTIVE' || status === 'SUSPENDED' || status === 'CLOSED') {
+    out.status = status;
+  }
+  if (typeof raw['q'] === 'string' && raw['q'] !== '') out.q = raw['q'];
+  if (typeof raw['cursor'] === 'string' && raw['cursor'] !== '') out.cursor = raw['cursor'];
+  return out;
+}
+
+const programsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/programs',
+  validateSearch: programListSearch,
+  component: ProgramListPage,
+});
+const programCreateRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/programs/new',
+  component: ProgramCreatePage,
+});
+const programDetailRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/programs/$programId',
+  component: ProgramDetailPage,
+});
+const planDetailRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/plans/$planId',
+  component: PlanDetailPage,
+});
+const planVersionRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/plan-versions/$planVersionId',
+  component: PlanVersionPage,
+});
+
+const adjustmentsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/entitlement-adjustments',
+  component: AdjustmentQueuePage,
+});
+
 const soonRoutes = SOON_PATHS.map((path) =>
   createRoute({ getParentRoute: () => appRoute, path, component: SoonPage }),
 );
@@ -185,6 +235,12 @@ const routeTree = rootRoute.addChildren([
     peopleRoute,
     personCreateRoute,
     personDetailRoute,
+    programsRoute,
+    programCreateRoute,
+    programDetailRoute,
+    planDetailRoute,
+    planVersionRoute,
+    adjustmentsRoute,
     ...soonRoutes,
   ]),
 ]);
