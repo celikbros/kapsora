@@ -1,0 +1,29 @@
+{
+  "name": "@kapsora/api-client",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Generated OpenAPI types, openapi-fetch client with KAPSORA headers, problem+json parsing and MSW mocks",
+  "exports": {
+    ".": "./src/index.ts",
+    "./mocks": "./src/mocks/index.ts",
+    "./mocks/browser": "./src/mocks/browser.ts",
+    "./mocks/node": "./src/mocks/node.ts"
+  },
+  "scripts": {
+    "generate": "openapi-typescript ../../../api/openapi/kapsora-v1.yaml -o src/generated/kapsora-v1.d.ts --alphabetize --root-types --default-non-nullable false",
+    "typecheck": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "openapi-fetch": "catalog:",
+    "msw": "catalog:"
+  },
+  "devDependencies": {
+    "@kapsora/config": "workspace:*",
+    "openapi-typescript": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "@types/node": "^24.0.0"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "@kapsora/i18n",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "i18next setup (tr complete, en skeleton) and formatting helpers",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "i18next": "catalog:",
+    "react-i18next": "catalog:",
+    "react": "catalog:"
+  },
+  "devDependencies": {
+    "@kapsora/config": "workspace:*",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "@types/node": "^24.0.0",
+    "@types/react": "catalog:"
+  }
+}

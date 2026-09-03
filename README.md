@@ -14,13 +14,14 @@ muhasebe kaydına kadar tek platformda yönetir.
 
 Go 1.27 modüler monolith (api / worker / scheduler), PostgreSQL 18 (UUIDv7, composite tenant FK,
 RLS), kendi kullanıcı hesaplarımızla giriş (Argon2id + opak oturum çerezi, ADR-022),
-React 19 / TypeScript, S3 uyumlu obje deposu, transactional outbox.
+React 19 / TypeScript 5.9 / Vite 8 pnpm çalışma alanı (backoffice, sağlayıcı portalı, üye PWA),
+S3 uyumlu obje deposu, transactional outbox.
 **Konteyner yok:** tüm servisler yerelde ve üretimde doğal süreç olarak çalışır (ADR-021).
 Ayrıntı: v1.2 bölüm 13-16, ADR-020, ADR-021.
 
 ## Hızlı başlangıç
 
-Gereksinimler: Go 1.27+, yerel PostgreSQL 18, Node 24 (frontend, I1'den itibaren).
+Gereksinimler: Go 1.27+, yerel PostgreSQL 18, Node 24 + pnpm 10 (frontend).
 MinIO, ClamAV ve Mailpit doğal kurulumları için
 [docs/runbooks/local-native-environment.md](docs/runbooks/local-native-environment.md).
 Giriş için ayrı bir sunucu gerekmez; hesaplar `go run ./cmd/seed account ...` ile açılır.
@@ -32,6 +33,7 @@ make db-init                    # kapsora_app rolü + kapsora veritabanı
 make migrate-up                 # şema sürüm 8
 make test-db                    # gerçek PostgreSQL üzerinde şema testleri
 make run-api                    # http://localhost:8080/health/ready
+make web-install && make web-dev # http://127.0.0.1:5173 (mock API ile; gerçek API için VITE_API_MOCK=false)
 ```
 
 Windows'ta GNU make yoksa: `.\scripts\dev.ps1 <hedef>` aynı hedefleri çalıştırır.
@@ -52,6 +54,8 @@ Windows'ta GNU make yoksa: `.\scripts\dev.ps1 <hedef>` aynı hedefleri çalışt
 | `make openapi-lint` | Spectral kural seti |
 | `make sqlc` | `db/queries/*.sql` → `internal/platform/sqlcgen` |
 | `make migrate-up` | Sahip rolüyle migration uygular |
+| `make web-ci` | Web: tip üretimi, Prettier + ESLint, tsc, Vitest, build |
+| `make web-e2e` | Playwright smoke testleri (mock API); `E2E_REAL_API=1` ile gerçek API |
 
 ## Depo yapısı
 

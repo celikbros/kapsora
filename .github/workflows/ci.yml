@@ -135,3 +135,45 @@ jobs:
           name: kapsora-binaries-${{ github.sha }}
           path: dist/
           retention-days: 14
+
+  web:
+    name: web workspace (lint, typecheck, unit, build, smoke)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: install
+        run: pnpm install --frozen-lockfile
+      - name: generated client types are current
+        run: |
+          pnpm generate
+          git diff --exit-code -- web/packages/api-client/src/generated
+      - name: format
+        run: pnpm format
+      - name: lint
+        run: pnpm lint
+      - name: typecheck
+        run: pnpm typecheck
+      - name: unit tests
+        run: pnpm test
+      - name: build
+        run: pnpm build
+      - name: playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+      - name: smoke tests (mock API)
+        run: pnpm e2e
+      - name: playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7

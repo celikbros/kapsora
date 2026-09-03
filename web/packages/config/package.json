@@ -1,0 +1,30 @@
+{
+  "name": "@kapsora/config",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Shared TypeScript, ESLint, Prettier and Tailwind settings",
+  "exports": {
+    "./eslint": "./eslint.js",
+    "./tsconfig.base.json": "./tsconfig.base.json",
+    "./tsconfig.react.json": "./tsconfig.react.json",
+    "./vitest.setup": "./vitest.setup.ts",
+    "./theme.css": "./theme.css"
+  },
+  "scripts": {
+    "typecheck": "echo skip"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.0",
+    "@testing-library/jest-dom": "catalog:",
+    "eslint": "^10.0.0",
+    "eslint-plugin-react-hooks": "^7.0.0",
+    "globals": "^17.0.0",
+    "typescript-eslint": "^8.64.0",
+    "vitest": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@types/react": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:"
+  }
+}

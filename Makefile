@@ -11,7 +11,7 @@ PSQL ?= psql
 export
 
 .PHONY: help db-init migrate-up migrate-version build run-api run-worker run-scheduler \
-        test test-unit test-db lint vet fmt openapi-lint openapi-generate openapi-diff sqlc tools ci
+        test test-unit test-db lint vet fmt openapi-lint openapi-generate openapi-diff sqlc tools ci \n        web-install web-generate web-dev web-lint web-typecheck web-test web-build web-e2e web-ci
 
 help: ## List targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-18s %s\n", $$1, $$2}'
@@ -80,3 +80,33 @@ tools: ## Install Go-based developer tools into GOPATH/bin
 
 ci: fmt vet lint test-unit openapi-generate sqlc ## What CI runs locally (db tests need a database)
 	git diff --exit-code -- api/generated internal/platform/sqlcgen
+
+## --- web (pnpm workspace, WP-I1-05) -------------------------------------------------
+PNPM ?= pnpm
+
+web-install: ## Install the web workspace (pnpm 10; npm install -g pnpm if corepack needs admin)
+	$(PNPM) install --frozen-lockfile
+
+web-generate: ## Regenerate TypeScript types from the OpenAPI contract
+	$(PNPM) generate
+
+web-dev: ## Backoffice dev server with the mock API (VITE_API_MOCK=false for the real API)
+	$(PNPM) dev
+
+web-lint: ## Prettier check + ESLint
+	$(PNPM) format && $(PNPM) lint
+
+web-typecheck: ## tsc for every package and app
+	$(PNPM) typecheck
+
+web-test: ## Vitest for every package and app
+	$(PNPM) test
+
+web-build: ## Production build of the three apps
+	$(PNPM) build
+
+web-e2e: ## Playwright smoke tests against the mocked backoffice
+	$(PNPM) e2e
+
+web-ci: web-generate web-lint web-typecheck web-test web-build ## What the CI web job runs (plus e2e)
+	git diff --exit-code -- web/packages/api-client/src/generated

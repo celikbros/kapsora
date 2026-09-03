@@ -1,0 +1,55 @@
+/* Design system stylesheet. Apps import this once; it pulls Tailwind and the tokens. */
+@import '@kapsora/config/theme.css';
+
+/* Class names used by the components live in this package; tell Tailwind to scan it
+   even when the app is built from another directory. */
+@source './';
+
+@layer components {
+  .k-table {
+    @apply w-full border-collapse text-sm;
+  }
+  .k-table th {
+    @apply bg-surface-sunken text-fg-muted border-line border-b px-3 py-2 text-left text-xs font-semibold tracking-wide uppercase;
+  }
+  .k-table td {
+    @apply border-line border-b px-3 py-2 align-middle;
+  }
+  .k-table tbody tr:hover {
+    @apply bg-primary-soft/40;
+  }
+  .k-table tbody tr[data-clickable='true'] {
+    @apply cursor-pointer;
+  }
+  .k-table tbody tr:focus-visible {
+    @apply outline-focus outline-2 -outline-offset-2;
+  }
+}
+
+@keyframes k-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes k-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.k-toast[data-state='open'] {
+  animation: k-toast-in 160ms ease-out;
+}
+.k-spinner {
+  animation: k-spin 800ms linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .k-toast[data-state='open'],
+  .k-spinner {
+    animation: none;
+  }
+}

@@ -1,0 +1,4 @@
+@import '@kapsora/ui/styles.css';
+
+@source '../../../packages/ui/src';
+@source '../../../packages/auth/src';

@@ -1,0 +1,5 @@
+@import '@kapsora/ui/styles.css';
+
+/* Workspace packages render JSX with Tailwind classes; scan them from this app. */
+@source '../../../packages/ui/src';
+@source '../../../packages/auth/src';

@@ -1,0 +1,30 @@
+{
+  "name": "@kapsora/auth",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Session bootstrap, tenant selection, route guards and tenant colour",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@kapsora/api-client": "workspace:*",
+    "@tanstack/react-router": "catalog:",
+    "react": "catalog:",
+    "zustand": "catalog:"
+  },
+  "devDependencies": {
+    "@kapsora/config": "workspace:*",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@types/node": "^24.0.0",
+    "@types/react": "catalog:",
+    "jsdom": "^26.1.0",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

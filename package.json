@@ -1,0 +1,39 @@
+{
+  "name": "kapsora-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "KAPSORA web workspace: backoffice, provider portal and member PWA plus shared packages",
+  "packageManager": "pnpm@10.34.5",
+  "engines": {
+    "node": ">=24",
+    "pnpm": ">=10"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @kapsora/backoffice dev",
+    "dev:provider": "pnpm --filter @kapsora/provider dev",
+    "dev:member": "pnpm --filter @kapsora/member dev",
+    "build": "pnpm -r --workspace-concurrency=1 build",
+    "lint": "eslint web tests --max-warnings 0",
+    "format": "prettier --check \"web/**/*.{ts,tsx,css,json}\" \"tests/**/*.ts\"",
+    "format:write": "prettier --write \"web/**/*.{ts,tsx,css,json}\" \"tests/**/*.ts\"",
+    "typecheck": "pnpm -r typecheck",
+    "test": "vitest run",
+    "e2e": "playwright test --config tests/e2e/playwright.config.ts",
+    "generate": "pnpm --filter @kapsora/api-client generate"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.0",
+    "@kapsora/config": "workspace:*",
+    "@playwright/test": "^1.55.0",
+    "@types/node": "^24.0.0",
+    "eslint": "^10.0.0",
+    "eslint-plugin-react-hooks": "^7.0.0",
+    "globals": "^17.0.0",
+    "jsdom": "^26.1.0",
+    "prettier": "^3.6.0",
+    "typescript": "~5.9.0",
+    "typescript-eslint": "^8.64.0",
+    "vitest": "^4.1.0"
+  }
+}

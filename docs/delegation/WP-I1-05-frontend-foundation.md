@@ -1,5 +1,12 @@
 # WP-I1-05 · Frontend foundation: pnpm workspace, three app shells, generated client, first screens
 
+> **Delivered in-house on 2026-09-03.** Notes for anyone reading this as a spec: login is a
+> KAPSORA form (user name + password, ADR-022), not an OIDC redirect; Storybook is deferred
+> (the `ui` package is covered by Testing Library tests instead; see the delivery report);
+> the Playwright smoke suite runs on the mock API in CI and `E2E_REAL_API=1` runs the same
+> screens against the Go API through the Vite proxy. Report:
+> [WP-I1-05-report.md](WP-I1-05-report.md).
+
 | Field | Value |
 |---|---|
 | Milestone | M1 (plan increment I1) |

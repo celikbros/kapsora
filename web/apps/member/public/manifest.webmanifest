@@ -1,0 +1,11 @@
+{
+  "name": "KAPSORA Üye",
+  "short_name": "KAPSORA",
+  "description": "Haklarım, sağlayıcı arama, rezervasyon ve başvurular",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fbfbfc",
+  "theme_color": "#2f4f8f",
+  "lang": "tr",
+  "icons": []
+}
