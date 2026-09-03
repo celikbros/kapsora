@@ -1,7 +1,13 @@
+import { benefitOperations } from './benefit';
 import type { KapsoraClient } from './client';
+import { eligibilityOperations } from './eligibility';
+import { entitlementOperations } from './entitlements';
+import { memberImportOperations } from './imports';
+import { peopleOperations } from './people';
 import { randomId } from './client';
 import type { components } from './generated/kapsora-v1';
 import { unwrap } from './problem';
+import { versioned, type Versioned } from './versioned';
 
 export type SessionInfo = components['schemas']['SessionInfo'];
 export type UserContext = components['schemas']['UserContext'];
@@ -13,16 +19,6 @@ export type OrganizationPage = components['schemas']['OrganizationPage'];
 export type CreateOrganizationRequest = components['schemas']['CreateOrganizationRequest'];
 export type UpdateOrganizationRequest = components['schemas']['UpdateOrganizationRequest'];
 export type RelationshipRole = CreateOrganizationRequest['relationshipRole'];
-
-/** A resource together with the ETag the server returned for it. */
-export interface Versioned<T> {
-  data: T;
-  etag: string;
-}
-
-function versioned<T>(data: T, response: Response): Versioned<T> {
-  return { data, etag: response.headers.get('ETag') ?? '' };
-}
 
 /** Session and identity operations; none of them needs a tenant header. */
 export function sessionOperations(client: KapsoraClient) {
@@ -129,6 +125,11 @@ export function createOperations(client: KapsoraClient) {
   return {
     session: sessionOperations(client),
     organizations: organizationOperations(client),
+    people: peopleOperations(client),
+    benefit: benefitOperations(client),
+    entitlements: entitlementOperations(client),
+    eligibility: eligibilityOperations(client),
+    imports: memberImportOperations(client),
   };
 }
 
