@@ -1,0 +1,52 @@
+# /etc/systemd/system/kapsora-worker.service
+[Unit]
+Description=KAPSORA outbox worker
+Documentation=https://github.com/celikbros/kapsora
+After=network-online.target postgresql.service kapsora-migrate.service
+Wants=network-online.target kapsora-migrate.service
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+Restart=on-failure
+RestartSec=3s
+TimeoutStopSec=60s
+KillSignal=SIGTERM
+WorkingDirectory=/opt/kapsora
+# Several instances (also on other hosts) share the outbox with SKIP LOCKED.
+ExecStart=/opt/kapsora/bin/worker
+EnvironmentFile=/etc/kapsora/api.env
+Environment=KAPSORA_ENV=production
+
+User=kapsora
+Group=kapsora
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+UMask=0077
+LimitNOFILE=65536
+StateDirectory=kapsora
+LogsDirectory=kapsora
+ReadWritePaths=/var/lib/kapsora
+
+[Install]
+WantedBy=multi-user.target

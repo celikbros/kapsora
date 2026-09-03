@@ -18,10 +18,10 @@ interface ToastApi {
 const ToastContext = createContext<ToastApi | null>(null);
 
 const tones: Record<ToastTone, string> = {
-  info: 'bg-info-soft border-info',
-  success: 'bg-success-soft border-success',
-  warning: 'bg-warning-soft border-warning',
-  danger: 'bg-danger-soft border-danger',
+  info: 'bg-info-soft border-info/40',
+  success: 'bg-success-soft border-success/40',
+  warning: 'bg-warning-soft border-warning/40',
+  danger: 'bg-danger-soft border-danger/40',
 };
 
 /** Provides `useToast()`; mount once near the app root. */
@@ -54,7 +54,7 @@ export function ToastProvider({
           <RadixToast.Root
             key={item.id}
             className={cn(
-              'k-toast text-fg shadow-card grid gap-1 rounded-md border-l-4 p-3 pr-8',
+              'k-toast text-fg shadow-card grid gap-1 rounded-md border p-3 pr-8',
               tones[item.tone],
             )}
             onOpenChange={(open) => {

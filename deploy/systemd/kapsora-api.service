@@ -1,0 +1,57 @@
+# /etc/systemd/system/kapsora-api.service
+[Unit]
+Description=KAPSORA HTTP API
+Documentation=https://github.com/celikbros/kapsora
+After=network-online.target postgresql.service kapsora-migrate.service
+Wants=network-online.target kapsora-migrate.service
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+Restart=on-failure
+RestartSec=3s
+TimeoutStopSec=30s
+KillSignal=SIGTERM
+WorkingDirectory=/opt/kapsora
+# Listens on 127.0.0.1:8080 behind the reverse proxy (KAPSORA_HTTP_ADDR in api.env).
+ExecStart=/opt/kapsora/bin/api
+# Environment never goes on the command line. api.env holds KAPSORA_* (0640 root:kapsora).
+# Secrets can also be handed over as files with LoadCredential (readable under
+# $CREDENTIALS_DIRECTORY), e.g.  LoadCredential=database_url:/etc/kapsora/database_url
+EnvironmentFile=/etc/kapsora/api.env
+Environment=KAPSORA_ENV=production
+
+# Hardening (replaces the container controls of v1.2 33.4; ADR-021)
+User=kapsora
+Group=kapsora
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+UMask=0077
+LimitNOFILE=65536
+# The only writable location; logs go to the journal.
+StateDirectory=kapsora
+LogsDirectory=kapsora
+ReadWritePaths=/var/lib/kapsora
+
+[Install]
+WantedBy=multi-user.target

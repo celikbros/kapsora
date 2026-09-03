@@ -162,6 +162,8 @@ jobs:
         run: pnpm test
       - name: build
         run: pnpm build
+      - name: design anti-pattern detector (impeccable)
+        run: pnpm design
       - name: playwright browsers
         run: pnpm exec playwright install --with-deps chromium
       - name: smoke tests (mock API)

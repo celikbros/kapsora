@@ -11,7 +11,8 @@ PSQL ?= psql
 export
 
 .PHONY: help db-init migrate-up migrate-version build run-api run-worker run-scheduler \
-        test test-unit test-db lint vet fmt openapi-lint openapi-generate openapi-diff sqlc tools ci \n        web-install web-generate web-dev web-lint web-typecheck web-test web-build web-e2e web-ci
+        test test-unit test-db lint vet fmt openapi-lint openapi-generate openapi-diff sqlc tools ci \n        web-install web-generate web-dev web-lint web-typecheck web-test web-build web-e2e web-ci \
+        native-install native-up native-down native-status
 
 help: ## List targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-18s %s\n", $$1, $$2}'
@@ -110,3 +111,16 @@ web-e2e: ## Playwright smoke tests against the mocked backoffice
 
 web-ci: web-generate web-lint web-typecheck web-test web-build ## What the CI web job runs (plus e2e)
 	git diff --exit-code -- web/packages/api-client/src/generated
+
+## --- native dependencies (ADR-021, WP-I1-06) ---------------------------------------
+native-install: ## Download pinned MinIO, mc, Mailpit (and check PostgreSQL, ClamAV) into tools/
+	bash scripts/native/install.sh
+
+native-up: ## Start MinIO (+buckets), clamd, Mailpit as native processes
+	bash scripts/native/up.sh
+
+native-down: ## Stop what native-up started
+	bash scripts/native/down.sh
+
+native-status: ## Health of PostgreSQL, MinIO, ClamAV, Mailpit and the API
+	bash scripts/native/status.sh

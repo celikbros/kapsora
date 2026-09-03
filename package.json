@@ -20,7 +20,8 @@
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
     "e2e": "playwright test --config tests/e2e/playwright.config.ts",
-    "generate": "pnpm --filter @kapsora/api-client generate"
+    "generate": "pnpm --filter @kapsora/api-client generate",
+    "design": "impeccable detect web"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",
@@ -34,6 +35,7 @@
     "prettier": "^3.6.0",
     "typescript": "~5.9.0",
     "typescript-eslint": "^8.64.0",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.0",
+    "impeccable": "latest"
   }
 }

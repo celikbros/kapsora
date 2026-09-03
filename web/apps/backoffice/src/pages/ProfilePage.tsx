@@ -31,12 +31,13 @@ export function ProfilePage() {
               const color = tenantColor(ctx.tenant.code);
               const isActive = active?.tenant.id === ctx.tenant.id;
               return (
-                <li
-                  key={ctx.tenant.id}
-                  className="border-line rounded-md border p-3"
-                  style={{ borderLeft: `4px solid ${color.accent}` }}
-                >
+                <li key={ctx.tenant.id} className="border-line rounded-md border p-3">
                   <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      aria-hidden="true"
+                      className="inline-block size-2.5 rounded-full"
+                      style={{ background: color.accent }}
+                    />
                     <span className="font-medium">{ctx.tenant.displayName}</span>
                     <span className="text-fg-muted text-xs">{ctx.tenant.code}</span>
                     <Badge tone={statusTone(ctx.tenant.status)}>{ctx.tenant.status}</Badge>

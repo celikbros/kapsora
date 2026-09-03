@@ -34,6 +34,8 @@ make migrate-up                 # şema sürüm 8
 make test-db                    # gerçek PostgreSQL üzerinde şema testleri
 make run-api                    # http://localhost:8080/health/ready
 make web-install && make web-dev # http://127.0.0.1:5173 (mock API ile; gerçek API için VITE_API_MOCK=false)
+make native-install && make native-up   # MinIO, ClamAV, Mailpit doğal süreç olarak (Windows: .\scripts
+ative\install.ps1 / up.ps1)
 ```
 
 Windows'ta GNU make yoksa: `.\scripts\dev.ps1 <hedef>` aynı hedefleri çalıştırır.
@@ -56,6 +58,7 @@ Windows'ta GNU make yoksa: `.\scripts\dev.ps1 <hedef>` aynı hedefleri çalışt
 | `make migrate-up` | Sahip rolüyle migration uygular |
 | `make web-ci` | Web: tip üretimi, Prettier + ESLint, tsc, Vitest, build |
 | `make web-e2e` | Playwright smoke testleri (mock API); `E2E_REAL_API=1` ile gerçek API |
+| `make native-up` / `native-status` / `native-down` | MinIO + kovalar, clamd, Mailpit doğal süreçleri (`scripts/native/`) |
 
 ## Depo yapısı
 

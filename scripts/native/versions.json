@@ -1,0 +1,71 @@
+{
+  "$comment": "Pinned native dependencies for the local environment (ADR-021). install.ps1/install.sh download these into tools/ and refuse anything whose SHA-256 differs. Linux ClamAV comes from the distribution packages (signatures and systemd unit are maintained there). MinIO community binaries stopped after 2025-10; this is the last release published with checksums, keep it until the object store decision in I5.",
+  "updated": "2026-09-03",
+  "minio": {
+    "version": "RELEASE.2025-09-07T16-13-09Z",
+    "windows-amd64": {
+      "url": "https://github.com/minio/minio/releases/download/RELEASE.2025-09-07T16-13-09Z/minio.windows-amd64.RELEASE.2025-09-07T16-13-09Z.exe",
+      "sha256": "af709e6ba68488404e85acdd22a3030d0f5e56a108d4b27d744f18ceb50861b4",
+      "kind": "binary",
+      "target": "bin/minio.exe"
+    },
+    "linux-amd64": {
+      "url": "https://github.com/minio/minio/releases/download/RELEASE.2025-09-07T16-13-09Z/minio.linux-amd64.RELEASE.2025-09-07T16-13-09Z",
+      "sha256": "7c5bd8512c6e966455b1d198209358b2d191c77a83ab377c4073281065fb855f",
+      "kind": "binary",
+      "target": "bin/minio"
+    }
+  },
+  "mc": {
+    "version": "RELEASE.2025-08-13T08-35-41Z",
+    "windows-amd64": {
+      "url": "https://github.com/minio/mc/releases/download/RELEASE.2025-08-13T08-35-41Z/mc.windows-amd64.RELEASE.2025-08-13T08-35-41Z.exe",
+      "sha256": "c8db13ebeda31497f354c0e950809db0ae9b2a2a69b8afee68c128c37300c157",
+      "kind": "binary",
+      "target": "bin/mc.exe"
+    },
+    "linux-amd64": {
+      "url": "https://github.com/minio/mc/releases/download/RELEASE.2025-08-13T08-35-41Z/mc.linux-amd64.RELEASE.2025-08-13T08-35-41Z",
+      "sha256": "01f866e9c5f9b87c2b09116fa5d7c06695b106242d829a8bb32990c00312e891",
+      "kind": "binary",
+      "target": "bin/mc"
+    }
+  },
+  "mailpit": {
+    "version": "v1.31.0",
+    "windows-amd64": {
+      "url": "https://github.com/axllent/mailpit/releases/download/v1.31.0/mailpit-windows-amd64.zip",
+      "sha256": "39b5f1b9a671a5f1738e3792e8495bef2fec8176b02ee1e22635626c5888c6e3",
+      "kind": "zip",
+      "member": "mailpit.exe",
+      "target": "bin/mailpit.exe"
+    },
+    "linux-amd64": {
+      "url": "https://github.com/axllent/mailpit/releases/download/v1.31.0/mailpit-linux-amd64.tar.gz",
+      "sha256": "076b5ded9a2182842b93e761b9586a1a251445bffe2666f9f22a6dc14470237d",
+      "kind": "tar.gz",
+      "member": "mailpit",
+      "target": "bin/mailpit"
+    }
+  },
+  "clamav": {
+    "version": "1.5.4",
+    "windows-amd64": {
+      "url": "https://github.com/Cisco-Talos/clamav/releases/download/clamav-1.5.4/clamav-1.5.4.win.x64.zip",
+      "sha256": "0d9e0228b2674137ea1a2853566c98a0278ad52ab2582c3d6dbd75373848c395",
+      "kind": "zip-tree",
+      "target": "clamav"
+    },
+    "linux": {
+      "kind": "package",
+      "packages": ["clamav", "clamav-daemon", "clamav-freshclam"],
+      "minimum": "1.0",
+      "note": "apt/dnf packages; the distribution keeps signatures, users and the systemd unit current."
+    }
+  },
+  "postgresql": {
+    "version": "18",
+    "kind": "preinstalled",
+    "note": "Installed by the developer or operator (Windows installer / distribution packages). The scripts only check the major version."
+  }
+}

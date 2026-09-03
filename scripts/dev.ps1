@@ -3,7 +3,8 @@
 param(
     [Parameter(Mandatory = $true)]
     [ValidateSet("build", "vet", "fmt", "lint", "test-unit", "test-db", "db-init", "migrate-up", "migrate-version",
-                 "run-api", "run-worker", "run-scheduler", "openapi-generate", "sqlc")]
+                 "run-api", "run-worker", "run-scheduler", "openapi-generate", "sqlc",
+                 "native-install", "native-up", "native-down", "native-status", "web-ci", "web-dev")]
     [string]$Target
 )
 
@@ -37,6 +38,12 @@ switch ($Target) {
     "run-scheduler"    { go run ./cmd/scheduler }
     "openapi-generate" { Push-Location api/openapi; try { & (Join-Path $gobin "oapi-codegen.exe") -config oapi-codegen.yaml kapsora-v1.yaml } finally { Pop-Location } }
     "sqlc"             { & (Join-Path $gobin "sqlc.exe") generate }
+    "native-install"   { & (Join-Path $PSScriptRoot "native\install.ps1") }
+    "native-up"        { & (Join-Path $PSScriptRoot "native\up.ps1") }
+    "native-down"      { & (Join-Path $PSScriptRoot "native\down.ps1") }
+    "native-status"    { & (Join-Path $PSScriptRoot "native\status.ps1") }
+    "web-ci"           { pnpm generate; pnpm format; pnpm lint; pnpm typecheck; pnpm test; pnpm build }
+    "web-dev"          { pnpm dev }
     "db-init"          {
         $psql = Get-Command psql -ErrorAction SilentlyContinue
         if (-not $psql) { $psql = "C:\Program Files\PostgreSQL\18\bin\psql.exe" }

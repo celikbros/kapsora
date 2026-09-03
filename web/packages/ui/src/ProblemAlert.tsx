@@ -37,8 +37,8 @@ export function ProblemAlert({
   const message = problemMessage(t, problem.code, problem.title);
   const tone =
     problem.status >= 500 || problem.status === 0
-      ? 'bg-danger-soft border-danger'
-      : 'bg-warning-soft border-warning';
+      ? 'bg-danger-soft border-danger/40'
+      : 'bg-warning-soft border-warning/40';
 
   async function copy() {
     try {
@@ -53,7 +53,7 @@ export function ProblemAlert({
   return (
     <div
       role="alert"
-      className={cn('text-fg rounded-md border-l-4 p-3 text-sm', tone, className)}
+      className={cn('text-fg rounded-md border p-3 text-sm', tone, className)}
       data-problem-code={problem.code}
     >
       <p className="font-medium">{message}</p>

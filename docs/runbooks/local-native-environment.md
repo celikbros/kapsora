@@ -1,61 +1,110 @@
 # Yerel doğal geliştirme ortamı (konteynersiz)
 
-Durum: başlangıç sürümü. Tam otomasyon ve tüm servisler WP-I1-06 ile gelir; bu doküman
-bugün çalışan asgari yolu anlatır.
+Tüm bağımlılıklar doğal süreç olarak çalışır; Docker, Kubernetes, Valkey yoktur
+(ADR-021). Giriş için ayrı bir sunucu gerekmez; hesaplar KAPSORA'nın kendi veritabanındadır
+(ADR-022, bkz. [local-accounts.md](local-accounts.md)).
 
-## Gereksinimler
+## 1. Gereksinimler
 
-| Bileşen | Sürüm | Not |
+| Bileşen | Sürüm | Nasıl |
 |---|---|---|
-| Go | 1.27+ | `go version` |
-| PostgreSQL | 18.x | Windows kurulumu `C:\Program Files\PostgreSQL\18`, servis `postgresql-x64-18`, port 5432 |
+| Go | 1.27+ | https://go.dev/dl/ · `go version` |
+| PostgreSQL | 18.x | Windows: resmi kurulum (servis `postgresql-x64-18`, port 5432). Ubuntu: PGDG deposu, `postgresql-18` |
+| Node.js + pnpm | 24 / 10 | Node kurulumu; `npm install -g pnpm` (corepack yönetici hakkı isterse kullanıcı öneki yeterlidir) |
 | Git | 2.4x+ | LF satır sonu `.gitattributes` ile zorunlu |
-| Node.js + pnpm | 24 / 10 | Yalnız frontend (WP-I1-05) |
+| ClamAV (Linux) | 1.x | `sudo apt install clamav clamav-daemon clamav-freshclam`; Windows'ta betik indirir |
 
+MinIO, `mc` ve Mailpit'i `install` betiği indirir; sürüm ve SHA-256 değerleri
+`scripts/native/versions.json` içinde sabittir, eşleşmeyen dosya kurulmaz.
 
-Docker, Kubernetes, Valkey/Redis kullanılmaz (ADR-021).
+## 2. Kurulum (bir kez)
 
-## Adımlar
+```powershell
+# Windows (PowerShell 5.1+ / 7)
+.\scripts\native\install.ps1
+```
 
-1. `.env.example` dosyasını `.env` olarak kopyalayın; `CHANGE_ME` değerlerini kendi
-   PostgreSQL superuser bilgilerinizle doldurun. `.env` git'e girmez.
-2. Rol ve veritabanı: `make db-init` veya `.\scripts\dev.ps1 db-init`
-   (`kapsora_app` rolü ve `kapsora` veritabanı; mevcutsa dokunmaz).
-3. Şema: `make migrate-up` (sürüm 9).
-4. Doğrulama: `make test-db` (geçici `kapsora_test_*` veritabanları yaratıp siler).
-5. Çalıştırma: `make run-api`, `make run-worker`, `make run-scheduler`; her biri `.env`
-   içindeki `KAPSORA_DATABASE_URL` ile (`kapsora_app` rolü) bağlanır.
-6. Kontrol: `curl http://localhost:8080/health/ready` → `{"status":"UP",...}`.
+```sh
+# Linux / macOS
+scripts/native/install.sh
+```
 
-## Henüz elle yapılanlar (WP-I1-06 otomatikleştirecek)
+Betik `tools/` altına (git dışı) `bin/minio`, `bin/mc`, `bin/mailpit` ve Windows'ta
+`clamav/` dizinini koyar; ClamAV için `tools/clamav/clamd.conf` ve `freshclam.conf`
+üretir; Go ve PostgreSQL sürümlerini denetler ve eksikse yönlendirir. Yönetici hakkı
+gerekmez; sisteme hiçbir şey kurmaz.
 
-- Giriş sunucusu gerekmez (ADR-022): kullanıcı hesapları KAPSORA'nın kendi
-  veritabanındadır. Yerel bir hesap açmak için:
+## 3. Yapılandırma
 
-  ```sh
-  go run ./cmd/keygen                     # KAPSORA_COOKIE_SIGNING_KEY üretir, .env'e yazın
-  go run ./cmd/seed account demo@kapsora.test "Demo Kullanıcı" demo@kapsora.test
-  ```
+```sh
+cp .env.example .env
+```
 
-  Parola bir kez ekrana yazılır ve ilk kullanımda değiştirilmesi istenir.
+`.env` içinde:
 
-  Demo veri seti (iki kurum, beş kullanıcı, roller) için:
+- `KAPSORA_MIGRATE_DATABASE_URL` ve `KAPSORA_TEST_ADMIN_DATABASE_URL`: yerel PostgreSQL
+  superuser bilgileri (`CHANGE_ME`).
+- `KAPSORA_LOCAL_MASTER_KEY`, `KAPSORA_COOKIE_SIGNING_KEY`: `go run ./cmd/keygen` çıktısı.
+- MinIO / ClamAV / Mailpit adresleri ve MinIO kök kimliği: örnek değerler yalnız yerel
+  içindir; `.env` git'e girmez.
 
-  ```sh
-  KAPSORA_SEED_DEMO_PASSWORD='uzun bir demo parolası' go run ./cmd/seed demo
-  ```
+## 4. Veritabanı
 
-  Kullanıcılar: `admin.a`, `reviewer.a`, `provider.a` (DEMO_A), `admin.b` (DEMO_B),
-  `both.ab` (her ikisinde denetçi). Komut tekrar çalıştırılabilir; var olanı atlar.
-- (Kaldırıldı) Keycloak: JDK 21 kurun, Keycloak 26.7 zip'ini `tools/keycloak` altına açın,
-  `bin\kc.bat start-dev --http-port=8081 --import-realm` (realm dosyası WP-I1-01 ile gelir).
-- MinIO: `minio.exe server C:\kapsora-data\minio --console-address :9001`.
-- ClamAV ve Mailpit: doğal ikili dosyalar; ayrıntı WP-I1-06 raporuyla bu dokümana eklenecek.
+```sh
+make db-init        # kapsora_app rolü + kapsora veritabanı (varsa dokunmaz)
+make migrate-up     # şema (sürüm 13)
+make test-db        # geçici veritabanlarında migration/RLS testleri
+go run ./cmd/seed demo   # DEMO_A / DEMO_B ve demo kullanıcılar (parola için local-accounts.md)
+```
 
-## Sık karşılaşılan sorunlar
+Windows'ta GNU make yoksa `.\scripts\dev.ps1 db-init` vb. aynı hedefleri çalıştırır.
 
-- `-race` Windows'ta cgo ister; yarış testleri CI'da (Linux) çalışır.
-- `__Host-` çerezi HTTPS ister; yerelde `KAPSORA_COOKIE_SECURE=false` ile ad `kapsora_session`
-  olur (yalnız local ortamda kabul edilir).
-- Şema testleri `kapsora_app` rolünün şifresini `.env` içindeki
-  `KAPSORA_TEST_APP_PASSWORD` değerine ayarlar; geliştirme URL'siyle aynı tutun.
+## 5. Servisleri başlatma
+
+```powershell
+.\scripts\native\up.ps1      # MinIO + kovalar, clamd (önce freshclam), Mailpit
+.\scripts\native\status.ps1  # sağlık tablosu
+.\scripts\native\down.ps1    # durdur (veriler tools/data altında kalır)
+```
+
+```sh
+scripts/native/up.sh && scripts/native/status.sh     # Linux; make native-up / native-status
+```
+
+`up` idempotenttir: pid dosyası canlıysa yeniden başlatmaz. İlk `freshclam` ~300 MB imza
+indirir; `-SkipFreshclam` / `--skip-freshclam` ile atlanabilir (clamd o zaman imzasız
+başlamaz). Linux'ta ClamAV dağıtım paketinden geliyorsa `up` yalnız
+`clamav-daemon` servisinin durumunu bildirir; `/etc/clamav/clamd.conf` içinde
+`TCPSocket 3310` ve `TCPAddr 127.0.0.1` olmalıdır.
+
+| Servis | Adres | Sağlık |
+|---|---|---|
+| PostgreSQL | 127.0.0.1:5432 | TCP |
+| MinIO | http://127.0.0.1:9000 (konsol 9001) | `/minio/health/live` |
+| ClamAV clamd | tcp://127.0.0.1:3310 | `PING` → `PONG` |
+| Mailpit | http://127.0.0.1:8025 (SMTP 1025) | `/livez` |
+| KAPSORA API | http://127.0.0.1:8080 | `/health/ready` |
+
+Kovalar: `quarantine`, `secure`, `exports`, `immutable`, `fiscal` (`immutable` ve `fiscal`
+sürümlemeli).
+
+## 6. Uygulamayı çalıştırma
+
+```sh
+make run-api        # veya .\scripts\dev.ps1 run-api
+make run-worker
+make run-scheduler
+make web-dev        # backoffice http://127.0.0.1:5173 (mock API); gerçek API için VITE_API_MOCK=false
+```
+
+## 7. Sık karşılaşılan sorunlar
+
+| Belirti | Neden / çözüm |
+|---|---|
+| `install`: "checksum mismatch" | İndirme bozuk ya da yayıncı dosyayı değiştirmiş. Yeniden deneyin; sürerse `versions.json` güncellenmeden kurmayın. |
+| `up`: "something else already listens on 127.0.0.1:9000" | Başka bir MinIO/uygulama portu tutuyor; `.env` içinde `KAPSORA_MINIO_ADDR` değiştirin. |
+| clamd 180 sn içinde ayağa kalkmadı | İmza yüklemesi yavaş makinelerde uzun sürer; `tools/run/clamd.err.log` bakın, bir süre sonra `status` ile yeniden kontrol edin. |
+| PostgreSQL DOWN | Windows: `Get-Service postgresql-x64-18 \| Start-Service`; Linux: `sudo systemctl start postgresql`. |
+| `make db-init` parola hatası | `.env` içindeki superuser URL'si yanlış; `psql "<url>" -c 'select 1'` ile doğrulayın. |
+| Vite dev sunucusu 5173 kullanımda | Başka bir proje çalışıyor; `pnpm dev -- --port 5180`. |
+| `.env` yüklenmiyor | Satırlar `KEY=VALUE` olmalı; tırnak ve boşluk kullanmayın. |

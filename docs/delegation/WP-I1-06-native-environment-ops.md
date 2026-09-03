@@ -1,5 +1,12 @@
 # WP-I1-06 · Native environment and ops: install/run scripts, systemd units, runbooks
 
+> **Delivered in-house on 2026-09-03.** Scope adapted to ADR-022: there is no Keycloak and
+> no JDK anywhere, so the scripts manage PostgreSQL (preinstalled), MinIO + mc, ClamAV and
+> Mailpit only, and `keycloak-local.md` became [local-accounts.md](../runbooks/local-accounts.md).
+> On Linux, ClamAV comes from the distribution packages rather than a download. Windows run
+> verified on this machine; the Ubuntu VM run is still open (see the report).
+> Report: [WP-I1-06-report.md](WP-I1-06-report.md).
+
 | Field | Value |
 |---|---|
 | Milestone | M1 (plan increment I1) |

@@ -1,0 +1,44 @@
+# /etc/systemd/system/kapsora-migrate.service
+# Oneshot: applies pending migrations with the owner role before the API/worker/scheduler
+# start (they declare Wants=/After= on this unit). Forward-only (ADR-016); rollback is a
+# forward fix.
+[Unit]
+Description=KAPSORA schema migration (oneshot)
+Documentation=https://github.com/celikbros/kapsora
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=no
+WorkingDirectory=/opt/kapsora
+ExecStart=/opt/kapsora/bin/migrate up
+# migrate.env sets KAPSORA_DATABASE_URL to the owner-role URL (0600 root:root).
+EnvironmentFile=/etc/kapsora/migrate.env
+Environment=KAPSORA_ENV=production
+
+User=kapsora
+Group=kapsora
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

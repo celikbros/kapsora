@@ -51,8 +51,12 @@ export function TenantPickerPage() {
                 <li
                   key={ctx.tenant.id}
                   className="border-line flex items-center gap-3 rounded-md border p-3"
-                  style={{ borderLeft: `4px solid ${color.accent}` }}
                 >
+                  <span
+                    aria-hidden="true"
+                    className="inline-block size-2.5 shrink-0 rounded-full"
+                    style={{ background: color.accent }}
+                  />
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">{ctx.tenant.displayName}</p>
                     <p className="text-fg-muted text-xs">
