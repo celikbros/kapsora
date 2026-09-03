@@ -13,8 +13,7 @@ import {
   type StoredImportBatch,
   type StoredImportRow,
 } from './data';
-import type {
-  MockApi} from './handlers';
+import type { MockApi } from './handlers';
 import {
   ANY,
   decodeCursor,

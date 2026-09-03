@@ -16,8 +16,7 @@ import {
   type StoredAdjustment,
   type StoredEntitlementAccount,
 } from './data';
-import type {
-  MockApi} from './handlers';
+import type { MockApi } from './handlers';
 import {
   ANY,
   decodeCursor,

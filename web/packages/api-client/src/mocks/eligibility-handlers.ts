@@ -14,16 +14,8 @@ import type {
   EligibilityEvaluation as DecimalEvaluation,
   EligibilityItemResult,
 } from '../decimals';
-import type {
-  MockApi} from './handlers';
-import {
-  ANY,
-  guardTenant,
-  pathParam,
-  problem,
-  readJson,
-  wait,
-} from './handlers';
+import type { MockApi } from './handlers';
+import { ANY, guardTenant, pathParam, problem, readJson, wait } from './handlers';
 
 // The mock speaks the wire format: quantities are decimal strings (see ../decimals.ts).
 type Result = DecimalResult;

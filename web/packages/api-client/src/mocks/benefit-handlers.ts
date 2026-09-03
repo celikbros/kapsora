@@ -19,8 +19,7 @@ import {
   type StoredPlanVersion,
   type StoredProgram,
 } from './data';
-import type {
-  MockApi} from './handlers';
+import type { MockApi } from './handlers';
 import {
   ANY,
   encodeCursor,
