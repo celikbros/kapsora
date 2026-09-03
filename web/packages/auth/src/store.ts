@@ -34,6 +34,8 @@ export interface SessionActions {
   login(username: string, password: string): Promise<SessionState>;
   logout(): Promise<void>;
   switchTenant(tenantId: string): Promise<TenantContext>;
+  /** Re-enters the password for a sensitive action and refreshes the session. */
+  stepUp(password: string): Promise<void>;
   /** Drops to anonymous without calling the server (e.g. after a 401 elsewhere). */
   invalidate(): void;
 }
@@ -134,6 +136,12 @@ export function createSessionStore(ops: Operations): SessionStore {
       } finally {
         store.setState({ ...initial, status: 'anonymous' });
       }
+    },
+    async stepUp(password) {
+      await ops.session.stepUp(password);
+      // The step-up window lives on the session, so read it back rather than guessing.
+      const session = await ops.session.get();
+      store.setState({ session, csrfToken: session.csrfToken });
     },
     async switchTenant(tenantId) {
       const ctx = await ops.session.switchTenant(tenantId);

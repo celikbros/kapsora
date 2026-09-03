@@ -19,5 +19,7 @@ export {
   useTenant,
   useTenantId,
 } from './hooks';
+export { useStepUp, useStepUpValid } from './stepup';
+export type { StepUp } from './stepup';
 export { hashCode, tenantColor } from './tenant-color';
 export type { TenantColor } from './tenant-color';

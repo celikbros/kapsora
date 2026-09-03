@@ -15,6 +15,9 @@ import {
   OrganizationListPage,
   type OrganizationListSearch,
 } from './organizations/OrganizationListPage';
+import { PersonCreatePage } from './people/PersonCreatePage';
+import { PersonDetailPage } from './people/PersonDetailPage';
+import { PersonListPage, type PersonListSearch } from './people/PersonListPage';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { LogoutPage } from './pages/LogoutPage';
@@ -129,6 +132,40 @@ const organizationEditRoute = createRoute({
   component: () => <OrganizationEditPage mode="edit" />,
 });
 
+function personListSearch(raw: Record<string, unknown>): PersonListSearch {
+  const out: PersonListSearch = {};
+  const status = raw['status'];
+  if (
+    status === 'ACTIVE' ||
+    status === 'INACTIVE' ||
+    status === 'DECEASED' ||
+    status === 'MERGED'
+  ) {
+    out.status = status;
+  }
+  if (typeof raw['q'] === 'string' && raw['q'] !== '') out.q = raw['q'];
+  if (typeof raw['cursor'] === 'string' && raw['cursor'] !== '') out.cursor = raw['cursor'];
+  return out;
+}
+
+const peopleRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/people',
+  validateSearch: personListSearch,
+  component: PersonListPage,
+});
+const personCreateRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/people/new',
+  component: PersonCreatePage,
+});
+
+const personDetailRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/people/$personId',
+  component: PersonDetailPage,
+});
+
 const soonRoutes = SOON_PATHS.map((path) =>
   createRoute({ getParentRoute: () => appRoute, path, component: SoonPage }),
 );
@@ -145,6 +182,9 @@ const routeTree = rootRoute.addChildren([
     organizationNewRoute,
     organizationDetailRoute,
     organizationEditRoute,
+    peopleRoute,
+    personCreateRoute,
+    personDetailRoute,
     ...soonRoutes,
   ]),
 ]);

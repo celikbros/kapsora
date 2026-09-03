@@ -48,7 +48,10 @@
     "switchTenant": "Kurum değiştir",
     "noTenantsTitle": "Üyelik bulunamadı",
     "noTenantsBody": "Hesabınız hiçbir kurumda aktif değil. Yöneticinizle görüşün.",
-    "mustChangePassword": "Devam etmeden önce parolanızı değiştirmeniz gerekiyor."
+    "mustChangePassword": "Devam etmeden önce parolanızı değiştirmeniz gerekiyor.",
+    "stepUpTitle": "Parolanızı doğrulayın",
+    "stepUpIntro": "{{action}} için parolanızı yeniden girmeniz gerekiyor. Bu doğrulama kısa süre geçerlidir.",
+    "stepUpConfirm": "Doğrula"
   },
   "header": {
     "userMenu": "Kullanıcı menüsü",

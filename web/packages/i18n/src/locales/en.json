@@ -48,7 +48,10 @@
     "switchTenant": "Switch tenant",
     "noTenantsTitle": "No memberships",
     "noTenantsBody": "Your account is not active in any tenant. Contact your administrator.",
-    "mustChangePassword": "You must change your password before continuing."
+    "mustChangePassword": "You must change your password before continuing.",
+    "stepUpTitle": "Confirm your password",
+    "stepUpIntro": "{{action}} needs your password again. The confirmation is valid for a short window.",
+    "stepUpConfirm": "Confirm"
   },
   "header": {
     "userMenu": "User menu",

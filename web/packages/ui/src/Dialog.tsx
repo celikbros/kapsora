@@ -6,11 +6,11 @@ export interface DialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
-  description?: string;
+  description?: string | undefined;
   children?: ReactNode;
   /** Footer slot, usually buttons. */
-  actions?: ReactNode;
-  className?: string;
+  actions?: ReactNode | undefined;
+  className?: string | undefined;
 }
 
 /** Modal dialog: focus trap, Escape to close, labelled by its title (Radix). */

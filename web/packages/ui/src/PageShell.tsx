@@ -50,9 +50,9 @@ export function AppShell({
 
 export interface PageHeaderProps {
   title: string;
-  description?: string;
-  actions?: ReactNode;
-  breadcrumb?: ReactNode;
+  description?: string | undefined;
+  actions?: ReactNode | undefined;
+  breadcrumb?: ReactNode | undefined;
 }
 
 /** Page title block with optional breadcrumb and actions. */

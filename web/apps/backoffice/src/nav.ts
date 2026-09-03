@@ -11,7 +11,13 @@ export interface NavEntry {
 
 export const NAV_ENTRIES: NavEntry[] = [
   { key: 'home', path: '/', labelKey: 'nav.home', implemented: true },
-  { key: 'people', path: '/people', labelKey: 'nav.people', implemented: false },
+  {
+    key: 'people',
+    path: '/people',
+    labelKey: 'nav.people',
+    implemented: true,
+    permission: 'member.read',
+  },
   { key: 'programs', path: '/programs', labelKey: 'nav.programs', implemented: false },
   { key: 'wallets', path: '/wallets', labelKey: 'nav.wallets', implemented: false },
   { key: 'catalog', path: '/catalog', labelKey: 'nav.catalog', implemented: false },
