@@ -1,0 +1,5 @@
+# Generated from the OpenAPI contract; openapi-typescript owns the formatting.
+web/packages/api-client/src/generated/
+pnpm-lock.yaml
+**/dist/
+**/public/mockServiceWorker.js

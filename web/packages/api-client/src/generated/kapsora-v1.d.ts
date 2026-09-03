@@ -4,823 +4,807 @@
  */
 
 export interface paths {
-  '/api/v1/eligibility/checks': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/eligibility/checks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Query-style POST: evaluates eligibility deterministically and records an evaluation
+         *     snapshot, but changes no business state. Idempotency-Key is therefore optional.
+         */
+        post: operations["checkEligibility"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * @description Query-style POST: evaluates eligibility deterministically and records an evaluation
-     *     snapshot, but changes no business state. Idempotency-Key is therefore optional.
-     */
-    post: operations['checkEligibility'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/me': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The signed-in actor with one context per active membership: tenant summary, the
+         *     permissions resolved from tenant-owned roles and access grants valid now, and any
+         *     narrowing scopes (ORGANIZATION, PROGRAM, ...). The frontend uses it to build the
+         *     tenant picker and to hide controls; the backend re-validates every call.
+         */
+        get: operations["getCurrentUserContext"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * @description The signed-in actor with one context per active membership: tenant summary, the
-     *     permissions resolved from tenant-owned roles and access grants valid now, and any
-     *     narrowing scopes (ORGANIZATION, PROGRAM, ...). The frontend uses it to build the
-     *     tenant picker and to hide controls; the backend re-validates every call.
-     */
-    get: operations['getCurrentUserContext'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/organizations': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/organizations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Lists the tenant's organization relationships newest first with keyset pagination.
+         *     `q` matches the display name (case-insensitive, 2-120 characters); `role` filters the
+         *     relationship role. Cursors are opaque and signed; a tampered one is rejected.
+         */
+        get: operations["listOrganizations"];
+        put?: never;
+        /**
+         * @description Creates the tenant's relationship with an organization. The organization itself lives
+         *     in the global directory: the server looks it up by the supplied registry identifiers
+         *     (country + tax number blind index) and reuses the existing legal entity when found,
+         *     otherwise creates it. A 409 is returned when this tenant already has the same
+         *     relationship role with that organization for an overlapping period.
+         */
+        post: operations["createTenantOrganization"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * @description Lists the tenant's organization relationships newest first with keyset pagination.
-     *     `q` matches the display name (case-insensitive, 2-120 characters); `role` filters the
-     *     relationship role. Cursors are opaque and signed; a tampered one is rejected.
-     */
-    get: operations['listOrganizations'];
-    put?: never;
-    /**
-     * @description Creates the tenant's relationship with an organization. The organization itself lives
-     *     in the global directory: the server looks it up by the supplied registry identifiers
-     *     (country + tax number blind index) and reuses the existing legal entity when found,
-     *     otherwise creates it. A 409 is returned when this tenant already has the same
-     *     relationship role with that organization for an overlapping period.
-     */
-    post: operations['createTenantOrganization'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/organizations/{organizationId}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/organizations/{organizationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One relationship with the shared legal entity and its masked registry identifiers.
+         *     `organizationId` is the relationship id; ids of other tenants answer 404.
+         */
+        get: operations["getOrganization"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Merge-patch of the relationship (`relationshipStatus`, `tenantCode`, `null` clears it)
+         *     and of the shared display name. Renaming is refused with 409
+         *     ORGANIZATION_SHARED_READONLY once another tenant also holds a relationship with the
+         *     organization. `If-Match` must carry the ETag of the last read; a stale value answers
+         *     412 and a missing one 428.
+         */
+        patch: operations["updateOrganization"];
+        trace?: never;
     };
-    /**
-     * @description One relationship with the shared legal entity and its masked registry identifiers.
-     *     `organizationId` is the relationship id; ids of other tenants answer 404.
-     */
-    get: operations['getOrganization'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * @description Merge-patch of the relationship (`relationshipStatus`, `tenantCode`, `null` clears it)
-     *     and of the shared display name. Renaming is refused with 409
-     *     ORGANIZATION_SHARED_READONLY once another tenant also holds a relationship with the
-     *     organization. `If-Match` must carry the ETag of the last read; a stale value answers
-     *     412 and a missing one 428.
-     */
-    patch: operations['updateOrganization'];
-    trace?: never;
-  };
-  '/api/v1/people': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/people": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listPeople"];
+        put?: never;
+        post: operations["createPerson"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations['listPeople'];
-    put?: never;
-    post: operations['createPerson'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/people/{personId}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/people/{personId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getPerson"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations['getPerson'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/service-requests': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/service-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listServiceRequests"];
+        put?: never;
+        post: operations["createServiceRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations['listServiceRequests'];
-    put?: never;
-    post: operations['createServiceRequest'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/service-requests/{requestId}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/service-requests/{requestId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getServiceRequest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["updateDraftServiceRequest"];
+        trace?: never;
     };
-    get: operations['getServiceRequest'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch: operations['updateDraftServiceRequest'];
-    trace?: never;
-  };
-  '/api/v1/service-requests/{requestId}/cancel': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/service-requests/{requestId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["cancelServiceRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations['cancelServiceRequest'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/service-requests/{requestId}/submit': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/service-requests/{requestId}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["submitServiceRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations['submitServiceRequest'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/session': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Returns the current session and the CSRF token every state-changing call must echo
+         *     in X-CSRF-Token. This is how the frontend obtains that token.
+         */
+        get: operations["getSession"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * @description Returns the current session and the CSRF token every state-changing call must echo
-     *     in X-CSRF-Token. This is how the frontend obtains that token.
-     */
-    get: operations['getSession'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/session/login': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/session/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Authenticates a user name and password and starts a session. The response sets the
+         *     session cookie and carries the CSRF token.
+         *
+         *     Failures are deliberately coarse: an unknown user name and a wrong password both
+         *     return 401 INVALID_CREDENTIALS with the same body and take the same time, so the
+         *     endpoint cannot be used to discover who has an account. Repeated failures lock the
+         *     account for a short period (403 ACCOUNT_LOCKED); the endpoint is also rate limited
+         *     per client address.
+         */
+        post: operations["login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * @description Authenticates a user name and password and starts a session. The response sets the
-     *     session cookie and carries the CSRF token.
-     *
-     *     Failures are deliberately coarse: an unknown user name and a wrong password both
-     *     return 401 INVALID_CREDENTIALS with the same body and take the same time, so the
-     *     endpoint cannot be used to discover who has an account. Repeated failures lock the
-     *     account for a short period (403 ACCOUNT_LOCKED); the endpoint is also rate limited
-     *     per client address.
-     */
-    post: operations['login'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/session/logout': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/session/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Ends the session and clears the cookie. Calling it without a session, or twice, is
+         *     not an error.
+         */
+        post: operations["logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * @description Ends the session and clears the cookie. Calling it without a session, or twice, is
-     *     not an error.
-     */
-    post: operations['logout'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/session/password': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/session/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Replaces the caller's own password after verifying the current one. Every other
+         *     session of the actor is ended; the calling session stays valid.
+         */
+        post: operations["changeOwnPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * @description Replaces the caller's own password after verifying the current one. Every other
-     *     session of the actor is ended; the calling session stays valid.
-     */
-    post: operations['changeOwnPassword'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/session/step-up': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/session/step-up": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Re-verifies the caller's password before a sensitive operation (publish, privileged
+         *     grant, sensitive download, export, adjustment, settlement approval, break-glass).
+         *     The elevated state is valid for a short window returned in the response. Failures
+         *     count towards the same account lockout as a login.
+         */
+        post: operations["stepUpSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * @description Re-verifies the caller's password before a sensitive operation (publish, privileged
-     *     grant, sensitive download, export, adjustment, settlement approval, break-glass).
-     *     The elevated state is valid for a short window returned in the response. Failures
-     *     count towards the same account lockout as a login.
-     */
-    post: operations['stepUpSession'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/session/switch-tenant': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/session/switch-tenant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Selects the active tenant for the session. The server verifies that the actor holds
+         *     an active membership; the X-Tenant-ID header on later calls must equal this tenant
+         *     and is never trusted on its own. A tenant the actor is not a member of and a tenant
+         *     that does not exist both answer 403 TENANT_ACCESS_DENIED.
+         */
+        post: operations["switchTenant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * @description Selects the active tenant for the session. The server verifies that the actor holds
-     *     an active membership; the X-Tenant-ID header on later calls must equal this tenant
-     *     and is never trusted on its own. A tenant the actor is not a member of and a tenant
-     *     that does not exist both answer 403 TENANT_ACCESS_DENIED.
-     */
-    post: operations['switchTenant'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/tenants': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/tenants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Tenants in which the actor holds an active membership, ordered by display name. An
+         *     actor never learns about tenants it is not a member of.
+         */
+        get: operations["listAccessibleTenants"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * @description Tenants in which the actor holds an active membership, ordered by display name. An
-     *     actor never learns about tenants it is not a member of.
-     */
-    get: operations['listAccessibleTenants'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/health/live': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/health/live": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getLiveness"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations['getLiveness'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/health/ready': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/health/ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getReadiness"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations['getReadiness'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-  schemas: {
-    CreateOrganizationRequest: {
-      /** @default TR */
-      countryCode?: string;
-      displayName: string;
-      /**
-       * @description Registry identifiers used to find or create the global legal entity. For TR a
-       *     VKN (10 digits) or, for sole proprietors, a TCKN (11 digits) is mandatory; the
-       *     server validates the checksum and deduplicates by blind index.
-       */
-      identifiers: {
-        /** @default false */
-        primary?: boolean;
-        /** @enum {string} */
-        type: 'VKN' | 'TCKN' | 'MERSIS' | 'PROVIDER_REGISTRY' | 'OTHER';
-        value: string;
-      }[];
-      legalName: string;
-      /** @enum {string} */
-      organizationKind:
-        'BANK' | 'INSURER' | 'SPONSOR' | 'PROVIDER' | 'VENDOR' | 'PUBLIC_BODY' | 'OTHER';
-      /** @enum {string} */
-      relationshipRole: 'PAYER' | 'SPONSOR' | 'PROVIDER' | 'VENDOR' | 'PARTNER';
-      tenantCode?: string;
+    schemas: {
+        CreateOrganizationRequest: {
+            /** @default TR */
+            countryCode?: string;
+            displayName: string;
+            /**
+             * @description Registry identifiers used to find or create the global legal entity. For TR a
+             *     VKN (10 digits) or, for sole proprietors, a TCKN (11 digits) is mandatory; the
+             *     server validates the checksum and deduplicates by blind index.
+             */
+            identifiers: {
+                /** @default false */
+                primary?: boolean;
+                /** @enum {string} */
+                type: "VKN" | "TCKN" | "MERSIS" | "PROVIDER_REGISTRY" | "OTHER";
+                value: string;
+            }[];
+            legalName: string;
+            /** @enum {string} */
+            organizationKind: "BANK" | "INSURER" | "SPONSOR" | "PROVIDER" | "VENDOR" | "PUBLIC_BODY" | "OTHER";
+            /** @enum {string} */
+            relationshipRole: "PAYER" | "SPONSOR" | "PROVIDER" | "VENDOR" | "PARTNER";
+            tenantCode?: string;
+        };
+        CreatePersonRequest: {
+            /** Format: date */
+            birthDate?: string;
+            firstName: string;
+            identifiers?: {
+                /** @default false */
+                primary?: boolean;
+                /** @description Tenant tarafından tanımlanan identifier type kodu. */
+                type: string;
+                value: string;
+            }[];
+            lastName: string;
+            middleName?: string;
+            /** @enum {string} */
+            sexAtBirth?: "FEMALE" | "MALE" | "INTERSEX" | "UNKNOWN";
+        };
+        CreateServiceRequest: {
+            /** @enum {string} */
+            channel: "BACKOFFICE" | "PROVIDER_PORTAL" | "MEMBER_PORTAL" | "API" | "BATCH_IMPORT" | "CALL_CENTER";
+            /** Format: uuid */
+            enrollmentId: string;
+            items: {
+                currencyCode?: string;
+                requestedAmount?: number;
+                requestedQuantity: number;
+                /** Format: uuid */
+                serviceDefinitionId: string;
+                unitType: string;
+            }[];
+            /** Format: uuid */
+            personId: string;
+            /** Format: uuid */
+            programId: string;
+            /** Format: uuid */
+            providerOrganizationId?: string;
+            /** Format: date-time */
+            requestedEndAt?: string;
+            /** Format: date-time */
+            requestedStartAt?: string;
+            /** @enum {string} */
+            requestType: "DIRECT_SERVICE" | "PREAUTHORIZATION" | "RESERVATION" | "REIMBURSEMENT";
+            /** Format: date */
+            serviceDate: string;
+        };
+        EligibilityCheckRequest: {
+            context?: {
+                [key: string]: unknown;
+            };
+            /** Format: uuid */
+            personId: string;
+            /** Format: uuid */
+            programId?: string | null;
+            /** Format: uuid */
+            providerOrganizationId?: string | null;
+            /** Format: date */
+            serviceDate: string;
+            serviceItems: {
+                currencyCode?: string;
+                quantity: number;
+                requestedAmount?: number;
+                /** Format: uuid */
+                serviceDefinitionId: string;
+            }[];
+        };
+        EligibilityCheckResult: {
+            balances?: {
+                available: number;
+                entitlementCode: string;
+                unit: string;
+            }[];
+            eligible: boolean;
+            /** Format: date-time */
+            evaluatedAt: string;
+            explanations: {
+                code: string;
+                message: string;
+                /** @enum {string} */
+                severity: "INFO" | "WARNING" | "ERROR";
+            }[];
+            /** @enum {string} */
+            outcome: "ELIGIBLE" | "PARTIALLY_ELIGIBLE" | "INELIGIBLE" | "REVIEW_REQUIRED" | "MISSING_DATA";
+            /** Format: uuid */
+            planVersionId?: string | null;
+            ruleSetVersionIds?: string[];
+        };
+        HealthStatus: {
+            checks?: {
+                [key: string]: string;
+            };
+            /** @enum {string} */
+            status: "UP" | "DEGRADED" | "DOWN";
+            /** Format: date-time */
+            timestamp: string;
+        };
+        MaskedIdentifier: {
+            maskedValue: string;
+            primary: boolean;
+            /** @description Tenant tarafından tanımlanan identifier type kodu (örn. TCKN, PASSPORT, MEMBER_NO, CUSTOMER_NO). */
+            type: string;
+        };
+        /**
+         * @description Tenant relationship with a global organization. `id` identifies the relationship
+         *     (tenant_organization); `organizationId` identifies the shared legal entity.
+         */
+        Organization: components["schemas"]["OrganizationSummary"] & {
+            countryCode: string;
+            identifiers: components["schemas"]["OrganizationIdentifier"][];
+            legalName: string;
+            /**
+             * @description Status of the global legal entity, independent of this tenant.
+             * @enum {string}
+             */
+            organizationStatus: "ACTIVE" | "SUSPENDED" | "CLOSED";
+            rowVersion: number;
+            tenantCode?: string | null;
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo?: string | null;
+        };
+        OrganizationIdentifier: {
+            maskedValue: string;
+            primary: boolean;
+            /** @enum {string} */
+            type: "VKN" | "TCKN" | "MERSIS" | "PROVIDER_REGISTRY" | "OTHER";
+        };
+        OrganizationPage: {
+            items: components["schemas"]["OrganizationSummary"][];
+            nextCursor?: string | null;
+        };
+        OrganizationSummary: {
+            displayName: string;
+            /**
+             * Format: uuid
+             * @description Tenant relationship id (directory.tenant_organization).
+             */
+            id: string;
+            /**
+             * Format: uuid
+             * @description Global legal entity id (directory.organization).
+             */
+            organizationId: string;
+            /** @enum {string} */
+            organizationKind: "BANK" | "INSURER" | "SPONSOR" | "PROVIDER" | "VENDOR" | "PUBLIC_BODY" | "OTHER";
+            /** @enum {string} */
+            relationshipRole: "PAYER" | "SPONSOR" | "PROVIDER" | "VENDOR" | "PARTNER";
+            /**
+             * @description Status of this tenant's relationship with the organization.
+             * @enum {string}
+             */
+            relationshipStatus: "PENDING" | "ACTIVE" | "SUSPENDED" | "TERMINATED";
+        };
+        Person: components["schemas"]["PersonSummary"] & {
+            /** Format: date */
+            birthDate?: string | null;
+            firstName: string;
+            /** @description Returned only with person.identifier.read permission; values are masked. */
+            identifiers?: components["schemas"]["MaskedIdentifier"][];
+            lastName: string;
+            middleName?: string | null;
+            rowVersion: number;
+            /** @enum {string|null} */
+            sexAtBirth?: "FEMALE" | "MALE" | "INTERSEX" | "UNKNOWN" | null;
+        };
+        PersonPage: {
+            items: components["schemas"]["PersonSummary"][];
+            nextCursor?: string | null;
+        };
+        PersonSummary: {
+            displayName: string;
+            /** Format: uuid */
+            id: string;
+            maskedPrimaryIdentifier?: string | null;
+            /** @enum {string} */
+            status: "ACTIVE" | "INACTIVE" | "DECEASED" | "MERGED";
+        };
+        Problem: {
+            code: string;
+            detail?: string;
+            errors?: {
+                code: string;
+                field: string;
+                message?: string;
+            }[];
+            /** Format: uri-reference */
+            instance?: string;
+            status: number;
+            title: string;
+            traceId: string;
+            /** Format: uri-reference */
+            type: string;
+        };
+        ReasonCommand: {
+            reasonCode: string;
+            reasonText?: string;
+        };
+        ServiceRequest: {
+            /** @enum {string} */
+            channel: "BACKOFFICE" | "PROVIDER_PORTAL" | "MEMBER_PORTAL" | "API" | "BATCH_IMPORT" | "CALL_CENTER";
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: uuid */
+            enrollmentId: string;
+            /** Format: uuid */
+            id: string;
+            items: components["schemas"]["ServiceRequestItem"][];
+            /** Format: uuid */
+            personId: string;
+            /** Format: uuid */
+            programId: string;
+            /** Format: uuid */
+            providerOrganizationId?: string | null;
+            reference: string;
+            /** Format: date-time */
+            requestedEndAt?: string | null;
+            /** Format: date-time */
+            requestedStartAt?: string | null;
+            /** @enum {string} */
+            requestType: "DIRECT_SERVICE" | "PREAUTHORIZATION" | "RESERVATION" | "REIMBURSEMENT";
+            rowVersion: number;
+            /** Format: date */
+            serviceDate: string;
+            /** @enum {string} */
+            status: "DRAFT" | "SUBMITTED" | "ELIGIBILITY_FAILED" | "PENDING_DOCUMENT" | "PENDING_REVIEW" | "APPROVED" | "PARTIALLY_APPROVED" | "REJECTED" | "CANCELLED" | "EXPIRED" | "CLOSED";
+            /** Format: date-time */
+            submittedAt?: string | null;
+        };
+        ServiceRequestItem: {
+            approvedAmount?: number | null;
+            approvedQuantity?: number | null;
+            currencyCode?: string | null;
+            decisionReasonCode?: string | null;
+            /** Format: uuid */
+            id: string;
+            lineNo: number;
+            requestedAmount?: number | null;
+            requestedQuantity: number;
+            /** Format: uuid */
+            serviceDefinitionId: string;
+            /** @enum {string} */
+            status: "REQUESTED" | "APPROVED" | "PARTIALLY_APPROVED" | "REJECTED" | "CANCELLED";
+            unitType: string;
+        };
+        ServiceRequestPage: {
+            items: components["schemas"]["ServiceRequest"][];
+            nextCursor?: string | null;
+        };
+        SessionInfo: {
+            /** Format: uuid */
+            activeTenantId: string | null;
+            /** Format: uuid */
+            actorId: string;
+            /** @description Echo this in X-CSRF-Token on every state-changing call. */
+            csrfToken: string;
+            displayName?: string;
+            /**
+             * Format: date-time
+             * @description Absolute end of the session, regardless of activity.
+             */
+            expiresAt: string;
+            /** @description True when an administrator issued a temporary password. */
+            mustChangePassword: boolean;
+            /** Format: date-time */
+            stepUpExpiresAt: string | null;
+        };
+        TenantContext: {
+            permissions: string[];
+            scopes?: {
+                /** Format: uuid */
+                id?: string | null;
+                type: string;
+            }[];
+            tenant: components["schemas"]["TenantSummary"];
+        };
+        TenantSummary: {
+            code: string;
+            defaultLocale?: string;
+            defaultTimeZone?: string;
+            displayName: string;
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            status: "PROVISIONING" | "ACTIVE" | "SUSPENDED" | "CLOSED";
+        };
+        UpdateOrganizationRequest: {
+            displayName?: string;
+            /** @enum {string} */
+            relationshipStatus?: "ACTIVE" | "SUSPENDED" | "TERMINATED";
+            tenantCode?: string | null;
+        };
+        UpdateServiceRequest: {
+            items?: {
+                currencyCode?: string;
+                requestedAmount?: number;
+                requestedQuantity: number;
+                /** Format: uuid */
+                serviceDefinitionId: string;
+                unitType: string;
+            }[];
+            /** Format: uuid */
+            providerOrganizationId?: string | null;
+            /** Format: date-time */
+            requestedEndAt?: string | null;
+            /** Format: date-time */
+            requestedStartAt?: string | null;
+            /** Format: date */
+            serviceDate?: string;
+        };
+        UserContext: {
+            /** Format: uuid */
+            actorId: string;
+            displayName: string;
+            /** Format: email */
+            email?: string;
+            tenants: components["schemas"]["TenantContext"][];
+        };
     };
-    CreatePersonRequest: {
-      /** Format: date */
-      birthDate?: string;
-      firstName: string;
-      identifiers?: {
-        /** @default false */
-        primary?: boolean;
-        /** @description Tenant tarafından tanımlanan identifier type kodu. */
-        type: string;
-        value: string;
-      }[];
-      lastName: string;
-      middleName?: string;
-      /** @enum {string} */
-      sexAtBirth?: 'FEMALE' | 'MALE' | 'INTERSEX' | 'UNKNOWN';
+    responses: {
+        /** @description Business state, duplicate idempotency key, or uniqueness conflict */
+        Conflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description Authenticated actor lacks permission or scope */
+        Forbidden: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description Resource does not exist or is not visible in the selected tenant */
+        NotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description Rate limit exceeded for tenant + actor + route */
+        TooManyRequests: {
+            headers: {
+                /** @description Seconds to wait before retrying */
+                "Retry-After"?: number;
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description Authentication required or session expired */
+        Unauthorized: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description Request is syntactically valid but violates validation or business preconditions */
+        ValidationError: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
     };
-    CreateServiceRequest: {
-      /** @enum {string} */
-      channel:
-        'BACKOFFICE' | 'PROVIDER_PORTAL' | 'MEMBER_PORTAL' | 'API' | 'BATCH_IMPORT' | 'CALL_CENTER';
-      /** Format: uuid */
-      enrollmentId: string;
-      items: {
-        currencyCode?: string;
-        requestedAmount?: number;
-        requestedQuantity: number;
-        /** Format: uuid */
-        serviceDefinitionId: string;
-        unitType: string;
-      }[];
-      /** Format: uuid */
-      personId: string;
-      /** Format: uuid */
-      programId: string;
-      /** Format: uuid */
-      providerOrganizationId?: string;
-      /** Format: date-time */
-      requestedEndAt?: string;
-      /** Format: date-time */
-      requestedStartAt?: string;
-      /** @enum {string} */
-      requestType: 'DIRECT_SERVICE' | 'PREAUTHORIZATION' | 'RESERVATION' | 'REIMBURSEMENT';
-      /** Format: date */
-      serviceDate: string;
+    parameters: {
+        /** @description Required when the request is authenticated with the BFF session cookie. */
+        CsrfHeader: string;
+        /** @description Opaque cursor from the previous response. */
+        Cursor: string;
+        /** @description Client-generated unique key retained for at least 24 hours. */
+        IdempotencyKey: string;
+        /** @description Optional on query-style POSTs; honoured when present. */
+        IdempotencyKeyOptional: string;
+        /** @description Optimistic concurrency token returned as ETag. */
+        IfMatch: string;
+        Limit: number;
+        OrganizationId: string;
+        PersonId: string;
+        RequestId: string;
+        /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+        TenantHeader: string;
     };
-    EligibilityCheckRequest: {
-      context?: {
-        [key: string]: unknown;
-      };
-      /** Format: uuid */
-      personId: string;
-      /** Format: uuid */
-      programId?: string | null;
-      /** Format: uuid */
-      providerOrganizationId?: string | null;
-      /** Format: date */
-      serviceDate: string;
-      serviceItems: {
-        currencyCode?: string;
-        quantity: number;
-        requestedAmount?: number;
-        /** Format: uuid */
-        serviceDefinitionId: string;
-      }[];
+    requestBodies: never;
+    headers: {
+        /** @description Strong optimistic concurrency tag based on row_version. */
+        ETag: string;
     };
-    EligibilityCheckResult: {
-      balances?: {
-        available: number;
-        entitlementCode: string;
-        unit: string;
-      }[];
-      eligible: boolean;
-      /** Format: date-time */
-      evaluatedAt: string;
-      explanations: {
-        code: string;
-        message: string;
-        /** @enum {string} */
-        severity: 'INFO' | 'WARNING' | 'ERROR';
-      }[];
-      /** @enum {string} */
-      outcome:
-        'ELIGIBLE' | 'PARTIALLY_ELIGIBLE' | 'INELIGIBLE' | 'REVIEW_REQUIRED' | 'MISSING_DATA';
-      /** Format: uuid */
-      planVersionId?: string | null;
-      ruleSetVersionIds?: string[];
-    };
-    HealthStatus: {
-      checks?: {
-        [key: string]: string;
-      };
-      /** @enum {string} */
-      status: 'UP' | 'DEGRADED' | 'DOWN';
-      /** Format: date-time */
-      timestamp: string;
-    };
-    MaskedIdentifier: {
-      maskedValue: string;
-      primary: boolean;
-      /** @description Tenant tarafından tanımlanan identifier type kodu (örn. TCKN, PASSPORT, MEMBER_NO, CUSTOMER_NO). */
-      type: string;
-    };
-    /**
-     * @description Tenant relationship with a global organization. `id` identifies the relationship
-     *     (tenant_organization); `organizationId` identifies the shared legal entity.
-     */
-    Organization: components['schemas']['OrganizationSummary'] & {
-      countryCode: string;
-      identifiers: components['schemas']['OrganizationIdentifier'][];
-      legalName: string;
-      /**
-       * @description Status of the global legal entity, independent of this tenant.
-       * @enum {string}
-       */
-      organizationStatus: 'ACTIVE' | 'SUSPENDED' | 'CLOSED';
-      rowVersion: number;
-      tenantCode?: string | null;
-      /** Format: date */
-      validFrom: string;
-      /** Format: date */
-      validTo?: string | null;
-    };
-    OrganizationIdentifier: {
-      maskedValue: string;
-      primary: boolean;
-      /** @enum {string} */
-      type: 'VKN' | 'TCKN' | 'MERSIS' | 'PROVIDER_REGISTRY' | 'OTHER';
-    };
-    OrganizationPage: {
-      items: components['schemas']['OrganizationSummary'][];
-      nextCursor?: string | null;
-    };
-    OrganizationSummary: {
-      displayName: string;
-      /**
-       * Format: uuid
-       * @description Tenant relationship id (directory.tenant_organization).
-       */
-      id: string;
-      /**
-       * Format: uuid
-       * @description Global legal entity id (directory.organization).
-       */
-      organizationId: string;
-      /** @enum {string} */
-      organizationKind:
-        'BANK' | 'INSURER' | 'SPONSOR' | 'PROVIDER' | 'VENDOR' | 'PUBLIC_BODY' | 'OTHER';
-      /** @enum {string} */
-      relationshipRole: 'PAYER' | 'SPONSOR' | 'PROVIDER' | 'VENDOR' | 'PARTNER';
-      /**
-       * @description Status of this tenant's relationship with the organization.
-       * @enum {string}
-       */
-      relationshipStatus: 'PENDING' | 'ACTIVE' | 'SUSPENDED' | 'TERMINATED';
-    };
-    Person: components['schemas']['PersonSummary'] & {
-      /** Format: date */
-      birthDate?: string | null;
-      firstName: string;
-      /** @description Returned only with person.identifier.read permission; values are masked. */
-      identifiers?: components['schemas']['MaskedIdentifier'][];
-      lastName: string;
-      middleName?: string | null;
-      rowVersion: number;
-      /** @enum {string|null} */
-      sexAtBirth?: 'FEMALE' | 'MALE' | 'INTERSEX' | 'UNKNOWN' | null;
-    };
-    PersonPage: {
-      items: components['schemas']['PersonSummary'][];
-      nextCursor?: string | null;
-    };
-    PersonSummary: {
-      displayName: string;
-      /** Format: uuid */
-      id: string;
-      maskedPrimaryIdentifier?: string | null;
-      /** @enum {string} */
-      status: 'ACTIVE' | 'INACTIVE' | 'DECEASED' | 'MERGED';
-    };
-    Problem: {
-      code: string;
-      detail?: string;
-      errors?: {
-        code: string;
-        field: string;
-        message?: string;
-      }[];
-      /** Format: uri-reference */
-      instance?: string;
-      status: number;
-      title: string;
-      traceId: string;
-      /** Format: uri-reference */
-      type: string;
-    };
-    ReasonCommand: {
-      reasonCode: string;
-      reasonText?: string;
-    };
-    ServiceRequest: {
-      /** @enum {string} */
-      channel:
-        'BACKOFFICE' | 'PROVIDER_PORTAL' | 'MEMBER_PORTAL' | 'API' | 'BATCH_IMPORT' | 'CALL_CENTER';
-      /** Format: date-time */
-      createdAt: string;
-      /** Format: uuid */
-      enrollmentId: string;
-      /** Format: uuid */
-      id: string;
-      items: components['schemas']['ServiceRequestItem'][];
-      /** Format: uuid */
-      personId: string;
-      /** Format: uuid */
-      programId: string;
-      /** Format: uuid */
-      providerOrganizationId?: string | null;
-      reference: string;
-      /** Format: date-time */
-      requestedEndAt?: string | null;
-      /** Format: date-time */
-      requestedStartAt?: string | null;
-      /** @enum {string} */
-      requestType: 'DIRECT_SERVICE' | 'PREAUTHORIZATION' | 'RESERVATION' | 'REIMBURSEMENT';
-      rowVersion: number;
-      /** Format: date */
-      serviceDate: string;
-      /** @enum {string} */
-      status:
-        | 'DRAFT'
-        | 'SUBMITTED'
-        | 'ELIGIBILITY_FAILED'
-        | 'PENDING_DOCUMENT'
-        | 'PENDING_REVIEW'
-        | 'APPROVED'
-        | 'PARTIALLY_APPROVED'
-        | 'REJECTED'
-        | 'CANCELLED'
-        | 'EXPIRED'
-        | 'CLOSED';
-      /** Format: date-time */
-      submittedAt?: string | null;
-    };
-    ServiceRequestItem: {
-      approvedAmount?: number | null;
-      approvedQuantity?: number | null;
-      currencyCode?: string | null;
-      decisionReasonCode?: string | null;
-      /** Format: uuid */
-      id: string;
-      lineNo: number;
-      requestedAmount?: number | null;
-      requestedQuantity: number;
-      /** Format: uuid */
-      serviceDefinitionId: string;
-      /** @enum {string} */
-      status: 'REQUESTED' | 'APPROVED' | 'PARTIALLY_APPROVED' | 'REJECTED' | 'CANCELLED';
-      unitType: string;
-    };
-    ServiceRequestPage: {
-      items: components['schemas']['ServiceRequest'][];
-      nextCursor?: string | null;
-    };
-    SessionInfo: {
-      /** Format: uuid */
-      activeTenantId: string | null;
-      /** Format: uuid */
-      actorId: string;
-      /** @description Echo this in X-CSRF-Token on every state-changing call. */
-      csrfToken: string;
-      displayName?: string;
-      /**
-       * Format: date-time
-       * @description Absolute end of the session, regardless of activity.
-       */
-      expiresAt: string;
-      /** @description True when an administrator issued a temporary password. */
-      mustChangePassword: boolean;
-      /** Format: date-time */
-      stepUpExpiresAt: string | null;
-    };
-    TenantContext: {
-      permissions: string[];
-      scopes?: {
-        /** Format: uuid */
-        id?: string | null;
-        type: string;
-      }[];
-      tenant: components['schemas']['TenantSummary'];
-    };
-    TenantSummary: {
-      code: string;
-      defaultLocale?: string;
-      defaultTimeZone?: string;
-      displayName: string;
-      /** Format: uuid */
-      id: string;
-      /** @enum {string} */
-      status: 'PROVISIONING' | 'ACTIVE' | 'SUSPENDED' | 'CLOSED';
-    };
-    UpdateOrganizationRequest: {
-      displayName?: string;
-      /** @enum {string} */
-      relationshipStatus?: 'ACTIVE' | 'SUSPENDED' | 'TERMINATED';
-      tenantCode?: string | null;
-    };
-    UpdateServiceRequest: {
-      items?: {
-        currencyCode?: string;
-        requestedAmount?: number;
-        requestedQuantity: number;
-        /** Format: uuid */
-        serviceDefinitionId: string;
-        unitType: string;
-      }[];
-      /** Format: uuid */
-      providerOrganizationId?: string | null;
-      /** Format: date-time */
-      requestedEndAt?: string | null;
-      /** Format: date-time */
-      requestedStartAt?: string | null;
-      /** Format: date */
-      serviceDate?: string;
-    };
-    UserContext: {
-      /** Format: uuid */
-      actorId: string;
-      displayName: string;
-      /** Format: email */
-      email?: string;
-      tenants: components['schemas']['TenantContext'][];
-    };
-  };
-  responses: {
-    /** @description Business state, duplicate idempotency key, or uniqueness conflict */
-    Conflict: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
-        'application/problem+json': components['schemas']['Problem'];
-      };
-    };
-    /** @description Authenticated actor lacks permission or scope */
-    Forbidden: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
-        'application/problem+json': components['schemas']['Problem'];
-      };
-    };
-    /** @description Resource does not exist or is not visible in the selected tenant */
-    NotFound: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
-        'application/problem+json': components['schemas']['Problem'];
-      };
-    };
-    /** @description Rate limit exceeded for tenant + actor + route */
-    TooManyRequests: {
-      headers: {
-        /** @description Seconds to wait before retrying */
-        'Retry-After'?: number;
-        [name: string]: unknown;
-      };
-      content: {
-        'application/problem+json': components['schemas']['Problem'];
-      };
-    };
-    /** @description Authentication required or session expired */
-    Unauthorized: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
-        'application/problem+json': components['schemas']['Problem'];
-      };
-    };
-    /** @description Request is syntactically valid but violates validation or business preconditions */
-    ValidationError: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
-        'application/problem+json': components['schemas']['Problem'];
-      };
-    };
-  };
-  parameters: {
-    /** @description Required when the request is authenticated with the BFF session cookie. */
-    CsrfHeader: string;
-    /** @description Opaque cursor from the previous response. */
-    Cursor: string;
-    /** @description Client-generated unique key retained for at least 24 hours. */
-    IdempotencyKey: string;
-    /** @description Optional on query-style POSTs; honoured when present. */
-    IdempotencyKeyOptional: string;
-    /** @description Optimistic concurrency token returned as ETag. */
-    IfMatch: string;
-    Limit: number;
-    OrganizationId: string;
-    PersonId: string;
-    RequestId: string;
-    /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
-    TenantHeader: string;
-  };
-  requestBodies: never;
-  headers: {
-    /** @description Strong optimistic concurrency tag based on row_version. */
-    ETag: string;
-  };
-  pathItems: never;
+    pathItems: never;
 }
 export type SchemaCreateOrganizationRequest = components['schemas']['CreateOrganizationRequest'];
 export type SchemaCreatePersonRequest = components['schemas']['CreatePersonRequest'];
@@ -866,780 +850,769 @@ export type ParameterTenantHeader = components['parameters']['TenantHeader'];
 export type HeaderETag = components['headers']['ETag'];
 export type $defs = Record<string, never>;
 export interface operations {
-  checkEligibility: {
-    parameters: {
-      query?: never;
-      header: {
-        /** @description Optional on query-style POSTs; honoured when present. */
-        'Idempotency-Key'?: components['parameters']['IdempotencyKeyOptional'];
-        /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
-        'X-Tenant-ID': components['parameters']['TenantHeader'];
-      };
-      path?: never;
-      cookie?: never;
+    checkEligibility: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optional on query-style POSTs; honoured when present. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EligibilityCheckRequest"];
+            };
+        };
+        responses: {
+            /** @description Deterministic eligibility result and explanation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EligibilityCheckResult"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
+        };
     };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['EligibilityCheckRequest'];
-      };
+    getCurrentUserContext: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authenticated actor and tenant memberships */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserContext"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
     };
-    responses: {
-      /** @description Deterministic eligibility result and explanation */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    listOrganizations: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                /** @description Display name/code search; tenant scoped */
+                q?: string;
+                role?: "PAYER" | "SPONSOR" | "PROVIDER" | "VENDOR" | "PARTNER";
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['EligibilityCheckResult'];
+        requestBody?: never;
+        responses: {
+            /** @description Organization page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationPage"];
+                };
+            };
+            /** @description Invalid cursor */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
         };
-      };
-      422: components['responses']['ValidationError'];
-      429: components['responses']['TooManyRequests'];
     };
-  };
-  getCurrentUserContext: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    createTenantOrganization: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateOrganizationRequest"];
+            };
+        };
+        responses: {
+            /** @description Organization relationship created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Organization"];
+                };
+            };
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
+        };
     };
-    requestBody?: never;
-    responses: {
-      /** @description Authenticated actor and tenant memberships */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    getOrganization: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                organizationId: components["parameters"]["OrganizationId"];
+            };
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['UserContext'];
+        requestBody?: never;
+        responses: {
+            /** @description Organization detail */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Organization"];
+                };
+            };
+            404: components["responses"]["NotFound"];
         };
-      };
-      401: components['responses']['Unauthorized'];
     };
-  };
-  listOrganizations: {
-    parameters: {
-      query?: {
-        /** @description Opaque cursor from the previous response. */
-        cursor?: components['parameters']['Cursor'];
-        limit?: components['parameters']['Limit'];
-        /** @description Display name/code search; tenant scoped */
-        q?: string;
-        role?: 'PAYER' | 'SPONSOR' | 'PROVIDER' | 'VENDOR' | 'PARTNER';
-      };
-      header: {
-        /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
-        'X-Tenant-ID': components['parameters']['TenantHeader'];
-      };
-      path?: never;
-      cookie?: never;
+    updateOrganization: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                organizationId: components["parameters"]["OrganizationId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/merge-patch+json": components["schemas"]["UpdateOrganizationRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated organization */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Organization"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Body is not application/merge-patch+json */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
     };
-    requestBody?: never;
-    responses: {
-      /** @description Organization page */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    listPeople: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                /** @description Name search. Exact sensitive identifier search uses identifierHash through a dedicated permission-protected endpoint. */
+                q?: string;
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['OrganizationPage'];
+        requestBody?: never;
+        responses: {
+            /** @description Person page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonPage"];
+                };
+            };
         };
-      };
-      /** @description Invalid cursor */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/problem+json': components['schemas']['Problem'];
-        };
-      };
-      403: components['responses']['Forbidden'];
-      422: components['responses']['ValidationError'];
     };
-  };
-  createTenantOrganization: {
-    parameters: {
-      query?: never;
-      header: {
-        /** @description Client-generated unique key retained for at least 24 hours. */
-        'Idempotency-Key': components['parameters']['IdempotencyKey'];
-        /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
-        'X-Tenant-ID': components['parameters']['TenantHeader'];
-      };
-      path?: never;
-      cookie?: never;
+    createPerson: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePersonRequest"];
+            };
+        };
+        responses: {
+            /** @description Person created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Person"];
+                };
+            };
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
+        };
     };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CreateOrganizationRequest'];
-      };
+    getPerson: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                personId: components["parameters"]["PersonId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Person detail filtered by field-level permission */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Person"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
     };
-    responses: {
-      /** @description Organization relationship created */
-      201: {
-        headers: {
-          ETag: components['headers']['ETag'];
-          [name: string]: unknown;
+    listServiceRequests: {
+        parameters: {
+            query?: {
+                createdFrom?: string;
+                createdTo?: string;
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                personId?: string;
+                providerOrganizationId?: string;
+                status?: "DRAFT" | "SUBMITTED" | "ELIGIBILITY_FAILED" | "PENDING_DOCUMENT" | "PENDING_REVIEW" | "APPROVED" | "PARTIALLY_APPROVED" | "REJECTED" | "CANCELLED" | "EXPIRED" | "CLOSED";
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['Organization'];
+        requestBody?: never;
+        responses: {
+            /** @description Service request page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceRequestPage"];
+                };
+            };
         };
-      };
-      409: components['responses']['Conflict'];
-      422: components['responses']['ValidationError'];
-      429: components['responses']['TooManyRequests'];
     };
-  };
-  getOrganization: {
-    parameters: {
-      query?: never;
-      header: {
-        /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
-        'X-Tenant-ID': components['parameters']['TenantHeader'];
-      };
-      path: {
-        organizationId: components['parameters']['OrganizationId'];
-      };
-      cookie?: never;
+    createServiceRequest: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateServiceRequest"];
+            };
+        };
+        responses: {
+            /** @description Draft service request created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceRequest"];
+                };
+            };
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
+        };
     };
-    requestBody?: never;
-    responses: {
-      /** @description Organization detail */
-      200: {
-        headers: {
-          ETag: components['headers']['ETag'];
-          [name: string]: unknown;
+    getServiceRequest: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                requestId: components["parameters"]["RequestId"];
+            };
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['Organization'];
+        requestBody?: never;
+        responses: {
+            /** @description Service request detail */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceRequest"];
+                };
+            };
+            404: components["responses"]["NotFound"];
         };
-      };
-      404: components['responses']['NotFound'];
     };
-  };
-  updateOrganization: {
-    parameters: {
-      query?: never;
-      header: {
-        /** @description Optimistic concurrency token returned as ETag. */
-        'If-Match': components['parameters']['IfMatch'];
-        /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
-        'X-Tenant-ID': components['parameters']['TenantHeader'];
-      };
-      path: {
-        organizationId: components['parameters']['OrganizationId'];
-      };
-      cookie?: never;
+    updateDraftServiceRequest: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                requestId: components["parameters"]["RequestId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/merge-patch+json": components["schemas"]["UpdateServiceRequest"];
+            };
+        };
+        responses: {
+            /** @description Draft updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceRequest"];
+                };
+            };
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
     };
-    requestBody: {
-      content: {
-        'application/merge-patch+json': components['schemas']['UpdateOrganizationRequest'];
-      };
+    cancelServiceRequest: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                requestId: components["parameters"]["RequestId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonCommand"];
+            };
+        };
+        responses: {
+            /** @description Cancelled request */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceRequest"];
+                };
+            };
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
     };
-    responses: {
-      /** @description Updated organization */
-      200: {
-        headers: {
-          ETag: components['headers']['ETag'];
-          [name: string]: unknown;
+    submitServiceRequest: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                requestId: components["parameters"]["RequestId"];
+            };
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['Organization'];
+        requestBody?: {
+            content: {
+                "application/json": {
+                    comment?: string;
+                };
+            };
         };
-      };
-      404: components['responses']['NotFound'];
-      409: components['responses']['Conflict'];
-      /** @description ETag mismatch */
-      412: {
-        headers: {
-          [name: string]: unknown;
+        responses: {
+            /** @description Submitted request after eligibility/rule evaluation */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceRequest"];
+                };
+            };
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
         };
-        content: {
-          'application/problem+json': components['schemas']['Problem'];
-        };
-      };
-      /** @description Body is not application/merge-patch+json */
-      415: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/problem+json': components['schemas']['Problem'];
-        };
-      };
-      422: components['responses']['ValidationError'];
-      /** @description If-Match header missing */
-      428: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/problem+json': components['schemas']['Problem'];
-        };
-      };
     };
-  };
-  listPeople: {
-    parameters: {
-      query?: {
-        /** @description Opaque cursor from the previous response. */
-        cursor?: components['parameters']['Cursor'];
-        limit?: components['parameters']['Limit'];
-        /** @description Name search. Exact sensitive identifier search uses identifierHash through a dedicated permission-protected endpoint. */
-        q?: string;
-      };
-      header: {
-        /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
-        'X-Tenant-ID': components['parameters']['TenantHeader'];
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Person page */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    getSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['PersonPage'];
+        requestBody?: never;
+        responses: {
+            /** @description Current session */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionInfo"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
         };
-      };
     };
-  };
-  createPerson: {
-    parameters: {
-      query?: never;
-      header: {
-        /** @description Client-generated unique key retained for at least 24 hours. */
-        'Idempotency-Key': components['parameters']['IdempotencyKey'];
-        /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
-        'X-Tenant-ID': components['parameters']['TenantHeader'];
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CreatePersonRequest'];
-      };
-    };
-    responses: {
-      /** @description Person created */
-      201: {
-        headers: {
-          ETag: components['headers']['ETag'];
-          [name: string]: unknown;
+    login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['Person'];
+        requestBody: {
+            content: {
+                "application/json": {
+                    password: string;
+                    /** @description Case-insensitive; leading and trailing spaces are ignored. */
+                    username: string;
+                };
+            };
         };
-      };
-      409: components['responses']['Conflict'];
-      422: components['responses']['ValidationError'];
-      429: components['responses']['TooManyRequests'];
+        responses: {
+            /** @description Session started */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionInfo"];
+                };
+            };
+            /** @description Malformed request body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+        };
     };
-  };
-  getPerson: {
-    parameters: {
-      query?: never;
-      header: {
-        /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
-        'X-Tenant-ID': components['parameters']['TenantHeader'];
-      };
-      path: {
-        personId: components['parameters']['PersonId'];
-      };
-      cookie?: never;
+    logout: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Session ended */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+        };
     };
-    requestBody?: never;
-    responses: {
-      /** @description Person detail filtered by field-level permission */
-      200: {
-        headers: {
-          ETag: components['headers']['ETag'];
-          [name: string]: unknown;
+    changeOwnPassword: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+            };
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['Person'];
+        requestBody: {
+            content: {
+                "application/json": {
+                    currentPassword: string;
+                    newPassword: string;
+                };
+            };
         };
-      };
-      404: components['responses']['NotFound'];
+        responses: {
+            /** @description Password changed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
     };
-  };
-  listServiceRequests: {
-    parameters: {
-      query?: {
-        createdFrom?: string;
-        createdTo?: string;
-        /** @description Opaque cursor from the previous response. */
-        cursor?: components['parameters']['Cursor'];
-        limit?: components['parameters']['Limit'];
-        personId?: string;
-        providerOrganizationId?: string;
-        status?:
-          | 'DRAFT'
-          | 'SUBMITTED'
-          | 'ELIGIBILITY_FAILED'
-          | 'PENDING_DOCUMENT'
-          | 'PENDING_REVIEW'
-          | 'APPROVED'
-          | 'PARTIALLY_APPROVED'
-          | 'REJECTED'
-          | 'CANCELLED'
-          | 'EXPIRED'
-          | 'CLOSED';
-      };
-      header: {
-        /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
-        'X-Tenant-ID': components['parameters']['TenantHeader'];
-      };
-      path?: never;
-      cookie?: never;
+    stepUpSession: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    password: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Step-up accepted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: date-time */
+                        stepUpExpiresAt: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
     };
-    requestBody?: never;
-    responses: {
-      /** @description Service request page */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    switchTenant: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+            };
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['ServiceRequestPage'];
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    tenantId: string;
+                };
+            };
         };
-      };
+        responses: {
+            /** @description Active tenant context after the switch */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantContext"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
     };
-  };
-  createServiceRequest: {
-    parameters: {
-      query?: never;
-      header: {
-        /** @description Client-generated unique key retained for at least 24 hours. */
-        'Idempotency-Key': components['parameters']['IdempotencyKey'];
-        /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
-        'X-Tenant-ID': components['parameters']['TenantHeader'];
-      };
-      path?: never;
-      cookie?: never;
+    listAccessibleTenants: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tenants accessible to the current actor */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["TenantSummary"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
     };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CreateServiceRequest'];
-      };
+    getLiveness: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Process is alive */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HealthStatus"];
+                };
+            };
+        };
     };
-    responses: {
-      /** @description Draft service request created */
-      201: {
-        headers: {
-          ETag: components['headers']['ETag'];
-          [name: string]: unknown;
+    getReadiness: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          'application/json': components['schemas']['ServiceRequest'];
+        requestBody?: never;
+        responses: {
+            /** @description Required dependencies are ready */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HealthStatus"];
+                };
+            };
+            /** @description One or more required dependencies are unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
         };
-      };
-      409: components['responses']['Conflict'];
-      422: components['responses']['ValidationError'];
-      429: components['responses']['TooManyRequests'];
     };
-  };
-  getServiceRequest: {
-    parameters: {
-      query?: never;
-      header: {
-        /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
-        'X-Tenant-ID': components['parameters']['TenantHeader'];
-      };
-      path: {
-        requestId: components['parameters']['RequestId'];
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Service request detail */
-      200: {
-        headers: {
-          ETag: components['headers']['ETag'];
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ServiceRequest'];
-        };
-      };
-      404: components['responses']['NotFound'];
-    };
-  };
-  updateDraftServiceRequest: {
-    parameters: {
-      query?: never;
-      header: {
-        /** @description Optimistic concurrency token returned as ETag. */
-        'If-Match': components['parameters']['IfMatch'];
-        /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
-        'X-Tenant-ID': components['parameters']['TenantHeader'];
-      };
-      path: {
-        requestId: components['parameters']['RequestId'];
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/merge-patch+json': components['schemas']['UpdateServiceRequest'];
-      };
-    };
-    responses: {
-      /** @description Draft updated */
-      200: {
-        headers: {
-          ETag: components['headers']['ETag'];
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ServiceRequest'];
-        };
-      };
-      409: components['responses']['Conflict'];
-      /** @description ETag mismatch */
-      412: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/problem+json': components['schemas']['Problem'];
-        };
-      };
-    };
-  };
-  cancelServiceRequest: {
-    parameters: {
-      query?: never;
-      header: {
-        /** @description Client-generated unique key retained for at least 24 hours. */
-        'Idempotency-Key': components['parameters']['IdempotencyKey'];
-        /** @description Optimistic concurrency token returned as ETag. */
-        'If-Match': components['parameters']['IfMatch'];
-        /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
-        'X-Tenant-ID': components['parameters']['TenantHeader'];
-      };
-      path: {
-        requestId: components['parameters']['RequestId'];
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ReasonCommand'];
-      };
-    };
-    responses: {
-      /** @description Cancelled request */
-      200: {
-        headers: {
-          ETag: components['headers']['ETag'];
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ServiceRequest'];
-        };
-      };
-      409: components['responses']['Conflict'];
-      429: components['responses']['TooManyRequests'];
-    };
-  };
-  submitServiceRequest: {
-    parameters: {
-      query?: never;
-      header: {
-        /** @description Client-generated unique key retained for at least 24 hours. */
-        'Idempotency-Key': components['parameters']['IdempotencyKey'];
-        /** @description Optimistic concurrency token returned as ETag. */
-        'If-Match': components['parameters']['IfMatch'];
-        /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
-        'X-Tenant-ID': components['parameters']['TenantHeader'];
-      };
-      path: {
-        requestId: components['parameters']['RequestId'];
-      };
-      cookie?: never;
-    };
-    requestBody?: {
-      content: {
-        'application/json': {
-          comment?: string;
-        };
-      };
-    };
-    responses: {
-      /** @description Submitted request after eligibility/rule evaluation */
-      200: {
-        headers: {
-          ETag: components['headers']['ETag'];
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ServiceRequest'];
-        };
-      };
-      409: components['responses']['Conflict'];
-      422: components['responses']['ValidationError'];
-      429: components['responses']['TooManyRequests'];
-    };
-  };
-  getSession: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Current session */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['SessionInfo'];
-        };
-      };
-      401: components['responses']['Unauthorized'];
-    };
-  };
-  login: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          password: string;
-          /** @description Case-insensitive; leading and trailing spaces are ignored. */
-          username: string;
-        };
-      };
-    };
-    responses: {
-      /** @description Session started */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['SessionInfo'];
-        };
-      };
-      /** @description Malformed request body */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/problem+json': components['schemas']['Problem'];
-        };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      429: components['responses']['TooManyRequests'];
-    };
-  };
-  logout: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Required when the request is authenticated with the BFF session cookie. */
-        'X-CSRF-Token'?: components['parameters']['CsrfHeader'];
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Session ended */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      401: components['responses']['Unauthorized'];
-    };
-  };
-  changeOwnPassword: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Required when the request is authenticated with the BFF session cookie. */
-        'X-CSRF-Token'?: components['parameters']['CsrfHeader'];
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          currentPassword: string;
-          newPassword: string;
-        };
-      };
-    };
-    responses: {
-      /** @description Password changed */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      422: components['responses']['ValidationError'];
-    };
-  };
-  stepUpSession: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Required when the request is authenticated with the BFF session cookie. */
-        'X-CSRF-Token'?: components['parameters']['CsrfHeader'];
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          password: string;
-        };
-      };
-    };
-    responses: {
-      /** @description Step-up accepted */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** Format: date-time */
-            stepUpExpiresAt: string;
-          };
-        };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-    };
-  };
-  switchTenant: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Required when the request is authenticated with the BFF session cookie. */
-        'X-CSRF-Token'?: components['parameters']['CsrfHeader'];
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /** Format: uuid */
-          tenantId: string;
-        };
-      };
-    };
-    responses: {
-      /** @description Active tenant context after the switch */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['TenantContext'];
-        };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-    };
-  };
-  listAccessibleTenants: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Tenants accessible to the current actor */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            items: components['schemas']['TenantSummary'][];
-          };
-        };
-      };
-      401: components['responses']['Unauthorized'];
-    };
-  };
-  getLiveness: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Process is alive */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HealthStatus'];
-        };
-      };
-    };
-  };
-  getReadiness: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Required dependencies are ready */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HealthStatus'];
-        };
-      };
-      /** @description One or more required dependencies are unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/problem+json': components['schemas']['Problem'];
-        };
-      };
-    };
-  };
 }
