@@ -189,6 +189,14 @@ type BenefitPlanVersion struct {
 	PublishedBy       uuid.NullUUID
 	CreatedAt         time.Time
 	CreatedBy         uuid.NullUUID
+	// Maker: actor who moved the draft to UNDER_REVIEW
+	SubmittedBy uuid.NullUUID
+	SubmittedAt *time.Time
+	// Free text from the maker or checker; never personal data
+	ReviewComment    *string
+	RetireReasonCode *string
+	RetireReasonText *string
+	Notes            *string
 }
 
 type BenefitProgram struct {

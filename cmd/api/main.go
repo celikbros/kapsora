@@ -17,6 +17,9 @@ import (
 
 	auditpg "github.com/celikbros/kapsora/internal/audit/postgres"
 	audithttp "github.com/celikbros/kapsora/internal/audit/transport/http"
+	benefitapp "github.com/celikbros/kapsora/internal/benefit/application"
+	benefitpg "github.com/celikbros/kapsora/internal/benefit/infrastructure/postgres"
+	benefithttp "github.com/celikbros/kapsora/internal/benefit/transport/http"
 	"github.com/celikbros/kapsora/internal/identity"
 	"github.com/celikbros/kapsora/internal/identity/application"
 	"github.com/celikbros/kapsora/internal/identity/domain"
@@ -112,6 +115,12 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	benefitSvc, err := benefitapp.New(benefitapp.Deps{
+		Pool: pool, Repo: benefitpg.New(), Audit: auditpg.New(), Cursors: cursors,
+	})
+	if err != nil {
+		return err
+	}
 
 	checker := health.NewChecker(2 * time.Second)
 	checker.Add("postgresql", health.PostgresCheck(pool))
@@ -124,6 +133,7 @@ func run() error {
 		ident:   ident,
 		orgs:    orgSvc,
 		party:   partySvc,
+		benefit: benefitSvc,
 		limiter: ratelimit.NewPostgres(pool),
 	})
 
@@ -197,6 +207,7 @@ type routerDeps struct {
 	ident   identityDeps
 	orgs    *orgapp.Service
 	party   *partyapp.Service
+	benefit *benefitapp.Service
 	limiter ratelimit.Limiter
 }
 
@@ -256,6 +267,15 @@ func newRouter(d routerDeps) http.Handler {
 			})
 
 			partyHandler := partyhttp.NewHandler(d.party, sessions, d.logger)
+			benefitHandler := benefithttp.NewHandler(d.benefit, sessions, d.logger)
+			benefitMW := benefithttp.Middlewares{
+				CreateProgram:     d.idempotent("program.create"),
+				CreatePlan:        d.idempotent("plan.create"),
+				CreatePlanVersion: d.idempotent("plan_version.create"),
+				CreateEnrollment:  d.idempotent("enrollment.create"),
+			}
+			// /people carries the party routes and the benefit module's person-scoped
+			// enrollment routes; the sub-patterns do not collide.
 			tenant.Route("/people", func(r chi.Router) {
 				partyHandler.Routes(r, partyhttp.Middlewares{
 					CreatePerson:       d.idempotent("person.create"),
@@ -264,8 +284,14 @@ func newRouter(d routerDeps) http.Handler {
 					Search: ratelimit.Middleware(d.limiter,
 						ratelimit.ScopedKey("member.identifier.search", tenantScope), identifierSearchRateLimit, d.logger),
 				})
+				benefitHandler.PersonRoutes(r, benefitMW)
 			})
 			tenant.Route("/party", partyHandler.CatalogRoutes)
+
+			tenant.Route("/programs", func(r chi.Router) { benefitHandler.ProgramRoutes(r, benefitMW) })
+			tenant.Route("/plans", func(r chi.Router) { benefitHandler.PlanRoutes(r, benefitMW) })
+			tenant.Route("/plan-versions", benefitHandler.PlanVersionRoutes)
+			tenant.Route("/enrollments", benefitHandler.EnrollmentRoutes)
 		})
 	})
 	return r

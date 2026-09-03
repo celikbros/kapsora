@@ -199,6 +199,47 @@ func TestPublishedPlanVersionIsImmutableAndNonOverlapping(t *testing.T) {
 	dbtest.ExpectSQLState(t, err, dbtest.SQLStateIntegrityConstraint, "edit retired version")
 }
 
+func TestPlanVersionMakerCheckerRejectsTheSameActor(t *testing.T) {
+	h := dbtest.New(t)
+	s := seedCore(h, "PLAN_MC")
+	ctx, cancel := h.Ctx()
+	defer cancel()
+	actor := h.CreateActor("plan-mc-actor", "Maker Checker")
+
+	var version uuid.UUID
+	if err := h.Admin.QueryRow(ctx, `
+		INSERT INTO benefit.plan_version (tenant_id, plan_id, version_no, status, valid_period,
+		                                  submitted_at, submitted_by)
+		VALUES ($1, $2, 1, 'UNDER_REVIEW', daterange('2026-01-01','2027-01-01','[)'), clock_timestamp(), $3)
+		RETURNING id`, s.tenant, s.plan, actor).Scan(&version); err != nil {
+		t.Fatalf("submit version: %v", err)
+	}
+
+	// ck_plan_version_maker_checker: the publisher may not be the submitter.
+	err := h.AdminExecErr(`
+		UPDATE benefit.plan_version
+		   SET status = 'PUBLISHED', published_at = clock_timestamp(), published_by = $2
+		 WHERE id = $1`, version, actor)
+	dbtest.ExpectSQLState(t, err, dbtest.SQLStateCheckViolation, "publisher equals submitter")
+
+	// A different actor is accepted.
+	other := h.CreateActor("plan-mc-checker", "Checker")
+	h.AdminExec(`
+		UPDATE benefit.plan_version
+		   SET status = 'PUBLISHED', published_at = clock_timestamp(), published_by = $2
+		 WHERE id = $1`, version, other)
+
+	// ck_plan_version_review_state: a draft may not carry review or publication metadata.
+	err = h.AdminExecErr(`
+		INSERT INTO benefit.plan_version (tenant_id, plan_id, version_no, status, valid_period, submitted_at)
+		VALUES ($1, $2, 2, 'DRAFT', daterange('2028-01-01', NULL, '[)'), clock_timestamp())`, s.tenant, s.plan)
+	dbtest.ExpectSQLState(t, err, dbtest.SQLStateCheckViolation, "draft with review metadata")
+
+	// ck_plan_version_retire_reason: retiring without a reason is refused.
+	err = h.AdminExecErr(`UPDATE benefit.plan_version SET status = 'RETIRED' WHERE id = $1`, version)
+	dbtest.ExpectSQLState(t, err, dbtest.SQLStateCheckViolation, "retire without a reason")
+}
+
 func TestEnrollmentOverlapRejected(t *testing.T) {
 	h := dbtest.New(t)
 	s := seedCore(h, "ENR_OV")
