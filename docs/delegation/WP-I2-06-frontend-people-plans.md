@@ -41,6 +41,43 @@ ledger, and run an eligibility check that explains its answer. Everything follow
    confirmation, reconciliation summary.
 6. **Hak düzeltmeleri**: pending adjustments queue with approve/reject (step-up).
 
+## 2b. Contract facts settled during WP-I2-01..05
+
+These are the shapes the screens must build on; they were decided while the backend
+landed, so do not re-invent them.
+
+- **Identifier search** is `POST /api/v1/people/search-by-identifier` with
+  `{type, value, sponsorOrganizationId?}`; it needs `member.identifier.search` and a valid
+  step-up, answers a single `PersonSummary` or 404, and is rate limited (20/min per actor).
+  The value never appears in a URL, a query key or storage.
+- **Person patch** is merge-patch with `If-Match`. An identifier entry `{type, value}`
+  replaces the person's rows of that type; `{type, remove: true}` deletes them.
+- **Relationship types** come from `GET /api/v1/party/catalogs` (SPOUSE, CHILD, PARENT,
+  DEPENDENT, GUARDIAN, DELEGATE); membership types include FAMILY, which requires a
+  principal membership. Overlapping periods answer 409 RELATIONSHIP_OVERLAP /
+  MEMBERSHIP_OVERLAP; a taken member number answers 409 MEMBER_NO_TAKEN.
+- **Plan versions**: submit (`plan.manage`) then publish (`plan.publish` + step-up) by a
+  different actor, else 403 MAKER_CHECKER_SAME_ACTOR. Published versions are read-only and
+  show `configurationHash`; retire needs a reason. Overlapping published periods answer
+  409 PLAN_VERSION_OVERLAP.
+- **Enrollments** need an ACTIVE membership and a published plan version covering
+  `validFrom` (422 PLAN_NOT_PUBLISHED on `planId`).
+- **Entitlements**: `GET /people/{id}/entitlements?asOf=` returns own and family-shared
+  accounts with a `shared` flag; quantities are decimal strings in JSON, so keep them as
+  strings in the client and never parse them into a JavaScript number. Ledger is paged
+  newest first. A frozen account (status FROZEN) refuses reserves; show it clearly.
+- **Adjustments** are maker-checker: create (PENDING), then approve or reject by another
+  actor with step-up; approve moves the balance.
+- **Eligibility**: the result carries `evaluationId`, `planVersionId`, `explanations[]`
+  (INFO/WARNING/ERROR) and `items[]` per requested line. Per-item entitlement hints travel
+  in `context.entitlementCodes` (positional, one per item) because `serviceItems` accepts
+  no extra properties. An `Idempotency-Key` replays the stored evaluation; the stored
+  snapshot is retrievable at `GET /eligibility/evaluations/{id}`.
+- **Member import** statuses are RECEIVED, VALIDATING, REVIEW, READY, APPLYING, APPLIED,
+  FAILED, CANCELLED; row statuses PENDING, VALID, INVALID, MATCHED, CONFLICT, APPLIED,
+  SKIPPED with decisions CREATE, UPDATE, SKIP. Upload is multipart and needs step-up; a
+  duplicate file answers 409 IMPORT_DUPLICATE; apply answers 202 and the batch page polls.
+
 ## 3. Rules
 
 - Step-up dialog component in `@kapsora/auth` (`useStepUp()`): retries the guarded
