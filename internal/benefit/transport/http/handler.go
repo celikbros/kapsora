@@ -136,6 +136,12 @@ func (h *Handler) requireStepUp(w http.ResponseWriter, r *http.Request, permissi
 
 // writeError maps application and domain errors to the problem codes of the work package.
 func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) {
+	writeBenefitError(h.logger, w, r, err)
+}
+
+// writeBenefitError is the shared mapping of the module's errors; the entitlement
+// handler maps its own ledger errors first and falls back to this one.
+func writeBenefitError(logger *slog.Logger, w http.ResponseWriter, r *http.Request, err error) {
 	var ve *domain.ValidationError
 	switch {
 	case errors.As(err, &ve):
@@ -184,7 +190,7 @@ func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) 
 	case errors.Is(err, httpx.ErrInvalidCursor):
 		problem(w, r, http.StatusBadRequest, "generic/cursor-invalid", "CURSOR_INVALID", "Sayfa imleci geçersiz", "")
 	default:
-		h.logger.Error("benefit request failed", "error", err)
+		logger.Error("benefit request failed", "error", err)
 		problem(w, r, http.StatusInternalServerError, "generic/internal-error", "INTERNAL_ERROR", "Beklenmeyen hata", "")
 	}
 }

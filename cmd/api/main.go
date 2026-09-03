@@ -19,6 +19,7 @@ import (
 	audithttp "github.com/celikbros/kapsora/internal/audit/transport/http"
 	benefitapp "github.com/celikbros/kapsora/internal/benefit/application"
 	benefitpg "github.com/celikbros/kapsora/internal/benefit/infrastructure/postgres"
+	benefitledger "github.com/celikbros/kapsora/internal/benefit/ledger"
 	benefithttp "github.com/celikbros/kapsora/internal/benefit/transport/http"
 	"github.com/celikbros/kapsora/internal/identity"
 	"github.com/celikbros/kapsora/internal/identity/application"
@@ -121,20 +122,27 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	entitlementSvc, err := benefitledger.New(benefitledger.Deps{
+		Pool: pool, Audit: auditpg.New(), Cursors: cursors, Logger: logger,
+	})
+	if err != nil {
+		return err
+	}
 
 	checker := health.NewChecker(2 * time.Second)
 	checker.Add("postgresql", health.PostgresCheck(pool))
 
 	router := newRouter(routerDeps{
-		cfg:     cfg,
-		pool:    pool,
-		logger:  logger,
-		checker: checker,
-		ident:   ident,
-		orgs:    orgSvc,
-		party:   partySvc,
-		benefit: benefitSvc,
-		limiter: ratelimit.NewPostgres(pool),
+		cfg:          cfg,
+		pool:         pool,
+		logger:       logger,
+		checker:      checker,
+		ident:        ident,
+		orgs:         orgSvc,
+		party:        partySvc,
+		benefit:      benefitSvc,
+		entitlements: entitlementSvc,
+		limiter:      ratelimit.NewPostgres(pool),
 	})
 
 	srv := &http.Server{
@@ -200,15 +208,16 @@ func newIdentity(cfg config.Config, pool *pgxpool.Pool, logger *slog.Logger) (id
 }
 
 type routerDeps struct {
-	cfg     config.Config
-	pool    *pgxpool.Pool
-	logger  *slog.Logger
-	checker *health.Checker
-	ident   identityDeps
-	orgs    *orgapp.Service
-	party   *partyapp.Service
-	benefit *benefitapp.Service
-	limiter ratelimit.Limiter
+	cfg          config.Config
+	pool         *pgxpool.Pool
+	logger       *slog.Logger
+	checker      *health.Checker
+	ident        identityDeps
+	orgs         *orgapp.Service
+	party        *partyapp.Service
+	benefit      *benefitapp.Service
+	entitlements *benefitledger.Service
+	limiter      ratelimit.Limiter
 }
 
 func newRouter(d routerDeps) http.Handler {
@@ -268,6 +277,10 @@ func newRouter(d routerDeps) http.Handler {
 
 			partyHandler := partyhttp.NewHandler(d.party, sessions, d.logger)
 			benefitHandler := benefithttp.NewHandler(d.benefit, sessions, d.logger)
+			entitlementHandler := benefithttp.NewEntitlementHandler(d.entitlements, sessions, d.logger)
+			entitlementMW := benefithttp.EntitlementMiddlewares{
+				CreateAdjustment: d.idempotent("entitlement_adjustment.create"),
+			}
 			benefitMW := benefithttp.Middlewares{
 				CreateProgram:     d.idempotent("program.create"),
 				CreatePlan:        d.idempotent("plan.create"),
@@ -285,6 +298,7 @@ func newRouter(d routerDeps) http.Handler {
 						ratelimit.ScopedKey("member.identifier.search", tenantScope), identifierSearchRateLimit, d.logger),
 				})
 				benefitHandler.PersonRoutes(r, benefitMW)
+				entitlementHandler.PersonRoutes(r)
 			})
 			tenant.Route("/party", partyHandler.CatalogRoutes)
 
@@ -292,6 +306,10 @@ func newRouter(d routerDeps) http.Handler {
 			tenant.Route("/plans", func(r chi.Router) { benefitHandler.PlanRoutes(r, benefitMW) })
 			tenant.Route("/plan-versions", benefitHandler.PlanVersionRoutes)
 			tenant.Route("/enrollments", benefitHandler.EnrollmentRoutes)
+			tenant.Route("/entitlement-accounts", func(r chi.Router) {
+				entitlementHandler.AccountRoutes(r, entitlementMW)
+			})
+			tenant.Route("/entitlement-adjustments", entitlementHandler.AdjustmentRoutes)
 		})
 	})
 	return r

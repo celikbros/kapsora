@@ -382,7 +382,7 @@ SELECT v.id, v.plan_id, v.version_no, v.status,
        lower(v.valid_period)::date AS valid_from, upper(v.valid_period)::date AS valid_to,
        v.configuration_hash, v.published_at, v.published_by, v.submitted_at, v.submitted_by,
        v.review_comment, v.retire_reason_code, v.retire_reason_text, v.notes, v.created_at,
-       v.xmin::text::bigint AS row_version
+       v.row_version
   FROM benefit.plan_version v
  WHERE v.tenant_id = $1 AND v.id = $2
 `
@@ -442,7 +442,7 @@ SELECT v.id, v.plan_id, v.version_no, v.status,
        lower(v.valid_period)::date AS valid_from, upper(v.valid_period)::date AS valid_to,
        v.configuration_hash, v.published_at, v.published_by, v.submitted_at, v.submitted_by,
        v.review_comment, v.retire_reason_code, v.retire_reason_text, v.notes, v.created_at,
-       v.xmin::text::bigint AS row_version
+       v.row_version
   FROM benefit.plan_version v
  WHERE v.tenant_id = $1 AND v.id = $2
    FOR UPDATE
@@ -473,7 +473,7 @@ type GetPlanVersionForUpdateRow struct {
 	RowVersion        int64
 }
 
-// Locks the version row for the state commands; the caller compares row_version (xmin)
+// Locks the version row for the state commands; the caller compares row_version
 // against If-Match before it writes.
 func (q *Queries) GetPlanVersionForUpdate(ctx context.Context, arg GetPlanVersionForUpdateParams) (GetPlanVersionForUpdateRow, error) {
 	row := q.db.QueryRow(ctx, getPlanVersionForUpdate, arg.TenantID, arg.ID)
@@ -585,10 +585,10 @@ type GetProgramTypeRow struct {
 // entitlement definitions and enrollments. Every statement filters on tenant_id
 // explicitly and runs inside db.WithTenantTx, so RLS is the second line of defence.
 //
-// benefit.plan_version carries no row_version column (migration 000004 is on main and
-// must not change), so its optimistic-concurrency token is the system column xmin: it
-// changes on every update of the row and is exposed as the contract rowVersion / ETag.
-// Statements that only touch child rows call TouchPlanVersion so the token still moves.
+// benefit.plan_version gained updated_at/row_version in migration 000016, so its
+// optimistic-concurrency token is the same database-owned counter as everywhere else
+// (WP-I2-02 used the system column xmin as a stopgap). Statements that only touch child
+// rows call TouchPlanVersion so the token still moves.
 func (q *Queries) GetProgramType(ctx context.Context, arg GetProgramTypeParams) (GetProgramTypeRow, error) {
 	row := q.db.QueryRow(ctx, getProgramType, arg.TenantID, arg.Code)
 	var i GetProgramTypeRow
@@ -818,7 +818,7 @@ SELECT v.id, v.plan_id, v.version_no, v.status,
        lower(v.valid_period)::date AS valid_from, upper(v.valid_period)::date AS valid_to,
        v.configuration_hash, v.published_at, v.published_by, v.submitted_at, v.submitted_by,
        v.review_comment, v.retire_reason_code, v.retire_reason_text, v.notes, v.created_at,
-       v.xmin::text::bigint AS row_version
+       v.row_version
   FROM benefit.plan_version v
  WHERE v.tenant_id = $1 AND v.plan_id = $2
  ORDER BY v.version_no DESC
@@ -955,6 +955,8 @@ SELECT p.id, p.code, p.name, p.program_type, p.status,
   JOIN directory.organization po ON po.id = pto.organization_id
  WHERE p.tenant_id = $1
    AND ($2::text IS NULL OR p.status = $2::text)
+   -- The caller escapes the user's own wildcards (domain.LikePattern); the default
+   -- backslash escape character therefore makes '%' and '_' literal characters here.
    AND ($3::text IS NULL
         OR p.code ILIKE $3::text OR p.name ILIKE $3::text)
    AND ($4::timestamptz IS NULL
@@ -1111,7 +1113,7 @@ SELECT v.id, v.plan_id, v.version_no, v.status,
        lower(v.valid_period)::date AS valid_from, upper(v.valid_period)::date AS valid_to,
        v.configuration_hash, v.published_at, v.published_by, v.submitted_at, v.submitted_by,
        v.review_comment, v.retire_reason_code, v.retire_reason_text, v.notes, v.created_at,
-       v.xmin::text::bigint AS row_version
+       v.row_version
   FROM benefit.plan_version v
  WHERE v.tenant_id = $1 AND v.plan_id = $2 AND v.status = 'PUBLISHED'
    AND v.valid_period @> $3::date
@@ -1244,8 +1246,8 @@ type TouchPlanVersionParams struct {
 	ID       uuid.UUID
 }
 
-// A no-op UPDATE moves xmin, so replacing the entitlement definitions of a draft also
-// invalidates the ETag the caller holds.
+// platform.tg_touch_row bumps row_version on any UPDATE, so replacing the entitlement
+// definitions of a draft also invalidates the ETag the caller holds.
 func (q *Queries) TouchPlanVersion(ctx context.Context, arg TouchPlanVersionParams) (int64, error) {
 	result, err := q.db.Exec(ctx, touchPlanVersion, arg.TenantID, arg.ID)
 	if err != nil {

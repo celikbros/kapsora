@@ -126,6 +126,25 @@ type BenefitEntitlementAccount struct {
 	RowVersion              int64
 }
 
+type BenefitEntitlementAdjustment struct {
+	ID                   uuid.UUID
+	TenantID             uuid.UUID
+	EntitlementAccountID uuid.UUID
+	DeltaQuantity        pgtype.Numeric
+	ReasonCode           string
+	ReasonText           *string
+	Status               string
+	RequestedBy          uuid.UUID
+	RequestedAt          time.Time
+	DecidedBy            uuid.NullUUID
+	DecidedAt            *time.Time
+	DecisionComment      *string
+	LedgerEntryID        uuid.NullUUID
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
+	RowVersion           int64
+}
+
 type BenefitEntitlementDefinition struct {
 	ID              uuid.UUID
 	TenantID        uuid.UUID
@@ -163,6 +182,25 @@ type BenefitEntitlementLedger struct {
 	ReasonText           *string
 	CreatedAt            time.Time
 	CreatedBy            uuid.NullUUID
+	ReservationID        uuid.NullUUID
+}
+
+type BenefitEntitlementReservation struct {
+	ID                   uuid.UUID
+	TenantID             uuid.UUID
+	EntitlementAccountID uuid.UUID
+	ReferenceType        string
+	ReferenceID          uuid.UUID
+	Quantity             pgtype.Numeric
+	ConsumedQuantity     pgtype.Numeric
+	ReleasedQuantity     pgtype.Numeric
+	Status               string
+	ExpiresAt            *time.Time
+	IdempotencyKey       string
+	CreatedBy            uuid.NullUUID
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
+	RowVersion           int64
 }
 
 type BenefitPlan struct {
@@ -197,6 +235,8 @@ type BenefitPlanVersion struct {
 	RetireReasonCode *string
 	RetireReasonText *string
 	Notes            *string
+	UpdatedAt        time.Time
+	RowVersion       int64
 }
 
 type BenefitProgram struct {

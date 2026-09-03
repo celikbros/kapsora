@@ -1,5 +1,13 @@
 # WP-I2-03 · Entitlement accounts, ledger movements, reservations (no double spend)
 
+> **Delivered in-house on 2026-09-03.** Decisions taken during delivery: quantities use
+> `domain.Quantity` (exact micro-units on big.Int) because no decimal library was in the
+> module; the drift audit event is category `SECURITY` (the audit enum has no SYSTEM);
+> `CUSTOM` benefit periods are rejected until `entitlement_definition` carries metadata;
+> expiry writes a RELEASE movement with reason `EXPIRED`; frozen accounts still accept
+> release and adjustment so they can be repaired; direct consume without a reservation is
+> left to the increment that needs it.
+
 | Field | Value |
 |---|---|
 | Milestone | M2 (plan increment I2) |

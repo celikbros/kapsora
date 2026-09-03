@@ -158,9 +158,7 @@ func (s *Service) ListPrograms(ctx context.Context, rc identity.RequestContext, 
 	}
 	pageSize := httpx.ClampLimit(f.Limit)
 	q := ProgramListQuery{Status: f.Status, PageSize: pageSize + 1}
-	if trimmed := strings.TrimSpace(f.Query); trimmed != "" {
-		q.Pattern = "%" + trimmed + "%"
-	}
+	q.Pattern = domain.LikePattern(f.Query)
 	if hasCursor {
 		q.After = &cursor
 	}

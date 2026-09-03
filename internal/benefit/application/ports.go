@@ -130,8 +130,9 @@ type PlanUpdateRow struct {
 	Expected int64
 }
 
-// PlanVersionRow is benefit.plan_version as stored. RowVersion is the row's xmin, the
-// concurrency token of a table that has no row_version column (see db/queries/benefit.sql).
+// PlanVersionRow is benefit.plan_version as stored. RowVersion is the row_version
+// counter migration 000016 added; platform.tg_touch_row owns it, and it is exposed as the
+// contract's rowVersion and ETag.
 type PlanVersionRow struct {
 	ID                uuid.UUID
 	PlanID            uuid.UUID

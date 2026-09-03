@@ -1,5 +1,6 @@
 // kapsora-worker dispatches outbox events and runs asynchronous jobs. Handlers are
-// registered by modules as they land (notification delivery, import processing, ...).
+// registered by modules as they land (entitlement account opening, notification
+// delivery, import processing, ...).
 package main
 
 import (
@@ -10,6 +11,9 @@ import (
 	"syscall"
 	"time"
 
+	auditpg "github.com/celikbros/kapsora/internal/audit/postgres"
+	benefitapp "github.com/celikbros/kapsora/internal/benefit/application"
+	"github.com/celikbros/kapsora/internal/benefit/ledger"
 	"github.com/celikbros/kapsora/internal/platform/config"
 	"github.com/celikbros/kapsora/internal/platform/db"
 	"github.com/celikbros/kapsora/internal/platform/logging"
@@ -45,9 +49,16 @@ func run() error {
 	}
 	defer pool.Close()
 
+	entitlements, err := ledger.New(ledger.Deps{Pool: pool, Audit: auditpg.New(), Logger: logger})
+	if err != nil {
+		return err
+	}
+
 	dispatcher := outbox.New(pool, outbox.Options{Logger: logger})
-	// Module handlers are registered here from increment I1 onwards, e.g.
-	// dispatcher.Handle("notification.message.requested", notification.Deliver)
+	// A new enrollment opens its entitlement accounts here rather than in the request
+	// that created it: the accounts follow the plan configuration, and the handler is
+	// idempotent, so a redelivery finds them already open.
+	dispatcher.Handle(benefitapp.EnrollmentCreatedEvent, entitlements.HandleEnrollmentCreated)
 
 	go reportBacklog(ctx, logger, dispatcher)
 

@@ -13,6 +13,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	auditpg "github.com/celikbros/kapsora/internal/audit/postgres"
+	"github.com/celikbros/kapsora/internal/benefit/ledger"
 	"github.com/celikbros/kapsora/internal/platform/config"
 	"github.com/celikbros/kapsora/internal/platform/db"
 	"github.com/celikbros/kapsora/internal/platform/idempotency"
@@ -56,11 +58,18 @@ func run() error {
 	}
 	defer pool.Close()
 
+	entitlements, err := ledger.New(ledger.Deps{Pool: pool, Audit: auditpg.New(), Logger: logger})
+	if err != nil {
+		return err
+	}
+
 	registry := scheduler.NewRegistry()
 	registry.Register(scheduler.AuditEnsurePartitions(pool))
 	registry.Register(scheduler.OutboxRecoverStale(outbox.New(pool, outbox.Options{Logger: logger})))
 	registry.Register(scheduler.IdempotencyPurge(pool, idempotency.PurgeExpired))
 	registry.Register(scheduler.RateLimitPurge(ratelimit.NewPostgres(pool)))
+	registry.Register(scheduler.EntitlementReservationExpire(entitlements))
+	registry.Register(scheduler.EntitlementReconcile(entitlements))
 	// scheduler.SessionCleanup(store) is registered once the identity session store
 	// (WP-I1-01) exists.
 	runner := scheduler.NewRunner(pool, registry, logger, 10*time.Minute)

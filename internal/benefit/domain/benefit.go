@@ -355,3 +355,18 @@ func TrimDecimal(raw string) string {
 	}
 	return raw
 }
+
+// likeEscaper neutralises the LIKE wildcards a user may type in a list filter; the SQL
+// side uses PostgreSQL's default backslash escape character.
+var likeEscaper = strings.NewReplacer(`\`, `\\`, "%", `\%`, "_", `\_`)
+
+// LikePattern wraps a trimmed search term in the contains-pattern the ILIKE filters
+// expect, with the user's own wildcards escaped so "%" searches for a literal percent
+// sign instead of matching every row. An empty term means "no filter".
+func LikePattern(q string) string {
+	trimmed := strings.TrimSpace(q)
+	if trimmed == "" {
+		return ""
+	}
+	return "%" + likeEscaper.Replace(trimmed) + "%"
+}

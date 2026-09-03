@@ -18,6 +18,7 @@ import (
 	auditpg "github.com/celikbros/kapsora/internal/audit/postgres"
 	"github.com/celikbros/kapsora/internal/benefit/application"
 	benefitpg "github.com/celikbros/kapsora/internal/benefit/infrastructure/postgres"
+	"github.com/celikbros/kapsora/internal/benefit/ledger"
 	benefithttp "github.com/celikbros/kapsora/internal/benefit/transport/http"
 	"github.com/celikbros/kapsora/internal/identity"
 	identityapp "github.com/celikbros/kapsora/internal/identity/application"
@@ -32,8 +33,9 @@ const (
 	stepUpHeader = "X-Test-StepUp"
 	actorHeader  = "X-Test-Actor"
 
-	allPermissions = "program.read,program.manage,plan.manage,plan.publish,enrollment.manage"
-	patchType      = "application/merge-patch+json"
+	allPermissions = "program.read,program.manage,plan.manage,plan.publish,enrollment.manage," +
+		"entitlement.read,entitlement.adjust"
+	patchType = "application/merge-patch+json"
 )
 
 type denyRecorder struct{ permissions []string }
@@ -44,17 +46,18 @@ func (d *denyRecorder) Deny(w http.ResponseWriter, r *http.Request, err error, p
 }
 
 type server struct {
-	h          *dbtest.Harness
-	handler    http.Handler
-	denied     *denyRecorder
-	logs       *bytes.Buffer
-	tenant     uuid.UUID
-	maker      uuid.UUID
-	checker    uuid.UUID
-	sponsorOrg uuid.UUID
-	payerOrg   uuid.UUID
-	person     uuid.UUID
-	membership uuid.UUID
+	h            *dbtest.Harness
+	entitlements *ledger.Service
+	handler      http.Handler
+	denied       *denyRecorder
+	logs         *bytes.Buffer
+	tenant       uuid.UUID
+	maker        uuid.UUID
+	checker      uuid.UUID
+	sponsorOrg   uuid.UUID
+	payerOrg     uuid.UUID
+	person       uuid.UUID
+	membership   uuid.UUID
 }
 
 func newServer(t *testing.T) *server {
@@ -70,8 +73,12 @@ func newServer(t *testing.T) *server {
 	if err != nil {
 		t.Fatal(err)
 	}
+	entitlements, err := ledger.New(ledger.Deps{Pool: h.App, Audit: auditpg.New(), Cursors: cursors})
+	if err != nil {
+		t.Fatal(err)
+	}
 	s := &server{
-		h: h, tenant: h.CreateTenant("HTTP_BENEFIT"),
+		h: h, entitlements: entitlements, tenant: h.CreateTenant("HTTP_BENEFIT"),
 		maker:   h.CreateActor("benefit-http-maker", "Maker"),
 		checker: h.CreateActor("benefit-http-checker", "Checker"),
 	}
@@ -85,8 +92,9 @@ func newServer(t *testing.T) *server {
 
 	s.logs = &bytes.Buffer{}
 	s.denied = &denyRecorder{}
-	handler := benefithttp.NewHandler(svc, s.denied,
-		slog.New(slog.NewJSONHandler(s.logs, &slog.HandlerOptions{Level: slog.LevelDebug})))
+	logger := slog.New(slog.NewJSONHandler(s.logs, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	handler := benefithttp.NewHandler(svc, s.denied, logger)
+	entitlementHandler := benefithttp.NewEntitlementHandler(entitlements, s.denied, logger)
 
 	// Stand-in for RequireTenantContext: actor, permissions and step-up come from headers.
 	fakeContext := func(next http.Handler) http.Handler {
@@ -122,7 +130,14 @@ func newServer(t *testing.T) *server {
 	mount("/api/v1/plans", func(rr chi.Router) { handler.PlanRoutes(rr, mw) })
 	mount("/api/v1/plan-versions", handler.PlanVersionRoutes)
 	mount("/api/v1/enrollments", handler.EnrollmentRoutes)
-	mount("/api/v1/people", func(rr chi.Router) { handler.PersonRoutes(rr, mw) })
+	mount("/api/v1/people", func(rr chi.Router) {
+		handler.PersonRoutes(rr, mw)
+		entitlementHandler.PersonRoutes(rr)
+	})
+	mount("/api/v1/entitlement-accounts", func(rr chi.Router) {
+		entitlementHandler.AccountRoutes(rr, benefithttp.EntitlementMiddlewares{})
+	})
+	mount("/api/v1/entitlement-adjustments", entitlementHandler.AdjustmentRoutes)
 	s.handler = r
 	return s
 }

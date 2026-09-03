@@ -2,10 +2,10 @@
 -- entitlement definitions and enrollments. Every statement filters on tenant_id
 -- explicitly and runs inside db.WithTenantTx, so RLS is the second line of defence.
 --
--- benefit.plan_version carries no row_version column (migration 000004 is on main and
--- must not change), so its optimistic-concurrency token is the system column xmin: it
--- changes on every update of the row and is exposed as the contract rowVersion / ETag.
--- Statements that only touch child rows call TouchPlanVersion so the token still moves.
+-- benefit.plan_version gained updated_at/row_version in migration 000016, so its
+-- optimistic-concurrency token is the same database-owned counter as everywhere else
+-- (WP-I2-02 used the system column xmin as a stopgap). Statements that only touch child
+-- rows call TouchPlanVersion so the token still moves.
 
 -- name: GetProgramType :one
 SELECT code, display_name, status
@@ -64,6 +64,8 @@ SELECT p.id, p.code, p.name, p.program_type, p.status,
   JOIN directory.organization po ON po.id = pto.organization_id
  WHERE p.tenant_id = $1
    AND (sqlc.narg('status')::text IS NULL OR p.status = sqlc.narg('status')::text)
+   -- The caller escapes the user's own wildcards (domain.LikePattern); the default
+   -- backslash escape character therefore makes '%' and '_' literal characters here.
    AND (sqlc.narg('q')::text IS NULL
         OR p.code ILIKE sqlc.narg('q')::text OR p.name ILIKE sqlc.narg('q')::text)
    AND (sqlc.narg('cursor_created_at')::timestamptz IS NULL
@@ -125,7 +127,7 @@ SELECT v.id, v.plan_id, v.version_no, v.status,
        lower(v.valid_period)::date AS valid_from, upper(v.valid_period)::date AS valid_to,
        v.configuration_hash, v.published_at, v.published_by, v.submitted_at, v.submitted_by,
        v.review_comment, v.retire_reason_code, v.retire_reason_text, v.notes, v.created_at,
-       v.xmin::text::bigint AS row_version
+       v.row_version
   FROM benefit.plan_version v
  WHERE v.tenant_id = $1 AND v.id = $2;
 
@@ -134,7 +136,7 @@ SELECT v.id, v.plan_id, v.version_no, v.status,
        lower(v.valid_period)::date AS valid_from, upper(v.valid_period)::date AS valid_to,
        v.configuration_hash, v.published_at, v.published_by, v.submitted_at, v.submitted_by,
        v.review_comment, v.retire_reason_code, v.retire_reason_text, v.notes, v.created_at,
-       v.xmin::text::bigint AS row_version
+       v.row_version
   FROM benefit.plan_version v
  WHERE v.tenant_id = $1 AND v.plan_id = $2
  ORDER BY v.version_no DESC;
@@ -146,19 +148,19 @@ SELECT v.id, v.plan_id, v.version_no, v.status,
        lower(v.valid_period)::date AS valid_from, upper(v.valid_period)::date AS valid_to,
        v.configuration_hash, v.published_at, v.published_by, v.submitted_at, v.submitted_by,
        v.review_comment, v.retire_reason_code, v.retire_reason_text, v.notes, v.created_at,
-       v.xmin::text::bigint AS row_version
+       v.row_version
   FROM benefit.plan_version v
  WHERE v.tenant_id = $1 AND v.plan_id = $2 AND v.status = 'PUBLISHED'
    AND v.valid_period @> sqlc.arg('as_of')::date;
 
 -- name: GetPlanVersionForUpdate :one
--- Locks the version row for the state commands; the caller compares row_version (xmin)
+-- Locks the version row for the state commands; the caller compares row_version
 -- against If-Match before it writes.
 SELECT v.id, v.plan_id, v.version_no, v.status,
        lower(v.valid_period)::date AS valid_from, upper(v.valid_period)::date AS valid_to,
        v.configuration_hash, v.published_at, v.published_by, v.submitted_at, v.submitted_by,
        v.review_comment, v.retire_reason_code, v.retire_reason_text, v.notes, v.created_at,
-       v.xmin::text::bigint AS row_version
+       v.row_version
   FROM benefit.plan_version v
  WHERE v.tenant_id = $1 AND v.id = $2
    FOR UPDATE;
@@ -172,8 +174,8 @@ UPDATE benefit.plan_version
    AND status = 'DRAFT';
 
 -- name: TouchPlanVersion :execrows
--- A no-op UPDATE moves xmin, so replacing the entitlement definitions of a draft also
--- invalidates the ETag the caller holds.
+-- platform.tg_touch_row bumps row_version on any UPDATE, so replacing the entitlement
+-- definitions of a draft also invalidates the ETag the caller holds.
 UPDATE benefit.plan_version
    SET notes = notes
  WHERE tenant_id = sqlc.arg('tenant_id')
