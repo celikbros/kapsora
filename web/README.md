@@ -2,16 +2,16 @@
 
 pnpm workspace (WP-I1-05). Packages under `packages/`, apps under `apps/`.
 
-| Package / app | Purpose |
-|---|---|
-| `@kapsora/config` | Shared tsconfig, ESLint rules, Prettier, Tailwind v4 theme tokens, Vitest setup |
+| Package / app         | Purpose                                                                                                                                          |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `@kapsora/config`     | Shared tsconfig, ESLint rules, Prettier, Tailwind v4 theme tokens, Vitest setup                                                                  |
 | `@kapsora/api-client` | Types generated from `api/openapi/kapsora-v1.yaml`, openapi-fetch client with KAPSORA headers, problem+json parsing, VKN/TCKN helpers, MSW mocks |
-| `@kapsora/auth` | In-memory session store (CSRF token never touches storage), route guards, tenant colour |
-| `@kapsora/i18n` | i18next (tr complete, en skeleton), date/money formatting |
-| `@kapsora/ui` | Design system on Radix primitives + Tailwind tokens |
-| `@kapsora/backoffice` | Desktop-first backoffice (port 5173) |
-| `@kapsora/provider` | Provider portal shell (port 5174) |
-| `@kapsora/member` | Member PWA shell, mobile-first (port 5175) |
+| `@kapsora/auth`       | In-memory session store (CSRF token never touches storage), route guards, tenant colour                                                          |
+| `@kapsora/i18n`       | i18next (tr complete, en skeleton), date/money formatting                                                                                        |
+| `@kapsora/ui`         | Design system on Radix primitives + Tailwind tokens                                                                                              |
+| `@kapsora/backoffice` | Desktop-first backoffice (port 5173)                                                                                                             |
+| `@kapsora/provider`   | Provider portal shell (port 5174)                                                                                                                |
+| `@kapsora/member`     | Member PWA shell, mobile-first (port 5175)                                                                                                       |
 
 ## Commands (repository root)
 

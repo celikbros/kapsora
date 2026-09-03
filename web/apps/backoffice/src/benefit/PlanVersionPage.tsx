@@ -258,7 +258,7 @@ export function PlanVersionPage() {
           {t('plans.versions.sameActorBlocked')}
         </p>
       ) : null}
-      {!isDraft ? (
+      {isPublished || row.status === 'RETIRED' ? (
         <p className="text-fg-muted mb-4 text-sm">{t('plans.versions.readOnly')}</p>
       ) : null}
 

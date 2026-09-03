@@ -202,7 +202,9 @@
     "TOO_LONG": "Value is too long",
     "MIN_LENGTH": "At least {{min}} characters",
     "MAX_LENGTH": "At most {{max}} characters",
-    "PATTERN": "Allowed characters: letters, digits, '.', '_', '-'"
+    "PATTERN": "Allowed characters: letters, digits, '.', '_', '-'",
+    "HEADER_INVALID": "The header row does not match the expected columns",
+    "EMPTY_FILE": "The file has no rows"
   },
   "people": {
     "title": "Members",
@@ -261,6 +263,16 @@
   },
   "imports": {
     "title": "Member import",
-    "apply": "Apply"
+    "apply": "Apply",
+    "statusFilter": "Status",
+    "allStatuses": "All statuses",
+    "uploaded": "File received and being validated.",
+    "notAllowed": "You are not allowed to import members.",
+    "fields": {
+      "cancelReason": "Cancellation reason",
+      "cancelReasonText": "Explanation",
+      "program": "Program",
+      "sponsorPlaceholder": "Choose a sponsor"
+    }
   }
 }

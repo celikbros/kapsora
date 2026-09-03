@@ -26,6 +26,20 @@ export const NAV_ENTRIES: NavEntry[] = [
     permission: 'program.read',
   },
   { key: 'wallets', path: '/wallets', labelKey: 'nav.wallets', implemented: false },
+  {
+    key: 'adjustments',
+    path: '/entitlement-adjustments',
+    labelKey: 'nav.adjustments',
+    implemented: true,
+    permission: 'entitlement.adjust',
+  },
+  {
+    key: 'imports',
+    path: '/imports',
+    labelKey: 'nav.imports',
+    implemented: true,
+    permission: 'import.execute',
+  },
   { key: 'catalog', path: '/catalog', labelKey: 'nav.catalog', implemented: false },
   {
     key: 'providers',

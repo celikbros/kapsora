@@ -8,6 +8,9 @@ import {
 } from '@tanstack/react-router';
 import { AdjustmentQueuePage } from './adjustments/AdjustmentQueuePage';
 import type { AppServices } from './api';
+import { ImportDetailPage } from './imports/ImportDetailPage';
+import { ImportListPage } from './imports/ImportListPage';
+import { ImportUploadPage } from './imports/ImportUploadPage';
 import { PlanDetailPage } from './benefit/PlanDetailPage';
 import { PlanVersionPage } from './benefit/PlanVersionPage';
 import { ProgramCreatePage } from './benefit/ProgramCreatePage';
@@ -216,6 +219,22 @@ const adjustmentsRoute = createRoute({
   component: AdjustmentQueuePage,
 });
 
+const importsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/imports',
+  component: ImportListPage,
+});
+const importUploadRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/imports/new',
+  component: ImportUploadPage,
+});
+const importDetailRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/imports/$importId',
+  component: ImportDetailPage,
+});
+
 const soonRoutes = SOON_PATHS.map((path) =>
   createRoute({ getParentRoute: () => appRoute, path, component: SoonPage }),
 );
@@ -241,6 +260,9 @@ const routeTree = rootRoute.addChildren([
     planDetailRoute,
     planVersionRoute,
     adjustmentsRoute,
+    importsRoute,
+    importUploadRoute,
+    importDetailRoute,
     ...soonRoutes,
   ]),
 ]);

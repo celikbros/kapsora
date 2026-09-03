@@ -261,7 +261,9 @@
     "PERIOD_LENGTH_REQUIRED": "Kayan gün dönemi için uzunluk zorunlu",
     "ROLLOVER_CAP_REQUIRED": "Sınırlı devir için üst sınır zorunlu",
     "QUANTITY_INVALID": "Miktar geçersiz",
-    "QUANTITY_ZERO": "Miktar sıfır olamaz"
+    "QUANTITY_ZERO": "Miktar sıfır olamaz",
+    "HEADER_INVALID": "Dosyanın başlık satırı beklenen sütunlarla uyuşmuyor",
+    "EMPTY_FILE": "Dosyada hiç satır yok"
   },
   "people": {
     "title": "Hak Sahipleri",
@@ -731,7 +733,11 @@
       "sourceVersion": "Kaynak sürümü",
       "sourceVersionHint": "Aynı dosyanın aynı sürümü ikinci kez yüklenemez.",
       "plan": "Varsayılan plan",
-      "planHint": "Satırında plan kodu olmayan kayıtlar bu plana yazılır."
+      "planHint": "Satırında plan kodu olmayan kayıtlar bu plana yazılır.",
+      "cancelReason": "İptal sebebi",
+      "cancelReasonText": "Açıklama",
+      "program": "Program",
+      "sponsorPlaceholder": "Sponsor seçin"
     },
     "statuses": {
       "RECEIVED": "Alındı",
@@ -789,6 +795,10 @@
     "cancel": "İptal et",
     "cancelTitle": "İçe aktarmayı iptal et",
     "cancelled": "İçe aktarma iptal edildi.",
-    "duplicate": "Bu dosya bu kaynak sürümüyle zaten yüklendi."
+    "duplicate": "Bu dosya bu kaynak sürümüyle zaten yüklendi.",
+    "statusFilter": "Durum",
+    "allStatuses": "Tüm durumlar",
+    "uploaded": "Dosya alındı ve doğrulanıyor.",
+    "notAllowed": "Üye içe aktarma yetkiniz yok."
   }
 }

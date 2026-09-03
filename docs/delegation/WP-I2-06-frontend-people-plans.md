@@ -10,6 +10,34 @@
 | OpenAPI operations owned | none (consumes) |
 | Read first | `DESIGN.md`, `PRODUCT.md` (Impeccable), WP-I1-05 report, v1.2 46 items 7-11, 15.4/15.5 |
 
+> **Delivered in-house, 03.09.2026.** Screens live under `web/apps/backoffice/src/` in
+> `people/`, `benefit/`, `adjustments/` and `imports/`; routes and the main menu are wired
+> in `router.tsx` and `nav.ts`. Decisions taken while delivering:
+>
+> - **Step-up is a promise, not a fire-and-forget.** `useStepUp().run(action)` keeps the
+>   promise it handed the caller pending until the retry after the password finishes, so a
+>   screen still receives what came back and can act on it. Cancelling resolves undefined.
+> - **The mock now matches the server on step-up.** Publishing and retiring a plan version
+>   go through `identity.RequireStepUp` in `internal/benefit/transport/http/planversion.go`;
+>   the mock did not ask, and now does.
+> - **Import screens are gated on `import.execute`**, the permission the server actually
+>   checks, not on the member permissions this document first suggested.
+> - **A draft plan version's period and notes are editable on its own page.** Submit refuses
+>   without a `validFrom` and a draft cannot be deleted, so a version created with the wrong
+>   start date would otherwise be stuck.
+> - **The submitter is offered no publish button** and is told why; the server still refuses
+>   with MAKER_CHECKER_SAME_ACTOR if it is reached another way.
+> - **Two published versions may not overlap.** The server refuses rather than closing the
+>   older period itself, so an operator retires the running version before the next starts.
+>   The Playwright smoke test walks exactly that.
+> - **Quantities never become JavaScript numbers.** They are read, edited and sent as
+>   decimal strings; a test asserts `2500.500000` survives the round trip intact.
+> - **Approve and reject on an adjustment carry no idempotency key**, because the OpenAPI
+>   operations do not accept one. They are protected by the ETag they were read with.
+> - **Identity numbers stay in component state**, never in a URL, a query key or storage.
+>   Tests assert both that and empty `localStorage`/`sessionStorage`.
+> - Tests: 85 Vitest specs across the workspace, 6 Playwright smoke flows, Impeccable clean.
+
 ## 1. Goal
 
 The backoffice operator can find a member (by name, or by identifier with step-up),

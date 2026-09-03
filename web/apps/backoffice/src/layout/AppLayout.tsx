@@ -129,7 +129,9 @@ export function AppLayout() {
       skipLinkLabel={t('app.skipToContent')}
       {...(color ? { accent: color.accent } : {})}
     >
-      <Outlet />
+      {/* Signing out clears the tenant a frame before the route changes. Every screen in
+          here is tenant-scoped and would throw on that frame, so hold the outlet back. */}
+      {active ? <Outlet /> : null}
     </AppShell>
   );
 }
