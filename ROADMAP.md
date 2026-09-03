@@ -31,7 +31,7 @@ See [docs/delegation/README.md](docs/delegation/README.md).
 | # | Milestone | Plan increment | Status | Exit criteria (summary) |
 |---|---|---|---|---|
 | M0 | Foundation | I0 | DONE (2026-09-02) | Repo, corrected migrations 1-9, OpenAPI v1, Go skeleton, CI, schema tests green on PostgreSQL 18.4 |
-| M1 | Identity, tenants, organizations | I1 | ACTIVE | Login via Keycloak, tenant switch, permissions enforced, organization CRUD with VKN dedup, audit and idempotency live, three web shells, native local environment documented |
+| M1 | Identity, tenants, organizations | I1 | ACTIVE | Login with KAPSORA accounts (ADR-022), tenant switch, permissions enforced, organization CRUD with VKN dedup, audit and idempotency live, three web shells, native local environment documented |
 | M2 | People, plans, eligibility, entitlement ledger | I2 | PLANNED | Encrypted identifiers + HMAC search, member import, program/plan/version/enrollment, eligibility API, ledger with reservations; 100 concurrent reserves without double spend |
 | M3 | Catalog, providers, contracts, pricing, rules | I3 | PLANNED | Deterministic contract/price selection, published versions immutable, CEL rule sets with test cases and maker-checker publish |
 | M4 | Requests, workflow, documents, notifications | I4 | PLANNED | Explicit transitions only, work queues with SLA, quarantine-scan-secure document pipeline, PII-free notifications |
@@ -55,7 +55,7 @@ milestones close when their exit criteria are verified by the integrator.
 | [WP-I1-03](docs/delegation/WP-I1-03-organizations.md) | Organizations: directory CRUD, VKN/TCKN validation, blind-index dedup, ETag, cursor paging | ports in repo | 01, 02, 04, 05, 06 | M | Claude |
 | [WP-I1-04](docs/delegation/WP-I1-04-platform-audit-outbox-idempotency.md) | Platform services: audit recorder, outbox dispatcher, idempotency middleware, rate limit, scheduler jobs, keygen | ports in repo | 01, 02, 03, 05, 06 | L | Claude · **DONE** |
 | [WP-I1-05](docs/delegation/WP-I1-05-frontend-foundation.md) | Frontend foundation: pnpm workspace, three app shells, generated client, first screens with mocks | OpenAPI only | all | L | Claude |
-| [WP-I1-06](docs/delegation/WP-I1-06-native-environment-ops.md) | Native environment and ops: install/run scripts for Keycloak, MinIO, ClamAV, Mailpit; systemd units; runbooks | none | all | M | Claude |
+| [WP-I1-06](docs/delegation/WP-I1-06-native-environment-ops.md) | Native environment and ops: install/run scripts for MinIO, ClamAV, Mailpit; systemd units; runbooks | none | all | M | Claude |
 
 Integration order once packages return: 04 → 01 → 02 → 03 → 05 (06 any time). The
 integrator wires middlewares and routes in `cmd/api` and runs the full test suite before
