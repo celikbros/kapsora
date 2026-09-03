@@ -1,4 +1,13 @@
-# WP-I1-01 · Identity: OIDC/BFF login, PostgreSQL sessions, CSRF, step-up
+# WP-I1-01 · Identity: login, PostgreSQL sessions, CSRF, step-up
+
+> **Delivered in-house on 2026-09-03, with one design change.** The business owner removed the
+> requirement to federate with a customer directory, so the OIDC/Keycloak half of this package
+> was replaced by KAPSORA's own password authentication ([ADR-022](../adr/ADR-022.md)):
+> Argon2id credentials in `iam.credential`, per-account lockout, and `POST /api/v1/session/login`
+> instead of a redirect to an identity provider. Everything else below — the opaque session in
+> `iam.session`, the cookie rules, the derived CSRF token, step-up, the audit events — was built
+> as written. Sections 1, 2.1-2.2, 4 (browser redirect routes) and 7 (Keycloak realm) are
+> historical; the rest still describes the delivered code.
 
 | Field | Value |
 |---|---|

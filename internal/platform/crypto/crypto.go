@@ -22,9 +22,6 @@ const (
 	PurposeOrganizationTax  Purpose = "organization.tax_number"
 	PurposeBankAccount      Purpose = "billing.bank_account"
 	PurposeIntegratorSecret Purpose = "fiscal.integrator_secret"
-	// PurposeSessionToken protects refresh/id tokens stored with BFF sessions; the
-	// "tenant" argument is uuid.Nil because sessions exist before a tenant is chosen.
-	PurposeSessionToken Purpose = "iam.session_token"
 )
 
 // BlindIndexSize is the byte length of every blind index (HMAC-SHA256).

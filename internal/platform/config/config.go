@@ -4,6 +4,7 @@
 package config
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -32,6 +33,21 @@ type Config struct {
 	DBMaxConns      int32
 	LogLevel        string
 	ShutdownTimeout time.Duration
+	Session         SessionConfig
+}
+
+// SessionConfig configures browser sessions and the cookie that carries them
+// (v1.2 section 18.2, ADR-022).
+type SessionConfig struct {
+	// CookieSecure marks the cookie Secure and enables the __Host- name prefix. Only a
+	// local HTTP developer setup may turn it off.
+	CookieSecure bool
+	// SigningKey derives the per-session CSRF token. 32 bytes, hex-encoded in the
+	// environment. Required by kapsora-api; other processes may run without it.
+	SigningKey       []byte
+	IdleTimeout      time.Duration
+	AbsoluteLifetime time.Duration
+	StepUpWindow     time.Duration
 }
 
 // Load reads KAPSORA_* variables. serviceName is the binary name (kapsora-api, ...).
@@ -63,7 +79,55 @@ func Load(serviceName string) (Config, error) {
 	if cfg.DatabaseURL == "" {
 		return cfg, errors.New("KAPSORA_DATABASE_URL is required")
 	}
+	if cfg.Session, err = loadSession(cfg); err != nil {
+		return cfg, err
+	}
 	return cfg, nil
+}
+
+func loadSession(cfg Config) (SessionConfig, error) {
+	s := SessionConfig{CookieSecure: true}
+
+	if raw, ok := os.LookupEnv("KAPSORA_COOKIE_SECURE"); ok && raw != "" {
+		v, err := strconv.ParseBool(raw)
+		if err != nil {
+			return s, fmt.Errorf("KAPSORA_COOKIE_SECURE must be true or false: %w", err)
+		}
+		s.CookieSecure = v
+	}
+	// An insecure cookie outside local development would send the session id in clear
+	// text, so it is refused rather than warned about.
+	if !s.CookieSecure && cfg.Environment != EnvLocal && cfg.Environment != EnvTest {
+		return s, fmt.Errorf("KAPSORA_COOKIE_SECURE=false is only allowed in the local and test environments, not %s", cfg.Environment)
+	}
+
+	if raw := strings.TrimSpace(os.Getenv("KAPSORA_COOKIE_SIGNING_KEY")); raw != "" {
+		key, err := hex.DecodeString(raw)
+		if err != nil {
+			return s, fmt.Errorf("KAPSORA_COOKIE_SIGNING_KEY must be hex: %w", err)
+		}
+		if len(key) != 32 {
+			return s, fmt.Errorf("KAPSORA_COOKIE_SIGNING_KEY must be 32 bytes (64 hex characters), got %d", len(key))
+		}
+		s.SigningKey = key
+	}
+
+	idle, err := envInt("KAPSORA_SESSION_IDLE_MINUTES", 30)
+	if err != nil {
+		return s, err
+	}
+	absolute, err := envInt("KAPSORA_SESSION_ABSOLUTE_HOURS", 8)
+	if err != nil {
+		return s, err
+	}
+	stepUp, err := envInt("KAPSORA_STEP_UP_MINUTES", 10)
+	if err != nil {
+		return s, err
+	}
+	s.IdleTimeout = time.Duration(idle) * time.Minute
+	s.AbsoluteLifetime = time.Duration(absolute) * time.Hour
+	s.StepUpWindow = time.Duration(stepUp) * time.Minute
+	return s, nil
 }
 
 // IsProductionLike reports whether debug conveniences must be disabled.

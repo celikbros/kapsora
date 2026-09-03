@@ -13,15 +13,17 @@ muhasebe kaydına kadar tek platformda yönetir.
 ## Teknoloji
 
 Go 1.27 modüler monolith (api / worker / scheduler), PostgreSQL 18 (UUIDv7, composite tenant FK,
-RLS), Keycloak OIDC + Go BFF, React 19 / TypeScript, S3 uyumlu obje deposu, transactional outbox.
+RLS), kendi kullanıcı hesaplarımızla giriş (Argon2id + opak oturum çerezi, ADR-022),
+React 19 / TypeScript, S3 uyumlu obje deposu, transactional outbox.
 **Konteyner yok:** tüm servisler yerelde ve üretimde doğal süreç olarak çalışır (ADR-021).
 Ayrıntı: v1.2 bölüm 13-16, ADR-020, ADR-021.
 
 ## Hızlı başlangıç
 
 Gereksinimler: Go 1.27+, yerel PostgreSQL 18, Node 24 (frontend, I1'den itibaren).
-Keycloak, MinIO, ClamAV ve Mailpit doğal kurulumları için
+MinIO, ClamAV ve Mailpit doğal kurulumları için
 [docs/runbooks/local-native-environment.md](docs/runbooks/local-native-environment.md).
+Giriş için ayrı bir sunucu gerekmez; hesaplar `go run ./cmd/seed account ...` ile açılır.
 
 ```sh
 cp .env.example .env            # CHANGE_ME değerlerini kendi PostgreSQL bilgilerinizle doldurun

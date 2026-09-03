@@ -11,7 +11,7 @@ bugün çalışan asgari yolu anlatır.
 | PostgreSQL | 18.x | Windows kurulumu `C:\Program Files\PostgreSQL\18`, servis `postgresql-x64-18`, port 5432 |
 | Git | 2.4x+ | LF satır sonu `.gitattributes` ile zorunlu |
 | Node.js + pnpm | 24 / 10 | Yalnız frontend (WP-I1-05) |
-| JDK 21 | Temurin | Yalnız Keycloak (WP-I1-01, WP-I1-06) |
+
 
 Docker, Kubernetes, Valkey/Redis kullanılmaz (ADR-021).
 
@@ -29,7 +29,16 @@ Docker, Kubernetes, Valkey/Redis kullanılmaz (ADR-021).
 
 ## Henüz elle yapılanlar (WP-I1-06 otomatikleştirecek)
 
-- Keycloak: JDK 21 kurun, Keycloak 26.7 zip'ini `tools/keycloak` altına açın,
+- Giriş sunucusu gerekmez (ADR-022): kullanıcı hesapları KAPSORA'nın kendi
+  veritabanındadır. Yerel bir hesap açmak için:
+
+  ```sh
+  go run ./cmd/keygen                     # KAPSORA_COOKIE_SIGNING_KEY üretir, .env'e yazın
+  go run ./cmd/seed account demo@kapsora.test "Demo Kullanıcı" demo@kapsora.test
+  ```
+
+  Parola bir kez ekrana yazılır ve ilk kullanımda değiştirilmesi istenir.
+- (Kaldırıldı) Keycloak: JDK 21 kurun, Keycloak 26.7 zip'ini `tools/keycloak` altına açın,
   `bin\kc.bat start-dev --http-port=8081 --import-realm` (realm dosyası WP-I1-01 ile gelir).
 - MinIO: `minio.exe server C:\kapsora-data\minio --console-address :9001`.
 - ClamAV ve Mailpit: doğal ikili dosyalar; ayrıntı WP-I1-06 raporuyla bu dokümana eklenecek.

@@ -306,6 +306,18 @@ type IamActor struct {
 	UpdatedAt       time.Time
 }
 
+type IamCredential struct {
+	ActorID            uuid.UUID
+	PasswordHash       string
+	PasswordUpdatedAt  time.Time
+	MustChangePassword bool
+	FailedAttempts     int32
+	LockedUntil        *time.Time
+	LastLoginAt        *time.Time
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
+}
+
 type IamPermission struct {
 	Code        string
 	Description string
@@ -326,6 +338,20 @@ type IamRolePermission struct {
 	TenantID       uuid.UUID
 	RoleID         uuid.UUID
 	PermissionCode string
+}
+
+type IamSession struct {
+	IDHash         []byte
+	ActorID        uuid.UUID
+	ActiveTenantID uuid.NullUUID
+	ClientType     string
+	UserAgentHash  []byte
+	SourceIp       *netip.Addr
+	CreatedAt      time.Time
+	LastSeenAt     time.Time
+	ExpiresAt      time.Time
+	StepUpUntil    *time.Time
+	RevokedAt      *time.Time
 }
 
 type IamTenantMembership struct {

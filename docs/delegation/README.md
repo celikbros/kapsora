@@ -26,7 +26,7 @@ No Docker anywhere (ADR-021). Everything runs as native processes.
 | Go | 1.27.x | `go.mod` pins the language version; the toolchain downloads automatically |
 | PostgreSQL | 18.x | Local server; you need a superuser or a role with CREATEDB + CREATEROLE for schema tests |
 | Node.js + pnpm | 24.x / 10.x | Only for frontend packages (WP-I1-05) |
-| JDK | 21 (Temurin) | Only if your WP runs Keycloak locally (WP-I1-01, WP-I1-06) |
+
 | Git | 2.4x+ | LF line endings are enforced by `.gitattributes` |
 
 Setup:

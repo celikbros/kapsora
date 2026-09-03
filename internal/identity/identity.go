@@ -31,18 +31,21 @@ type Principal struct {
 	Email       string
 }
 
-// Session is the opaque BFF session referenced by the __Host-kapsora_session cookie.
-// The cookie carries a random id; the store persists only a hash of it.
+// Session is the opaque BFF session referenced by the session cookie. The cookie carries
+// a random id; the store persists only a hash of it.
 type Session struct {
+	// ID is the plaintext session id. It exists in the cookie and in memory, never in
+	// the database, and is empty on sessions loaded for anything but the current request.
 	ID             string
 	ActorID        uuid.UUID
 	ActiveTenantID uuid.NullUUID
-	CSRFToken      string
-	IdPSessionID   string
-	CreatedAt      time.Time
-	LastSeenAt     time.Time
-	ExpiresAt      time.Time // absolute limit (v1.2 18.2)
-	StepUpUntil    time.Time // zero when no step-up is active
+	// CSRFToken is derived from ID by the transport layer (domain.DeriveCSRFToken); it is
+	// not stored and is empty unless the transport filled it in.
+	CSRFToken   string
+	CreatedAt   time.Time
+	LastSeenAt  time.Time
+	ExpiresAt   time.Time // absolute limit (v1.2 18.2)
+	StepUpUntil time.Time // zero when no step-up is active
 }
 
 // SessionStore persists sessions. The PostgreSQL implementation is delivered by
@@ -154,3 +157,8 @@ func RequireStepUp(ctx context.Context, permission string) (RequestContext, erro
 	}
 	return rc, nil
 }
+
+// LocalIssuer is the identity_issuer value of accounts KAPSORA authenticates itself
+// (ADR-022). identity_subject holds the normalised user name, so the existing
+// UNIQUE (identity_issuer, identity_subject) enforces user-name uniqueness.
+const LocalIssuer = "kapsora"

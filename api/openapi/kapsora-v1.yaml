@@ -5,8 +5,9 @@ info:
   summary: Kurumsal hak, fayda ve hizmet orkestrasyonu için başlangıç API sözleşmesi
   description: |
     Bu sözleşme ilk sprint ve çekirdek MVP için contract-first geliştirme başlangıç noktasıdır.
-    Tarayıcı uygulamaları BFF oturum çerezi kullanır; makineden makineye entegrasyonlar
-    OAuth 2.0 client credentials ve mTLS ile çalışır. Tüm tenant kapsamlı çağrılar X-Tenant-ID
+    Kullanıcılar KAPSORA'nın kendi hesaplarıyla giriş yapar (ADR-022); tarayıcı yalnız opak
+    oturum çerezi taşır. Makineden makineye entegrasyonlar OAuth 2.0 client credentials ve
+    mTLS ile çalışır. Tüm tenant kapsamlı çağrılar X-Tenant-ID
     başlığı taşır. Durum değiştiren POST komutlarında Idempotency-Key zorunludur; sorgu
     niteliğindeki POST'larda (eligibility check, pricing quote) opsiyoneldir.
     İstemci X-Request-ID başlığında UUID gönderebilir; sunucu her yanıtta X-Request-ID döner.
@@ -97,6 +98,111 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/TenantSummary'
+  /api/v1/session:
+    get:
+      tags: [Identity]
+      operationId: getSession
+      security:
+        - sessionCookie: []
+      description: |
+        Returns the current session and the CSRF token every state-changing call must echo
+        in X-CSRF-Token. This is how the frontend obtains that token.
+      responses:
+        '200':
+          description: Current session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionInfo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/v1/session/login:
+    post:
+      tags: [Identity]
+      operationId: login
+      security: []
+      description: |
+        Authenticates a user name and password and starts a session. The response sets the
+        session cookie and carries the CSRF token.
+
+        Failures are deliberately coarse: an unknown user name and a wrong password both
+        return 401 INVALID_CREDENTIALS with the same body and take the same time, so the
+        endpoint cannot be used to discover who has an account. Repeated failures lock the
+        account for a short period (403 ACCOUNT_LOCKED); the endpoint is also rate limited
+        per client address.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                  minLength: 1
+                  maxLength: 320
+                  description: Case-insensitive; leading and trailing spaces are ignored.
+                password:
+                  type: string
+                  minLength: 1
+                  maxLength: 1024
+      responses:
+        '200':
+          description: Session started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionInfo'
+        '400':
+          description: Malformed request body
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/session/password:
+    post:
+      tags: [Identity]
+      operationId: changeOwnPassword
+      security:
+        - sessionCookie: []
+      description: |
+        Replaces the caller's own password after verifying the current one. Every other
+        session of the actor is ended; the calling session stays valid.
+      parameters:
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [currentPassword, newPassword]
+              properties:
+                currentPassword:
+                  type: string
+                  maxLength: 1024
+                newPassword:
+                  type: string
+                  minLength: 12
+                  maxLength: 1024
+      responses:
+        '204':
+          description: Password changed
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
   /api/v1/session/switch-tenant:
     post:
       tags: [Identity]
@@ -134,9 +240,12 @@ paths:
       tags: [Identity]
       operationId: stepUpSession
       description: |
-        Re-authenticates the current session for a sensitive operation (publish, privileged
+        Re-verifies the caller's password before a sensitive operation (publish, privileged
         grant, sensitive download, export, adjustment, settlement approval, break-glass).
-        The elevated state is valid for a short window returned in the response.
+        The elevated state is valid for a short window returned in the response. Failures
+        count towards the same account lockout as a login.
+      security:
+        - sessionCookie: []
       parameters:
         - $ref: '#/components/parameters/CsrfHeader'
       requestBody:
@@ -146,15 +255,11 @@ paths:
             schema:
               type: object
               additionalProperties: false
-              required: [method]
+              required: [password]
               properties:
-                method:
+                password:
                   type: string
-                  enum: [WEBAUTHN, TOTP]
-                assertion:
-                  type: object
-                  additionalProperties: true
-                  description: Method-specific proof (WebAuthn assertion or TOTP code).
+                  maxLength: 1024
       responses:
         '200':
           description: Step-up accepted
@@ -170,13 +275,17 @@ paths:
                     format: date-time
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '422':
-          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /api/v1/session/logout:
     post:
       tags: [Identity]
       operationId: logout
-      description: Ends the BFF session and revokes the identity provider session.
+      description: |
+        Ends the session and clears the cookie. Calling it without a session, or twice, is
+        not an error.
+      security:
+        - sessionCookie: []
       parameters:
         - $ref: '#/components/parameters/CsrfHeader'
       responses:
@@ -580,7 +689,10 @@ components:
       type: apiKey
       in: cookie
       name: __Host-kapsora_session
-      description: BFF-managed opaque session. Browser never stores OAuth tokens.
+      description: |
+        Opaque session id. The server stores only its SHA-256 hash and the browser never
+        holds a token of any kind. Local HTTP development uses the name kapsora_session
+        because the __Host- prefix requires HTTPS.
     oauth2:
       type: oauth2
       flows:
@@ -782,6 +894,32 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TenantContext'
+    SessionInfo:
+      type: object
+      additionalProperties: false
+      required: [actorId, csrfToken, expiresAt, activeTenantId, stepUpExpiresAt, mustChangePassword]
+      properties:
+        actorId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        activeTenantId:
+          type: [string, 'null']
+          format: uuid
+        csrfToken:
+          type: string
+          description: Echo this in X-CSRF-Token on every state-changing call.
+        expiresAt:
+          type: string
+          format: date-time
+          description: Absolute end of the session, regardless of activity.
+        stepUpExpiresAt:
+          type: [string, 'null']
+          format: date-time
+        mustChangePassword:
+          type: boolean
+          description: True when an administrator issued a temporary password.
     TenantContext:
       type: object
       additionalProperties: false

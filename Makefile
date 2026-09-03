@@ -1,5 +1,5 @@
 # KAPSORA developer entry points (GNU make on Linux/macOS/Git Bash).
-# Container-free runtime (ADR-021): PostgreSQL, Keycloak and the other services run as
+# Container-free runtime (ADR-021): PostgreSQL and the other services run as
 # native processes; see docs/runbooks/local-native-environment.md.
 # On Windows without make, scripts/dev.ps1 mirrors these targets.
 

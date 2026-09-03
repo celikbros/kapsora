@@ -10,7 +10,7 @@ ilgili v1.2 bölümüne referans verir; plan v2.0 ile gelen kararlar ayrıntıl�
 | 002 | Dedicated production varsayılanı ve tenant-aware veri modeli | Accepted | v1.2 16.3, 33.3 |
 | 003 | PostgreSQL 18, UUIDv7 ve SQL-first repository | Accepted | v1.2 14.1, 16.1; ADR-020 ile güncellendi |
 | 004 | Composite tenant FK + RLS | Accepted | v1.2 16.10, 16.11 |
-| 005 | Keycloak OIDC ve BFF session | Accepted | v1.2 15.3, 18 |
+| 005 | Keycloak OIDC ve BFF session | **Superseded by 022** | v1.2 15.3, 18 |
 | 006 | Plan/contract/rule versioning ve effective dating | Accepted | v1.2 11.3, 11.5 |
 | 007 | Entitlement immutable ledger | Accepted | v1.2 11.4 |
 | 008 | Accommodation daily inventory and hold model | Accepted | v1.2 11.11 |
