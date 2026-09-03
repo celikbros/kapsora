@@ -25,7 +25,9 @@
     "security": "Security and audit",
     "profile": "My profile and permissions",
     "organizations": "Organizations",
-    "mainMenu": "Main menu"
+    "mainMenu": "Main menu",
+    "adjustments": "Entitlement adjustments",
+    "imports": "Member import"
   },
   "auth": {
     "loginTitle": "Sign in",
@@ -198,5 +200,45 @@
     "MIN_LENGTH": "At least {{min}} characters",
     "MAX_LENGTH": "At most {{max}} characters",
     "PATTERN": "Allowed characters: letters, digits, '.', '_', '-'"
+  },
+  "people": {
+    "title": "Members",
+    "new": "New member",
+    "search": "Search by name",
+    "identifierSearch": "Search by identifier",
+    "tabs": {
+      "identity": "Identity",
+      "family": "Family",
+      "memberships": "Memberships",
+      "enrollments": "Enrollments",
+      "entitlements": "Entitlements",
+      "eligibility": "Eligibility"
+    }
+  },
+  "programs": {
+    "title": "Programs and plans",
+    "new": "New program"
+  },
+  "plans": {
+    "title": "Plans",
+    "versions": {
+      "submit": "Submit for review",
+      "publish": "Publish",
+      "retire": "Retire"
+    }
+  },
+  "entitlements": {
+    "title": "Entitlements",
+    "ledger": {
+      "title": "Movements"
+    }
+  },
+  "eligibility": {
+    "title": "Eligibility check",
+    "run": "Check"
+  },
+  "imports": {
+    "title": "Member import",
+    "apply": "Apply"
   }
 }

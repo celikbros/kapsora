@@ -25,7 +25,9 @@
     "security": "Güvenlik ve Audit",
     "profile": "Profilim ve Yetkilerim",
     "organizations": "Kurumlar",
-    "mainMenu": "Ana menü"
+    "mainMenu": "Ana menü",
+    "adjustments": "Hak Düzeltmeleri",
+    "imports": "Üye İçe Aktarma"
   },
   "auth": {
     "loginTitle": "Oturum aç",
@@ -201,7 +203,26 @@
     "TENANT_CODE_TAKEN": "Bu kurum kodu zaten kullanılıyor.",
     "PASSWORD_POLICY_VIOLATION": "Parola politikaya uymuyor.",
     "REQUEST_BODY_TOO_LARGE": "Gönderilen veri çok büyük.",
-    "INTERNAL_ERROR": "Sunucu tarafında bir hata oluştu."
+    "INTERNAL_ERROR": "Sunucu tarafında bir hata oluştu.",
+    "PERSON_IDENTIFIER_TAKEN": "Bu numara başka bir hak sahibine kayıtlı.",
+    "RELATIONSHIP_OVERLAP": "Aynı kişiler arasında bu türde çakışan bir ilişki var.",
+    "MEMBERSHIP_OVERLAP": "Bu sponsorda çakışan bir üyelik var.",
+    "MEMBER_NO_TAKEN": "Bu üye numarası bu sponsorda kullanılıyor.",
+    "PRINCIPAL_REQUIRED": "Bu üyelik türü bir asıl üye ister.",
+    "PROGRAM_CODE_TAKEN": "Bu program kodu zaten kullanılıyor.",
+    "PROGRAM_TRANSITION_INVALID": "Program bu duruma geçemez.",
+    "PLAN_CODE_TAKEN": "Bu plan kodu programda zaten var.",
+    "PLAN_TRANSITION_INVALID": "Plan bu duruma geçemez.",
+    "PLAN_VERSION_IMMUTABLE": "Yayınlanmış sürüm değiştirilemez.",
+    "PLAN_VERSION_OVERLAP": "Bu tarih aralığında yayında başka bir sürüm var.",
+    "MAKER_CHECKER_SAME_ACTOR": "Gönderen ile onaylayan aynı kişi olamaz.",
+    "PLAN_NOT_PUBLISHED": "Planın bu tarihte yayınlanmış sürümü yok.",
+    "ENROLLMENT_OVERLAP": "Bu üyelik ve plan için çakışan bir kayıt var.",
+    "ENTITLEMENT_ACCOUNT_FROZEN": "Hak hesabı donduruldu; önce farkın giderilmesi gerekiyor.",
+    "IMPORT_DUPLICATE": "Bu dosya bu kaynak sürümüyle zaten yüklendi.",
+    "IMPORT_STATE_INVALID": "İçe aktarma bu işleme uygun durumda değil.",
+    "IMPORT_ROW_NOT_REVIEWABLE": "Bu satır bu kararı alamaz.",
+    "IMPORT_FILE_TOO_LARGE": "Dosya çok büyük."
   },
   "fieldErrors": {
     "REQUIRED": "Zorunlu alan",
@@ -219,6 +240,533 @@
     "TOO_LONG": "Değer çok uzun",
     "MIN_LENGTH": "En az {{min}} karakter",
     "MAX_LENGTH": "En fazla {{max}} karakter",
-    "PATTERN": "İzin verilen karakterler: harf, rakam, '.', '_', '-'"
+    "PATTERN": "İzin verilen karakterler: harf, rakam, '.', '_', '-'",
+    "IDENTIFIER_TYPE_UNKNOWN": "Bu tanımlayıcı türü tenantta tanımlı değil",
+    "IDENTIFIER_SCOPE_REQUIRED": "Bu tür için sponsor seçilmelidir",
+    "IDENTIFIER_DUPLICATE": "Aynı tür iki kez verilmiş",
+    "SELF_RELATIONSHIP": "Kişi kendisiyle ilişkilendirilemez",
+    "RELATIONSHIP_TYPE_UNKNOWN": "İlişki türü tanımlı değil",
+    "MEMBERSHIP_TYPE_UNKNOWN": "Üyelik türü tanımlı değil",
+    "SPONSOR_ORGANIZATION_INVALID": "Sponsor kurum geçersiz",
+    "SOURCE_RECORD_ID_DUPLICATED": "Kaynak kayıt numarası dosyada iki kez var",
+    "PRINCIPAL_UNKNOWN": "Asıl üye ne dosyada ne de kayıtlarda bulunabildi",
+    "APPLY_FAILED": "Satır uygulanamadı",
+    "DATE_ORDER": "Bitiş tarihi başlangıçtan önce olamaz",
+    "DATE_RANGE": "Tarih beklenen aralıkta değil",
+    "CURRENCY_REQUIRED": "Tutar birimi için para birimi zorunlu",
+    "CURRENCY_FORBIDDEN": "Bu birim için para birimi verilemez",
+    "PERIOD_LENGTH_REQUIRED": "Kayan gün dönemi için uzunluk zorunlu",
+    "ROLLOVER_CAP_REQUIRED": "Sınırlı devir için üst sınır zorunlu",
+    "QUANTITY_INVALID": "Miktar geçersiz",
+    "QUANTITY_ZERO": "Miktar sıfır olamaz"
+  },
+  "people": {
+    "title": "Hak Sahipleri",
+    "intro": "Bu kurumun hizmet verdiği kişiler. Kimlik numarasıyla arama ayrı bir yetki ister ve parola doğrulaması gerektirir.",
+    "new": "Yeni hak sahibi",
+    "search": "Ad veya soyad ara",
+    "searchHint": "En az iki karakter yazın.",
+    "statusFilter": "Durum",
+    "allStatuses": "Tüm durumlar",
+    "sponsorFilter": "Sponsor",
+    "allSponsors": "Tüm sponsorlar",
+    "identifierSearch": "Kimlik ile ara",
+    "identifierSearchTitle": "Kimlik numarasıyla ara",
+    "identifierSearchIntro": "Bu arama denetim kaydına yazılır. Numara hiçbir yerde saklanmaz, adres çubuğunda görünmez.",
+    "identifierSearchNotFound": "Bu numarayla kayıtlı kişi bulunamadı.",
+    "columns": {
+      "displayName": "Ad soyad",
+      "identifier": "Birincil kimlik",
+      "status": "Durum"
+    },
+    "empty": "Kayıt bulunamadı.",
+    "emptyHint": "Aramayı değiştirin ya da yeni bir hak sahibi ekleyin.",
+    "createTitle": "Yeni hak sahibi",
+    "editTitle": "Hak sahibini düzenle",
+    "detailTitle": "Hak sahibi",
+    "mergedInto": "Bu kayıt birleştirildi. Güncel kayda gidin.",
+    "tabs": {
+      "identity": "Kimlik",
+      "family": "Aile",
+      "memberships": "Üyelikler",
+      "enrollments": "Kayıtlar",
+      "entitlements": "Haklar",
+      "eligibility": "Uygunluk"
+    },
+    "fields": {
+      "firstName": "Ad",
+      "middleName": "İkinci ad",
+      "lastName": "Soyad",
+      "birthDate": "Doğum tarihi",
+      "sexAtBirth": "Doğumdaki cinsiyet",
+      "status": "Durum",
+      "identifiers": "Tanımlayıcılar",
+      "identifierType": "Tür",
+      "identifierValue": "Numara",
+      "primary": "Birincil",
+      "addIdentifier": "Tanımlayıcı ekle",
+      "removeIdentifier": "Kaldır"
+    },
+    "sex": {
+      "FEMALE": "Kadın",
+      "MALE": "Erkek",
+      "INTERSEX": "İnterseks",
+      "UNKNOWN": "Bilinmiyor"
+    },
+    "statuses": {
+      "ACTIVE": "Aktif",
+      "INACTIVE": "Pasif",
+      "DECEASED": "Vefat",
+      "MERGED": "Birleştirildi"
+    },
+    "created": "Hak sahibi oluşturuldu.",
+    "updated": "Hak sahibi güncellendi.",
+    "identifierHint": "TCKN 11 hane, kontrol basamağıyla doğrulanır. Bir türden yalnız bir numara tutulur; yeni değer eskisinin yerine geçer."
+  },
+  "family": {
+    "title": "Aile ve ilişkiler",
+    "add": "İlişki ekle",
+    "addTitle": "Yeni ilişki",
+    "endTitle": "İlişkiyi bitir",
+    "end": "Bitir",
+    "columns": {
+      "person": "Kişi",
+      "type": "İlişki",
+      "direction": "Yön",
+      "period": "Geçerlilik"
+    },
+    "empty": "Tanımlı ilişki yok.",
+    "fields": {
+      "targetPerson": "Diğer kişi",
+      "relationshipType": "İlişki türü",
+      "validFrom": "Başlangıç",
+      "validTo": "Bitiş",
+      "endsOn": "Bitiş tarihi",
+      "reasonCode": "Sebep kodu",
+      "reasonText": "Açıklama"
+    },
+    "directions": {
+      "OUTGOING": "Bu kişiden",
+      "INCOMING": "Bu kişiye",
+      "MUTUAL": "Karşılıklı"
+    },
+    "created": "İlişki eklendi.",
+    "ended": "İlişki bitirildi."
+  },
+  "memberships": {
+    "title": "Sponsor üyelikleri",
+    "add": "Üyelik ekle",
+    "addTitle": "Yeni üyelik",
+    "editTitle": "Üyeliği düzenle",
+    "columns": {
+      "sponsor": "Sponsor",
+      "type": "Tür",
+      "memberNo": "Üye no",
+      "period": "Geçerlilik",
+      "status": "Durum"
+    },
+    "empty": "Üyelik yok.",
+    "fields": {
+      "sponsor": "Sponsor kurum",
+      "membershipType": "Üyelik türü",
+      "principal": "Asıl üye",
+      "externalMemberNo": "Üye numarası",
+      "validFrom": "Başlangıç",
+      "validTo": "Bitiş",
+      "status": "Durum"
+    },
+    "principalRequired": "Bu üyelik türü bir asıl üye ister.",
+    "statuses": {
+      "PENDING": "Beklemede",
+      "ACTIVE": "Aktif",
+      "SUSPENDED": "Askıda",
+      "ENDED": "Sona erdi"
+    },
+    "created": "Üyelik eklendi.",
+    "updated": "Üyelik güncellendi."
+  },
+  "programs": {
+    "title": "Programlar ve Planlar",
+    "intro": "Bir program, sponsor ile ödeyici arasındaki fayda çatısıdır. Planlar programın altında, hak tanımları da plan sürümünün içinde yaşar.",
+    "new": "Yeni program",
+    "createTitle": "Yeni program",
+    "editTitle": "Programı düzenle",
+    "detailTitle": "Program",
+    "search": "Kod veya ad ara",
+    "columns": {
+      "code": "Kod",
+      "name": "Ad",
+      "type": "Tür",
+      "sponsor": "Sponsor",
+      "payer": "Ödeyici",
+      "status": "Durum",
+      "plans": "Plan"
+    },
+    "empty": "Program yok.",
+    "emptyHint": "İlk programı oluşturun.",
+    "fields": {
+      "code": "Kod",
+      "name": "Ad",
+      "programType": "Program türü",
+      "sponsorOrganization": "Sponsor kurum",
+      "payerOrganization": "Ödeyici kurum",
+      "validFrom": "Başlangıç",
+      "validTo": "Bitiş",
+      "status": "Durum"
+    },
+    "statuses": {
+      "DRAFT": "Taslak",
+      "ACTIVE": "Aktif",
+      "SUSPENDED": "Askıda",
+      "CLOSED": "Kapalı"
+    },
+    "created": "Program oluşturuldu.",
+    "updated": "Program güncellendi."
+  },
+  "plans": {
+    "title": "Planlar",
+    "new": "Yeni plan",
+    "createTitle": "Yeni plan",
+    "editTitle": "Planı düzenle",
+    "detailTitle": "Plan",
+    "columns": {
+      "code": "Kod",
+      "name": "Ad",
+      "status": "Durum",
+      "versions": "Sürüm"
+    },
+    "empty": "Bu programda plan yok.",
+    "fields": {
+      "code": "Kod",
+      "name": "Ad",
+      "status": "Durum"
+    },
+    "statuses": {
+      "DRAFT": "Taslak",
+      "ACTIVE": "Aktif",
+      "RETIRED": "Kullanımdan çıktı"
+    },
+    "created": "Plan oluşturuldu.",
+    "updated": "Plan güncellendi.",
+    "versions": {
+      "title": "Plan sürümleri",
+      "new": "Yeni sürüm",
+      "createTitle": "Yeni plan sürümü",
+      "detailTitle": "Plan sürümü",
+      "copyFrom": "Kopyalanacak sürüm",
+      "copyFromNone": "Boş başla",
+      "columns": {
+        "versionNo": "Sürüm",
+        "period": "Geçerlilik",
+        "status": "Durum",
+        "published": "Yayın"
+      },
+      "fields": {
+        "validFrom": "Başlangıç",
+        "validTo": "Bitiş",
+        "notes": "Notlar",
+        "configurationHash": "Yapılandırma özeti",
+        "submittedBy": "Gönderen",
+        "publishedBy": "Yayınlayan",
+        "reviewComment": "İnceleme notu"
+      },
+      "statuses": {
+        "DRAFT": "Taslak",
+        "UNDER_REVIEW": "İncelemede",
+        "PUBLISHED": "Yayında",
+        "RETIRED": "Kullanımdan çıktı"
+      },
+      "submit": "İncelemeye gönder",
+      "publish": "Yayınla",
+      "retire": "Kullanımdan çıkar",
+      "submitted": "Sürüm incelemeye gönderildi.",
+      "published": "Sürüm yayınlandı.",
+      "retired": "Sürüm kullanımdan çıkarıldı.",
+      "readOnly": "Yayınlanmış sürüm değiştirilemez. Yeni bir taslak açıp değişikliği orada yapın.",
+      "sameActorBlocked": "Bir sürümü inceleyip yayınlayan kişi, onu gönderen kişi olamaz. Başka bir yetkili yayınlamalı.",
+      "retireReason": "Kullanımdan çıkarma sebebi"
+    },
+    "definitions": {
+      "title": "Hak tanımları",
+      "add": "Tanım ekle",
+      "remove": "Kaldır",
+      "empty": "Bu sürümde hak tanımı yok. Yayınlamak için en az bir tanım gerekir.",
+      "columns": {
+        "code": "Kod",
+        "name": "Ad",
+        "unitType": "Birim",
+        "period": "Dönem",
+        "initialQuantity": "Başlangıç miktarı",
+        "flags": "Özellikler"
+      },
+      "fields": {
+        "code": "Kod",
+        "name": "Ad",
+        "unitType": "Birim türü",
+        "currencyCode": "Para birimi",
+        "periodType": "Dönem türü",
+        "periodLength": "Dönem uzunluğu (gün)",
+        "initialQuantity": "Başlangıç miktarı",
+        "allowOverdraft": "Eksiye izin ver",
+        "rolloverPolicy": "Devir",
+        "rolloverCap": "Devir üst sınırı",
+        "familyShared": "Aile ile paylaşımlı"
+      },
+      "units": {
+        "MONEY": "Tutar",
+        "COUNT": "Adet",
+        "NIGHT": "Gece",
+        "SESSION": "Seans",
+        "HOUR": "Saat",
+        "KILOMETER": "Kilometre",
+        "POINT": "Puan"
+      },
+      "periods": {
+        "CALENDAR_YEAR": "Takvim yılı",
+        "PLAN_YEAR": "Plan yılı",
+        "ROLLING_DAYS": "Kayan gün",
+        "LIFETIME": "Ömür boyu",
+        "CUSTOM": "Özel"
+      },
+      "rollover": {
+        "NONE": "Devir yok",
+        "FULL": "Tamamı devreder",
+        "CAPPED": "Sınırlı devreder"
+      },
+      "saved": "Hak tanımları kaydedildi."
+    }
+  },
+  "enrollments": {
+    "title": "Plan kayıtları",
+    "add": "Kayıt ekle",
+    "addTitle": "Yeni plan kaydı",
+    "editTitle": "Kaydı düzenle",
+    "columns": {
+      "plan": "Plan",
+      "membership": "Üyelik",
+      "period": "Geçerlilik",
+      "status": "Durum"
+    },
+    "empty": "Plan kaydı yok.",
+    "fields": {
+      "membership": "Üyelik",
+      "plan": "Plan",
+      "validFrom": "Başlangıç",
+      "validTo": "Bitiş",
+      "reason": "Sebep",
+      "status": "Durum"
+    },
+    "statuses": {
+      "PENDING": "Beklemede",
+      "ACTIVE": "Aktif",
+      "SUSPENDED": "Askıda",
+      "ENDED": "Sona erdi"
+    },
+    "created": "Plan kaydı oluşturuldu.",
+    "updated": "Plan kaydı güncellendi.",
+    "planNotPublished": "Seçilen planın bu tarihte yayınlanmış bir sürümü yok. Önce sürümü yayınlayın."
+  },
+  "entitlements": {
+    "title": "Haklar",
+    "asOf": "Tarih",
+    "columns": {
+      "definition": "Hak",
+      "period": "Dönem",
+      "available": "Kullanılabilir",
+      "reserved": "Bloke",
+      "consumed": "Kullanılan",
+      "total": "Toplam",
+      "status": "Durum"
+    },
+    "empty": "Bu tarihte açık hak hesabı yok.",
+    "shared": "Aile ile paylaşımlı",
+    "sharedHint": "Bu hesap asıl üyenin kaydında açılır; aile bireyleri aynı bakiyeyi kullanır.",
+    "frozen": "Bu hesap donduruldu. Ledger ile bakiye arasında fark bulundu; düzeltme yapılana kadar yeni bloke alınamaz.",
+    "statuses": {
+      "OPEN": "Açık",
+      "FROZEN": "Donduruldu",
+      "CLOSED": "Kapalı"
+    },
+    "ledger": {
+      "title": "Hareketler",
+      "columns": {
+        "movement": "Hareket",
+        "effectiveAt": "Tarih",
+        "quantity": "Miktar",
+        "reference": "Referans",
+        "reason": "Sebep"
+      },
+      "empty": "Hareket yok.",
+      "movements": {
+        "GRANT": "Tanımlama",
+        "RESERVE": "Bloke",
+        "RELEASE": "Bloke çözümü",
+        "CONSUME": "Kullanım",
+        "REVERSE": "Ters kayıt",
+        "EXPIRE": "Süre sonu",
+        "ADJUST": "Düzeltme"
+      }
+    },
+    "adjustments": {
+      "title": "Hak düzeltmeleri",
+      "queueTitle": "Onay bekleyen düzeltmeler",
+      "new": "Düzeltme talebi",
+      "createTitle": "Hak düzeltmesi talebi",
+      "columns": {
+        "account": "Hesap",
+        "delta": "Değişim",
+        "reason": "Sebep",
+        "requestedBy": "Talep eden",
+        "status": "Durum"
+      },
+      "empty": "Bekleyen düzeltme yok.",
+      "fields": {
+        "deltaQuantity": "Değişim miktarı",
+        "reasonCode": "Sebep kodu",
+        "reasonText": "Açıklama",
+        "comment": "Karar notu"
+      },
+      "deltaHint": "Artı değer hak ekler, eksi değer düşer. Sıfır olamaz.",
+      "approve": "Onayla",
+      "reject": "Reddet",
+      "requested": "Düzeltme talebi oluşturuldu. Başka bir yetkilinin onayı gerekiyor.",
+      "approved": "Düzeltme onaylandı ve bakiyeye işlendi.",
+      "rejected": "Düzeltme reddedildi.",
+      "statuses": {
+        "PENDING": "Onay bekliyor",
+        "APPROVED": "Onaylandı",
+        "REJECTED": "Reddedildi"
+      },
+      "sameActorBlocked": "Kendi talebinizi onaylayamazsınız. Başka bir yetkili karar vermeli."
+    }
+  },
+  "eligibility": {
+    "title": "Uygunluk sorgusu",
+    "intro": "Hizmet tarihinde kişinin hakkı var mı, hangi plan sürümüne göre ve neden. Sonuç değiştirilemez biçimde saklanır.",
+    "run": "Sorgula",
+    "running": "Sorgulanıyor…",
+    "fields": {
+      "serviceDate": "Hizmet tarihi",
+      "program": "Program",
+      "provider": "Sağlayıcı",
+      "entitlementCode": "Hak kodu",
+      "quantity": "Miktar",
+      "addItem": "Satır ekle",
+      "removeItem": "Kaldır",
+      "domain": "Alan"
+    },
+    "outcomes": {
+      "ELIGIBLE": "Uygun",
+      "PARTIALLY_ELIGIBLE": "Kısmen uygun",
+      "INELIGIBLE": "Uygun değil",
+      "REVIEW_REQUIRED": "İnceleme gerekiyor",
+      "MISSING_DATA": "Eksik veri"
+    },
+    "planVersion": "Kullanılan plan sürümü",
+    "evaluationId": "Değerlendirme no",
+    "explanations": "Açıklamalar",
+    "balances": "Bakiyeler",
+    "items": "Satırlar",
+    "itemOutcomes": {
+      "ELIGIBLE": "Uygun",
+      "INELIGIBLE": "Uygun değil",
+      "REVIEW_REQUIRED": "İnceleme"
+    },
+    "empty": "Henüz sorgu yapılmadı.",
+    "codes": {
+      "PERSON_NOT_FOUND": "Hak sahibi bulunamadı.",
+      "PERSON_INACTIVE": "Hak sahibi kaydı aktif değil.",
+      "MEMBERSHIP_NONE": "Bu tarihte aktif sponsor üyeliği yok.",
+      "MEMBERSHIP_SUSPENDED": "Sponsor üyeliği askıda.",
+      "ENROLLMENT_NONE": "Bu tarihte aktif plan kaydı yok.",
+      "ENROLLMENT_SUSPENDED": "Plan kaydı askıda.",
+      "ENROLLMENT_MULTIPLE": "Birden fazla plan kaydı var; hangisinin geçerli olduğu belirsiz.",
+      "PLAN_VERSION_NONE": "Bu tarihte yayınlanmış plan sürümü yok.",
+      "BALANCE_INSUFFICIENT": "Bakiye istenen miktar için yeterli değil.",
+      "BALANCE_OVERDRAFT_ALLOWED": "Bakiye yetersiz ama bu hak eksiye izin veriyor.",
+      "SERVICE_MAPPING_PENDING": "Hizmet tanımı henüz hak koduna bağlanmadı; hak kodunu elle seçin."
+    }
+  },
+  "imports": {
+    "title": "Üye içe aktarma",
+    "intro": "Sponsorun üye dosyasını yükleyin. Satırlar önce ayrı bir alanda doğrulanır; hiçbir şey onaylanmadan canlı kayıtlara yazılmaz.",
+    "new": "Yeni içe aktarma",
+    "uploadTitle": "Dosya yükle",
+    "detailTitle": "İçe aktarma",
+    "columns": {
+      "file": "Dosya",
+      "source": "Kaynak",
+      "rows": "Satır",
+      "status": "Durum",
+      "created": "Yüklendi"
+    },
+    "empty": "İçe aktarma yok.",
+    "fields": {
+      "file": "Dosya (CSV)",
+      "fileHint": "UTF-8, başlık satırlı, noktalı virgül ya da virgül ayraçlı. En fazla 20 MB ve 50.000 satır.",
+      "sponsor": "Sponsor kurum",
+      "sourceSystem": "Kaynak sistem",
+      "sourceVersion": "Kaynak sürümü",
+      "sourceVersionHint": "Aynı dosyanın aynı sürümü ikinci kez yüklenemez.",
+      "plan": "Varsayılan plan",
+      "planHint": "Satırında plan kodu olmayan kayıtlar bu plana yazılır."
+    },
+    "statuses": {
+      "RECEIVED": "Alındı",
+      "VALIDATING": "Doğrulanıyor",
+      "REVIEW": "İnceleme bekliyor",
+      "READY": "Uygulanmaya hazır",
+      "APPLYING": "Uygulanıyor",
+      "APPLIED": "Uygulandı",
+      "FAILED": "Başarısız",
+      "CANCELLED": "İptal edildi"
+    },
+    "counters": {
+      "title": "Özet",
+      "rowCount": "Dosyadaki satır",
+      "valid": "Geçerli",
+      "invalid": "Hatalı",
+      "matched": "Eşleşen",
+      "conflict": "Çakışan",
+      "created": "Oluşturulan",
+      "updated": "Güncellenen",
+      "skipped": "Atlanan"
+    },
+    "rows": {
+      "title": "Satırlar",
+      "columns": {
+        "rowNo": "Satır",
+        "recordID": "Kaynak no",
+        "name": "Ad soyad",
+        "identifier": "Kimlik",
+        "status": "Durum",
+        "decision": "Karar"
+      },
+      "empty": "Bu filtrede satır yok.",
+      "statuses": {
+        "PENDING": "Bekliyor",
+        "VALID": "Geçerli",
+        "INVALID": "Hatalı",
+        "MATCHED": "Eşleşti",
+        "CONFLICT": "Çakışma",
+        "APPLIED": "Uygulandı",
+        "SKIPPED": "Atlandı"
+      },
+      "decisions": {
+        "CREATE": "Yeni kayıt",
+        "UPDATE": "Güncelle",
+        "SKIP": "Atla"
+      },
+      "chooseCandidate": "Hangi kayıt güncellenecek",
+      "reviewed": "Karar kaydedildi."
+    },
+    "apply": "Uygula",
+    "applyTitle": "İçe aktarmayı uygula",
+    "applyConfirm": "Kabul edilen satırlar canlı kayıtlara yazılacak. Hatalı ve atlanan satırlar atlanır. Bu işlem geri alınamaz.",
+    "applied": "Uygulama başlatıldı. Durum bu sayfada güncellenecek.",
+    "cancel": "İptal et",
+    "cancelTitle": "İçe aktarmayı iptal et",
+    "cancelled": "İçe aktarma iptal edildi.",
+    "duplicate": "Bu dosya bu kaynak sürümüyle zaten yüklendi."
   }
 }
