@@ -76,6 +76,7 @@ type LoginInput struct {
 type SessionView struct {
 	Session            identity.Session
 	DisplayName        string
+	Email              string
 	MustChangePassword bool
 }
 
@@ -138,6 +139,7 @@ func (s *Service) Login(ctx context.Context, in LoginInput) (SessionView, error)
 	return SessionView{
 		Session:            session,
 		DisplayName:        account.DisplayName,
+		Email:              account.Email,
 		MustChangePassword: account.MustChangePassword,
 	}, nil
 }
@@ -165,6 +167,7 @@ func (s *Service) Describe(ctx context.Context, sessionID string) (SessionView, 
 	return SessionView{
 		Session:            session,
 		DisplayName:        account.DisplayName,
+		Email:              account.Email,
 		MustChangePassword: account.MustChangePassword,
 	}, nil
 }

@@ -72,6 +72,13 @@ paths:
     get:
       tags: [Identity]
       operationId: getCurrentUserContext
+      security:
+        - sessionCookie: []
+      description: |
+        The signed-in actor with one context per active membership: tenant summary, the
+        permissions resolved from tenant-owned roles and access grants valid now, and any
+        narrowing scopes (ORGANIZATION, PROGRAM, ...). The frontend uses it to build the
+        tenant picker and to hide controls; the backend re-validates every call.
       responses:
         '200':
           description: Authenticated actor and tenant memberships
@@ -85,6 +92,11 @@ paths:
     get:
       tags: [Tenants]
       operationId: listAccessibleTenants
+      security:
+        - sessionCookie: []
+      description: |
+        Tenants in which the actor holds an active membership, ordered by display name. An
+        actor never learns about tenants it is not a member of.
       responses:
         '200':
           description: Tenants accessible to the current actor
@@ -92,12 +104,15 @@ paths:
             application/json:
               schema:
                 type: object
+                additionalProperties: false
                 required: [items]
                 properties:
                   items:
                     type: array
                     items:
                       $ref: '#/components/schemas/TenantSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /api/v1/session:
     get:
       tags: [Identity]
@@ -208,8 +223,12 @@ paths:
       tags: [Identity]
       operationId: switchTenant
       description: |
-        Selects the active tenant for the BFF session. The server verifies that the actor
-        holds an active membership; the X-Tenant-ID header is never trusted on its own.
+        Selects the active tenant for the session. The server verifies that the actor holds
+        an active membership; the X-Tenant-ID header on later calls must equal this tenant
+        and is never trusted on its own. A tenant the actor is not a member of and a tenant
+        that does not exist both answer 403 TENANT_ACCESS_DENIED.
+      security:
+        - sessionCookie: []
       parameters:
         - $ref: '#/components/parameters/CsrfHeader'
       requestBody:

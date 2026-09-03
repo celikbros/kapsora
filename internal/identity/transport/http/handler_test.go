@@ -73,6 +73,7 @@ type call struct {
 	method, path, body string
 	cookie             *http.Cookie
 	csrf               string
+	headers            map[string]string
 }
 
 func (s *server) do(c call) *httptest.ResponseRecorder {
@@ -87,6 +88,11 @@ func (s *server) do(c call) *httptest.ResponseRecorder {
 	}
 	if c.csrf != "" {
 		req.Header.Set(identityhttp.CSRFHeader, c.csrf)
+	}
+	for k, v := range c.headers {
+		if v != "" {
+			req.Header.Set(k, v)
+		}
 	}
 	rec := httptest.NewRecorder()
 	s.handler.ServeHTTP(rec, req)

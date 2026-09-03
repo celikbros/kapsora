@@ -1,5 +1,12 @@
 # WP-I1-02 · Authorization: tenant context, permissions, /me, /tenants, tenant switch, role templates, seed
 
+> **Delivered in-house on 2026-09-03.** Built as specified with two adjustments that follow
+> from ADR-022: the demo users are local accounts (`seed demo`, optional
+> `KAPSORA_SEED_DEMO_PASSWORD`) rather than Keycloak ids, and the platform-admin subject list
+> (section 4.3) was not added because provisioning is reachable only through `cmd/seed`,
+> which already refuses production-like environments. The stretch item (bearer-token service
+> accounts) was not done.
+
 | Field | Value |
 |---|---|
 | Milestone | M1 (plan increment I1) |

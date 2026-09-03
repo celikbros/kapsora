@@ -82,11 +82,11 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		},
 	})
 	if err != nil {
-		h.writeAuthError(w, r, err)
+		WriteAuthError(w, r, err, h.logger)
 		return
 	}
 	h.cookies.set(w, result.Session.ID)
-	writeJSON(w, http.StatusOK, h.sessionBody(result))
+	writeJSON(w, h.sessionBody(result))
 }
 
 // GetSession returns the current session and the CSRF token the frontend must echo.
@@ -99,10 +99,10 @@ func (h *Handler) GetSession(w http.ResponseWriter, r *http.Request) {
 	view, err := h.svc.Describe(r.Context(), session.ID)
 	if err != nil {
 		h.cookies.clear(w)
-		h.writeAuthError(w, r, err)
+		WriteAuthError(w, r, err, h.logger)
 		return
 	}
-	writeJSON(w, http.StatusOK, h.sessionBody(view))
+	writeJSON(w, h.sessionBody(view))
 }
 
 // Logout ends the session and clears the cookie. It is idempotent.
@@ -133,10 +133,10 @@ func (h *Handler) StepUp(w http.ResponseWriter, r *http.Request) {
 	}
 	until, err := h.svc.StepUp(r.Context(), session.ID, in.Password)
 	if err != nil {
-		h.writeAuthError(w, r, err)
+		WriteAuthError(w, r, err, h.logger)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"stepUpExpiresAt": until.UTC().Format(time.RFC3339)})
+	writeJSON(w, map[string]string{"stepUpExpiresAt": until.UTC().Format(time.RFC3339)})
 }
 
 type changePasswordRequest struct {
@@ -156,7 +156,7 @@ func (h *Handler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.svc.ChangePassword(r.Context(), session.ID, in.CurrentPassword, in.NewPassword); err != nil {
-		h.writeAuthError(w, r, err)
+		WriteAuthError(w, r, err, h.logger)
 		return
 	}
 	// The session id is unchanged, so the cookie stays valid.
@@ -183,62 +183,8 @@ func (h *Handler) sessionBody(v application.SessionView) sessionResponse {
 	return body
 }
 
-// writeAuthError maps application errors to stable codes. Login failures never say
-// whether the user name existed.
-func (h *Handler) writeAuthError(w http.ResponseWriter, r *http.Request, err error) {
-	switch {
-	case errors.Is(err, application.ErrInvalidCredentials):
-		httpx.WriteProblem(w, r, httpx.Problem{
-			Type:   httpx.ProblemTypeBase + "identity/invalid-credentials",
-			Title:  "Kullanıcı adı veya parola hatalı",
-			Status: http.StatusUnauthorized,
-			Code:   "INVALID_CREDENTIALS",
-		})
-	case errors.Is(err, application.ErrAccountLocked):
-		httpx.WriteProblem(w, r, httpx.Problem{
-			Type:   httpx.ProblemTypeBase + "identity/account-locked",
-			Title:  "Hesap geçici olarak kilitlendi",
-			Status: http.StatusForbidden,
-			Code:   "ACCOUNT_LOCKED",
-			Detail: "Art arda hatalı deneme nedeniyle hesap kısa süreliğine kilitlendi.",
-		})
-	case errors.Is(err, application.ErrActorSuspended):
-		httpx.WriteProblem(w, r, httpx.Problem{
-			Type:   httpx.ProblemTypeBase + "identity/actor-suspended",
-			Title:  "Hesap kullanıma kapalı",
-			Status: http.StatusForbidden,
-			Code:   "ACTOR_SUSPENDED",
-		})
-	case errors.Is(err, identity.ErrSessionNotFound), errors.Is(err, identity.ErrUnauthenticated):
-		h.unauthenticated(w, r)
-	case errors.Is(err, domain.ErrPasswordTooShort), errors.Is(err, domain.ErrPasswordTooLong),
-		errors.Is(err, domain.ErrPasswordTooCommon):
-		httpx.WriteProblem(w, r, httpx.Problem{
-			Type:   httpx.ProblemTypeBase + "identity/password-policy",
-			Title:  "Parola kurallara uymuyor",
-			Status: http.StatusUnprocessableEntity,
-			Code:   "PASSWORD_POLICY_VIOLATION",
-			Detail: err.Error(),
-			Errors: []httpx.FieldError{{Field: "newPassword", Code: "PASSWORD_POLICY_VIOLATION"}},
-		})
-	default:
-		h.logger.Error("authentication failed", "error", err)
-		httpx.WriteProblem(w, r, httpx.Problem{
-			Type:   httpx.ProblemTypeBase + "generic/internal-error",
-			Title:  "Beklenmeyen hata",
-			Status: http.StatusInternalServerError,
-			Code:   "INTERNAL_ERROR",
-		})
-	}
-}
-
 func (h *Handler) unauthenticated(w http.ResponseWriter, r *http.Request) {
-	httpx.WriteProblem(w, r, httpx.Problem{
-		Type:   httpx.ProblemTypeBase + "identity/unauthenticated",
-		Title:  "Oturum bulunamadı",
-		Status: http.StatusUnauthorized,
-		Code:   "UNAUTHENTICATED",
-	})
+	WriteAuthError(w, r, identity.ErrUnauthenticated, h.logger)
 }
 
 func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) bool {
@@ -256,10 +202,10 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) bool {
 	return true
 }
 
-func writeJSON(w http.ResponseWriter, status int, body any) {
+func writeJSON(w http.ResponseWriter, body any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
-	w.WriteHeader(status)
+	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(body)
 }
 

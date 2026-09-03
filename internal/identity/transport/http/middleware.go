@@ -17,6 +17,7 @@ const CSRFHeader = "X-CSRF-Token"
 // Middleware loads the session and enforces CSRF on cookie-authenticated writes.
 type Middleware struct {
 	svc     *application.Service
+	authz   *application.Authorizer
 	cookies CookieConfig
 	signing []byte
 	logger  *slog.Logger

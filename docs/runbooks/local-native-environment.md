@@ -38,6 +38,15 @@ Docker, Kubernetes, Valkey/Redis kullanılmaz (ADR-021).
   ```
 
   Parola bir kez ekrana yazılır ve ilk kullanımda değiştirilmesi istenir.
+
+  Demo veri seti (iki kurum, beş kullanıcı, roller) için:
+
+  ```sh
+  KAPSORA_SEED_DEMO_PASSWORD='uzun bir demo parolası' go run ./cmd/seed demo
+  ```
+
+  Kullanıcılar: `admin.a`, `reviewer.a`, `provider.a` (DEMO_A), `admin.b` (DEMO_B),
+  `both.ab` (her ikisinde denetçi). Komut tekrar çalıştırılabilir; var olanı atlar.
 - (Kaldırıldı) Keycloak: JDK 21 kurun, Keycloak 26.7 zip'ini `tools/keycloak` altına açın,
   `bin\kc.bat start-dev --http-port=8081 --import-realm` (realm dosyası WP-I1-01 ile gelir).
 - MinIO: `minio.exe server C:\kapsora-data\minio --console-address :9001`.
