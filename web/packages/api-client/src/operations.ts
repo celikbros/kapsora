@@ -1,9 +1,14 @@
 import { benefitOperations } from './benefit';
+import { catalogOperations } from './catalog';
 import type { KapsoraClient } from './client';
+import { contractOperations } from './contract';
 import { eligibilityOperations } from './eligibility';
 import { entitlementOperations } from './entitlements';
 import { memberImportOperations } from './imports';
 import { peopleOperations } from './people';
+import { pricingOperations } from './pricing';
+import { providerOperations } from './provider';
+import { ruleOperations } from './rules';
 import { randomId } from './client';
 import type { components } from './generated/kapsora-v1';
 import { unwrap } from './problem';
@@ -130,6 +135,11 @@ export function createOperations(client: KapsoraClient) {
     entitlements: entitlementOperations(client),
     eligibility: eligibilityOperations(client),
     imports: memberImportOperations(client),
+    catalog: catalogOperations(client),
+    providers: providerOperations(client),
+    contracts: contractOperations(client),
+    rules: ruleOperations(client),
+    pricing: pricingOperations(client),
   };
 }
 

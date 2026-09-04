@@ -6,9 +6,14 @@
 import { HttpResponse, http, type HttpHandler, type PathParams } from 'msw';
 
 import { benefitHandlers } from './benefit-handlers';
+import { catalogHandlers } from './catalog-handlers';
+import { contractHandlers } from './contract-handlers';
 import { eligibilityHandlers } from './eligibility-handlers';
 import { entitlementHandlers } from './entitlement-handlers';
 import { importHandlers } from './import-handlers';
+import { pricingHandlers } from './pricing-handlers';
+import { providerHandlers } from './provider-handlers';
+import { rulesHandlers } from './rules-handlers';
 import type { components } from '../generated/kapsora-v1';
 import { isValidTCKN, isValidVKN, normalizeDigits } from '../identifiers';
 import {
@@ -266,10 +271,61 @@ export function etagOf(version: number): string {
   return `"${version}"`;
 }
 
+/** The 404 every route answers for a row the caller may not see or that does not exist. */
+export function notFound(api: MockApi): Response {
+  return problem(api, 404, 'RESOURCE_NOT_FOUND', 'Kaynak bulunamadı');
+}
+
+/** Rejects a body that is not a merge-patch document. */
+export function requireMergePatch(api: MockApi, request: Request): Response | null {
+  const type = (request.headers.get('Content-Type') ?? '').toLowerCase();
+  return type.startsWith('application/merge-patch+json')
+    ? null
+    : problem(
+        api,
+        415,
+        'UNSUPPORTED_MEDIA_TYPE',
+        'Content-Type application/merge-patch+json olmalı',
+      );
+}
+
+/** True when `date` falls inside the half-open period [from, to). */
+export function withinPeriod(date: string, from: string | null, to: string | null): boolean {
+  if (from !== null && date < from) return false;
+  return to === null || date < to;
+}
+
+/** Two half-open periods overlap when each starts before the other ends. */
+export function periodsOverlap(
+  aFrom: string,
+  aTo: string | null,
+  bFrom: string,
+  bTo: string | null,
+): boolean {
+  return (aTo === null || bFrom < aTo) && (bTo === null || aFrom < bTo);
+}
+
 export function parseIfMatch(raw: string | null): number | null {
   if (!raw) return null;
   const m = /^(?:W\/)?"(\d+)"$/.exec(raw.trim());
   return m ? Number(m[1]) : null;
+}
+
+/**
+ * True when the session carries `permission` in the tenant it is acting for. Used where a
+ * route is readable by two grants and answers differently for each — a draft contract
+ * version, for instance, is invisible to a caller holding only `contract.read`.
+ */
+export function hasPermission(
+  api: MockApi,
+  session: MockSession,
+  tenantId: string,
+  permission: string,
+): boolean {
+  const tenant = api.world.tenants.find((t) => t.id === tenantId);
+  if (!tenant) return false;
+  const membership = session.account.memberships.find((m) => m.tenantCode === tenant.code);
+  return membership?.permissions.includes(permission) ?? false;
 }
 
 /** True while the session's step-up (password re-entry) is still fresh. */
@@ -1355,6 +1411,12 @@ export function createHandlers(api: MockApi): HttpHandler[] {
     ...benefitHandlers(api),
     ...entitlementHandlers(api),
     ...importHandlers(api),
+    // M3: catalog, providers, contracts and prices, rules, quotes.
+    ...catalogHandlers(api),
+    ...providerHandlers(api),
+    ...contractHandlers(api),
+    ...rulesHandlers(api),
+    ...pricingHandlers(api),
   ];
 }
 

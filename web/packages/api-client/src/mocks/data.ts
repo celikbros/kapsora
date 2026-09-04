@@ -111,6 +111,59 @@ export function addDecimal(a: Decimal, b: Decimal): Decimal {
   return toDecimal(Number(a) + Number(b));
 }
 
+// --- exact decimal arithmetic ---------------------------------------------------------
+// Money and quantities in M3 are numeric(20,6) decimal strings end to end. Every sum,
+// product and comparison below runs on integer micro-units held in BigInt, so no amount
+// ever passes through a binary float: `Number('0.1') + Number('0.2')` is exactly the class
+// of error a tariff row must never contain.
+
+const MICROS = 1_000_000n;
+const DECIMAL_TEXT = /^(-?)(\d{1,20})(?:\.(\d{1,6}))?$/;
+
+/** Parses an exact decimal string into integer micro-units; anything unparsable is zero. */
+export function toMicros(value: Decimal | null | undefined): bigint {
+  const m = DECIMAL_TEXT.exec((value ?? '').trim());
+  if (!m) return 0n;
+  const sign = m[1] === '-' ? -1n : 1n;
+  const fraction = (m[3] ?? '').padEnd(6, '0');
+  return sign * (BigInt(m[2]!) * MICROS + BigInt(fraction));
+}
+
+/** Renders integer micro-units back as the canonical six-decimal string. */
+export function fromMicros(micros: bigint): Decimal {
+  const negative = micros < 0n;
+  const abs = negative ? -micros : micros;
+  const whole = abs / MICROS;
+  const fraction = (abs % MICROS).toString().padStart(6, '0');
+  return `${negative ? '-' : ''}${whole}.${fraction}`;
+}
+
+/** Multiplies two micro-unit values, rounding the product half away from zero. */
+export function multiplyMicros(a: bigint, b: bigint): bigint {
+  const product = a * b;
+  const negative = product < 0n;
+  const abs = negative ? -product : product;
+  const rounded = (abs + MICROS / 2n) / MICROS;
+  return negative ? -rounded : rounded;
+}
+
+/** `amount` × `percent`/100, in micro-units; used for member shares and percent prices. */
+export function percentOfMicros(amount: bigint, percent: bigint): bigint {
+  return multiplyMicros(amount, percent) / 100n;
+}
+
+/** Orders two decimal strings exactly: -1, 0 or 1. */
+export function compareDecimal(a: Decimal, b: Decimal): number {
+  const left = toMicros(a);
+  const right = toMicros(b);
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
+/** True when the text is a decimal the mock can compare exactly. */
+export function isDecimalText(value: string): boolean {
+  return DECIMAL_TEXT.test(value.trim());
+}
+
 /** Small, deterministic hex digest so `configurationHash` looks like a real sha256. */
 export function pseudoHash(seed: string): string {
   let h = 0x811c9dc5;
@@ -371,6 +424,321 @@ export interface StoredImportRow {
   rowVersion: number;
 }
 
+// --- M3: catalog, providers, contracts, rules and pricing -----------------------------
+
+export interface StoredServiceCategory {
+  id: string;
+  tenantId: string;
+  parentId: string | null;
+  code: string;
+  name: string;
+  domain: Schemas['ServiceDomain'];
+  active: boolean;
+  rowVersion: number;
+}
+
+export interface StoredServiceDefinition {
+  id: string;
+  tenantId: string;
+  categoryId: string;
+  code: string;
+  name: string;
+  description: string | null;
+  fulfillmentMode: Schemas['FulfillmentMode'];
+  defaultUnitType: Schemas['ServiceUnitType'];
+  requiresProvider: boolean;
+  active: boolean;
+  rowVersion: number;
+}
+
+export interface StoredCodeSystem {
+  id: string;
+  tenantId: string;
+  code: string;
+  name: string;
+  version: string;
+  authority: Schemas['CodeSystemAuthority'];
+  licensed: boolean;
+  status: 'ACTIVE' | 'INACTIVE';
+  validFrom: string;
+  validTo: string | null;
+  rowVersion: number;
+}
+
+export interface StoredCodeValue {
+  id: string;
+  tenantId: string;
+  codeSystemId: string;
+  code: string;
+  display: string;
+  parentCode: string | null;
+  validFrom: string;
+  validTo: string | null;
+  active: boolean;
+  attributes: Record<string, unknown>;
+}
+
+export interface StoredCodeMapping {
+  id: string;
+  tenantId: string;
+  serviceDefinitionId: string;
+  codeSystemId: string;
+  code: string;
+  validFrom: string;
+  validTo: string | null;
+  primary: boolean;
+}
+
+export interface StoredProvider {
+  id: string;
+  tenantId: string;
+  /** The tenant's organization relationship carrying the PROVIDER role. */
+  tenantOrganizationId: string;
+  providerType: Schemas['ProviderType'];
+  status: Schemas['ProviderStatus'];
+  networkTier: string | null;
+  contractedFrom: string | null;
+  contractedTo: string | null;
+  notes: string | null;
+  rowVersion: number;
+}
+
+export interface StoredProviderLocation {
+  id: string;
+  tenantId: string;
+  providerId: string;
+  code: string;
+  name: string;
+  addressLine: string | null;
+  district: string | null;
+  city: string | null;
+  countryCode: string;
+  postalCode: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  timezone: string;
+  phone: string | null;
+  status: Schemas['ProviderLocationStatus'];
+  rowVersion: number;
+}
+
+export interface StoredProviderCapability {
+  id: string;
+  tenantId: string;
+  locationId: string;
+  serviceDefinitionId: string | null;
+  serviceCategoryId: string | null;
+  validFrom: string;
+  validTo: string | null;
+  notes: string | null;
+}
+
+export interface StoredPractitionerLocation {
+  id: string;
+  practitionerId: string;
+  locationId: string;
+  role: Schemas['PractitionerRole'];
+  validFrom: string;
+  validTo: string | null;
+}
+
+export interface StoredPractitioner {
+  id: string;
+  tenantId: string;
+  providerId: string;
+  personId: string | null;
+  fullName: string;
+  title: string | null;
+  branchCode: string | null;
+  registrationAuthority: Schemas['RegistrationAuthority'];
+  /**
+   * Plain registration number, kept only inside the mock so the blind-index search can be
+   * emulated. It is never returned, never logged and never put in a URL: responses carry
+   * `maskedRegistrationNumber` only.
+   */
+  registrationNumber: string;
+  validFrom: string | null;
+  validTo: string | null;
+  status: Schemas['PractitionerStatus'];
+  locations: StoredPractitionerLocation[];
+  rowVersion: number;
+}
+
+export interface StoredContract {
+  id: string;
+  tenantId: string;
+  code: string;
+  name: string;
+  payerOrganizationId: string;
+  providerProfileId: string;
+  sponsorOrganizationId: string | null;
+  domainCode: Schemas['ServiceDomain'];
+  status: Schemas['ContractStatus'];
+  rowVersion: number;
+}
+
+export interface StoredContractVersion {
+  id: string;
+  tenantId: string;
+  contractId: string;
+  versionNo: number;
+  status: Schemas['ContractVersionStatus'];
+  validFrom: string | null;
+  validTo: string | null;
+  currencyCode: string;
+  notes: string | null;
+  configurationHash: string | null;
+  submittedAt: string | null;
+  submittedBy: string | null;
+  publishedAt: string | null;
+  publishedBy: string | null;
+  reviewComment: string | null;
+  retireReasonCode: string | null;
+  rowVersion: number;
+}
+
+export interface StoredPriceList {
+  id: string;
+  tenantId: string;
+  contractVersionId: string;
+  code: string;
+  name: string;
+  priority: number;
+  seasonFrom: string | null;
+  seasonTo: string | null;
+  /** Bit 1 = Monday … bit 64 = Sunday; null means every day. */
+  weekdayMask: number | null;
+  rowVersion: number;
+}
+
+/** One tariff row. Every amount is an exact decimal string, never a JS number. */
+export interface StoredPriceItem {
+  id: string;
+  tenantId: string;
+  priceListId: string;
+  serviceDefinitionId: string | null;
+  serviceCategoryId: string | null;
+  packageDefinitionId: string | null;
+  locationId: string | null;
+  unitType: Schemas['ServiceUnitType'];
+  pricingMethod: Schemas['PricingMethod'];
+  amount: Decimal | null;
+  percent: Decimal | null;
+  formulaKey: string | null;
+  minAmount: Decimal | null;
+  maxAmount: Decimal | null;
+  memberShareMethod: Schemas['MemberShareMethod'];
+  memberShareAmount: Decimal | null;
+  memberSharePercent: Decimal | null;
+  validFrom: string;
+  validTo: string | null;
+  priority: number;
+}
+
+export interface StoredPackageLine {
+  serviceDefinitionId: string;
+  includedQuantity: Decimal;
+}
+
+export interface StoredPackageDefinition {
+  id: string;
+  tenantId: string;
+  contractVersionId: string;
+  code: string;
+  name: string;
+  inclusionRule: Schemas['PackageInclusionRule'];
+  minLines: number | null;
+  lines: StoredPackageLine[];
+}
+
+export interface StoredProviderQuota {
+  id: string;
+  tenantId: string;
+  contractVersionId: string;
+  locationId: string | null;
+  serviceDefinitionId: string | null;
+  periodType: Schemas['QuotaPeriodType'];
+  periodFrom: string;
+  periodTo: string;
+  capacity: Decimal;
+  consumed: Decimal;
+  allowOverdraft: boolean;
+}
+
+export interface StoredPaymentTerm {
+  id: string;
+  tenantId: string;
+  contractVersionId: string;
+  dueDays: number;
+  settlementMethod: Schemas['SettlementMethod'];
+  taxBehaviour: Schemas['TaxBehaviour'];
+  vatRate: Decimal | null;
+  lateFeePercent: Decimal | null;
+  rowVersion: number;
+}
+
+export interface StoredRuleSet {
+  id: string;
+  tenantId: string;
+  code: string;
+  name: string;
+  domainCode: Schemas['ServiceDomain'];
+  purpose: Schemas['RuleSetPurpose'];
+  status: Schemas['RuleSetStatus'];
+  rowVersion: number;
+}
+
+export interface StoredRule {
+  id: string;
+  code: string;
+  name: string;
+  priority: number;
+  condition: string;
+  actions: Schemas['RuleAction'][];
+  explanationCode: string;
+  explanationParams: Record<string, unknown> | null;
+  stopOnMatch: boolean;
+  active: boolean;
+}
+
+export interface StoredRuleTestCase {
+  id: string;
+  code: string;
+  description: string | null;
+  input: Record<string, unknown>;
+  expectedOutcome: Schemas['RuleOutcome'];
+  expectedExplanations: string[];
+  expectedActions: Schemas['RuleAction'][] | null;
+}
+
+export interface StoredRuleSetVersion {
+  id: string;
+  tenantId: string;
+  ruleSetId: string;
+  versionNo: number;
+  status: Schemas['RuleSetVersionStatus'];
+  validFrom: string | null;
+  validTo: string | null;
+  inputSchema: Record<string, Schemas['RuleInputType']>;
+  notes: string | null;
+  contentHash: string | null;
+  submittedAt: string | null;
+  submittedBy: string | null;
+  publishedAt: string | null;
+  publishedBy: string | null;
+  reviewComment: string | null;
+  retireReasonCode: string | null;
+  rules: StoredRule[];
+  testCases: StoredRuleTestCase[];
+  rowVersion: number;
+}
+
+/** An append-only recorded decision. Simulations and test runs never produce one. */
+export type StoredRuleEvaluation = Schemas['RuleEvaluation'] & { tenantId: string };
+
+/** A stored quote. It reserves nothing: no account and no ledger row is ever touched. */
+export type StoredPriceQuote = Schemas['PriceQuote'] & { tenantId: string };
+
 /** Reference catalogs; tenant-independent so every tenant sees the same options. */
 export const IDENTIFIER_TYPE_CATALOG: Schemas['PartyCatalogEntry'][] = [
   {
@@ -447,6 +815,18 @@ const ADMIN_PERMISSIONS = [
   'entitlement.adjust',
   'service_request.read',
   'service_request.manage',
+  'catalog.read',
+  'catalog.manage',
+  'provider.read',
+  'provider.manage',
+  'provider.practitioner.manage',
+  'contract.read',
+  'contract.manage',
+  'contract.publish',
+  'rule.read',
+  'rule.draft',
+  'rule.publish',
+  'pricing.quote',
   'import.execute',
   'identity.user.read',
   'identity.user.manage',
@@ -462,6 +842,11 @@ const REVIEWER_PERMISSIONS = [
   'entitlement.read',
   'service_request.read',
   'service_request.review',
+  // Read-only M3 grants: enough to see the agreed prices and rules, never the drafts.
+  'catalog.read',
+  'provider.read',
+  'contract.read',
+  'rule.read',
 ];
 
 const ORG_PREFIXES = [
@@ -585,6 +970,26 @@ export interface MockWorld {
   evaluations: Map<string, StoredEvaluation>;
   importBatches: StoredImportBatch[];
   importRows: StoredImportRow[];
+  serviceCategories: StoredServiceCategory[];
+  serviceDefinitions: StoredServiceDefinition[];
+  codeSystems: StoredCodeSystem[];
+  codeValues: StoredCodeValue[];
+  codeMappings: StoredCodeMapping[];
+  providers: StoredProvider[];
+  providerLocations: StoredProviderLocation[];
+  providerCapabilities: StoredProviderCapability[];
+  practitioners: StoredPractitioner[];
+  contracts: StoredContract[];
+  contractVersions: StoredContractVersion[];
+  priceLists: StoredPriceList[];
+  priceItems: StoredPriceItem[];
+  packageDefinitions: StoredPackageDefinition[];
+  providerQuotas: StoredProviderQuota[];
+  paymentTerms: StoredPaymentTerm[];
+  ruleSets: StoredRuleSet[];
+  ruleSetVersions: StoredRuleSetVersion[];
+  ruleEvaluations: StoredRuleEvaluation[];
+  priceQuotes: StoredPriceQuote[];
   nextId: (offsetMs?: number) => string;
   random: () => number;
 }
@@ -1282,6 +1687,629 @@ export function buildWorld(
     createdBy: null,
   });
 
+  // --- M3 catalog: a three-level category tree plus one isolated pricing branch.
+  const category = (
+    code: string,
+    name: string,
+    parentId: string | null,
+  ): StoredServiceCategory => ({
+    id: nextId(),
+    tenantId: demoA.id,
+    parentId,
+    code,
+    name,
+    domain: 'HEALTH',
+    active: true,
+    rowVersion: 1,
+  });
+  const catHealth = category('HEALTH', 'Sağlık Hizmetleri', null);
+  const catOutpatient = category('HEALTH_OUTPATIENT', 'Ayakta Tedavi', catHealth.id);
+  const catPhysio = category('HEALTH_PHYSIO', 'Fizik Tedavi', catOutpatient.id);
+  const catImaging = category('HEALTH_IMAGING', 'Görüntüleme', catHealth.id);
+  // Kept apart from the tree above: it exists only to hold the ambiguous price pair, so
+  // no other fixture can trip over the tie.
+  const catPricingLab = category('PRICING_LAB', 'Laboratuvar (fiyat çakışma örneği)', null);
+  const serviceCategories: StoredServiceCategory[] = [
+    catHealth,
+    catOutpatient,
+    catPhysio,
+    catImaging,
+    catPricingLab,
+  ];
+
+  const definition = (
+    categoryId: string,
+    code: string,
+    name: string,
+    fulfillmentMode: Schemas['FulfillmentMode'],
+    defaultUnitType: Schemas['ServiceUnitType'],
+  ): StoredServiceDefinition => ({
+    id: nextId(),
+    tenantId: demoA.id,
+    categoryId,
+    code,
+    name,
+    description: null,
+    fulfillmentMode,
+    defaultUnitType,
+    requiresProvider: true,
+    active: true,
+    rowVersion: 1,
+  });
+  const defPhysio = definition(
+    catPhysio.id,
+    'PHYSIO_SESSION',
+    'Fizyoterapi Seansı',
+    'SESSION',
+    'SESSION',
+  );
+  const defGpVisit = definition(
+    catOutpatient.id,
+    'GP_VISIT',
+    'Pratisyen Muayenesi',
+    'APPOINTMENT',
+    'COUNT',
+  );
+  const defMri = definition(catImaging.id, 'MRI_SCAN', 'MR Çekimi', 'APPOINTMENT', 'COUNT');
+  const defAmbiguous = definition(
+    catPricingLab.id,
+    'LAB_PANEL_AMBIGUOUS',
+    'Laboratuvar Paneli (çakışan fiyat)',
+    'DIRECT',
+    'COUNT',
+  );
+  const serviceDefinitions: StoredServiceDefinition[] = [
+    defPhysio,
+    defGpVisit,
+    defMri,
+    defAmbiguous,
+  ];
+
+  const codeSystemSut: StoredCodeSystem = {
+    id: nextId(),
+    tenantId: demoA.id,
+    code: 'SUT',
+    name: 'Sağlık Uygulama Tebliği',
+    version: '2026',
+    authority: 'SGK',
+    licensed: false,
+    status: 'ACTIVE',
+    validFrom: '2026-01-01',
+    validTo: null,
+    rowVersion: 1,
+  };
+  const codeValue = (
+    code: string,
+    display: string,
+    parentCode: string | null,
+    validFrom = '2026-01-01',
+  ): StoredCodeValue => ({
+    id: nextId(),
+    tenantId: demoA.id,
+    codeSystemId: codeSystemSut.id,
+    code,
+    display,
+    parentCode,
+    validFrom,
+    validTo: null,
+    active: true,
+    attributes: {},
+  });
+  const codeValues: StoredCodeValue[] = [
+    codeValue('P', 'Fizik tedavi ve rehabilitasyon', null),
+    codeValue('520030', 'Fizik tedavi seansı', 'P'),
+    codeValue('803930', 'Manyetik rezonans görüntüleme', null),
+    codeValue('530010', 'Pratisyen hekim muayenesi', null),
+    // Retired at the end of 2026, so an asOf in 2027 must not return it.
+    { ...codeValue('520031', 'Fizik tedavi seansı (eski)', 'P'), validTo: '2027-01-01' },
+  ];
+  const codeMappings: StoredCodeMapping[] = [
+    {
+      id: nextId(),
+      tenantId: demoA.id,
+      serviceDefinitionId: defPhysio.id,
+      codeSystemId: codeSystemSut.id,
+      code: '520030',
+      validFrom: '2026-01-01',
+      validTo: null,
+      primary: true,
+    },
+  ];
+
+  // --- M3 provider: one profile, two locations, two capabilities, three practitioners.
+  const providerOrgId = nextId();
+  organizations.set(providerOrgId, {
+    organizationId: providerOrgId,
+    legalName: 'Kapsora Anlaşmalı Sağlık Grubu A.Ş.',
+    displayName: 'Kapsora Anlaşmalı Sağlık Grubu',
+    organizationKind: 'PROVIDER',
+    countryCode: 'TR',
+    organizationStatus: 'ACTIVE',
+    taxNumber: { type: 'VKN', value: randomVKN(random) },
+    otherIdentifiers: [],
+  });
+  const providerRel: StoredRelationship = {
+    id: nextId(),
+    tenantId: demoA.id,
+    organizationId: providerOrgId,
+    relationshipRole: 'PROVIDER',
+    relationshipStatus: 'ACTIVE',
+    tenantCode: null,
+    validFrom: '2025-12-01',
+    validTo: null,
+    createdAt: isoDaysAgo(base, 300),
+    rowVersion: 1,
+  };
+  relationships.push(providerRel);
+
+  const providerHealth: StoredProvider = {
+    id: nextId(),
+    tenantId: demoA.id,
+    tenantOrganizationId: providerRel.id,
+    providerType: 'HOSPITAL',
+    status: 'ACTIVE',
+    networkTier: 'A',
+    contractedFrom: '2026-01-01',
+    contractedTo: null,
+    notes: null,
+    rowVersion: 1,
+  };
+  const providers: StoredProvider[] = [providerHealth];
+
+  const locationIstanbul: StoredProviderLocation = {
+    id: nextId(),
+    tenantId: demoA.id,
+    providerId: providerHealth.id,
+    code: 'IST-01',
+    name: 'Kadıköy Tıp Merkezi',
+    addressLine: 'Bağdat Caddesi No: 120',
+    district: 'Kadıköy',
+    city: 'İstanbul',
+    countryCode: 'TR',
+    postalCode: '34710',
+    latitude: 40.9833,
+    longitude: 29.0333,
+    timezone: 'Europe/Istanbul',
+    phone: '+902165550101',
+    status: 'ACTIVE',
+    rowVersion: 1,
+  };
+  const locationAnkara: StoredProviderLocation = {
+    id: nextId(),
+    tenantId: demoA.id,
+    providerId: providerHealth.id,
+    code: 'ANK-01',
+    name: 'Çankaya Poliklinik',
+    addressLine: 'Atatürk Bulvarı No: 45',
+    district: 'Çankaya',
+    city: 'Ankara',
+    countryCode: 'TR',
+    postalCode: '06680',
+    latitude: 39.9208,
+    longitude: 32.8541,
+    timezone: 'Europe/Istanbul',
+    phone: '+903125550202',
+    status: 'ACTIVE',
+    rowVersion: 1,
+  };
+  const providerLocations: StoredProviderLocation[] = [locationIstanbul, locationAnkara];
+
+  const providerCapabilities: StoredProviderCapability[] = [
+    // A category capability: it covers every definition under HEALTH_OUTPATIENT,
+    // including PHYSIO_SESSION one level further down and any added later.
+    {
+      id: nextId(),
+      tenantId: demoA.id,
+      locationId: locationIstanbul.id,
+      serviceDefinitionId: null,
+      serviceCategoryId: catOutpatient.id,
+      validFrom: '2026-01-01',
+      validTo: null,
+      notes: 'Ayakta tedavi hizmetlerinin tamamı',
+    },
+    // A definition capability: only this one service, and only here.
+    {
+      id: nextId(),
+      tenantId: demoA.id,
+      locationId: locationIstanbul.id,
+      serviceDefinitionId: defMri.id,
+      serviceCategoryId: null,
+      validFrom: '2026-01-01',
+      validTo: null,
+      notes: null,
+    },
+  ];
+
+  const practitioner = (
+    fullName: string,
+    title: string,
+    branchCode: string,
+    registrationNumber: string,
+    locations: { locationId: string; role: Schemas['PractitionerRole'] }[],
+  ): StoredPractitioner => {
+    const id = nextId();
+    return {
+      id,
+      tenantId: demoA.id,
+      providerId: providerHealth.id,
+      personId: null,
+      fullName,
+      title,
+      branchCode,
+      registrationAuthority: 'TTB',
+      registrationNumber,
+      validFrom: '2026-01-01',
+      validTo: null,
+      status: 'ACTIVE',
+      locations: locations.map((l) => ({
+        id: nextId(),
+        practitionerId: id,
+        locationId: l.locationId,
+        role: l.role,
+        validFrom: '2026-01-01',
+        validTo: null,
+      })),
+      rowVersion: 1,
+    };
+  };
+  const practitioners: StoredPractitioner[] = [
+    practitioner('Elif Şahin', 'Dr.', 'FTR', '10045001', [
+      { locationId: locationIstanbul.id, role: 'ATTENDING' },
+    ]),
+    practitioner('Murat Kılıç', 'Uzm. Dr.', 'RAD', '10045002', [
+      { locationId: locationIstanbul.id, role: 'CONSULTANT' },
+      { locationId: locationAnkara.id, role: 'CONSULTANT' },
+    ]),
+    practitioner('Zeynep Arslan', 'Fzt.', 'FTR', '10045003', [
+      { locationId: locationAnkara.id, role: 'TECHNICIAN' },
+    ]),
+  ];
+
+  // --- M3 contract: one published version with a full price sheet, one draft beside it.
+  const contractHealth: StoredContract = {
+    id: nextId(),
+    tenantId: demoA.id,
+    code: 'HLT-2026',
+    name: 'Sağlık Hizmet Sözleşmesi 2026',
+    payerOrganizationId: payerRel.id,
+    providerProfileId: providerHealth.id,
+    sponsorOrganizationId: sponsorRel.id,
+    domainCode: 'HEALTH',
+    status: 'ACTIVE',
+    rowVersion: 1,
+  };
+  const contracts: StoredContract[] = [contractHealth];
+
+  const publishedContractVersion: StoredContractVersion = {
+    id: nextId(),
+    tenantId: demoA.id,
+    contractId: contractHealth.id,
+    versionNo: 1,
+    status: 'PUBLISHED',
+    validFrom: '2026-01-01',
+    validTo: null,
+    currencyCode: 'TRY',
+    notes: null,
+    configurationHash: pseudoHash(`${contractHealth.code}:1`),
+    submittedAt: isoDaysAgo(base, 240),
+    submittedBy: accounts[0]!.actorId, // admin.a (maker)
+    publishedAt: isoDaysAgo(base, 239),
+    publishedBy: accounts[3]!.actorId, // both.ab (checker)
+    reviewComment: null,
+    retireReasonCode: null,
+    rowVersion: 3,
+  };
+  const draftContractVersion: StoredContractVersion = {
+    id: nextId(),
+    tenantId: demoA.id,
+    contractId: contractHealth.id,
+    versionNo: 2,
+    status: 'DRAFT',
+    validFrom: '2027-01-01',
+    validTo: null,
+    currencyCode: 'TRY',
+    notes: '2027 zam görüşmesi taslağı',
+    configurationHash: null,
+    submittedAt: null,
+    submittedBy: null,
+    publishedAt: null,
+    publishedBy: null,
+    reviewComment: null,
+    retireReasonCode: null,
+    rowVersion: 1,
+  };
+  const contractVersions: StoredContractVersion[] = [
+    publishedContractVersion,
+    draftContractVersion,
+  ];
+
+  const standardList: StoredPriceList = {
+    id: nextId(),
+    tenantId: demoA.id,
+    contractVersionId: publishedContractVersion.id,
+    code: 'STD',
+    name: 'Standart Tarife',
+    priority: 100,
+    seasonFrom: null,
+    seasonTo: null,
+    weekdayMask: null,
+    rowVersion: 1,
+  };
+  const winterList: StoredPriceList = {
+    id: nextId(),
+    tenantId: demoA.id,
+    contractVersionId: publishedContractVersion.id,
+    code: 'WINTER',
+    name: 'Kış Dönemi Tarifesi',
+    priority: 200,
+    seasonFrom: '2026-12-01',
+    seasonTo: '2027-03-01',
+    weekdayMask: null,
+    rowVersion: 1,
+  };
+  const priceLists: StoredPriceList[] = [standardList, winterList];
+
+  const packageCheckup: StoredPackageDefinition = {
+    id: nextId(),
+    tenantId: demoA.id,
+    contractVersionId: publishedContractVersion.id,
+    code: 'CHECKUP',
+    name: 'Yıllık Kontrol Paketi',
+    inclusionRule: 'ALL',
+    minLines: null,
+    // GP_VISIT is deliberately not a package line: it is the fixture that proves a
+    // definition with no price of its own resolves through its category.
+    lines: [
+      { serviceDefinitionId: defMri.id, includedQuantity: '1.000000' },
+      { serviceDefinitionId: defPhysio.id, includedQuantity: '4.000000' },
+    ],
+  };
+  const packageDefinitions: StoredPackageDefinition[] = [packageCheckup];
+
+  const priceItem = (
+    priceListId: string,
+    target: Partial<
+      Pick<
+        StoredPriceItem,
+        'serviceDefinitionId' | 'serviceCategoryId' | 'packageDefinitionId' | 'locationId'
+      >
+    >,
+    rest: Pick<StoredPriceItem, 'unitType' | 'pricingMethod' | 'amount'> & Partial<StoredPriceItem>,
+  ): StoredPriceItem => ({
+    id: nextId(),
+    tenantId: demoA.id,
+    priceListId,
+    serviceDefinitionId: target.serviceDefinitionId ?? null,
+    serviceCategoryId: target.serviceCategoryId ?? null,
+    packageDefinitionId: target.packageDefinitionId ?? null,
+    locationId: target.locationId ?? null,
+    percent: null,
+    formulaKey: null,
+    minAmount: null,
+    maxAmount: null,
+    memberShareMethod: 'NONE',
+    memberShareAmount: null,
+    memberSharePercent: null,
+    validFrom: '2026-01-01',
+    validTo: null,
+    priority: 100,
+    ...rest,
+  });
+
+  const priceItems: StoredPriceItem[] = [
+    // Names the definition itself, with a 20% member share.
+    priceItem(
+      standardList.id,
+      { serviceDefinitionId: defPhysio.id },
+      {
+        unitType: 'SESSION',
+        pricingMethod: 'UNIT',
+        amount: '750.000000',
+        memberShareMethod: 'PERCENT',
+        memberSharePercent: '20.000000',
+      },
+    ),
+    // Location-specific: beats a tenant-wide price of the same tier.
+    priceItem(
+      standardList.id,
+      { serviceDefinitionId: defMri.id, locationId: locationIstanbul.id },
+      { unitType: 'COUNT', pricingMethod: 'FIXED', amount: '2500.000000' },
+    ),
+    priceItem(
+      standardList.id,
+      { serviceDefinitionId: defMri.id },
+      { unitType: 'COUNT', pricingMethod: 'FIXED', amount: '2900.000000' },
+    ),
+    // A category price: GP_VISIT has no price of its own and resolves through this one.
+    priceItem(
+      standardList.id,
+      { serviceCategoryId: catOutpatient.id },
+      { unitType: 'COUNT', pricingMethod: 'FIXED', amount: '500.000000' },
+    ),
+    priceItem(
+      standardList.id,
+      { packageDefinitionId: packageCheckup.id },
+      { unitType: 'COUNT', pricingMethod: 'FIXED', amount: '3000.000000' },
+    ),
+    // The deliberate tie: two equally specific, equally prioritised prices for the same
+    // service on the same date, in the same list. The resolver must answer
+    // REVIEW_REQUIRED / PRICE_AMBIGUOUS rather than invent a winner.
+    priceItem(
+      standardList.id,
+      { serviceDefinitionId: defAmbiguous.id },
+      { unitType: 'COUNT', pricingMethod: 'FIXED', amount: '1200.000000' },
+    ),
+    priceItem(
+      standardList.id,
+      { serviceDefinitionId: defAmbiguous.id },
+      { unitType: 'COUNT', pricingMethod: 'FIXED', amount: '1350.000000' },
+    ),
+    // Only inside the winter season window; outside it GP_VISIT falls back to the
+    // category price above.
+    priceItem(
+      winterList.id,
+      { serviceDefinitionId: defGpVisit.id },
+      { unitType: 'COUNT', pricingMethod: 'FIXED', amount: '900.000000' },
+    ),
+  ];
+
+  const providerQuotas: StoredProviderQuota[] = [
+    {
+      id: nextId(),
+      tenantId: demoA.id,
+      contractVersionId: publishedContractVersion.id,
+      locationId: locationIstanbul.id,
+      serviceDefinitionId: defMri.id,
+      periodType: 'YEAR',
+      periodFrom: '2026-01-01',
+      periodTo: '2027-01-01',
+      capacity: '1200.000000',
+      consumed: '318.000000',
+      allowOverdraft: false,
+    },
+  ];
+
+  const paymentTerms: StoredPaymentTerm[] = [
+    {
+      id: nextId(),
+      tenantId: demoA.id,
+      contractVersionId: publishedContractVersion.id,
+      dueDays: 30,
+      settlementMethod: 'BANK_TRANSFER',
+      taxBehaviour: 'EXCLUSIVE',
+      vatRate: '10.00',
+      lateFeePercent: '1.50',
+      rowVersion: 1,
+    },
+  ];
+
+  // --- M3 rules: one set with a published version carrying two rules and two test cases.
+  const ruleSetDocuments: StoredRuleSet = {
+    id: nextId(),
+    tenantId: demoA.id,
+    code: 'HLT_DOCUMENTS',
+    name: 'Sağlık Belge Kuralları',
+    domainCode: 'HEALTH',
+    purpose: 'DOCUMENT',
+    status: 'ACTIVE',
+    rowVersion: 1,
+  };
+  const ruleSets: StoredRuleSet[] = [ruleSetDocuments];
+
+  const publishedRuleVersion: StoredRuleSetVersion = {
+    id: nextId(),
+    tenantId: demoA.id,
+    ruleSetId: ruleSetDocuments.id,
+    versionNo: 1,
+    status: 'PUBLISHED',
+    validFrom: '2026-01-01',
+    validTo: null,
+    inputSchema: { serviceCode: 'string', quantity: 'double', requestedAmount: 'double' },
+    notes: null,
+    contentHash: pseudoHash(`${ruleSetDocuments.code}:1`),
+    submittedAt: isoDaysAgo(base, 220),
+    submittedBy: accounts[0]!.actorId,
+    publishedAt: isoDaysAgo(base, 219),
+    publishedBy: accounts[3]!.actorId,
+    reviewComment: null,
+    retireReasonCode: null,
+    rules: [
+      {
+        id: nextId(),
+        code: 'PHYSIO_REPORT_REQUIRED',
+        name: 'Uzun fizik tedavi için rapor',
+        priority: 10,
+        condition: 'serviceCode == "PHYSIO_SESSION" && quantity > 6',
+        actions: [{ type: 'REQUIRE_DOCUMENT', payload: { documentTypeCode: 'MEDICAL_REPORT' } }],
+        explanationCode: 'DOCUMENT_REQUIRED',
+        explanationParams: { documentTypeCode: 'MEDICAL_REPORT' },
+        stopOnMatch: false,
+        active: true,
+      },
+      {
+        id: nextId(),
+        code: 'HIGH_AMOUNT_REVIEW',
+        name: 'Yüksek tutar mali inceleme',
+        priority: 20,
+        condition: 'requestedAmount > 5000',
+        actions: [{ type: 'REQUIRE_FINANCIAL_REVIEW' }],
+        explanationCode: 'AMOUNT_ABOVE_THRESHOLD',
+        explanationParams: null,
+        stopOnMatch: false,
+        active: true,
+      },
+    ],
+    testCases: [
+      {
+        id: nextId(),
+        code: 'SHORT_PHYSIO_APPROVED',
+        description: 'Kısa seans, düşük tutar: hiçbir kural eşleşmez.',
+        input: { serviceCode: 'PHYSIO_SESSION', quantity: '2', requestedAmount: '1500.000000' },
+        expectedOutcome: 'APPROVED',
+        expectedExplanations: [],
+        expectedActions: null,
+      },
+      {
+        id: nextId(),
+        code: 'LONG_PHYSIO_REVIEW',
+        description: 'Uzun seans ve yüksek tutar: iki kural da eşleşir.',
+        input: { serviceCode: 'PHYSIO_SESSION', quantity: '10', requestedAmount: '7500.000000' },
+        expectedOutcome: 'REVIEW_REQUIRED',
+        expectedExplanations: ['DOCUMENT_REQUIRED', 'AMOUNT_ABOVE_THRESHOLD'],
+        expectedActions: null,
+      },
+    ],
+    rowVersion: 4,
+  };
+  const ruleSetVersions: StoredRuleSetVersion[] = [publishedRuleVersion];
+
+  // One decision that really was recorded, so the append-only read has a fixture. The
+  // snapshot carries ids, dates and quantities only: no identity number, no name.
+  const ruleEvaluations: StoredRuleEvaluation[] = [
+    {
+      tenantId: demoA.id,
+      id: nextId(),
+      ruleSetVersionId: publishedRuleVersion.id,
+      ruleSetId: ruleSetDocuments.id,
+      ruleSetCode: ruleSetDocuments.code,
+      versionNo: 1,
+      subjectType: 'SERVICE_REQUEST',
+      subjectId: null,
+      outcome: 'REVIEW_REQUIRED',
+      inputHash: pseudoHash('rule-evaluation-fixture'),
+      inputSnapshot: {
+        serviceCode: 'PHYSIO_SESSION',
+        quantity: '10',
+        requestedAmount: '7500.000000',
+      },
+      durationMs: 3,
+      evaluatedAt: isoDaysAgo(base, 12),
+      evaluatedBy: accounts[0]!.actorId,
+      results: [
+        {
+          sequence: 1,
+          ruleId: publishedRuleVersion.rules[0]!.id,
+          ruleCode: 'PHYSIO_REPORT_REQUIRED',
+          matched: true,
+          actionType: 'REQUIRE_DOCUMENT',
+          actionPayload: { documentTypeCode: 'MEDICAL_REPORT' },
+          explanationCode: 'DOCUMENT_REQUIRED',
+          severity: 'WARNING',
+        },
+        {
+          sequence: 2,
+          ruleId: publishedRuleVersion.rules[1]!.id,
+          ruleCode: 'HIGH_AMOUNT_REVIEW',
+          matched: true,
+          actionType: 'REQUIRE_FINANCIAL_REVIEW',
+          actionPayload: null,
+          explanationCode: 'AMOUNT_ABOVE_THRESHOLD',
+          severity: 'WARNING',
+        },
+      ],
+    },
+  ];
+
   return {
     tenants,
     accounts,
@@ -1301,6 +2329,26 @@ export function buildWorld(
     evaluations: new Map(),
     importBatches: [],
     importRows: [],
+    serviceCategories,
+    serviceDefinitions,
+    codeSystems: [codeSystemSut],
+    codeValues,
+    codeMappings,
+    providers,
+    providerLocations,
+    providerCapabilities,
+    practitioners,
+    contracts,
+    contractVersions,
+    priceLists,
+    priceItems,
+    packageDefinitions,
+    providerQuotas,
+    paymentTerms,
+    ruleSets,
+    ruleSetVersions,
+    ruleEvaluations,
+    priceQuotes: [],
     nextId,
     random,
   };
@@ -1870,4 +2918,444 @@ export function parseImportCsv(
     });
   }
   return { rows, counters };
+}
+
+// --- M3 projections -------------------------------------------------------------------
+
+export function toServiceCategory(c: StoredServiceCategory): Schemas['ServiceCategory'] {
+  return {
+    id: c.id,
+    parentId: c.parentId,
+    code: c.code,
+    name: c.name,
+    domain: c.domain,
+    active: c.active,
+    rowVersion: c.rowVersion,
+  };
+}
+
+export function toServiceDefinition(
+  world: MockWorld,
+  d: StoredServiceDefinition,
+): Schemas['ServiceDefinition'] {
+  const category = world.serviceCategories.find((c) => c.id === d.categoryId);
+  return {
+    id: d.id,
+    categoryId: d.categoryId,
+    categoryCode: category?.code ?? '',
+    domain: category?.domain ?? 'GENERIC',
+    code: d.code,
+    name: d.name,
+    description: d.description,
+    fulfillmentMode: d.fulfillmentMode,
+    defaultUnitType: d.defaultUnitType,
+    requiresProvider: d.requiresProvider,
+    active: d.active,
+    rowVersion: d.rowVersion,
+  };
+}
+
+/** The category itself and every ancestor above it, nearest first. */
+export function categoryChain(world: MockWorld, categoryId: string): StoredServiceCategory[] {
+  const chain: StoredServiceCategory[] = [];
+  let current = world.serviceCategories.find((c) => c.id === categoryId);
+  // The tree is at most six deep by contract; the guard stops a cycle a bad patch made.
+  while (current && chain.length < 16) {
+    chain.push(current);
+    const parentId: string | null = current.parentId;
+    current = parentId ? world.serviceCategories.find((c) => c.id === parentId) : undefined;
+  }
+  return chain;
+}
+
+/** Depth of a category, counting the root as 1. */
+export function categoryDepth(world: MockWorld, categoryId: string): number {
+  return categoryChain(world, categoryId).length;
+}
+
+/** True when `ancestorId` is the category itself or sits above it in the tree. */
+export function categoryCovers(
+  world: MockWorld,
+  ancestorId: string,
+  categoryId: string,
+): number | null {
+  const chain = categoryChain(world, categoryId);
+  const index = chain.findIndex((c) => c.id === ancestorId);
+  return index < 0 ? null : index;
+}
+
+export function toCodeSystem(s: StoredCodeSystem): Schemas['CodeSystem'] {
+  return {
+    id: s.id,
+    code: s.code,
+    name: s.name,
+    version: s.version,
+    authority: s.authority,
+    licensed: s.licensed,
+    status: s.status,
+    validFrom: s.validFrom,
+    validTo: s.validTo,
+    rowVersion: s.rowVersion,
+  };
+}
+
+export function toCodeValue(v: StoredCodeValue): Schemas['CodeValue'] {
+  return {
+    id: v.id,
+    codeSystemId: v.codeSystemId,
+    code: v.code,
+    display: v.display,
+    parentCode: v.parentCode,
+    validFrom: v.validFrom,
+    validTo: v.validTo,
+    active: v.active,
+    attributes: v.attributes,
+  };
+}
+
+export function toServiceCodeMapping(
+  world: MockWorld,
+  m: StoredCodeMapping,
+): Schemas['ServiceCodeMapping'] {
+  const system = world.codeSystems.find((s) => s.id === m.codeSystemId);
+  return {
+    id: m.id,
+    serviceDefinitionId: m.serviceDefinitionId,
+    codeSystemId: m.codeSystemId,
+    codeSystemCode: system?.code ?? '',
+    codeSystemVersion: system?.version ?? '',
+    code: m.code,
+    validFrom: m.validFrom,
+    validTo: m.validTo,
+    primary: m.primary,
+  };
+}
+
+/** Display name of the organization behind a tenant relationship. */
+export function organizationNameOf(world: MockWorld, relationshipId: string): string {
+  const rel = world.relationships.find((r) => r.id === relationshipId);
+  if (!rel) return '';
+  return world.organizations.get(rel.organizationId)?.displayName ?? '';
+}
+
+export function toProvider(world: MockWorld, p: StoredProvider): Schemas['Provider'] {
+  return {
+    id: p.id,
+    tenantOrganizationId: p.tenantOrganizationId,
+    organizationName: organizationNameOf(world, p.tenantOrganizationId),
+    providerType: p.providerType,
+    status: p.status,
+    networkTier: p.networkTier,
+    contractedFrom: p.contractedFrom,
+    contractedTo: p.contractedTo,
+    notes: p.notes,
+    rowVersion: p.rowVersion,
+  };
+}
+
+export function toProviderLocation(l: StoredProviderLocation): Schemas['ProviderLocation'] {
+  return {
+    id: l.id,
+    providerId: l.providerId,
+    code: l.code,
+    name: l.name,
+    addressLine: l.addressLine,
+    district: l.district,
+    city: l.city,
+    countryCode: l.countryCode,
+    postalCode: l.postalCode,
+    latitude: l.latitude,
+    longitude: l.longitude,
+    timezone: l.timezone,
+    phone: l.phone,
+    status: l.status,
+    rowVersion: l.rowVersion,
+  };
+}
+
+export function toProviderCapability(
+  world: MockWorld,
+  c: StoredProviderCapability,
+): Schemas['ProviderCapability'] {
+  const definition = c.serviceDefinitionId
+    ? world.serviceDefinitions.find((d) => d.id === c.serviceDefinitionId)
+    : undefined;
+  const category = c.serviceCategoryId
+    ? world.serviceCategories.find((x) => x.id === c.serviceCategoryId)
+    : undefined;
+  return {
+    id: c.id,
+    locationId: c.locationId,
+    serviceDefinitionId: c.serviceDefinitionId,
+    serviceDefinitionCode: definition?.code ?? null,
+    serviceCategoryId: c.serviceCategoryId,
+    serviceCategoryCode: category?.code ?? null,
+    validFrom: c.validFrom,
+    validTo: c.validTo,
+    notes: c.notes,
+  };
+}
+
+export function toPractitionerLocation(
+  world: MockWorld,
+  l: StoredPractitionerLocation,
+): Schemas['PractitionerLocation'] {
+  const location = world.providerLocations.find((x) => x.id === l.locationId);
+  return {
+    id: l.id,
+    practitionerId: l.practitionerId,
+    locationId: l.locationId,
+    locationCode: location?.code ?? '',
+    locationName: location?.name ?? '',
+    role: l.role,
+    validFrom: l.validFrom,
+    validTo: l.validTo,
+  };
+}
+
+/** The registration number is masked here and nowhere else undone. */
+export function toPractitioner(world: MockWorld, p: StoredPractitioner): Schemas['Practitioner'] {
+  return {
+    id: p.id,
+    providerId: p.providerId,
+    personId: p.personId,
+    fullName: p.fullName,
+    title: p.title,
+    branchCode: p.branchCode,
+    registrationAuthority: p.registrationAuthority,
+    maskedRegistrationNumber: maskIdentifier('OTHER', p.registrationNumber),
+    validFrom: p.validFrom,
+    validTo: p.validTo,
+    status: p.status,
+    rowVersion: p.rowVersion,
+    locations: p.locations.map((l) => toPractitionerLocation(world, l)),
+  };
+}
+
+export function toContract(world: MockWorld, c: StoredContract): Schemas['Contract'] {
+  const provider = world.providers.find((p) => p.id === c.providerProfileId);
+  return {
+    id: c.id,
+    code: c.code,
+    name: c.name,
+    payerOrganizationId: c.payerOrganizationId,
+    payerName: organizationNameOf(world, c.payerOrganizationId),
+    providerProfileId: c.providerProfileId,
+    providerName: provider ? organizationNameOf(world, provider.tenantOrganizationId) : null,
+    sponsorOrganizationId: c.sponsorOrganizationId,
+    sponsorName: c.sponsorOrganizationId
+      ? organizationNameOf(world, c.sponsorOrganizationId)
+      : null,
+    domainCode: c.domainCode,
+    status: c.status,
+    rowVersion: c.rowVersion,
+  };
+}
+
+export function toPriceList(world: MockWorld, l: StoredPriceList): Schemas['PriceList'] {
+  return {
+    id: l.id,
+    contractVersionId: l.contractVersionId,
+    code: l.code,
+    name: l.name,
+    priority: l.priority,
+    seasonFrom: l.seasonFrom,
+    seasonTo: l.seasonTo,
+    weekdayMask: l.weekdayMask,
+    itemCount: world.priceItems.filter((i) => i.priceListId === l.id).length,
+    rowVersion: l.rowVersion,
+  };
+}
+
+export function toContractVersionSummary(
+  v: StoredContractVersion,
+): Schemas['ContractVersionSummary'] {
+  return {
+    id: v.id,
+    contractId: v.contractId,
+    versionNo: v.versionNo,
+    status: v.status,
+    validFrom: v.validFrom,
+    validTo: v.validTo,
+    currencyCode: v.currencyCode,
+    notes: v.notes,
+    publishedAt: v.publishedAt,
+    rowVersion: v.rowVersion,
+  };
+}
+
+export function toContractVersion(
+  world: MockWorld,
+  v: StoredContractVersion,
+): Schemas['ContractVersion'] {
+  return {
+    ...toContractVersionSummary(v),
+    configurationHash: v.configurationHash,
+    submittedAt: v.submittedAt,
+    submittedBy: v.submittedBy,
+    publishedBy: v.publishedBy,
+    reviewComment: v.reviewComment,
+    retireReasonCode: v.retireReasonCode,
+    priceLists: world.priceLists
+      .filter((l) => l.contractVersionId === v.id)
+      .sort((a, b) => b.priority - a.priority || a.code.localeCompare(b.code, 'tr'))
+      .map((l) => toPriceList(world, l)),
+  };
+}
+
+export function toPriceItem(world: MockWorld, i: StoredPriceItem): Schemas['PriceItem'] {
+  const definition = i.serviceDefinitionId
+    ? world.serviceDefinitions.find((d) => d.id === i.serviceDefinitionId)
+    : undefined;
+  const category = i.serviceCategoryId
+    ? world.serviceCategories.find((c) => c.id === i.serviceCategoryId)
+    : undefined;
+  const pkg = i.packageDefinitionId
+    ? world.packageDefinitions.find((p) => p.id === i.packageDefinitionId)
+    : undefined;
+  return {
+    id: i.id,
+    priceListId: i.priceListId,
+    serviceDefinitionId: i.serviceDefinitionId,
+    serviceDefinitionCode: definition?.code ?? null,
+    serviceCategoryId: i.serviceCategoryId,
+    serviceCategoryCode: category?.code ?? null,
+    packageDefinitionId: i.packageDefinitionId,
+    packageDefinitionCode: pkg?.code ?? null,
+    locationId: i.locationId,
+    unitType: i.unitType,
+    pricingMethod: i.pricingMethod,
+    amount: i.amount,
+    percent: i.percent,
+    formulaKey: i.formulaKey,
+    minAmount: i.minAmount,
+    maxAmount: i.maxAmount,
+    memberShareMethod: i.memberShareMethod,
+    memberShareAmount: i.memberShareAmount,
+    memberSharePercent: i.memberSharePercent,
+    validFrom: i.validFrom,
+    validTo: i.validTo,
+    priority: i.priority,
+  };
+}
+
+export function toPackageDefinition(
+  world: MockWorld,
+  p: StoredPackageDefinition,
+): Schemas['PackageDefinition'] {
+  return {
+    id: p.id,
+    contractVersionId: p.contractVersionId,
+    code: p.code,
+    name: p.name,
+    inclusionRule: p.inclusionRule,
+    minLines: p.minLines,
+    lines: p.lines.map((l) => ({
+      serviceDefinitionId: l.serviceDefinitionId,
+      serviceDefinitionCode:
+        world.serviceDefinitions.find((d) => d.id === l.serviceDefinitionId)?.code ?? null,
+      includedQuantity: l.includedQuantity,
+    })),
+  };
+}
+
+export function toProviderQuota(q: StoredProviderQuota): Schemas['ProviderQuota'] {
+  return {
+    id: q.id,
+    contractVersionId: q.contractVersionId,
+    locationId: q.locationId,
+    serviceDefinitionId: q.serviceDefinitionId,
+    periodType: q.periodType,
+    periodFrom: q.periodFrom,
+    periodTo: q.periodTo,
+    capacity: q.capacity,
+    consumed: q.consumed,
+    allowOverdraft: q.allowOverdraft,
+  };
+}
+
+export function toPaymentTerm(t: StoredPaymentTerm): Schemas['PaymentTerm'] {
+  return {
+    id: t.id,
+    contractVersionId: t.contractVersionId,
+    dueDays: t.dueDays,
+    settlementMethod: t.settlementMethod,
+    taxBehaviour: t.taxBehaviour,
+    vatRate: t.vatRate,
+    lateFeePercent: t.lateFeePercent,
+    rowVersion: t.rowVersion,
+  };
+}
+
+export function toRuleSet(world: MockWorld, s: StoredRuleSet): Schemas['RuleSet'] {
+  return {
+    id: s.id,
+    code: s.code,
+    name: s.name,
+    domainCode: s.domainCode,
+    purpose: s.purpose,
+    status: s.status,
+    versionCount: world.ruleSetVersions.filter((v) => v.ruleSetId === s.id).length,
+    rowVersion: s.rowVersion,
+  };
+}
+
+export function toRule(versionId: string, r: StoredRule): Schemas['Rule'] {
+  return {
+    id: r.id,
+    ruleSetVersionId: versionId,
+    code: r.code,
+    name: r.name,
+    priority: r.priority,
+    condition: r.condition,
+    actions: r.actions,
+    explanationCode: r.explanationCode,
+    ...(r.explanationParams ? { explanationParams: r.explanationParams } : {}),
+    stopOnMatch: r.stopOnMatch,
+    active: r.active,
+  };
+}
+
+export function toRuleTestCase(versionId: string, c: StoredRuleTestCase): Schemas['RuleTestCase'] {
+  return {
+    id: c.id,
+    ruleSetVersionId: versionId,
+    code: c.code,
+    description: c.description,
+    input: c.input,
+    expectedOutcome: c.expectedOutcome,
+    expectedExplanations: c.expectedExplanations,
+    expectedActions: c.expectedActions,
+  };
+}
+
+export function toRuleSetVersionSummary(v: StoredRuleSetVersion): Schemas['RuleSetVersionSummary'] {
+  return {
+    id: v.id,
+    ruleSetId: v.ruleSetId,
+    versionNo: v.versionNo,
+    status: v.status,
+    validFrom: v.validFrom,
+    validTo: v.validTo,
+    notes: v.notes,
+    publishedAt: v.publishedAt,
+    ruleCount: v.rules.length,
+    testCaseCount: v.testCases.length,
+    rowVersion: v.rowVersion,
+  };
+}
+
+export function toRuleSetVersion(v: StoredRuleSetVersion): Schemas['RuleSetVersion'] {
+  return {
+    ...toRuleSetVersionSummary(v),
+    inputSchema: v.inputSchema,
+    contentHash: v.contentHash,
+    submittedAt: v.submittedAt,
+    submittedBy: v.submittedBy,
+    publishedBy: v.publishedBy,
+    reviewComment: v.reviewComment,
+    retireReasonCode: v.retireReasonCode,
+    rules: [...v.rules].sort((a, b) => a.priority - b.priority).map((r) => toRule(v.id, r)),
+    testCases: v.testCases.map((c) => toRuleTestCase(v.id, c)),
+  };
 }
