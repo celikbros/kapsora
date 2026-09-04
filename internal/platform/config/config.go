@@ -34,6 +34,51 @@ type Config struct {
 	LogLevel        string
 	ShutdownTimeout time.Duration
 	Session         SessionConfig
+	Documents       DocumentConfig
+}
+
+// DocumentConfig configures the object store a file actually lives in and the malware
+// scanner that decides whether it may (WP-I4-04, ADR-021: both run as native services,
+// there is no container anywhere in this project).
+//
+// Everything here has a working local default except the store credentials, which is why
+// Load never fails on it: the API and the worker check Configured themselves and refuse to
+// start without a store, while the scheduler and the tooling do not need one.
+type DocumentConfig struct {
+	// Endpoint is the S3-compatible base URL, for example http://127.0.0.1:9000. A bare
+	// host:port is read as http.
+	Endpoint  string
+	Region    string
+	AccessKey string
+	SecretKey string
+	// QuarantineBucket is where an upload lands and is scanned. Nothing is ever readable
+	// from it: no presigned GET is minted against it anywhere in the codebase.
+	QuarantineBucket string
+	// SecureBucket is where a clean file is promoted to, and the only bucket a download
+	// URL is ever signed for.
+	SecureBucket string
+	// UploadURLTTL and DownloadURLTTL are how long a presigned URL lives. Both are short
+	// because a presigned URL is a bearer credential.
+	UploadURLTTL   time.Duration
+	DownloadURLTTL time.Duration
+	// EncryptionKeyRef names the key the store protects the bytes with. It is recorded on
+	// every version; it is a reference, never key material.
+	EncryptionKeyRef string
+	// ScannerAddr is the clamd TCP socket, host:port.
+	ScannerAddr string
+	// ScannerTimeout bounds one whole scan, connection included.
+	ScannerTimeout time.Duration
+	// RetentionDays is how long a stored document is kept before the retention sweep
+	// removes its bytes. Zero disables the sweep, which is the default: deleting real
+	// documents after a number nobody chose is worse than keeping them.
+	RetentionDays int
+}
+
+// Configured reports whether an object store was configured. Credentials are the test:
+// everything else has a local default, and a store nobody gave a key for is a store the
+// process cannot talk to.
+func (d DocumentConfig) Configured() bool {
+	return d.Endpoint != "" && d.AccessKey != "" && d.SecretKey != ""
 }
 
 // SessionConfig configures browser sessions and the cookie that carries them
@@ -82,7 +127,62 @@ func Load(serviceName string) (Config, error) {
 	if cfg.Session, err = loadSession(cfg); err != nil {
 		return cfg, err
 	}
+	if cfg.Documents, err = loadDocuments(); err != nil {
+		return cfg, err
+	}
 	return cfg, nil
+}
+
+// loadDocuments reads the object store and scanner settings. It fails only on a value that
+// is present and unusable: a missing store is a decision the process makes, not a
+// configuration error, because two of the three binaries have no use for one.
+func loadDocuments() (DocumentConfig, error) {
+	d := DocumentConfig{
+		Endpoint:         envOr("KAPSORA_MINIO_ADDR", "127.0.0.1:9000"),
+		Region:           envOr("KAPSORA_OBJECT_STORE_REGION", "us-east-1"),
+		AccessKey:        os.Getenv("KAPSORA_MINIO_ROOT_USER"),
+		SecretKey:        os.Getenv("KAPSORA_MINIO_ROOT_PASSWORD"),
+		QuarantineBucket: envOr("KAPSORA_DOCUMENT_QUARANTINE_BUCKET", "quarantine"),
+		SecureBucket:     envOr("KAPSORA_DOCUMENT_SECURE_BUCKET", "secure"),
+		EncryptionKeyRef: envOr("KAPSORA_DOCUMENT_ENCRYPTION_KEY_REF", "objectstore:default"),
+		ScannerAddr:      envOr("KAPSORA_CLAMAV_ADDR", "127.0.0.1:3310"),
+	}
+
+	upload, err := envInt("KAPSORA_DOCUMENT_UPLOAD_URL_MINUTES", 15)
+	if err != nil {
+		return d, err
+	}
+	download, err := envInt("KAPSORA_DOCUMENT_DOWNLOAD_URL_MINUTES", 5)
+	if err != nil {
+		return d, err
+	}
+	scan, err := envInt("KAPSORA_DOCUMENT_SCAN_TIMEOUT_SECONDS", 120)
+	if err != nil {
+		return d, err
+	}
+	retention, err := envInt("KAPSORA_DOCUMENT_RETENTION_DAYS", 0)
+	if err != nil {
+		return d, err
+	}
+	// A presigned URL is a bearer credential, so its life is bounded here rather than left
+	// to whatever an operator typed. A day is already generous for both.
+	if upload < 1 || upload > 1440 {
+		return d, fmt.Errorf("KAPSORA_DOCUMENT_UPLOAD_URL_MINUTES must be between 1 and 1440, got %d", upload)
+	}
+	if download < 1 || download > 1440 {
+		return d, fmt.Errorf("KAPSORA_DOCUMENT_DOWNLOAD_URL_MINUTES must be between 1 and 1440, got %d", download)
+	}
+	if scan < 1 || scan > 3600 {
+		return d, fmt.Errorf("KAPSORA_DOCUMENT_SCAN_TIMEOUT_SECONDS must be between 1 and 3600, got %d", scan)
+	}
+	if retention < 0 {
+		return d, fmt.Errorf("KAPSORA_DOCUMENT_RETENTION_DAYS must not be negative, got %d", retention)
+	}
+	d.UploadURLTTL = time.Duration(upload) * time.Minute
+	d.DownloadURLTTL = time.Duration(download) * time.Minute
+	d.ScannerTimeout = time.Duration(scan) * time.Second
+	d.RetentionDays = retention
+	return d, nil
 }
 
 func loadSession(cfg Config) (SessionConfig, error) {

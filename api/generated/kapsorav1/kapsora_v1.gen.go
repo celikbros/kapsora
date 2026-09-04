@@ -328,6 +328,90 @@ func (e CreatePersonRequestSexAtBirth) Valid() bool {
 	}
 }
 
+// Defines values for DocumentBucket.
+const (
+	Quarantine DocumentBucket = "quarantine"
+	Secure     DocumentBucket = "secure"
+)
+
+// Valid indicates whether the value is a known member of the DocumentBucket enum.
+func (e DocumentBucket) Valid() bool {
+	switch e {
+	case Quarantine:
+		return true
+	case Secure:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DocumentClassification.
+const (
+	DocumentClassificationCONFIDENTIAL DocumentClassification = "CONFIDENTIAL"
+	DocumentClassificationHEALTH       DocumentClassification = "HEALTH"
+	DocumentClassificationINTERNAL     DocumentClassification = "INTERNAL"
+	DocumentClassificationPERSONAL     DocumentClassification = "PERSONAL"
+)
+
+// Valid indicates whether the value is a known member of the DocumentClassification enum.
+func (e DocumentClassification) Valid() bool {
+	switch e {
+	case DocumentClassificationCONFIDENTIAL:
+		return true
+	case DocumentClassificationHEALTH:
+		return true
+	case DocumentClassificationINTERNAL:
+		return true
+	case DocumentClassificationPERSONAL:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DocumentDownloadMethod.
+const (
+	GET DocumentDownloadMethod = "GET"
+)
+
+// Valid indicates whether the value is a known member of the DocumentDownloadMethod enum.
+func (e DocumentDownloadMethod) Valid() bool {
+	switch e {
+	case GET:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DocumentScanStatus.
+const (
+	DocumentScanStatusCLEAN    DocumentScanStatus = "CLEAN"
+	DocumentScanStatusFAILED   DocumentScanStatus = "FAILED"
+	DocumentScanStatusINFECTED DocumentScanStatus = "INFECTED"
+	DocumentScanStatusPENDING  DocumentScanStatus = "PENDING"
+	DocumentScanStatusSCANNING DocumentScanStatus = "SCANNING"
+)
+
+// Valid indicates whether the value is a known member of the DocumentScanStatus enum.
+func (e DocumentScanStatus) Valid() bool {
+	switch e {
+	case DocumentScanStatusCLEAN:
+		return true
+	case DocumentScanStatusFAILED:
+		return true
+	case DocumentScanStatusINFECTED:
+		return true
+	case DocumentScanStatusPENDING:
+		return true
+	case DocumentScanStatusSCANNING:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for EligibilityCheckResultExplanationsSeverity.
 const (
 	EligibilityCheckResultExplanationsSeverityERROR   EligibilityCheckResultExplanationsSeverity = "ERROR"
@@ -1513,6 +1597,21 @@ func (e PractitionerStatus) Valid() bool {
 	case PractitionerStatusENDED:
 		return true
 	case PractitionerStatusSUSPENDED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PresignedUploadMethod.
+const (
+	PUT PresignedUploadMethod = "PUT"
+)
+
+// Valid indicates whether the value is a known member of the PresignedUploadMethod enum.
+func (e PresignedUploadMethod) Valid() bool {
+	switch e {
+	case PUT:
 		return true
 	default:
 		return false
@@ -3101,6 +3200,14 @@ type CodeValuePage struct {
 // rule about content which the health module enforces against this field.
 type CommentVisibility string
 
+// CompleteUpload defines model for CompleteUpload.
+type CompleteUpload struct {
+	ByteSize int64 `json:"byteSize"`
+
+	// Sha256 The digest of what was uploaded, as the client computed it.
+	Sha256 string `json:"sha256"`
+}
+
 // CompleteWorkItem defines model for CompleteWorkItem.
 type CompleteWorkItem struct {
 	// Comment An optional internal note, stored as an INTERNAL comment on the item in the same
@@ -3256,6 +3363,18 @@ type CreateContractVersionRequest struct {
 	ValidTo           *openapi_types.Date `json:"validTo,omitempty"`
 }
 
+// CreateDocumentLink defines model for CreateDocumentLink.
+type CreateDocumentLink struct {
+	AggregateId      openapi_types.UUID `json:"aggregateId"`
+	AggregateType    string             `json:"aggregateType"`
+	DocumentTypeCode string             `json:"documentTypeCode"`
+	Purpose          *string            `json:"purpose,omitempty"`
+
+	// RequiredPermission Narrows who may download through this link. Every link on a document is checked,
+	// so a clinical attachment stays clinical wherever it is reached from.
+	RequiredPermission *string `json:"requiredPermission,omitempty"`
+}
+
 // CreateEnrollmentRequest defines model for CreateEnrollmentRequest.
 type CreateEnrollmentRequest struct {
 	EnrollmentReason    *string                        `json:"enrollmentReason,omitempty"`
@@ -3277,6 +3396,15 @@ type CreateFulfilment struct {
 	PerformedAt       time.Time             `json:"performedAt"`
 	PractitionerId    *openapi_types.UUID   `json:"practitionerId,omitempty"`
 	ProviderProfileId *openapi_types.UUID   `json:"providerProfileId,omitempty"`
+}
+
+// CreateLegalHold defines model for CreateLegalHold.
+type CreateLegalHold struct {
+	AggregateId   *openapi_types.UUID `json:"aggregateId,omitempty"`
+	AggregateType *string             `json:"aggregateType,omitempty"`
+	DocumentId    *openapi_types.UUID `json:"documentId,omitempty"`
+	PersonId      *openapi_types.UUID `json:"personId,omitempty"`
+	Reason        string              `json:"reason"`
 }
 
 // CreateMembershipRequest defines model for CreateMembershipRequest.
@@ -3518,6 +3646,29 @@ type CreateServiceRequest struct {
 	SupersedesRequestId *openapi_types.UUID `json:"supersedesRequestId,omitempty"`
 }
 
+// CreateUpload defines model for CreateUpload.
+type CreateUpload struct {
+	// ByteSize The exact size of the file. It is signed into the upload URL, so the object
+	// store refuses a body of any other size: this is where the limit actually holds,
+	// because the API has no body to measure.
+	ByteSize int64 `json:"byteSize"`
+
+	// Classification How sensitive the document is. It is copied onto every access event a download
+	// writes, and HEALTH additionally produces an audit event of its own: who opened
+	// clinical material is a question asked on its own (v1.2 11.10).
+	Classification   *DocumentClassification `json:"classification,omitempty"`
+	ContentType      string                  `json:"contentType"`
+	OriginalFilename string                  `json:"originalFilename"`
+
+	// OwnerOrganizationId Which provider the document belongs to. A provider-scoped caller may only name
+	// an organization it holds, and one holding exactly one does not have to say which.
+	OwnerOrganizationId *openapi_types.UUID `json:"ownerOrganizationId,omitempty"`
+
+	// Sha256 Optional digest of the file about to be sent. When those exact bytes are already
+	// stored clean and visible to the caller, no upload happens at all.
+	Sha256 *string `json:"sha256,omitempty"`
+}
+
 // CreateWorkQueue defines model for CreateWorkQueue.
 type CreateWorkQueue struct {
 	Active *bool `json:"active,omitempty"`
@@ -3545,6 +3696,140 @@ type DecimalPercent = string
 
 // DecimalRate A rate with at most two decimals, as an exact decimal string.
 type DecimalRate = string
+
+// Document defines model for Document.
+type Document struct {
+	// Bucket Which of the two worlds the bytes are in. It is never `secure` unless the scan
+	// came back clean, which the schema enforces with a CHECK rather than trusting the
+	// code that writes it.
+	Bucket DocumentBucket `json:"bucket"`
+
+	// ByteSize Null until the upload is completed. After a scan it is the size the worker
+	// counted while reading the bytes, not the one the client claimed.
+	ByteSize *int64 `json:"byteSize,omitempty"`
+
+	// Classification How sensitive the document is. It is copied onto every access event a download
+	// writes, and HEALTH additionally produces an audit event of its own: who opened
+	// clinical material is a question asked on its own (v1.2 11.10).
+	Classification DocumentClassification `json:"classification"`
+	ContentType    string                 `json:"contentType"`
+	CreatedAt      time.Time              `json:"createdAt"`
+
+	// Downloadable Whether downloadDocument would answer a URL right now. It is the one answer the
+	// product computes in one place: clean, in the secure bucket, and not purged.
+	Downloadable bool `json:"downloadable"`
+
+	// DuplicateOfDocumentId Set when these exact bytes were already stored under another document, which
+	// this one now points at. It carries no second copy of the file.
+	DuplicateOfDocumentId *openapi_types.UUID `json:"duplicateOfDocumentId,omitempty"`
+	Id                    openapi_types.UUID  `json:"id"`
+
+	// Links The records this document belongs to.
+	Links []DocumentLink `json:"links"`
+
+	// OriginalFilename The name the file was uploaded under, kept so a person can recognise their own
+	// document. Any directory part a browser sent is stripped, and it is never used to
+	// build a storage key.
+	OriginalFilename string `json:"originalFilename"`
+
+	// OwnerOrganizationId The provider the document belongs to, or null when it belongs to the tenant
+	// itself. A provider-scoped actor only ever sees its own organizations' documents.
+	OwnerOrganizationId *openapi_types.UUID `json:"ownerOrganizationId,omitempty"`
+
+	// PurgedAt When retention removed the bytes. The row outlives them, so "this document
+	// existed and was removed on this day" stays answerable.
+	PurgedAt   *time.Time `json:"purgedAt,omitempty"`
+	RowVersion int64      `json:"rowVersion"`
+
+	// ScanStatus The life of a file in one field. PENDING is a reserved upload with no bytes yet,
+	// SCANNING is bytes in quarantine waiting for a verdict, CLEAN is the only status
+	// whose bytes are in the secure bucket, INFECTED is a file the scanner named something
+	// in and whose bytes have been deleted, and FAILED is one no verdict could be reached
+	// about — which is not "clean" and is never promoted.
+	ScanStatus DocumentScanStatus `json:"scanStatus"`
+
+	// Sha256 Null until the upload is completed. After a scan it is the digest the worker
+	// computed over the bytes it scanned.
+	Sha256     *string             `json:"sha256,omitempty"`
+	UploadedAt time.Time           `json:"uploadedAt"`
+	UploadedBy *openapi_types.UUID `json:"uploadedBy,omitempty"`
+}
+
+// DocumentBucket Which of the two worlds the bytes are in. It is never `secure` unless the scan
+// came back clean, which the schema enforces with a CHECK rather than trusting the
+// code that writes it.
+type DocumentBucket string
+
+// DocumentClassification How sensitive the document is. It is copied onto every access event a download
+// writes, and HEALTH additionally produces an audit event of its own: who opened
+// clinical material is a question asked on its own (v1.2 11.10).
+type DocumentClassification string
+
+// DocumentDownload defines model for DocumentDownload.
+type DocumentDownload struct {
+	// Classification How sensitive the document is. It is copied onto every access event a download
+	// writes, and HEALTH additionally produces an audit event of its own: who opened
+	// clinical material is a question asked on its own (v1.2 11.10).
+	Classification DocumentClassification `json:"classification"`
+	ExpiresAt      time.Time              `json:"expiresAt"`
+	Method         DocumentDownloadMethod `json:"method"`
+
+	// Url Where to GET the file from the secure bucket. It is a bearer credential with a
+	// short life; it is never logged and never shared.
+	Url string `json:"url"`
+}
+
+// DocumentDownloadMethod defines model for DocumentDownload.Method.
+type DocumentDownloadMethod string
+
+// DocumentLink defines model for DocumentLink.
+type DocumentLink struct {
+	AggregateId openapi_types.UUID `json:"aggregateId"`
+
+	// AggregateType The kind of record this document belongs to, for example SERVICE_REQUEST.
+	AggregateType string              `json:"aggregateType"`
+	CreatedAt     time.Time           `json:"createdAt"`
+	CreatedBy     *openapi_types.UUID `json:"createdBy,omitempty"`
+	DocumentId    openapi_types.UUID  `json:"documentId"`
+
+	// DocumentTypeCode What the document is on that record, for example INVOICE or REFERRAL.
+	DocumentTypeCode string             `json:"documentTypeCode"`
+	Id               openapi_types.UUID `json:"id"`
+	Purpose          *string            `json:"purpose,omitempty"`
+
+	// RequiredPermission The permission a caller must hold to download through this link. Null means
+	// document.read is enough.
+	RequiredPermission *string `json:"requiredPermission,omitempty"`
+}
+
+// DocumentPage defines model for DocumentPage.
+type DocumentPage struct {
+	Items      []Document `json:"items"`
+	NextCursor *string    `json:"nextCursor,omitempty"`
+}
+
+// DocumentScanStatus The life of a file in one field. PENDING is a reserved upload with no bytes yet,
+// SCANNING is bytes in quarantine waiting for a verdict, CLEAN is the only status
+// whose bytes are in the secure bucket, INFECTED is a file the scanner named something
+// in and whose bytes have been deleted, and FAILED is one no verdict could be reached
+// about — which is not "clean" and is never promoted.
+type DocumentScanStatus string
+
+// DocumentUpload defines model for DocumentUpload.
+type DocumentUpload struct {
+	Document Document `json:"document"`
+
+	// Upload Null when the same bytes were already stored: there is nothing to upload, and
+	// `document` is the one that already exists.
+	Upload *PresignedUpload `json:"upload,omitempty"`
+}
+
+// DownloadDocument Why the document is being opened. Both fields travel into the access event: "who
+// read this" without "why" is not an answer a data protection review can use.
+type DownloadDocument struct {
+	PurposeCode *string `json:"purposeCode,omitempty"`
+	ReasonText  *string `json:"reasonText,omitempty"`
+}
 
 // EligibilityCheckRequest defines model for EligibilityCheckRequest.
 type EligibilityCheckRequest struct {
@@ -3946,6 +4231,21 @@ type LedgerEntryMovementType string
 type LedgerPage struct {
 	Items      []LedgerEntry `json:"items"`
 	NextCursor *string       `json:"nextCursor,omitempty"`
+}
+
+// LegalHold defines model for LegalHold.
+type LegalHold struct {
+	AggregateId   *openapi_types.UUID `json:"aggregateId,omitempty"`
+	AggregateType *string             `json:"aggregateType,omitempty"`
+	DocumentId    *openapi_types.UUID `json:"documentId,omitempty"`
+	Id            openapi_types.UUID  `json:"id"`
+	PersonId      *openapi_types.UUID `json:"personId,omitempty"`
+	PlacedAt      time.Time           `json:"placedAt"`
+	PlacedBy      *openapi_types.UUID `json:"placedBy,omitempty"`
+	Reason        string              `json:"reason"`
+	ReleasedAt    *time.Time          `json:"releasedAt,omitempty"`
+	ReleasedBy    *openapi_types.UUID `json:"releasedBy,omitempty"`
+	RowVersion    int64               `json:"rowVersion"`
 }
 
 // MaskedIdentifier defines model for MaskedIdentifier.
@@ -4420,6 +4720,23 @@ type PractitionerRole string
 
 // PractitionerStatus Lifecycle of a practitioner registration at a provider.
 type PractitionerStatus string
+
+// PresignedUpload defines model for PresignedUpload.
+type PresignedUpload struct {
+	ExpiresAt time.Time `json:"expiresAt"`
+
+	// Headers Headers the upload must carry exactly as given. They are part of the signature,
+	// so a different content type or length is refused by the store.
+	Headers map[string]string     `json:"headers"`
+	Method  PresignedUploadMethod `json:"method"`
+
+	// Url Where to PUT the file. It is a bearer credential with a short life; it is never
+	// logged and never shared.
+	Url string `json:"url"`
+}
+
+// PresignedUploadMethod defines model for PresignedUpload.Method.
+type PresignedUploadMethod string
 
 // PriceItem defines model for PriceItem.
 type PriceItem struct {
@@ -6144,6 +6461,12 @@ type CsrfHeader = string
 // Cursor defines model for Cursor.
 type Cursor = string
 
+// DocumentId defines model for DocumentId.
+type DocumentId = openapi_types.UUID
+
+// DocumentLinkId defines model for DocumentLinkId.
+type DocumentLinkId = openapi_types.UUID
+
 // EnrollmentId defines model for EnrollmentId.
 type EnrollmentId = openapi_types.UUID
 
@@ -6167,6 +6490,9 @@ type ImportId = openapi_types.UUID
 
 // ImportRowId defines model for ImportRowId.
 type ImportRowId = openapi_types.UUID
+
+// LegalHoldId defines model for LegalHoldId.
+type LegalHoldId = openapi_types.UUID
 
 // Limit defines model for Limit.
 type Limit = int
@@ -6616,6 +6942,73 @@ type CreateContractVersionParams struct {
 	XCSRFToken *CsrfHeader `json:"X-CSRF-Token,omitempty"`
 }
 
+// ListDocumentsParams defines parameters for ListDocuments.
+type ListDocumentsParams struct {
+	// Cursor Opaque cursor from the previous response.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// ScanStatus Keep only the documents in one scan state.
+	ScanStatus *DocumentScanStatus `form:"scanStatus,omitempty" json:"scanStatus,omitempty"`
+
+	// Classification Keep only the documents of one confidentiality class.
+	Classification *DocumentClassification `form:"classification,omitempty" json:"classification,omitempty"`
+
+	// AggregateType Keep only the documents linked to records of this type.
+	AggregateType *string `form:"aggregateType,omitempty" json:"aggregateType,omitempty"`
+
+	// AggregateId With aggregateType, keep only the documents linked to that one record.
+	AggregateId *openapi_types.UUID `form:"aggregateId,omitempty" json:"aggregateId,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// CreateUploadParams defines parameters for CreateUpload.
+type CreateUploadParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// GetDocumentParams defines parameters for GetDocument.
+type GetDocumentParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// CompleteUploadParams defines parameters for CompleteUpload.
+type CompleteUploadParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// DownloadDocumentParams defines parameters for DownloadDocument.
+type DownloadDocumentParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// LinkDocumentParams defines parameters for LinkDocument.
+type LinkDocumentParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// UnlinkDocumentParams defines parameters for UnlinkDocument.
+type UnlinkDocumentParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
 // CheckEligibilityParams defines parameters for CheckEligibility.
 type CheckEligibilityParams struct {
 	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
@@ -6888,6 +7281,27 @@ type ReviewMemberImportRowParams struct {
 
 // ReviewMemberImportRowJSONBodyDecision defines parameters for ReviewMemberImportRow.
 type ReviewMemberImportRowJSONBodyDecision string
+
+// PutLegalHoldParams defines parameters for PutLegalHold.
+type PutLegalHoldParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ReleaseLegalHoldParams defines parameters for ReleaseLegalHold.
+type ReleaseLegalHoldParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
 
 // ListOrganizationsParams defines parameters for ListOrganizations.
 type ListOrganizationsParams struct {
@@ -8187,6 +8601,18 @@ type PatchContractApplicationMergePatchPlusJSONRequestBody = UpdateContractReque
 // CreateContractVersionJSONRequestBody defines body for CreateContractVersion for application/json ContentType.
 type CreateContractVersionJSONRequestBody = CreateContractVersionRequest
 
+// CreateUploadJSONRequestBody defines body for CreateUpload for application/json ContentType.
+type CreateUploadJSONRequestBody = CreateUpload
+
+// CompleteUploadJSONRequestBody defines body for CompleteUpload for application/json ContentType.
+type CompleteUploadJSONRequestBody = CompleteUpload
+
+// DownloadDocumentJSONRequestBody defines body for DownloadDocument for application/json ContentType.
+type DownloadDocumentJSONRequestBody = DownloadDocument
+
+// LinkDocumentJSONRequestBody defines body for LinkDocument for application/json ContentType.
+type LinkDocumentJSONRequestBody = CreateDocumentLink
+
 // CheckEligibilityJSONRequestBody defines body for CheckEligibility for application/json ContentType.
 type CheckEligibilityJSONRequestBody = EligibilityCheckRequest
 
@@ -8216,6 +8642,9 @@ type CancelMemberImportJSONRequestBody = ReasonCommand
 
 // ReviewMemberImportRowJSONRequestBody defines body for ReviewMemberImportRow for application/json ContentType.
 type ReviewMemberImportRowJSONRequestBody ReviewMemberImportRowJSONBody
+
+// PutLegalHoldJSONRequestBody defines body for PutLegalHold for application/json ContentType.
+type PutLegalHoldJSONRequestBody = CreateLegalHold
 
 // CreateTenantOrganizationJSONRequestBody defines body for CreateTenantOrganization for application/json ContentType.
 type CreateTenantOrganizationJSONRequestBody = CreateOrganizationRequest
@@ -8523,6 +8952,27 @@ type ServerInterface interface {
 	// (POST /api/v1/contracts/{contractId}/versions)
 	CreateContractVersion(w http.ResponseWriter, r *http.Request, contractId ContractId, params CreateContractVersionParams)
 
+	// (GET /api/v1/documents)
+	ListDocuments(w http.ResponseWriter, r *http.Request, params ListDocumentsParams)
+
+	// (POST /api/v1/documents)
+	CreateUpload(w http.ResponseWriter, r *http.Request, params CreateUploadParams)
+
+	// (GET /api/v1/documents/{documentId})
+	GetDocument(w http.ResponseWriter, r *http.Request, documentId DocumentId, params GetDocumentParams)
+
+	// (POST /api/v1/documents/{documentId}/complete)
+	CompleteUpload(w http.ResponseWriter, r *http.Request, documentId DocumentId, params CompleteUploadParams)
+
+	// (POST /api/v1/documents/{documentId}/download)
+	DownloadDocument(w http.ResponseWriter, r *http.Request, documentId DocumentId, params DownloadDocumentParams)
+
+	// (POST /api/v1/documents/{documentId}/links)
+	LinkDocument(w http.ResponseWriter, r *http.Request, documentId DocumentId, params LinkDocumentParams)
+
+	// (DELETE /api/v1/documents/{documentId}/links/{linkId})
+	UnlinkDocument(w http.ResponseWriter, r *http.Request, documentId DocumentId, linkId DocumentLinkId, params UnlinkDocumentParams)
+
 	// (POST /api/v1/eligibility/checks)
 	CheckEligibility(w http.ResponseWriter, r *http.Request, params CheckEligibilityParams)
 
@@ -8591,6 +9041,12 @@ type ServerInterface interface {
 
 	// (POST /api/v1/imports/members/{importId}/rows/{rowId}/review)
 	ReviewMemberImportRow(w http.ResponseWriter, r *http.Request, importId ImportId, rowId ImportRowId, params ReviewMemberImportRowParams)
+
+	// (POST /api/v1/legal-holds)
+	PutLegalHold(w http.ResponseWriter, r *http.Request, params PutLegalHoldParams)
+
+	// (POST /api/v1/legal-holds/{legalHoldId}/release)
+	ReleaseLegalHold(w http.ResponseWriter, r *http.Request, legalHoldId LegalHoldId, params ReleaseLegalHoldParams)
 
 	// (GET /api/v1/me)
 	GetCurrentUserContext(w http.ResponseWriter, r *http.Request)
@@ -9120,6 +9576,41 @@ func (_ Unimplemented) CreateContractVersion(w http.ResponseWriter, r *http.Requ
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// (GET /api/v1/documents)
+func (_ Unimplemented) ListDocuments(w http.ResponseWriter, r *http.Request, params ListDocumentsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/documents)
+func (_ Unimplemented) CreateUpload(w http.ResponseWriter, r *http.Request, params CreateUploadParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/documents/{documentId})
+func (_ Unimplemented) GetDocument(w http.ResponseWriter, r *http.Request, documentId DocumentId, params GetDocumentParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/documents/{documentId}/complete)
+func (_ Unimplemented) CompleteUpload(w http.ResponseWriter, r *http.Request, documentId DocumentId, params CompleteUploadParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/documents/{documentId}/download)
+func (_ Unimplemented) DownloadDocument(w http.ResponseWriter, r *http.Request, documentId DocumentId, params DownloadDocumentParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/documents/{documentId}/links)
+func (_ Unimplemented) LinkDocument(w http.ResponseWriter, r *http.Request, documentId DocumentId, params LinkDocumentParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (DELETE /api/v1/documents/{documentId}/links/{linkId})
+func (_ Unimplemented) UnlinkDocument(w http.ResponseWriter, r *http.Request, documentId DocumentId, linkId DocumentLinkId, params UnlinkDocumentParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // (POST /api/v1/eligibility/checks)
 func (_ Unimplemented) CheckEligibility(w http.ResponseWriter, r *http.Request, params CheckEligibilityParams) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -9232,6 +9723,16 @@ func (_ Unimplemented) ListMemberImportRows(w http.ResponseWriter, r *http.Reque
 
 // (POST /api/v1/imports/members/{importId}/rows/{rowId}/review)
 func (_ Unimplemented) ReviewMemberImportRow(w http.ResponseWriter, r *http.Request, importId ImportId, rowId ImportRowId, params ReviewMemberImportRowParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/legal-holds)
+func (_ Unimplemented) PutLegalHold(w http.ResponseWriter, r *http.Request, params PutLegalHoldParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/legal-holds/{legalHoldId}/release)
+func (_ Unimplemented) ReleaseLegalHold(w http.ResponseWriter, r *http.Request, legalHoldId LegalHoldId, params ReleaseLegalHoldParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -12525,6 +13026,522 @@ func (siw *ServerInterfaceWrapper) CreateContractVersion(w http.ResponseWriter, 
 	handler.ServeHTTP(w, r)
 }
 
+// ListDocuments operation middleware
+func (siw *ServerInterfaceWrapper) ListDocuments(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListDocumentsParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "scanStatus" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "scanStatus", r.URL.Query(), &params.ScanStatus, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "scanStatus"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "scanStatus", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "classification" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "classification", r.URL.Query(), &params.Classification, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "classification"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "classification", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "aggregateType" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "aggregateType", r.URL.Query(), &params.AggregateType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "aggregateType"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "aggregateType", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "aggregateId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "aggregateId", r.URL.Query(), &params.AggregateId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "aggregateId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "aggregateId", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDocuments(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateUpload operation middleware
+func (siw *ServerInterfaceWrapper) CreateUpload(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateUploadParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateUpload(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetDocument operation middleware
+func (siw *ServerInterfaceWrapper) GetDocument(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", chi.URLParam(r, "documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetDocumentParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetDocument(w, r, documentId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CompleteUpload operation middleware
+func (siw *ServerInterfaceWrapper) CompleteUpload(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", chi.URLParam(r, "documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CompleteUploadParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CompleteUpload(w, r, documentId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DownloadDocument operation middleware
+func (siw *ServerInterfaceWrapper) DownloadDocument(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", chi.URLParam(r, "documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DownloadDocumentParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DownloadDocument(w, r, documentId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// LinkDocument operation middleware
+func (siw *ServerInterfaceWrapper) LinkDocument(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", chi.URLParam(r, "documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params LinkDocumentParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.LinkDocument(w, r, documentId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UnlinkDocument operation middleware
+func (siw *ServerInterfaceWrapper) UnlinkDocument(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", chi.URLParam(r, "documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "linkId" -------------
+	var linkId DocumentLinkId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "linkId", chi.URLParam(r, "linkId"), &linkId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "linkId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UnlinkDocumentParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UnlinkDocument(w, r, documentId, linkId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // CheckEligibility operation middleware
 func (siw *ServerInterfaceWrapper) CheckEligibility(w http.ResponseWriter, r *http.Request) {
 
@@ -14403,6 +15420,174 @@ func (siw *ServerInterfaceWrapper) ReviewMemberImportRow(w http.ResponseWriter, 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ReviewMemberImportRow(w, r, importId, rowId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutLegalHold operation middleware
+func (siw *ServerInterfaceWrapper) PutLegalHold(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PutLegalHoldParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutLegalHold(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReleaseLegalHold operation middleware
+func (siw *ServerInterfaceWrapper) ReleaseLegalHold(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "legalHoldId" -------------
+	var legalHoldId LegalHoldId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "legalHoldId", chi.URLParam(r, "legalHoldId"), &legalHoldId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "legalHoldId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ReleaseLegalHoldParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReleaseLegalHold(w, r, legalHoldId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -24354,6 +25539,33 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/api/v1/approval-policies", wrapper.PutApprovalPolicies)
 	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/documents", wrapper.ListDocuments)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/documents", wrapper.CreateUpload)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/documents/{documentId}", wrapper.GetDocument)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/documents/{documentId}/complete", wrapper.CompleteUpload)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/documents/{documentId}/download", wrapper.DownloadDocument)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/documents/{documentId}/links", wrapper.LinkDocument)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/api/v1/documents/{documentId}/links/{linkId}", wrapper.UnlinkDocument)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/legal-holds", wrapper.PutLegalHold)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/legal-holds/{legalHoldId}/release", wrapper.ReleaseLegalHold)
+	})
 
 	return r
 }
@@ -27475,6 +28687,557 @@ func (response CreateContractVersion422ApplicationProblemPlusJSONResponse) Visit
 	return err
 }
 
+type ListDocumentsRequestObject struct {
+	Params ListDocumentsParams
+}
+
+type ListDocumentsResponseObject interface {
+	VisitListDocumentsResponse(w http.ResponseWriter) error
+}
+
+type ListDocuments200JSONResponse DocumentPage
+
+func (response ListDocuments200JSONResponse) VisitListDocumentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDocuments400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListDocuments400ApplicationProblemPlusJSONResponse) VisitListDocumentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDocuments403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListDocuments403ApplicationProblemPlusJSONResponse) VisitListDocumentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDocuments422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListDocuments422ApplicationProblemPlusJSONResponse) VisitListDocumentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateUploadRequestObject struct {
+	Params CreateUploadParams
+	Body   *CreateUploadJSONRequestBody
+}
+
+type CreateUploadResponseObject interface {
+	VisitCreateUploadResponse(w http.ResponseWriter) error
+}
+
+type CreateUpload201JSONResponse DocumentUpload
+
+func (response CreateUpload201JSONResponse) VisitCreateUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateUpload403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CreateUpload403ApplicationProblemPlusJSONResponse) VisitCreateUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateUpload422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CreateUpload422ApplicationProblemPlusJSONResponse) VisitCreateUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateUpload429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response CreateUpload429ApplicationProblemPlusJSONResponse) VisitCreateUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateUpload503ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateUpload503ApplicationProblemPlusJSONResponse) VisitCreateUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDocumentRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	Params     GetDocumentParams
+}
+
+type GetDocumentResponseObject interface {
+	VisitGetDocumentResponse(w http.ResponseWriter) error
+}
+
+type GetDocument200JSONResponse Document
+
+func (response GetDocument200JSONResponse) VisitGetDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDocument403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetDocument403ApplicationProblemPlusJSONResponse) VisitGetDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDocument404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetDocument404ApplicationProblemPlusJSONResponse) VisitGetDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CompleteUploadRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	Params     CompleteUploadParams
+	Body       *CompleteUploadJSONRequestBody
+}
+
+type CompleteUploadResponseObject interface {
+	VisitCompleteUploadResponse(w http.ResponseWriter) error
+}
+
+type CompleteUpload200JSONResponse Document
+
+func (response CompleteUpload200JSONResponse) VisitCompleteUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CompleteUpload403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CompleteUpload403ApplicationProblemPlusJSONResponse) VisitCompleteUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CompleteUpload404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CompleteUpload404ApplicationProblemPlusJSONResponse) VisitCompleteUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CompleteUpload409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response CompleteUpload409ApplicationProblemPlusJSONResponse) VisitCompleteUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CompleteUpload422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CompleteUpload422ApplicationProblemPlusJSONResponse) VisitCompleteUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CompleteUpload503ApplicationProblemPlusJSONResponse Problem
+
+func (response CompleteUpload503ApplicationProblemPlusJSONResponse) VisitCompleteUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadDocumentRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	Params     DownloadDocumentParams
+	Body       *DownloadDocumentJSONRequestBody
+}
+
+type DownloadDocumentResponseObject interface {
+	VisitDownloadDocumentResponse(w http.ResponseWriter) error
+}
+
+type DownloadDocument200JSONResponse DocumentDownload
+
+func (response DownloadDocument200JSONResponse) VisitDownloadDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadDocument403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DownloadDocument403ApplicationProblemPlusJSONResponse) VisitDownloadDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadDocument404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response DownloadDocument404ApplicationProblemPlusJSONResponse) VisitDownloadDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadDocument409ApplicationProblemPlusJSONResponse Problem
+
+func (response DownloadDocument409ApplicationProblemPlusJSONResponse) VisitDownloadDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadDocument422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response DownloadDocument422ApplicationProblemPlusJSONResponse) VisitDownloadDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadDocument503ApplicationProblemPlusJSONResponse Problem
+
+func (response DownloadDocument503ApplicationProblemPlusJSONResponse) VisitDownloadDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LinkDocumentRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	Params     LinkDocumentParams
+	Body       *LinkDocumentJSONRequestBody
+}
+
+type LinkDocumentResponseObject interface {
+	VisitLinkDocumentResponse(w http.ResponseWriter) error
+}
+
+type LinkDocument201JSONResponse DocumentLink
+
+func (response LinkDocument201JSONResponse) VisitLinkDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LinkDocument403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response LinkDocument403ApplicationProblemPlusJSONResponse) VisitLinkDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LinkDocument404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response LinkDocument404ApplicationProblemPlusJSONResponse) VisitLinkDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LinkDocument409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response LinkDocument409ApplicationProblemPlusJSONResponse) VisitLinkDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LinkDocument422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response LinkDocument422ApplicationProblemPlusJSONResponse) VisitLinkDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UnlinkDocumentRequestObject struct {
+	DocumentId DocumentId     `json:"documentId"`
+	LinkId     DocumentLinkId `json:"linkId"`
+	Params     UnlinkDocumentParams
+}
+
+type UnlinkDocumentResponseObject interface {
+	VisitUnlinkDocumentResponse(w http.ResponseWriter) error
+}
+
+type UnlinkDocument204Response struct {
+}
+
+func (response UnlinkDocument204Response) VisitUnlinkDocumentResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type UnlinkDocument403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response UnlinkDocument403ApplicationProblemPlusJSONResponse) VisitUnlinkDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UnlinkDocument404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response UnlinkDocument404ApplicationProblemPlusJSONResponse) VisitUnlinkDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type CheckEligibilityRequestObject struct {
 	Params CheckEligibilityParams
 	Body   *CheckEligibilityJSONRequestBody
@@ -29075,6 +30838,212 @@ func (response ReviewMemberImportRow422ApplicationProblemPlusJSONResponse) Visit
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutLegalHoldRequestObject struct {
+	Params PutLegalHoldParams
+	Body   *PutLegalHoldJSONRequestBody
+}
+
+type PutLegalHoldResponseObject interface {
+	VisitPutLegalHoldResponse(w http.ResponseWriter) error
+}
+
+type PutLegalHold201ResponseHeaders struct {
+	ETag *string
+}
+
+type PutLegalHold201JSONResponse struct {
+	Body    LegalHold
+	Headers PutLegalHold201ResponseHeaders
+}
+
+func (response PutLegalHold201JSONResponse) VisitPutLegalHoldResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutLegalHold403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response PutLegalHold403ApplicationProblemPlusJSONResponse) VisitPutLegalHoldResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutLegalHold404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response PutLegalHold404ApplicationProblemPlusJSONResponse) VisitPutLegalHoldResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutLegalHold409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response PutLegalHold409ApplicationProblemPlusJSONResponse) VisitPutLegalHoldResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutLegalHold422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response PutLegalHold422ApplicationProblemPlusJSONResponse) VisitPutLegalHoldResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReleaseLegalHoldRequestObject struct {
+	LegalHoldId LegalHoldId `json:"legalHoldId"`
+	Params      ReleaseLegalHoldParams
+}
+
+type ReleaseLegalHoldResponseObject interface {
+	VisitReleaseLegalHoldResponse(w http.ResponseWriter) error
+}
+
+type ReleaseLegalHold200ResponseHeaders struct {
+	ETag *string
+}
+
+type ReleaseLegalHold200JSONResponse struct {
+	Body    LegalHold
+	Headers ReleaseLegalHold200ResponseHeaders
+}
+
+func (response ReleaseLegalHold200JSONResponse) VisitReleaseLegalHoldResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReleaseLegalHold403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ReleaseLegalHold403ApplicationProblemPlusJSONResponse) VisitReleaseLegalHoldResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReleaseLegalHold404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ReleaseLegalHold404ApplicationProblemPlusJSONResponse) VisitReleaseLegalHoldResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReleaseLegalHold409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response ReleaseLegalHold409ApplicationProblemPlusJSONResponse) VisitReleaseLegalHoldResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReleaseLegalHold412ApplicationProblemPlusJSONResponse Problem
+
+func (response ReleaseLegalHold412ApplicationProblemPlusJSONResponse) VisitReleaseLegalHoldResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReleaseLegalHold428ApplicationProblemPlusJSONResponse Problem
+
+func (response ReleaseLegalHold428ApplicationProblemPlusJSONResponse) VisitReleaseLegalHoldResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -39765,6 +41734,27 @@ type StrictServerInterface interface {
 	// (POST /api/v1/contracts/{contractId}/versions)
 	CreateContractVersion(ctx context.Context, request CreateContractVersionRequestObject) (CreateContractVersionResponseObject, error)
 
+	// (GET /api/v1/documents)
+	ListDocuments(ctx context.Context, request ListDocumentsRequestObject) (ListDocumentsResponseObject, error)
+
+	// (POST /api/v1/documents)
+	CreateUpload(ctx context.Context, request CreateUploadRequestObject) (CreateUploadResponseObject, error)
+
+	// (GET /api/v1/documents/{documentId})
+	GetDocument(ctx context.Context, request GetDocumentRequestObject) (GetDocumentResponseObject, error)
+
+	// (POST /api/v1/documents/{documentId}/complete)
+	CompleteUpload(ctx context.Context, request CompleteUploadRequestObject) (CompleteUploadResponseObject, error)
+
+	// (POST /api/v1/documents/{documentId}/download)
+	DownloadDocument(ctx context.Context, request DownloadDocumentRequestObject) (DownloadDocumentResponseObject, error)
+
+	// (POST /api/v1/documents/{documentId}/links)
+	LinkDocument(ctx context.Context, request LinkDocumentRequestObject) (LinkDocumentResponseObject, error)
+
+	// (DELETE /api/v1/documents/{documentId}/links/{linkId})
+	UnlinkDocument(ctx context.Context, request UnlinkDocumentRequestObject) (UnlinkDocumentResponseObject, error)
+
 	// (POST /api/v1/eligibility/checks)
 	CheckEligibility(ctx context.Context, request CheckEligibilityRequestObject) (CheckEligibilityResponseObject, error)
 
@@ -39833,6 +41823,12 @@ type StrictServerInterface interface {
 
 	// (POST /api/v1/imports/members/{importId}/rows/{rowId}/review)
 	ReviewMemberImportRow(ctx context.Context, request ReviewMemberImportRowRequestObject) (ReviewMemberImportRowResponseObject, error)
+
+	// (POST /api/v1/legal-holds)
+	PutLegalHold(ctx context.Context, request PutLegalHoldRequestObject) (PutLegalHoldResponseObject, error)
+
+	// (POST /api/v1/legal-holds/{legalHoldId}/release)
+	ReleaseLegalHold(ctx context.Context, request ReleaseLegalHoldRequestObject) (ReleaseLegalHoldResponseObject, error)
 
 	// (GET /api/v1/me)
 	GetCurrentUserContext(ctx context.Context, request GetCurrentUserContextRequestObject) (GetCurrentUserContextResponseObject, error)
@@ -41235,6 +43231,225 @@ func (sh *strictHandler) CreateContractVersion(w http.ResponseWriter, r *http.Re
 	}
 }
 
+// ListDocuments operation middleware
+func (sh *strictHandler) ListDocuments(w http.ResponseWriter, r *http.Request, params ListDocumentsParams) {
+	var request ListDocumentsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDocuments(ctx, request.(ListDocumentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDocuments")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDocumentsResponseObject); ok {
+		if err := validResponse.VisitListDocumentsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateUpload operation middleware
+func (sh *strictHandler) CreateUpload(w http.ResponseWriter, r *http.Request, params CreateUploadParams) {
+	var request CreateUploadRequestObject
+
+	request.Params = params
+
+	var body CreateUploadJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateUpload(ctx, request.(CreateUploadRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateUpload")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateUploadResponseObject); ok {
+		if err := validResponse.VisitCreateUploadResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetDocument operation middleware
+func (sh *strictHandler) GetDocument(w http.ResponseWriter, r *http.Request, documentId DocumentId, params GetDocumentParams) {
+	var request GetDocumentRequestObject
+
+	request.DocumentId = documentId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetDocument(ctx, request.(GetDocumentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetDocument")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetDocumentResponseObject); ok {
+		if err := validResponse.VisitGetDocumentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CompleteUpload operation middleware
+func (sh *strictHandler) CompleteUpload(w http.ResponseWriter, r *http.Request, documentId DocumentId, params CompleteUploadParams) {
+	var request CompleteUploadRequestObject
+
+	request.DocumentId = documentId
+	request.Params = params
+
+	var body CompleteUploadJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CompleteUpload(ctx, request.(CompleteUploadRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CompleteUpload")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CompleteUploadResponseObject); ok {
+		if err := validResponse.VisitCompleteUploadResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DownloadDocument operation middleware
+func (sh *strictHandler) DownloadDocument(w http.ResponseWriter, r *http.Request, documentId DocumentId, params DownloadDocumentParams) {
+	var request DownloadDocumentRequestObject
+
+	request.DocumentId = documentId
+	request.Params = params
+
+	var body DownloadDocumentJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DownloadDocument(ctx, request.(DownloadDocumentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DownloadDocument")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DownloadDocumentResponseObject); ok {
+		if err := validResponse.VisitDownloadDocumentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// LinkDocument operation middleware
+func (sh *strictHandler) LinkDocument(w http.ResponseWriter, r *http.Request, documentId DocumentId, params LinkDocumentParams) {
+	var request LinkDocumentRequestObject
+
+	request.DocumentId = documentId
+	request.Params = params
+
+	var body LinkDocumentJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.LinkDocument(ctx, request.(LinkDocumentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "LinkDocument")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(LinkDocumentResponseObject); ok {
+		if err := validResponse.VisitLinkDocumentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UnlinkDocument operation middleware
+func (sh *strictHandler) UnlinkDocument(w http.ResponseWriter, r *http.Request, documentId DocumentId, linkId DocumentLinkId, params UnlinkDocumentParams) {
+	var request UnlinkDocumentRequestObject
+
+	request.DocumentId = documentId
+	request.LinkId = linkId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UnlinkDocument(ctx, request.(UnlinkDocumentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UnlinkDocument")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UnlinkDocumentResponseObject); ok {
+		if err := validResponse.VisitUnlinkDocumentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // CheckEligibility operation middleware
 func (sh *strictHandler) CheckEligibility(w http.ResponseWriter, r *http.Request, params CheckEligibilityParams) {
 	var request CheckEligibilityRequestObject
@@ -41916,6 +44131,66 @@ func (sh *strictHandler) ReviewMemberImportRow(w http.ResponseWriter, r *http.Re
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ReviewMemberImportRowResponseObject); ok {
 		if err := validResponse.VisitReviewMemberImportRowResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutLegalHold operation middleware
+func (sh *strictHandler) PutLegalHold(w http.ResponseWriter, r *http.Request, params PutLegalHoldParams) {
+	var request PutLegalHoldRequestObject
+
+	request.Params = params
+
+	var body PutLegalHoldJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutLegalHold(ctx, request.(PutLegalHoldRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutLegalHold")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutLegalHoldResponseObject); ok {
+		if err := validResponse.VisitPutLegalHoldResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReleaseLegalHold operation middleware
+func (sh *strictHandler) ReleaseLegalHold(w http.ResponseWriter, r *http.Request, legalHoldId LegalHoldId, params ReleaseLegalHoldParams) {
+	var request ReleaseLegalHoldRequestObject
+
+	request.LegalHoldId = legalHoldId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReleaseLegalHold(ctx, request.(ReleaseLegalHoldRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReleaseLegalHold")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReleaseLegalHoldResponseObject); ok {
+		if err := validResponse.VisitReleaseLegalHoldResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

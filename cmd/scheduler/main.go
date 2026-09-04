@@ -17,10 +17,13 @@ import (
 	authorizationapp "github.com/celikbros/kapsora/internal/authorization/application"
 	authorizationpg "github.com/celikbros/kapsora/internal/authorization/infrastructure/postgres"
 	"github.com/celikbros/kapsora/internal/benefit/ledger"
+	documentapp "github.com/celikbros/kapsora/internal/document/application"
+	documentpg "github.com/celikbros/kapsora/internal/document/infrastructure/postgres"
 	"github.com/celikbros/kapsora/internal/platform/config"
 	"github.com/celikbros/kapsora/internal/platform/db"
 	"github.com/celikbros/kapsora/internal/platform/idempotency"
 	"github.com/celikbros/kapsora/internal/platform/logging"
+	"github.com/celikbros/kapsora/internal/platform/objectstore"
 	"github.com/celikbros/kapsora/internal/platform/outbox"
 	"github.com/celikbros/kapsora/internal/platform/ratelimit"
 	"github.com/celikbros/kapsora/internal/platform/scheduler"
@@ -98,6 +101,22 @@ func run() error {
 	registry.Register(scheduler.EntitlementReconcile(entitlements))
 	registry.Register(scheduler.AuthorizationExpire(authorizations))
 	registry.Register(scheduler.WorkflowEscalate(workflows))
+	// Document retention runs only when an object store and a retention period are both
+	// configured. Purging real documents after a number nobody chose would be worse than
+	// keeping them, so keeping them is the default; when the sweep does run, every
+	// document a legal hold covers is skipped whatever the period says.
+	if cfg.Documents.Configured() && cfg.Documents.RetentionDays > 0 {
+		documents, err := newDocuments(cfg, pool, logger)
+		if err != nil {
+			return err
+		}
+		registry.Register(scheduler.DocumentRetention(documents,
+			time.Duration(cfg.Documents.RetentionDays)*24*time.Hour))
+	} else {
+		logger.Info("document retention disabled",
+			"object_store_configured", cfg.Documents.Configured(),
+			"retention_days", cfg.Documents.RetentionDays)
+	}
 	// scheduler.SessionCleanup(store) is registered once the identity session store
 	// (WP-I1-01) exists.
 	runner := scheduler.NewRunner(pool, registry, logger, 10*time.Minute)
@@ -114,6 +133,29 @@ func run() error {
 		case <-time.After(5 * time.Second):
 		}
 	}
+}
+
+// newDocuments builds the document service the retention sweep drives. No scanner and no
+// cursor codec: this process scans nothing and answers no list, and asking it for either
+// would only add a dependency it has no reason to hold.
+func newDocuments(cfg config.Config, pool *pgxpool.Pool, logger *slog.Logger) (*documentapp.Service, error) {
+	store, err := objectstore.NewS3(objectstore.S3Options{
+		Endpoint: cfg.Documents.Endpoint, Region: cfg.Documents.Region,
+		AccessKey: cfg.Documents.AccessKey, SecretKey: cfg.Documents.SecretKey,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return documentapp.New(documentapp.Deps{
+		Pool: pool, Repo: documentpg.New(), Store: store, Audit: auditpg.New(), Logger: logger,
+		Storage: documentapp.Storage{
+			QuarantineBucket: cfg.Documents.QuarantineBucket,
+			SecureBucket:     cfg.Documents.SecureBucket,
+			UploadTTL:        cfg.Documents.UploadURLTTL,
+			DownloadTTL:      cfg.Documents.DownloadURLTTL,
+			EncryptionKeyRef: cfg.Documents.EncryptionKeyRef,
+		},
+	})
 }
 
 // leadOnce holds the lock on one connection and runs the tick loop until the context

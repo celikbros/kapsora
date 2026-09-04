@@ -47,6 +47,11 @@ cp .env.example .env
 - `KAPSORA_LOCAL_MASTER_KEY`, `KAPSORA_COOKIE_SIGNING_KEY`: `go run ./cmd/keygen` çıktısı.
 - MinIO / ClamAV / Mailpit adresleri ve MinIO kök kimliği: örnek değerler yalnız yerel
   içindir; `.env` git'e girmez.
+- Belge hattı (WP-I4-04): `kapsora-api` ve `kapsora-worker` nesne deposu olmadan
+  başlamaz. `.env` dosyanız `.env.example`'dan eskiyse `KAPSORA_MINIO_ROOT_USER`,
+  `KAPSORA_MINIO_ROOT_PASSWORD` ve `KAPSORA_DOCUMENT_*` satırlarını kopyalayın. Dosya
+  gövdesi ne API'ye ne veritabanına girer: istemci `quarantine` kovasına presigned PUT ile
+  yükler, worker dosyayı clamd'e akıtır, yalnız temiz dosya `secure` kovasına kopyalanır.
 
 ## 4. Veritabanı
 

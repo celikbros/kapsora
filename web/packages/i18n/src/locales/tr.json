@@ -315,7 +315,20 @@
     "WORK_ITEM_TRANSITION_INVALID": "İş kalemi bu duruma geçemez.",
     "WORK_ITEM_NOT_ASSIGNEE": "Bu iş kalemi sizde değil; başkasının işini almak için yeniden atama yetkisi gerekir.",
     "APPROVAL_POLICY_OVERLAP": "Aynı işlem ve kapsam için çakışan bir onay politikası dönemi var.",
-    "APPROVAL_POLICY_NOT_FOUND": "Bu işlem ve tutar için tanımlı bir onay politikası yok."
+    "APPROVAL_POLICY_NOT_FOUND": "Bu işlem ve tutar için tanımlı bir onay politikası yok.",
+    "DOCUMENT_NOT_FOUND": "Belge bulunamadı ya da bu kurumda görünmüyor.",
+    "DOCUMENT_NOT_SCANNED": "Belge henüz virüs taramasından geçmedi; tarama bitince indirilebilir.",
+    "DOCUMENT_INFECTED": "Belgede zararlı yazılım bulundu ve dosya silindi. Temiz bir kopyasını yeniden yükleyin.",
+    "DOCUMENT_PURGED": "Belgenin saklama süresi doldu ve dosya silindi.",
+    "DOCUMENT_UPLOAD_MISSING": "Yüklenen dosya bulunamadı. Yükleme bağlantısı kullanılmamış ya da süresi dolmuş olabilir.",
+    "DOCUMENT_ALREADY_COMPLETED": "Bu yükleme zaten tamamlandı.",
+    "DOCUMENT_LINK_NOT_FOUND": "Belge bağlantısı bulunamadı.",
+    "DOCUMENT_LINK_EXISTS": "Belge bu kayda bu türde zaten bağlı.",
+    "DOCUMENT_LINK_PERMISSION_DENIED": "Bu belgeyi indirmek için ek yetki gerekiyor.",
+    "DOCUMENT_STORE_UNAVAILABLE": "Belge deposuna şu anda ulaşılamıyor. Kısa bir süre sonra yeniden deneyin.",
+    "LEGAL_HOLD_NOT_FOUND": "Hukuki saklama kaydı bulunamadı.",
+    "LEGAL_HOLD_EXISTS": "Bu hedef için etkin bir hukuki saklama zaten var.",
+    "LEGAL_HOLD_ALREADY_RELEASED": "Hukuki saklama zaten kaldırılmış."
   },
   "fieldErrors": {
     "RULE_COMPILE_FAILED": "Kural koşulu derlenemedi",

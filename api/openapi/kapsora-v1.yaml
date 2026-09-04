@@ -55,6 +55,8 @@ tags:
     description: Ön onaylar, hizmet kayıtları ve kuponlar
   - name: Worklist
     description: İş kuyrukları, iş kalemleri, yorumlar ve onay politikaları
+  - name: Documents
+    description: Belge yükleme, karantina taraması, güvenli indirme ve hukuki saklama
 paths:
   /health/live:
     get:
@@ -6867,6 +6869,358 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+  /api/v1/documents:
+    get:
+      tags: [Documents]
+      operationId: listDocuments
+      description: |
+        The tenant's documents, newest first, with keyset paging. A provider-scoped actor
+        sees the documents its own organizations own plus the tenant's own, and one
+        belonging to another provider is not on the page and is not reachable by id either.
+
+        The page carries scan status, so a client can show "taranıyor" rather than a broken
+        download: a document is only ever downloadable once its status is CLEAN.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: scanStatus
+          in: query
+          description: Keep only the documents in one scan state.
+          schema:
+            $ref: '#/components/schemas/DocumentScanStatus'
+        - name: classification
+          in: query
+          description: Keep only the documents of one confidentiality class.
+          schema:
+            $ref: '#/components/schemas/DocumentClassification'
+        - name: aggregateType
+          in: query
+          description: Keep only the documents linked to records of this type.
+          schema:
+            type: string
+            pattern: '^[A-Z][A-Z0-9_]{1,63}$'
+        - name: aggregateId
+          in: query
+          description: With aggregateType, keep only the documents linked to that one record.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Document page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentPage'
+        '400':
+          description: Cursor invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags: [Documents]
+      operationId: createUpload
+      description: |
+        Reserves a document and answers a short-lived presigned PUT into the quarantine
+        bucket. The API never carries a file body: the client uploads straight to the URL
+        returned here, and only then calls completeUpload.
+
+        The declared byteSize and contentType are signed into the URL, so they are the
+        actual limit rather than a hint — the object store refuses a body of any other size.
+
+        sha256 is optional. When it is given and those exact bytes are already stored clean
+        and visible to the caller, nothing is uploaded at all: the response carries the
+        document that already exists and no upload URL. That is what stops the same file
+        being stored twice, and a member re-uploading a document being counted as a new one.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUpload'
+      responses:
+        '201':
+          description: |
+            Document reserved. `upload` is null when the same bytes were already stored, in
+            which case the document is the one that already exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentUpload'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          description: The object store could not issue an upload URL
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/documents/{documentId}:
+    get:
+      tags: [Documents]
+      operationId: getDocument
+      description: |
+        One document with the records it is linked to. It never carries the file: a document
+        is read here and fetched through downloadDocument.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: Document
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/documents/{documentId}/complete:
+    post:
+      tags: [Documents]
+      operationId: completeUpload
+      description: |
+        Records what the client uploaded and queues the malware scan. The document moves to
+        SCANNING and stays unreadable until a scanner has looked at every byte of it.
+
+        Neither the size nor the digest is trusted: the worker counts and hashes the bytes
+        itself while streaming them to the scanner, and it is that digest the document is
+        finally stored under. They are recorded because a claim that later disagrees with
+        the file is itself worth knowing about.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/DocumentId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteUpload'
+      responses:
+        '200':
+          description: Upload recorded and the scan queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '503':
+          description: The object store could not be reached
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/documents/{documentId}/download:
+    post:
+      tags: [Documents]
+      operationId: downloadDocument
+      description: |
+        Answers a short-lived presigned GET into the secure bucket, and only for a document
+        whose scan came back CLEAN. Anything else is a 409: a file that has not been scanned,
+        whose scan failed, or that the scanner named something in has no download URL at all.
+
+        Every call writes an audit access event carrying the document's classification and
+        the reason it was opened, so it is a POST rather than a GET: it mints a bearer URL
+        and records an access, neither of which may be cached or replayed by an intermediary.
+
+        A link may name a permission of its own — a clinical attachment names
+        health.clinical.read — and a caller who may read documents in general but not that
+        one is refused with 403.
+
+        It carries no Idempotency-Key. Every call mints a new short-lived URL and records a
+        new access, which is exactly what a retry should do; replaying the first response
+        would hand the caller a URL that has since expired.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/DocumentId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DownloadDocument'
+      responses:
+        '200':
+          description: Short-lived download URL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentDownload'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: The document is not scanned clean, or its bytes have been purged
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '503':
+          description: The object store could not issue a download URL
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/documents/{documentId}/links:
+    post:
+      tags: [Documents]
+      operationId: linkDocument
+      description: |
+        Attaches a document to a record: this is the invoice, that is the referral. The same
+        document may be linked to several records, which is what stops the same file being
+        uploaded once per place it is needed.
+
+        requiredPermission narrows who may download through the link. Every link on a
+        document is checked, so attaching a file to a clinical record makes it clinical
+        everywhere rather than only when reached from that record.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/DocumentId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDocumentLink'
+      responses:
+        '201':
+          description: Document linked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentLink'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/documents/{documentId}/links/{linkId}:
+    delete:
+      tags: [Documents]
+      operationId: unlinkDocument
+      description: |
+        Removes one link. The document itself is untouched: a file that is no longer this
+        request's invoice is still a file somebody uploaded, and it may still belong to
+        other records.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/DocumentId'
+        - $ref: '#/components/parameters/DocumentLinkId'
+      responses:
+        '204':
+          description: Link removed
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/legal-holds:
+    post:
+      tags: [Documents]
+      operationId: putLegalHold
+      description: |
+        Places a legal hold on a document, a person or a record. From that moment nothing
+        deletes what it covers: the retention sweep skips every held document and reports how
+        many it left alone.
+
+        One of objectId, personId or the aggregateType/aggregateId pair is required. A hold
+        that named nothing would look like protection and protect nothing.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLegalHold'
+      responses:
+        '201':
+          description: Legal hold placed
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegalHold'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/legal-holds/{legalHoldId}/release:
+    post:
+      tags: [Documents]
+      operationId: releaseLegalHold
+      description: |
+        Lifts a hold, after which retention may act on what it covered again. Who lifted it
+        and when are both recorded: a hold that could be released anonymously would be no
+        protection at all.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/LegalHoldId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Legal hold released
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegalHold'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
 components:
   securitySchemes:
     sessionCookie:
@@ -7062,6 +7416,27 @@ components:
         format: uuid
     WorkItemId:
       name: workItemId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    DocumentId:
+      name: documentId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    DocumentLinkId:
+      name: linkId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    LegalHoldId:
+      name: legalHoldId
       in: path
       required: true
       schema:
@@ -12613,3 +12988,347 @@ components:
           maxItems: 50
           items:
             $ref: '#/components/schemas/ApprovalPolicyInput'
+    DocumentClassification:
+      type: string
+      description: |
+        How sensitive the document is. It is copied onto every access event a download
+        writes, and HEALTH additionally produces an audit event of its own: who opened
+        clinical material is a question asked on its own (v1.2 11.10).
+      enum: [INTERNAL, CONFIDENTIAL, PERSONAL, HEALTH]
+    DocumentScanStatus:
+      type: string
+      description: |
+        The life of a file in one field. PENDING is a reserved upload with no bytes yet,
+        SCANNING is bytes in quarantine waiting for a verdict, CLEAN is the only status
+        whose bytes are in the secure bucket, INFECTED is a file the scanner named something
+        in and whose bytes have been deleted, and FAILED is one no verdict could be reached
+        about — which is not "clean" and is never promoted.
+      enum: [PENDING, SCANNING, CLEAN, INFECTED, FAILED]
+    Document:
+      type: object
+      additionalProperties: false
+      required: [id, bucket, classification, originalFilename, contentType, scanStatus, downloadable, links, uploadedAt, createdAt, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        bucket:
+          type: string
+          description: |
+            Which of the two worlds the bytes are in. It is never `secure` unless the scan
+            came back clean, which the schema enforces with a CHECK rather than trusting the
+            code that writes it.
+          enum: [quarantine, secure]
+        classification:
+          $ref: '#/components/schemas/DocumentClassification'
+        originalFilename:
+          type: string
+          maxLength: 255
+          description: |
+            The name the file was uploaded under, kept so a person can recognise their own
+            document. Any directory part a browser sent is stripped, and it is never used to
+            build a storage key.
+        contentType:
+          type: string
+          maxLength: 255
+        byteSize:
+          type: [integer, 'null']
+          format: int64
+          description: |
+            Null until the upload is completed. After a scan it is the size the worker
+            counted while reading the bytes, not the one the client claimed.
+        sha256:
+          type: [string, 'null']
+          pattern: '^[0-9a-f]{64}$'
+          description: |
+            Null until the upload is completed. After a scan it is the digest the worker
+            computed over the bytes it scanned.
+        scanStatus:
+          $ref: '#/components/schemas/DocumentScanStatus'
+        downloadable:
+          type: boolean
+          description: |
+            Whether downloadDocument would answer a URL right now. It is the one answer the
+            product computes in one place: clean, in the secure bucket, and not purged.
+        ownerOrganizationId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            The provider the document belongs to, or null when it belongs to the tenant
+            itself. A provider-scoped actor only ever sees its own organizations' documents.
+        duplicateOfDocumentId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            Set when these exact bytes were already stored under another document, which
+            this one now points at. It carries no second copy of the file.
+        uploadedBy:
+          type: [string, 'null']
+          format: uuid
+        uploadedAt:
+          type: string
+          format: date-time
+        purgedAt:
+          type: [string, 'null']
+          format: date-time
+          description: |
+            When retention removed the bytes. The row outlives them, so "this document
+            existed and was removed on this day" stays answerable.
+        links:
+          type: array
+          description: The records this document belongs to.
+          items:
+            $ref: '#/components/schemas/DocumentLink'
+        createdAt:
+          type: string
+          format: date-time
+        rowVersion:
+          type: integer
+          format: int64
+    DocumentPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Document'
+        nextCursor:
+          type: [string, 'null']
+    DocumentLink:
+      type: object
+      additionalProperties: false
+      required: [id, documentId, aggregateType, aggregateId, documentTypeCode, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        documentId:
+          type: string
+          format: uuid
+        aggregateType:
+          type: string
+          description: The kind of record this document belongs to, for example SERVICE_REQUEST.
+        aggregateId:
+          type: string
+          format: uuid
+        documentTypeCode:
+          type: string
+          description: What the document is on that record, for example INVOICE or REFERRAL.
+        purpose:
+          type: [string, 'null']
+          maxLength: 200
+        requiredPermission:
+          type: [string, 'null']
+          description: |
+            The permission a caller must hold to download through this link. Null means
+            document.read is enough.
+        createdBy:
+          type: [string, 'null']
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+    CreateUpload:
+      type: object
+      additionalProperties: false
+      required: [originalFilename, contentType, byteSize]
+      properties:
+        originalFilename:
+          type: string
+          minLength: 1
+          maxLength: 255
+        contentType:
+          type: string
+          minLength: 3
+          maxLength: 255
+        byteSize:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 104857600
+          description: |
+            The exact size of the file. It is signed into the upload URL, so the object
+            store refuses a body of any other size: this is where the limit actually holds,
+            because the API has no body to measure.
+        classification:
+          $ref: '#/components/schemas/DocumentClassification'
+        ownerOrganizationId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            Which provider the document belongs to. A provider-scoped caller may only name
+            an organization it holds, and one holding exactly one does not have to say which.
+        sha256:
+          type: [string, 'null']
+          pattern: '^[0-9a-f]{64}$'
+          description: |
+            Optional digest of the file about to be sent. When those exact bytes are already
+            stored clean and visible to the caller, no upload happens at all.
+    PresignedUpload:
+      type: object
+      additionalProperties: false
+      required: [url, method, expiresAt, headers]
+      properties:
+        url:
+          type: string
+          format: uri
+          description: |
+            Where to PUT the file. It is a bearer credential with a short life; it is never
+            logged and never shared.
+        method:
+          type: string
+          enum: [PUT]
+        expiresAt:
+          type: string
+          format: date-time
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+          description: |
+            Headers the upload must carry exactly as given. They are part of the signature,
+            so a different content type or length is refused by the store.
+    DocumentUpload:
+      type: object
+      additionalProperties: false
+      required: [document]
+      properties:
+        document:
+          $ref: '#/components/schemas/Document'
+        upload:
+          oneOf:
+            - $ref: '#/components/schemas/PresignedUpload'
+            - type: 'null'
+          description: |
+            Null when the same bytes were already stored: there is nothing to upload, and
+            `document` is the one that already exists.
+    CompleteUpload:
+      type: object
+      additionalProperties: false
+      required: [sha256, byteSize]
+      properties:
+        sha256:
+          type: string
+          pattern: '^[0-9a-f]{64}$'
+          description: The digest of what was uploaded, as the client computed it.
+        byteSize:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 104857600
+    DownloadDocument:
+      type: object
+      additionalProperties: false
+      description: |
+        Why the document is being opened. Both fields travel into the access event: "who
+        read this" without "why" is not an answer a data protection review can use.
+      properties:
+        purposeCode:
+          type: string
+          minLength: 2
+          maxLength: 80
+        reasonText:
+          type: string
+          maxLength: 1000
+    DocumentDownload:
+      type: object
+      additionalProperties: false
+      required: [url, method, expiresAt, classification]
+      properties:
+        url:
+          type: string
+          format: uri
+          description: |
+            Where to GET the file from the secure bucket. It is a bearer credential with a
+            short life; it is never logged and never shared.
+        method:
+          type: string
+          enum: [GET]
+        expiresAt:
+          type: string
+          format: date-time
+        classification:
+          $ref: '#/components/schemas/DocumentClassification'
+    CreateDocumentLink:
+      type: object
+      additionalProperties: false
+      required: [aggregateType, aggregateId, documentTypeCode]
+      properties:
+        aggregateType:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]{1,63}$'
+        aggregateId:
+          type: string
+          format: uuid
+        documentTypeCode:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]{1,63}$'
+        purpose:
+          type: string
+          maxLength: 200
+        requiredPermission:
+          type: string
+          pattern: '^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*){1,3}$'
+          description: |
+            Narrows who may download through this link. Every link on a document is checked,
+            so a clinical attachment stays clinical wherever it is reached from.
+    CreateLegalHold:
+      type: object
+      additionalProperties: false
+      required: [reason]
+      properties:
+        documentId:
+          type: [string, 'null']
+          format: uuid
+        personId:
+          type: [string, 'null']
+          format: uuid
+        aggregateType:
+          type: [string, 'null']
+          pattern: '^[A-Z][A-Z0-9_]{1,63}$'
+        aggregateId:
+          type: [string, 'null']
+          format: uuid
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+    LegalHold:
+      type: object
+      additionalProperties: false
+      required: [id, reason, placedAt, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        documentId:
+          type: [string, 'null']
+          format: uuid
+        personId:
+          type: [string, 'null']
+          format: uuid
+        aggregateType:
+          type: [string, 'null']
+        aggregateId:
+          type: [string, 'null']
+          format: uuid
+        reason:
+          type: string
+          maxLength: 1000
+        placedBy:
+          type: [string, 'null']
+          format: uuid
+        placedAt:
+          type: string
+          format: date-time
+        releasedAt:
+          type: [string, 'null']
+          format: date-time
+        releasedBy:
+          type: [string, 'null']
+          format: uuid
+        rowVersion:
+          type: integer
+          format: int64

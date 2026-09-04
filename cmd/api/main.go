@@ -31,6 +31,9 @@ import (
 	contractapp "github.com/celikbros/kapsora/internal/contract/application"
 	contractpg "github.com/celikbros/kapsora/internal/contract/infrastructure/postgres"
 	contracthttp "github.com/celikbros/kapsora/internal/contract/transport/http"
+	documentapp "github.com/celikbros/kapsora/internal/document/application"
+	documentpg "github.com/celikbros/kapsora/internal/document/infrastructure/postgres"
+	documenthttp "github.com/celikbros/kapsora/internal/document/transport/http"
 	"github.com/celikbros/kapsora/internal/identity"
 	"github.com/celikbros/kapsora/internal/identity/application"
 	"github.com/celikbros/kapsora/internal/identity/domain"
@@ -50,6 +53,7 @@ import (
 	"github.com/celikbros/kapsora/internal/platform/httpx"
 	"github.com/celikbros/kapsora/internal/platform/idempotency"
 	"github.com/celikbros/kapsora/internal/platform/logging"
+	"github.com/celikbros/kapsora/internal/platform/objectstore"
 	"github.com/celikbros/kapsora/internal/platform/ratelimit"
 	pricingapp "github.com/celikbros/kapsora/internal/pricing/application"
 	pricingpg "github.com/celikbros/kapsora/internal/pricing/infrastructure/postgres"
@@ -231,6 +235,14 @@ func run() error {
 		return err
 	}
 
+	// Documents. The API hands out presigned URLs and never touches a file body: this
+	// process needs the object store to sign them, and no scanner at all — scanning is the
+	// worker's job, and a scanner wired in here would be one this process never calls.
+	documentSvc, err := newDocuments(cfg, pool, cursors, logger)
+	if err != nil {
+		return err
+	}
+
 	// The eligibility service shares the entitlement movement engine, so a check that
 	// opens an account lazily and a reservation on the same account run the same code.
 	eligibilitySvc, err := benefiteligibility.New(benefiteligibility.Deps{
@@ -260,6 +272,7 @@ func run() error {
 		requests:       serviceRequestSvc,
 		authorizations: authorizationSvc,
 		workflows:      workflowSvc,
+		documents:      documentSvc,
 		entitlements:   entitlementSvc,
 		eligibility:    eligibilitySvc,
 		imports:        memberImports,
@@ -297,6 +310,38 @@ func run() error {
 	}
 	logger.Info("http server stopped")
 	return nil
+}
+
+// newDocuments builds the document service for a process that serves the API. The scanner
+// is deliberately absent: only kapsora-worker scans, and ScanObject refuses to run without
+// one rather than ever treating a missing scanner as a clean verdict.
+func newDocuments(cfg config.Config, pool *pgxpool.Pool, cursors *httpx.CursorCodec,
+	logger *slog.Logger,
+) (*documentapp.Service, error) {
+	if !cfg.Documents.Configured() {
+		// The document routes are part of the contract, so the API cannot serve a version
+		// of itself without them. Refusing at start-up is the honest answer; the
+		// alternative is an endpoint that exists and 500s.
+		return nil, errors.New("kapsora-api: the document API needs an object store; set KAPSORA_MINIO_ROOT_USER and KAPSORA_MINIO_ROOT_PASSWORD (see .env.example) and start it with scripts/native/up")
+	}
+	store, err := objectstore.NewS3(objectstore.S3Options{
+		Endpoint: cfg.Documents.Endpoint, Region: cfg.Documents.Region,
+		AccessKey: cfg.Documents.AccessKey, SecretKey: cfg.Documents.SecretKey,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return documentapp.New(documentapp.Deps{
+		Pool: pool, Repo: documentpg.New(), Store: store, Audit: auditpg.New(),
+		Cursors: cursors, Logger: logger,
+		Storage: documentapp.Storage{
+			QuarantineBucket: cfg.Documents.QuarantineBucket,
+			SecureBucket:     cfg.Documents.SecureBucket,
+			UploadTTL:        cfg.Documents.UploadURLTTL,
+			DownloadTTL:      cfg.Documents.DownloadURLTTL,
+			EncryptionKeyRef: cfg.Documents.EncryptionKeyRef,
+		},
+	})
 }
 
 // identityDeps bundles the identity module's services for the router.
@@ -345,6 +390,7 @@ type routerDeps struct {
 	requests       *servicerequestapp.Service
 	authorizations *authorizationapp.Service
 	workflows      *workflowapp.Service
+	documents      *documentapp.Service
 	entitlements   *benefitledger.Service
 	eligibility    *benefiteligibility.Service
 	imports        *memberimport.Service
@@ -575,6 +621,28 @@ func newRouter(d routerDeps) http.Handler {
 			})
 			tenant.Route("/approval-policies", func(r chi.Router) {
 				workflowHandler.PolicyRoutes(r, workflowMW)
+			})
+
+			// Documents. Every byte travels between the client and the object store
+			// directly: createUpload answers a presigned PUT into the quarantine bucket and
+			// downloadDocument a presigned GET out of the secure one, and nothing in
+			// between ever holds a file. downloadDocument carries no Idempotency-Key —
+			// it changes no state, and minting the same URL twice is what a retry should
+			// do — but it is a POST, because it hands out a bearer credential and writes an
+			// access event with the reason it was asked for.
+			documentHandler := documenthttp.NewHandler(d.documents, sessions, d.logger)
+			documentMW := documenthttp.Middlewares{
+				CreateUpload:     d.idempotent("document.upload_create"),
+				CompleteUpload:   d.idempotent("document.upload_complete"),
+				LinkDocument:     d.idempotent("document.link_create"),
+				PutLegalHold:     d.idempotent("legal_hold.place"),
+				ReleaseLegalHold: d.idempotent("legal_hold.release"),
+			}
+			tenant.Route("/documents", func(r chi.Router) {
+				documentHandler.DocumentRoutes(r, documentMW)
+			})
+			tenant.Route("/legal-holds", func(r chi.Router) {
+				documentHandler.LegalHoldRoutes(r, documentMW)
 			})
 
 			// Eligibility checks change no business state and carry their own replay

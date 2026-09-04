@@ -574,6 +574,83 @@ type DirectoryTenantOrganization struct {
 	RowVersion       int64
 }
 
+type DocumentLegalHold struct {
+	ID            uuid.UUID
+	TenantID      uuid.UUID
+	ObjectID      uuid.NullUUID
+	PersonID      uuid.NullUUID
+	AggregateType *string
+	AggregateID   uuid.NullUUID
+	Reason        string
+	PlacedBy      uuid.NullUUID
+	PlacedAt      time.Time
+	ReleasedAt    *time.Time
+	ReleasedBy    uuid.NullUUID
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	RowVersion    int64
+}
+
+type DocumentLink struct {
+	ID                 uuid.UUID
+	TenantID           uuid.UUID
+	ObjectID           uuid.UUID
+	AggregateType      string
+	AggregateID        uuid.UUID
+	DocumentTypeCode   string
+	Purpose            *string
+	RequiredPermission *string
+	CreatedBy          uuid.NullUUID
+	CreatedAt          time.Time
+}
+
+type DocumentObject struct {
+	ID                        uuid.UUID
+	TenantID                  uuid.UUID
+	ObjectKey                 string
+	Bucket                    string
+	Classification            string
+	OriginalFilename          string
+	ContentType               string
+	ByteSize                  *int64
+	Sha256                    []byte
+	ScanStatus                string
+	OwnerTenantOrganizationID uuid.NullUUID
+	DuplicateOfObjectID       uuid.NullUUID
+	UploadedBy                uuid.NullUUID
+	UploadedAt                time.Time
+	PurgedAt                  *time.Time
+	CreatedAt                 time.Time
+	CreatedBy                 uuid.NullUUID
+	UpdatedAt                 time.Time
+	UpdatedBy                 uuid.NullUUID
+	RowVersion                int64
+}
+
+type DocumentScanResult struct {
+	ID               uuid.UUID
+	TenantID         uuid.UUID
+	ObjectID         uuid.UUID
+	VersionID        uuid.UUID
+	Engine           string
+	SignatureVersion *string
+	Outcome          string
+	Finding          *string
+	ScannedAt        time.Time
+}
+
+type DocumentVersion struct {
+	ID               uuid.UUID
+	TenantID         uuid.UUID
+	ObjectID         uuid.UUID
+	VersionNo        int32
+	ByteSize         int64
+	ContentType      string
+	EncryptionKeyRef *string
+	CreatedAt        time.Time
+	CreatedBy        uuid.NullUUID
+}
+
 type IamAccessGrant struct {
 	ID                 uuid.UUID
 	TenantID           uuid.UUID

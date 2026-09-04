@@ -10,7 +10,7 @@ import (
 )
 
 // expectedSchemaVersion is the number of the newest migration file.
-const expectedSchemaVersion = 27
+const expectedSchemaVersion = 28
 
 func TestMigrateUpFromEmptyDatabase(t *testing.T) {
 	h := dbtest.New(t)

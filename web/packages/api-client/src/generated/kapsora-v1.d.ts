@@ -551,6 +551,167 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The tenant's documents, newest first, with keyset paging. A provider-scoped actor
+         *     sees the documents its own organizations own plus the tenant's own, and one
+         *     belonging to another provider is not on the page and is not reachable by id either.
+         *
+         *     The page carries scan status, so a client can show "taranıyor" rather than a broken
+         *     download: a document is only ever downloadable once its status is CLEAN.
+         */
+        get: operations["listDocuments"];
+        put?: never;
+        /**
+         * @description Reserves a document and answers a short-lived presigned PUT into the quarantine
+         *     bucket. The API never carries a file body: the client uploads straight to the URL
+         *     returned here, and only then calls completeUpload.
+         *
+         *     The declared byteSize and contentType are signed into the URL, so they are the
+         *     actual limit rather than a hint — the object store refuses a body of any other size.
+         *
+         *     sha256 is optional. When it is given and those exact bytes are already stored clean
+         *     and visible to the caller, nothing is uploaded at all: the response carries the
+         *     document that already exists and no upload URL. That is what stops the same file
+         *     being stored twice, and a member re-uploading a document being counted as a new one.
+         */
+        post: operations["createUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/documents/{documentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One document with the records it is linked to. It never carries the file: a document
+         *     is read here and fetched through downloadDocument.
+         */
+        get: operations["getDocument"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/documents/{documentId}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Records what the client uploaded and queues the malware scan. The document moves to
+         *     SCANNING and stays unreadable until a scanner has looked at every byte of it.
+         *
+         *     Neither the size nor the digest is trusted: the worker counts and hashes the bytes
+         *     itself while streaming them to the scanner, and it is that digest the document is
+         *     finally stored under. They are recorded because a claim that later disagrees with
+         *     the file is itself worth knowing about.
+         */
+        post: operations["completeUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/documents/{documentId}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Answers a short-lived presigned GET into the secure bucket, and only for a document
+         *     whose scan came back CLEAN. Anything else is a 409: a file that has not been scanned,
+         *     whose scan failed, or that the scanner named something in has no download URL at all.
+         *
+         *     Every call writes an audit access event carrying the document's classification and
+         *     the reason it was opened, so it is a POST rather than a GET: it mints a bearer URL
+         *     and records an access, neither of which may be cached or replayed by an intermediary.
+         *
+         *     A link may name a permission of its own — a clinical attachment names
+         *     health.clinical.read — and a caller who may read documents in general but not that
+         *     one is refused with 403.
+         *
+         *     It carries no Idempotency-Key. Every call mints a new short-lived URL and records a
+         *     new access, which is exactly what a retry should do; replaying the first response
+         *     would hand the caller a URL that has since expired.
+         */
+        post: operations["downloadDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/documents/{documentId}/links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Attaches a document to a record: this is the invoice, that is the referral. The same
+         *     document may be linked to several records, which is what stops the same file being
+         *     uploaded once per place it is needed.
+         *
+         *     requiredPermission narrows who may download through the link. Every link on a
+         *     document is checked, so attaching a file to a clinical record makes it clinical
+         *     everywhere rather than only when reached from that record.
+         */
+        post: operations["linkDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/documents/{documentId}/links/{linkId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * @description Removes one link. The document itself is untouched: a file that is no longer this
+         *     request's invoice is still a file somebody uploaded, and it may still belong to
+         *     other records.
+         */
+        delete: operations["unlinkDocument"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/eligibility/checks": {
         parameters: {
             query?: never;
@@ -930,6 +1091,51 @@ export interface paths {
         put?: never;
         /** @description Records the operator's decision for a CONFLICT or INVALID row. */
         post: operations["reviewMemberImportRow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/legal-holds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Places a legal hold on a document, a person or a record. From that moment nothing
+         *     deletes what it covers: the retention sweep skips every held document and reports how
+         *     many it left alone.
+         *
+         *     One of objectId, personId or the aggregateType/aggregateId pair is required. A hold
+         *     that named nothing would look like protection and protect nothing.
+         */
+        post: operations["putLegalHold"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/legal-holds/{legalHoldId}/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Lifts a hold, after which retention may act on what it covered again. Who lifted it
+         *     and when are both recorded: a hold that could be released anonymously would be no
+         *     protection at all.
+         */
+        post: operations["releaseLegalHold"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3218,6 +3424,12 @@ export interface components {
          * @enum {string}
          */
         CommentVisibility: "INTERNAL" | "PROVIDER" | "MEMBER";
+        CompleteUpload: {
+            /** Format: int64 */
+            byteSize: number;
+            /** @description The digest of what was uploaded, as the client computed it. */
+            sha256: string;
+        };
         CompleteWorkItem: {
             /**
              * @description An optional internal note, stored as an INTERNAL comment on the item in the same
@@ -3385,6 +3597,18 @@ export interface components {
             /** Format: date */
             validTo?: string | null;
         };
+        CreateDocumentLink: {
+            /** Format: uuid */
+            aggregateId: string;
+            aggregateType: string;
+            documentTypeCode: string;
+            purpose?: string;
+            /**
+             * @description Narrows who may download through this link. Every link on a document is checked,
+             *     so a clinical attachment stays clinical wherever it is reached from.
+             */
+            requiredPermission?: string;
+        };
         CreateEnrollmentRequest: {
             enrollmentReason?: string;
             /** Format: uuid */
@@ -3413,6 +3637,16 @@ export interface components {
             practitionerId?: string;
             /** Format: uuid */
             providerProfileId?: string;
+        };
+        CreateLegalHold: {
+            /** Format: uuid */
+            aggregateId?: string | null;
+            aggregateType?: string | null;
+            /** Format: uuid */
+            documentId?: string | null;
+            /** Format: uuid */
+            personId?: string | null;
+            reason: string;
         };
         CreateMembershipRequest: {
             externalMemberNo?: string;
@@ -3651,6 +3885,29 @@ export interface components {
              */
             supersedesRequestId?: string;
         };
+        CreateUpload: {
+            /**
+             * Format: int64
+             * @description The exact size of the file. It is signed into the upload URL, so the object
+             *     store refuses a body of any other size: this is where the limit actually holds,
+             *     because the API has no body to measure.
+             */
+            byteSize: number;
+            classification?: components["schemas"]["DocumentClassification"];
+            contentType: string;
+            originalFilename: string;
+            /**
+             * Format: uuid
+             * @description Which provider the document belongs to. A provider-scoped caller may only name
+             *     an organization it holds, and one holding exactly one does not have to say which.
+             */
+            ownerOrganizationId?: string | null;
+            /**
+             * @description Optional digest of the file about to be sent. When those exact bytes are already
+             *     stored clean and visible to the caller, no upload happens at all.
+             */
+            sha256?: string | null;
+        };
         CreateWorkQueue: {
             /** @default true */
             active?: boolean;
@@ -3672,6 +3929,141 @@ export interface components {
         DecimalPercent: string;
         /** @description A rate with at most two decimals, as an exact decimal string. */
         DecimalRate: string;
+        Document: {
+            /**
+             * @description Which of the two worlds the bytes are in. It is never `secure` unless the scan
+             *     came back clean, which the schema enforces with a CHECK rather than trusting the
+             *     code that writes it.
+             * @enum {string}
+             */
+            bucket: "quarantine" | "secure";
+            /**
+             * Format: int64
+             * @description Null until the upload is completed. After a scan it is the size the worker
+             *     counted while reading the bytes, not the one the client claimed.
+             */
+            byteSize?: number | null;
+            classification: components["schemas"]["DocumentClassification"];
+            contentType: string;
+            /** Format: date-time */
+            createdAt: string;
+            /**
+             * @description Whether downloadDocument would answer a URL right now. It is the one answer the
+             *     product computes in one place: clean, in the secure bucket, and not purged.
+             */
+            downloadable: boolean;
+            /**
+             * Format: uuid
+             * @description Set when these exact bytes were already stored under another document, which
+             *     this one now points at. It carries no second copy of the file.
+             */
+            duplicateOfDocumentId?: string | null;
+            /** Format: uuid */
+            id: string;
+            /** @description The records this document belongs to. */
+            links: components["schemas"]["DocumentLink"][];
+            /**
+             * @description The name the file was uploaded under, kept so a person can recognise their own
+             *     document. Any directory part a browser sent is stripped, and it is never used to
+             *     build a storage key.
+             */
+            originalFilename: string;
+            /**
+             * Format: uuid
+             * @description The provider the document belongs to, or null when it belongs to the tenant
+             *     itself. A provider-scoped actor only ever sees its own organizations' documents.
+             */
+            ownerOrganizationId?: string | null;
+            /**
+             * Format: date-time
+             * @description When retention removed the bytes. The row outlives them, so "this document
+             *     existed and was removed on this day" stays answerable.
+             */
+            purgedAt?: string | null;
+            /** Format: int64 */
+            rowVersion: number;
+            scanStatus: components["schemas"]["DocumentScanStatus"];
+            /**
+             * @description Null until the upload is completed. After a scan it is the digest the worker
+             *     computed over the bytes it scanned.
+             */
+            sha256?: string | null;
+            /** Format: date-time */
+            uploadedAt: string;
+            /** Format: uuid */
+            uploadedBy?: string | null;
+        };
+        /**
+         * @description How sensitive the document is. It is copied onto every access event a download
+         *     writes, and HEALTH additionally produces an audit event of its own: who opened
+         *     clinical material is a question asked on its own (v1.2 11.10).
+         * @enum {string}
+         */
+        DocumentClassification: "INTERNAL" | "CONFIDENTIAL" | "PERSONAL" | "HEALTH";
+        DocumentDownload: {
+            classification: components["schemas"]["DocumentClassification"];
+            /** Format: date-time */
+            expiresAt: string;
+            /** @enum {string} */
+            method: "GET";
+            /**
+             * Format: uri
+             * @description Where to GET the file from the secure bucket. It is a bearer credential with a
+             *     short life; it is never logged and never shared.
+             */
+            url: string;
+        };
+        DocumentLink: {
+            /** Format: uuid */
+            aggregateId: string;
+            /** @description The kind of record this document belongs to, for example SERVICE_REQUEST. */
+            aggregateType: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: uuid */
+            createdBy?: string | null;
+            /** Format: uuid */
+            documentId: string;
+            /** @description What the document is on that record, for example INVOICE or REFERRAL. */
+            documentTypeCode: string;
+            /** Format: uuid */
+            id: string;
+            purpose?: string | null;
+            /**
+             * @description The permission a caller must hold to download through this link. Null means
+             *     document.read is enough.
+             */
+            requiredPermission?: string | null;
+        };
+        DocumentPage: {
+            items: components["schemas"]["Document"][];
+            nextCursor?: string | null;
+        };
+        /**
+         * @description The life of a file in one field. PENDING is a reserved upload with no bytes yet,
+         *     SCANNING is bytes in quarantine waiting for a verdict, CLEAN is the only status
+         *     whose bytes are in the secure bucket, INFECTED is a file the scanner named something
+         *     in and whose bytes have been deleted, and FAILED is one no verdict could be reached
+         *     about — which is not "clean" and is never promoted.
+         * @enum {string}
+         */
+        DocumentScanStatus: "PENDING" | "SCANNING" | "CLEAN" | "INFECTED" | "FAILED";
+        DocumentUpload: {
+            document: components["schemas"]["Document"];
+            /**
+             * @description Null when the same bytes were already stored: there is nothing to upload, and
+             *     `document` is the one that already exists.
+             */
+            upload?: components["schemas"]["PresignedUpload"] | null;
+        };
+        /**
+         * @description Why the document is being opened. Both fields travel into the access event: "who
+         *     read this" without "why" is not an answer a data protection review can use.
+         */
+        DownloadDocument: {
+            purposeCode?: string;
+            reasonText?: string;
+        };
         EligibilityCheckRequest: {
             context?: {
                 [key: string]: unknown;
@@ -4039,6 +4431,28 @@ export interface components {
         LedgerPage: {
             items: components["schemas"]["LedgerEntry"][];
             nextCursor?: string | null;
+        };
+        LegalHold: {
+            /** Format: uuid */
+            aggregateId?: string | null;
+            aggregateType?: string | null;
+            /** Format: uuid */
+            documentId?: string | null;
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            personId?: string | null;
+            /** Format: date-time */
+            placedAt: string;
+            /** Format: uuid */
+            placedBy?: string | null;
+            reason: string;
+            /** Format: date-time */
+            releasedAt?: string | null;
+            /** Format: uuid */
+            releasedBy?: string | null;
+            /** Format: int64 */
+            rowVersion: number;
         };
         MaskedIdentifier: {
             maskedValue: string;
@@ -4415,6 +4829,25 @@ export interface components {
          * @enum {string}
          */
         PractitionerStatus: "ACTIVE" | "SUSPENDED" | "ENDED";
+        PresignedUpload: {
+            /** Format: date-time */
+            expiresAt: string;
+            /**
+             * @description Headers the upload must carry exactly as given. They are part of the signature,
+             *     so a different content type or length is refused by the store.
+             */
+            headers: {
+                [key: string]: string;
+            };
+            /** @enum {string} */
+            method: "PUT";
+            /**
+             * Format: uri
+             * @description Where to PUT the file. It is a bearer credential with a short life; it is never
+             *     logged and never shared.
+             */
+            url: string;
+        };
         PriceItem: {
             amount?: string | null;
             formulaKey?: string | null;
@@ -6058,6 +6491,8 @@ export interface components {
         CsrfHeader: string;
         /** @description Opaque cursor from the previous response. */
         Cursor: string;
+        DocumentId: string;
+        DocumentLinkId: string;
         EnrollmentId: string;
         EvaluationId: string;
         FulfilmentId: string;
@@ -6069,6 +6504,7 @@ export interface components {
         IfMatch: string;
         ImportId: string;
         ImportRowId: string;
+        LegalHoldId: string;
         Limit: number;
         MembershipId: string;
         OrganizationId: string;
@@ -6124,6 +6560,7 @@ export type SchemaCodeValueImportResult = components['schemas']['CodeValueImport
 export type SchemaCodeValueInput = components['schemas']['CodeValueInput'];
 export type SchemaCodeValuePage = components['schemas']['CodeValuePage'];
 export type SchemaCommentVisibility = components['schemas']['CommentVisibility'];
+export type SchemaCompleteUpload = components['schemas']['CompleteUpload'];
 export type SchemaCompleteWorkItem = components['schemas']['CompleteWorkItem'];
 export type SchemaContract = components['schemas']['Contract'];
 export type SchemaContractPage = components['schemas']['ContractPage'];
@@ -6137,8 +6574,10 @@ export type SchemaCreateAuthorization = components['schemas']['CreateAuthorizati
 export type SchemaCreateCodeSystemRequest = components['schemas']['CreateCodeSystemRequest'];
 export type SchemaCreateContractRequest = components['schemas']['CreateContractRequest'];
 export type SchemaCreateContractVersionRequest = components['schemas']['CreateContractVersionRequest'];
+export type SchemaCreateDocumentLink = components['schemas']['CreateDocumentLink'];
 export type SchemaCreateEnrollmentRequest = components['schemas']['CreateEnrollmentRequest'];
 export type SchemaCreateFulfilment = components['schemas']['CreateFulfilment'];
+export type SchemaCreateLegalHold = components['schemas']['CreateLegalHold'];
 export type SchemaCreateMembershipRequest = components['schemas']['CreateMembershipRequest'];
 export type SchemaCreateOrganizationRequest = components['schemas']['CreateOrganizationRequest'];
 export type SchemaCreatePersonRequest = components['schemas']['CreatePersonRequest'];
@@ -6155,10 +6594,19 @@ export type SchemaCreateRuleSetVersionRequest = components['schemas']['CreateRul
 export type SchemaCreateServiceCategoryRequest = components['schemas']['CreateServiceCategoryRequest'];
 export type SchemaCreateServiceDefinitionRequest = components['schemas']['CreateServiceDefinitionRequest'];
 export type SchemaCreateServiceRequest = components['schemas']['CreateServiceRequest'];
+export type SchemaCreateUpload = components['schemas']['CreateUpload'];
 export type SchemaCreateWorkQueue = components['schemas']['CreateWorkQueue'];
 export type SchemaDecimalAmount = components['schemas']['DecimalAmount'];
 export type SchemaDecimalPercent = components['schemas']['DecimalPercent'];
 export type SchemaDecimalRate = components['schemas']['DecimalRate'];
+export type SchemaDocument = components['schemas']['Document'];
+export type SchemaDocumentClassification = components['schemas']['DocumentClassification'];
+export type SchemaDocumentDownload = components['schemas']['DocumentDownload'];
+export type SchemaDocumentLink = components['schemas']['DocumentLink'];
+export type SchemaDocumentPage = components['schemas']['DocumentPage'];
+export type SchemaDocumentScanStatus = components['schemas']['DocumentScanStatus'];
+export type SchemaDocumentUpload = components['schemas']['DocumentUpload'];
+export type SchemaDownloadDocument = components['schemas']['DownloadDocument'];
 export type SchemaEligibilityCheckRequest = components['schemas']['EligibilityCheckRequest'];
 export type SchemaEligibilityCheckResult = components['schemas']['EligibilityCheckResult'];
 export type SchemaEligibilityEvaluation = components['schemas']['EligibilityEvaluation'];
@@ -6184,6 +6632,7 @@ export type SchemaIssuedVoucher = components['schemas']['IssuedVoucher'];
 export type SchemaIssueVoucher = components['schemas']['IssueVoucher'];
 export type SchemaLedgerEntry = components['schemas']['LedgerEntry'];
 export type SchemaLedgerPage = components['schemas']['LedgerPage'];
+export type SchemaLegalHold = components['schemas']['LegalHold'];
 export type SchemaMaskedIdentifier = components['schemas']['MaskedIdentifier'];
 export type SchemaMemberImportBatch = components['schemas']['MemberImportBatch'];
 export type SchemaMemberImportRow = components['schemas']['MemberImportRow'];
@@ -6217,6 +6666,7 @@ export type SchemaPractitionerPage = components['schemas']['PractitionerPage'];
 export type SchemaPractitionerRegistrationSearchRequest = components['schemas']['PractitionerRegistrationSearchRequest'];
 export type SchemaPractitionerRole = components['schemas']['PractitionerRole'];
 export type SchemaPractitionerStatus = components['schemas']['PractitionerStatus'];
+export type SchemaPresignedUpload = components['schemas']['PresignedUpload'];
 export type SchemaPriceItem = components['schemas']['PriceItem'];
 export type SchemaPriceItemInput = components['schemas']['PriceItemInput'];
 export type SchemaPriceItemPage = components['schemas']['PriceItemPage'];
@@ -6369,6 +6819,8 @@ export type ParameterContractId = components['parameters']['ContractId'];
 export type ParameterContractVersionId = components['parameters']['ContractVersionId'];
 export type ParameterCsrfHeader = components['parameters']['CsrfHeader'];
 export type ParameterCursor = components['parameters']['Cursor'];
+export type ParameterDocumentId = components['parameters']['DocumentId'];
+export type ParameterDocumentLinkId = components['parameters']['DocumentLinkId'];
 export type ParameterEnrollmentId = components['parameters']['EnrollmentId'];
 export type ParameterEvaluationId = components['parameters']['EvaluationId'];
 export type ParameterFulfilmentId = components['parameters']['FulfilmentId'];
@@ -6377,6 +6829,7 @@ export type ParameterIdempotencyKeyOptional = components['parameters']['Idempote
 export type ParameterIfMatch = components['parameters']['IfMatch'];
 export type ParameterImportId = components['parameters']['ImportId'];
 export type ParameterImportRowId = components['parameters']['ImportRowId'];
+export type ParameterLegalHoldId = components['parameters']['LegalHoldId'];
 export type ParameterLimit = components['parameters']['Limit'];
 export type ParameterMembershipId = components['parameters']['MembershipId'];
 export type ParameterOrganizationId = components['parameters']['OrganizationId'];
@@ -7795,6 +8248,278 @@ export interface operations {
             422: components["responses"]["ValidationError"];
         };
     };
+    listDocuments: {
+        parameters: {
+            query?: {
+                /** @description With aggregateType, keep only the documents linked to that one record. */
+                aggregateId?: string;
+                /** @description Keep only the documents linked to records of this type. */
+                aggregateType?: string;
+                /** @description Keep only the documents of one confidentiality class. */
+                classification?: components["schemas"]["DocumentClassification"];
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                /** @description Keep only the documents in one scan state. */
+                scanStatus?: components["schemas"]["DocumentScanStatus"];
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Document page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentPage"];
+                };
+            };
+            /** @description Cursor invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    createUpload: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateUpload"];
+            };
+        };
+        responses: {
+            /**
+             * @description Document reserved. `upload` is null when the same bytes were already stored, in
+             *     which case the document is the one that already exists.
+             */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentUpload"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
+            /** @description The object store could not issue an upload URL */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getDocument: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                documentId: components["parameters"]["DocumentId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Document */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Document"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    completeUpload: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                documentId: components["parameters"]["DocumentId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompleteUpload"];
+            };
+        };
+        responses: {
+            /** @description Upload recorded and the scan queued */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Document"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+            /** @description The object store could not be reached */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    downloadDocument: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                documentId: components["parameters"]["DocumentId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DownloadDocument"];
+            };
+        };
+        responses: {
+            /** @description Short-lived download URL */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentDownload"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The document is not scanned clean, or its bytes have been purged */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description The object store could not issue a download URL */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    linkDocument: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                documentId: components["parameters"]["DocumentId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDocumentLink"];
+            };
+        };
+        responses: {
+            /** @description Document linked */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentLink"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    unlinkDocument: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                documentId: components["parameters"]["DocumentId"];
+                linkId: components["parameters"]["DocumentLinkId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Link removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     checkEligibility: {
         parameters: {
             query?: never;
@@ -8700,6 +9425,91 @@ export interface operations {
                 };
             };
             422: components["responses"]["ValidationError"];
+        };
+    };
+    putLegalHold: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateLegalHold"];
+            };
+        };
+        responses: {
+            /** @description Legal hold placed */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalHold"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    releaseLegalHold: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                legalHoldId: components["parameters"]["LegalHoldId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Legal hold released */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalHold"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
         };
     };
     getCurrentUserContext: {
