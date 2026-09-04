@@ -83,6 +83,17 @@ RLS, touch triggers, composite keys throughout.
   A voucher token is never mailed; the member sees it in the product.
 - No unbounded fan-out: a bulk notification is a job with a recorded count, not a loop.
 
+### 2.5 Permissions this package adds
+
+The permission catalogue (migration 000008) and the role templates
+(`internal/identity/application/roles.go`) are two separate places. A permission seeded
+into the first but missing from the second is a permission nobody can ever hold — that
+already happened once, with `pricing.quote`. Add both, in this package's migration and in
+the same commit.
+
+New: `notification.read` (the message log). `notification.manage` is
+already seeded. Grant `notification.read` to TENANT_ADMIN, PROGRAM_MANAGER and AUDITOR.
+
 ## 3. Tests required
 
 - **Sensitive content is refused**: rendering with a diagnosis, a TCKN or a comment in the

@@ -94,6 +94,18 @@ fulfilment. A second redemption answers 409 `VOUCHER_ALREADY_REDEEMED`. An expir
 revoked voucher answers 409 with its own code. The token never appears in a URL, a query
 key, a log or an audit row.
 
+### 2.5 Permissions this package adds
+
+The permission catalogue (migration 000008) and the role templates
+(`internal/identity/application/roles.go`) are two separate places. A permission seeded
+into the first but missing from the second is a permission nobody can ever hold — that
+already happened once, with `pricing.quote`. Add both, in this package's migration and in
+the same commit.
+
+New: `authorization.manage` (create, extend, cancel), `fulfilment.record`,
+`voucher.redeem`. Grant `authorization.manage` to PROGRAM_MANAGER and MEDICAL_REVIEWER,
+`fulfilment.record` and `voucher.redeem` to PROVIDER_STAFF and PROGRAM_MANAGER.
+
 ## 3. Tests required
 
 - **No double promise**: 50 concurrent `createAuthorization` calls against a balance that

@@ -76,6 +76,19 @@ which roles may approve, and how many approvals are needed for this amount. This
 owns the table and the lookup; it does not change any existing command — wiring the lookup
 into a command is that command's own change, in its own package.
 
+### 2.5 Permissions this package adds
+
+The permission catalogue (migration 000008) and the role templates
+(`internal/identity/application/roles.go`) are two separate places. A permission seeded
+into the first but missing from the second is a permission nobody can ever hold — that
+already happened once, with `pricing.quote`. Add both, in this package's migration and in
+the same commit.
+
+New: `worklist.read`, `worklist.claim`, `worklist.reassign`,
+`workflow.queue.manage`, `workflow.policy.manage`. Grant the first two to every role that
+does review work (PROGRAM_MANAGER, MEDICAL_REVIEWER, FINANCIAL_REVIEWER, PAYER_APPROVER),
+`worklist.reassign` and the two manage permissions to TENANT_ADMIN.
+
 ## 3. Tests required
 
 - **Concurrency**: 20 goroutines claim the same work item; exactly one succeeds and the
