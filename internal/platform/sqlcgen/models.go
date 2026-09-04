@@ -890,6 +890,103 @@ type ProviderProviderProfile struct {
 	RowVersion           int64
 }
 
+type RulesEvaluation struct {
+	ID               uuid.UUID
+	TenantID         uuid.UUID
+	SubjectType      string
+	SubjectID        uuid.NullUUID
+	RuleSetVersionID uuid.UUID
+	InputHash        []byte
+	InputSnapshot    []byte
+	Outcome          string
+	DurationMs       *int32
+	EvaluatedAt      time.Time
+	EvaluatedBy      uuid.NullUUID
+}
+
+type RulesEvaluationResult struct {
+	ID              uuid.UUID
+	TenantID        uuid.UUID
+	EvaluationID    uuid.UUID
+	Sequence        int32
+	RuleID          uuid.NullUUID
+	RuleCode        string
+	Matched         bool
+	ActionType      *string
+	ActionPayload   []byte
+	ExplanationCode string
+	Severity        string
+	CreatedAt       time.Time
+}
+
+type RulesRule struct {
+	ID                uuid.UUID
+	TenantID          uuid.UUID
+	RuleSetVersionID  uuid.UUID
+	Code              string
+	Name              string
+	Priority          int32
+	Condition         string
+	Actions           []byte
+	ExplanationCode   string
+	ExplanationParams []byte
+	StopOnMatch       bool
+	Active            bool
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+	RowVersion        int64
+}
+
+type RulesRuleSet struct {
+	ID         uuid.UUID
+	TenantID   uuid.UUID
+	Code       string
+	Name       string
+	DomainCode string
+	Purpose    string
+	Status     string
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	RowVersion int64
+}
+
+type RulesRuleSetVersion struct {
+	ID               uuid.UUID
+	TenantID         uuid.UUID
+	RuleSetID        uuid.UUID
+	VersionNo        int32
+	Status           string
+	ValidFrom        pgtype.Date
+	ValidTo          pgtype.Date
+	InputSchema      []byte
+	ContentHash      *string
+	Notes            *string
+	SubmittedAt      *time.Time
+	SubmittedBy      uuid.NullUUID
+	PublishedAt      *time.Time
+	PublishedBy      uuid.NullUUID
+	RetireReasonCode *string
+	ReviewComment    *string
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	RowVersion       int64
+}
+
+type RulesRuleTestCase struct {
+	ID                   uuid.UUID
+	TenantID             uuid.UUID
+	RuleSetVersionID     uuid.UUID
+	Code                 string
+	Description          *string
+	Input                []byte
+	ExpectedOutcome      string
+	ExpectedExplanations []string
+	ExpectedActions      []byte
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
+	RowVersion           int64
+}
+
 type ServiceServiceRequest struct {
 	ID                           uuid.UUID
 	TenantID                     uuid.UUID

@@ -47,6 +47,8 @@ tags:
     description: Sağlayıcı profilleri, lokasyonlar, yetkinlikler ve uygulayıcılar
   - name: Contracts
     description: Sözleşmeler, sürümler, fiyat listeleri, paketler, kotalar ve ödeme koşulları
+  - name: Rules
+    description: Kural setleri, sürümler, CEL kuralları, test senaryoları ve değerlendirmeler
 paths:
   /health/live:
     get:
@@ -4605,6 +4607,662 @@ paths:
           $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/ValidationError'
+  /api/v1/rule-sets:
+    get:
+      tags: [Rules]
+      operationId: listRuleSets
+      description: |
+        Rule sets of the tenant, newest first, with keyset paging. A rule set is a named
+        decision — which document a claim needs, when a pre-approval is required, what age
+        a dependant may be — and what it currently decides lives in its published version.
+        q searches the code and the name; the other filters narrow to one service domain,
+        one purpose or one status.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: q
+          in: query
+          description: Rule set code or name search.
+          schema:
+            type: string
+            maxLength: 120
+        - name: domainCode
+          in: query
+          description: Only rule sets in this service domain.
+          schema:
+            $ref: '#/components/schemas/ServiceDomain'
+        - name: purpose
+          in: query
+          description: Only rule sets serving this purpose.
+          schema:
+            $ref: '#/components/schemas/RuleSetPurpose'
+        - name: status
+          in: query
+          description: Only rule sets in this status.
+          schema:
+            $ref: '#/components/schemas/RuleSetStatus'
+      responses:
+        '200':
+          description: Rule set page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleSetPage'
+        '400':
+          description: Cursor invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags: [Rules]
+      operationId: createRuleSet
+      description: |
+        Opens a rule set. The set itself decides nothing: it holds versions, and only a
+        published version is ever evaluated. The purpose says which decision the set
+        answers, so a caller asking "which documents does this claim need" reads the
+        DOCUMENT sets and never a PRICE one. The code is unique inside the tenant, so a
+        second one answers 409 RULE_SET_CODE_TAKEN.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRuleSetRequest'
+      responses:
+        '201':
+          description: Rule set created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleSet'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/rule-sets/{ruleSetId}:
+    get:
+      tags: [Rules]
+      operationId: getRuleSet
+      description: |
+        One rule set of the tenant with its optimistic concurrency tag. The versions are
+        read separately, because a rule set that has been revised every quarter for three
+        years carries more of them than a detail view wants.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RuleSetId'
+      responses:
+        '200':
+          description: Rule set
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleSet'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Rules]
+      operationId: patchRuleSet
+      description: |
+        Merge-patch of the name and the status of a rule set. The code, the service domain
+        and the purpose are absent: they are what the set is, and every published version
+        was written against them, so a body carrying one answers 422 with field code
+        IMMUTABLE. Setting the status to INACTIVE stops the set being offered for new
+        decisions; it changes nothing about the evaluations it already produced.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RuleSetId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: '#/components/schemas/UpdateRuleSetRequest'
+      responses:
+        '200':
+          description: Rule set updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleSet'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '415':
+          description: Body is not application/merge-patch+json
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/rule-sets/{ruleSetId}/versions:
+    get:
+      tags: [Rules]
+      operationId: listRuleSetVersions
+      description: |
+        The version summaries of one rule set, highest version number first. A published
+        or retired version is visible to anyone who may read rules; a draft or a version
+        under review is an unagreed proposal and takes `rule.draft` to see at all.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RuleSetId'
+      responses:
+        '200':
+          description: Rule set versions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleSetVersionList'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Rules]
+      operationId: createRuleSetVersion
+      description: |
+        Opens the next DRAFT version of a rule set. copyFromVersionId copies the input
+        schema, the rules and the test cases of another version of the same set, which is
+        how a revision starts from what is live rather than from an empty page. The input
+        schema declares the variables a condition may name and their CEL types; a
+        condition reaching anything else fails to compile at authoring time (ADR-023).
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RuleSetId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRuleSetVersionRequest'
+      responses:
+        '201':
+          description: Rule set version created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleSetVersion'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/rule-set-versions/{ruleSetVersionId}:
+    get:
+      tags: [Rules]
+      operationId: getRuleSetVersion
+      description: |
+        One rule set version with its input schema, its rules in priority order, its test
+        cases and its review metadata. A published version needs only `rule.read`; a draft
+        or a version under review needs `rule.draft`, so a rule nobody has approved is not
+        visible to everyone who may read the approved one.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RuleSetVersionId'
+      responses:
+        '200':
+          description: Rule set version
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleSetVersion'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Rules]
+      operationId: patchRuleSetVersion
+      description: |
+        Merge-patch of the validity period, the input schema and the notes of a DRAFT
+        version. Narrowing the input schema is checked against the rules already written:
+        a variable a condition still names cannot be withdrawn, because the version would
+        then be unable to compile. A version that is not DRAFT answers 409
+        RULE_VERSION_IMMUTABLE, which is the point of the package — what decided a claim
+        cannot move afterwards.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RuleSetVersionId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: '#/components/schemas/UpdateRuleSetVersionRequest'
+      responses:
+        '200':
+          description: Rule set version updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleSetVersion'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '415':
+          description: Body is not application/merge-patch+json
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/rule-set-versions/{ruleSetVersionId}/rules:
+    put:
+      tags: [Rules]
+      operationId: putRules
+      description: |
+        Replaces the whole rule set of a DRAFT version, the way a contract price list is
+        replaced: the meaningful unit is the rule set, and a set write makes consistency
+        one decision rather than n. Every condition is compiled against the version's
+        input schema before anything is stored, so a condition naming an undeclared
+        variable or returning something other than a boolean answers 422 with the failing
+        rule's code and the compiler's own message — at authoring time rather than at
+        three in the morning. Two rules may not share a priority, because evaluation order
+        has to be total and reproducible. If-Match carries the ETag of the version.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RuleSetVersionId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplaceRulesRequest'
+      responses:
+        '200':
+          description: Rule set replaced
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleList'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/rule-set-versions/{ruleSetVersionId}/test-cases:
+    put:
+      tags: [Rules]
+      operationId: putRuleTestCases
+      description: |
+        Replaces the whole test case set of a DRAFT version. A test case is one input with
+        the outcome, the explanation codes and, optionally, the actions it must produce.
+        The set exists because a version cannot be submitted for review without at least
+        one case and without every case passing: an untested rule that decides what a
+        member is owed is not a rule anybody should have to trust. If-Match carries the
+        ETag of the version.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RuleSetVersionId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplaceRuleTestCasesRequest'
+      responses:
+        '200':
+          description: Test case set replaced
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleTestCaseList'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/rule-set-versions/{ruleSetVersionId}/tests:run:
+    post:
+      tags: [Rules]
+      operationId: runRuleTests
+      description: |
+        Runs the stored test cases of a version against its rules and reports, per case,
+        what was expected and what actually happened. It writes nothing: no evaluation
+        row, no test result row, no side effect of any kind, so an author may run it as
+        often as they like. This is the same check the submit gate applies, offered
+        separately so a failing case is found before the review is asked for.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RuleSetVersionId'
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: Test run result, per case
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleTestRunResult'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/rule-set-versions/{ruleSetVersionId}:simulate:
+    post:
+      tags: [Rules]
+      operationId: simulateRuleSetVersion
+      description: |
+        Runs one supplied input against a draft or a published version and returns the
+        full trace: every rule considered, in priority order, whether it matched, the
+        action it asked for and the explanation code it carries. It writes no evaluation
+        row and has no side effect of any kind — the engine returns actions and performs
+        none of them, which is what lets production data be simulated safely. Use
+        `getRuleEvaluation` to read a decision that was actually recorded.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RuleSetVersionId'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SimulateRuleSetVersionRequest'
+      responses:
+        '200':
+          description: Simulated trace; nothing was written
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleEvaluationTrace'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/rule-set-versions/{ruleSetVersionId}/submit:
+    post:
+      tags: [Rules]
+      operationId: submitRuleSetVersion
+      description: |
+        Moves a DRAFT version to UNDER_REVIEW and records the maker. This is the gate the
+        whole package exists for: a version with no test case answers 422 on field
+        testCases with code TESTS_REQUIRED, and a version whose cases do not all pass
+        answers 422 with code TESTS_FAILING naming the failing case codes. The validity
+        start is required too, because a published version without one could never be
+        selected by service date.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RuleSetVersionId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewComment'
+      responses:
+        '200':
+          description: Rule set version submitted for review
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleSetVersion'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/rule-set-versions/{ruleSetVersionId}/publish:
+    post:
+      tags: [Rules]
+      operationId: publishRuleSetVersion
+      description: |
+        Freezes a version under review and makes it the one the engine evaluates. It needs
+        `rule.publish`, a recent step-up and an actor other than the one who submitted it;
+        the same person answers 403 MAKER_CHECKER_SAME_ACTOR and the refusal is audited.
+        Publishing writes a content hash over the input schema and every rule, so "which
+        rules decided this" can be proved years later. Two published versions of one rule
+        set may not cover the same day, so an overlapping period answers 409
+        RULE_SET_VERSION_OVERLAP.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RuleSetVersionId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewComment'
+      responses:
+        '200':
+          description: Rule set version published
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleSetVersion'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/rule-set-versions/{ruleSetVersionId}/retire:
+    post:
+      tags: [Rules]
+      operationId: retireRuleSetVersion
+      description: |
+        Closes a published version with a reason. It stays readable, because every
+        evaluation ever recorded names the version that produced it and a dispute two
+        years later has to be able to read the rules that decided it. Retiring needs
+        `rule.publish` and a recent step-up.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RuleSetVersionId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonCommand'
+      responses:
+        '200':
+          description: Rule set version retired
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleSetVersion'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/rule-evaluations/{ruleEvaluationId}:
+    get:
+      tags: [Rules]
+      operationId: getRuleEvaluation
+      description: |
+        One recorded decision: the rule set version that produced it, the outcome, the
+        rules that fired in order with their explanation codes and actions, and the input
+        snapshot the decision was taken on. The snapshot holds ids, dates and quantities
+        only — never an identity number and never a name — because an audit trail that
+        needs protecting is an audit trail nobody reads. The row is append-only and can
+        never be edited.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RuleEvaluationId'
+      responses:
+        '200':
+          description: Recorded rule evaluation with its full trace
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleEvaluation'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
 components:
   securitySchemes:
     sessionCookie:
@@ -4835,6 +5493,27 @@ components:
         format: uuid
     PriceListId:
       name: priceListId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    RuleSetId:
+      name: ruleSetId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    RuleSetVersionId:
+      name: ruleSetVersionId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    RuleEvaluationId:
+      name: ruleEvaluationId
       in: path
       required: true
       schema:
@@ -8470,3 +9149,620 @@ components:
           description: Every candidate with its score, winners and losers alike, highest first.
           items:
             $ref: '#/components/schemas/ScoredPriceCandidate'
+    RuleSetPurpose:
+      type: string
+      description: |
+        Which decision a rule set answers. A caller asking "what documents does this claim
+        need" reads the DOCUMENT sets and never a PRICE one, so the purpose is what makes
+        a set findable rather than a comment on it.
+      enum: [ELIGIBILITY, DOCUMENT, PREAUTH, LIMIT, DUPLICATE, DIAGNOSIS_SERVICE, PRICE, ADJUDICATION]
+    RuleSetStatus:
+      type: string
+      description: |
+        Lifecycle of a rule set. INACTIVE stops it being offered for new decisions and
+        changes nothing about the evaluations it already produced.
+      enum: [ACTIVE, INACTIVE]
+    RuleSetVersionStatus:
+      type: string
+      description: |
+        Lifecycle of a rule set version. PUBLISHED is the only status the engine ever
+        evaluates for a recorded decision, and nothing about it may change afterwards.
+      enum: [DRAFT, UNDER_REVIEW, PUBLISHED, RETIRED]
+    RuleInputType:
+      type: string
+      description: |
+        The CEL type of one declared input variable (ADR-023). The environment offers
+        these and nothing else: there is no type here that reaches a network, a file or a
+        database, which is how v1.2 11.7's prohibitions are kept — by absence.
+      enum: [string, int, double, bool, timestamp, duration, map, list]
+    RuleInputSchema:
+      type: object
+      description: |
+        The variables a condition of this version may name, and their CEL types. A
+        condition reaching anything not declared here fails to compile at authoring time.
+      additionalProperties:
+        $ref: '#/components/schemas/RuleInputType'
+    RuleActionType:
+      type: string
+      description: |
+        What a matched rule asks the caller to do. The engine returns actions and performs
+        none of them: eligibility, authorization and adjudication decide what to do with
+        them, and that separation is what lets a simulation run without writing a row.
+      enum:
+        - APPROVE
+        - REJECT
+        - WARN
+        - REQUIRE_DOCUMENT
+        - REQUIRE_PREAUTH
+        - REQUIRE_MEDICAL_REVIEW
+        - REQUIRE_FINANCIAL_REVIEW
+        - PARTIAL_APPROVE
+        - RESERVE_ENTITLEMENT
+        - ADJUST_PRICE
+        - SET_LIMIT
+    RuleOutcome:
+      type: string
+      description: |
+        The one answer a whole pass folds to. Any REJECT wins; otherwise any REQUIRE_*
+        means REVIEW_REQUIRED; otherwise any PARTIAL_APPROVE means PARTIALLY_APPROVED;
+        APPROVED is what is left when nothing objected.
+      enum: [APPROVED, REJECTED, REVIEW_REQUIRED, PARTIALLY_APPROVED]
+    RuleSeverity:
+      type: string
+      description: How loud one line of the trace is; ERROR marks a rule that threw or timed out.
+      enum: [INFO, WARNING, ERROR]
+    RuleAction:
+      type: object
+      additionalProperties: false
+      required: [type]
+      properties:
+        type:
+          $ref: '#/components/schemas/RuleActionType'
+        payload:
+          type: object
+          additionalProperties: true
+          description: |
+            The typed payload of the action, validated on write against the action type:
+            REQUIRE_DOCUMENT needs a documentTypeCode, SET_LIMIT and RESERVE_ENTITLEMENT
+            an amount, ADJUST_PRICE a method and a value. Every numeric value is an exact
+            decimal string, never a JSON number.
+    RuleSet:
+      type: object
+      additionalProperties: false
+      required: [id, code, name, domainCode, purpose, status, versionCount, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        domainCode:
+          $ref: '#/components/schemas/ServiceDomain'
+        purpose:
+          $ref: '#/components/schemas/RuleSetPurpose'
+        status:
+          $ref: '#/components/schemas/RuleSetStatus'
+        versionCount:
+          type: integer
+          minimum: 0
+          description: How many versions the set holds, drafts included.
+        rowVersion:
+          type: integer
+          minimum: 1
+    RuleSetPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleSet'
+        nextCursor:
+          type: [string, 'null']
+    CreateRuleSetRequest:
+      type: object
+      additionalProperties: false
+      required: [code, name, domainCode, purpose]
+      properties:
+        code:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]{1,39}$'
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+        domainCode:
+          $ref: '#/components/schemas/ServiceDomain'
+        purpose:
+          $ref: '#/components/schemas/RuleSetPurpose'
+    UpdateRuleSetRequest:
+      type: object
+      additionalProperties: false
+      description: |
+        Merge-patch body. The code, the service domain and the purpose are absent because
+        they are what the set is; a body carrying one answers 422 with IMMUTABLE.
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+        status:
+          $ref: '#/components/schemas/RuleSetStatus'
+    RuleSetVersionSummary:
+      type: object
+      additionalProperties: false
+      required: [id, ruleSetId, versionNo, status, ruleCount, testCaseCount, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        ruleSetId:
+          type: string
+          format: uuid
+        versionNo:
+          type: integer
+          minimum: 1
+        status:
+          $ref: '#/components/schemas/RuleSetVersionStatus'
+        validFrom:
+          type: [string, 'null']
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+        notes:
+          type: [string, 'null']
+        publishedAt:
+          type: [string, 'null']
+          format: date-time
+        ruleCount:
+          type: integer
+          minimum: 0
+        testCaseCount:
+          type: integer
+          minimum: 0
+          description: How many test cases the version holds; submit refuses while this is zero.
+        rowVersion:
+          type: integer
+          minimum: 1
+    RuleSetVersionList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleSetVersionSummary'
+    RuleSetVersion:
+      type: object
+      additionalProperties: false
+      required: [id, ruleSetId, versionNo, status, inputSchema, rules, testCases, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        ruleSetId:
+          type: string
+          format: uuid
+        versionNo:
+          type: integer
+          minimum: 1
+        status:
+          $ref: '#/components/schemas/RuleSetVersionStatus'
+        validFrom:
+          type: [string, 'null']
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+        inputSchema:
+          $ref: '#/components/schemas/RuleInputSchema'
+        notes:
+          type: [string, 'null']
+        contentHash:
+          type: [string, 'null']
+          description: Lower-case hex SHA-256 over the input schema and every rule, written at publish.
+        submittedAt:
+          type: [string, 'null']
+          format: date-time
+        submittedBy:
+          type: [string, 'null']
+          format: uuid
+        publishedAt:
+          type: [string, 'null']
+          format: date-time
+        publishedBy:
+          type: [string, 'null']
+          format: uuid
+        reviewComment:
+          type: [string, 'null']
+        retireReasonCode:
+          type: [string, 'null']
+        rules:
+          type: array
+          description: The rules of the version in ascending priority order; 1 runs first.
+          items:
+            $ref: '#/components/schemas/Rule'
+        testCases:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleTestCase'
+        rowVersion:
+          type: integer
+          minimum: 1
+    CreateRuleSetVersionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        copyFromVersionId:
+          type: string
+          format: uuid
+          description: Another version of the same set whose schema, rules and test cases are copied.
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+        inputSchema:
+          $ref: '#/components/schemas/RuleInputSchema'
+        notes:
+          type: string
+          maxLength: 2000
+    UpdateRuleSetVersionRequest:
+      type: object
+      additionalProperties: false
+      description: Merge-patch body of a DRAFT rule set version.
+      properties:
+        validFrom:
+          type: [string, 'null']
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+        inputSchema:
+          $ref: '#/components/schemas/RuleInputSchema'
+        notes:
+          type: [string, 'null']
+          maxLength: 2000
+    Rule:
+      type: object
+      additionalProperties: false
+      required: [id, ruleSetVersionId, code, name, priority, condition, actions, explanationCode, stopOnMatch, active]
+      properties:
+        id:
+          type: string
+          format: uuid
+        ruleSetVersionId:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        priority:
+          type: integer
+          minimum: 1
+          description: Ascending evaluation order; two rules of one version may not share a priority.
+        condition:
+          type: string
+          description: A CEL expression returning a boolean, compiled against the version's input schema.
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleAction'
+        explanationCode:
+          type: string
+          description: The code every line of the trace this rule produces carries.
+        explanationParams:
+          type: object
+          additionalProperties: true
+          description: Substitution parameters of the explanation; ids and codes only, never a name.
+        stopOnMatch:
+          type: boolean
+          description: Ends the pass as soon as this rule matches; recorded in the trace.
+        active:
+          type: boolean
+          description: An inactive rule is kept for the record and never compiled or evaluated.
+    RuleInput:
+      type: object
+      additionalProperties: false
+      required: [code, name, priority, condition, explanationCode]
+      properties:
+        code:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]{1,63}$'
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 100000
+        condition:
+          type: string
+          minLength: 1
+          maxLength: 8192
+        actions:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/RuleAction'
+        explanationCode:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]{1,63}$'
+        explanationParams:
+          type: object
+          additionalProperties: true
+        stopOnMatch:
+          type: boolean
+          default: false
+        active:
+          type: boolean
+          default: true
+    RuleList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Rule'
+    ReplaceRulesRequest:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/RuleInput'
+    RuleTestCase:
+      type: object
+      additionalProperties: false
+      required: [id, ruleSetVersionId, code, input, expectedOutcome, expectedExplanations]
+      properties:
+        id:
+          type: string
+          format: uuid
+        ruleSetVersionId:
+          type: string
+          format: uuid
+        code:
+          type: string
+        description:
+          type: [string, 'null']
+        input:
+          type: object
+          additionalProperties: true
+          description: One whole input document, keyed by the variables the input schema declares.
+        expectedOutcome:
+          $ref: '#/components/schemas/RuleOutcome'
+        expectedExplanations:
+          type: array
+          description: The explanation codes the case must produce, in order.
+          items:
+            type: string
+        expectedActions:
+          type: [array, 'null']
+          description: |
+            The actions the case must produce, in order. Null means the case does not
+            assert on actions at all; an entry without a payload asserts only its type.
+          items:
+            $ref: '#/components/schemas/RuleAction'
+    RuleTestCaseInput:
+      type: object
+      additionalProperties: false
+      required: [code, input, expectedOutcome]
+      properties:
+        code:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]{1,63}$'
+        description:
+          type: [string, 'null']
+          maxLength: 500
+        input:
+          type: object
+          additionalProperties: true
+        expectedOutcome:
+          $ref: '#/components/schemas/RuleOutcome'
+        expectedExplanations:
+          type: array
+          maxItems: 100
+          items:
+            type: string
+            pattern: '^[A-Z][A-Z0-9_]{1,63}$'
+        expectedActions:
+          type: [array, 'null']
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/RuleAction'
+    RuleTestCaseList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleTestCase'
+    ReplaceRuleTestCasesRequest:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/RuleTestCaseInput'
+    RuleTestCaseResult:
+      type: object
+      additionalProperties: false
+      required: [code, passed, expectedOutcome, actualOutcome, expectedExplanations, actualExplanations, actualActions, mismatches]
+      properties:
+        code:
+          type: string
+        passed:
+          type: boolean
+        expectedOutcome:
+          $ref: '#/components/schemas/RuleOutcome'
+        actualOutcome:
+          $ref: '#/components/schemas/RuleOutcome'
+        expectedExplanations:
+          type: array
+          items:
+            type: string
+        actualExplanations:
+          type: array
+          items:
+            type: string
+        expectedActions:
+          type: [array, 'null']
+          items:
+            $ref: '#/components/schemas/RuleAction'
+        actualActions:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleAction'
+        mismatches:
+          type: array
+          description: Which of outcome, explanations or actions differed; empty when the case passed.
+          items:
+            type: string
+            enum: [OUTCOME, EXPLANATIONS, ACTIONS]
+    RuleTestRunResult:
+      type: object
+      additionalProperties: false
+      required: [ruleSetVersionId, passed, total, failed, cases]
+      properties:
+        ruleSetVersionId:
+          type: string
+          format: uuid
+        passed:
+          type: boolean
+          description: True only when there is at least one case and every one of them passed.
+        total:
+          type: integer
+          minimum: 0
+        failed:
+          type: integer
+          minimum: 0
+        cases:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleTestCaseResult'
+    SimulateRuleSetVersionRequest:
+      type: object
+      additionalProperties: false
+      required: [input]
+      properties:
+        input:
+          type: object
+          additionalProperties: true
+          description: One whole input document, keyed by the variables the input schema declares.
+    RuleEvaluationResultLine:
+      type: object
+      additionalProperties: false
+      required: [sequence, ruleCode, matched, explanationCode, severity]
+      properties:
+        sequence:
+          type: integer
+          minimum: 1
+          description: Position in the pass; the order the rules were considered in.
+        ruleId:
+          type: [string, 'null']
+          format: uuid
+        ruleCode:
+          type: string
+        matched:
+          type: boolean
+        actionType:
+          type: [string, 'null']
+          description: The action this line asks for, absent when the rule did not match or carries none.
+        actionPayload:
+          type: [object, 'null']
+          additionalProperties: true
+        explanationCode:
+          type: string
+        severity:
+          $ref: '#/components/schemas/RuleSeverity'
+    RuleEvaluationTrace:
+      type: object
+      additionalProperties: false
+      required: [ruleSetVersionId, outcome, results]
+      properties:
+        ruleSetVersionId:
+          type: string
+          format: uuid
+        versionNo:
+          type: integer
+          minimum: 1
+        status:
+          $ref: '#/components/schemas/RuleSetVersionStatus'
+        outcome:
+          $ref: '#/components/schemas/RuleOutcome'
+        durationMs:
+          type: integer
+          minimum: 0
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleEvaluationResultLine'
+    RuleEvaluation:
+      type: object
+      additionalProperties: false
+      required: [id, ruleSetVersionId, ruleSetId, subjectType, outcome, inputHash, inputSnapshot, evaluatedAt, results]
+      properties:
+        id:
+          type: string
+          format: uuid
+        ruleSetVersionId:
+          type: string
+          format: uuid
+        ruleSetId:
+          type: string
+          format: uuid
+        ruleSetCode:
+          type: string
+        versionNo:
+          type: integer
+          minimum: 1
+        subjectType:
+          type: string
+          description: What was decided about, for example CLAIM or SERVICE_REQUEST.
+        subjectId:
+          type: [string, 'null']
+          format: uuid
+        outcome:
+          $ref: '#/components/schemas/RuleOutcome'
+        inputHash:
+          type: string
+          description: Lower-case hex SHA-256 of the canonical input; the same input twice gives the same hash.
+        inputSnapshot:
+          type: object
+          additionalProperties: true
+          description: |
+            The input as it is kept for audit: ids, dates, codes and quantities only.
+            Anything that is neither of those is dropped before the row is written, so no
+            identity number and no name ever reaches this column.
+        durationMs:
+          type: [integer, 'null']
+          minimum: 0
+        evaluatedAt:
+          type: string
+          format: date-time
+        evaluatedBy:
+          type: [string, 'null']
+          format: uuid
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleEvaluationResultLine'

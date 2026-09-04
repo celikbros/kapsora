@@ -51,6 +51,9 @@ import (
 	providerapp "github.com/celikbros/kapsora/internal/provider/application"
 	providerpg "github.com/celikbros/kapsora/internal/provider/infrastructure/postgres"
 	providerhttp "github.com/celikbros/kapsora/internal/provider/transport/http"
+	rulesapp "github.com/celikbros/kapsora/internal/rules/application"
+	rulespg "github.com/celikbros/kapsora/internal/rules/infrastructure/postgres"
+	ruleshttp "github.com/celikbros/kapsora/internal/rules/transport/http"
 )
 
 const serviceName = "kapsora-api"
@@ -158,6 +161,15 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	// The compiled rule programs are cached per rule set version. A published version
+	// never changes, so an entry can never go stale; the service refuses to cache a draft.
+	rulesSvc, err := rulesapp.New(rulesapp.Deps{
+		Pool: pool, Repo: rulespg.New(), Audit: auditpg.New(), Cursors: cursors,
+		Programs: rulesapp.NewProgramCache(rulesapp.DefaultCacheSize),
+	})
+	if err != nil {
+		return err
+	}
 	memberImports, err := memberimport.New(memberimport.Deps{
 		Pool: pool, Cipher: keys, Index: keys, Audit: auditpg.New(), Cursors: cursors, Logger: logger,
 	})
@@ -189,6 +201,7 @@ func run() error {
 		catalog:      catalogSvc,
 		providers:    providerSvc,
 		contracts:    contractSvc,
+		rules:        rulesSvc,
 		entitlements: entitlementSvc,
 		eligibility:  eligibilitySvc,
 		imports:      memberImports,
@@ -269,6 +282,7 @@ type routerDeps struct {
 	catalog      *catalogapp.Service
 	providers    *providerapp.Service
 	contracts    *contractapp.Service
+	rules        *rulesapp.Service
 	entitlements *benefitledger.Service
 	eligibility  *benefiteligibility.Service
 	imports      *memberimport.Service
@@ -414,6 +428,19 @@ func newRouter(d routerDeps) http.Handler {
 			// The price lookup is a single literal path segment rather than a
 			// sub-resource, so it is registered on the tenant router itself.
 			contractHandler.PriceRoutes(tenant)
+
+			// The rule engine sits beside the contracts: both are configuration a
+			// second person approves, and a published version of either is what a later
+			// decision is measured against. Simulation and the test run write nothing, so
+			// neither carries an Idempotency-Key.
+			rulesHandler := ruleshttp.NewHandler(d.rules, sessions, d.logger)
+			rulesMW := ruleshttp.Middlewares{
+				CreateRuleSet:        d.idempotent("rule_set.create"),
+				CreateRuleSetVersion: d.idempotent("rule_set_version.create"),
+			}
+			tenant.Route("/rule-sets", func(r chi.Router) { rulesHandler.RuleSetRoutes(r, rulesMW) })
+			tenant.Route("/rule-set-versions", rulesHandler.VersionRoutes)
+			tenant.Route("/rule-evaluations", rulesHandler.EvaluationRoutes)
 
 			// Eligibility checks change no business state and carry their own replay
 			// contract in benefit.eligibility_evaluation.idempotency_key, so the

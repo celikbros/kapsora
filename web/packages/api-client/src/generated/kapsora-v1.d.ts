@@ -1568,6 +1568,314 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/rule-evaluations/{ruleEvaluationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One recorded decision: the rule set version that produced it, the outcome, the
+         *     rules that fired in order with their explanation codes and actions, and the input
+         *     snapshot the decision was taken on. The snapshot holds ids, dates and quantities
+         *     only — never an identity number and never a name — because an audit trail that
+         *     needs protecting is an audit trail nobody reads. The row is append-only and can
+         *     never be edited.
+         */
+        get: operations["getRuleEvaluation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rule-set-versions/{ruleSetVersionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One rule set version with its input schema, its rules in priority order, its test
+         *     cases and its review metadata. A published version needs only `rule.read`; a draft
+         *     or a version under review needs `rule.draft`, so a rule nobody has approved is not
+         *     visible to everyone who may read the approved one.
+         */
+        get: operations["getRuleSetVersion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Merge-patch of the validity period, the input schema and the notes of a DRAFT
+         *     version. Narrowing the input schema is checked against the rules already written:
+         *     a variable a condition still names cannot be withdrawn, because the version would
+         *     then be unable to compile. A version that is not DRAFT answers 409
+         *     RULE_VERSION_IMMUTABLE, which is the point of the package — what decided a claim
+         *     cannot move afterwards.
+         */
+        patch: operations["patchRuleSetVersion"];
+        trace?: never;
+    };
+    "/api/v1/rule-set-versions/{ruleSetVersionId}:simulate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Runs one supplied input against a draft or a published version and returns the
+         *     full trace: every rule considered, in priority order, whether it matched, the
+         *     action it asked for and the explanation code it carries. It writes no evaluation
+         *     row and has no side effect of any kind — the engine returns actions and performs
+         *     none of them, which is what lets production data be simulated safely. Use
+         *     `getRuleEvaluation` to read a decision that was actually recorded.
+         */
+        post: operations["simulateRuleSetVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rule-set-versions/{ruleSetVersionId}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Freezes a version under review and makes it the one the engine evaluates. It needs
+         *     `rule.publish`, a recent step-up and an actor other than the one who submitted it;
+         *     the same person answers 403 MAKER_CHECKER_SAME_ACTOR and the refusal is audited.
+         *     Publishing writes a content hash over the input schema and every rule, so "which
+         *     rules decided this" can be proved years later. Two published versions of one rule
+         *     set may not cover the same day, so an overlapping period answers 409
+         *     RULE_SET_VERSION_OVERLAP.
+         */
+        post: operations["publishRuleSetVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rule-set-versions/{ruleSetVersionId}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Closes a published version with a reason. It stays readable, because every
+         *     evaluation ever recorded names the version that produced it and a dispute two
+         *     years later has to be able to read the rules that decided it. Retiring needs
+         *     `rule.publish` and a recent step-up.
+         */
+        post: operations["retireRuleSetVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rule-set-versions/{ruleSetVersionId}/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * @description Replaces the whole rule set of a DRAFT version, the way a contract price list is
+         *     replaced: the meaningful unit is the rule set, and a set write makes consistency
+         *     one decision rather than n. Every condition is compiled against the version's
+         *     input schema before anything is stored, so a condition naming an undeclared
+         *     variable or returning something other than a boolean answers 422 with the failing
+         *     rule's code and the compiler's own message — at authoring time rather than at
+         *     three in the morning. Two rules may not share a priority, because evaluation order
+         *     has to be total and reproducible. If-Match carries the ETag of the version.
+         */
+        put: operations["putRules"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rule-set-versions/{ruleSetVersionId}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Moves a DRAFT version to UNDER_REVIEW and records the maker. This is the gate the
+         *     whole package exists for: a version with no test case answers 422 on field
+         *     testCases with code TESTS_REQUIRED, and a version whose cases do not all pass
+         *     answers 422 with code TESTS_FAILING naming the failing case codes. The validity
+         *     start is required too, because a published version without one could never be
+         *     selected by service date.
+         */
+        post: operations["submitRuleSetVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rule-set-versions/{ruleSetVersionId}/test-cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * @description Replaces the whole test case set of a DRAFT version. A test case is one input with
+         *     the outcome, the explanation codes and, optionally, the actions it must produce.
+         *     The set exists because a version cannot be submitted for review without at least
+         *     one case and without every case passing: an untested rule that decides what a
+         *     member is owed is not a rule anybody should have to trust. If-Match carries the
+         *     ETag of the version.
+         */
+        put: operations["putRuleTestCases"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rule-set-versions/{ruleSetVersionId}/tests:run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Runs the stored test cases of a version against its rules and reports, per case,
+         *     what was expected and what actually happened. It writes nothing: no evaluation
+         *     row, no test result row, no side effect of any kind, so an author may run it as
+         *     often as they like. This is the same check the submit gate applies, offered
+         *     separately so a failing case is found before the review is asked for.
+         */
+        post: operations["runRuleTests"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rule-sets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Rule sets of the tenant, newest first, with keyset paging. A rule set is a named
+         *     decision — which document a claim needs, when a pre-approval is required, what age
+         *     a dependant may be — and what it currently decides lives in its published version.
+         *     q searches the code and the name; the other filters narrow to one service domain,
+         *     one purpose or one status.
+         */
+        get: operations["listRuleSets"];
+        put?: never;
+        /**
+         * @description Opens a rule set. The set itself decides nothing: it holds versions, and only a
+         *     published version is ever evaluated. The purpose says which decision the set
+         *     answers, so a caller asking "which documents does this claim need" reads the
+         *     DOCUMENT sets and never a PRICE one. The code is unique inside the tenant, so a
+         *     second one answers 409 RULE_SET_CODE_TAKEN.
+         */
+        post: operations["createRuleSet"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rule-sets/{ruleSetId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One rule set of the tenant with its optimistic concurrency tag. The versions are
+         *     read separately, because a rule set that has been revised every quarter for three
+         *     years carries more of them than a detail view wants.
+         */
+        get: operations["getRuleSet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Merge-patch of the name and the status of a rule set. The code, the service domain
+         *     and the purpose are absent: they are what the set is, and every published version
+         *     was written against them, so a body carrying one answers 422 with field code
+         *     IMMUTABLE. Setting the status to INACTIVE stops the set being offered for new
+         *     decisions; it changes nothing about the evaluations it already produced.
+         */
+        patch: operations["patchRuleSet"];
+        trace?: never;
+    };
+    "/api/v1/rule-sets/{ruleSetId}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The version summaries of one rule set, highest version number first. A published
+         *     or retired version is visible to anyone who may read rules; a draft or a version
+         *     under review is an unagreed proposal and takes `rule.draft` to see at all.
+         */
+        get: operations["listRuleSetVersions"];
+        put?: never;
+        /**
+         * @description Opens the next DRAFT version of a rule set. copyFromVersionId copies the input
+         *     schema, the rules and the test cases of another version of the same set, which is
+         *     how a revision starts from what is live rather than from an empty page. The input
+         *     schema declares the variables a condition may name and their CEL types; a
+         *     condition reaching anything else fails to compile at authoring time (ADR-023).
+         */
+        post: operations["createRuleSetVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/service-categories": {
         parameters: {
             query?: never;
@@ -2304,6 +2612,25 @@ export interface components {
             validFrom: string;
             /** Format: date */
             validTo?: string;
+        };
+        CreateRuleSetRequest: {
+            code: string;
+            domainCode: components["schemas"]["ServiceDomain"];
+            name: string;
+            purpose: components["schemas"]["RuleSetPurpose"];
+        };
+        CreateRuleSetVersionRequest: {
+            /**
+             * Format: uuid
+             * @description Another version of the same set whose schema, rules and test cases are copied.
+             */
+            copyFromVersionId?: string;
+            inputSchema?: components["schemas"]["RuleInputSchema"];
+            notes?: string;
+            /** Format: date */
+            validFrom?: string;
+            /** Format: date */
+            validTo?: string | null;
         };
         CreateServiceCategoryRequest: {
             /** @default true */
@@ -3368,6 +3695,12 @@ export interface components {
         ReplaceProviderQuotasRequest: {
             items: components["schemas"]["ProviderQuotaInput"][];
         };
+        ReplaceRulesRequest: {
+            items: components["schemas"]["RuleInput"][];
+        };
+        ReplaceRuleTestCasesRequest: {
+            items: components["schemas"]["RuleTestCaseInput"][];
+        };
         ReplaceServiceCodeMappingsRequest: {
             items: components["schemas"]["ServiceCodeMappingInput"][];
         };
@@ -3433,6 +3766,288 @@ export interface components {
         };
         ReviewComment: {
             comment?: string;
+        };
+        Rule: {
+            actions: components["schemas"]["RuleAction"][];
+            /** @description An inactive rule is kept for the record and never compiled or evaluated. */
+            active: boolean;
+            code: string;
+            /** @description A CEL expression returning a boolean, compiled against the version's input schema. */
+            condition: string;
+            /** @description The code every line of the trace this rule produces carries. */
+            explanationCode: string;
+            /** @description Substitution parameters of the explanation; ids and codes only, never a name. */
+            explanationParams?: {
+                [key: string]: unknown;
+            };
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** @description Ascending evaluation order; two rules of one version may not share a priority. */
+            priority: number;
+            /** Format: uuid */
+            ruleSetVersionId: string;
+            /** @description Ends the pass as soon as this rule matches; recorded in the trace. */
+            stopOnMatch: boolean;
+        };
+        RuleAction: {
+            /**
+             * @description The typed payload of the action, validated on write against the action type:
+             *     REQUIRE_DOCUMENT needs a documentTypeCode, SET_LIMIT and RESERVE_ENTITLEMENT
+             *     an amount, ADJUST_PRICE a method and a value. Every numeric value is an exact
+             *     decimal string, never a JSON number.
+             */
+            payload?: {
+                [key: string]: unknown;
+            };
+            type: components["schemas"]["RuleActionType"];
+        };
+        /**
+         * @description What a matched rule asks the caller to do. The engine returns actions and performs
+         *     none of them: eligibility, authorization and adjudication decide what to do with
+         *     them, and that separation is what lets a simulation run without writing a row.
+         * @enum {string}
+         */
+        RuleActionType: "APPROVE" | "REJECT" | "WARN" | "REQUIRE_DOCUMENT" | "REQUIRE_PREAUTH" | "REQUIRE_MEDICAL_REVIEW" | "REQUIRE_FINANCIAL_REVIEW" | "PARTIAL_APPROVE" | "RESERVE_ENTITLEMENT" | "ADJUST_PRICE" | "SET_LIMIT";
+        RuleEvaluation: {
+            durationMs?: number | null;
+            /** Format: date-time */
+            evaluatedAt: string;
+            /** Format: uuid */
+            evaluatedBy?: string | null;
+            /** Format: uuid */
+            id: string;
+            /** @description Lower-case hex SHA-256 of the canonical input; the same input twice gives the same hash. */
+            inputHash: string;
+            /**
+             * @description The input as it is kept for audit: ids, dates, codes and quantities only.
+             *     Anything that is neither of those is dropped before the row is written, so no
+             *     identity number and no name ever reaches this column.
+             */
+            inputSnapshot: {
+                [key: string]: unknown;
+            };
+            outcome: components["schemas"]["RuleOutcome"];
+            results: components["schemas"]["RuleEvaluationResultLine"][];
+            ruleSetCode?: string;
+            /** Format: uuid */
+            ruleSetId: string;
+            /** Format: uuid */
+            ruleSetVersionId: string;
+            /** Format: uuid */
+            subjectId?: string | null;
+            /** @description What was decided about, for example CLAIM or SERVICE_REQUEST. */
+            subjectType: string;
+            versionNo?: number;
+        };
+        RuleEvaluationResultLine: {
+            actionPayload?: {
+                [key: string]: unknown;
+            } | null;
+            /** @description The action this line asks for, absent when the rule did not match or carries none. */
+            actionType?: string | null;
+            explanationCode: string;
+            matched: boolean;
+            ruleCode: string;
+            /** Format: uuid */
+            ruleId?: string | null;
+            /** @description Position in the pass; the order the rules were considered in. */
+            sequence: number;
+            severity: components["schemas"]["RuleSeverity"];
+        };
+        RuleEvaluationTrace: {
+            durationMs?: number;
+            outcome: components["schemas"]["RuleOutcome"];
+            results: components["schemas"]["RuleEvaluationResultLine"][];
+            /** Format: uuid */
+            ruleSetVersionId: string;
+            status?: components["schemas"]["RuleSetVersionStatus"];
+            versionNo?: number;
+        };
+        RuleInput: {
+            actions?: components["schemas"]["RuleAction"][];
+            /** @default true */
+            active?: boolean;
+            code: string;
+            condition: string;
+            explanationCode: string;
+            explanationParams?: {
+                [key: string]: unknown;
+            };
+            name: string;
+            priority: number;
+            /** @default false */
+            stopOnMatch?: boolean;
+        };
+        /**
+         * @description The variables a condition of this version may name, and their CEL types. A
+         *     condition reaching anything not declared here fails to compile at authoring time.
+         */
+        RuleInputSchema: {
+            [key: string]: components["schemas"]["RuleInputType"];
+        };
+        /**
+         * @description The CEL type of one declared input variable (ADR-023). The environment offers
+         *     these and nothing else: there is no type here that reaches a network, a file or a
+         *     database, which is how v1.2 11.7's prohibitions are kept — by absence.
+         * @enum {string}
+         */
+        RuleInputType: "string" | "int" | "double" | "bool" | "timestamp" | "duration" | "map" | "list";
+        RuleList: {
+            items: components["schemas"]["Rule"][];
+        };
+        /**
+         * @description The one answer a whole pass folds to. Any REJECT wins; otherwise any REQUIRE_*
+         *     means REVIEW_REQUIRED; otherwise any PARTIAL_APPROVE means PARTIALLY_APPROVED;
+         *     APPROVED is what is left when nothing objected.
+         * @enum {string}
+         */
+        RuleOutcome: "APPROVED" | "REJECTED" | "REVIEW_REQUIRED" | "PARTIALLY_APPROVED";
+        RuleSet: {
+            code: string;
+            domainCode: components["schemas"]["ServiceDomain"];
+            /** Format: uuid */
+            id: string;
+            name: string;
+            purpose: components["schemas"]["RuleSetPurpose"];
+            rowVersion: number;
+            status: components["schemas"]["RuleSetStatus"];
+            /** @description How many versions the set holds, drafts included. */
+            versionCount: number;
+        };
+        RuleSetPage: {
+            items: components["schemas"]["RuleSet"][];
+            nextCursor?: string | null;
+        };
+        /**
+         * @description Which decision a rule set answers. A caller asking "what documents does this claim
+         *     need" reads the DOCUMENT sets and never a PRICE one, so the purpose is what makes
+         *     a set findable rather than a comment on it.
+         * @enum {string}
+         */
+        RuleSetPurpose: "ELIGIBILITY" | "DOCUMENT" | "PREAUTH" | "LIMIT" | "DUPLICATE" | "DIAGNOSIS_SERVICE" | "PRICE" | "ADJUDICATION";
+        /**
+         * @description Lifecycle of a rule set. INACTIVE stops it being offered for new decisions and
+         *     changes nothing about the evaluations it already produced.
+         * @enum {string}
+         */
+        RuleSetStatus: "ACTIVE" | "INACTIVE";
+        RuleSetVersion: {
+            /** @description Lower-case hex SHA-256 over the input schema and every rule, written at publish. */
+            contentHash?: string | null;
+            /** Format: uuid */
+            id: string;
+            inputSchema: components["schemas"]["RuleInputSchema"];
+            notes?: string | null;
+            /** Format: date-time */
+            publishedAt?: string | null;
+            /** Format: uuid */
+            publishedBy?: string | null;
+            retireReasonCode?: string | null;
+            reviewComment?: string | null;
+            rowVersion: number;
+            /** @description The rules of the version in ascending priority order; 1 runs first. */
+            rules: components["schemas"]["Rule"][];
+            /** Format: uuid */
+            ruleSetId: string;
+            status: components["schemas"]["RuleSetVersionStatus"];
+            /** Format: date-time */
+            submittedAt?: string | null;
+            /** Format: uuid */
+            submittedBy?: string | null;
+            testCases: components["schemas"]["RuleTestCase"][];
+            /** Format: date */
+            validFrom?: string | null;
+            /** Format: date */
+            validTo?: string | null;
+            versionNo: number;
+        };
+        RuleSetVersionList: {
+            items: components["schemas"]["RuleSetVersionSummary"][];
+        };
+        /**
+         * @description Lifecycle of a rule set version. PUBLISHED is the only status the engine ever
+         *     evaluates for a recorded decision, and nothing about it may change afterwards.
+         * @enum {string}
+         */
+        RuleSetVersionStatus: "DRAFT" | "UNDER_REVIEW" | "PUBLISHED" | "RETIRED";
+        RuleSetVersionSummary: {
+            /** Format: uuid */
+            id: string;
+            notes?: string | null;
+            /** Format: date-time */
+            publishedAt?: string | null;
+            rowVersion: number;
+            ruleCount: number;
+            /** Format: uuid */
+            ruleSetId: string;
+            status: components["schemas"]["RuleSetVersionStatus"];
+            /** @description How many test cases the version holds; submit refuses while this is zero. */
+            testCaseCount: number;
+            /** Format: date */
+            validFrom?: string | null;
+            /** Format: date */
+            validTo?: string | null;
+            versionNo: number;
+        };
+        /**
+         * @description How loud one line of the trace is; ERROR marks a rule that threw or timed out.
+         * @enum {string}
+         */
+        RuleSeverity: "INFO" | "WARNING" | "ERROR";
+        RuleTestCase: {
+            code: string;
+            description?: string | null;
+            /**
+             * @description The actions the case must produce, in order. Null means the case does not
+             *     assert on actions at all; an entry without a payload asserts only its type.
+             */
+            expectedActions?: components["schemas"]["RuleAction"][] | null;
+            /** @description The explanation codes the case must produce, in order. */
+            expectedExplanations: string[];
+            expectedOutcome: components["schemas"]["RuleOutcome"];
+            /** Format: uuid */
+            id: string;
+            /** @description One whole input document, keyed by the variables the input schema declares. */
+            input: {
+                [key: string]: unknown;
+            };
+            /** Format: uuid */
+            ruleSetVersionId: string;
+        };
+        RuleTestCaseInput: {
+            code: string;
+            description?: string | null;
+            expectedActions?: components["schemas"]["RuleAction"][] | null;
+            expectedExplanations?: string[];
+            expectedOutcome: components["schemas"]["RuleOutcome"];
+            input: {
+                [key: string]: unknown;
+            };
+        };
+        RuleTestCaseList: {
+            items: components["schemas"]["RuleTestCase"][];
+        };
+        RuleTestCaseResult: {
+            actualActions: components["schemas"]["RuleAction"][];
+            actualExplanations: string[];
+            actualOutcome: components["schemas"]["RuleOutcome"];
+            code: string;
+            expectedActions?: components["schemas"]["RuleAction"][] | null;
+            expectedExplanations: string[];
+            expectedOutcome: components["schemas"]["RuleOutcome"];
+            /** @description Which of outcome, explanations or actions differed; empty when the case passed. */
+            mismatches: ("OUTCOME" | "EXPLANATIONS" | "ACTIONS")[];
+            passed: boolean;
+        };
+        RuleTestRunResult: {
+            cases: components["schemas"]["RuleTestCaseResult"][];
+            failed: number;
+            /** @description True only when there is at least one case and every one of them passed. */
+            passed: boolean;
+            /** Format: uuid */
+            ruleSetVersionId: string;
+            total: number;
         };
         ScoredPriceCandidate: {
             /** Format: uuid */
@@ -3601,6 +4216,12 @@ export interface components {
          * @enum {string}
          */
         SettlementMethod: "BANK_TRANSFER" | "OFFSET" | "OTHER";
+        SimulateRuleSetVersionRequest: {
+            /** @description One whole input document, keyed by the variables the input schema declares. */
+            input: {
+                [key: string]: unknown;
+            };
+        };
         SponsorMembership: {
             externalMemberNo?: string | null;
             /** Format: uuid */
@@ -3785,6 +4406,23 @@ export interface components {
             notes?: string | null;
             providerType?: components["schemas"]["ProviderType"];
         };
+        /**
+         * @description Merge-patch body. The code, the service domain and the purpose are absent because
+         *     they are what the set is; a body carrying one answers 422 with IMMUTABLE.
+         */
+        UpdateRuleSetRequest: {
+            name?: string;
+            status?: components["schemas"]["RuleSetStatus"];
+        };
+        /** @description Merge-patch body of a DRAFT rule set version. */
+        UpdateRuleSetVersionRequest: {
+            inputSchema?: components["schemas"]["RuleInputSchema"];
+            notes?: string | null;
+            /** Format: date */
+            validFrom?: string | null;
+            /** Format: date */
+            validTo?: string | null;
+        };
         /** @description Merge-patch body; code is absent because it is immutable. */
         UpdateServiceCategoryRequest: {
             active?: boolean;
@@ -3921,6 +4559,9 @@ export interface components {
         ProviderLocationId: string;
         RelationshipId: string;
         RequestId: string;
+        RuleEvaluationId: string;
+        RuleSetId: string;
+        RuleSetVersionId: string;
         ServiceCategoryId: string;
         ServiceDefinitionId: string;
         /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
@@ -3963,6 +4604,8 @@ export type SchemaCreateProgramRequest = components['schemas']['CreateProgramReq
 export type SchemaCreateProviderLocationRequest = components['schemas']['CreateProviderLocationRequest'];
 export type SchemaCreateProviderRequest = components['schemas']['CreateProviderRequest'];
 export type SchemaCreateRelationshipRequest = components['schemas']['CreateRelationshipRequest'];
+export type SchemaCreateRuleSetRequest = components['schemas']['CreateRuleSetRequest'];
+export type SchemaCreateRuleSetVersionRequest = components['schemas']['CreateRuleSetVersionRequest'];
 export type SchemaCreateServiceCategoryRequest = components['schemas']['CreateServiceCategoryRequest'];
 export type SchemaCreateServiceDefinitionRequest = components['schemas']['CreateServiceDefinitionRequest'];
 export type SchemaCreateServiceRequest = components['schemas']['CreateServiceRequest'];
@@ -4054,11 +4697,38 @@ export type SchemaReplacePriceItemsRequest = components['schemas']['ReplacePrice
 export type SchemaReplacePriceListsRequest = components['schemas']['ReplacePriceListsRequest'];
 export type SchemaReplaceProviderCapabilitiesRequest = components['schemas']['ReplaceProviderCapabilitiesRequest'];
 export type SchemaReplaceProviderQuotasRequest = components['schemas']['ReplaceProviderQuotasRequest'];
+export type SchemaReplaceRulesRequest = components['schemas']['ReplaceRulesRequest'];
+export type SchemaReplaceRuleTestCasesRequest = components['schemas']['ReplaceRuleTestCasesRequest'];
 export type SchemaReplaceServiceCodeMappingsRequest = components['schemas']['ReplaceServiceCodeMappingsRequest'];
 export type SchemaResolvedPrice = components['schemas']['ResolvedPrice'];
 export type SchemaResolvePriceRequest = components['schemas']['ResolvePriceRequest'];
 export type SchemaResolvePriceResult = components['schemas']['ResolvePriceResult'];
 export type SchemaReviewComment = components['schemas']['ReviewComment'];
+export type SchemaRule = components['schemas']['Rule'];
+export type SchemaRuleAction = components['schemas']['RuleAction'];
+export type SchemaRuleActionType = components['schemas']['RuleActionType'];
+export type SchemaRuleEvaluation = components['schemas']['RuleEvaluation'];
+export type SchemaRuleEvaluationResultLine = components['schemas']['RuleEvaluationResultLine'];
+export type SchemaRuleEvaluationTrace = components['schemas']['RuleEvaluationTrace'];
+export type SchemaRuleInput = components['schemas']['RuleInput'];
+export type SchemaRuleInputSchema = components['schemas']['RuleInputSchema'];
+export type SchemaRuleInputType = components['schemas']['RuleInputType'];
+export type SchemaRuleList = components['schemas']['RuleList'];
+export type SchemaRuleOutcome = components['schemas']['RuleOutcome'];
+export type SchemaRuleSet = components['schemas']['RuleSet'];
+export type SchemaRuleSetPage = components['schemas']['RuleSetPage'];
+export type SchemaRuleSetPurpose = components['schemas']['RuleSetPurpose'];
+export type SchemaRuleSetStatus = components['schemas']['RuleSetStatus'];
+export type SchemaRuleSetVersion = components['schemas']['RuleSetVersion'];
+export type SchemaRuleSetVersionList = components['schemas']['RuleSetVersionList'];
+export type SchemaRuleSetVersionStatus = components['schemas']['RuleSetVersionStatus'];
+export type SchemaRuleSetVersionSummary = components['schemas']['RuleSetVersionSummary'];
+export type SchemaRuleSeverity = components['schemas']['RuleSeverity'];
+export type SchemaRuleTestCase = components['schemas']['RuleTestCase'];
+export type SchemaRuleTestCaseInput = components['schemas']['RuleTestCaseInput'];
+export type SchemaRuleTestCaseList = components['schemas']['RuleTestCaseList'];
+export type SchemaRuleTestCaseResult = components['schemas']['RuleTestCaseResult'];
+export type SchemaRuleTestRunResult = components['schemas']['RuleTestRunResult'];
 export type SchemaScoredPriceCandidate = components['schemas']['ScoredPriceCandidate'];
 export type SchemaServiceCategory = components['schemas']['ServiceCategory'];
 export type SchemaServiceCategoryPage = components['schemas']['ServiceCategoryPage'];
@@ -4074,6 +4744,7 @@ export type SchemaServiceRequestPage = components['schemas']['ServiceRequestPage
 export type SchemaServiceUnitType = components['schemas']['ServiceUnitType'];
 export type SchemaSessionInfo = components['schemas']['SessionInfo'];
 export type SchemaSettlementMethod = components['schemas']['SettlementMethod'];
+export type SchemaSimulateRuleSetVersionRequest = components['schemas']['SimulateRuleSetVersionRequest'];
 export type SchemaSponsorMembership = components['schemas']['SponsorMembership'];
 export type SchemaTaxBehaviour = components['schemas']['TaxBehaviour'];
 export type SchemaTenantContext = components['schemas']['TenantContext'];
@@ -4091,6 +4762,8 @@ export type SchemaUpdatePractitionerRequest = components['schemas']['UpdatePract
 export type SchemaUpdateProgramRequest = components['schemas']['UpdateProgramRequest'];
 export type SchemaUpdateProviderLocationRequest = components['schemas']['UpdateProviderLocationRequest'];
 export type SchemaUpdateProviderRequest = components['schemas']['UpdateProviderRequest'];
+export type SchemaUpdateRuleSetRequest = components['schemas']['UpdateRuleSetRequest'];
+export type SchemaUpdateRuleSetVersionRequest = components['schemas']['UpdateRuleSetVersionRequest'];
 export type SchemaUpdateServiceCategoryRequest = components['schemas']['UpdateServiceCategoryRequest'];
 export type SchemaUpdateServiceDefinitionRequest = components['schemas']['UpdateServiceDefinitionRequest'];
 export type SchemaUpdateServiceRequest = components['schemas']['UpdateServiceRequest'];
@@ -4128,6 +4801,9 @@ export type ParameterProviderId = components['parameters']['ProviderId'];
 export type ParameterProviderLocationId = components['parameters']['ProviderLocationId'];
 export type ParameterRelationshipId = components['parameters']['RelationshipId'];
 export type ParameterRequestId = components['parameters']['RequestId'];
+export type ParameterRuleEvaluationId = components['parameters']['RuleEvaluationId'];
+export type ParameterRuleSetId = components['parameters']['RuleSetId'];
+export type ParameterRuleSetVersionId = components['parameters']['RuleSetVersionId'];
 export type ParameterServiceCategoryId = components['parameters']['ServiceCategoryId'];
 export type ParameterServiceDefinitionId = components['parameters']['ServiceDefinitionId'];
 export type ParameterTenantHeader = components['parameters']['TenantHeader'];
@@ -8277,6 +8953,708 @@ export interface operations {
                 };
             };
             403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getRuleEvaluation: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                ruleEvaluationId: components["parameters"]["RuleEvaluationId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Recorded rule evaluation with its full trace */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleEvaluation"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getRuleSetVersion: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                ruleSetVersionId: components["parameters"]["RuleSetVersionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Rule set version */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleSetVersion"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    patchRuleSetVersion: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                ruleSetVersionId: components["parameters"]["RuleSetVersionId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/merge-patch+json": components["schemas"]["UpdateRuleSetVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description Rule set version updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleSetVersion"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Body is not application/merge-patch+json */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    simulateRuleSetVersion: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                ruleSetVersionId: components["parameters"]["RuleSetVersionId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SimulateRuleSetVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description Simulated trace; nothing was written */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleEvaluationTrace"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    publishRuleSetVersion: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                ruleSetVersionId: components["parameters"]["RuleSetVersionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReviewComment"];
+            };
+        };
+        responses: {
+            /** @description Rule set version published */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleSetVersion"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    retireRuleSetVersion: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                ruleSetVersionId: components["parameters"]["RuleSetVersionId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonCommand"];
+            };
+        };
+        responses: {
+            /** @description Rule set version retired */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleSetVersion"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    putRules: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                ruleSetVersionId: components["parameters"]["RuleSetVersionId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplaceRulesRequest"];
+            };
+        };
+        responses: {
+            /** @description Rule set replaced */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    submitRuleSetVersion: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                ruleSetVersionId: components["parameters"]["RuleSetVersionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReviewComment"];
+            };
+        };
+        responses: {
+            /** @description Rule set version submitted for review */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleSetVersion"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    putRuleTestCases: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                ruleSetVersionId: components["parameters"]["RuleSetVersionId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplaceRuleTestCasesRequest"];
+            };
+        };
+        responses: {
+            /** @description Test case set replaced */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleTestCaseList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    runRuleTests: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                ruleSetVersionId: components["parameters"]["RuleSetVersionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Test run result, per case */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleTestRunResult"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    listRuleSets: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description Only rule sets in this service domain. */
+                domainCode?: components["schemas"]["ServiceDomain"];
+                limit?: components["parameters"]["Limit"];
+                /** @description Only rule sets serving this purpose. */
+                purpose?: components["schemas"]["RuleSetPurpose"];
+                /** @description Rule set code or name search. */
+                q?: string;
+                /** @description Only rule sets in this status. */
+                status?: components["schemas"]["RuleSetStatus"];
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Rule set page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleSetPage"];
+                };
+            };
+            /** @description Cursor invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    createRuleSet: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRuleSetRequest"];
+            };
+        };
+        responses: {
+            /** @description Rule set created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleSet"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getRuleSet: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                ruleSetId: components["parameters"]["RuleSetId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Rule set */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleSet"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    patchRuleSet: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                ruleSetId: components["parameters"]["RuleSetId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/merge-patch+json": components["schemas"]["UpdateRuleSetRequest"];
+            };
+        };
+        responses: {
+            /** @description Rule set updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleSet"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Body is not application/merge-patch+json */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listRuleSetVersions: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                ruleSetId: components["parameters"]["RuleSetId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Rule set versions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleSetVersionList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createRuleSetVersion: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                ruleSetId: components["parameters"]["RuleSetId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRuleSetVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description Rule set version created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleSetVersion"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
             422: components["responses"]["ValidationError"];
         };
     };

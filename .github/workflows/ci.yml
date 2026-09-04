@@ -82,9 +82,12 @@ jobs:
       - name: spectral
         run: npx --yes @stoplight/spectral-cli lint api/openapi/kapsora-v1.yaml --ruleset .spectral.yaml --fail-severity error
       - name: generated code is current
+        # oapi-codegen resolves the config's output path against the working directory,
+        # and that path is ../generated/... — run from the repository root it writes
+        # outside the checkout, git sees no change and this guard passes over nothing.
         run: |
           go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest
-          oapi-codegen -config api/openapi/oapi-codegen.yaml api/openapi/kapsora-v1.yaml
+          cd api/openapi && oapi-codegen -config oapi-codegen.yaml kapsora-v1.yaml && cd ../..
           git diff --exit-code -- api/generated
       - name: breaking changes against base
         if: github.event_name == 'pull_request'

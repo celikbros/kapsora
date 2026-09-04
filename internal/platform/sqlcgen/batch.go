@@ -297,6 +297,214 @@ func (b *CreateProviderCapabilityBatchResults) Close() error {
 	return b.br.Close()
 }
 
+const createRule = `-- name: CreateRule :batchexec
+INSERT INTO rules.rule (tenant_id, rule_set_version_id, code, name, priority, condition,
+                        actions, explanation_code, explanation_params, stop_on_match, active)
+VALUES ($1, $2, $3,
+        $4, $5, $6,
+        $7, $8, $9,
+        $10, $11)
+`
+
+type CreateRuleBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type CreateRuleParams struct {
+	TenantID          uuid.UUID
+	RuleSetVersionID  uuid.UUID
+	Code              string
+	Name              string
+	Priority          int32
+	Condition         string
+	Actions           []byte
+	ExplanationCode   string
+	ExplanationParams []byte
+	StopOnMatch       bool
+	Active            bool
+}
+
+func (q *Queries) CreateRule(ctx context.Context, arg []CreateRuleParams) *CreateRuleBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.TenantID,
+			a.RuleSetVersionID,
+			a.Code,
+			a.Name,
+			a.Priority,
+			a.Condition,
+			a.Actions,
+			a.ExplanationCode,
+			a.ExplanationParams,
+			a.StopOnMatch,
+			a.Active,
+		}
+		batch.Queue(createRule, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &CreateRuleBatchResults{br, len(arg), false}
+}
+
+func (b *CreateRuleBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *CreateRuleBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
+const createRuleEvaluationResult = `-- name: CreateRuleEvaluationResult :batchexec
+INSERT INTO rules.evaluation_result (tenant_id, evaluation_id, sequence, rule_id, rule_code,
+                                     matched, action_type, action_payload,
+                                     explanation_code, severity)
+VALUES ($1, $2, $3,
+        $4, $5, $6,
+        $7, $8,
+        $9, $10)
+`
+
+type CreateRuleEvaluationResultBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type CreateRuleEvaluationResultParams struct {
+	TenantID        uuid.UUID
+	EvaluationID    uuid.UUID
+	Sequence        int32
+	RuleID          uuid.NullUUID
+	RuleCode        string
+	Matched         bool
+	ActionType      *string
+	ActionPayload   []byte
+	ExplanationCode string
+	Severity        string
+}
+
+func (q *Queries) CreateRuleEvaluationResult(ctx context.Context, arg []CreateRuleEvaluationResultParams) *CreateRuleEvaluationResultBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.TenantID,
+			a.EvaluationID,
+			a.Sequence,
+			a.RuleID,
+			a.RuleCode,
+			a.Matched,
+			a.ActionType,
+			a.ActionPayload,
+			a.ExplanationCode,
+			a.Severity,
+		}
+		batch.Queue(createRuleEvaluationResult, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &CreateRuleEvaluationResultBatchResults{br, len(arg), false}
+}
+
+func (b *CreateRuleEvaluationResultBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *CreateRuleEvaluationResultBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
+const createRuleTestCase = `-- name: CreateRuleTestCase :batchexec
+INSERT INTO rules.rule_test_case (tenant_id, rule_set_version_id, code, description, input,
+                                  expected_outcome, expected_explanations, expected_actions)
+VALUES ($1, $2, $3,
+        $4, $5, $6,
+        $7, $8)
+`
+
+type CreateRuleTestCaseBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type CreateRuleTestCaseParams struct {
+	TenantID             uuid.UUID
+	RuleSetVersionID     uuid.UUID
+	Code                 string
+	Description          *string
+	Input                []byte
+	ExpectedOutcome      string
+	ExpectedExplanations []string
+	ExpectedActions      []byte
+}
+
+func (q *Queries) CreateRuleTestCase(ctx context.Context, arg []CreateRuleTestCaseParams) *CreateRuleTestCaseBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.TenantID,
+			a.RuleSetVersionID,
+			a.Code,
+			a.Description,
+			a.Input,
+			a.ExpectedOutcome,
+			a.ExpectedExplanations,
+			a.ExpectedActions,
+		}
+		batch.Queue(createRuleTestCase, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &CreateRuleTestCaseBatchResults{br, len(arg), false}
+}
+
+func (b *CreateRuleTestCaseBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *CreateRuleTestCaseBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
 const createServiceCodeMapping = `-- name: CreateServiceCodeMapping :batchexec
 INSERT INTO catalog.service_code_mapping (tenant_id, service_definition_id, code_system_id,
                                           code, valid_from, valid_to, is_primary)
