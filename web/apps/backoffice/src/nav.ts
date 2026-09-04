@@ -40,7 +40,20 @@ export const NAV_ENTRIES: NavEntry[] = [
     implemented: true,
     permission: 'import.execute',
   },
-  { key: 'catalog', path: '/catalog', labelKey: 'nav.catalog', implemented: false },
+  {
+    key: 'catalog',
+    path: '/catalog/definitions',
+    labelKey: 'nav.catalog',
+    implemented: true,
+    permission: 'catalog.read',
+  },
+  {
+    key: 'codeSystems',
+    path: '/catalog/code-systems',
+    labelKey: 'nav.codeSystems',
+    implemented: true,
+    permission: 'catalog.read',
+  },
   {
     key: 'contracts',
     path: '/contracts',

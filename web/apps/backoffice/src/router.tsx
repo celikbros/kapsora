@@ -8,6 +8,12 @@ import {
 } from '@tanstack/react-router';
 import { AdjustmentQueuePage } from './adjustments/AdjustmentQueuePage';
 import type { AppServices } from './api';
+import { CategoryTreePage } from './catalog/CategoryTreePage';
+import { CodeSystemDetailPage } from './catalog/CodeSystemDetailPage';
+import { CodeSystemListPage } from './catalog/CodeSystemListPage';
+import { DefinitionCreatePage } from './catalog/DefinitionCreatePage';
+import { DefinitionDetailPage } from './catalog/DefinitionDetailPage';
+import { DefinitionListPage } from './catalog/DefinitionListPage';
 import { ContractCreatePage } from './contracts/ContractCreatePage';
 import { ContractDetailPage } from './contracts/ContractDetailPage';
 import { ContractListPage, type ContractListSearch } from './contracts/ContractListPage';
@@ -224,6 +230,40 @@ const adjustmentsRoute = createRoute({
   component: AdjustmentQueuePage,
 });
 
+// Declared one by one rather than mapped over a list: createRoute keeps the path as a
+// literal type, and that is what makes Link and useNavigate check a path at compile time.
+// A .map() erases the literals and every link to these pages becomes a plain string.
+const categoryTreeRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/catalog/categories',
+  component: CategoryTreePage,
+});
+const definitionListRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/catalog/definitions',
+  component: DefinitionListPage,
+});
+const definitionCreateRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/catalog/definitions/new',
+  component: DefinitionCreatePage,
+});
+const definitionDetailRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/catalog/definitions/$definitionId',
+  component: DefinitionDetailPage,
+});
+const codeSystemListRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/catalog/code-systems',
+  component: CodeSystemListPage,
+});
+const codeSystemDetailRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/catalog/code-systems/$codeSystemId',
+  component: CodeSystemDetailPage,
+});
+
 function contractListSearch(raw: Record<string, unknown>): ContractListSearch {
   const out: ContractListSearch = {};
   const status = raw['status'];
@@ -311,6 +351,12 @@ const routeTree = rootRoute.addChildren([
     contractDetailRoute,
     contractVersionRoute,
     pricingRoute,
+    categoryTreeRoute,
+    definitionListRoute,
+    definitionCreateRoute,
+    definitionDetailRoute,
+    codeSystemListRoute,
+    codeSystemDetailRoute,
     ...soonRoutes,
   ]),
 ]);
