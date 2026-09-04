@@ -62,6 +62,13 @@ export const NAV_ENTRIES: NavEntry[] = [
     permission: 'contract.read',
   },
   {
+    key: 'rules',
+    path: '/rule-sets',
+    labelKey: 'nav.rules',
+    implemented: true,
+    permission: 'rule.read',
+  },
+  {
     key: 'pricing',
     path: '/pricing',
     labelKey: 'nav.pricing',
@@ -70,8 +77,15 @@ export const NAV_ENTRIES: NavEntry[] = [
   },
   {
     key: 'providers',
-    path: '/organizations',
+    path: '/providers',
     labelKey: 'nav.providers',
+    implemented: true,
+    permission: 'provider.read',
+  },
+  {
+    key: 'organizations',
+    path: '/organizations',
+    labelKey: 'nav.organizations',
     implemented: true,
     permission: 'organization.read',
   },

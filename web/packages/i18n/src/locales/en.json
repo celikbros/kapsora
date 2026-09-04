@@ -241,7 +241,7 @@
     "RULE_COMPILE_FAILED": "The rule condition did not compile",
     "TESTS_REQUIRED": "At least one test case is required",
     "TESTS_FAILING": "Some test cases are failing",
-    "DUPLICATE": "This value appears more than once in the set",
+    "DUPLICATE": "The same value was given more than once",
     "REQUIRED": "Required",
     "LENGTH": "Length out of range",
     "FORMAT": "Invalid format",
@@ -261,9 +261,9 @@
     "IMMUTABLE": "This field cannot be changed",
     "DEPTH_EXCEEDED": "The category tree may be at most six levels deep",
     "PERIOD": "The end date must be after the start date",
-    "DUPLICATE": "The same value was given more than once",
     "NOT_FOUND": "The selected record was not found",
-    "MAX_ITEMS": "Too many rows in one call"
+    "MAX_ITEMS": "Too many rows in one call",
+    "PRIORITY_DUPLICATE": "Another rule already uses this position"
   },
   "people": {
     "title": "Members",

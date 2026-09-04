@@ -19,6 +19,14 @@ import { ContractDetailPage } from './contracts/ContractDetailPage';
 import { ContractListPage, type ContractListSearch } from './contracts/ContractListPage';
 import { ContractVersionPage } from './contracts/ContractVersionPage';
 import { QuotePage } from './pricing/QuotePage';
+import { ProviderCreatePage } from './providers/ProviderCreatePage';
+import { RuleSetDetailPage } from './rules/RuleSetDetailPage';
+import { RuleSetListPage } from './rules/RuleSetListPage';
+import { RuleSetVersionPage } from './rules/RuleSetVersionPage';
+import type { RuleSetListSearch } from './rules/routing';
+import { ProviderDetailPage } from './providers/ProviderDetailPage';
+import { ProviderListPage } from './providers/ProviderListPage';
+import { providerListSearch } from './providers/routes';
 import { ImportDetailPage } from './imports/ImportDetailPage';
 import { ImportListPage } from './imports/ImportListPage';
 import { ImportUploadPage } from './imports/ImportUploadPage';
@@ -230,6 +238,60 @@ const adjustmentsRoute = createRoute({
   component: AdjustmentQueuePage,
 });
 
+function ruleSetListSearch(raw: Record<string, unknown>): RuleSetListSearch {
+  const out: RuleSetListSearch = {};
+  const purpose = raw['purpose'];
+  if (
+    purpose === 'ELIGIBILITY' ||
+    purpose === 'DOCUMENT' ||
+    purpose === 'PREAUTH' ||
+    purpose === 'LIMIT' ||
+    purpose === 'DUPLICATE' ||
+    purpose === 'DIAGNOSIS_SERVICE' ||
+    purpose === 'PRICE' ||
+    purpose === 'ADJUDICATION'
+  ) {
+    out.purpose = purpose;
+  }
+  if (typeof raw['q'] === 'string' && raw['q'] !== '') out.q = raw['q'];
+  if (typeof raw['cursor'] === 'string' && raw['cursor'] !== '') out.cursor = raw['cursor'];
+  return out;
+}
+
+const ruleSetsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/rule-sets',
+  validateSearch: ruleSetListSearch,
+  component: RuleSetListPage,
+});
+const ruleSetDetailRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/rule-sets/$ruleSetId',
+  component: RuleSetDetailPage,
+});
+const ruleSetVersionRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/rule-set-versions/$ruleSetVersionId',
+  component: RuleSetVersionPage,
+});
+
+const providersRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/providers',
+  validateSearch: providerListSearch,
+  component: ProviderListPage,
+});
+const providerCreateRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/providers/new',
+  component: ProviderCreatePage,
+});
+const providerDetailRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/providers/$providerId',
+  component: ProviderDetailPage,
+});
+
 // Declared one by one rather than mapped over a list: createRoute keeps the path as a
 // literal type, and that is what makes Link and useNavigate check a path at compile time.
 // A .map() erases the literals and every link to these pages becomes a plain string.
@@ -351,6 +413,12 @@ const routeTree = rootRoute.addChildren([
     contractDetailRoute,
     contractVersionRoute,
     pricingRoute,
+    ruleSetsRoute,
+    ruleSetDetailRoute,
+    ruleSetVersionRoute,
+    providersRoute,
+    providerCreateRoute,
+    providerDetailRoute,
     categoryTreeRoute,
     definitionListRoute,
     definitionCreateRoute,

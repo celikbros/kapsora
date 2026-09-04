@@ -325,7 +325,8 @@
     "DEPTH_EXCEEDED": "Kategori ağacı en fazla altı seviye olabilir",
     "PERIOD": "Bitiş tarihi başlangıçtan sonra olmalı",
     "NOT_FOUND": "Seçilen kayıt bulunamadı",
-    "MAX_ITEMS": "Satır sayısı üst sınırı aşıyor"
+    "MAX_ITEMS": "Satır sayısı üst sınırı aşıyor",
+    "PRIORITY_DUPLICATE": "Bu sıra numarası başka bir kuralda kullanılıyor"
   },
   "people": {
     "title": "Hak Sahipleri",
