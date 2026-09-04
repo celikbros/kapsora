@@ -19,6 +19,7 @@ import { Link } from '@tanstack/react-router';
 import { useState, type FormEvent } from 'react';
 
 import { useDefinitionOptions } from '../catalogOptions';
+import { usePersonList } from '../people/queries';
 import { problemOf } from '../problems';
 import { useCreateQuote, useProviderOptions } from './queries';
 
@@ -62,6 +63,7 @@ export function QuotePage() {
   const definitions = useDefinitionOptions();
   const quote = useCreateQuote();
 
+  const [personQuery, setPersonQuery] = useState('');
   const [personId, setPersonId] = useState('');
   const [providerProfileId, setProviderProfileId] = useState('');
   const [serviceDate, setServiceDate] = useState(() => new Date().toISOString().slice(0, 10));
@@ -108,19 +110,12 @@ export function QuotePage() {
       <Card className="mb-4">
         <form onSubmit={submit} className="grid gap-4" noValidate>
           <div className="grid gap-4 md:grid-cols-3">
-            <FormField
-              label={t('pricing.fields.person')}
-              required
-              requiredLabel={t('common.requiredMark')}
-            >
-              <Input
-                name="personId"
-                value={personId}
-                onChange={(e) => setPersonId(e.target.value)}
-                autoComplete="off"
-                className="font-mono"
-              />
-            </FormField>
+            <PersonPicker
+              query={personQuery}
+              onQueryChange={setPersonQuery}
+              personId={personId}
+              onPick={setPersonId}
+            />
             <FormField
               label={t('pricing.fields.provider')}
               required
@@ -203,6 +198,59 @@ export function QuotePage() {
       ) : (
         <EmptyState title={t('pricing.empty')} />
       )}
+    </>
+  );
+}
+
+/**
+ * Picks the person by name. The identifier of a member is not something an operator has
+ * in their head, and asking for one turns a working screen into a demo; the same name
+ * search the member list uses is what they already know how to do.
+ */
+function PersonPicker({
+  query,
+  onQueryChange,
+  personId,
+  onPick,
+}: {
+  query: string;
+  onQueryChange: (value: string) => void;
+  personId: string;
+  onPick: (id: string) => void;
+}) {
+  const { t } = useTranslation();
+  const trimmed = query.trim();
+  const people = usePersonList(
+    trimmed.length >= 2 ? { q: trimmed, status: 'ACTIVE', limit: 20 } : { limit: 20 },
+  );
+  const options = (people.data?.items ?? []).map((person) => ({
+    value: person.id,
+    label: person.displayName,
+  }));
+
+  return (
+    <>
+      <FormField label={t('people.search')} hint={t('people.searchHint')}>
+        <Input
+          name="personSearch"
+          value={query}
+          onChange={(e) => onQueryChange(e.target.value)}
+          autoComplete="off"
+        />
+      </FormField>
+      <FormField
+        label={t('pricing.fields.person')}
+        required
+        requiredLabel={t('common.requiredMark')}
+      >
+        <Select
+          name="personId"
+          value={personId}
+          onChange={(e) => onPick(e.target.value)}
+          placeholder={t('common.none')}
+          options={options}
+        />
+      </FormField>
     </>
   );
 }

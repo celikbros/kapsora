@@ -34,7 +34,7 @@ test('multi-tenant user sees the picker, then the list renders 50 rows and pagin
 
   await page
     .getByRole('navigation', { name: 'Ana menü' })
-    .getByRole('link', { name: 'Sağlayıcılar ve Sözleşmeler' })
+    .getByRole('link', { name: 'Kurumlar' })
     .click();
   await expect(page).toHaveURL(/\/organizations$/);
   const table = page.getByTestId('organization-table');
@@ -55,7 +55,7 @@ test('nothing personal lands in browser storage', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Ana Sayfa' })).toBeVisible();
   await page
     .getByRole('navigation', { name: 'Ana menü' })
-    .getByRole('link', { name: 'Sağlayıcılar ve Sözleşmeler' })
+    .getByRole('link', { name: 'Kurumlar' })
     .click();
   await expect(page.getByTestId('organization-table')).toBeVisible();
   const storage = await page.evaluate(() => ({
