@@ -655,6 +655,144 @@ func (b *CreateServiceCodeMappingBatchResults) Close() error {
 	return b.br.Close()
 }
 
+const createServiceRequestItem = `-- name: CreateServiceRequestItem :batchexec
+INSERT INTO service.service_request_item (
+    tenant_id, service_request_version_id, line_no, service_definition_id,
+    requested_quantity, unit_type, requested_amount, currency_code)
+VALUES ($1, $2, $3,
+        $4,
+        $5::text::numeric,
+        $6,
+        $7::text::numeric,
+        $8)
+`
+
+type CreateServiceRequestItemBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type CreateServiceRequestItemParams struct {
+	TenantID                uuid.UUID
+	ServiceRequestVersionID uuid.UUID
+	LineNo                  int32
+	ServiceDefinitionID     uuid.UUID
+	RequestedQuantity       string
+	UnitType                string
+	RequestedAmount         *string
+	CurrencyCode            *string
+}
+
+func (q *Queries) CreateServiceRequestItem(ctx context.Context, arg []CreateServiceRequestItemParams) *CreateServiceRequestItemBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.TenantID,
+			a.ServiceRequestVersionID,
+			a.LineNo,
+			a.ServiceDefinitionID,
+			a.RequestedQuantity,
+			a.UnitType,
+			a.RequestedAmount,
+			a.CurrencyCode,
+		}
+		batch.Queue(createServiceRequestItem, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &CreateServiceRequestItemBatchResults{br, len(arg), false}
+}
+
+func (b *CreateServiceRequestItemBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *CreateServiceRequestItemBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
+const decideServiceRequestItem = `-- name: DecideServiceRequestItem :batchexec
+UPDATE service.service_request_item
+   SET status               = $1,
+       approved_quantity    = $2::text::numeric,
+       approved_amount      = $3::text::numeric,
+       decision_reason_code = $4
+ WHERE tenant_id = $5
+   AND service_request_version_id = $6
+   AND line_no = $7
+`
+
+type DecideServiceRequestItemBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type DecideServiceRequestItemParams struct {
+	Status                  string
+	ApprovedQuantity        *string
+	ApprovedAmount          *string
+	DecisionReasonCode      *string
+	TenantID                uuid.UUID
+	ServiceRequestVersionID uuid.UUID
+	LineNo                  int32
+}
+
+// The line-level outcome a reviewer recorded. These are the only columns of a submitted
+// version's line that migration 000006 leaves writable, which is the point: what was asked
+// for is frozen, what was decided about it is not.
+func (q *Queries) DecideServiceRequestItem(ctx context.Context, arg []DecideServiceRequestItemParams) *DecideServiceRequestItemBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.Status,
+			a.ApprovedQuantity,
+			a.ApprovedAmount,
+			a.DecisionReasonCode,
+			a.TenantID,
+			a.ServiceRequestVersionID,
+			a.LineNo,
+		}
+		batch.Queue(decideServiceRequestItem, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &DecideServiceRequestItemBatchResults{br, len(arg), false}
+}
+
+func (b *DecideServiceRequestItemBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *DecideServiceRequestItemBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
 const insertImportRow = `-- name: InsertImportRow :batchexec
 INSERT INTO party.import_row (tenant_id, batch_id, row_no, source_record_id, payload,
                               identifiers, identifier_cipher, status, errors)

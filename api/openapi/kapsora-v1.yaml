@@ -2058,32 +2058,65 @@ paths:
     get:
       tags: [Service Requests]
       operationId: listServiceRequests
+      description: |
+        Service requests of the tenant, newest first, with keyset paging. Every filter is
+        optional and they combine with AND. A provider-scoped actor only ever sees the
+        requests made for one of its own organizations: the boundary is applied in the
+        repository rather than in the handler, so a request that belongs to another
+        provider is not on the page and is not reachable by id either.
       parameters:
         - $ref: '#/components/parameters/TenantHeader'
         - $ref: '#/components/parameters/Cursor'
         - $ref: '#/components/parameters/Limit'
         - name: status
           in: query
+          description: Keep only the requests currently in this lifecycle state.
           schema:
-            type: string
-            enum: [DRAFT, SUBMITTED, ELIGIBILITY_FAILED, PENDING_DOCUMENT, PENDING_REVIEW, APPROVED, PARTIALLY_APPROVED, REJECTED, CANCELLED, EXPIRED, CLOSED]
+            $ref: '#/components/schemas/ServiceRequestStatus'
         - name: personId
           in: query
+          description: Keep only the requests raised for this person.
+          schema:
+            type: string
+            format: uuid
+        - name: programId
+          in: query
+          description: Keep only the requests raised under this benefit program.
           schema:
             type: string
             format: uuid
         - name: providerOrganizationId
           in: query
+          description: Keep only the requests naming this provider organization.
           schema:
             type: string
             format: uuid
+        - name: channel
+          in: query
+          description: Keep only the requests that arrived through this channel.
+          schema:
+            $ref: '#/components/schemas/ServiceRequestChannel'
+        - name: serviceDateFrom
+          in: query
+          description: Keep only the requests whose service date is on or after this day.
+          schema:
+            type: string
+            format: date
+        - name: serviceDateTo
+          in: query
+          description: Keep only the requests whose service date is on or before this day.
+          schema:
+            type: string
+            format: date
         - name: createdFrom
           in: query
+          description: Keep only the requests created at or after this instant.
           schema:
             type: string
             format: date-time
         - name: createdTo
           in: query
+          description: Keep only the requests created at or before this instant.
           schema:
             type: string
             format: date-time
@@ -2094,9 +2127,25 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ServiceRequestPage'
+        '400':
+          description: Cursor invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
     post:
       tags: [Service Requests]
       operationId: createServiceRequest
+      description: |
+        Opens a request in DRAFT together with its first version and the lines it starts
+        with. Nothing is decided here: the eligibility gate and the tenant's rules run at
+        submit, and until then the draft is only a form somebody is filling in. The status
+        cannot be chosen, because a request always starts in DRAFT, and supersedesRequestId
+        is how a fresh attempt names the rejected request it replaces.
       parameters:
         - $ref: '#/components/parameters/TenantHeader'
         - $ref: '#/components/parameters/IdempotencyKey'
@@ -2116,6 +2165,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ServiceRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
         '422':
@@ -2126,6 +2179,11 @@ paths:
     get:
       tags: [Service Requests]
       operationId: getServiceRequest
+      description: |
+        One request with the lines of its current version and the evaluations that decided
+        its last submit. A provider-scoped actor asking for another provider's request is
+        answered 404 rather than 403: that such a request exists at all is itself
+        information about somebody else's business.
       parameters:
         - $ref: '#/components/parameters/TenantHeader'
         - $ref: '#/components/parameters/RequestId'
@@ -2139,11 +2197,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ServiceRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
     patch:
       tags: [Service Requests]
-      operationId: updateDraftServiceRequest
+      operationId: patchServiceRequestDraft
+      description: |
+        Merge-patches the header of the DRAFT version: the provider, the service date and
+        the requested window. It never writes status. A body carrying status, or any other
+        field this endpoint does not own, is answered 422 with the field code IMMUTABLE,
+        because every move through the lifecycle is a command of its own with its own
+        precondition, permission and reason. The lines are replaced through
+        putServiceRequestItems rather than here.
       parameters:
         - $ref: '#/components/parameters/TenantHeader'
         - $ref: '#/components/parameters/RequestId'
@@ -2164,6 +2231,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ServiceRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
         '412':
@@ -2172,10 +2243,81 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+        '415':
+          description: Body is not application/merge-patch+json
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/service-requests/{requestId}/items:
+    put:
+      tags: [Service Requests]
+      operationId: putServiceRequestItems
+      description: |
+        Replaces the whole line set of the DRAFT version. It is a replacement rather than a
+        patch because a line number identifies a line only inside one version, and a partial
+        write would leave the caller guessing which of the lines it sent survived. A version
+        that has already been submitted is frozen: writing to it answers 409.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceRequestItems'
+      responses:
+        '200':
+          description: Draft lines replaced
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
   /api/v1/service-requests/{requestId}/submit:
     post:
       tags: [Service Requests]
       operationId: submitServiceRequest
+      description: |
+        Freezes the DRAFT version and runs the gate in one transaction: the version is
+        validated, the pure eligibility resolver answers whether the person may use the
+        benefit on the service date, and the tenant's published DOCUMENT and PREAUTH rule
+        sets are evaluated. The request lands in ELIGIBILITY_FAILED, PENDING_DOCUMENT,
+        PENDING_REVIEW or APPROVED, and the eligibility evaluation and the rule evaluation
+        that decided it are recorded so the outcome can be explained afterwards. Nothing is
+        reserved: moving entitlement is the authorization's job, not this command's.
       parameters:
         - $ref: '#/components/parameters/TenantHeader'
         - $ref: '#/components/parameters/RequestId'
@@ -2186,15 +2328,10 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              additionalProperties: false
-              properties:
-                comment:
-                  type: string
-                  maxLength: 1000
+              $ref: '#/components/schemas/ReviewComment'
       responses:
         '200':
-          description: Submitted request after eligibility/rule evaluation
+          description: Submitted request after the eligibility and rule gate
           headers:
             ETag:
               $ref: '#/components/headers/ETag'
@@ -2202,16 +2339,248 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ServiceRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
         '422':
           $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/service-requests/{requestId}/return:
+    post:
+      tags: [Service Requests]
+      operationId: returnServiceRequest
+      description: |
+        Sends a request awaiting review or a document back to the requester. This is not a
+        rejection and the two must never be collapsed: the request keeps its reference, goes
+        back to DRAFT, opens the next version to be corrected in, and the reason stays on the
+        version that was sent back, so what was submitted the first time is still readable
+        exactly as it was. A returned request is a correctable mistake; a rejected one is a
+        refusal, and mistaking the first for the second is what makes a member give up rather
+        than fix a form.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonCommand'
+      responses:
+        '200':
+          description: Request returned to the requester as a new draft version
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/service-requests/{requestId}/reject:
+    post:
+      tags: [Service Requests]
+      operationId: rejectServiceRequest
+      description: |
+        Refuses a request awaiting review. A rejected request is finished: it is closed, its
+        version is frozen and it cannot be corrected. A fresh attempt is a new request that
+        names this one in supersedesRequestId, which is what keeps "we asked again,
+        differently" readable rather than hidden inside one row that changed its mind.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonCommand'
+      responses:
+        '200':
+          description: Rejected request
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/service-requests/{requestId}/approve:
+    post:
+      tags: [Service Requests]
+      operationId: approveServiceRequest
+      description: |
+        Approves a request awaiting review in full. Every line is approved for what was
+        requested unless the command names lines explicitly. Approval decides; it does not
+        reserve anything, and no balance moves until an authorization is raised against this
+        request.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceRequestDecision'
+      responses:
+        '200':
+          description: Approved request
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/service-requests/{requestId}/partially-approve:
+    post:
+      tags: [Service Requests]
+      operationId: partiallyApproveServiceRequest
+      description: |
+        Approves some of what was asked for and refuses or reduces the rest. The line
+        decisions are required and at least one of them has to differ from a full approval,
+        otherwise the command is an approve and says so: a partial approval that approved
+        everything would leave a member reading a word that does not match the numbers.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceRequestDecision'
+      responses:
+        '200':
+          description: Partially approved request
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /api/v1/service-requests/{requestId}/cancel:
     post:
       tags: [Service Requests]
       operationId: cancelServiceRequest
+      description: |
+        Withdraws a request that has not been decided yet. A draft, a submitted request and
+        one waiting for a document or a review can all be cancelled; a request that has been
+        approved, rejected or already cancelled cannot, because undoing a decision is a
+        different act with different consequences and belongs to the cancellation aggregate.
       parameters:
         - $ref: '#/components/parameters/TenantHeader'
         - $ref: '#/components/parameters/RequestId'
@@ -2233,10 +2602,74 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ServiceRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+  /api/v1/service-requests/{requestId}/versions:
+    get:
+      tags: [Service Requests]
+      operationId: listServiceRequestVersions
+      description: |
+        Every version of one request, newest first, with the reason each returned version was
+        sent back. The list is what makes a correction auditable: version 1 is what was
+        submitted the first time and stays readable exactly as it was submitted, however many
+        versions came after it.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '200':
+          description: Versions of the request, newest first
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequestVersionList'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/service-requests/{requestId}/versions/{versionNo}:
+    get:
+      tags: [Service Requests]
+      operationId: getServiceRequestVersion
+      description: |
+        One version of a request with the lines it carried. A submitted version answers from
+        the snapshot frozen at submit rather than from the live rows, so what a reviewer
+        decided against is what a reader sees, whatever happened to the request afterwards.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/ServiceRequestVersionNo'
+      responses:
+        '200':
+          description: One version of the request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequestVersion'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /api/v1/service-categories:
     get:
       tags: [Catalog]
@@ -5508,6 +5941,16 @@ components:
       schema:
         type: string
         format: uuid
+    ServiceRequestVersionNo:
+      name: versionNo
+      in: path
+      required: true
+      description: |
+        Number of the version, counting from 1. Versions are addressed by number rather
+        than by id because the number is what the reviewer and the requester both see.
+      schema:
+        type: integer
+        minimum: 1
     ServiceCategoryId:
       name: categoryId
       in: path
@@ -7168,19 +7611,46 @@ components:
         rowVersion:
           type: integer
           minimum: 1
+    ServiceRequestType:
+      type: string
+      description: |
+        What kind of request this is. The type decides whether a provider has to be named
+        and which downstream aggregate the decision feeds.
+      enum: [DIRECT_SERVICE, PREAUTHORIZATION, RESERVATION, REIMBURSEMENT]
+    ServiceRequestChannel:
+      type: string
+      description: Where the request came from; a phone call is not the same as a portal.
+      enum: [BACKOFFICE, PROVIDER_PORTAL, MEMBER_PORTAL, API, BATCH_IMPORT, CALL_CENTER]
+    ServiceRequestStatus:
+      type: string
+      description: |
+        Lifecycle state of a request. It is read-only on every endpoint: each move is its
+        own command with its own precondition, permission and reason, and nothing writes
+        this field directly.
+      enum: [DRAFT, SUBMITTED, ELIGIBILITY_FAILED, PENDING_DOCUMENT, PENDING_REVIEW, APPROVED, PARTIALLY_APPROVED, REJECTED, CANCELLED, EXPIRED, CLOSED]
+    ServiceRequestVersionStatus:
+      type: string
+      description: |
+        State of one version of the request content. Exactly one DRAFT version exists at a
+        time; a SUBMITTED version is frozen and a SUPERSEDED one was replaced by a later one.
+      enum: [DRAFT, SUBMITTED, SUPERSEDED]
+    ServiceRequestItemStatus:
+      type: string
+      description: The line-level outcome a reviewer recorded, REQUESTED until one is.
+      enum: [REQUESTED, APPROVED, PARTIALLY_APPROVED, REJECTED, CANCELLED]
     ServiceRequest:
       type: object
       additionalProperties: false
-      required: [id, reference, requestType, personId, programId, enrollmentId, serviceDate, channel, status, items, rowVersion, createdAt]
+      required: [id, reference, requestType, personId, programId, enrollmentId, serviceDate, channel, status, currentVersionNo, items, rowVersion, createdAt]
       properties:
         id:
           type: string
           format: uuid
         reference:
           type: string
+          description: Human-readable number of the request; it survives every return.
         requestType:
-          type: string
-          enum: [DIRECT_SERVICE, PREAUTHORIZATION, RESERVATION, REIMBURSEMENT]
+          $ref: '#/components/schemas/ServiceRequestType'
         personId:
           type: string
           format: uuid
@@ -7203,13 +7673,43 @@ components:
           type: [string, 'null']
           format: date-time
         channel:
-          type: string
-          enum: [BACKOFFICE, PROVIDER_PORTAL, MEMBER_PORTAL, API, BATCH_IMPORT, CALL_CENTER]
+          $ref: '#/components/schemas/ServiceRequestChannel'
         status:
-          type: string
-          enum: [DRAFT, SUBMITTED, ELIGIBILITY_FAILED, PENDING_DOCUMENT, PENDING_REVIEW, APPROVED, PARTIALLY_APPROVED, REJECTED, CANCELLED, EXPIRED, CLOSED]
+          $ref: '#/components/schemas/ServiceRequestStatus'
+        currentVersionNo:
+          type: integer
+          minimum: 1
+          description: Number of the version the lines below belong to.
+        supersedesRequestId:
+          type: [string, 'null']
+          format: uuid
+          description: The rejected request this one was raised to replace, if any.
+        eligibilityEvaluationId:
+          type: [string, 'null']
+          format: uuid
+          description: The eligibility evaluation the last submit was decided against.
+        ruleEvaluationId:
+          type: [string, 'null']
+          format: uuid
+          description: The rule evaluation the last submit was decided against.
+        requiredDocumentTypes:
+          type: [array, 'null']
+          description: |
+            The document types a rule asked for, in the order the rule named them. An empty
+            array means the rules were asked and required nothing; null means not yet asked.
+          items:
+            type: string
+        returnReasonCode:
+          type: [string, 'null']
+          description: Why the request was last sent back for correction.
+        rejectReasonCode:
+          type: [string, 'null']
+          description: Why the request was refused.
+        reviewComment:
+          type: [string, 'null']
         items:
           type: array
+          description: The lines of the current version.
           items:
             $ref: '#/components/schemas/ServiceRequestItem'
         rowVersion:
@@ -7219,6 +7719,9 @@ components:
           type: string
           format: date-time
         submittedAt:
+          type: [string, 'null']
+          format: date-time
+        closedAt:
           type: [string, 'null']
           format: date-time
     ServiceRequestItem:
@@ -7236,21 +7739,20 @@ components:
           type: string
           format: uuid
         requestedQuantity:
-          type: number
-          exclusiveMinimum: 0
+          $ref: '#/components/schemas/DecimalAmount'
         unitType:
-          type: string
+          $ref: '#/components/schemas/ServiceUnitType'
         requestedAmount:
-          type: [number, 'null']
+          type: [string, 'null']
         currencyCode:
           type: [string, 'null']
+          pattern: '^[A-Z]{3}$'
         status:
-          type: string
-          enum: [REQUESTED, APPROVED, PARTIALLY_APPROVED, REJECTED, CANCELLED]
+          $ref: '#/components/schemas/ServiceRequestItemStatus'
         approvedQuantity:
-          type: [number, 'null']
+          type: [string, 'null']
         approvedAmount:
-          type: [number, 'null']
+          type: [string, 'null']
         decisionReasonCode:
           type: [string, 'null']
     ServiceRequestPage:
@@ -7264,14 +7766,46 @@ components:
             $ref: '#/components/schemas/ServiceRequest'
         nextCursor:
           type: [string, 'null']
+    ServiceRequestItemInput:
+      type: object
+      additionalProperties: false
+      required: [serviceDefinitionId, requestedQuantity, unitType]
+      description: |
+        One requested line. Quantities and amounts are exact decimal strings, never JSON
+        numbers: a quantity that passed through a float is a quantity nobody can reconcile
+        against the ledger afterwards.
+      properties:
+        serviceDefinitionId:
+          type: string
+          format: uuid
+        requestedQuantity:
+          $ref: '#/components/schemas/DecimalAmount'
+        unitType:
+          $ref: '#/components/schemas/ServiceUnitType'
+        requestedAmount:
+          $ref: '#/components/schemas/DecimalAmount'
+        currencyCode:
+          type: string
+          pattern: '^[A-Z]{3}$'
+    ServiceRequestItems:
+      type: object
+      additionalProperties: false
+      required: [items]
+      description: The complete line set of the draft version; it replaces what is there.
+      properties:
+        items:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/ServiceRequestItemInput'
     CreateServiceRequest:
       type: object
       additionalProperties: false
       required: [requestType, personId, programId, enrollmentId, serviceDate, channel, items]
       properties:
         requestType:
-          type: string
-          enum: [DIRECT_SERVICE, PREAUTHORIZATION, RESERVATION, REIMBURSEMENT]
+          $ref: '#/components/schemas/ServiceRequestType'
         personId:
           type: string
           format: uuid
@@ -7294,34 +7828,23 @@ components:
           type: string
           format: date-time
         channel:
+          $ref: '#/components/schemas/ServiceRequestChannel'
+        supersedesRequestId:
           type: string
-          enum: [BACKOFFICE, PROVIDER_PORTAL, MEMBER_PORTAL, API, BATCH_IMPORT, CALL_CENTER]
+          format: uuid
+          description: The rejected request this one replaces; a rejection is never reopened.
         items:
           type: array
           minItems: 1
           maxItems: 100
           items:
-            type: object
-            additionalProperties: false
-            required: [serviceDefinitionId, requestedQuantity, unitType]
-            properties:
-              serviceDefinitionId:
-                type: string
-                format: uuid
-              requestedQuantity:
-                type: number
-                exclusiveMinimum: 0
-              unitType:
-                type: string
-              requestedAmount:
-                type: number
-                minimum: 0
-              currencyCode:
-                type: string
-                pattern: '^[A-Z]{3}$'
+            $ref: '#/components/schemas/ServiceRequestItemInput'
     UpdateServiceRequest:
       type: object
       additionalProperties: false
+      description: |
+        Merge-patch of the draft header. There is deliberately no status here and no items:
+        a move through the lifecycle is a command, and the lines are replaced as a set.
       properties:
         providerOrganizationId:
           type: [string, 'null']
@@ -7335,29 +7858,129 @@ components:
         requestedEndAt:
           type: [string, 'null']
           format: date-time
+    ServiceRequestDecisionItem:
+      type: object
+      additionalProperties: false
+      required: [lineNo, status]
+      description: What a reviewer decided about one line of the submitted version.
+      properties:
+        lineNo:
+          type: integer
+          minimum: 1
+        status:
+          type: string
+          enum: [APPROVED, PARTIALLY_APPROVED, REJECTED]
+        approvedQuantity:
+          $ref: '#/components/schemas/DecimalAmount'
+        approvedAmount:
+          $ref: '#/components/schemas/DecimalAmount'
+        decisionReasonCode:
+          type: string
+          minLength: 2
+          maxLength: 80
+    ServiceRequestDecision:
+      type: object
+      additionalProperties: false
+      required: [reasonCode]
+      description: |
+        A review decision with its reason. An approve may leave items out, in which case
+        every line is approved for what it asked for; a partial approval has to name them.
+      properties:
+        reasonCode:
+          type: string
+          minLength: 2
+          maxLength: 80
+        reasonText:
+          type: string
+          maxLength: 1000
         items:
           type: array
-          minItems: 1
           maxItems: 100
           items:
-            type: object
-            additionalProperties: false
-            required: [serviceDefinitionId, requestedQuantity, unitType]
-            properties:
-              serviceDefinitionId:
-                type: string
-                format: uuid
-              requestedQuantity:
-                type: number
-                exclusiveMinimum: 0
-              unitType:
-                type: string
-              requestedAmount:
-                type: number
-                minimum: 0
-              currencyCode:
-                type: string
-                pattern: '^[A-Z]{3}$'
+            $ref: '#/components/schemas/ServiceRequestDecisionItem'
+    ServiceRequestVersionSummary:
+      type: object
+      additionalProperties: false
+      required: [id, versionNo, status, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        versionNo:
+          type: integer
+          minimum: 1
+        status:
+          $ref: '#/components/schemas/ServiceRequestVersionStatus'
+        submittedAt:
+          type: [string, 'null']
+          format: date-time
+        submittedBy:
+          type: [string, 'null']
+          format: uuid
+        returnedAt:
+          type: [string, 'null']
+          format: date-time
+        returnedBy:
+          type: [string, 'null']
+          format: uuid
+        returnReasonCode:
+          type: [string, 'null']
+        returnReasonText:
+          type: [string, 'null']
+        createdAt:
+          type: string
+          format: date-time
+    ServiceRequestVersion:
+      type: object
+      additionalProperties: false
+      required: [id, serviceRequestId, versionNo, status, items, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        serviceRequestId:
+          type: string
+          format: uuid
+        versionNo:
+          type: integer
+          minimum: 1
+        status:
+          $ref: '#/components/schemas/ServiceRequestVersionStatus'
+        submittedAt:
+          type: [string, 'null']
+          format: date-time
+        submittedBy:
+          type: [string, 'null']
+          format: uuid
+        returnedAt:
+          type: [string, 'null']
+          format: date-time
+        returnedBy:
+          type: [string, 'null']
+          format: uuid
+        returnReasonCode:
+          type: [string, 'null']
+        returnReasonText:
+          type: [string, 'null']
+        items:
+          type: array
+          description: |
+            The lines as this version carried them. A submitted version answers from the
+            snapshot frozen at submit, so it never drifts with the request.
+          items:
+            $ref: '#/components/schemas/ServiceRequestItem'
+        createdAt:
+          type: string
+          format: date-time
+    ServiceRequestVersionList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceRequestVersionSummary'
     ReasonCommand:
       type: object
       additionalProperties: false

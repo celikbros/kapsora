@@ -2065,8 +2065,22 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * @description Service requests of the tenant, newest first, with keyset paging. Every filter is
+         *     optional and they combine with AND. A provider-scoped actor only ever sees the
+         *     requests made for one of its own organizations: the boundary is applied in the
+         *     repository rather than in the handler, so a request that belongs to another
+         *     provider is not on the page and is not reachable by id either.
+         */
         get: operations["listServiceRequests"];
         put?: never;
+        /**
+         * @description Opens a request in DRAFT together with its first version and the lines it starts
+         *     with. Nothing is decided here: the eligibility gate and the tenant's rules run at
+         *     submit, and until then the draft is only a form somebody is filling in. The status
+         *     cannot be chosen, because a request always starts in DRAFT, and supersedesRequestId
+         *     is how a fresh attempt names the rejected request it replaces.
+         */
         post: operations["createServiceRequest"];
         delete?: never;
         options?: never;
@@ -2081,13 +2095,49 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * @description One request with the lines of its current version and the evaluations that decided
+         *     its last submit. A provider-scoped actor asking for another provider's request is
+         *     answered 404 rather than 403: that such a request exists at all is itself
+         *     information about somebody else's business.
+         */
         get: operations["getServiceRequest"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        patch: operations["updateDraftServiceRequest"];
+        /**
+         * @description Merge-patches the header of the DRAFT version: the provider, the service date and
+         *     the requested window. It never writes status. A body carrying status, or any other
+         *     field this endpoint does not own, is answered 422 with the field code IMMUTABLE,
+         *     because every move through the lifecycle is a command of its own with its own
+         *     precondition, permission and reason. The lines are replaced through
+         *     putServiceRequestItems rather than here.
+         */
+        patch: operations["patchServiceRequestDraft"];
+        trace?: never;
+    };
+    "/api/v1/service-requests/{requestId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Approves a request awaiting review in full. Every line is approved for what was
+         *     requested unless the command names lines explicitly. Approval decides; it does not
+         *     reserve anything, and no balance moves until an authorization is raised against this
+         *     request.
+         */
+        post: operations["approveServiceRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/service-requests/{requestId}/cancel": {
@@ -2099,7 +2149,104 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /**
+         * @description Withdraws a request that has not been decided yet. A draft, a submitted request and
+         *     one waiting for a document or a review can all be cancelled; a request that has been
+         *     approved, rejected or already cancelled cannot, because undoing a decision is a
+         *     different act with different consequences and belongs to the cancellation aggregate.
+         */
         post: operations["cancelServiceRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/service-requests/{requestId}/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * @description Replaces the whole line set of the DRAFT version. It is a replacement rather than a
+         *     patch because a line number identifies a line only inside one version, and a partial
+         *     write would leave the caller guessing which of the lines it sent survived. A version
+         *     that has already been submitted is frozen: writing to it answers 409.
+         */
+        put: operations["putServiceRequestItems"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/service-requests/{requestId}/partially-approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Approves some of what was asked for and refuses or reduces the rest. The line
+         *     decisions are required and at least one of them has to differ from a full approval,
+         *     otherwise the command is an approve and says so: a partial approval that approved
+         *     everything would leave a member reading a word that does not match the numbers.
+         */
+        post: operations["partiallyApproveServiceRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/service-requests/{requestId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Refuses a request awaiting review. A rejected request is finished: it is closed, its
+         *     version is frozen and it cannot be corrected. A fresh attempt is a new request that
+         *     names this one in supersedesRequestId, which is what keeps "we asked again,
+         *     differently" readable rather than hidden inside one row that changed its mind.
+         */
+        post: operations["rejectServiceRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/service-requests/{requestId}/return": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Sends a request awaiting review or a document back to the requester. This is not a
+         *     rejection and the two must never be collapsed: the request keeps its reference, goes
+         *     back to DRAFT, opens the next version to be corrected in, and the reason stays on the
+         *     version that was sent back, so what was submitted the first time is still readable
+         *     exactly as it was. A returned request is a correctable mistake; a rejected one is a
+         *     refusal, and mistaking the first for the second is what makes a member give up rather
+         *     than fix a form.
+         */
+        post: operations["returnServiceRequest"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2115,7 +2262,59 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /**
+         * @description Freezes the DRAFT version and runs the gate in one transaction: the version is
+         *     validated, the pure eligibility resolver answers whether the person may use the
+         *     benefit on the service date, and the tenant's published DOCUMENT and PREAUTH rule
+         *     sets are evaluated. The request lands in ELIGIBILITY_FAILED, PENDING_DOCUMENT,
+         *     PENDING_REVIEW or APPROVED, and the eligibility evaluation and the rule evaluation
+         *     that decided it are recorded so the outcome can be explained afterwards. Nothing is
+         *     reserved: moving entitlement is the authorization's job, not this command's.
+         */
         post: operations["submitServiceRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/service-requests/{requestId}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Every version of one request, newest first, with the reason each returned version was
+         *     sent back. The list is what makes a correction auditable: version 1 is what was
+         *     submitted the first time and stays readable exactly as it was submitted, however many
+         *     versions came after it.
+         */
+        get: operations["listServiceRequestVersions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/service-requests/{requestId}/versions/{versionNo}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One version of a request with the lines it carried. A submitted version answers from
+         *     the snapshot frozen at submit rather than from the live rows, so what a reviewer
+         *     decided against is what a reader sees, whatever happened to the request afterwards.
+         */
+        get: operations["getServiceRequestVersion"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2750,18 +2949,10 @@ export interface components {
             requiresProvider?: boolean;
         };
         CreateServiceRequest: {
-            /** @enum {string} */
-            channel: "BACKOFFICE" | "PROVIDER_PORTAL" | "MEMBER_PORTAL" | "API" | "BATCH_IMPORT" | "CALL_CENTER";
+            channel: components["schemas"]["ServiceRequestChannel"];
             /** Format: uuid */
             enrollmentId: string;
-            items: {
-                currencyCode?: string;
-                requestedAmount?: number;
-                requestedQuantity: number;
-                /** Format: uuid */
-                serviceDefinitionId: string;
-                unitType: string;
-            }[];
+            items: components["schemas"]["ServiceRequestItemInput"][];
             /** Format: uuid */
             personId: string;
             /** Format: uuid */
@@ -2772,10 +2963,14 @@ export interface components {
             requestedEndAt?: string;
             /** Format: date-time */
             requestedStartAt?: string;
-            /** @enum {string} */
-            requestType: "DIRECT_SERVICE" | "PREAUTHORIZATION" | "RESERVATION" | "REIMBURSEMENT";
+            requestType: components["schemas"]["ServiceRequestType"];
             /** Format: date */
             serviceDate: string;
+            /**
+             * Format: uuid
+             * @description The rejected request this one replaces; a rejection is never reopened.
+             */
+            supersedesRequestId?: string;
         };
         /**
          * @description An exact numeric(20,6) money or quantity value as a decimal string. It is a string
@@ -4363,14 +4558,23 @@ export interface components {
          */
         ServiceDomain: "GENERIC" | "HEALTH" | "ACCOMMODATION" | "ASSISTANCE" | "EDUCATION" | "SPORT" | "TRANSPORT" | "CARE" | "OTHER";
         ServiceRequest: {
-            /** @enum {string} */
-            channel: "BACKOFFICE" | "PROVIDER_PORTAL" | "MEMBER_PORTAL" | "API" | "BATCH_IMPORT" | "CALL_CENTER";
+            channel: components["schemas"]["ServiceRequestChannel"];
+            /** Format: date-time */
+            closedAt?: string | null;
             /** Format: date-time */
             createdAt: string;
+            /** @description Number of the version the lines below belong to. */
+            currentVersionNo: number;
+            /**
+             * Format: uuid
+             * @description The eligibility evaluation the last submit was decided against.
+             */
+            eligibilityEvaluationId?: string | null;
             /** Format: uuid */
             enrollmentId: string;
             /** Format: uuid */
             id: string;
+            /** @description The lines of the current version. */
             items: components["schemas"]["ServiceRequestItem"][];
             /** Format: uuid */
             personId: string;
@@ -4378,40 +4582,168 @@ export interface components {
             programId: string;
             /** Format: uuid */
             providerOrganizationId?: string | null;
+            /** @description Human-readable number of the request; it survives every return. */
             reference: string;
+            /** @description Why the request was refused. */
+            rejectReasonCode?: string | null;
             /** Format: date-time */
             requestedEndAt?: string | null;
             /** Format: date-time */
             requestedStartAt?: string | null;
-            /** @enum {string} */
-            requestType: "DIRECT_SERVICE" | "PREAUTHORIZATION" | "RESERVATION" | "REIMBURSEMENT";
+            requestType: components["schemas"]["ServiceRequestType"];
+            /**
+             * @description The document types a rule asked for, in the order the rule named them. An empty
+             *     array means the rules were asked and required nothing; null means not yet asked.
+             */
+            requiredDocumentTypes?: string[] | null;
+            /** @description Why the request was last sent back for correction. */
+            returnReasonCode?: string | null;
+            reviewComment?: string | null;
             rowVersion: number;
+            /**
+             * Format: uuid
+             * @description The rule evaluation the last submit was decided against.
+             */
+            ruleEvaluationId?: string | null;
             /** Format: date */
             serviceDate: string;
-            /** @enum {string} */
-            status: "DRAFT" | "SUBMITTED" | "ELIGIBILITY_FAILED" | "PENDING_DOCUMENT" | "PENDING_REVIEW" | "APPROVED" | "PARTIALLY_APPROVED" | "REJECTED" | "CANCELLED" | "EXPIRED" | "CLOSED";
+            status: components["schemas"]["ServiceRequestStatus"];
             /** Format: date-time */
             submittedAt?: string | null;
+            /**
+             * Format: uuid
+             * @description The rejected request this one was raised to replace, if any.
+             */
+            supersedesRequestId?: string | null;
+        };
+        /**
+         * @description Where the request came from; a phone call is not the same as a portal.
+         * @enum {string}
+         */
+        ServiceRequestChannel: "BACKOFFICE" | "PROVIDER_PORTAL" | "MEMBER_PORTAL" | "API" | "BATCH_IMPORT" | "CALL_CENTER";
+        /**
+         * @description A review decision with its reason. An approve may leave items out, in which case
+         *     every line is approved for what it asked for; a partial approval has to name them.
+         */
+        ServiceRequestDecision: {
+            items?: components["schemas"]["ServiceRequestDecisionItem"][];
+            reasonCode: string;
+            reasonText?: string;
+        };
+        /** @description What a reviewer decided about one line of the submitted version. */
+        ServiceRequestDecisionItem: {
+            approvedAmount?: components["schemas"]["DecimalAmount"];
+            approvedQuantity?: components["schemas"]["DecimalAmount"];
+            decisionReasonCode?: string;
+            lineNo: number;
+            /** @enum {string} */
+            status: "APPROVED" | "PARTIALLY_APPROVED" | "REJECTED";
         };
         ServiceRequestItem: {
-            approvedAmount?: number | null;
-            approvedQuantity?: number | null;
+            approvedAmount?: string | null;
+            approvedQuantity?: string | null;
             currencyCode?: string | null;
             decisionReasonCode?: string | null;
             /** Format: uuid */
             id: string;
             lineNo: number;
-            requestedAmount?: number | null;
-            requestedQuantity: number;
+            requestedAmount?: string | null;
+            requestedQuantity: components["schemas"]["DecimalAmount"];
             /** Format: uuid */
             serviceDefinitionId: string;
-            /** @enum {string} */
-            status: "REQUESTED" | "APPROVED" | "PARTIALLY_APPROVED" | "REJECTED" | "CANCELLED";
-            unitType: string;
+            status: components["schemas"]["ServiceRequestItemStatus"];
+            unitType: components["schemas"]["ServiceUnitType"];
         };
+        /**
+         * @description One requested line. Quantities and amounts are exact decimal strings, never JSON
+         *     numbers: a quantity that passed through a float is a quantity nobody can reconcile
+         *     against the ledger afterwards.
+         */
+        ServiceRequestItemInput: {
+            currencyCode?: string;
+            requestedAmount?: components["schemas"]["DecimalAmount"];
+            requestedQuantity: components["schemas"]["DecimalAmount"];
+            /** Format: uuid */
+            serviceDefinitionId: string;
+            unitType: components["schemas"]["ServiceUnitType"];
+        };
+        /** @description The complete line set of the draft version; it replaces what is there. */
+        ServiceRequestItems: {
+            items: components["schemas"]["ServiceRequestItemInput"][];
+        };
+        /**
+         * @description The line-level outcome a reviewer recorded, REQUESTED until one is.
+         * @enum {string}
+         */
+        ServiceRequestItemStatus: "REQUESTED" | "APPROVED" | "PARTIALLY_APPROVED" | "REJECTED" | "CANCELLED";
         ServiceRequestPage: {
             items: components["schemas"]["ServiceRequest"][];
             nextCursor?: string | null;
+        };
+        /**
+         * @description Lifecycle state of a request. It is read-only on every endpoint: each move is its
+         *     own command with its own precondition, permission and reason, and nothing writes
+         *     this field directly.
+         * @enum {string}
+         */
+        ServiceRequestStatus: "DRAFT" | "SUBMITTED" | "ELIGIBILITY_FAILED" | "PENDING_DOCUMENT" | "PENDING_REVIEW" | "APPROVED" | "PARTIALLY_APPROVED" | "REJECTED" | "CANCELLED" | "EXPIRED" | "CLOSED";
+        /**
+         * @description What kind of request this is. The type decides whether a provider has to be named
+         *     and which downstream aggregate the decision feeds.
+         * @enum {string}
+         */
+        ServiceRequestType: "DIRECT_SERVICE" | "PREAUTHORIZATION" | "RESERVATION" | "REIMBURSEMENT";
+        ServiceRequestVersion: {
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: uuid */
+            id: string;
+            /**
+             * @description The lines as this version carried them. A submitted version answers from the
+             *     snapshot frozen at submit, so it never drifts with the request.
+             */
+            items: components["schemas"]["ServiceRequestItem"][];
+            /** Format: date-time */
+            returnedAt?: string | null;
+            /** Format: uuid */
+            returnedBy?: string | null;
+            returnReasonCode?: string | null;
+            returnReasonText?: string | null;
+            /** Format: uuid */
+            serviceRequestId: string;
+            status: components["schemas"]["ServiceRequestVersionStatus"];
+            /** Format: date-time */
+            submittedAt?: string | null;
+            /** Format: uuid */
+            submittedBy?: string | null;
+            versionNo: number;
+        };
+        ServiceRequestVersionList: {
+            items: components["schemas"]["ServiceRequestVersionSummary"][];
+        };
+        /**
+         * @description State of one version of the request content. Exactly one DRAFT version exists at a
+         *     time; a SUBMITTED version is frozen and a SUPERSEDED one was replaced by a later one.
+         * @enum {string}
+         */
+        ServiceRequestVersionStatus: "DRAFT" | "SUBMITTED" | "SUPERSEDED";
+        ServiceRequestVersionSummary: {
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            returnedAt?: string | null;
+            /** Format: uuid */
+            returnedBy?: string | null;
+            returnReasonCode?: string | null;
+            returnReasonText?: string | null;
+            status: components["schemas"]["ServiceRequestVersionStatus"];
+            /** Format: date-time */
+            submittedAt?: string | null;
+            /** Format: uuid */
+            submittedBy?: string | null;
+            versionNo: number;
         };
         /**
          * @description Unit a service definition is counted in.
@@ -4666,15 +4998,11 @@ export interface components {
             name?: string;
             requiresProvider?: boolean;
         };
+        /**
+         * @description Merge-patch of the draft header. There is deliberately no status here and no items:
+         *     a move through the lifecycle is a command, and the lines are replaced as a set.
+         */
         UpdateServiceRequest: {
-            items?: {
-                currencyCode?: string;
-                requestedAmount?: number;
-                requestedQuantity: number;
-                /** Format: uuid */
-                serviceDefinitionId: string;
-                unitType: string;
-            }[];
             /** Format: uuid */
             providerOrganizationId?: string | null;
             /** Format: date-time */
@@ -4790,6 +5118,11 @@ export interface components {
         RuleSetVersionId: string;
         ServiceCategoryId: string;
         ServiceDefinitionId: string;
+        /**
+         * @description Number of the version, counting from 1. Versions are addressed by number rather
+         *     than by id because the number is what the reviewer and the requester both see.
+         */
+        ServiceRequestVersionNo: number;
         /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
         TenantHeader: string;
     };
@@ -4971,8 +5304,20 @@ export type SchemaServiceDefinition = components['schemas']['ServiceDefinition']
 export type SchemaServiceDefinitionPage = components['schemas']['ServiceDefinitionPage'];
 export type SchemaServiceDomain = components['schemas']['ServiceDomain'];
 export type SchemaServiceRequest = components['schemas']['ServiceRequest'];
+export type SchemaServiceRequestChannel = components['schemas']['ServiceRequestChannel'];
+export type SchemaServiceRequestDecision = components['schemas']['ServiceRequestDecision'];
+export type SchemaServiceRequestDecisionItem = components['schemas']['ServiceRequestDecisionItem'];
 export type SchemaServiceRequestItem = components['schemas']['ServiceRequestItem'];
+export type SchemaServiceRequestItemInput = components['schemas']['ServiceRequestItemInput'];
+export type SchemaServiceRequestItems = components['schemas']['ServiceRequestItems'];
+export type SchemaServiceRequestItemStatus = components['schemas']['ServiceRequestItemStatus'];
 export type SchemaServiceRequestPage = components['schemas']['ServiceRequestPage'];
+export type SchemaServiceRequestStatus = components['schemas']['ServiceRequestStatus'];
+export type SchemaServiceRequestType = components['schemas']['ServiceRequestType'];
+export type SchemaServiceRequestVersion = components['schemas']['ServiceRequestVersion'];
+export type SchemaServiceRequestVersionList = components['schemas']['ServiceRequestVersionList'];
+export type SchemaServiceRequestVersionStatus = components['schemas']['ServiceRequestVersionStatus'];
+export type SchemaServiceRequestVersionSummary = components['schemas']['ServiceRequestVersionSummary'];
 export type SchemaServiceUnitType = components['schemas']['ServiceUnitType'];
 export type SchemaSessionInfo = components['schemas']['SessionInfo'];
 export type SchemaSettlementMethod = components['schemas']['SettlementMethod'];
@@ -5039,6 +5384,7 @@ export type ParameterRuleSetId = components['parameters']['RuleSetId'];
 export type ParameterRuleSetVersionId = components['parameters']['RuleSetVersionId'];
 export type ParameterServiceCategoryId = components['parameters']['ServiceCategoryId'];
 export type ParameterServiceDefinitionId = components['parameters']['ServiceDefinitionId'];
+export type ParameterServiceRequestVersionNo = components['parameters']['ServiceRequestVersionNo'];
 export type ParameterTenantHeader = components['parameters']['TenantHeader'];
 export type HeaderETag = components['headers']['ETag'];
 export type $defs = Record<string, never>;
@@ -10378,14 +10724,27 @@ export interface operations {
     listServiceRequests: {
         parameters: {
             query?: {
+                /** @description Keep only the requests that arrived through this channel. */
+                channel?: components["schemas"]["ServiceRequestChannel"];
+                /** @description Keep only the requests created at or after this instant. */
                 createdFrom?: string;
+                /** @description Keep only the requests created at or before this instant. */
                 createdTo?: string;
                 /** @description Opaque cursor from the previous response. */
                 cursor?: components["parameters"]["Cursor"];
                 limit?: components["parameters"]["Limit"];
+                /** @description Keep only the requests raised for this person. */
                 personId?: string;
+                /** @description Keep only the requests raised under this benefit program. */
+                programId?: string;
+                /** @description Keep only the requests naming this provider organization. */
                 providerOrganizationId?: string;
-                status?: "DRAFT" | "SUBMITTED" | "ELIGIBILITY_FAILED" | "PENDING_DOCUMENT" | "PENDING_REVIEW" | "APPROVED" | "PARTIALLY_APPROVED" | "REJECTED" | "CANCELLED" | "EXPIRED" | "CLOSED";
+                /** @description Keep only the requests whose service date is on or after this day. */
+                serviceDateFrom?: string;
+                /** @description Keep only the requests whose service date is on or before this day. */
+                serviceDateTo?: string;
+                /** @description Keep only the requests currently in this lifecycle state. */
+                status?: components["schemas"]["ServiceRequestStatus"];
             };
             header: {
                 /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
@@ -10405,6 +10764,17 @@ export interface operations {
                     "application/json": components["schemas"]["ServiceRequestPage"];
                 };
             };
+            /** @description Cursor invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
         };
     };
     createServiceRequest: {
@@ -10435,6 +10805,8 @@ export interface operations {
                     "application/json": components["schemas"]["ServiceRequest"];
                 };
             };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["TooManyRequests"];
@@ -10464,10 +10836,11 @@ export interface operations {
                     "application/json": components["schemas"]["ServiceRequest"];
                 };
             };
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
         };
     };
-    updateDraftServiceRequest: {
+    patchServiceRequestDraft: {
         parameters: {
             query?: never;
             header: {
@@ -10497,6 +10870,8 @@ export interface operations {
                     "application/json": components["schemas"]["ServiceRequest"];
                 };
             };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             /** @description ETag mismatch */
             412: {
@@ -10507,6 +10882,82 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            /** @description Body is not application/merge-patch+json */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    approveServiceRequest: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                requestId: components["parameters"]["RequestId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceRequestDecision"];
+            };
+        };
+        responses: {
+            /** @description Approved request */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceRequest"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
         };
     };
     cancelServiceRequest: {
@@ -10541,7 +10992,253 @@ export interface operations {
                     "application/json": components["schemas"]["ServiceRequest"];
                 };
             };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    putServiceRequestItems: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                requestId: components["parameters"]["RequestId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceRequestItems"];
+            };
+        };
+        responses: {
+            /** @description Draft lines replaced */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceRequest"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    partiallyApproveServiceRequest: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                requestId: components["parameters"]["RequestId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceRequestDecision"];
+            };
+        };
+        responses: {
+            /** @description Partially approved request */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceRequest"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    rejectServiceRequest: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                requestId: components["parameters"]["RequestId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonCommand"];
+            };
+        };
+        responses: {
+            /** @description Rejected request */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceRequest"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    returnServiceRequest: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                requestId: components["parameters"]["RequestId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonCommand"];
+            };
+        };
+        responses: {
+            /** @description Request returned to the requester as a new draft version */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceRequest"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             429: components["responses"]["TooManyRequests"];
         };
     };
@@ -10563,13 +11260,11 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": {
-                    comment?: string;
-                };
+                "application/json": components["schemas"]["ReviewComment"];
             };
         };
         responses: {
-            /** @description Submitted request after eligibility/rule evaluation */
+            /** @description Submitted request after the eligibility and rule gate */
             200: {
                 headers: {
                     ETag: components["headers"]["ETag"];
@@ -10579,9 +11274,88 @@ export interface operations {
                     "application/json": components["schemas"]["ServiceRequest"];
                 };
             };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listServiceRequestVersions: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                requestId: components["parameters"]["RequestId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Versions of the request, newest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceRequestVersionList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getServiceRequestVersion: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                requestId: components["parameters"]["RequestId"];
+                /**
+                 * @description Number of the version, counting from 1. Versions are addressed by number rather
+                 *     than by id because the number is what the reviewer and the requester both see.
+                 */
+                versionNo: components["parameters"]["ServiceRequestVersionNo"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One version of the request */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceRequestVersion"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     getSession: {

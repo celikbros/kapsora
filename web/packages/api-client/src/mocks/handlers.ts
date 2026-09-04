@@ -1310,6 +1310,7 @@ export function createHandlers(api: MockApi): HttpHandler[] {
         requestedEndAt: body.requestedEndAt ?? null,
         submittedAt: null,
         createdAt: now,
+        currentVersionNo: 1,
         rowVersion: 1,
         items: body.items.map((it, i) => ({
           id: world().nextId(),
@@ -1383,7 +1384,12 @@ export function createHandlers(api: MockApi): HttpHandler[] {
                 'SERVICE_REQUEST_NOT_DRAFT',
                 'Yalnız taslaklar gönderilebilir',
               );
-            sr.status = 'SUBMITTED';
+            // The server runs eligibility and the rules inside the submit and lands on
+            // PENDING_REVIEW, PENDING_DOCUMENT or ELIGIBILITY_FAILED; it never leaves a
+            // request resting at SUBMITTED. The mock does not evaluate anything yet, so it
+            // takes the ordinary outcome. WP-I4-06 gives it the other two branches with the
+            // fixtures the screens need to show them.
+            sr.status = 'PENDING_REVIEW';
             sr.submittedAt = new Date().toISOString();
           } else {
             const body = await readJson<Schemas['ReasonCommand']>(request);

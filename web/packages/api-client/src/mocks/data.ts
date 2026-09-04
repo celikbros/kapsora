@@ -1146,9 +1146,13 @@ export function buildWorld(
   }
 
   const serviceRequests: StoredServiceRequest[] = [];
+  // SUBMITTED is not in this list on purpose. The server passes through it inside the
+  // submit transaction and lands on one of the four below, so no stored row is ever
+  // observably SUBMITTED — seeding one would show the screens a state the product never
+  // shows them.
   const statuses: Schemas['ServiceRequest']['status'][] = [
     'DRAFT',
-    'SUBMITTED',
+    'PENDING_DOCUMENT',
     'PENDING_REVIEW',
     'APPROVED',
     'REJECTED',
@@ -1184,6 +1188,14 @@ export function buildWorld(
         requestedEndAt: null,
         submittedAt: status === 'DRAFT' ? null : isoDaysAgo(base, daysAgo),
         createdAt: isoDaysAgo(base, daysAgo),
+        currentVersionNo: 1,
+        // The same invariants migration 000025 checks: a rejected request names why it was
+        // rejected, and one waiting on documents names which ones. A fixture that breaks a
+        // constraint the database enforces is a screen written against a row that cannot
+        // exist.
+        rejectReasonCode: status === 'REJECTED' ? 'NOT_COVERED_BY_PLAN' : null,
+        requiredDocumentTypes:
+          status === 'PENDING_DOCUMENT' ? ['MEDICAL_REPORT', 'INVOICE'] : null,
         rowVersion: 1,
         items: [
           {
@@ -1191,8 +1203,11 @@ export function buildWorld(
             lineNo: 1,
             serviceDefinitionId: nextId(),
             unitType: 'SESSION',
-            requestedQuantity: 1 + Math.floor(random() * 5),
-            requestedAmount: Math.round(random() * 5000) / 1,
+            // Quantity and amount are exact decimal strings, as they are on the wire. Both
+            // are built from integers (kuruş for the amount) so no fixture value ever
+            // passes through a float on its way to becoming a string.
+            requestedQuantity: toDecimal(1 + Math.floor(random() * 5)),
+            requestedAmount: fromMicros(BigInt(50_000 + Math.floor(random() * 450_000)) * 10_000n),
             currencyCode: 'TRY',
             status: 'REQUESTED',
             approvedQuantity: null,

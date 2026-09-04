@@ -278,7 +278,15 @@
     "PRICE_QUOTE_LOCATION_INVALID": "Seçilen lokasyon bu sağlayıcıya ait değil.",
     "PRICE_QUOTE_PACKAGE_NOT_FOUND": "Paket tanımı bulunamadı.",
     "PRICE_QUOTE_ELIGIBILITY_INVALID": "Seçilen uygunluk değerlendirmesi bu hak sahibine ait değil.",
-    "PRICE_QUOTE_RETRY": "Teklif hesaplanırken veriler değişti; isteği aynen yeniden gönderin."
+    "PRICE_QUOTE_RETRY": "Teklif hesaplanırken veriler değişti; isteği aynen yeniden gönderin.",
+    "SERVICE_REQUEST_NOT_FOUND": "Hizmet talebi bulunamadı ya da bu kurumda görünmüyor.",
+    "SERVICE_REQUEST_VERSION_NOT_FOUND": "Talebin bu sürümü bulunamadı.",
+    "SERVICE_REQUEST_PROVIDER_SCOPE": "Bu sağlayıcı adına işlem yapma yetkiniz yok.",
+    "SERVICE_REQUEST_DRAFT_MISSING": "Talebin düzenlenebilir bir sürümü yok. Düzeltme için talebin geri gönderilmesi gerekir.",
+    "SERVICE_REQUEST_VERSION_IMMUTABLE": "Gönderilmiş talep sürümü değiştirilemez. Talep geri gönderildiğinde düzeltme için yeni bir sürüm açılır.",
+    "REQUEST_TRANSITION_INVALID": "Talep bu duruma geçemez.",
+    "SERVICE_REQUEST_ENROLLMENT_MISMATCH": "Seçilen plan kaydı bu hak sahibine veya programa ait değil.",
+    "SERVICE_REQUEST_REFERENCE_UNAVAILABLE": "Talep numarası üretilemedi. Lütfen yeniden deneyin."
   },
   "fieldErrors": {
     "RULE_COMPILE_FAILED": "Kural koşulu derlenemedi",

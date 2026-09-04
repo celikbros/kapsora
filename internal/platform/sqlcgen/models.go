@@ -1033,6 +1033,40 @@ type RulesRuleTestCase struct {
 	RowVersion           int64
 }
 
+type ServiceAppeal struct {
+	ID                uuid.UUID
+	TenantID          uuid.UUID
+	ServiceRequestID  uuid.UUID
+	AppealedVersionNo int32
+	AppellantActorID  uuid.NullUUID
+	ReasonCode        string
+	ReasonText        *string
+	Status            string
+	OutcomeReasonCode *string
+	DueAt             *time.Time
+	DecidedAt         *time.Time
+	DecidedBy         uuid.NullUUID
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+	RowVersion        int64
+}
+
+type ServiceCancellation struct {
+	ID               uuid.UUID
+	TenantID         uuid.UUID
+	AggregateType    string
+	AggregateID      uuid.UUID
+	AggregateVersion int32
+	PolicySnapshot   []byte
+	FeeAmount        pgtype.Numeric
+	ReleasedAmount   pgtype.Numeric
+	CurrencyCode     *string
+	ReasonCode       string
+	ReasonText       *string
+	CancelledAt      time.Time
+	CancelledBy      uuid.NullUUID
+}
+
 type ServiceServiceRequest struct {
 	ID                           uuid.UUID
 	TenantID                     uuid.UUID
@@ -1056,6 +1090,12 @@ type ServiceServiceRequest struct {
 	UpdatedAt                    time.Time
 	UpdatedBy                    uuid.NullUUID
 	RowVersion                   int64
+	EligibilityEvaluationID      uuid.NullUUID
+	RuleEvaluationID             uuid.NullUUID
+	RequiredDocumentTypes        []string
+	ReturnReasonCode             *string
+	RejectReasonCode             *string
+	ReviewComment                *string
 }
 
 type ServiceServiceRequestItem struct {
@@ -1088,6 +1128,10 @@ type ServiceServiceRequestVersion struct {
 	SubmittedBy      uuid.NullUUID
 	CreatedAt        time.Time
 	CreatedBy        uuid.NullUUID
+	ReturnedAt       *time.Time
+	ReturnedBy       uuid.NullUUID
+	ReturnReasonCode *string
+	ReturnReasonText *string
 }
 
 type SystemIdempotencyRecord struct {

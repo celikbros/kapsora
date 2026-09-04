@@ -259,60 +259,6 @@ func (e CreatePersonRequestSexAtBirth) Valid() bool {
 	}
 }
 
-// Defines values for CreateServiceRequestChannel.
-const (
-	CreateServiceRequestChannelAPI            CreateServiceRequestChannel = "API"
-	CreateServiceRequestChannelBACKOFFICE     CreateServiceRequestChannel = "BACKOFFICE"
-	CreateServiceRequestChannelBATCHIMPORT    CreateServiceRequestChannel = "BATCH_IMPORT"
-	CreateServiceRequestChannelCALLCENTER     CreateServiceRequestChannel = "CALL_CENTER"
-	CreateServiceRequestChannelMEMBERPORTAL   CreateServiceRequestChannel = "MEMBER_PORTAL"
-	CreateServiceRequestChannelPROVIDERPORTAL CreateServiceRequestChannel = "PROVIDER_PORTAL"
-)
-
-// Valid indicates whether the value is a known member of the CreateServiceRequestChannel enum.
-func (e CreateServiceRequestChannel) Valid() bool {
-	switch e {
-	case CreateServiceRequestChannelAPI:
-		return true
-	case CreateServiceRequestChannelBACKOFFICE:
-		return true
-	case CreateServiceRequestChannelBATCHIMPORT:
-		return true
-	case CreateServiceRequestChannelCALLCENTER:
-		return true
-	case CreateServiceRequestChannelMEMBERPORTAL:
-		return true
-	case CreateServiceRequestChannelPROVIDERPORTAL:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for CreateServiceRequestRequestType.
-const (
-	CreateServiceRequestRequestTypeDIRECTSERVICE    CreateServiceRequestRequestType = "DIRECT_SERVICE"
-	CreateServiceRequestRequestTypePREAUTHORIZATION CreateServiceRequestRequestType = "PREAUTHORIZATION"
-	CreateServiceRequestRequestTypeREIMBURSEMENT    CreateServiceRequestRequestType = "REIMBURSEMENT"
-	CreateServiceRequestRequestTypeRESERVATION      CreateServiceRequestRequestType = "RESERVATION"
-)
-
-// Valid indicates whether the value is a known member of the CreateServiceRequestRequestType enum.
-func (e CreateServiceRequestRequestType) Valid() bool {
-	switch e {
-	case CreateServiceRequestRequestTypeDIRECTSERVICE:
-		return true
-	case CreateServiceRequestRequestTypePREAUTHORIZATION:
-		return true
-	case CreateServiceRequestRequestTypeREIMBURSEMENT:
-		return true
-	case CreateServiceRequestRequestTypeRESERVATION:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for EligibilityCheckResultExplanationsSeverity.
 const (
 	EligibilityCheckResultExplanationsSeverityERROR   EligibilityCheckResultExplanationsSeverity = "ERROR"
@@ -2046,52 +1992,76 @@ func (e ServiceDomain) Valid() bool {
 
 // Defines values for ServiceRequestChannel.
 const (
-	ServiceRequestChannelAPI            ServiceRequestChannel = "API"
-	ServiceRequestChannelBACKOFFICE     ServiceRequestChannel = "BACKOFFICE"
-	ServiceRequestChannelBATCHIMPORT    ServiceRequestChannel = "BATCH_IMPORT"
-	ServiceRequestChannelCALLCENTER     ServiceRequestChannel = "CALL_CENTER"
-	ServiceRequestChannelMEMBERPORTAL   ServiceRequestChannel = "MEMBER_PORTAL"
-	ServiceRequestChannelPROVIDERPORTAL ServiceRequestChannel = "PROVIDER_PORTAL"
+	API            ServiceRequestChannel = "API"
+	BACKOFFICE     ServiceRequestChannel = "BACKOFFICE"
+	BATCHIMPORT    ServiceRequestChannel = "BATCH_IMPORT"
+	CALLCENTER     ServiceRequestChannel = "CALL_CENTER"
+	MEMBERPORTAL   ServiceRequestChannel = "MEMBER_PORTAL"
+	PROVIDERPORTAL ServiceRequestChannel = "PROVIDER_PORTAL"
 )
 
 // Valid indicates whether the value is a known member of the ServiceRequestChannel enum.
 func (e ServiceRequestChannel) Valid() bool {
 	switch e {
-	case ServiceRequestChannelAPI:
+	case API:
 		return true
-	case ServiceRequestChannelBACKOFFICE:
+	case BACKOFFICE:
 		return true
-	case ServiceRequestChannelBATCHIMPORT:
+	case BATCHIMPORT:
 		return true
-	case ServiceRequestChannelCALLCENTER:
+	case CALLCENTER:
 		return true
-	case ServiceRequestChannelMEMBERPORTAL:
+	case MEMBERPORTAL:
 		return true
-	case ServiceRequestChannelPROVIDERPORTAL:
+	case PROVIDERPORTAL:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for ServiceRequestRequestType.
+// Defines values for ServiceRequestDecisionItemStatus.
 const (
-	ServiceRequestRequestTypeDIRECTSERVICE    ServiceRequestRequestType = "DIRECT_SERVICE"
-	ServiceRequestRequestTypePREAUTHORIZATION ServiceRequestRequestType = "PREAUTHORIZATION"
-	ServiceRequestRequestTypeREIMBURSEMENT    ServiceRequestRequestType = "REIMBURSEMENT"
-	ServiceRequestRequestTypeRESERVATION      ServiceRequestRequestType = "RESERVATION"
+	ServiceRequestDecisionItemStatusAPPROVED          ServiceRequestDecisionItemStatus = "APPROVED"
+	ServiceRequestDecisionItemStatusPARTIALLYAPPROVED ServiceRequestDecisionItemStatus = "PARTIALLY_APPROVED"
+	ServiceRequestDecisionItemStatusREJECTED          ServiceRequestDecisionItemStatus = "REJECTED"
 )
 
-// Valid indicates whether the value is a known member of the ServiceRequestRequestType enum.
-func (e ServiceRequestRequestType) Valid() bool {
+// Valid indicates whether the value is a known member of the ServiceRequestDecisionItemStatus enum.
+func (e ServiceRequestDecisionItemStatus) Valid() bool {
 	switch e {
-	case ServiceRequestRequestTypeDIRECTSERVICE:
+	case ServiceRequestDecisionItemStatusAPPROVED:
 		return true
-	case ServiceRequestRequestTypePREAUTHORIZATION:
+	case ServiceRequestDecisionItemStatusPARTIALLYAPPROVED:
 		return true
-	case ServiceRequestRequestTypeREIMBURSEMENT:
+	case ServiceRequestDecisionItemStatusREJECTED:
 		return true
-	case ServiceRequestRequestTypeRESERVATION:
+	default:
+		return false
+	}
+}
+
+// Defines values for ServiceRequestItemStatus.
+const (
+	ServiceRequestItemStatusAPPROVED          ServiceRequestItemStatus = "APPROVED"
+	ServiceRequestItemStatusCANCELLED         ServiceRequestItemStatus = "CANCELLED"
+	ServiceRequestItemStatusPARTIALLYAPPROVED ServiceRequestItemStatus = "PARTIALLY_APPROVED"
+	ServiceRequestItemStatusREJECTED          ServiceRequestItemStatus = "REJECTED"
+	ServiceRequestItemStatusREQUESTED         ServiceRequestItemStatus = "REQUESTED"
+)
+
+// Valid indicates whether the value is a known member of the ServiceRequestItemStatus enum.
+func (e ServiceRequestItemStatus) Valid() bool {
+	switch e {
+	case ServiceRequestItemStatusAPPROVED:
+		return true
+	case ServiceRequestItemStatusCANCELLED:
+		return true
+	case ServiceRequestItemStatusPARTIALLYAPPROVED:
+		return true
+	case ServiceRequestItemStatusREJECTED:
+		return true
+	case ServiceRequestItemStatusREQUESTED:
 		return true
 	default:
 		return false
@@ -2143,27 +2113,45 @@ func (e ServiceRequestStatus) Valid() bool {
 	}
 }
 
-// Defines values for ServiceRequestItemStatus.
+// Defines values for ServiceRequestType.
 const (
-	ServiceRequestItemStatusAPPROVED          ServiceRequestItemStatus = "APPROVED"
-	ServiceRequestItemStatusCANCELLED         ServiceRequestItemStatus = "CANCELLED"
-	ServiceRequestItemStatusPARTIALLYAPPROVED ServiceRequestItemStatus = "PARTIALLY_APPROVED"
-	ServiceRequestItemStatusREJECTED          ServiceRequestItemStatus = "REJECTED"
-	ServiceRequestItemStatusREQUESTED         ServiceRequestItemStatus = "REQUESTED"
+	ServiceRequestTypeDIRECTSERVICE    ServiceRequestType = "DIRECT_SERVICE"
+	ServiceRequestTypePREAUTHORIZATION ServiceRequestType = "PREAUTHORIZATION"
+	ServiceRequestTypeREIMBURSEMENT    ServiceRequestType = "REIMBURSEMENT"
+	ServiceRequestTypeRESERVATION      ServiceRequestType = "RESERVATION"
 )
 
-// Valid indicates whether the value is a known member of the ServiceRequestItemStatus enum.
-func (e ServiceRequestItemStatus) Valid() bool {
+// Valid indicates whether the value is a known member of the ServiceRequestType enum.
+func (e ServiceRequestType) Valid() bool {
 	switch e {
-	case ServiceRequestItemStatusAPPROVED:
+	case ServiceRequestTypeDIRECTSERVICE:
 		return true
-	case ServiceRequestItemStatusCANCELLED:
+	case ServiceRequestTypePREAUTHORIZATION:
 		return true
-	case ServiceRequestItemStatusPARTIALLYAPPROVED:
+	case ServiceRequestTypeREIMBURSEMENT:
 		return true
-	case ServiceRequestItemStatusREJECTED:
+	case ServiceRequestTypeRESERVATION:
 		return true
-	case ServiceRequestItemStatusREQUESTED:
+	default:
+		return false
+	}
+}
+
+// Defines values for ServiceRequestVersionStatus.
+const (
+	ServiceRequestVersionStatusDRAFT      ServiceRequestVersionStatus = "DRAFT"
+	ServiceRequestVersionStatusSUBMITTED  ServiceRequestVersionStatus = "SUBMITTED"
+	ServiceRequestVersionStatusSUPERSEDED ServiceRequestVersionStatus = "SUPERSEDED"
+)
+
+// Valid indicates whether the value is a known member of the ServiceRequestVersionStatus enum.
+func (e ServiceRequestVersionStatus) Valid() bool {
+	switch e {
+	case ServiceRequestVersionStatusDRAFT:
+		return true
+	case ServiceRequestVersionStatusSUBMITTED:
+		return true
+	case ServiceRequestVersionStatusSUPERSEDED:
 		return true
 	default:
 		return false
@@ -2689,51 +2677,6 @@ func (e ListProgramsParamsStatus) Valid() bool {
 	}
 }
 
-// Defines values for ListServiceRequestsParamsStatus.
-const (
-	ListServiceRequestsParamsStatusAPPROVED          ListServiceRequestsParamsStatus = "APPROVED"
-	ListServiceRequestsParamsStatusCANCELLED         ListServiceRequestsParamsStatus = "CANCELLED"
-	ListServiceRequestsParamsStatusCLOSED            ListServiceRequestsParamsStatus = "CLOSED"
-	ListServiceRequestsParamsStatusDRAFT             ListServiceRequestsParamsStatus = "DRAFT"
-	ListServiceRequestsParamsStatusELIGIBILITYFAILED ListServiceRequestsParamsStatus = "ELIGIBILITY_FAILED"
-	ListServiceRequestsParamsStatusEXPIRED           ListServiceRequestsParamsStatus = "EXPIRED"
-	ListServiceRequestsParamsStatusPARTIALLYAPPROVED ListServiceRequestsParamsStatus = "PARTIALLY_APPROVED"
-	ListServiceRequestsParamsStatusPENDINGDOCUMENT   ListServiceRequestsParamsStatus = "PENDING_DOCUMENT"
-	ListServiceRequestsParamsStatusPENDINGREVIEW     ListServiceRequestsParamsStatus = "PENDING_REVIEW"
-	ListServiceRequestsParamsStatusREJECTED          ListServiceRequestsParamsStatus = "REJECTED"
-	ListServiceRequestsParamsStatusSUBMITTED         ListServiceRequestsParamsStatus = "SUBMITTED"
-)
-
-// Valid indicates whether the value is a known member of the ListServiceRequestsParamsStatus enum.
-func (e ListServiceRequestsParamsStatus) Valid() bool {
-	switch e {
-	case ListServiceRequestsParamsStatusAPPROVED:
-		return true
-	case ListServiceRequestsParamsStatusCANCELLED:
-		return true
-	case ListServiceRequestsParamsStatusCLOSED:
-		return true
-	case ListServiceRequestsParamsStatusDRAFT:
-		return true
-	case ListServiceRequestsParamsStatusELIGIBILITYFAILED:
-		return true
-	case ListServiceRequestsParamsStatusEXPIRED:
-		return true
-	case ListServiceRequestsParamsStatusPARTIALLYAPPROVED:
-		return true
-	case ListServiceRequestsParamsStatusPENDINGDOCUMENT:
-		return true
-	case ListServiceRequestsParamsStatusPENDINGREVIEW:
-		return true
-	case ListServiceRequestsParamsStatusREJECTED:
-		return true
-	case ListServiceRequestsParamsStatusSUBMITTED:
-		return true
-	default:
-		return false
-	}
-}
-
 // CodeSystem defines model for CodeSystem.
 type CodeSystem struct {
 	// Authority Publisher of a code system; TENANT marks a sponsor-internal system.
@@ -3180,29 +3123,24 @@ type CreateServiceDefinitionRequest struct {
 
 // CreateServiceRequest defines model for CreateServiceRequest.
 type CreateServiceRequest struct {
-	Channel      CreateServiceRequestChannel `json:"channel"`
-	EnrollmentId openapi_types.UUID          `json:"enrollmentId"`
-	Items        []struct {
-		CurrencyCode        *string            `json:"currencyCode,omitempty"`
-		RequestedAmount     *float32           `json:"requestedAmount,omitempty"`
-		RequestedQuantity   float32            `json:"requestedQuantity"`
-		ServiceDefinitionId openapi_types.UUID `json:"serviceDefinitionId"`
-		UnitType            string             `json:"unitType"`
-	} `json:"items"`
-	PersonId               openapi_types.UUID              `json:"personId"`
-	ProgramId              openapi_types.UUID              `json:"programId"`
-	ProviderOrganizationId *openapi_types.UUID             `json:"providerOrganizationId,omitempty"`
-	RequestType            CreateServiceRequestRequestType `json:"requestType"`
-	RequestedEndAt         *time.Time                      `json:"requestedEndAt,omitempty"`
-	RequestedStartAt       *time.Time                      `json:"requestedStartAt,omitempty"`
-	ServiceDate            openapi_types.Date              `json:"serviceDate"`
+	// Channel Where the request came from; a phone call is not the same as a portal.
+	Channel                ServiceRequestChannel     `json:"channel"`
+	EnrollmentId           openapi_types.UUID        `json:"enrollmentId"`
+	Items                  []ServiceRequestItemInput `json:"items"`
+	PersonId               openapi_types.UUID        `json:"personId"`
+	ProgramId              openapi_types.UUID        `json:"programId"`
+	ProviderOrganizationId *openapi_types.UUID       `json:"providerOrganizationId,omitempty"`
+
+	// RequestType What kind of request this is. The type decides whether a provider has to be named
+	// and which downstream aggregate the decision feeds.
+	RequestType      ServiceRequestType `json:"requestType"`
+	RequestedEndAt   *time.Time         `json:"requestedEndAt,omitempty"`
+	RequestedStartAt *time.Time         `json:"requestedStartAt,omitempty"`
+	ServiceDate      openapi_types.Date `json:"serviceDate"`
+
+	// SupersedesRequestId The rejected request this one replaces; a rejection is never reopened.
+	SupersedesRequestId *openapi_types.UUID `json:"supersedesRequestId,omitempty"`
 }
-
-// CreateServiceRequestChannel defines model for CreateServiceRequest.Channel.
-type CreateServiceRequestChannel string
-
-// CreateServiceRequestRequestType defines model for CreateServiceRequest.RequestType.
-type CreateServiceRequestRequestType string
 
 // DecimalAmount An exact numeric(20,6) money or quantity value as a decimal string. It is a string
 // and not a JSON number on purpose: a tariff row is what somebody is invoiced, and a
@@ -5022,55 +4960,203 @@ type ServiceDomain string
 
 // ServiceRequest defines model for ServiceRequest.
 type ServiceRequest struct {
-	Channel                ServiceRequestChannel     `json:"channel"`
-	CreatedAt              time.Time                 `json:"createdAt"`
-	EnrollmentId           openapi_types.UUID        `json:"enrollmentId"`
-	Id                     openapi_types.UUID        `json:"id"`
-	Items                  []ServiceRequestItem      `json:"items"`
-	PersonId               openapi_types.UUID        `json:"personId"`
-	ProgramId              openapi_types.UUID        `json:"programId"`
-	ProviderOrganizationId *openapi_types.UUID       `json:"providerOrganizationId,omitempty"`
-	Reference              string                    `json:"reference"`
-	RequestType            ServiceRequestRequestType `json:"requestType"`
-	RequestedEndAt         *time.Time                `json:"requestedEndAt,omitempty"`
-	RequestedStartAt       *time.Time                `json:"requestedStartAt,omitempty"`
-	RowVersion             int                       `json:"rowVersion"`
-	ServiceDate            openapi_types.Date        `json:"serviceDate"`
-	Status                 ServiceRequestStatus      `json:"status"`
-	SubmittedAt            *time.Time                `json:"submittedAt,omitempty"`
+	// Channel Where the request came from; a phone call is not the same as a portal.
+	Channel   ServiceRequestChannel `json:"channel"`
+	ClosedAt  *time.Time            `json:"closedAt,omitempty"`
+	CreatedAt time.Time             `json:"createdAt"`
+
+	// CurrentVersionNo Number of the version the lines below belong to.
+	CurrentVersionNo int `json:"currentVersionNo"`
+
+	// EligibilityEvaluationId The eligibility evaluation the last submit was decided against.
+	EligibilityEvaluationId *openapi_types.UUID `json:"eligibilityEvaluationId,omitempty"`
+	EnrollmentId            openapi_types.UUID  `json:"enrollmentId"`
+	Id                      openapi_types.UUID  `json:"id"`
+
+	// Items The lines of the current version.
+	Items                  []ServiceRequestItem `json:"items"`
+	PersonId               openapi_types.UUID   `json:"personId"`
+	ProgramId              openapi_types.UUID   `json:"programId"`
+	ProviderOrganizationId *openapi_types.UUID  `json:"providerOrganizationId,omitempty"`
+
+	// Reference Human-readable number of the request; it survives every return.
+	Reference string `json:"reference"`
+
+	// RejectReasonCode Why the request was refused.
+	RejectReasonCode *string `json:"rejectReasonCode,omitempty"`
+
+	// RequestType What kind of request this is. The type decides whether a provider has to be named
+	// and which downstream aggregate the decision feeds.
+	RequestType      ServiceRequestType `json:"requestType"`
+	RequestedEndAt   *time.Time         `json:"requestedEndAt,omitempty"`
+	RequestedStartAt *time.Time         `json:"requestedStartAt,omitempty"`
+
+	// RequiredDocumentTypes The document types a rule asked for, in the order the rule named them. An empty
+	// array means the rules were asked and required nothing; null means not yet asked.
+	RequiredDocumentTypes *[]string `json:"requiredDocumentTypes,omitempty"`
+
+	// ReturnReasonCode Why the request was last sent back for correction.
+	ReturnReasonCode *string `json:"returnReasonCode,omitempty"`
+	ReviewComment    *string `json:"reviewComment,omitempty"`
+	RowVersion       int     `json:"rowVersion"`
+
+	// RuleEvaluationId The rule evaluation the last submit was decided against.
+	RuleEvaluationId *openapi_types.UUID `json:"ruleEvaluationId,omitempty"`
+	ServiceDate      openapi_types.Date  `json:"serviceDate"`
+
+	// Status Lifecycle state of a request. It is read-only on every endpoint: each move is its
+	// own command with its own precondition, permission and reason, and nothing writes
+	// this field directly.
+	Status      ServiceRequestStatus `json:"status"`
+	SubmittedAt *time.Time           `json:"submittedAt,omitempty"`
+
+	// SupersedesRequestId The rejected request this one was raised to replace, if any.
+	SupersedesRequestId *openapi_types.UUID `json:"supersedesRequestId,omitempty"`
 }
 
-// ServiceRequestChannel defines model for ServiceRequest.Channel.
+// ServiceRequestChannel Where the request came from; a phone call is not the same as a portal.
 type ServiceRequestChannel string
 
-// ServiceRequestRequestType defines model for ServiceRequest.RequestType.
-type ServiceRequestRequestType string
+// ServiceRequestDecision A review decision with its reason. An approve may leave items out, in which case
+// every line is approved for what it asked for; a partial approval has to name them.
+type ServiceRequestDecision struct {
+	Items      *[]ServiceRequestDecisionItem `json:"items,omitempty"`
+	ReasonCode string                        `json:"reasonCode"`
+	ReasonText *string                       `json:"reasonText,omitempty"`
+}
 
-// ServiceRequestStatus defines model for ServiceRequest.Status.
-type ServiceRequestStatus string
+// ServiceRequestDecisionItem What a reviewer decided about one line of the submitted version.
+type ServiceRequestDecisionItem struct {
+	// ApprovedAmount An exact numeric(20,6) money or quantity value as a decimal string. It is a string
+	// and not a JSON number on purpose: a tariff row is what somebody is invoiced, and a
+	// float would round it silently somewhere between the browser and the ledger.
+	ApprovedAmount *DecimalAmount `json:"approvedAmount,omitempty"`
+
+	// ApprovedQuantity An exact numeric(20,6) money or quantity value as a decimal string. It is a string
+	// and not a JSON number on purpose: a tariff row is what somebody is invoiced, and a
+	// float would round it silently somewhere between the browser and the ledger.
+	ApprovedQuantity   *DecimalAmount                   `json:"approvedQuantity,omitempty"`
+	DecisionReasonCode *string                          `json:"decisionReasonCode,omitempty"`
+	LineNo             int                              `json:"lineNo"`
+	Status             ServiceRequestDecisionItemStatus `json:"status"`
+}
+
+// ServiceRequestDecisionItemStatus defines model for ServiceRequestDecisionItem.Status.
+type ServiceRequestDecisionItemStatus string
 
 // ServiceRequestItem defines model for ServiceRequestItem.
 type ServiceRequestItem struct {
-	ApprovedAmount      *float32                 `json:"approvedAmount,omitempty"`
-	ApprovedQuantity    *float32                 `json:"approvedQuantity,omitempty"`
-	CurrencyCode        *string                  `json:"currencyCode,omitempty"`
-	DecisionReasonCode  *string                  `json:"decisionReasonCode,omitempty"`
-	Id                  openapi_types.UUID       `json:"id"`
-	LineNo              int                      `json:"lineNo"`
-	RequestedAmount     *float32                 `json:"requestedAmount,omitempty"`
-	RequestedQuantity   float32                  `json:"requestedQuantity"`
-	ServiceDefinitionId openapi_types.UUID       `json:"serviceDefinitionId"`
-	Status              ServiceRequestItemStatus `json:"status"`
-	UnitType            string                   `json:"unitType"`
+	ApprovedAmount     *string            `json:"approvedAmount,omitempty"`
+	ApprovedQuantity   *string            `json:"approvedQuantity,omitempty"`
+	CurrencyCode       *string            `json:"currencyCode,omitempty"`
+	DecisionReasonCode *string            `json:"decisionReasonCode,omitempty"`
+	Id                 openapi_types.UUID `json:"id"`
+	LineNo             int                `json:"lineNo"`
+	RequestedAmount    *string            `json:"requestedAmount,omitempty"`
+
+	// RequestedQuantity An exact numeric(20,6) money or quantity value as a decimal string. It is a string
+	// and not a JSON number on purpose: a tariff row is what somebody is invoiced, and a
+	// float would round it silently somewhere between the browser and the ledger.
+	RequestedQuantity   DecimalAmount      `json:"requestedQuantity"`
+	ServiceDefinitionId openapi_types.UUID `json:"serviceDefinitionId"`
+
+	// Status The line-level outcome a reviewer recorded, REQUESTED until one is.
+	Status ServiceRequestItemStatus `json:"status"`
+
+	// UnitType Unit a service definition is counted in.
+	UnitType ServiceUnitType `json:"unitType"`
 }
 
-// ServiceRequestItemStatus defines model for ServiceRequestItem.Status.
+// ServiceRequestItemInput One requested line. Quantities and amounts are exact decimal strings, never JSON
+// numbers: a quantity that passed through a float is a quantity nobody can reconcile
+// against the ledger afterwards.
+type ServiceRequestItemInput struct {
+	CurrencyCode *string `json:"currencyCode,omitempty"`
+
+	// RequestedAmount An exact numeric(20,6) money or quantity value as a decimal string. It is a string
+	// and not a JSON number on purpose: a tariff row is what somebody is invoiced, and a
+	// float would round it silently somewhere between the browser and the ledger.
+	RequestedAmount *DecimalAmount `json:"requestedAmount,omitempty"`
+
+	// RequestedQuantity An exact numeric(20,6) money or quantity value as a decimal string. It is a string
+	// and not a JSON number on purpose: a tariff row is what somebody is invoiced, and a
+	// float would round it silently somewhere between the browser and the ledger.
+	RequestedQuantity   DecimalAmount      `json:"requestedQuantity"`
+	ServiceDefinitionId openapi_types.UUID `json:"serviceDefinitionId"`
+
+	// UnitType Unit a service definition is counted in.
+	UnitType ServiceUnitType `json:"unitType"`
+}
+
+// ServiceRequestItemStatus The line-level outcome a reviewer recorded, REQUESTED until one is.
 type ServiceRequestItemStatus string
+
+// ServiceRequestItems The complete line set of the draft version; it replaces what is there.
+type ServiceRequestItems struct {
+	Items []ServiceRequestItemInput `json:"items"`
+}
 
 // ServiceRequestPage defines model for ServiceRequestPage.
 type ServiceRequestPage struct {
 	Items      []ServiceRequest `json:"items"`
 	NextCursor *string          `json:"nextCursor,omitempty"`
+}
+
+// ServiceRequestStatus Lifecycle state of a request. It is read-only on every endpoint: each move is its
+// own command with its own precondition, permission and reason, and nothing writes
+// this field directly.
+type ServiceRequestStatus string
+
+// ServiceRequestType What kind of request this is. The type decides whether a provider has to be named
+// and which downstream aggregate the decision feeds.
+type ServiceRequestType string
+
+// ServiceRequestVersion defines model for ServiceRequestVersion.
+type ServiceRequestVersion struct {
+	CreatedAt time.Time          `json:"createdAt"`
+	Id        openapi_types.UUID `json:"id"`
+
+	// Items The lines as this version carried them. A submitted version answers from the
+	// snapshot frozen at submit, so it never drifts with the request.
+	Items            []ServiceRequestItem `json:"items"`
+	ReturnReasonCode *string              `json:"returnReasonCode,omitempty"`
+	ReturnReasonText *string              `json:"returnReasonText,omitempty"`
+	ReturnedAt       *time.Time           `json:"returnedAt,omitempty"`
+	ReturnedBy       *openapi_types.UUID  `json:"returnedBy,omitempty"`
+	ServiceRequestId openapi_types.UUID   `json:"serviceRequestId"`
+
+	// Status State of one version of the request content. Exactly one DRAFT version exists at a
+	// time; a SUBMITTED version is frozen and a SUPERSEDED one was replaced by a later one.
+	Status      ServiceRequestVersionStatus `json:"status"`
+	SubmittedAt *time.Time                  `json:"submittedAt,omitempty"`
+	SubmittedBy *openapi_types.UUID         `json:"submittedBy,omitempty"`
+	VersionNo   int                         `json:"versionNo"`
+}
+
+// ServiceRequestVersionList defines model for ServiceRequestVersionList.
+type ServiceRequestVersionList struct {
+	Items []ServiceRequestVersionSummary `json:"items"`
+}
+
+// ServiceRequestVersionStatus State of one version of the request content. Exactly one DRAFT version exists at a
+// time; a SUBMITTED version is frozen and a SUPERSEDED one was replaced by a later one.
+type ServiceRequestVersionStatus string
+
+// ServiceRequestVersionSummary defines model for ServiceRequestVersionSummary.
+type ServiceRequestVersionSummary struct {
+	CreatedAt        time.Time           `json:"createdAt"`
+	Id               openapi_types.UUID  `json:"id"`
+	ReturnReasonCode *string             `json:"returnReasonCode,omitempty"`
+	ReturnReasonText *string             `json:"returnReasonText,omitempty"`
+	ReturnedAt       *time.Time          `json:"returnedAt,omitempty"`
+	ReturnedBy       *openapi_types.UUID `json:"returnedBy,omitempty"`
+
+	// Status State of one version of the request content. Exactly one DRAFT version exists at a
+	// time; a SUBMITTED version is frozen and a SUPERSEDED one was replaced by a later one.
+	Status      ServiceRequestVersionStatus `json:"status"`
+	SubmittedAt *time.Time                  `json:"submittedAt,omitempty"`
+	SubmittedBy *openapi_types.UUID         `json:"submittedBy,omitempty"`
+	VersionNo   int                         `json:"versionNo"`
 }
 
 // ServiceUnitType Unit a service definition is counted in.
@@ -5347,15 +5433,9 @@ type UpdateServiceDefinitionRequest struct {
 	RequiresProvider *bool            `json:"requiresProvider,omitempty"`
 }
 
-// UpdateServiceRequest defines model for UpdateServiceRequest.
+// UpdateServiceRequest Merge-patch of the draft header. There is deliberately no status here and no items:
+// a move through the lifecycle is a command, and the lines are replaced as a set.
 type UpdateServiceRequest struct {
-	Items *[]struct {
-		CurrencyCode        *string            `json:"currencyCode,omitempty"`
-		RequestedAmount     *float32           `json:"requestedAmount,omitempty"`
-		RequestedQuantity   float32            `json:"requestedQuantity"`
-		ServiceDefinitionId openapi_types.UUID `json:"serviceDefinitionId"`
-		UnitType            string             `json:"unitType"`
-	} `json:"items,omitempty"`
 	ProviderOrganizationId *openapi_types.UUID `json:"providerOrganizationId,omitempty"`
 	RequestedEndAt         *time.Time          `json:"requestedEndAt,omitempty"`
 	RequestedStartAt       *time.Time          `json:"requestedStartAt,omitempty"`
@@ -5468,6 +5548,9 @@ type ServiceCategoryId = openapi_types.UUID
 
 // ServiceDefinitionId defines model for ServiceDefinitionId.
 type ServiceDefinitionId = openapi_types.UUID
+
+// ServiceRequestVersionNo defines model for ServiceRequestVersionNo.
+type ServiceRequestVersionNo = int
 
 // TenantHeader defines model for TenantHeader.
 type TenantHeader = openapi_types.UUID
@@ -6865,20 +6948,39 @@ type PutServiceCodeMappingsParams struct {
 // ListServiceRequestsParams defines parameters for ListServiceRequests.
 type ListServiceRequestsParams struct {
 	// Cursor Opaque cursor from the previous response.
-	Cursor                 *Cursor                          `form:"cursor,omitempty" json:"cursor,omitempty"`
-	Limit                  *Limit                           `form:"limit,omitempty" json:"limit,omitempty"`
-	Status                 *ListServiceRequestsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
-	PersonId               *openapi_types.UUID              `form:"personId,omitempty" json:"personId,omitempty"`
-	ProviderOrganizationId *openapi_types.UUID              `form:"providerOrganizationId,omitempty" json:"providerOrganizationId,omitempty"`
-	CreatedFrom            *time.Time                       `form:"createdFrom,omitempty" json:"createdFrom,omitempty"`
-	CreatedTo              *time.Time                       `form:"createdTo,omitempty" json:"createdTo,omitempty"`
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Status Keep only the requests currently in this lifecycle state.
+	Status *ServiceRequestStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// PersonId Keep only the requests raised for this person.
+	PersonId *openapi_types.UUID `form:"personId,omitempty" json:"personId,omitempty"`
+
+	// ProgramId Keep only the requests raised under this benefit program.
+	ProgramId *openapi_types.UUID `form:"programId,omitempty" json:"programId,omitempty"`
+
+	// ProviderOrganizationId Keep only the requests naming this provider organization.
+	ProviderOrganizationId *openapi_types.UUID `form:"providerOrganizationId,omitempty" json:"providerOrganizationId,omitempty"`
+
+	// Channel Keep only the requests that arrived through this channel.
+	Channel *ServiceRequestChannel `form:"channel,omitempty" json:"channel,omitempty"`
+
+	// ServiceDateFrom Keep only the requests whose service date is on or after this day.
+	ServiceDateFrom *openapi_types.Date `form:"serviceDateFrom,omitempty" json:"serviceDateFrom,omitempty"`
+
+	// ServiceDateTo Keep only the requests whose service date is on or before this day.
+	ServiceDateTo *openapi_types.Date `form:"serviceDateTo,omitempty" json:"serviceDateTo,omitempty"`
+
+	// CreatedFrom Keep only the requests created at or after this instant.
+	CreatedFrom *time.Time `form:"createdFrom,omitempty" json:"createdFrom,omitempty"`
+
+	// CreatedTo Keep only the requests created at or before this instant.
+	CreatedTo *time.Time `form:"createdTo,omitempty" json:"createdTo,omitempty"`
 
 	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
 	XTenantID TenantHeader `json:"X-Tenant-ID"`
 }
-
-// ListServiceRequestsParamsStatus defines parameters for ListServiceRequests.
-type ListServiceRequestsParamsStatus string
 
 // CreateServiceRequestParams defines parameters for CreateServiceRequest.
 type CreateServiceRequestParams struct {
@@ -6895,10 +6997,22 @@ type GetServiceRequestParams struct {
 	XTenantID TenantHeader `json:"X-Tenant-ID"`
 }
 
-// UpdateDraftServiceRequestParams defines parameters for UpdateDraftServiceRequest.
-type UpdateDraftServiceRequestParams struct {
+// PatchServiceRequestDraftParams defines parameters for PatchServiceRequestDraft.
+type PatchServiceRequestDraftParams struct {
 	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
 	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// ApproveServiceRequestParams defines parameters for ApproveServiceRequest.
+type ApproveServiceRequestParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 
 	// IfMatch Optimistic concurrency token returned as ETag.
 	IfMatch IfMatch `json:"If-Match"`
@@ -6916,9 +7030,49 @@ type CancelServiceRequestParams struct {
 	IfMatch IfMatch `json:"If-Match"`
 }
 
-// SubmitServiceRequestJSONBody defines parameters for SubmitServiceRequest.
-type SubmitServiceRequestJSONBody struct {
-	Comment *string `json:"comment,omitempty"`
+// PutServiceRequestItemsParams defines parameters for PutServiceRequestItems.
+type PutServiceRequestItemsParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// PartiallyApproveServiceRequestParams defines parameters for PartiallyApproveServiceRequest.
+type PartiallyApproveServiceRequestParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// RejectServiceRequestParams defines parameters for RejectServiceRequest.
+type RejectServiceRequestParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// ReturnServiceRequestParams defines parameters for ReturnServiceRequest.
+type ReturnServiceRequestParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
 }
 
 // SubmitServiceRequestParams defines parameters for SubmitServiceRequest.
@@ -6931,6 +7085,18 @@ type SubmitServiceRequestParams struct {
 
 	// IfMatch Optimistic concurrency token returned as ETag.
 	IfMatch IfMatch `json:"If-Match"`
+}
+
+// ListServiceRequestVersionsParams defines parameters for ListServiceRequestVersions.
+type ListServiceRequestVersionsParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// GetServiceRequestVersionParams defines parameters for GetServiceRequestVersion.
+type GetServiceRequestVersionParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
 }
 
 // LoginJSONBody defines parameters for Login.
@@ -7197,14 +7363,29 @@ type PutServiceCodeMappingsJSONRequestBody = ReplaceServiceCodeMappingsRequest
 // CreateServiceRequestJSONRequestBody defines body for CreateServiceRequest for application/json ContentType.
 type CreateServiceRequestJSONRequestBody = CreateServiceRequest
 
-// UpdateDraftServiceRequestApplicationMergePatchPlusJSONRequestBody defines body for UpdateDraftServiceRequest for application/merge-patch+json ContentType.
-type UpdateDraftServiceRequestApplicationMergePatchPlusJSONRequestBody = UpdateServiceRequest
+// PatchServiceRequestDraftApplicationMergePatchPlusJSONRequestBody defines body for PatchServiceRequestDraft for application/merge-patch+json ContentType.
+type PatchServiceRequestDraftApplicationMergePatchPlusJSONRequestBody = UpdateServiceRequest
+
+// ApproveServiceRequestJSONRequestBody defines body for ApproveServiceRequest for application/json ContentType.
+type ApproveServiceRequestJSONRequestBody = ServiceRequestDecision
 
 // CancelServiceRequestJSONRequestBody defines body for CancelServiceRequest for application/json ContentType.
 type CancelServiceRequestJSONRequestBody = ReasonCommand
 
+// PutServiceRequestItemsJSONRequestBody defines body for PutServiceRequestItems for application/json ContentType.
+type PutServiceRequestItemsJSONRequestBody = ServiceRequestItems
+
+// PartiallyApproveServiceRequestJSONRequestBody defines body for PartiallyApproveServiceRequest for application/json ContentType.
+type PartiallyApproveServiceRequestJSONRequestBody = ServiceRequestDecision
+
+// RejectServiceRequestJSONRequestBody defines body for RejectServiceRequest for application/json ContentType.
+type RejectServiceRequestJSONRequestBody = ReasonCommand
+
+// ReturnServiceRequestJSONRequestBody defines body for ReturnServiceRequest for application/json ContentType.
+type ReturnServiceRequestJSONRequestBody = ReasonCommand
+
 // SubmitServiceRequestJSONRequestBody defines body for SubmitServiceRequest for application/json ContentType.
-type SubmitServiceRequestJSONRequestBody SubmitServiceRequestJSONBody
+type SubmitServiceRequestJSONRequestBody = ReviewComment
 
 // LoginJSONRequestBody defines body for Login for application/json ContentType.
 type LoginJSONRequestBody LoginJSONBody
@@ -7618,13 +7799,34 @@ type ServerInterface interface {
 	GetServiceRequest(w http.ResponseWriter, r *http.Request, requestId RequestId, params GetServiceRequestParams)
 
 	// (PATCH /api/v1/service-requests/{requestId})
-	UpdateDraftServiceRequest(w http.ResponseWriter, r *http.Request, requestId RequestId, params UpdateDraftServiceRequestParams)
+	PatchServiceRequestDraft(w http.ResponseWriter, r *http.Request, requestId RequestId, params PatchServiceRequestDraftParams)
+
+	// (POST /api/v1/service-requests/{requestId}/approve)
+	ApproveServiceRequest(w http.ResponseWriter, r *http.Request, requestId RequestId, params ApproveServiceRequestParams)
 
 	// (POST /api/v1/service-requests/{requestId}/cancel)
 	CancelServiceRequest(w http.ResponseWriter, r *http.Request, requestId RequestId, params CancelServiceRequestParams)
 
+	// (PUT /api/v1/service-requests/{requestId}/items)
+	PutServiceRequestItems(w http.ResponseWriter, r *http.Request, requestId RequestId, params PutServiceRequestItemsParams)
+
+	// (POST /api/v1/service-requests/{requestId}/partially-approve)
+	PartiallyApproveServiceRequest(w http.ResponseWriter, r *http.Request, requestId RequestId, params PartiallyApproveServiceRequestParams)
+
+	// (POST /api/v1/service-requests/{requestId}/reject)
+	RejectServiceRequest(w http.ResponseWriter, r *http.Request, requestId RequestId, params RejectServiceRequestParams)
+
+	// (POST /api/v1/service-requests/{requestId}/return)
+	ReturnServiceRequest(w http.ResponseWriter, r *http.Request, requestId RequestId, params ReturnServiceRequestParams)
+
 	// (POST /api/v1/service-requests/{requestId}/submit)
 	SubmitServiceRequest(w http.ResponseWriter, r *http.Request, requestId RequestId, params SubmitServiceRequestParams)
+
+	// (GET /api/v1/service-requests/{requestId}/versions)
+	ListServiceRequestVersions(w http.ResponseWriter, r *http.Request, requestId RequestId, params ListServiceRequestVersionsParams)
+
+	// (GET /api/v1/service-requests/{requestId}/versions/{versionNo})
+	GetServiceRequestVersion(w http.ResponseWriter, r *http.Request, requestId RequestId, versionNo ServiceRequestVersionNo, params GetServiceRequestVersionParams)
 
 	// (GET /api/v1/session)
 	GetSession(w http.ResponseWriter, r *http.Request)
@@ -8319,7 +8521,12 @@ func (_ Unimplemented) GetServiceRequest(w http.ResponseWriter, r *http.Request,
 }
 
 // (PATCH /api/v1/service-requests/{requestId})
-func (_ Unimplemented) UpdateDraftServiceRequest(w http.ResponseWriter, r *http.Request, requestId RequestId, params UpdateDraftServiceRequestParams) {
+func (_ Unimplemented) PatchServiceRequestDraft(w http.ResponseWriter, r *http.Request, requestId RequestId, params PatchServiceRequestDraftParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/service-requests/{requestId}/approve)
+func (_ Unimplemented) ApproveServiceRequest(w http.ResponseWriter, r *http.Request, requestId RequestId, params ApproveServiceRequestParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -8328,8 +8535,38 @@ func (_ Unimplemented) CancelServiceRequest(w http.ResponseWriter, r *http.Reque
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// (PUT /api/v1/service-requests/{requestId}/items)
+func (_ Unimplemented) PutServiceRequestItems(w http.ResponseWriter, r *http.Request, requestId RequestId, params PutServiceRequestItemsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/service-requests/{requestId}/partially-approve)
+func (_ Unimplemented) PartiallyApproveServiceRequest(w http.ResponseWriter, r *http.Request, requestId RequestId, params PartiallyApproveServiceRequestParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/service-requests/{requestId}/reject)
+func (_ Unimplemented) RejectServiceRequest(w http.ResponseWriter, r *http.Request, requestId RequestId, params RejectServiceRequestParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/service-requests/{requestId}/return)
+func (_ Unimplemented) ReturnServiceRequest(w http.ResponseWriter, r *http.Request, requestId RequestId, params ReturnServiceRequestParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // (POST /api/v1/service-requests/{requestId}/submit)
 func (_ Unimplemented) SubmitServiceRequest(w http.ResponseWriter, r *http.Request, requestId RequestId, params SubmitServiceRequestParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/service-requests/{requestId}/versions)
+func (_ Unimplemented) ListServiceRequestVersions(w http.ResponseWriter, r *http.Request, requestId RequestId, params ListServiceRequestVersionsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/service-requests/{requestId}/versions/{versionNo})
+func (_ Unimplemented) GetServiceRequestVersion(w http.ResponseWriter, r *http.Request, requestId RequestId, versionNo ServiceRequestVersionNo, params GetServiceRequestVersionParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -18718,6 +18955,19 @@ func (siw *ServerInterfaceWrapper) ListServiceRequests(w http.ResponseWriter, r 
 		return
 	}
 
+	// ------------- Optional query parameter "programId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "programId", r.URL.Query(), &params.ProgramId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "programId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "programId", Err: err})
+		}
+		return
+	}
+
 	// ------------- Optional query parameter "providerOrganizationId" -------------
 
 	err = runtime.BindQueryParameterWithOptions("form", true, false, "providerOrganizationId", r.URL.Query(), &params.ProviderOrganizationId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
@@ -18727,6 +18977,45 @@ func (siw *ServerInterfaceWrapper) ListServiceRequests(w http.ResponseWriter, r 
 			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "providerOrganizationId"})
 		} else {
 			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "providerOrganizationId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "channel" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "channel", r.URL.Query(), &params.Channel, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "channel"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "channel", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "serviceDateFrom" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "serviceDateFrom", r.URL.Query(), &params.ServiceDateFrom, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "serviceDateFrom"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "serviceDateFrom", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "serviceDateTo" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "serviceDateTo", r.URL.Query(), &params.ServiceDateTo, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "serviceDateTo"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "serviceDateTo", Err: err})
 		}
 		return
 	}
@@ -18915,8 +19204,8 @@ func (siw *ServerInterfaceWrapper) GetServiceRequest(w http.ResponseWriter, r *h
 	handler.ServeHTTP(w, r)
 }
 
-// UpdateDraftServiceRequest operation middleware
-func (siw *ServerInterfaceWrapper) UpdateDraftServiceRequest(w http.ResponseWriter, r *http.Request) {
+// PatchServiceRequestDraft operation middleware
+func (siw *ServerInterfaceWrapper) PatchServiceRequestDraft(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 	_ = err
@@ -18931,7 +19220,7 @@ func (siw *ServerInterfaceWrapper) UpdateDraftServiceRequest(w http.ResponseWrit
 	}
 
 	// Parameter object where we will unmarshal all parameters from the context
-	var params UpdateDraftServiceRequestParams
+	var params PatchServiceRequestDraftParams
 
 	headers := r.Header
 
@@ -18982,7 +19271,107 @@ func (siw *ServerInterfaceWrapper) UpdateDraftServiceRequest(w http.ResponseWrit
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.UpdateDraftServiceRequest(w, r, requestId, params)
+		siw.Handler.PatchServiceRequestDraft(w, r, requestId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ApproveServiceRequest operation middleware
+func (siw *ServerInterfaceWrapper) ApproveServiceRequest(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "requestId" -------------
+	var requestId RequestId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "requestId", chi.URLParam(r, "requestId"), &requestId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "requestId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ApproveServiceRequestParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ApproveServiceRequest(w, r, requestId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -19092,6 +19481,383 @@ func (siw *ServerInterfaceWrapper) CancelServiceRequest(w http.ResponseWriter, r
 	handler.ServeHTTP(w, r)
 }
 
+// PutServiceRequestItems operation middleware
+func (siw *ServerInterfaceWrapper) PutServiceRequestItems(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "requestId" -------------
+	var requestId RequestId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "requestId", chi.URLParam(r, "requestId"), &requestId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "requestId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PutServiceRequestItemsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutServiceRequestItems(w, r, requestId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PartiallyApproveServiceRequest operation middleware
+func (siw *ServerInterfaceWrapper) PartiallyApproveServiceRequest(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "requestId" -------------
+	var requestId RequestId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "requestId", chi.URLParam(r, "requestId"), &requestId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "requestId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PartiallyApproveServiceRequestParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PartiallyApproveServiceRequest(w, r, requestId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RejectServiceRequest operation middleware
+func (siw *ServerInterfaceWrapper) RejectServiceRequest(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "requestId" -------------
+	var requestId RequestId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "requestId", chi.URLParam(r, "requestId"), &requestId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "requestId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RejectServiceRequestParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RejectServiceRequest(w, r, requestId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReturnServiceRequest operation middleware
+func (siw *ServerInterfaceWrapper) ReturnServiceRequest(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "requestId" -------------
+	var requestId RequestId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "requestId", chi.URLParam(r, "requestId"), &requestId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "requestId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ReturnServiceRequestParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReturnServiceRequest(w, r, requestId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // SubmitServiceRequest operation middleware
 func (siw *ServerInterfaceWrapper) SubmitServiceRequest(w http.ResponseWriter, r *http.Request) {
 
@@ -19183,6 +19949,123 @@ func (siw *ServerInterfaceWrapper) SubmitServiceRequest(w http.ResponseWriter, r
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.SubmitServiceRequest(w, r, requestId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListServiceRequestVersions operation middleware
+func (siw *ServerInterfaceWrapper) ListServiceRequestVersions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "requestId" -------------
+	var requestId RequestId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "requestId", chi.URLParam(r, "requestId"), &requestId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "requestId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListServiceRequestVersionsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListServiceRequestVersions(w, r, requestId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetServiceRequestVersion operation middleware
+func (siw *ServerInterfaceWrapper) GetServiceRequestVersion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "requestId" -------------
+	var requestId RequestId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "requestId", chi.URLParam(r, "requestId"), &requestId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "requestId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "versionNo" -------------
+	var versionNo ServiceRequestVersionNo
+
+	err = runtime.BindStyledParameterWithOptions("simple", "versionNo", chi.URLParam(r, "versionNo"), &versionNo, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "versionNo", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetServiceRequestVersionParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetServiceRequestVersion(w, r, requestId, versionNo, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -19738,13 +20621,34 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/v1/service-requests/{requestId}", wrapper.GetServiceRequest)
 	})
 	r.Group(func(r chi.Router) {
-		r.Patch(options.BaseURL+"/api/v1/service-requests/{requestId}", wrapper.UpdateDraftServiceRequest)
+		r.Patch(options.BaseURL+"/api/v1/service-requests/{requestId}", wrapper.PatchServiceRequestDraft)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/v1/service-requests/{requestId}/items", wrapper.PutServiceRequestItems)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/service-requests/{requestId}/submit", wrapper.SubmitServiceRequest)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/service-requests/{requestId}/return", wrapper.ReturnServiceRequest)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/service-requests/{requestId}/reject", wrapper.RejectServiceRequest)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/service-requests/{requestId}/approve", wrapper.ApproveServiceRequest)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/service-requests/{requestId}/partially-approve", wrapper.PartiallyApproveServiceRequest)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/service-requests/{requestId}/cancel", wrapper.CancelServiceRequest)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/service-requests/{requestId}/versions", wrapper.ListServiceRequestVersions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/service-requests/{requestId}/versions/{versionNo}", wrapper.GetServiceRequestVersion)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/service-categories", wrapper.ListServiceCategories)
@@ -30847,6 +31751,52 @@ func (response ListServiceRequests200JSONResponse) VisitListServiceRequestsRespo
 	return err
 }
 
+type ListServiceRequests400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListServiceRequests400ApplicationProblemPlusJSONResponse) VisitListServiceRequestsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListServiceRequests403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListServiceRequests403ApplicationProblemPlusJSONResponse) VisitListServiceRequestsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListServiceRequests422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListServiceRequests422ApplicationProblemPlusJSONResponse) VisitListServiceRequestsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type CreateServiceRequestRequestObject struct {
 	Params CreateServiceRequestParams
 	Body   *CreateServiceRequestJSONRequestBody
@@ -30876,6 +31826,38 @@ func (response CreateServiceRequest201JSONResponse) VisitCreateServiceRequestRes
 		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
 	}
 	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateServiceRequest403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CreateServiceRequest403ApplicationProblemPlusJSONResponse) VisitCreateServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateServiceRequest404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CreateServiceRequest404ApplicationProblemPlusJSONResponse) VisitCreateServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -30964,6 +31946,22 @@ func (response GetServiceRequest200JSONResponse) VisitGetServiceRequestResponse(
 	return err
 }
 
+type GetServiceRequest403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetServiceRequest403ApplicationProblemPlusJSONResponse) VisitGetServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetServiceRequest404ApplicationProblemPlusJSONResponse struct {
 	NotFoundApplicationProblemPlusJSONResponse
 }
@@ -30980,26 +31978,26 @@ func (response GetServiceRequest404ApplicationProblemPlusJSONResponse) VisitGetS
 	return err
 }
 
-type UpdateDraftServiceRequestRequestObject struct {
+type PatchServiceRequestDraftRequestObject struct {
 	RequestId RequestId `json:"requestId"`
-	Params    UpdateDraftServiceRequestParams
-	Body      *UpdateDraftServiceRequestApplicationMergePatchPlusJSONRequestBody
+	Params    PatchServiceRequestDraftParams
+	Body      *PatchServiceRequestDraftApplicationMergePatchPlusJSONRequestBody
 }
 
-type UpdateDraftServiceRequestResponseObject interface {
-	VisitUpdateDraftServiceRequestResponse(w http.ResponseWriter) error
+type PatchServiceRequestDraftResponseObject interface {
+	VisitPatchServiceRequestDraftResponse(w http.ResponseWriter) error
 }
 
-type UpdateDraftServiceRequest200ResponseHeaders struct {
+type PatchServiceRequestDraft200ResponseHeaders struct {
 	ETag *string
 }
 
-type UpdateDraftServiceRequest200JSONResponse struct {
+type PatchServiceRequestDraft200JSONResponse struct {
 	Body    ServiceRequest
-	Headers UpdateDraftServiceRequest200ResponseHeaders
+	Headers PatchServiceRequestDraft200ResponseHeaders
 }
 
-func (response UpdateDraftServiceRequest200JSONResponse) VisitUpdateDraftServiceRequestResponse(w http.ResponseWriter) error {
+func (response PatchServiceRequestDraft200JSONResponse) VisitPatchServiceRequestDraftResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -31014,11 +32012,43 @@ func (response UpdateDraftServiceRequest200JSONResponse) VisitUpdateDraftService
 	return err
 }
 
-type UpdateDraftServiceRequest409ApplicationProblemPlusJSONResponse struct {
+type PatchServiceRequestDraft403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response PatchServiceRequestDraft403ApplicationProblemPlusJSONResponse) VisitPatchServiceRequestDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchServiceRequestDraft404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response PatchServiceRequestDraft404ApplicationProblemPlusJSONResponse) VisitPatchServiceRequestDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchServiceRequestDraft409ApplicationProblemPlusJSONResponse struct {
 	ConflictApplicationProblemPlusJSONResponse
 }
 
-func (response UpdateDraftServiceRequest409ApplicationProblemPlusJSONResponse) VisitUpdateDraftServiceRequestResponse(w http.ResponseWriter) error {
+func (response PatchServiceRequestDraft409ApplicationProblemPlusJSONResponse) VisitPatchServiceRequestDraftResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -31030,9 +32060,9 @@ func (response UpdateDraftServiceRequest409ApplicationProblemPlusJSONResponse) V
 	return err
 }
 
-type UpdateDraftServiceRequest412ApplicationProblemPlusJSONResponse Problem
+type PatchServiceRequestDraft412ApplicationProblemPlusJSONResponse Problem
 
-func (response UpdateDraftServiceRequest412ApplicationProblemPlusJSONResponse) VisitUpdateDraftServiceRequestResponse(w http.ResponseWriter) error {
+func (response PatchServiceRequestDraft412ApplicationProblemPlusJSONResponse) VisitPatchServiceRequestDraftResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -31040,6 +32070,195 @@ func (response UpdateDraftServiceRequest412ApplicationProblemPlusJSONResponse) V
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchServiceRequestDraft415ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchServiceRequestDraft415ApplicationProblemPlusJSONResponse) VisitPatchServiceRequestDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(415)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchServiceRequestDraft422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response PatchServiceRequestDraft422ApplicationProblemPlusJSONResponse) VisitPatchServiceRequestDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchServiceRequestDraft428ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchServiceRequestDraft428ApplicationProblemPlusJSONResponse) VisitPatchServiceRequestDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveServiceRequestRequestObject struct {
+	RequestId RequestId `json:"requestId"`
+	Params    ApproveServiceRequestParams
+	Body      *ApproveServiceRequestJSONRequestBody
+}
+
+type ApproveServiceRequestResponseObject interface {
+	VisitApproveServiceRequestResponse(w http.ResponseWriter) error
+}
+
+type ApproveServiceRequest200ResponseHeaders struct {
+	ETag *string
+}
+
+type ApproveServiceRequest200JSONResponse struct {
+	Body    ServiceRequest
+	Headers ApproveServiceRequest200ResponseHeaders
+}
+
+func (response ApproveServiceRequest200JSONResponse) VisitApproveServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveServiceRequest403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ApproveServiceRequest403ApplicationProblemPlusJSONResponse) VisitApproveServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveServiceRequest404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ApproveServiceRequest404ApplicationProblemPlusJSONResponse) VisitApproveServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveServiceRequest409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response ApproveServiceRequest409ApplicationProblemPlusJSONResponse) VisitApproveServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveServiceRequest412ApplicationProblemPlusJSONResponse Problem
+
+func (response ApproveServiceRequest412ApplicationProblemPlusJSONResponse) VisitApproveServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveServiceRequest422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ApproveServiceRequest422ApplicationProblemPlusJSONResponse) VisitApproveServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveServiceRequest428ApplicationProblemPlusJSONResponse Problem
+
+func (response ApproveServiceRequest428ApplicationProblemPlusJSONResponse) VisitApproveServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveServiceRequest429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response ApproveServiceRequest429ApplicationProblemPlusJSONResponse) VisitApproveServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -31078,6 +32297,38 @@ func (response CancelServiceRequest200JSONResponse) VisitCancelServiceRequestRes
 	return err
 }
 
+type CancelServiceRequest403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CancelServiceRequest403ApplicationProblemPlusJSONResponse) VisitCancelServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelServiceRequest404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CancelServiceRequest404ApplicationProblemPlusJSONResponse) VisitCancelServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type CancelServiceRequest409ApplicationProblemPlusJSONResponse struct {
 	ConflictApplicationProblemPlusJSONResponse
 }
@@ -31094,11 +32345,616 @@ func (response CancelServiceRequest409ApplicationProblemPlusJSONResponse) VisitC
 	return err
 }
 
+type CancelServiceRequest412ApplicationProblemPlusJSONResponse Problem
+
+func (response CancelServiceRequest412ApplicationProblemPlusJSONResponse) VisitCancelServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelServiceRequest422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CancelServiceRequest422ApplicationProblemPlusJSONResponse) VisitCancelServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelServiceRequest428ApplicationProblemPlusJSONResponse Problem
+
+func (response CancelServiceRequest428ApplicationProblemPlusJSONResponse) VisitCancelServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type CancelServiceRequest429ApplicationProblemPlusJSONResponse struct {
 	TooManyRequestsApplicationProblemPlusJSONResponse
 }
 
 func (response CancelServiceRequest429ApplicationProblemPlusJSONResponse) VisitCancelServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutServiceRequestItemsRequestObject struct {
+	RequestId RequestId `json:"requestId"`
+	Params    PutServiceRequestItemsParams
+	Body      *PutServiceRequestItemsJSONRequestBody
+}
+
+type PutServiceRequestItemsResponseObject interface {
+	VisitPutServiceRequestItemsResponse(w http.ResponseWriter) error
+}
+
+type PutServiceRequestItems200ResponseHeaders struct {
+	ETag *string
+}
+
+type PutServiceRequestItems200JSONResponse struct {
+	Body    ServiceRequest
+	Headers PutServiceRequestItems200ResponseHeaders
+}
+
+func (response PutServiceRequestItems200JSONResponse) VisitPutServiceRequestItemsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutServiceRequestItems403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response PutServiceRequestItems403ApplicationProblemPlusJSONResponse) VisitPutServiceRequestItemsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutServiceRequestItems404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response PutServiceRequestItems404ApplicationProblemPlusJSONResponse) VisitPutServiceRequestItemsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutServiceRequestItems409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response PutServiceRequestItems409ApplicationProblemPlusJSONResponse) VisitPutServiceRequestItemsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutServiceRequestItems412ApplicationProblemPlusJSONResponse Problem
+
+func (response PutServiceRequestItems412ApplicationProblemPlusJSONResponse) VisitPutServiceRequestItemsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutServiceRequestItems422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response PutServiceRequestItems422ApplicationProblemPlusJSONResponse) VisitPutServiceRequestItemsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutServiceRequestItems428ApplicationProblemPlusJSONResponse Problem
+
+func (response PutServiceRequestItems428ApplicationProblemPlusJSONResponse) VisitPutServiceRequestItemsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PartiallyApproveServiceRequestRequestObject struct {
+	RequestId RequestId `json:"requestId"`
+	Params    PartiallyApproveServiceRequestParams
+	Body      *PartiallyApproveServiceRequestJSONRequestBody
+}
+
+type PartiallyApproveServiceRequestResponseObject interface {
+	VisitPartiallyApproveServiceRequestResponse(w http.ResponseWriter) error
+}
+
+type PartiallyApproveServiceRequest200ResponseHeaders struct {
+	ETag *string
+}
+
+type PartiallyApproveServiceRequest200JSONResponse struct {
+	Body    ServiceRequest
+	Headers PartiallyApproveServiceRequest200ResponseHeaders
+}
+
+func (response PartiallyApproveServiceRequest200JSONResponse) VisitPartiallyApproveServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PartiallyApproveServiceRequest403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response PartiallyApproveServiceRequest403ApplicationProblemPlusJSONResponse) VisitPartiallyApproveServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PartiallyApproveServiceRequest404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response PartiallyApproveServiceRequest404ApplicationProblemPlusJSONResponse) VisitPartiallyApproveServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PartiallyApproveServiceRequest409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response PartiallyApproveServiceRequest409ApplicationProblemPlusJSONResponse) VisitPartiallyApproveServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PartiallyApproveServiceRequest412ApplicationProblemPlusJSONResponse Problem
+
+func (response PartiallyApproveServiceRequest412ApplicationProblemPlusJSONResponse) VisitPartiallyApproveServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PartiallyApproveServiceRequest422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response PartiallyApproveServiceRequest422ApplicationProblemPlusJSONResponse) VisitPartiallyApproveServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PartiallyApproveServiceRequest428ApplicationProblemPlusJSONResponse Problem
+
+func (response PartiallyApproveServiceRequest428ApplicationProblemPlusJSONResponse) VisitPartiallyApproveServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PartiallyApproveServiceRequest429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response PartiallyApproveServiceRequest429ApplicationProblemPlusJSONResponse) VisitPartiallyApproveServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectServiceRequestRequestObject struct {
+	RequestId RequestId `json:"requestId"`
+	Params    RejectServiceRequestParams
+	Body      *RejectServiceRequestJSONRequestBody
+}
+
+type RejectServiceRequestResponseObject interface {
+	VisitRejectServiceRequestResponse(w http.ResponseWriter) error
+}
+
+type RejectServiceRequest200ResponseHeaders struct {
+	ETag *string
+}
+
+type RejectServiceRequest200JSONResponse struct {
+	Body    ServiceRequest
+	Headers RejectServiceRequest200ResponseHeaders
+}
+
+func (response RejectServiceRequest200JSONResponse) VisitRejectServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectServiceRequest403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RejectServiceRequest403ApplicationProblemPlusJSONResponse) VisitRejectServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectServiceRequest404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response RejectServiceRequest404ApplicationProblemPlusJSONResponse) VisitRejectServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectServiceRequest409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response RejectServiceRequest409ApplicationProblemPlusJSONResponse) VisitRejectServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectServiceRequest412ApplicationProblemPlusJSONResponse Problem
+
+func (response RejectServiceRequest412ApplicationProblemPlusJSONResponse) VisitRejectServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectServiceRequest422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response RejectServiceRequest422ApplicationProblemPlusJSONResponse) VisitRejectServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectServiceRequest428ApplicationProblemPlusJSONResponse Problem
+
+func (response RejectServiceRequest428ApplicationProblemPlusJSONResponse) VisitRejectServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectServiceRequest429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response RejectServiceRequest429ApplicationProblemPlusJSONResponse) VisitRejectServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReturnServiceRequestRequestObject struct {
+	RequestId RequestId `json:"requestId"`
+	Params    ReturnServiceRequestParams
+	Body      *ReturnServiceRequestJSONRequestBody
+}
+
+type ReturnServiceRequestResponseObject interface {
+	VisitReturnServiceRequestResponse(w http.ResponseWriter) error
+}
+
+type ReturnServiceRequest200ResponseHeaders struct {
+	ETag *string
+}
+
+type ReturnServiceRequest200JSONResponse struct {
+	Body    ServiceRequest
+	Headers ReturnServiceRequest200ResponseHeaders
+}
+
+func (response ReturnServiceRequest200JSONResponse) VisitReturnServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReturnServiceRequest403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ReturnServiceRequest403ApplicationProblemPlusJSONResponse) VisitReturnServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReturnServiceRequest404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ReturnServiceRequest404ApplicationProblemPlusJSONResponse) VisitReturnServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReturnServiceRequest409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response ReturnServiceRequest409ApplicationProblemPlusJSONResponse) VisitReturnServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReturnServiceRequest412ApplicationProblemPlusJSONResponse Problem
+
+func (response ReturnServiceRequest412ApplicationProblemPlusJSONResponse) VisitReturnServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReturnServiceRequest422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ReturnServiceRequest422ApplicationProblemPlusJSONResponse) VisitReturnServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReturnServiceRequest428ApplicationProblemPlusJSONResponse Problem
+
+func (response ReturnServiceRequest428ApplicationProblemPlusJSONResponse) VisitReturnServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReturnServiceRequest429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response ReturnServiceRequest429ApplicationProblemPlusJSONResponse) VisitReturnServiceRequestResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -31147,6 +33003,38 @@ func (response SubmitServiceRequest200JSONResponse) VisitSubmitServiceRequestRes
 	return err
 }
 
+type SubmitServiceRequest403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response SubmitServiceRequest403ApplicationProblemPlusJSONResponse) VisitSubmitServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitServiceRequest404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response SubmitServiceRequest404ApplicationProblemPlusJSONResponse) VisitSubmitServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type SubmitServiceRequest409ApplicationProblemPlusJSONResponse struct {
 	ConflictApplicationProblemPlusJSONResponse
 }
@@ -31159,6 +33047,20 @@ func (response SubmitServiceRequest409ApplicationProblemPlusJSONResponse) VisitS
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitServiceRequest412ApplicationProblemPlusJSONResponse Problem
+
+func (response SubmitServiceRequest412ApplicationProblemPlusJSONResponse) VisitSubmitServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -31179,6 +33081,20 @@ func (response SubmitServiceRequest422ApplicationProblemPlusJSONResponse) VisitS
 	return err
 }
 
+type SubmitServiceRequest428ApplicationProblemPlusJSONResponse Problem
+
+func (response SubmitServiceRequest428ApplicationProblemPlusJSONResponse) VisitSubmitServiceRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type SubmitServiceRequest429ApplicationProblemPlusJSONResponse struct {
 	TooManyRequestsApplicationProblemPlusJSONResponse
 }
@@ -31194,6 +33110,117 @@ func (response SubmitServiceRequest429ApplicationProblemPlusJSONResponse) VisitS
 		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
 	}
 	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListServiceRequestVersionsRequestObject struct {
+	RequestId RequestId `json:"requestId"`
+	Params    ListServiceRequestVersionsParams
+}
+
+type ListServiceRequestVersionsResponseObject interface {
+	VisitListServiceRequestVersionsResponse(w http.ResponseWriter) error
+}
+
+type ListServiceRequestVersions200JSONResponse ServiceRequestVersionList
+
+func (response ListServiceRequestVersions200JSONResponse) VisitListServiceRequestVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListServiceRequestVersions403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListServiceRequestVersions403ApplicationProblemPlusJSONResponse) VisitListServiceRequestVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListServiceRequestVersions404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ListServiceRequestVersions404ApplicationProblemPlusJSONResponse) VisitListServiceRequestVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetServiceRequestVersionRequestObject struct {
+	RequestId RequestId               `json:"requestId"`
+	VersionNo ServiceRequestVersionNo `json:"versionNo"`
+	Params    GetServiceRequestVersionParams
+}
+
+type GetServiceRequestVersionResponseObject interface {
+	VisitGetServiceRequestVersionResponse(w http.ResponseWriter) error
+}
+
+type GetServiceRequestVersion200JSONResponse ServiceRequestVersion
+
+func (response GetServiceRequestVersion200JSONResponse) VisitGetServiceRequestVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetServiceRequestVersion403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetServiceRequestVersion403ApplicationProblemPlusJSONResponse) VisitGetServiceRequestVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetServiceRequestVersion404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetServiceRequestVersion404ApplicationProblemPlusJSONResponse) VisitGetServiceRequestVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -32026,13 +34053,34 @@ type StrictServerInterface interface {
 	GetServiceRequest(ctx context.Context, request GetServiceRequestRequestObject) (GetServiceRequestResponseObject, error)
 
 	// (PATCH /api/v1/service-requests/{requestId})
-	UpdateDraftServiceRequest(ctx context.Context, request UpdateDraftServiceRequestRequestObject) (UpdateDraftServiceRequestResponseObject, error)
+	PatchServiceRequestDraft(ctx context.Context, request PatchServiceRequestDraftRequestObject) (PatchServiceRequestDraftResponseObject, error)
+
+	// (POST /api/v1/service-requests/{requestId}/approve)
+	ApproveServiceRequest(ctx context.Context, request ApproveServiceRequestRequestObject) (ApproveServiceRequestResponseObject, error)
 
 	// (POST /api/v1/service-requests/{requestId}/cancel)
 	CancelServiceRequest(ctx context.Context, request CancelServiceRequestRequestObject) (CancelServiceRequestResponseObject, error)
 
+	// (PUT /api/v1/service-requests/{requestId}/items)
+	PutServiceRequestItems(ctx context.Context, request PutServiceRequestItemsRequestObject) (PutServiceRequestItemsResponseObject, error)
+
+	// (POST /api/v1/service-requests/{requestId}/partially-approve)
+	PartiallyApproveServiceRequest(ctx context.Context, request PartiallyApproveServiceRequestRequestObject) (PartiallyApproveServiceRequestResponseObject, error)
+
+	// (POST /api/v1/service-requests/{requestId}/reject)
+	RejectServiceRequest(ctx context.Context, request RejectServiceRequestRequestObject) (RejectServiceRequestResponseObject, error)
+
+	// (POST /api/v1/service-requests/{requestId}/return)
+	ReturnServiceRequest(ctx context.Context, request ReturnServiceRequestRequestObject) (ReturnServiceRequestResponseObject, error)
+
 	// (POST /api/v1/service-requests/{requestId}/submit)
 	SubmitServiceRequest(ctx context.Context, request SubmitServiceRequestRequestObject) (SubmitServiceRequestResponseObject, error)
+
+	// (GET /api/v1/service-requests/{requestId}/versions)
+	ListServiceRequestVersions(ctx context.Context, request ListServiceRequestVersionsRequestObject) (ListServiceRequestVersionsResponseObject, error)
+
+	// (GET /api/v1/service-requests/{requestId}/versions/{versionNo})
+	GetServiceRequestVersion(ctx context.Context, request GetServiceRequestVersionRequestObject) (GetServiceRequestVersionResponseObject, error)
 
 	// (GET /api/v1/session)
 	GetSession(ctx context.Context, request GetSessionRequestObject) (GetSessionResponseObject, error)
@@ -36159,14 +38207,14 @@ func (sh *strictHandler) GetServiceRequest(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-// UpdateDraftServiceRequest operation middleware
-func (sh *strictHandler) UpdateDraftServiceRequest(w http.ResponseWriter, r *http.Request, requestId RequestId, params UpdateDraftServiceRequestParams) {
-	var request UpdateDraftServiceRequestRequestObject
+// PatchServiceRequestDraft operation middleware
+func (sh *strictHandler) PatchServiceRequestDraft(w http.ResponseWriter, r *http.Request, requestId RequestId, params PatchServiceRequestDraftParams) {
+	var request PatchServiceRequestDraftRequestObject
 
 	request.RequestId = requestId
 	request.Params = params
 
-	var body UpdateDraftServiceRequestApplicationMergePatchPlusJSONRequestBody
+	var body PatchServiceRequestDraftApplicationMergePatchPlusJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
 		return
@@ -36174,18 +38222,52 @@ func (sh *strictHandler) UpdateDraftServiceRequest(w http.ResponseWriter, r *htt
 	request.Body = &body
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.UpdateDraftServiceRequest(ctx, request.(UpdateDraftServiceRequestRequestObject))
+		return sh.ssi.PatchServiceRequestDraft(ctx, request.(PatchServiceRequestDraftRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "UpdateDraftServiceRequest")
+		handler = middleware(handler, "PatchServiceRequestDraft")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(UpdateDraftServiceRequestResponseObject); ok {
-		if err := validResponse.VisitUpdateDraftServiceRequestResponse(w); err != nil {
+	} else if validResponse, ok := response.(PatchServiceRequestDraftResponseObject); ok {
+		if err := validResponse.VisitPatchServiceRequestDraftResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ApproveServiceRequest operation middleware
+func (sh *strictHandler) ApproveServiceRequest(w http.ResponseWriter, r *http.Request, requestId RequestId, params ApproveServiceRequestParams) {
+	var request ApproveServiceRequestRequestObject
+
+	request.RequestId = requestId
+	request.Params = params
+
+	var body ApproveServiceRequestJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ApproveServiceRequest(ctx, request.(ApproveServiceRequestRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ApproveServiceRequest")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ApproveServiceRequestResponseObject); ok {
+		if err := validResponse.VisitApproveServiceRequestResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -36227,6 +38309,142 @@ func (sh *strictHandler) CancelServiceRequest(w http.ResponseWriter, r *http.Req
 	}
 }
 
+// PutServiceRequestItems operation middleware
+func (sh *strictHandler) PutServiceRequestItems(w http.ResponseWriter, r *http.Request, requestId RequestId, params PutServiceRequestItemsParams) {
+	var request PutServiceRequestItemsRequestObject
+
+	request.RequestId = requestId
+	request.Params = params
+
+	var body PutServiceRequestItemsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutServiceRequestItems(ctx, request.(PutServiceRequestItemsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutServiceRequestItems")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutServiceRequestItemsResponseObject); ok {
+		if err := validResponse.VisitPutServiceRequestItemsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PartiallyApproveServiceRequest operation middleware
+func (sh *strictHandler) PartiallyApproveServiceRequest(w http.ResponseWriter, r *http.Request, requestId RequestId, params PartiallyApproveServiceRequestParams) {
+	var request PartiallyApproveServiceRequestRequestObject
+
+	request.RequestId = requestId
+	request.Params = params
+
+	var body PartiallyApproveServiceRequestJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PartiallyApproveServiceRequest(ctx, request.(PartiallyApproveServiceRequestRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PartiallyApproveServiceRequest")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PartiallyApproveServiceRequestResponseObject); ok {
+		if err := validResponse.VisitPartiallyApproveServiceRequestResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RejectServiceRequest operation middleware
+func (sh *strictHandler) RejectServiceRequest(w http.ResponseWriter, r *http.Request, requestId RequestId, params RejectServiceRequestParams) {
+	var request RejectServiceRequestRequestObject
+
+	request.RequestId = requestId
+	request.Params = params
+
+	var body RejectServiceRequestJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RejectServiceRequest(ctx, request.(RejectServiceRequestRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RejectServiceRequest")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RejectServiceRequestResponseObject); ok {
+		if err := validResponse.VisitRejectServiceRequestResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReturnServiceRequest operation middleware
+func (sh *strictHandler) ReturnServiceRequest(w http.ResponseWriter, r *http.Request, requestId RequestId, params ReturnServiceRequestParams) {
+	var request ReturnServiceRequestRequestObject
+
+	request.RequestId = requestId
+	request.Params = params
+
+	var body ReturnServiceRequestJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReturnServiceRequest(ctx, request.(ReturnServiceRequestRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReturnServiceRequest")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReturnServiceRequestResponseObject); ok {
+		if err := validResponse.VisitReturnServiceRequestResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // SubmitServiceRequest operation middleware
 func (sh *strictHandler) SubmitServiceRequest(w http.ResponseWriter, r *http.Request, requestId RequestId, params SubmitServiceRequestParams) {
 	var request SubmitServiceRequestRequestObject
@@ -36257,6 +38475,61 @@ func (sh *strictHandler) SubmitServiceRequest(w http.ResponseWriter, r *http.Req
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(SubmitServiceRequestResponseObject); ok {
 		if err := validResponse.VisitSubmitServiceRequestResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListServiceRequestVersions operation middleware
+func (sh *strictHandler) ListServiceRequestVersions(w http.ResponseWriter, r *http.Request, requestId RequestId, params ListServiceRequestVersionsParams) {
+	var request ListServiceRequestVersionsRequestObject
+
+	request.RequestId = requestId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListServiceRequestVersions(ctx, request.(ListServiceRequestVersionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListServiceRequestVersions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListServiceRequestVersionsResponseObject); ok {
+		if err := validResponse.VisitListServiceRequestVersionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetServiceRequestVersion operation middleware
+func (sh *strictHandler) GetServiceRequestVersion(w http.ResponseWriter, r *http.Request, requestId RequestId, versionNo ServiceRequestVersionNo, params GetServiceRequestVersionParams) {
+	var request GetServiceRequestVersionRequestObject
+
+	request.RequestId = requestId
+	request.VersionNo = versionNo
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetServiceRequestVersion(ctx, request.(GetServiceRequestVersionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetServiceRequestVersion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetServiceRequestVersionResponseObject); ok {
+		if err := validResponse.VisitGetServiceRequestVersionResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

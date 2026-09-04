@@ -57,6 +57,9 @@ import (
 	rulesapp "github.com/celikbros/kapsora/internal/rules/application"
 	rulespg "github.com/celikbros/kapsora/internal/rules/infrastructure/postgres"
 	ruleshttp "github.com/celikbros/kapsora/internal/rules/transport/http"
+	servicerequestapp "github.com/celikbros/kapsora/internal/servicerequest/application"
+	servicerequestpg "github.com/celikbros/kapsora/internal/servicerequest/infrastructure/postgres"
+	servicerequesthttp "github.com/celikbros/kapsora/internal/servicerequest/transport/http"
 )
 
 const serviceName = "kapsora-api"
@@ -186,6 +189,16 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	// A service request sits on top of the plan, the catalog and the rules and writes to
+	// none of them. It shares the rule program cache with the engine and the quote: a
+	// published version compiled once is the same program whoever evaluates it.
+	serviceRequestSvc, err := servicerequestapp.New(servicerequestapp.Deps{
+		Pool: pool, Repo: servicerequestpg.New(), Audit: auditpg.New(), Cursors: cursors,
+		Programs: pricingPrograms, Logger: logger,
+	})
+	if err != nil {
+		return err
+	}
 	memberImports, err := memberimport.New(memberimport.Deps{
 		Pool: pool, Cipher: keys, Index: keys, Audit: auditpg.New(), Cursors: cursors, Logger: logger,
 	})
@@ -219,6 +232,7 @@ func run() error {
 		contracts:    contractSvc,
 		rules:        rulesSvc,
 		pricing:      pricingSvc,
+		requests:     serviceRequestSvc,
 		entitlements: entitlementSvc,
 		eligibility:  eligibilitySvc,
 		imports:      memberImports,
@@ -301,6 +315,7 @@ type routerDeps struct {
 	contracts    *contractapp.Service
 	rules        *rulesapp.Service
 	pricing      *pricingapp.Service
+	requests     *servicerequestapp.Service
 	entitlements *benefitledger.Service
 	eligibility  *benefiteligibility.Service
 	imports      *memberimport.Service
@@ -466,6 +481,22 @@ func newRouter(d routerDeps) http.Handler {
 			// not applied here either.
 			pricingHandler := pricinghttp.NewHandler(d.pricing, sessions, d.logger)
 			tenant.Route("/pricing", pricingHandler.Routes)
+
+			// A request is how anything gets asked for. Every move through its lifecycle is
+			// a command of its own with its own permission and its own reason, so each one
+			// is a route rather than a status a caller could write, and each one carries an
+			// Idempotency-Key: a retried browser submit must not decide a request twice.
+			requestHandler := servicerequesthttp.NewHandler(d.requests, sessions, d.logger)
+			requestMW := servicerequesthttp.Middlewares{
+				Create:           d.idempotent("service_request.create"),
+				Submit:           d.idempotent("service_request.submit"),
+				Return:           d.idempotent("service_request.return"),
+				Reject:           d.idempotent("service_request.reject"),
+				Approve:          d.idempotent("service_request.approve"),
+				PartiallyApprove: d.idempotent("service_request.partially_approve"),
+				Cancel:           d.idempotent("service_request.cancel"),
+			}
+			tenant.Route("/service-requests", func(r chi.Router) { requestHandler.Routes(r, requestMW) })
 
 			// Eligibility checks change no business state and carry their own replay
 			// contract in benefit.eligibility_evaluation.idempotency_key, so the
