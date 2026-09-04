@@ -1277,6 +1277,37 @@ type SystemRateLimitBucket struct {
 	UpdatedAt time.Time
 }
 
+type WorkflowApprovalPolicy struct {
+	ID                    uuid.UUID
+	TenantID              uuid.UUID
+	ActionCode            string
+	ScopeCode             string
+	VersionNo             int32
+	MinAmount             pgtype.Numeric
+	MaxAmount             pgtype.Numeric
+	RequiredRoleCodes     []string
+	RequiredApproverCount int32
+	ValidFrom             pgtype.Date
+	ValidTo               pgtype.Date
+	CreatedAt             time.Time
+	CreatedBy             uuid.NullUUID
+	UpdatedAt             time.Time
+	UpdatedBy             uuid.NullUUID
+	RowVersion            int64
+}
+
+type WorkflowComment struct {
+	ID            uuid.UUID
+	TenantID      uuid.UUID
+	AggregateType string
+	AggregateID   uuid.UUID
+	WorkItemID    uuid.NullUUID
+	Visibility    string
+	Body          string
+	AuthorActorID uuid.NullUUID
+	CreatedAt     time.Time
+}
+
 type WorkflowStatusEvent struct {
 	ID             uuid.UUID
 	TenantID       uuid.UUID
@@ -1291,4 +1322,46 @@ type WorkflowStatusEvent struct {
 	ActorID        uuid.NullUUID
 	RequestID      uuid.NullUUID
 	MetadataJson   []byte
+}
+
+type WorkflowWorkItem struct {
+	ID                   uuid.UUID
+	TenantID             uuid.UUID
+	QueueID              uuid.UUID
+	AggregateType        string
+	AggregateID          uuid.UUID
+	Title                string
+	Priority             int32
+	AssigneeActorID      uuid.NullUUID
+	AssignedAt           *time.Time
+	DueAt                *time.Time
+	SlaMinutesSnapshot   *int32
+	Status               string
+	OutcomeCode          *string
+	CompletedAt          *time.Time
+	CompletedBy          uuid.NullUUID
+	EscalatedAt          *time.Time
+	EscalatedFromQueueID uuid.NullUUID
+	CreatedAt            time.Time
+	CreatedBy            uuid.NullUUID
+	UpdatedAt            time.Time
+	UpdatedBy            uuid.NullUUID
+	RowVersion           int64
+}
+
+type WorkflowWorkQueue struct {
+	ID                uuid.UUID
+	TenantID          uuid.UUID
+	Code              string
+	Name              string
+	DomainCode        string
+	AssignmentPolicy  string
+	SlaMinutes        *int32
+	EscalationQueueID uuid.NullUUID
+	Active            bool
+	CreatedAt         time.Time
+	CreatedBy         uuid.NullUUID
+	UpdatedAt         time.Time
+	UpdatedBy         uuid.NullUUID
+	RowVersion        int64
 }

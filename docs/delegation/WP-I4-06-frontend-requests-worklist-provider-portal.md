@@ -62,6 +62,7 @@ with it.
   the same styling is how a correctable mistake gets read as a refusal.
 - **A file's state is never implied.** "Taranıyor" is a real state with a spinner, not an
   optimistic "yüklendi". A file that failed its scan says so where the download would be.
+- **The worklist's ordering is an open decision this package has to force.** WP-I4-03 pages `listWorkItems` by `(created_at DESC, id DESC)` — newest first — because `httpx.Cursor` carries only `(CreatedAt, ID)` and every keyset list in the product shares that shape. For a directory listing newest-first is right; for a list an operator works down it is backwards, and it buries the item that has waited longest. Filtering by `overdue` narrows the set but still shows the least-overdue first, which is the wrong end for triage. The queue already carries `priority`, and the index `(tenant_id, queue_id, status, priority DESC, due_at)` exists for it. Ordering by `priority DESC, due_at ASC` needs a wider cursor than the shared one, so decide what the screen actually needs before building around the current order: either extend the cursor or state plainly that the worklist is oldest-first and change the ORDER BY to match.
 - **The worklist is dense and boring on purpose.** It is read for hours. No cards, no
   avatars, no progress rings: a table with the columns an operator sorts by.
 - Everything else follows the patterns in `DESIGN.md`: ETag merge-patch forms, problem

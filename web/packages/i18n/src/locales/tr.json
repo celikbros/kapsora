@@ -305,7 +305,17 @@
     "VOUCHER_ALREADY_ISSUED": "Bu ön onay için kullanılabilir bir kupon zaten var.",
     "VOUCHER_ALREADY_REDEEMED": "Kupon zaten kullanılmış.",
     "VOUCHER_EXPIRED": "Kupon geçerlilik süresi dışında.",
-    "VOUCHER_REVOKED": "Kupon iptal edilmiş."
+    "VOUCHER_REVOKED": "Kupon iptal edilmiş.",
+    "WORK_QUEUE_NOT_FOUND": "İş kuyruğu bulunamadı ya da bu kurumda görünmüyor.",
+    "WORK_QUEUE_CODE_TAKEN": "Bu kuyruk kodu zaten kullanılıyor.",
+    "WORK_QUEUE_INACTIVE": "Kuyruk kapalı; kapalı bir kuyruğa yeni iş düşürülemez.",
+    "WORK_QUEUE_ESCALATION_CYCLE": "Bir kuyruk kendine yönlendirilemez.",
+    "WORK_ITEM_NOT_FOUND": "İş kalemi bulunamadı ya da bu kurumda görünmüyor.",
+    "WORK_ITEM_ALREADY_CLAIMED": "Bu iş kalemini başkası üstlendi. Listeyi yenileyin.",
+    "WORK_ITEM_TRANSITION_INVALID": "İş kalemi bu duruma geçemez.",
+    "WORK_ITEM_NOT_ASSIGNEE": "Bu iş kalemi sizde değil; başkasının işini almak için yeniden atama yetkisi gerekir.",
+    "APPROVAL_POLICY_OVERLAP": "Aynı işlem ve kapsam için çakışan bir onay politikası dönemi var.",
+    "APPROVAL_POLICY_NOT_FOUND": "Bu işlem ve tutar için tanımlı bir onay politikası yok."
   },
   "fieldErrors": {
     "RULE_COMPILE_FAILED": "Kural koşulu derlenemedi",

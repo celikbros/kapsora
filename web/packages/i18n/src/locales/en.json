@@ -262,7 +262,17 @@
     "VOUCHER_ALREADY_ISSUED": "This authorization already has a usable voucher.",
     "VOUCHER_ALREADY_REDEEMED": "The voucher has already been used.",
     "VOUCHER_EXPIRED": "The voucher is outside its validity window.",
-    "VOUCHER_REVOKED": "The voucher has been cancelled."
+    "VOUCHER_REVOKED": "The voucher has been cancelled.",
+    "WORK_QUEUE_NOT_FOUND": "The work queue was not found, or it is not visible in this organization.",
+    "WORK_QUEUE_CODE_TAKEN": "That queue code is already in use.",
+    "WORK_QUEUE_INACTIVE": "The queue is closed; no new work can be raised into it.",
+    "WORK_QUEUE_ESCALATION_CYCLE": "A queue cannot escalate into itself.",
+    "WORK_ITEM_NOT_FOUND": "The work item was not found, or it is not visible in this organization.",
+    "WORK_ITEM_ALREADY_CLAIMED": "Somebody else has taken this work item. Refresh the list.",
+    "WORK_ITEM_TRANSITION_INVALID": "The work item cannot move to that state.",
+    "WORK_ITEM_NOT_ASSIGNEE": "You are not holding this work item; taking somebody else's work needs the reassign permission.",
+    "APPROVAL_POLICY_OVERLAP": "Another approval policy for this action and scope covers those dates.",
+    "APPROVAL_POLICY_NOT_FOUND": "No approval policy applies to this action and amount."
   },
   "fieldErrors": {
     "RULE_COMPILE_FAILED": "The rule condition did not compile",

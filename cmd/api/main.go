@@ -63,6 +63,9 @@ import (
 	servicerequestapp "github.com/celikbros/kapsora/internal/servicerequest/application"
 	servicerequestpg "github.com/celikbros/kapsora/internal/servicerequest/infrastructure/postgres"
 	servicerequesthttp "github.com/celikbros/kapsora/internal/servicerequest/transport/http"
+	workflowapp "github.com/celikbros/kapsora/internal/workflow/application"
+	workflowpg "github.com/celikbros/kapsora/internal/workflow/infrastructure/postgres"
+	workflowhttp "github.com/celikbros/kapsora/internal/workflow/transport/http"
 )
 
 const serviceName = "kapsora-api"
@@ -212,6 +215,15 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	// The worklist is where work that needs a person waits. It writes no business state
+	// of any other module: it holds the queues, the items raised into them and the clock
+	// each item was given, and every other package reaches it by raising an item.
+	workflowSvc, err := workflowapp.New(workflowapp.Deps{
+		Pool: pool, Repo: workflowpg.New(), Audit: auditpg.New(), Cursors: cursors, Logger: logger,
+	})
+	if err != nil {
+		return err
+	}
 	memberImports, err := memberimport.New(memberimport.Deps{
 		Pool: pool, Cipher: keys, Index: keys, Audit: auditpg.New(), Cursors: cursors, Logger: logger,
 	})
@@ -247,6 +259,7 @@ func run() error {
 		pricing:        pricingSvc,
 		requests:       serviceRequestSvc,
 		authorizations: authorizationSvc,
+		workflows:      workflowSvc,
 		entitlements:   entitlementSvc,
 		eligibility:    eligibilitySvc,
 		imports:        memberImports,
@@ -331,6 +344,7 @@ type routerDeps struct {
 	pricing        *pricingapp.Service
 	requests       *servicerequestapp.Service
 	authorizations *authorizationapp.Service
+	workflows      *workflowapp.Service
 	entitlements   *benefitledger.Service
 	eligibility    *benefiteligibility.Service
 	imports        *memberimport.Service
@@ -538,6 +552,30 @@ func newRouter(d routerDeps) http.Handler {
 				authorizationHandler.FulfilmentRoutes(r, authorizationMW)
 			})
 			authorizationHandler.VoucherRoutes(tenant, authorizationMW)
+
+			// The worklist: what is waiting, what is mine, what is late. Claiming carries
+			// an Idempotency-Key like every other command, but it is If-Match that makes
+			// two people unable to own one item — the key answers a retry, the version
+			// answers a race.
+			workflowHandler := workflowhttp.NewHandler(d.workflows, sessions, d.logger)
+			workflowMW := workflowhttp.Middlewares{
+				CreateQueue:  d.idempotent("work_queue.create"),
+				ClaimItem:    d.idempotent("work_item.claim"),
+				ReleaseItem:  d.idempotent("work_item.release"),
+				ReassignItem: d.idempotent("work_item.reassign"),
+				CompleteItem: d.idempotent("work_item.complete"),
+				AddComment:   d.idempotent("work_item.comment"),
+				PutPolicies:  d.idempotent("approval_policy.put"),
+			}
+			tenant.Route("/work-queues", func(r chi.Router) {
+				workflowHandler.QueueRoutes(r, workflowMW)
+			})
+			tenant.Route("/work-items", func(r chi.Router) {
+				workflowHandler.ItemRoutes(r, workflowMW)
+			})
+			tenant.Route("/approval-policies", func(r chi.Router) {
+				workflowHandler.PolicyRoutes(r, workflowMW)
+			})
 
 			// Eligibility checks change no business state and carry their own replay
 			// contract in benefit.eligibility_evaluation.idempotency_key, so the

@@ -4,6 +4,37 @@
  */
 
 export interface paths {
+    "/api/v1/approval-policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Which roles may approve which action, and how many of them each amount band needs.
+         *     The list is short and complete rather than paged: a policy set is read as a whole,
+         *     and half of one answers nothing.
+         */
+        get: operations["listApprovalPolicies"];
+        /**
+         * @description Replaces the whole policy set of one action, in one transaction. It is a replace
+         *     rather than a merge because the set is read as a whole: a merge would leave behind a
+         *     band the caller believed it had removed, and the amount it covers would keep being
+         *     approved by the rule nobody meant to keep.
+         *
+         *     Two policies for the same action and scope may not cover the same day; the request
+         *     is refused with 409 rather than leaving the question of how many approvals an amount
+         *     needs with two answers. Both amounts are exact decimal strings, never JSON numbers.
+         */
+        put: operations["putApprovalPolicies"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/authorizations": {
         parameters: {
             query?: never;
@@ -2710,6 +2741,227 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/work-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The morning list: what is waiting, what is mine, what is late. Every filter is
+         *     optional and they combine with AND. assignedToMe is resolved against the calling
+         *     actor rather than taking an actor id, so somebody else's list is not a question this
+         *     endpoint can be made to answer.
+         *
+         *     overdue is answered from the item's own due date, never from its queue's SLA today:
+         *     an item is late by the clock it was given.
+         */
+        get: operations["listWorkItems"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/work-items/{workItemId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One work item, with the clock it was given and whoever holds it. A caller outside
+         *     the queue grant is answered 404 rather than 403.
+         */
+        get: operations["getWorkItem"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/work-items/{workItemId}/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Takes one piece of work. The claim is one conditional update on the item, the status
+         *     and the version in If-Match, so two people racing on the same item cannot both win
+         *     and the loser is never a partial write.
+         *
+         *     The loser is answered 409 WORK_ITEM_ALREADY_CLAIMED, and the problem detail names
+         *     the actor who won: telling somebody the item is taken without saying by whom is what
+         *     makes two people keep clicking. A stale If-Match on an item nobody has taken is 412
+         *     instead, because nobody won and there is nobody to name.
+         */
+        post: operations["claimWorkItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/work-items/{workItemId}/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The comments of one work item, oldest first: a conversation read in the order it
+         *     happened. The visibility filter narrows the list to one audience, so a
+         *     provider-facing screen asks for PROVIDER comments and is not handed the internal
+         *     ones by accident.
+         */
+        get: operations["listWorkItemComments"];
+        put?: never;
+        /**
+         * @description Records what somebody said about a piece of work, and who it was said to. Comments
+         *     are append-only: one that could be edited after the decision it influenced is not a
+         *     record of why the decision was made.
+         *
+         *     The visibility is stored, not interpreted. A comment a provider or a member can read
+         *     may not carry clinical detail; that is a rule about content which the health module
+         *     enforces, and this is where the audience it will be judged against is recorded.
+         */
+        post: operations["addWorkItemComment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/work-items/{workItemId}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Finishes a piece of work with what it decided. Only the person holding it may finish
+         *     it: an outcome recorded by somebody who never had the item is an outcome nobody can
+         *     be asked about. outcomeCode is required, because saying an item was closed is not an
+         *     answer to what was decided.
+         */
+        post: operations["completeWorkItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/work-items/{workItemId}/reassign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Gives a piece of work to somebody else, whether or not anybody held it. The person
+         *     it was taken from is recorded in the item's status event: why this is no longer mine
+         *     is a question somebody will ask, and the item itself no longer knows the answer.
+         */
+        post: operations["reassignWorkItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/work-items/{workItemId}/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Puts a piece of work back in its queue. Only the person holding it may put it down;
+         *     taking work off somebody else is reassignment, which needs worklist.reassign. The
+         *     due date is untouched: putting work down does not buy more time to do it.
+         */
+        post: operations["releaseWorkItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/work-queues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The work queues of the tenant, newest first, with keyset paging. An actor granted
+         *     particular queues sees only those: a queue outside the grant is not on the page and
+         *     is not reachable by id either.
+         */
+        get: operations["listWorkQueues"];
+        put?: never;
+        /**
+         * @description Defines a place work waits and the clock it waits against. slaMinutes is copied onto
+         *     every item raised into the queue from that moment on; changing it later moves no
+         *     item that already exists, because the clock an item was given is the clock it is
+         *     judged by.
+         *
+         *     escalationQueueId names where overdue work goes. A queue that names none has its
+         *     overdue items marked ESCALATED where they stand, which is what puts them on a report
+         *     rather than leaving them late in a queue nobody watches.
+         */
+        post: operations["createWorkQueue"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/work-queues/{queueId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Merge-patch of the name, the assignment policy, the SLA, the escalation target and
+         *     activity. The code and the domain are immutable: they are what other rows already
+         *     point at, and changing them in place would silently repoint them.
+         *
+         *     Changing slaMinutes changes what items raised from now on are given and nothing
+         *     else. The items already in the queue keep the clock they were given.
+         */
+        patch: operations["patchWorkQueue"];
+        trace?: never;
+    };
     "/health/live": {
         parameters: {
             query?: never;
@@ -2746,6 +2998,69 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AddWorkItemComment: {
+            body: string;
+            visibility: components["schemas"]["CommentVisibility"];
+        };
+        ApprovalPolicy: {
+            /** @description The command this policy governs, for example service_request.approve. */
+            actionCode: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: uuid */
+            id: string;
+            /** @description Upper edge of the band, inclusive, as an exact decimal string. Null is an open end. */
+            maxAmount?: string | null;
+            /**
+             * @description Lower edge of the band, inclusive, as an exact decimal string. Null is an open
+             *     end. It is never a JSON number: a band that had passed through a float would
+             *     refuse an approval it should have allowed.
+             */
+            minAmount?: string | null;
+            /** @description How many separate approvals this band needs. */
+            requiredApproverCount: number;
+            /** @description Roles that may approve. Empty means no particular role is required. */
+            requiredRoleCodes: string[];
+            /** Format: int64 */
+            rowVersion: number;
+            /**
+             * @description Which band of the action this policy is about. Two policies for the same action
+             *     and scope may not cover the same day, so a scope is how one action carries more
+             *     than one rule at a time.
+             */
+            scopeCode: string;
+            /** Format: date */
+            validFrom: string;
+            /**
+             * Format: date
+             * @description Exclusive end of the period. Null means it has no end yet.
+             */
+            validTo?: string | null;
+            /** @description How many times the set for this action has been written. */
+            versionNo: number;
+        };
+        ApprovalPolicyInput: {
+            maxAmount?: string | null;
+            minAmount?: string | null;
+            /** @default 1 */
+            requiredApproverCount?: number;
+            requiredRoleCodes?: string[];
+            scopeCode: string;
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo?: string | null;
+        };
+        ApprovalPolicyList: {
+            items: components["schemas"]["ApprovalPolicy"][];
+        };
+        /**
+         * @description How work is meant to reach a person in this queue. MANUAL is the only one the
+         *     commands implement today: ROUND_ROBIN and LEAST_LOADED are recorded so a queue can
+         *     already say what it wants, and an automatic assigner reads it when one exists.
+         * @enum {string}
+         */
+        AssignmentPolicy: "MANUAL" | "ROUND_ROBIN" | "LEAST_LOADED";
         Authorization: {
             /** Format: date-time */
             approvedAt: string;
@@ -2895,6 +3210,25 @@ export interface components {
             asOf: string;
             items: components["schemas"]["CodeValue"][];
             nextCursor?: string | null;
+        };
+        /**
+         * @description Who a comment was written for. It is recorded rather than interpreted here: a
+         *     comment a provider or a member can read may not carry clinical detail, and that is a
+         *     rule about content which the health module enforces against this field.
+         * @enum {string}
+         */
+        CommentVisibility: "INTERNAL" | "PROVIDER" | "MEMBER";
+        CompleteWorkItem: {
+            /**
+             * @description An optional internal note, stored as an INTERNAL comment on the item in the same
+             *     transaction. It is never audited: it is free text a person typed.
+             */
+            comment?: string;
+            /**
+             * @description What was decided. It is required, because an item closed with no outcome is a row
+             *     nobody can report on.
+             */
+            outcomeCode: string;
         };
         Contract: {
             code: string;
@@ -3316,6 +3650,17 @@ export interface components {
              * @description The rejected request this one replaces; a rejection is never reopened.
              */
             supersedesRequestId?: string;
+        };
+        CreateWorkQueue: {
+            /** @default true */
+            active?: boolean;
+            assignmentPolicy?: components["schemas"]["AssignmentPolicy"];
+            code: string;
+            domainCode: components["schemas"]["WorkQueueDomain"];
+            /** Format: uuid */
+            escalationQueueId?: string | null;
+            name: string;
+            slaMinutes?: number | null;
         };
         /**
          * @description An exact numeric(20,6) money or quantity value as a decimal string. It is a string
@@ -3881,6 +4226,20 @@ export interface components {
             identifierTypes: components["schemas"]["PartyCatalogEntry"][];
             membershipTypes: components["schemas"]["PartyCatalogEntry"][];
             relationshipTypes: components["schemas"]["PartyCatalogEntry"][];
+        };
+        /**
+         * @description Merge patch: a field that is absent is left alone, and an explicit null clears the
+         *     two fields that may be cleared. The code and the domain are absent from this schema
+         *     because they are immutable; sending either answers 422 with field code UNKNOWN_FIELD.
+         */
+        PatchWorkQueue: {
+            active?: boolean;
+            assignmentPolicy?: components["schemas"]["AssignmentPolicy"];
+            /** Format: uuid */
+            escalationQueueId?: string | null;
+            name?: string;
+            /** @description Null stops new items being given a clock; existing items keep theirs. */
+            slaMinutes?: number | null;
         };
         PaymentTerm: {
             /** Format: uuid */
@@ -4510,6 +4869,14 @@ export interface components {
          * @enum {string}
          */
         ProviderType: "HOSPITAL" | "CLINIC" | "PHARMACY" | "LABORATORY" | "IMAGING" | "HOTEL" | "AGENCY" | "TRANSPORT" | "EDUCATION" | "SPORT" | "OTHER";
+        PutApprovalPolicies: {
+            actionCode: string;
+            /**
+             * @description The whole set for this action. An empty array is a legitimate request: it means
+             *     this action needs no policy at all, and it removes whatever was there.
+             */
+            policies: components["schemas"]["ApprovalPolicyInput"][];
+        };
         PutPaymentTermRequest: {
             dueDays: number;
             lateFeePercent?: components["schemas"]["DecimalRate"];
@@ -4524,6 +4891,15 @@ export interface components {
         QuotaPeriodType: "DAY" | "WEEK" | "MONTH" | "YEAR" | "CONTRACT";
         ReasonCommand: {
             reasonCode: string;
+            reasonText?: string;
+        };
+        ReassignWorkItem: {
+            /**
+             * Format: uuid
+             * @description Who is to hold the item from now on.
+             */
+            assigneeActorId: string;
+            reasonCode?: string;
             reasonText?: string;
         };
         RedeemVoucher: {
@@ -4544,6 +4920,14 @@ export interface components {
          * @enum {string}
          */
         RegistrationAuthority: "TTB" | "SB" | "TDB" | "TEB" | "OTHER";
+        /**
+         * @description A reason is optional here: putting work down may be nothing more than the end of a
+         *     shift. A code that is given has to be one a report can group by.
+         */
+        ReleaseWorkItem: {
+            reasonCode?: string;
+            reasonText?: string;
+        };
         ReplacePackageDefinitionsRequest: {
             items: components["schemas"]["PackageDefinitionInput"][];
         };
@@ -5493,6 +5877,117 @@ export interface components {
         };
         /** @enum {string} */
         VoucherStatus: "ISSUED" | "REDEEMED" | "EXPIRED" | "REVOKED";
+        WorkItem: {
+            /** Format: uuid */
+            aggregateId: string;
+            /** @description What kind of record the work is about, for example SERVICE_REQUEST. */
+            aggregateType: string;
+            /** Format: date-time */
+            assignedAt?: string | null;
+            /** Format: uuid */
+            assigneeActorId?: string | null;
+            /** Format: date-time */
+            completedAt?: string | null;
+            /** Format: uuid */
+            completedBy?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @description When this item is late, computed once from the queue's SLA as it stood when the
+             *     item was raised. Nothing moves it afterwards, escalation included: a late item
+             *     stays late.
+             */
+            dueAt?: string | null;
+            /**
+             * Format: date-time
+             * @description When the escalation job last acted on this item. It is what makes running the
+             *     job twice produce one escalation rather than two.
+             */
+            escalatedAt?: string | null;
+            /** Format: uuid */
+            escalatedFromQueueId?: string | null;
+            /** Format: uuid */
+            id: string;
+            /** @description What a completed item decided. */
+            outcomeCode?: string | null;
+            /** @description Higher is more urgent; 100 is the middle everything starts at. */
+            priority: number;
+            /**
+             * Format: uuid
+             * @description The queue the item is waiting in, which escalation may change.
+             */
+            queueId: string;
+            /** Format: int64 */
+            rowVersion: number;
+            /** @description The queue's SLA as it stood when this item was raised. */
+            slaMinutesSnapshot?: number | null;
+            status: components["schemas"]["WorkItemStatus"];
+            title: string;
+        };
+        WorkItemComment: {
+            /** Format: uuid */
+            aggregateId: string;
+            aggregateType: string;
+            /** Format: uuid */
+            authorActorId?: string | null;
+            body: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: uuid */
+            id: string;
+            visibility: components["schemas"]["CommentVisibility"];
+            /** Format: uuid */
+            workItemId?: string | null;
+        };
+        WorkItemCommentList: {
+            items: components["schemas"]["WorkItemComment"][];
+        };
+        WorkItemPage: {
+            items: components["schemas"]["WorkItem"][];
+            nextCursor?: string | null;
+        };
+        /**
+         * @description State of one piece of work. It is read-only on every endpoint: an item moves by
+         *     command — claim, release, reassign, complete — or by the escalation job, and there
+         *     is no field a caller can set to change it.
+         * @enum {string}
+         */
+        WorkItemStatus: "OPEN" | "CLAIMED" | "COMPLETED" | "CANCELLED" | "ESCALATED";
+        WorkQueue: {
+            active: boolean;
+            assignmentPolicy: components["schemas"]["AssignmentPolicy"];
+            /** @description Stable code work is routed to. Immutable once the queue exists. */
+            code: string;
+            /** Format: date-time */
+            createdAt: string;
+            domainCode: components["schemas"]["WorkQueueDomain"];
+            /**
+             * Format: uuid
+             * @description Where overdue items go. Null means they are marked ESCALATED in place.
+             */
+            escalationQueueId?: string | null;
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** Format: int64 */
+            rowVersion: number;
+            /**
+             * @description How long an item raised into this queue has. It is copied onto the item at that
+             *     moment and never read again: changing it here leaves every existing item on the
+             *     clock it was already given.
+             */
+            slaMinutes?: number | null;
+        };
+        /**
+         * @description Business domain a queue belongs to; the same closed list the catalog uses.
+         * @enum {string}
+         */
+        WorkQueueDomain: "GENERIC" | "HEALTH" | "ACCOMMODATION" | "ASSISTANCE" | "EDUCATION" | "SPORT" | "TRANSPORT" | "CARE" | "OTHER";
+        WorkQueuePage: {
+            items: components["schemas"]["WorkQueue"][];
+            nextCursor?: string | null;
+        };
     };
     responses: {
         /** @description Business state, duplicate idempotency key, or uniqueness conflict */
@@ -5600,6 +6095,8 @@ export interface components {
         ServiceRequestVersionNo: number;
         /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
         TenantHeader: string;
+        WorkItemId: string;
+        WorkQueueId: string;
     };
     requestBodies: never;
     headers: {
@@ -5608,6 +6105,11 @@ export interface components {
     };
     pathItems: never;
 }
+export type SchemaAddWorkItemComment = components['schemas']['AddWorkItemComment'];
+export type SchemaApprovalPolicy = components['schemas']['ApprovalPolicy'];
+export type SchemaApprovalPolicyInput = components['schemas']['ApprovalPolicyInput'];
+export type SchemaApprovalPolicyList = components['schemas']['ApprovalPolicyList'];
+export type SchemaAssignmentPolicy = components['schemas']['AssignmentPolicy'];
 export type SchemaAuthorization = components['schemas']['Authorization'];
 export type SchemaAuthorizationItem = components['schemas']['AuthorizationItem'];
 export type SchemaAuthorizationItemInput = components['schemas']['AuthorizationItemInput'];
@@ -5621,6 +6123,8 @@ export type SchemaCodeValueImportError = components['schemas']['CodeValueImportE
 export type SchemaCodeValueImportResult = components['schemas']['CodeValueImportResult'];
 export type SchemaCodeValueInput = components['schemas']['CodeValueInput'];
 export type SchemaCodeValuePage = components['schemas']['CodeValuePage'];
+export type SchemaCommentVisibility = components['schemas']['CommentVisibility'];
+export type SchemaCompleteWorkItem = components['schemas']['CompleteWorkItem'];
 export type SchemaContract = components['schemas']['Contract'];
 export type SchemaContractPage = components['schemas']['ContractPage'];
 export type SchemaContractStatus = components['schemas']['ContractStatus'];
@@ -5651,6 +6155,7 @@ export type SchemaCreateRuleSetVersionRequest = components['schemas']['CreateRul
 export type SchemaCreateServiceCategoryRequest = components['schemas']['CreateServiceCategoryRequest'];
 export type SchemaCreateServiceDefinitionRequest = components['schemas']['CreateServiceDefinitionRequest'];
 export type SchemaCreateServiceRequest = components['schemas']['CreateServiceRequest'];
+export type SchemaCreateWorkQueue = components['schemas']['CreateWorkQueue'];
 export type SchemaDecimalAmount = components['schemas']['DecimalAmount'];
 export type SchemaDecimalPercent = components['schemas']['DecimalPercent'];
 export type SchemaDecimalRate = components['schemas']['DecimalRate'];
@@ -5695,6 +6200,7 @@ export type SchemaPackageLine = components['schemas']['PackageLine'];
 export type SchemaPackageLineInput = components['schemas']['PackageLineInput'];
 export type SchemaPartyCatalogEntry = components['schemas']['PartyCatalogEntry'];
 export type SchemaPartyCatalogs = components['schemas']['PartyCatalogs'];
+export type SchemaPatchWorkQueue = components['schemas']['PatchWorkQueue'];
 export type SchemaPaymentTerm = components['schemas']['PaymentTerm'];
 export type SchemaPerson = components['schemas']['Person'];
 export type SchemaPersonPage = components['schemas']['PersonPage'];
@@ -5742,11 +6248,14 @@ export type SchemaProviderSearchPage = components['schemas']['ProviderSearchPage
 export type SchemaProviderSearchResult = components['schemas']['ProviderSearchResult'];
 export type SchemaProviderStatus = components['schemas']['ProviderStatus'];
 export type SchemaProviderType = components['schemas']['ProviderType'];
+export type SchemaPutApprovalPolicies = components['schemas']['PutApprovalPolicies'];
 export type SchemaPutPaymentTermRequest = components['schemas']['PutPaymentTermRequest'];
 export type SchemaQuotaPeriodType = components['schemas']['QuotaPeriodType'];
 export type SchemaReasonCommand = components['schemas']['ReasonCommand'];
+export type SchemaReassignWorkItem = components['schemas']['ReassignWorkItem'];
 export type SchemaRedeemVoucher = components['schemas']['RedeemVoucher'];
 export type SchemaRegistrationAuthority = components['schemas']['RegistrationAuthority'];
+export type SchemaReleaseWorkItem = components['schemas']['ReleaseWorkItem'];
 export type SchemaReplacePackageDefinitionsRequest = components['schemas']['ReplacePackageDefinitionsRequest'];
 export type SchemaReplacePractitionerLocationsRequest = components['schemas']['ReplacePractitionerLocationsRequest'];
 export type SchemaReplacePriceItemsRequest = components['schemas']['ReplacePriceItemsRequest'];
@@ -5838,6 +6347,14 @@ export type SchemaUpdateServiceRequest = components['schemas']['UpdateServiceReq
 export type SchemaUserContext = components['schemas']['UserContext'];
 export type SchemaVoucher = components['schemas']['Voucher'];
 export type SchemaVoucherStatus = components['schemas']['VoucherStatus'];
+export type SchemaWorkItem = components['schemas']['WorkItem'];
+export type SchemaWorkItemComment = components['schemas']['WorkItemComment'];
+export type SchemaWorkItemCommentList = components['schemas']['WorkItemCommentList'];
+export type SchemaWorkItemPage = components['schemas']['WorkItemPage'];
+export type SchemaWorkItemStatus = components['schemas']['WorkItemStatus'];
+export type SchemaWorkQueue = components['schemas']['WorkQueue'];
+export type SchemaWorkQueueDomain = components['schemas']['WorkQueueDomain'];
+export type SchemaWorkQueuePage = components['schemas']['WorkQueuePage'];
 export type ResponseConflict = components['responses']['Conflict'];
 export type ResponseForbidden = components['responses']['Forbidden'];
 export type ResponseNotFound = components['responses']['NotFound'];
@@ -5881,9 +6398,74 @@ export type ParameterServiceCategoryId = components['parameters']['ServiceCatego
 export type ParameterServiceDefinitionId = components['parameters']['ServiceDefinitionId'];
 export type ParameterServiceRequestVersionNo = components['parameters']['ServiceRequestVersionNo'];
 export type ParameterTenantHeader = components['parameters']['TenantHeader'];
+export type ParameterWorkItemId = components['parameters']['WorkItemId'];
+export type ParameterWorkQueueId = components['parameters']['WorkQueueId'];
 export type HeaderETag = components['headers']['ETag'];
 export type $defs = Record<string, never>;
 export interface operations {
+    listApprovalPolicies: {
+        parameters: {
+            query?: {
+                /** @description Keep only the policies of one action. */
+                actionCode?: string;
+                /** @description Keep only the policies of one scope. */
+                scopeCode?: string;
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Approval policies */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalPolicyList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    putApprovalPolicies: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PutApprovalPolicies"];
+            };
+        };
+        responses: {
+            /** @description Approval policy set written */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalPolicyList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
     listAuthorizations: {
         parameters: {
             query?: {
@@ -12567,6 +13149,512 @@ export interface operations {
             409: components["responses"]["Conflict"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listWorkItems: {
+        parameters: {
+            query?: {
+                /** @description Keep only the items raised over one record. */
+                aggregateId?: string;
+                /** @description Keep only the items raised over one kind of record. */
+                aggregateType?: string;
+                /** @description Keep only the items the calling actor holds. */
+                assignedToMe?: boolean;
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                /** @description Keep only the items past their due date, or only those still within it. */
+                overdue?: boolean;
+                /** @description Keep only the items waiting in this queue. */
+                queueId?: string;
+                /** @description Keep only the items currently in this state. */
+                status?: components["schemas"]["WorkItemStatus"];
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Work item page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkItemPage"];
+                };
+            };
+            /** @description Cursor invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getWorkItem: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                workItemId: components["parameters"]["WorkItemId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Work item detail */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkItem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    claimWorkItem: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                workItemId: components["parameters"]["WorkItemId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Work item claimed */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkItem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listWorkItemComments: {
+        parameters: {
+            query?: {
+                /** @description Keep only the comments written for these audiences. */
+                visibility?: components["schemas"]["CommentVisibility"][];
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                workItemId: components["parameters"]["WorkItemId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Comments of the work item */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkItemCommentList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    addWorkItemComment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                workItemId: components["parameters"]["WorkItemId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddWorkItemComment"];
+            };
+        };
+        responses: {
+            /** @description Comment added */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkItemComment"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    completeWorkItem: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                workItemId: components["parameters"]["WorkItemId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompleteWorkItem"];
+            };
+        };
+        responses: {
+            /** @description Work item completed */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkItem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    reassignWorkItem: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                workItemId: components["parameters"]["WorkItemId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReassignWorkItem"];
+            };
+        };
+        responses: {
+            /** @description Work item reassigned */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkItem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    releaseWorkItem: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                workItemId: components["parameters"]["WorkItemId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReleaseWorkItem"];
+            };
+        };
+        responses: {
+            /** @description Work item released */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkItem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listWorkQueues: {
+        parameters: {
+            query?: {
+                /** @description Keep only the active, or only the retired, queues. */
+                active?: boolean;
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description Keep only the queues of one business domain. */
+                domainCode?: components["schemas"]["WorkQueueDomain"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Work queue page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkQueuePage"];
+                };
+            };
+            /** @description Cursor invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    createWorkQueue: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateWorkQueue"];
+            };
+        };
+        responses: {
+            /** @description Work queue created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkQueue"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    patchWorkQueue: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                queueId: components["parameters"]["WorkQueueId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/merge-patch+json": components["schemas"]["PatchWorkQueue"];
+            };
+        };
+        responses: {
+            /** @description Work queue updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkQueue"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Body is not application/merge-patch+json */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
         };
     };
     getLiveness: {

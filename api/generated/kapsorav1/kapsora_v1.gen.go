@@ -19,6 +19,27 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for AssignmentPolicy.
+const (
+	AssignmentPolicyLEASTLOADED AssignmentPolicy = "LEAST_LOADED"
+	AssignmentPolicyMANUAL      AssignmentPolicy = "MANUAL"
+	AssignmentPolicyROUNDROBIN  AssignmentPolicy = "ROUND_ROBIN"
+)
+
+// Valid indicates whether the value is a known member of the AssignmentPolicy enum.
+func (e AssignmentPolicy) Valid() bool {
+	switch e {
+	case AssignmentPolicyLEASTLOADED:
+		return true
+	case AssignmentPolicyMANUAL:
+		return true
+	case AssignmentPolicyROUNDROBIN:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AuthorizationStatus.
 const (
 	AuthorizationStatusACTIVE        AuthorizationStatus = "ACTIVE"
@@ -85,6 +106,27 @@ func (e CodeSystemAuthority) Valid() bool {
 	case CodeSystemAuthorityTENANT:
 		return true
 	case CodeSystemAuthorityWHO:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CommentVisibility.
+const (
+	CommentVisibilityINTERNAL CommentVisibility = "INTERNAL"
+	CommentVisibilityMEMBER   CommentVisibility = "MEMBER"
+	CommentVisibilityPROVIDER CommentVisibility = "PROVIDER"
+)
+
+// Valid indicates whether the value is a known member of the CommentVisibility enum.
+func (e CommentVisibility) Valid() bool {
+	switch e {
+	case CommentVisibilityINTERNAL:
+		return true
+	case CommentVisibilityMEMBER:
+		return true
+	case CommentVisibilityPROVIDER:
 		return true
 	default:
 		return false
@@ -684,22 +726,22 @@ func (e EntitlementDefinitionInputUnitType) Valid() bool {
 
 // Defines values for EntitlementReservationReferenceType.
 const (
-	AUTHORIZATION  EntitlementReservationReferenceType = "AUTHORIZATION"
-	BOOKING        EntitlementReservationReferenceType = "BOOKING"
-	MANUAL         EntitlementReservationReferenceType = "MANUAL"
-	SERVICEREQUEST EntitlementReservationReferenceType = "SERVICE_REQUEST"
+	EntitlementReservationReferenceTypeAUTHORIZATION  EntitlementReservationReferenceType = "AUTHORIZATION"
+	EntitlementReservationReferenceTypeBOOKING        EntitlementReservationReferenceType = "BOOKING"
+	EntitlementReservationReferenceTypeMANUAL         EntitlementReservationReferenceType = "MANUAL"
+	EntitlementReservationReferenceTypeSERVICEREQUEST EntitlementReservationReferenceType = "SERVICE_REQUEST"
 )
 
 // Valid indicates whether the value is a known member of the EntitlementReservationReferenceType enum.
 func (e EntitlementReservationReferenceType) Valid() bool {
 	switch e {
-	case AUTHORIZATION:
+	case EntitlementReservationReferenceTypeAUTHORIZATION:
 		return true
-	case BOOKING:
+	case EntitlementReservationReferenceTypeBOOKING:
 		return true
-	case MANUAL:
+	case EntitlementReservationReferenceTypeMANUAL:
 		return true
-	case SERVICEREQUEST:
+	case EntitlementReservationReferenceTypeSERVICEREQUEST:
 		return true
 	default:
 		return false
@@ -2521,6 +2563,72 @@ func (e VoucherStatus) Valid() bool {
 	}
 }
 
+// Defines values for WorkItemStatus.
+const (
+	WorkItemStatusCANCELLED WorkItemStatus = "CANCELLED"
+	WorkItemStatusCLAIMED   WorkItemStatus = "CLAIMED"
+	WorkItemStatusCOMPLETED WorkItemStatus = "COMPLETED"
+	WorkItemStatusESCALATED WorkItemStatus = "ESCALATED"
+	WorkItemStatusOPEN      WorkItemStatus = "OPEN"
+)
+
+// Valid indicates whether the value is a known member of the WorkItemStatus enum.
+func (e WorkItemStatus) Valid() bool {
+	switch e {
+	case WorkItemStatusCANCELLED:
+		return true
+	case WorkItemStatusCLAIMED:
+		return true
+	case WorkItemStatusCOMPLETED:
+		return true
+	case WorkItemStatusESCALATED:
+		return true
+	case WorkItemStatusOPEN:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WorkQueueDomain.
+const (
+	WorkQueueDomainACCOMMODATION WorkQueueDomain = "ACCOMMODATION"
+	WorkQueueDomainASSISTANCE    WorkQueueDomain = "ASSISTANCE"
+	WorkQueueDomainCARE          WorkQueueDomain = "CARE"
+	WorkQueueDomainEDUCATION     WorkQueueDomain = "EDUCATION"
+	WorkQueueDomainGENERIC       WorkQueueDomain = "GENERIC"
+	WorkQueueDomainHEALTH        WorkQueueDomain = "HEALTH"
+	WorkQueueDomainOTHER         WorkQueueDomain = "OTHER"
+	WorkQueueDomainSPORT         WorkQueueDomain = "SPORT"
+	WorkQueueDomainTRANSPORT     WorkQueueDomain = "TRANSPORT"
+)
+
+// Valid indicates whether the value is a known member of the WorkQueueDomain enum.
+func (e WorkQueueDomain) Valid() bool {
+	switch e {
+	case WorkQueueDomainACCOMMODATION:
+		return true
+	case WorkQueueDomainASSISTANCE:
+		return true
+	case WorkQueueDomainCARE:
+		return true
+	case WorkQueueDomainEDUCATION:
+		return true
+	case WorkQueueDomainGENERIC:
+		return true
+	case WorkQueueDomainHEALTH:
+		return true
+	case WorkQueueDomainOTHER:
+		return true
+	case WorkQueueDomainSPORT:
+		return true
+	case WorkQueueDomainTRANSPORT:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListCodeSystemsParamsStatus.
 const (
 	ListCodeSystemsParamsStatusACTIVE   ListCodeSystemsParamsStatus = "ACTIVE"
@@ -2749,6 +2857,72 @@ func (e ListProgramsParamsStatus) Valid() bool {
 	}
 }
 
+// AddWorkItemComment defines model for AddWorkItemComment.
+type AddWorkItemComment struct {
+	Body string `json:"body"`
+
+	// Visibility Who a comment was written for. It is recorded rather than interpreted here: a
+	// comment a provider or a member can read may not carry clinical detail, and that is a
+	// rule about content which the health module enforces against this field.
+	Visibility CommentVisibility `json:"visibility"`
+}
+
+// ApprovalPolicy defines model for ApprovalPolicy.
+type ApprovalPolicy struct {
+	// ActionCode The command this policy governs, for example service_request.approve.
+	ActionCode string             `json:"actionCode"`
+	CreatedAt  time.Time          `json:"createdAt"`
+	Id         openapi_types.UUID `json:"id"`
+
+	// MaxAmount Upper edge of the band, inclusive, as an exact decimal string. Null is an open end.
+	MaxAmount *string `json:"maxAmount,omitempty"`
+
+	// MinAmount Lower edge of the band, inclusive, as an exact decimal string. Null is an open
+	// end. It is never a JSON number: a band that had passed through a float would
+	// refuse an approval it should have allowed.
+	MinAmount *string `json:"minAmount,omitempty"`
+
+	// RequiredApproverCount How many separate approvals this band needs.
+	RequiredApproverCount int `json:"requiredApproverCount"`
+
+	// RequiredRoleCodes Roles that may approve. Empty means no particular role is required.
+	RequiredRoleCodes []string `json:"requiredRoleCodes"`
+	RowVersion        int64    `json:"rowVersion"`
+
+	// ScopeCode Which band of the action this policy is about. Two policies for the same action
+	// and scope may not cover the same day, so a scope is how one action carries more
+	// than one rule at a time.
+	ScopeCode string             `json:"scopeCode"`
+	ValidFrom openapi_types.Date `json:"validFrom"`
+
+	// ValidTo Exclusive end of the period. Null means it has no end yet.
+	ValidTo *openapi_types.Date `json:"validTo,omitempty"`
+
+	// VersionNo How many times the set for this action has been written.
+	VersionNo int `json:"versionNo"`
+}
+
+// ApprovalPolicyInput defines model for ApprovalPolicyInput.
+type ApprovalPolicyInput struct {
+	MaxAmount             *string             `json:"maxAmount,omitempty"`
+	MinAmount             *string             `json:"minAmount,omitempty"`
+	RequiredApproverCount *int                `json:"requiredApproverCount,omitempty"`
+	RequiredRoleCodes     *[]string           `json:"requiredRoleCodes,omitempty"`
+	ScopeCode             string              `json:"scopeCode"`
+	ValidFrom             openapi_types.Date  `json:"validFrom"`
+	ValidTo               *openapi_types.Date `json:"validTo,omitempty"`
+}
+
+// ApprovalPolicyList defines model for ApprovalPolicyList.
+type ApprovalPolicyList struct {
+	Items []ApprovalPolicy `json:"items"`
+}
+
+// AssignmentPolicy How work is meant to reach a person in this queue. MANUAL is the only one the
+// commands implement today: ROUND_ROBIN and LEAST_LOADED are recorded so a queue can
+// already say what it wants, and an automatic assigner reads it when one exists.
+type AssignmentPolicy string
+
 // Authorization defines model for Authorization.
 type Authorization struct {
 	ApprovedAt       time.Time           `json:"approvedAt"`
@@ -2920,6 +3094,22 @@ type CodeValuePage struct {
 	AsOf       openapi_types.Date `json:"asOf"`
 	Items      []CodeValue        `json:"items"`
 	NextCursor *string            `json:"nextCursor,omitempty"`
+}
+
+// CommentVisibility Who a comment was written for. It is recorded rather than interpreted here: a
+// comment a provider or a member can read may not carry clinical detail, and that is a
+// rule about content which the health module enforces against this field.
+type CommentVisibility string
+
+// CompleteWorkItem defines model for CompleteWorkItem.
+type CompleteWorkItem struct {
+	// Comment An optional internal note, stored as an INTERNAL comment on the item in the same
+	// transaction. It is never audited: it is free text a person typed.
+	Comment *string `json:"comment,omitempty"`
+
+	// OutcomeCode What was decided. It is required, because an item closed with no outcome is a row
+	// nobody can report on.
+	OutcomeCode string `json:"outcomeCode"`
 }
 
 // Contract defines model for Contract.
@@ -3326,6 +3516,23 @@ type CreateServiceRequest struct {
 
 	// SupersedesRequestId The rejected request this one replaces; a rejection is never reopened.
 	SupersedesRequestId *openapi_types.UUID `json:"supersedesRequestId,omitempty"`
+}
+
+// CreateWorkQueue defines model for CreateWorkQueue.
+type CreateWorkQueue struct {
+	Active *bool `json:"active,omitempty"`
+
+	// AssignmentPolicy How work is meant to reach a person in this queue. MANUAL is the only one the
+	// commands implement today: ROUND_ROBIN and LEAST_LOADED are recorded so a queue can
+	// already say what it wants, and an automatic assigner reads it when one exists.
+	AssignmentPolicy *AssignmentPolicy `json:"assignmentPolicy,omitempty"`
+	Code             string            `json:"code"`
+
+	// DomainCode Business domain a queue belongs to; the same closed list the catalog uses.
+	DomainCode        WorkQueueDomain     `json:"domainCode"`
+	EscalationQueueId *openapi_types.UUID `json:"escalationQueueId,omitempty"`
+	Name              string              `json:"name"`
+	SlaMinutes        *int                `json:"slaMinutes,omitempty"`
 }
 
 // DecimalAmount An exact numeric(20,6) money or quantity value as a decimal string. It is a string
@@ -3984,6 +4191,23 @@ type PartyCatalogs struct {
 	IdentifierTypes   []PartyCatalogEntry `json:"identifierTypes"`
 	MembershipTypes   []PartyCatalogEntry `json:"membershipTypes"`
 	RelationshipTypes []PartyCatalogEntry `json:"relationshipTypes"`
+}
+
+// PatchWorkQueue Merge patch: a field that is absent is left alone, and an explicit null clears the
+// two fields that may be cleared. The code and the domain are absent from this schema
+// because they are immutable; sending either answers 422 with field code UNKNOWN_FIELD.
+type PatchWorkQueue struct {
+	Active *bool `json:"active,omitempty"`
+
+	// AssignmentPolicy How work is meant to reach a person in this queue. MANUAL is the only one the
+	// commands implement today: ROUND_ROBIN and LEAST_LOADED are recorded so a queue can
+	// already say what it wants, and an automatic assigner reads it when one exists.
+	AssignmentPolicy  *AssignmentPolicy   `json:"assignmentPolicy,omitempty"`
+	EscalationQueueId *openapi_types.UUID `json:"escalationQueueId,omitempty"`
+	Name              *string             `json:"name,omitempty"`
+
+	// SlaMinutes Null stops new items being given a clock; existing items keep theirs.
+	SlaMinutes *int `json:"slaMinutes,omitempty"`
 }
 
 // PaymentTerm defines model for PaymentTerm.
@@ -4666,6 +4890,15 @@ type ProviderStatus string
 // ProviderType What kind of place the provider is; it drives the default location and capability picker.
 type ProviderType string
 
+// PutApprovalPolicies defines model for PutApprovalPolicies.
+type PutApprovalPolicies struct {
+	ActionCode string `json:"actionCode"`
+
+	// Policies The whole set for this action. An empty array is a legitimate request: it means
+	// this action needs no policy at all, and it removes whatever was there.
+	Policies []ApprovalPolicyInput `json:"policies"`
+}
+
 // PutPaymentTermRequest defines model for PutPaymentTermRequest.
 type PutPaymentTermRequest struct {
 	DueDays int `json:"dueDays"`
@@ -4692,6 +4925,14 @@ type ReasonCommand struct {
 	ReasonText *string `json:"reasonText,omitempty"`
 }
 
+// ReassignWorkItem defines model for ReassignWorkItem.
+type ReassignWorkItem struct {
+	// AssigneeActorId Who is to hold the item from now on.
+	AssigneeActorId openapi_types.UUID `json:"assigneeActorId"`
+	ReasonCode      *string            `json:"reasonCode,omitempty"`
+	ReasonText      *string            `json:"reasonText,omitempty"`
+}
+
 // RedeemVoucher defines model for RedeemVoucher.
 type RedeemVoucher struct {
 	Items             []FulfilmentItemInput `json:"items"`
@@ -4706,6 +4947,13 @@ type RedeemVoucher struct {
 
 // RegistrationAuthority The body that issued the practitioner's registration number.
 type RegistrationAuthority string
+
+// ReleaseWorkItem A reason is optional here: putting work down may be nothing more than the end of a
+// shift. A code that is given has to be one a report can group by.
+type ReleaseWorkItem struct {
+	ReasonCode *string `json:"reasonCode,omitempty"`
+	ReasonText *string `json:"reasonText,omitempty"`
+}
 
 // ReplacePackageDefinitionsRequest defines model for ReplacePackageDefinitionsRequest.
 type ReplacePackageDefinitionsRequest struct {
@@ -5760,6 +6008,118 @@ type Voucher struct {
 // VoucherStatus defines model for VoucherStatus.
 type VoucherStatus string
 
+// WorkItem defines model for WorkItem.
+type WorkItem struct {
+	AggregateId openapi_types.UUID `json:"aggregateId"`
+
+	// AggregateType What kind of record the work is about, for example SERVICE_REQUEST.
+	AggregateType   string              `json:"aggregateType"`
+	AssignedAt      *time.Time          `json:"assignedAt,omitempty"`
+	AssigneeActorId *openapi_types.UUID `json:"assigneeActorId,omitempty"`
+	CompletedAt     *time.Time          `json:"completedAt,omitempty"`
+	CompletedBy     *openapi_types.UUID `json:"completedBy,omitempty"`
+	CreatedAt       time.Time           `json:"createdAt"`
+
+	// DueAt When this item is late, computed once from the queue's SLA as it stood when the
+	// item was raised. Nothing moves it afterwards, escalation included: a late item
+	// stays late.
+	DueAt *time.Time `json:"dueAt,omitempty"`
+
+	// EscalatedAt When the escalation job last acted on this item. It is what makes running the
+	// job twice produce one escalation rather than two.
+	EscalatedAt          *time.Time          `json:"escalatedAt,omitempty"`
+	EscalatedFromQueueId *openapi_types.UUID `json:"escalatedFromQueueId,omitempty"`
+	Id                   openapi_types.UUID  `json:"id"`
+
+	// OutcomeCode What a completed item decided.
+	OutcomeCode *string `json:"outcomeCode,omitempty"`
+
+	// Priority Higher is more urgent; 100 is the middle everything starts at.
+	Priority int `json:"priority"`
+
+	// QueueId The queue the item is waiting in, which escalation may change.
+	QueueId    openapi_types.UUID `json:"queueId"`
+	RowVersion int64              `json:"rowVersion"`
+
+	// SlaMinutesSnapshot The queue's SLA as it stood when this item was raised.
+	SlaMinutesSnapshot *int `json:"slaMinutesSnapshot,omitempty"`
+
+	// Status State of one piece of work. It is read-only on every endpoint: an item moves by
+	// command — claim, release, reassign, complete — or by the escalation job, and there
+	// is no field a caller can set to change it.
+	Status WorkItemStatus `json:"status"`
+	Title  string         `json:"title"`
+}
+
+// WorkItemComment defines model for WorkItemComment.
+type WorkItemComment struct {
+	AggregateId   openapi_types.UUID  `json:"aggregateId"`
+	AggregateType string              `json:"aggregateType"`
+	AuthorActorId *openapi_types.UUID `json:"authorActorId,omitempty"`
+	Body          string              `json:"body"`
+	CreatedAt     time.Time           `json:"createdAt"`
+	Id            openapi_types.UUID  `json:"id"`
+
+	// Visibility Who a comment was written for. It is recorded rather than interpreted here: a
+	// comment a provider or a member can read may not carry clinical detail, and that is a
+	// rule about content which the health module enforces against this field.
+	Visibility CommentVisibility   `json:"visibility"`
+	WorkItemId *openapi_types.UUID `json:"workItemId,omitempty"`
+}
+
+// WorkItemCommentList defines model for WorkItemCommentList.
+type WorkItemCommentList struct {
+	Items []WorkItemComment `json:"items"`
+}
+
+// WorkItemPage defines model for WorkItemPage.
+type WorkItemPage struct {
+	Items      []WorkItem `json:"items"`
+	NextCursor *string    `json:"nextCursor,omitempty"`
+}
+
+// WorkItemStatus State of one piece of work. It is read-only on every endpoint: an item moves by
+// command — claim, release, reassign, complete — or by the escalation job, and there
+// is no field a caller can set to change it.
+type WorkItemStatus string
+
+// WorkQueue defines model for WorkQueue.
+type WorkQueue struct {
+	Active bool `json:"active"`
+
+	// AssignmentPolicy How work is meant to reach a person in this queue. MANUAL is the only one the
+	// commands implement today: ROUND_ROBIN and LEAST_LOADED are recorded so a queue can
+	// already say what it wants, and an automatic assigner reads it when one exists.
+	AssignmentPolicy AssignmentPolicy `json:"assignmentPolicy"`
+
+	// Code Stable code work is routed to. Immutable once the queue exists.
+	Code      string    `json:"code"`
+	CreatedAt time.Time `json:"createdAt"`
+
+	// DomainCode Business domain a queue belongs to; the same closed list the catalog uses.
+	DomainCode WorkQueueDomain `json:"domainCode"`
+
+	// EscalationQueueId Where overdue items go. Null means they are marked ESCALATED in place.
+	EscalationQueueId *openapi_types.UUID `json:"escalationQueueId,omitempty"`
+	Id                openapi_types.UUID  `json:"id"`
+	Name              string              `json:"name"`
+	RowVersion        int64               `json:"rowVersion"`
+
+	// SlaMinutes How long an item raised into this queue has. It is copied onto the item at that
+	// moment and never read again: changing it here leaves every existing item on the
+	// clock it was already given.
+	SlaMinutes *int `json:"slaMinutes,omitempty"`
+}
+
+// WorkQueueDomain Business domain a queue belongs to; the same closed list the catalog uses.
+type WorkQueueDomain string
+
+// WorkQueuePage defines model for WorkQueuePage.
+type WorkQueuePage struct {
+	Items      []WorkQueue `json:"items"`
+	NextCursor *string     `json:"nextCursor,omitempty"`
+}
+
 // AccountId defines model for AccountId.
 type AccountId = openapi_types.UUID
 
@@ -5871,6 +6231,12 @@ type ServiceRequestVersionNo = int
 // TenantHeader defines model for TenantHeader.
 type TenantHeader = openapi_types.UUID
 
+// WorkItemId defines model for WorkItemId.
+type WorkItemId = openapi_types.UUID
+
+// WorkQueueId defines model for WorkQueueId.
+type WorkQueueId = openapi_types.UUID
+
 // Conflict defines model for Conflict.
 type Conflict = Problem
 
@@ -5888,6 +6254,27 @@ type Unauthorized = Problem
 
 // ValidationError defines model for ValidationError.
 type ValidationError = Problem
+
+// ListApprovalPoliciesParams defines parameters for ListApprovalPolicies.
+type ListApprovalPoliciesParams struct {
+	// ActionCode Keep only the policies of one action.
+	ActionCode *string `form:"actionCode,omitempty" json:"actionCode,omitempty"`
+
+	// ScopeCode Keep only the policies of one scope.
+	ScopeCode *string `form:"scopeCode,omitempty" json:"scopeCode,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// PutApprovalPoliciesParams defines parameters for PutApprovalPolicies.
+type PutApprovalPoliciesParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
 
 // ListAuthorizationsParams defines parameters for ListAuthorizations.
 type ListAuthorizationsParams struct {
@@ -7609,6 +7996,143 @@ type RedeemVoucherParams struct {
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
+// ListWorkItemsParams defines parameters for ListWorkItems.
+type ListWorkItemsParams struct {
+	// Cursor Opaque cursor from the previous response.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// QueueId Keep only the items waiting in this queue.
+	QueueId *openapi_types.UUID `form:"queueId,omitempty" json:"queueId,omitempty"`
+
+	// Status Keep only the items currently in this state.
+	Status *WorkItemStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// AssignedToMe Keep only the items the calling actor holds.
+	AssignedToMe *bool `form:"assignedToMe,omitempty" json:"assignedToMe,omitempty"`
+
+	// Overdue Keep only the items past their due date, or only those still within it.
+	Overdue *bool `form:"overdue,omitempty" json:"overdue,omitempty"`
+
+	// AggregateType Keep only the items raised over one kind of record.
+	AggregateType *string `form:"aggregateType,omitempty" json:"aggregateType,omitempty"`
+
+	// AggregateId Keep only the items raised over one record.
+	AggregateId *openapi_types.UUID `form:"aggregateId,omitempty" json:"aggregateId,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// GetWorkItemParams defines parameters for GetWorkItem.
+type GetWorkItemParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// ClaimWorkItemParams defines parameters for ClaimWorkItem.
+type ClaimWorkItemParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// ListWorkItemCommentsParams defines parameters for ListWorkItemComments.
+type ListWorkItemCommentsParams struct {
+	// Visibility Keep only the comments written for these audiences.
+	Visibility *[]CommentVisibility `form:"visibility,omitempty" json:"visibility,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// AddWorkItemCommentParams defines parameters for AddWorkItemComment.
+type AddWorkItemCommentParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// CompleteWorkItemParams defines parameters for CompleteWorkItem.
+type CompleteWorkItemParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// ReassignWorkItemParams defines parameters for ReassignWorkItem.
+type ReassignWorkItemParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// ReleaseWorkItemParams defines parameters for ReleaseWorkItem.
+type ReleaseWorkItemParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// ListWorkQueuesParams defines parameters for ListWorkQueues.
+type ListWorkQueuesParams struct {
+	// Cursor Opaque cursor from the previous response.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// DomainCode Keep only the queues of one business domain.
+	DomainCode *WorkQueueDomain `form:"domainCode,omitempty" json:"domainCode,omitempty"`
+
+	// Active Keep only the active, or only the retired, queues.
+	Active *bool `form:"active,omitempty" json:"active,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// CreateWorkQueueParams defines parameters for CreateWorkQueue.
+type CreateWorkQueueParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// PatchWorkQueueParams defines parameters for PatchWorkQueue.
+type PatchWorkQueueParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// PutApprovalPoliciesJSONRequestBody defines body for PutApprovalPolicies for application/json ContentType.
+type PutApprovalPoliciesJSONRequestBody = PutApprovalPolicies
+
 // CreateAuthorizationJSONRequestBody defines body for CreateAuthorization for application/json ContentType.
 type CreateAuthorizationJSONRequestBody = CreateAuthorization
 
@@ -7882,8 +8406,32 @@ type SwitchTenantJSONRequestBody SwitchTenantJSONBody
 // RedeemVoucherJSONRequestBody defines body for RedeemVoucher for application/json ContentType.
 type RedeemVoucherJSONRequestBody = RedeemVoucher
 
+// AddWorkItemCommentJSONRequestBody defines body for AddWorkItemComment for application/json ContentType.
+type AddWorkItemCommentJSONRequestBody = AddWorkItemComment
+
+// CompleteWorkItemJSONRequestBody defines body for CompleteWorkItem for application/json ContentType.
+type CompleteWorkItemJSONRequestBody = CompleteWorkItem
+
+// ReassignWorkItemJSONRequestBody defines body for ReassignWorkItem for application/json ContentType.
+type ReassignWorkItemJSONRequestBody = ReassignWorkItem
+
+// ReleaseWorkItemJSONRequestBody defines body for ReleaseWorkItem for application/json ContentType.
+type ReleaseWorkItemJSONRequestBody = ReleaseWorkItem
+
+// CreateWorkQueueJSONRequestBody defines body for CreateWorkQueue for application/json ContentType.
+type CreateWorkQueueJSONRequestBody = CreateWorkQueue
+
+// PatchWorkQueueApplicationMergePatchPlusJSONRequestBody defines body for PatchWorkQueue for application/merge-patch+json ContentType.
+type PatchWorkQueueApplicationMergePatchPlusJSONRequestBody = PatchWorkQueue
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+
+	// (GET /api/v1/approval-policies)
+	ListApprovalPolicies(w http.ResponseWriter, r *http.Request, params ListApprovalPoliciesParams)
+
+	// (PUT /api/v1/approval-policies)
+	PutApprovalPolicies(w http.ResponseWriter, r *http.Request, params PutApprovalPoliciesParams)
 
 	// (GET /api/v1/authorizations)
 	ListAuthorizations(w http.ResponseWriter, r *http.Request, params ListAuthorizationsParams)
@@ -8368,6 +8916,39 @@ type ServerInterface interface {
 	// (POST /api/v1/vouchers:redeem)
 	RedeemVoucher(w http.ResponseWriter, r *http.Request, params RedeemVoucherParams)
 
+	// (GET /api/v1/work-items)
+	ListWorkItems(w http.ResponseWriter, r *http.Request, params ListWorkItemsParams)
+
+	// (GET /api/v1/work-items/{workItemId})
+	GetWorkItem(w http.ResponseWriter, r *http.Request, workItemId WorkItemId, params GetWorkItemParams)
+
+	// (POST /api/v1/work-items/{workItemId}/claim)
+	ClaimWorkItem(w http.ResponseWriter, r *http.Request, workItemId WorkItemId, params ClaimWorkItemParams)
+
+	// (GET /api/v1/work-items/{workItemId}/comments)
+	ListWorkItemComments(w http.ResponseWriter, r *http.Request, workItemId WorkItemId, params ListWorkItemCommentsParams)
+
+	// (POST /api/v1/work-items/{workItemId}/comments)
+	AddWorkItemComment(w http.ResponseWriter, r *http.Request, workItemId WorkItemId, params AddWorkItemCommentParams)
+
+	// (POST /api/v1/work-items/{workItemId}/complete)
+	CompleteWorkItem(w http.ResponseWriter, r *http.Request, workItemId WorkItemId, params CompleteWorkItemParams)
+
+	// (POST /api/v1/work-items/{workItemId}/reassign)
+	ReassignWorkItem(w http.ResponseWriter, r *http.Request, workItemId WorkItemId, params ReassignWorkItemParams)
+
+	// (POST /api/v1/work-items/{workItemId}/release)
+	ReleaseWorkItem(w http.ResponseWriter, r *http.Request, workItemId WorkItemId, params ReleaseWorkItemParams)
+
+	// (GET /api/v1/work-queues)
+	ListWorkQueues(w http.ResponseWriter, r *http.Request, params ListWorkQueuesParams)
+
+	// (POST /api/v1/work-queues)
+	CreateWorkQueue(w http.ResponseWriter, r *http.Request, params CreateWorkQueueParams)
+
+	// (PATCH /api/v1/work-queues/{queueId})
+	PatchWorkQueue(w http.ResponseWriter, r *http.Request, queueId WorkQueueId, params PatchWorkQueueParams)
+
 	// (GET /health/live)
 	GetLiveness(w http.ResponseWriter, r *http.Request)
 
@@ -8378,6 +8959,16 @@ type ServerInterface interface {
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
+
+// (GET /api/v1/approval-policies)
+func (_ Unimplemented) ListApprovalPolicies(w http.ResponseWriter, r *http.Request, params ListApprovalPoliciesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PUT /api/v1/approval-policies)
+func (_ Unimplemented) PutApprovalPolicies(w http.ResponseWriter, r *http.Request, params PutApprovalPoliciesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // (GET /api/v1/authorizations)
 func (_ Unimplemented) ListAuthorizations(w http.ResponseWriter, r *http.Request, params ListAuthorizationsParams) {
@@ -9184,6 +9775,61 @@ func (_ Unimplemented) RedeemVoucher(w http.ResponseWriter, r *http.Request, par
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// (GET /api/v1/work-items)
+func (_ Unimplemented) ListWorkItems(w http.ResponseWriter, r *http.Request, params ListWorkItemsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/work-items/{workItemId})
+func (_ Unimplemented) GetWorkItem(w http.ResponseWriter, r *http.Request, workItemId WorkItemId, params GetWorkItemParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/work-items/{workItemId}/claim)
+func (_ Unimplemented) ClaimWorkItem(w http.ResponseWriter, r *http.Request, workItemId WorkItemId, params ClaimWorkItemParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/work-items/{workItemId}/comments)
+func (_ Unimplemented) ListWorkItemComments(w http.ResponseWriter, r *http.Request, workItemId WorkItemId, params ListWorkItemCommentsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/work-items/{workItemId}/comments)
+func (_ Unimplemented) AddWorkItemComment(w http.ResponseWriter, r *http.Request, workItemId WorkItemId, params AddWorkItemCommentParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/work-items/{workItemId}/complete)
+func (_ Unimplemented) CompleteWorkItem(w http.ResponseWriter, r *http.Request, workItemId WorkItemId, params CompleteWorkItemParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/work-items/{workItemId}/reassign)
+func (_ Unimplemented) ReassignWorkItem(w http.ResponseWriter, r *http.Request, workItemId WorkItemId, params ReassignWorkItemParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/work-items/{workItemId}/release)
+func (_ Unimplemented) ReleaseWorkItem(w http.ResponseWriter, r *http.Request, workItemId WorkItemId, params ReleaseWorkItemParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/work-queues)
+func (_ Unimplemented) ListWorkQueues(w http.ResponseWriter, r *http.Request, params ListWorkQueuesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/work-queues)
+func (_ Unimplemented) CreateWorkQueue(w http.ResponseWriter, r *http.Request, params CreateWorkQueueParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PATCH /api/v1/work-queues/{queueId})
+func (_ Unimplemented) PatchWorkQueue(w http.ResponseWriter, r *http.Request, queueId WorkQueueId, params PatchWorkQueueParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // (GET /health/live)
 func (_ Unimplemented) GetLiveness(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -9202,6 +9848,145 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// ListApprovalPolicies operation middleware
+func (siw *ServerInterfaceWrapper) ListApprovalPolicies(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListApprovalPoliciesParams
+
+	// ------------- Optional query parameter "actionCode" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "actionCode", r.URL.Query(), &params.ActionCode, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "actionCode"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "actionCode", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "scopeCode" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "scopeCode", r.URL.Query(), &params.ScopeCode, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "scopeCode"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "scopeCode", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListApprovalPolicies(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutApprovalPolicies operation middleware
+func (siw *ServerInterfaceWrapper) PutApprovalPolicies(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PutApprovalPoliciesParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutApprovalPolicies(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // ListAuthorizations operation middleware
 func (siw *ServerInterfaceWrapper) ListAuthorizations(w http.ResponseWriter, r *http.Request) {
@@ -21911,6 +22696,995 @@ func (siw *ServerInterfaceWrapper) RedeemVoucher(w http.ResponseWriter, r *http.
 	handler.ServeHTTP(w, r)
 }
 
+// ListWorkItems operation middleware
+func (siw *ServerInterfaceWrapper) ListWorkItems(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListWorkItemsParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "queueId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "queueId", r.URL.Query(), &params.QueueId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "queueId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "queueId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "assignedToMe" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "assignedToMe", r.URL.Query(), &params.AssignedToMe, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "assignedToMe"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "assignedToMe", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "overdue" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "overdue", r.URL.Query(), &params.Overdue, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "overdue"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "overdue", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "aggregateType" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "aggregateType", r.URL.Query(), &params.AggregateType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "aggregateType"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "aggregateType", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "aggregateId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "aggregateId", r.URL.Query(), &params.AggregateId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "aggregateId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "aggregateId", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListWorkItems(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetWorkItem operation middleware
+func (siw *ServerInterfaceWrapper) GetWorkItem(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workItemId" -------------
+	var workItemId WorkItemId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workItemId", chi.URLParam(r, "workItemId"), &workItemId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workItemId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetWorkItemParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetWorkItem(w, r, workItemId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ClaimWorkItem operation middleware
+func (siw *ServerInterfaceWrapper) ClaimWorkItem(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workItemId" -------------
+	var workItemId WorkItemId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workItemId", chi.URLParam(r, "workItemId"), &workItemId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workItemId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ClaimWorkItemParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ClaimWorkItem(w, r, workItemId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListWorkItemComments operation middleware
+func (siw *ServerInterfaceWrapper) ListWorkItemComments(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workItemId" -------------
+	var workItemId WorkItemId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workItemId", chi.URLParam(r, "workItemId"), &workItemId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workItemId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListWorkItemCommentsParams
+
+	// ------------- Optional query parameter "visibility" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "visibility", r.URL.Query(), &params.Visibility, runtime.BindQueryParameterOptions{Type: "array", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "visibility"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "visibility", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListWorkItemComments(w, r, workItemId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AddWorkItemComment operation middleware
+func (siw *ServerInterfaceWrapper) AddWorkItemComment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workItemId" -------------
+	var workItemId WorkItemId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workItemId", chi.URLParam(r, "workItemId"), &workItemId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workItemId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params AddWorkItemCommentParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddWorkItemComment(w, r, workItemId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CompleteWorkItem operation middleware
+func (siw *ServerInterfaceWrapper) CompleteWorkItem(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workItemId" -------------
+	var workItemId WorkItemId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workItemId", chi.URLParam(r, "workItemId"), &workItemId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workItemId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CompleteWorkItemParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CompleteWorkItem(w, r, workItemId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReassignWorkItem operation middleware
+func (siw *ServerInterfaceWrapper) ReassignWorkItem(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workItemId" -------------
+	var workItemId WorkItemId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workItemId", chi.URLParam(r, "workItemId"), &workItemId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workItemId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ReassignWorkItemParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReassignWorkItem(w, r, workItemId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReleaseWorkItem operation middleware
+func (siw *ServerInterfaceWrapper) ReleaseWorkItem(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "workItemId" -------------
+	var workItemId WorkItemId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workItemId", chi.URLParam(r, "workItemId"), &workItemId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "workItemId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ReleaseWorkItemParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReleaseWorkItem(w, r, workItemId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListWorkQueues operation middleware
+func (siw *ServerInterfaceWrapper) ListWorkQueues(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListWorkQueuesParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "domainCode" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "domainCode", r.URL.Query(), &params.DomainCode, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "domainCode"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "domainCode", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "active" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "active", r.URL.Query(), &params.Active, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "active"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "active", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListWorkQueues(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateWorkQueue operation middleware
+func (siw *ServerInterfaceWrapper) CreateWorkQueue(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateWorkQueueParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateWorkQueue(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PatchWorkQueue operation middleware
+func (siw *ServerInterfaceWrapper) PatchWorkQueue(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "queueId" -------------
+	var queueId WorkQueueId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "queueId", chi.URLParam(r, "queueId"), &queueId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "queueId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PatchWorkQueueParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PatchWorkQueue(w, r, queueId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetLiveness operation middleware
 func (siw *ServerInterfaceWrapper) GetLiveness(w http.ResponseWriter, r *http.Request) {
 
@@ -22541,6 +24315,45 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/fulfilments/{fulfilmentId}/cancel", wrapper.CancelFulfilment)
 	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/work-queues", wrapper.ListWorkQueues)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/work-queues", wrapper.CreateWorkQueue)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/api/v1/work-queues/{queueId}", wrapper.PatchWorkQueue)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/work-items", wrapper.ListWorkItems)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/work-items/{workItemId}", wrapper.GetWorkItem)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/work-items/{workItemId}/claim", wrapper.ClaimWorkItem)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/work-items/{workItemId}/release", wrapper.ReleaseWorkItem)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/work-items/{workItemId}/reassign", wrapper.ReassignWorkItem)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/work-items/{workItemId}/complete", wrapper.CompleteWorkItem)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/work-items/{workItemId}/comments", wrapper.ListWorkItemComments)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/work-items/{workItemId}/comments", wrapper.AddWorkItemComment)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/approval-policies", wrapper.ListApprovalPolicies)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/v1/approval-policies", wrapper.PutApprovalPolicies)
+	})
 
 	return r
 }
@@ -22563,6 +24376,150 @@ type TooManyRequestsApplicationProblemPlusJSONResponse struct {
 type UnauthorizedApplicationProblemPlusJSONResponse Problem
 
 type ValidationErrorApplicationProblemPlusJSONResponse Problem
+
+type ListApprovalPoliciesRequestObject struct {
+	Params ListApprovalPoliciesParams
+}
+
+type ListApprovalPoliciesResponseObject interface {
+	VisitListApprovalPoliciesResponse(w http.ResponseWriter) error
+}
+
+type ListApprovalPolicies200JSONResponse ApprovalPolicyList
+
+func (response ListApprovalPolicies200JSONResponse) VisitListApprovalPoliciesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListApprovalPolicies403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListApprovalPolicies403ApplicationProblemPlusJSONResponse) VisitListApprovalPoliciesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListApprovalPolicies422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListApprovalPolicies422ApplicationProblemPlusJSONResponse) VisitListApprovalPoliciesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutApprovalPoliciesRequestObject struct {
+	Params PutApprovalPoliciesParams
+	Body   *PutApprovalPoliciesJSONRequestBody
+}
+
+type PutApprovalPoliciesResponseObject interface {
+	VisitPutApprovalPoliciesResponse(w http.ResponseWriter) error
+}
+
+type PutApprovalPolicies200JSONResponse ApprovalPolicyList
+
+func (response PutApprovalPolicies200JSONResponse) VisitPutApprovalPoliciesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutApprovalPolicies403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response PutApprovalPolicies403ApplicationProblemPlusJSONResponse) VisitPutApprovalPoliciesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutApprovalPolicies409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response PutApprovalPolicies409ApplicationProblemPlusJSONResponse) VisitPutApprovalPoliciesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutApprovalPolicies422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response PutApprovalPolicies422ApplicationProblemPlusJSONResponse) VisitPutApprovalPoliciesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutApprovalPolicies429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response PutApprovalPolicies429ApplicationProblemPlusJSONResponse) VisitPutApprovalPoliciesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
 
 type ListAuthorizationsRequestObject struct {
 	Params ListAuthorizationsParams
@@ -36487,6 +38444,1172 @@ func (response RedeemVoucher429ApplicationProblemPlusJSONResponse) VisitRedeemVo
 	return err
 }
 
+type ListWorkItemsRequestObject struct {
+	Params ListWorkItemsParams
+}
+
+type ListWorkItemsResponseObject interface {
+	VisitListWorkItemsResponse(w http.ResponseWriter) error
+}
+
+type ListWorkItems200JSONResponse WorkItemPage
+
+func (response ListWorkItems200JSONResponse) VisitListWorkItemsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListWorkItems400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListWorkItems400ApplicationProblemPlusJSONResponse) VisitListWorkItemsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListWorkItems403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListWorkItems403ApplicationProblemPlusJSONResponse) VisitListWorkItemsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListWorkItems422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListWorkItems422ApplicationProblemPlusJSONResponse) VisitListWorkItemsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetWorkItemRequestObject struct {
+	WorkItemId WorkItemId `json:"workItemId"`
+	Params     GetWorkItemParams
+}
+
+type GetWorkItemResponseObject interface {
+	VisitGetWorkItemResponse(w http.ResponseWriter) error
+}
+
+type GetWorkItem200ResponseHeaders struct {
+	ETag *string
+}
+
+type GetWorkItem200JSONResponse struct {
+	Body    WorkItem
+	Headers GetWorkItem200ResponseHeaders
+}
+
+func (response GetWorkItem200JSONResponse) VisitGetWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetWorkItem403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetWorkItem403ApplicationProblemPlusJSONResponse) VisitGetWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetWorkItem404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetWorkItem404ApplicationProblemPlusJSONResponse) VisitGetWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ClaimWorkItemRequestObject struct {
+	WorkItemId WorkItemId `json:"workItemId"`
+	Params     ClaimWorkItemParams
+}
+
+type ClaimWorkItemResponseObject interface {
+	VisitClaimWorkItemResponse(w http.ResponseWriter) error
+}
+
+type ClaimWorkItem200ResponseHeaders struct {
+	ETag *string
+}
+
+type ClaimWorkItem200JSONResponse struct {
+	Body    WorkItem
+	Headers ClaimWorkItem200ResponseHeaders
+}
+
+func (response ClaimWorkItem200JSONResponse) VisitClaimWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ClaimWorkItem403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ClaimWorkItem403ApplicationProblemPlusJSONResponse) VisitClaimWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ClaimWorkItem404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ClaimWorkItem404ApplicationProblemPlusJSONResponse) VisitClaimWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ClaimWorkItem409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response ClaimWorkItem409ApplicationProblemPlusJSONResponse) VisitClaimWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ClaimWorkItem412ApplicationProblemPlusJSONResponse Problem
+
+func (response ClaimWorkItem412ApplicationProblemPlusJSONResponse) VisitClaimWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ClaimWorkItem428ApplicationProblemPlusJSONResponse Problem
+
+func (response ClaimWorkItem428ApplicationProblemPlusJSONResponse) VisitClaimWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ClaimWorkItem429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response ClaimWorkItem429ApplicationProblemPlusJSONResponse) VisitClaimWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListWorkItemCommentsRequestObject struct {
+	WorkItemId WorkItemId `json:"workItemId"`
+	Params     ListWorkItemCommentsParams
+}
+
+type ListWorkItemCommentsResponseObject interface {
+	VisitListWorkItemCommentsResponse(w http.ResponseWriter) error
+}
+
+type ListWorkItemComments200JSONResponse WorkItemCommentList
+
+func (response ListWorkItemComments200JSONResponse) VisitListWorkItemCommentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListWorkItemComments403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListWorkItemComments403ApplicationProblemPlusJSONResponse) VisitListWorkItemCommentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListWorkItemComments404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ListWorkItemComments404ApplicationProblemPlusJSONResponse) VisitListWorkItemCommentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListWorkItemComments422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListWorkItemComments422ApplicationProblemPlusJSONResponse) VisitListWorkItemCommentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddWorkItemCommentRequestObject struct {
+	WorkItemId WorkItemId `json:"workItemId"`
+	Params     AddWorkItemCommentParams
+	Body       *AddWorkItemCommentJSONRequestBody
+}
+
+type AddWorkItemCommentResponseObject interface {
+	VisitAddWorkItemCommentResponse(w http.ResponseWriter) error
+}
+
+type AddWorkItemComment201JSONResponse WorkItemComment
+
+func (response AddWorkItemComment201JSONResponse) VisitAddWorkItemCommentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddWorkItemComment403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response AddWorkItemComment403ApplicationProblemPlusJSONResponse) VisitAddWorkItemCommentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddWorkItemComment404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response AddWorkItemComment404ApplicationProblemPlusJSONResponse) VisitAddWorkItemCommentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddWorkItemComment422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response AddWorkItemComment422ApplicationProblemPlusJSONResponse) VisitAddWorkItemCommentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddWorkItemComment429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response AddWorkItemComment429ApplicationProblemPlusJSONResponse) VisitAddWorkItemCommentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CompleteWorkItemRequestObject struct {
+	WorkItemId WorkItemId `json:"workItemId"`
+	Params     CompleteWorkItemParams
+	Body       *CompleteWorkItemJSONRequestBody
+}
+
+type CompleteWorkItemResponseObject interface {
+	VisitCompleteWorkItemResponse(w http.ResponseWriter) error
+}
+
+type CompleteWorkItem200ResponseHeaders struct {
+	ETag *string
+}
+
+type CompleteWorkItem200JSONResponse struct {
+	Body    WorkItem
+	Headers CompleteWorkItem200ResponseHeaders
+}
+
+func (response CompleteWorkItem200JSONResponse) VisitCompleteWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CompleteWorkItem403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CompleteWorkItem403ApplicationProblemPlusJSONResponse) VisitCompleteWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CompleteWorkItem404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CompleteWorkItem404ApplicationProblemPlusJSONResponse) VisitCompleteWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CompleteWorkItem409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response CompleteWorkItem409ApplicationProblemPlusJSONResponse) VisitCompleteWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CompleteWorkItem412ApplicationProblemPlusJSONResponse Problem
+
+func (response CompleteWorkItem412ApplicationProblemPlusJSONResponse) VisitCompleteWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CompleteWorkItem422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CompleteWorkItem422ApplicationProblemPlusJSONResponse) VisitCompleteWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CompleteWorkItem428ApplicationProblemPlusJSONResponse Problem
+
+func (response CompleteWorkItem428ApplicationProblemPlusJSONResponse) VisitCompleteWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CompleteWorkItem429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response CompleteWorkItem429ApplicationProblemPlusJSONResponse) VisitCompleteWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReassignWorkItemRequestObject struct {
+	WorkItemId WorkItemId `json:"workItemId"`
+	Params     ReassignWorkItemParams
+	Body       *ReassignWorkItemJSONRequestBody
+}
+
+type ReassignWorkItemResponseObject interface {
+	VisitReassignWorkItemResponse(w http.ResponseWriter) error
+}
+
+type ReassignWorkItem200ResponseHeaders struct {
+	ETag *string
+}
+
+type ReassignWorkItem200JSONResponse struct {
+	Body    WorkItem
+	Headers ReassignWorkItem200ResponseHeaders
+}
+
+func (response ReassignWorkItem200JSONResponse) VisitReassignWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReassignWorkItem403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ReassignWorkItem403ApplicationProblemPlusJSONResponse) VisitReassignWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReassignWorkItem404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ReassignWorkItem404ApplicationProblemPlusJSONResponse) VisitReassignWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReassignWorkItem409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response ReassignWorkItem409ApplicationProblemPlusJSONResponse) VisitReassignWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReassignWorkItem412ApplicationProblemPlusJSONResponse Problem
+
+func (response ReassignWorkItem412ApplicationProblemPlusJSONResponse) VisitReassignWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReassignWorkItem422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ReassignWorkItem422ApplicationProblemPlusJSONResponse) VisitReassignWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReassignWorkItem428ApplicationProblemPlusJSONResponse Problem
+
+func (response ReassignWorkItem428ApplicationProblemPlusJSONResponse) VisitReassignWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReassignWorkItem429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response ReassignWorkItem429ApplicationProblemPlusJSONResponse) VisitReassignWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReleaseWorkItemRequestObject struct {
+	WorkItemId WorkItemId `json:"workItemId"`
+	Params     ReleaseWorkItemParams
+	Body       *ReleaseWorkItemJSONRequestBody
+}
+
+type ReleaseWorkItemResponseObject interface {
+	VisitReleaseWorkItemResponse(w http.ResponseWriter) error
+}
+
+type ReleaseWorkItem200ResponseHeaders struct {
+	ETag *string
+}
+
+type ReleaseWorkItem200JSONResponse struct {
+	Body    WorkItem
+	Headers ReleaseWorkItem200ResponseHeaders
+}
+
+func (response ReleaseWorkItem200JSONResponse) VisitReleaseWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReleaseWorkItem403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ReleaseWorkItem403ApplicationProblemPlusJSONResponse) VisitReleaseWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReleaseWorkItem404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ReleaseWorkItem404ApplicationProblemPlusJSONResponse) VisitReleaseWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReleaseWorkItem409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response ReleaseWorkItem409ApplicationProblemPlusJSONResponse) VisitReleaseWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReleaseWorkItem412ApplicationProblemPlusJSONResponse Problem
+
+func (response ReleaseWorkItem412ApplicationProblemPlusJSONResponse) VisitReleaseWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReleaseWorkItem422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ReleaseWorkItem422ApplicationProblemPlusJSONResponse) VisitReleaseWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReleaseWorkItem428ApplicationProblemPlusJSONResponse Problem
+
+func (response ReleaseWorkItem428ApplicationProblemPlusJSONResponse) VisitReleaseWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReleaseWorkItem429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response ReleaseWorkItem429ApplicationProblemPlusJSONResponse) VisitReleaseWorkItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListWorkQueuesRequestObject struct {
+	Params ListWorkQueuesParams
+}
+
+type ListWorkQueuesResponseObject interface {
+	VisitListWorkQueuesResponse(w http.ResponseWriter) error
+}
+
+type ListWorkQueues200JSONResponse WorkQueuePage
+
+func (response ListWorkQueues200JSONResponse) VisitListWorkQueuesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListWorkQueues400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListWorkQueues400ApplicationProblemPlusJSONResponse) VisitListWorkQueuesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListWorkQueues403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListWorkQueues403ApplicationProblemPlusJSONResponse) VisitListWorkQueuesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListWorkQueues422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListWorkQueues422ApplicationProblemPlusJSONResponse) VisitListWorkQueuesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateWorkQueueRequestObject struct {
+	Params CreateWorkQueueParams
+	Body   *CreateWorkQueueJSONRequestBody
+}
+
+type CreateWorkQueueResponseObject interface {
+	VisitCreateWorkQueueResponse(w http.ResponseWriter) error
+}
+
+type CreateWorkQueue201ResponseHeaders struct {
+	ETag *string
+}
+
+type CreateWorkQueue201JSONResponse struct {
+	Body    WorkQueue
+	Headers CreateWorkQueue201ResponseHeaders
+}
+
+func (response CreateWorkQueue201JSONResponse) VisitCreateWorkQueueResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateWorkQueue403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CreateWorkQueue403ApplicationProblemPlusJSONResponse) VisitCreateWorkQueueResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateWorkQueue409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response CreateWorkQueue409ApplicationProblemPlusJSONResponse) VisitCreateWorkQueueResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateWorkQueue422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CreateWorkQueue422ApplicationProblemPlusJSONResponse) VisitCreateWorkQueueResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateWorkQueue429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response CreateWorkQueue429ApplicationProblemPlusJSONResponse) VisitCreateWorkQueueResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchWorkQueueRequestObject struct {
+	QueueId WorkQueueId `json:"queueId"`
+	Params  PatchWorkQueueParams
+	Body    *PatchWorkQueueApplicationMergePatchPlusJSONRequestBody
+}
+
+type PatchWorkQueueResponseObject interface {
+	VisitPatchWorkQueueResponse(w http.ResponseWriter) error
+}
+
+type PatchWorkQueue200ResponseHeaders struct {
+	ETag *string
+}
+
+type PatchWorkQueue200JSONResponse struct {
+	Body    WorkQueue
+	Headers PatchWorkQueue200ResponseHeaders
+}
+
+func (response PatchWorkQueue200JSONResponse) VisitPatchWorkQueueResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchWorkQueue403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response PatchWorkQueue403ApplicationProblemPlusJSONResponse) VisitPatchWorkQueueResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchWorkQueue404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response PatchWorkQueue404ApplicationProblemPlusJSONResponse) VisitPatchWorkQueueResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchWorkQueue409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response PatchWorkQueue409ApplicationProblemPlusJSONResponse) VisitPatchWorkQueueResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchWorkQueue412ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchWorkQueue412ApplicationProblemPlusJSONResponse) VisitPatchWorkQueueResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchWorkQueue415ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchWorkQueue415ApplicationProblemPlusJSONResponse) VisitPatchWorkQueueResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(415)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchWorkQueue422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response PatchWorkQueue422ApplicationProblemPlusJSONResponse) VisitPatchWorkQueueResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchWorkQueue428ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchWorkQueue428ApplicationProblemPlusJSONResponse) VisitPatchWorkQueueResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetLivenessRequestObject struct {
 }
 
@@ -36545,6 +39668,12 @@ func (response GetReadiness503ApplicationProblemPlusJSONResponse) VisitGetReadin
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+
+	// (GET /api/v1/approval-policies)
+	ListApprovalPolicies(ctx context.Context, request ListApprovalPoliciesRequestObject) (ListApprovalPoliciesResponseObject, error)
+
+	// (PUT /api/v1/approval-policies)
+	PutApprovalPolicies(ctx context.Context, request PutApprovalPoliciesRequestObject) (PutApprovalPoliciesResponseObject, error)
 
 	// (GET /api/v1/authorizations)
 	ListAuthorizations(ctx context.Context, request ListAuthorizationsRequestObject) (ListAuthorizationsResponseObject, error)
@@ -37029,6 +40158,39 @@ type StrictServerInterface interface {
 	// (POST /api/v1/vouchers:redeem)
 	RedeemVoucher(ctx context.Context, request RedeemVoucherRequestObject) (RedeemVoucherResponseObject, error)
 
+	// (GET /api/v1/work-items)
+	ListWorkItems(ctx context.Context, request ListWorkItemsRequestObject) (ListWorkItemsResponseObject, error)
+
+	// (GET /api/v1/work-items/{workItemId})
+	GetWorkItem(ctx context.Context, request GetWorkItemRequestObject) (GetWorkItemResponseObject, error)
+
+	// (POST /api/v1/work-items/{workItemId}/claim)
+	ClaimWorkItem(ctx context.Context, request ClaimWorkItemRequestObject) (ClaimWorkItemResponseObject, error)
+
+	// (GET /api/v1/work-items/{workItemId}/comments)
+	ListWorkItemComments(ctx context.Context, request ListWorkItemCommentsRequestObject) (ListWorkItemCommentsResponseObject, error)
+
+	// (POST /api/v1/work-items/{workItemId}/comments)
+	AddWorkItemComment(ctx context.Context, request AddWorkItemCommentRequestObject) (AddWorkItemCommentResponseObject, error)
+
+	// (POST /api/v1/work-items/{workItemId}/complete)
+	CompleteWorkItem(ctx context.Context, request CompleteWorkItemRequestObject) (CompleteWorkItemResponseObject, error)
+
+	// (POST /api/v1/work-items/{workItemId}/reassign)
+	ReassignWorkItem(ctx context.Context, request ReassignWorkItemRequestObject) (ReassignWorkItemResponseObject, error)
+
+	// (POST /api/v1/work-items/{workItemId}/release)
+	ReleaseWorkItem(ctx context.Context, request ReleaseWorkItemRequestObject) (ReleaseWorkItemResponseObject, error)
+
+	// (GET /api/v1/work-queues)
+	ListWorkQueues(ctx context.Context, request ListWorkQueuesRequestObject) (ListWorkQueuesResponseObject, error)
+
+	// (POST /api/v1/work-queues)
+	CreateWorkQueue(ctx context.Context, request CreateWorkQueueRequestObject) (CreateWorkQueueResponseObject, error)
+
+	// (PATCH /api/v1/work-queues/{queueId})
+	PatchWorkQueue(ctx context.Context, request PatchWorkQueueRequestObject) (PatchWorkQueueResponseObject, error)
+
 	// (GET /health/live)
 	GetLiveness(ctx context.Context, request GetLivenessRequestObject) (GetLivenessResponseObject, error)
 
@@ -37073,6 +40235,65 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// ListApprovalPolicies operation middleware
+func (sh *strictHandler) ListApprovalPolicies(w http.ResponseWriter, r *http.Request, params ListApprovalPoliciesParams) {
+	var request ListApprovalPoliciesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListApprovalPolicies(ctx, request.(ListApprovalPoliciesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListApprovalPolicies")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListApprovalPoliciesResponseObject); ok {
+		if err := validResponse.VisitListApprovalPoliciesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutApprovalPolicies operation middleware
+func (sh *strictHandler) PutApprovalPolicies(w http.ResponseWriter, r *http.Request, params PutApprovalPoliciesParams) {
+	var request PutApprovalPoliciesRequestObject
+
+	request.Params = params
+
+	var body PutApprovalPoliciesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutApprovalPolicies(ctx, request.(PutApprovalPoliciesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutApprovalPolicies")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutApprovalPoliciesResponseObject); ok {
+		if err := validResponse.VisitPutApprovalPoliciesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // ListAuthorizations operation middleware
@@ -42031,6 +45252,345 @@ func (sh *strictHandler) RedeemVoucher(w http.ResponseWriter, r *http.Request, p
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RedeemVoucherResponseObject); ok {
 		if err := validResponse.VisitRedeemVoucherResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListWorkItems operation middleware
+func (sh *strictHandler) ListWorkItems(w http.ResponseWriter, r *http.Request, params ListWorkItemsParams) {
+	var request ListWorkItemsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListWorkItems(ctx, request.(ListWorkItemsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListWorkItems")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListWorkItemsResponseObject); ok {
+		if err := validResponse.VisitListWorkItemsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetWorkItem operation middleware
+func (sh *strictHandler) GetWorkItem(w http.ResponseWriter, r *http.Request, workItemId WorkItemId, params GetWorkItemParams) {
+	var request GetWorkItemRequestObject
+
+	request.WorkItemId = workItemId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetWorkItem(ctx, request.(GetWorkItemRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetWorkItem")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetWorkItemResponseObject); ok {
+		if err := validResponse.VisitGetWorkItemResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ClaimWorkItem operation middleware
+func (sh *strictHandler) ClaimWorkItem(w http.ResponseWriter, r *http.Request, workItemId WorkItemId, params ClaimWorkItemParams) {
+	var request ClaimWorkItemRequestObject
+
+	request.WorkItemId = workItemId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ClaimWorkItem(ctx, request.(ClaimWorkItemRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ClaimWorkItem")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ClaimWorkItemResponseObject); ok {
+		if err := validResponse.VisitClaimWorkItemResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListWorkItemComments operation middleware
+func (sh *strictHandler) ListWorkItemComments(w http.ResponseWriter, r *http.Request, workItemId WorkItemId, params ListWorkItemCommentsParams) {
+	var request ListWorkItemCommentsRequestObject
+
+	request.WorkItemId = workItemId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListWorkItemComments(ctx, request.(ListWorkItemCommentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListWorkItemComments")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListWorkItemCommentsResponseObject); ok {
+		if err := validResponse.VisitListWorkItemCommentsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AddWorkItemComment operation middleware
+func (sh *strictHandler) AddWorkItemComment(w http.ResponseWriter, r *http.Request, workItemId WorkItemId, params AddWorkItemCommentParams) {
+	var request AddWorkItemCommentRequestObject
+
+	request.WorkItemId = workItemId
+	request.Params = params
+
+	var body AddWorkItemCommentJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AddWorkItemComment(ctx, request.(AddWorkItemCommentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AddWorkItemComment")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AddWorkItemCommentResponseObject); ok {
+		if err := validResponse.VisitAddWorkItemCommentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CompleteWorkItem operation middleware
+func (sh *strictHandler) CompleteWorkItem(w http.ResponseWriter, r *http.Request, workItemId WorkItemId, params CompleteWorkItemParams) {
+	var request CompleteWorkItemRequestObject
+
+	request.WorkItemId = workItemId
+	request.Params = params
+
+	var body CompleteWorkItemJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CompleteWorkItem(ctx, request.(CompleteWorkItemRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CompleteWorkItem")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CompleteWorkItemResponseObject); ok {
+		if err := validResponse.VisitCompleteWorkItemResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReassignWorkItem operation middleware
+func (sh *strictHandler) ReassignWorkItem(w http.ResponseWriter, r *http.Request, workItemId WorkItemId, params ReassignWorkItemParams) {
+	var request ReassignWorkItemRequestObject
+
+	request.WorkItemId = workItemId
+	request.Params = params
+
+	var body ReassignWorkItemJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReassignWorkItem(ctx, request.(ReassignWorkItemRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReassignWorkItem")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReassignWorkItemResponseObject); ok {
+		if err := validResponse.VisitReassignWorkItemResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReleaseWorkItem operation middleware
+func (sh *strictHandler) ReleaseWorkItem(w http.ResponseWriter, r *http.Request, workItemId WorkItemId, params ReleaseWorkItemParams) {
+	var request ReleaseWorkItemRequestObject
+
+	request.WorkItemId = workItemId
+	request.Params = params
+
+	var body ReleaseWorkItemJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReleaseWorkItem(ctx, request.(ReleaseWorkItemRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReleaseWorkItem")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReleaseWorkItemResponseObject); ok {
+		if err := validResponse.VisitReleaseWorkItemResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListWorkQueues operation middleware
+func (sh *strictHandler) ListWorkQueues(w http.ResponseWriter, r *http.Request, params ListWorkQueuesParams) {
+	var request ListWorkQueuesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListWorkQueues(ctx, request.(ListWorkQueuesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListWorkQueues")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListWorkQueuesResponseObject); ok {
+		if err := validResponse.VisitListWorkQueuesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateWorkQueue operation middleware
+func (sh *strictHandler) CreateWorkQueue(w http.ResponseWriter, r *http.Request, params CreateWorkQueueParams) {
+	var request CreateWorkQueueRequestObject
+
+	request.Params = params
+
+	var body CreateWorkQueueJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateWorkQueue(ctx, request.(CreateWorkQueueRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateWorkQueue")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateWorkQueueResponseObject); ok {
+		if err := validResponse.VisitCreateWorkQueueResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PatchWorkQueue operation middleware
+func (sh *strictHandler) PatchWorkQueue(w http.ResponseWriter, r *http.Request, queueId WorkQueueId, params PatchWorkQueueParams) {
+	var request PatchWorkQueueRequestObject
+
+	request.QueueId = queueId
+	request.Params = params
+
+	var body PatchWorkQueueApplicationMergePatchPlusJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PatchWorkQueue(ctx, request.(PatchWorkQueueRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PatchWorkQueue")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PatchWorkQueueResponseObject); ok {
+		if err := validResponse.VisitPatchWorkQueueResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

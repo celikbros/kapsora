@@ -53,6 +53,8 @@ tags:
     description: Fiyat teklifleri, kalem kırılımı ve teklif açıklamaları
   - name: Authorizations
     description: Ön onaylar, hizmet kayıtları ve kuponlar
+  - name: Worklist
+    description: İş kuyrukları, iş kalemleri, yorumlar ve onay politikaları
 paths:
   /health/live:
     get:
@@ -6297,6 +6299,574 @@ paths:
               schema:
                 $ref: '#/components/schemas/Problem'
 
+  /api/v1/work-queues:
+    get:
+      tags: [Worklist]
+      operationId: listWorkQueues
+      description: |
+        The work queues of the tenant, newest first, with keyset paging. An actor granted
+        particular queues sees only those: a queue outside the grant is not on the page and
+        is not reachable by id either.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: domainCode
+          in: query
+          description: Keep only the queues of one business domain.
+          schema:
+            $ref: '#/components/schemas/WorkQueueDomain'
+        - name: active
+          in: query
+          description: Keep only the active, or only the retired, queues.
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Work queue page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkQueuePage'
+        '400':
+          description: Cursor invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags: [Worklist]
+      operationId: createWorkQueue
+      description: |
+        Defines a place work waits and the clock it waits against. slaMinutes is copied onto
+        every item raised into the queue from that moment on; changing it later moves no
+        item that already exists, because the clock an item was given is the clock it is
+        judged by.
+
+        escalationQueueId names where overdue work goes. A queue that names none has its
+        overdue items marked ESCALATED where they stand, which is what puts them on a report
+        rather than leaving them late in a queue nobody watches.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWorkQueue'
+      responses:
+        '201':
+          description: Work queue created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkQueue'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/work-queues/{queueId}:
+    patch:
+      tags: [Worklist]
+      operationId: patchWorkQueue
+      description: |
+        Merge-patch of the name, the assignment policy, the SLA, the escalation target and
+        activity. The code and the domain are immutable: they are what other rows already
+        point at, and changing them in place would silently repoint them.
+
+        Changing slaMinutes changes what items raised from now on are given and nothing
+        else. The items already in the queue keep the clock they were given.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/WorkQueueId'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: '#/components/schemas/PatchWorkQueue'
+      responses:
+        '200':
+          description: Work queue updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkQueue'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '415':
+          description: Body is not application/merge-patch+json
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/work-items:
+    get:
+      tags: [Worklist]
+      operationId: listWorkItems
+      description: |
+        The morning list: what is waiting, what is mine, what is late. Every filter is
+        optional and they combine with AND. assignedToMe is resolved against the calling
+        actor rather than taking an actor id, so somebody else's list is not a question this
+        endpoint can be made to answer.
+
+        overdue is answered from the item's own due date, never from its queue's SLA today:
+        an item is late by the clock it was given.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: queueId
+          in: query
+          description: Keep only the items waiting in this queue.
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          description: Keep only the items currently in this state.
+          schema:
+            $ref: '#/components/schemas/WorkItemStatus'
+        - name: assignedToMe
+          in: query
+          description: Keep only the items the calling actor holds.
+          schema:
+            type: boolean
+        - name: overdue
+          in: query
+          description: Keep only the items past their due date, or only those still within it.
+          schema:
+            type: boolean
+        - name: aggregateType
+          in: query
+          description: Keep only the items raised over one kind of record.
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 64
+        - name: aggregateId
+          in: query
+          description: Keep only the items raised over one record.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Work item page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkItemPage'
+        '400':
+          description: Cursor invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/work-items/{workItemId}:
+    get:
+      tags: [Worklist]
+      operationId: getWorkItem
+      description: |
+        One work item, with the clock it was given and whoever holds it. A caller outside
+        the queue grant is answered 404 rather than 403.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/WorkItemId'
+      responses:
+        '200':
+          description: Work item detail
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkItem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/work-items/{workItemId}/claim:
+    post:
+      tags: [Worklist]
+      operationId: claimWorkItem
+      description: |
+        Takes one piece of work. The claim is one conditional update on the item, the status
+        and the version in If-Match, so two people racing on the same item cannot both win
+        and the loser is never a partial write.
+
+        The loser is answered 409 WORK_ITEM_ALREADY_CLAIMED, and the problem detail names
+        the actor who won: telling somebody the item is taken without saying by whom is what
+        makes two people keep clicking. A stale If-Match on an item nobody has taken is 412
+        instead, because nobody won and there is nobody to name.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/WorkItemId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '200':
+          description: Work item claimed
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkItem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/work-items/{workItemId}/release:
+    post:
+      tags: [Worklist]
+      operationId: releaseWorkItem
+      description: |
+        Puts a piece of work back in its queue. Only the person holding it may put it down;
+        taking work off somebody else is reassignment, which needs worklist.reassign. The
+        due date is untouched: putting work down does not buy more time to do it.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/WorkItemId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReleaseWorkItem'
+      responses:
+        '200':
+          description: Work item released
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkItem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/work-items/{workItemId}/reassign:
+    post:
+      tags: [Worklist]
+      operationId: reassignWorkItem
+      description: |
+        Gives a piece of work to somebody else, whether or not anybody held it. The person
+        it was taken from is recorded in the item's status event: why this is no longer mine
+        is a question somebody will ask, and the item itself no longer knows the answer.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/WorkItemId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReassignWorkItem'
+      responses:
+        '200':
+          description: Work item reassigned
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkItem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/work-items/{workItemId}/complete:
+    post:
+      tags: [Worklist]
+      operationId: completeWorkItem
+      description: |
+        Finishes a piece of work with what it decided. Only the person holding it may finish
+        it: an outcome recorded by somebody who never had the item is an outcome nobody can
+        be asked about. outcomeCode is required, because saying an item was closed is not an
+        answer to what was decided.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/WorkItemId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteWorkItem'
+      responses:
+        '200':
+          description: Work item completed
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkItem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/work-items/{workItemId}/comments:
+    get:
+      tags: [Worklist]
+      operationId: listWorkItemComments
+      description: |
+        The comments of one work item, oldest first: a conversation read in the order it
+        happened. The visibility filter narrows the list to one audience, so a
+        provider-facing screen asks for PROVIDER comments and is not handed the internal
+        ones by accident.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/WorkItemId'
+        - name: visibility
+          in: query
+          description: Keep only the comments written for these audiences.
+          schema:
+            type: array
+            maxItems: 3
+            items:
+              $ref: '#/components/schemas/CommentVisibility'
+      responses:
+        '200':
+          description: Comments of the work item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkItemCommentList'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags: [Worklist]
+      operationId: addWorkItemComment
+      description: |
+        Records what somebody said about a piece of work, and who it was said to. Comments
+        are append-only: one that could be edited after the decision it influenced is not a
+        record of why the decision was made.
+
+        The visibility is stored, not interpreted. A comment a provider or a member can read
+        may not carry clinical detail; that is a rule about content which the health module
+        enforces, and this is where the audience it will be judged against is recorded.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/WorkItemId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddWorkItemComment'
+      responses:
+        '201':
+          description: Comment added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkItemComment'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/approval-policies:
+    get:
+      tags: [Worklist]
+      operationId: listApprovalPolicies
+      description: |
+        Which roles may approve which action, and how many of them each amount band needs.
+        The list is short and complete rather than paged: a policy set is read as a whole,
+        and half of one answers nothing.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: actionCode
+          in: query
+          description: Keep only the policies of one action.
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 80
+        - name: scopeCode
+          in: query
+          description: Keep only the policies of one scope.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+      responses:
+        '200':
+          description: Approval policies
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalPolicyList'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    put:
+      tags: [Worklist]
+      operationId: putApprovalPolicies
+      description: |
+        Replaces the whole policy set of one action, in one transaction. It is a replace
+        rather than a merge because the set is read as a whole: a merge would leave behind a
+        band the caller believed it had removed, and the amount it covers would keep being
+        approved by the rule nobody meant to keep.
+
+        Two policies for the same action and scope may not cover the same day; the request
+        is refused with 409 rather than leaving the question of how many approvals an amount
+        needs with two answers. Both amounts are exact decimal strings, never JSON numbers.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutApprovalPolicies'
+      responses:
+        '200':
+          description: Approval policy set written
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalPolicyList'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
 components:
   securitySchemes:
     sessionCookie:
@@ -6478,6 +7048,20 @@ components:
         format: uuid
     FulfilmentId:
       name: fulfilmentId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    WorkQueueId:
+      name: queueId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    WorkItemId:
+      name: workItemId
       in: path
       required: true
       schema:
@@ -11615,3 +12199,417 @@ components:
             Plain-language statement that a quote is not an authorization and grants nothing:
             no reservation, no approval and no ledger movement. Carried through to the UI so
             nobody at a counter mistakes a quote for a decision.
+    WorkQueueDomain:
+      type: string
+      description: Business domain a queue belongs to; the same closed list the catalog uses.
+      enum: [GENERIC, HEALTH, ACCOMMODATION, ASSISTANCE, EDUCATION, SPORT, TRANSPORT, CARE, OTHER]
+    AssignmentPolicy:
+      type: string
+      description: |
+        How work is meant to reach a person in this queue. MANUAL is the only one the
+        commands implement today: ROUND_ROBIN and LEAST_LOADED are recorded so a queue can
+        already say what it wants, and an automatic assigner reads it when one exists.
+      enum: [MANUAL, ROUND_ROBIN, LEAST_LOADED]
+    WorkQueue:
+      type: object
+      additionalProperties: false
+      required: [id, code, name, domainCode, assignmentPolicy, active, rowVersion, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+          description: Stable code work is routed to. Immutable once the queue exists.
+          minLength: 2
+          maxLength: 64
+        name:
+          type: string
+          maxLength: 200
+        domainCode:
+          $ref: '#/components/schemas/WorkQueueDomain'
+        assignmentPolicy:
+          $ref: '#/components/schemas/AssignmentPolicy'
+        slaMinutes:
+          type: [integer, 'null']
+          minimum: 1
+          maximum: 525600
+          description: |
+            How long an item raised into this queue has. It is copied onto the item at that
+            moment and never read again: changing it here leaves every existing item on the
+            clock it was already given.
+        escalationQueueId:
+          type: [string, 'null']
+          format: uuid
+          description: Where overdue items go. Null means they are marked ESCALATED in place.
+        active:
+          type: boolean
+        rowVersion:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+    WorkQueuePage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkQueue'
+        nextCursor:
+          type: [string, 'null']
+    CreateWorkQueue:
+      type: object
+      additionalProperties: false
+      required: [code, name, domainCode]
+      properties:
+        code:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]{1,63}$'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        domainCode:
+          $ref: '#/components/schemas/WorkQueueDomain'
+        assignmentPolicy:
+          $ref: '#/components/schemas/AssignmentPolicy'
+        slaMinutes:
+          type: [integer, 'null']
+          minimum: 1
+          maximum: 525600
+        escalationQueueId:
+          type: [string, 'null']
+          format: uuid
+        active:
+          type: boolean
+          default: true
+    PatchWorkQueue:
+      type: object
+      additionalProperties: false
+      description: |
+        Merge patch: a field that is absent is left alone, and an explicit null clears the
+        two fields that may be cleared. The code and the domain are absent from this schema
+        because they are immutable; sending either answers 422 with field code UNKNOWN_FIELD.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        assignmentPolicy:
+          $ref: '#/components/schemas/AssignmentPolicy'
+        slaMinutes:
+          type: [integer, 'null']
+          minimum: 1
+          maximum: 525600
+          description: Null stops new items being given a clock; existing items keep theirs.
+        escalationQueueId:
+          type: [string, 'null']
+          format: uuid
+        active:
+          type: boolean
+    WorkItemStatus:
+      type: string
+      description: |
+        State of one piece of work. It is read-only on every endpoint: an item moves by
+        command — claim, release, reassign, complete — or by the escalation job, and there
+        is no field a caller can set to change it.
+      enum: [OPEN, CLAIMED, COMPLETED, CANCELLED, ESCALATED]
+    WorkItem:
+      type: object
+      additionalProperties: false
+      required: [id, queueId, aggregateType, aggregateId, title, priority, status, rowVersion, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        queueId:
+          type: string
+          format: uuid
+          description: The queue the item is waiting in, which escalation may change.
+        aggregateType:
+          type: string
+          description: What kind of record the work is about, for example SERVICE_REQUEST.
+          minLength: 2
+          maxLength: 64
+        aggregateId:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 200
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          description: Higher is more urgent; 100 is the middle everything starts at.
+        assigneeActorId:
+          type: [string, 'null']
+          format: uuid
+        assignedAt:
+          type: [string, 'null']
+          format: date-time
+        dueAt:
+          type: [string, 'null']
+          format: date-time
+          description: |
+            When this item is late, computed once from the queue's SLA as it stood when the
+            item was raised. Nothing moves it afterwards, escalation included: a late item
+            stays late.
+        slaMinutesSnapshot:
+          type: [integer, 'null']
+          description: The queue's SLA as it stood when this item was raised.
+        status:
+          $ref: '#/components/schemas/WorkItemStatus'
+        outcomeCode:
+          type: [string, 'null']
+          description: What a completed item decided.
+        completedAt:
+          type: [string, 'null']
+          format: date-time
+        completedBy:
+          type: [string, 'null']
+          format: uuid
+        escalatedAt:
+          type: [string, 'null']
+          format: date-time
+          description: |
+            When the escalation job last acted on this item. It is what makes running the
+            job twice produce one escalation rather than two.
+        escalatedFromQueueId:
+          type: [string, 'null']
+          format: uuid
+        rowVersion:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+    WorkItemPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkItem'
+        nextCursor:
+          type: [string, 'null']
+    ReleaseWorkItem:
+      type: object
+      additionalProperties: false
+      description: |
+        A reason is optional here: putting work down may be nothing more than the end of a
+        shift. A code that is given has to be one a report can group by.
+      properties:
+        reasonCode:
+          type: string
+          minLength: 2
+          maxLength: 80
+        reasonText:
+          type: string
+          maxLength: 1000
+    ReassignWorkItem:
+      type: object
+      additionalProperties: false
+      required: [assigneeActorId]
+      properties:
+        assigneeActorId:
+          type: string
+          format: uuid
+          description: Who is to hold the item from now on.
+        reasonCode:
+          type: string
+          minLength: 2
+          maxLength: 80
+        reasonText:
+          type: string
+          maxLength: 1000
+    CompleteWorkItem:
+      type: object
+      additionalProperties: false
+      required: [outcomeCode]
+      properties:
+        outcomeCode:
+          type: string
+          minLength: 2
+          maxLength: 80
+          description: |
+            What was decided. It is required, because an item closed with no outcome is a row
+            nobody can report on.
+        comment:
+          type: string
+          maxLength: 4000
+          description: |
+            An optional internal note, stored as an INTERNAL comment on the item in the same
+            transaction. It is never audited: it is free text a person typed.
+    CommentVisibility:
+      type: string
+      description: |
+        Who a comment was written for. It is recorded rather than interpreted here: a
+        comment a provider or a member can read may not carry clinical detail, and that is a
+        rule about content which the health module enforces against this field.
+      enum: [INTERNAL, PROVIDER, MEMBER]
+    WorkItemComment:
+      type: object
+      additionalProperties: false
+      required: [id, aggregateType, aggregateId, visibility, body, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        aggregateType:
+          type: string
+        aggregateId:
+          type: string
+          format: uuid
+        workItemId:
+          type: [string, 'null']
+          format: uuid
+        visibility:
+          $ref: '#/components/schemas/CommentVisibility'
+        body:
+          type: string
+          maxLength: 4000
+        authorActorId:
+          type: [string, 'null']
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+    WorkItemCommentList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkItemComment'
+    AddWorkItemComment:
+      type: object
+      additionalProperties: false
+      required: [visibility, body]
+      properties:
+        visibility:
+          $ref: '#/components/schemas/CommentVisibility'
+        body:
+          type: string
+          minLength: 1
+          maxLength: 4000
+    ApprovalPolicy:
+      type: object
+      additionalProperties: false
+      required: [id, actionCode, scopeCode, versionNo, requiredRoleCodes, requiredApproverCount, validFrom, rowVersion, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        actionCode:
+          type: string
+          description: The command this policy governs, for example service_request.approve.
+        scopeCode:
+          type: string
+          description: |
+            Which band of the action this policy is about. Two policies for the same action
+            and scope may not cover the same day, so a scope is how one action carries more
+            than one rule at a time.
+        versionNo:
+          type: integer
+          minimum: 1
+          description: How many times the set for this action has been written.
+        minAmount:
+          type: [string, 'null']
+          pattern: '^-?[0-9]+(\.[0-9]{1,6})?$'
+          description: |
+            Lower edge of the band, inclusive, as an exact decimal string. Null is an open
+            end. It is never a JSON number: a band that had passed through a float would
+            refuse an approval it should have allowed.
+        maxAmount:
+          type: [string, 'null']
+          pattern: '^-?[0-9]+(\.[0-9]{1,6})?$'
+          description: Upper edge of the band, inclusive, as an exact decimal string. Null is an open end.
+        requiredRoleCodes:
+          type: array
+          description: Roles that may approve. Empty means no particular role is required.
+          maxItems: 20
+          items:
+            type: string
+            minLength: 2
+            maxLength: 64
+        requiredApproverCount:
+          type: integer
+          minimum: 1
+          description: How many separate approvals this band needs.
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+          description: Exclusive end of the period. Null means it has no end yet.
+        rowVersion:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+    ApprovalPolicyList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApprovalPolicy'
+    ApprovalPolicyInput:
+      type: object
+      additionalProperties: false
+      required: [scopeCode, validFrom]
+      properties:
+        scopeCode:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]{0,63}$'
+        minAmount:
+          type: [string, 'null']
+          pattern: '^[0-9]+(\.[0-9]{1,6})?$'
+        maxAmount:
+          type: [string, 'null']
+          pattern: '^[0-9]+(\.[0-9]{1,6})?$'
+        requiredRoleCodes:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            pattern: '^[A-Z][A-Z0-9_]{1,63}$'
+        requiredApproverCount:
+          type: integer
+          minimum: 1
+          default: 1
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+    PutApprovalPolicies:
+      type: object
+      additionalProperties: false
+      required: [actionCode, policies]
+      properties:
+        actionCode:
+          type: string
+          pattern: '^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*){0,3}$'
+        policies:
+          type: array
+          description: |
+            The whole set for this action. An empty array is a legitimate request: it means
+            this action needs no policy at all, and it removes whatever was there.
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/ApprovalPolicyInput'

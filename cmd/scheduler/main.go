@@ -24,6 +24,8 @@ import (
 	"github.com/celikbros/kapsora/internal/platform/outbox"
 	"github.com/celikbros/kapsora/internal/platform/ratelimit"
 	"github.com/celikbros/kapsora/internal/platform/scheduler"
+	workflowapp "github.com/celikbros/kapsora/internal/workflow/application"
+	workflowpg "github.com/celikbros/kapsora/internal/workflow/infrastructure/postgres"
 )
 
 const (
@@ -77,6 +79,16 @@ func run() error {
 		return err
 	}
 
+	// The escalation job is what makes an SLA mean anything: work nobody picked up in time
+	// moves to whoever is meant to catch it. No cursor codec here either — this process
+	// answers no list.
+	workflows, err := workflowapp.New(workflowapp.Deps{
+		Pool: pool, Repo: workflowpg.New(), Audit: auditpg.New(), Logger: logger,
+	})
+	if err != nil {
+		return err
+	}
+
 	registry := scheduler.NewRegistry()
 	registry.Register(scheduler.AuditEnsurePartitions(pool))
 	registry.Register(scheduler.OutboxRecoverStale(outbox.New(pool, outbox.Options{Logger: logger})))
@@ -85,6 +97,7 @@ func run() error {
 	registry.Register(scheduler.EntitlementReservationExpire(entitlements))
 	registry.Register(scheduler.EntitlementReconcile(entitlements))
 	registry.Register(scheduler.AuthorizationExpire(authorizations))
+	registry.Register(scheduler.WorkflowEscalate(workflows))
 	// scheduler.SessionCleanup(store) is registered once the identity session store
 	// (WP-I1-01) exists.
 	runner := scheduler.NewRunner(pool, registry, logger, 10*time.Minute)
