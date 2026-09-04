@@ -822,6 +822,82 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/practitioners/{practitionerId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One practitioner with the masked registration number, the locations the
+         *     practitioner is assigned to and the optimistic concurrency tag. A practitioner of
+         *     a provider outside the caller's organization scope answers 404, not 403.
+         */
+        get: operations["getPractitioner"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Merge-patch of the name, title, branch, linked person, validity and status. The
+         *     registration authority and the registration number are immutable: a wrong number
+         *     is ended and re-registered rather than rewritten, because reports already signed
+         *     under it must keep resolving. A body carrying either answers 422 with field code
+         *     IMMUTABLE. Requires `provider.practitioner.manage`.
+         */
+        patch: operations["patchPractitioner"];
+        trace?: never;
+    };
+    "/api/v1/practitioners/{practitionerId}/locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * @description Replaces the whole set of locations the practitioner works at, in which role and
+         *     over which period. Two assignments to the same location in the same role whose
+         *     periods overlap answer 409 PRACTITIONER_ASSIGNMENT_OVERLAP. Every location must
+         *     belong to the practitioner's own provider. If-Match carries the ETag of the
+         *     practitioner, which the replacement moves on. Requires
+         *     `provider.practitioner.manage`.
+         */
+        put: operations["putPractitionerLocations"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/practitioners/search-by-registration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Finds the one practitioner carrying a registration number, through the
+         *     tenant-salted blind index. The number travels in the body and never in a path or a
+         *     query key, so it cannot reach a log, a proxy or a browser history; the answer
+         *     carries the masked form only. Requires `provider.practitioner.manage` and a recent
+         *     step-up, and every call is written to the access audit with the issuing authority
+         *     alone. Not idempotent and not cached.
+         */
+        post: operations["searchPractitionerByRegistration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/programs": {
         parameters: {
             query?: never;
@@ -876,6 +952,261 @@ export interface paths {
         put?: never;
         /** @description Creates a plan (DRAFT) under the program; code unique per program (409 PLAN_CODE_TAKEN). */
         post: operations["createPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/provider-locations/{locationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One provider location with its optimistic concurrency tag. A location belonging to
+         *     a provider outside the caller's organization scope answers 404, not 403.
+         */
+        get: operations["getProviderLocation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Merge-patch of the address, the contact details and the location status. The code
+         *     is immutable: a body carrying code answers 422 with field code IMMUTABLE.
+         *     Suspending or closing a location removes it from the eligibility search without
+         *     touching its capability history.
+         */
+        patch: operations["patchProviderLocation"];
+        trace?: never;
+    };
+    "/api/v1/provider-locations/{locationId}/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description What this location can deliver and when. A row names either one service definition
+         *     or a whole service category; a category row covers the definitions added under it
+         *     later, which is why the search resolves the tree at read time instead of expanding
+         *     rows here. The set is short by design, so it is returned whole rather than paged.
+         */
+        get: operations["listProviderCapabilities"];
+        /**
+         * @description Replaces the whole capability set of the location, because what matters is the
+         *     resulting coverage and a set replacement makes the overlap check one decision
+         *     instead of many. Two rows for the same service definition or the same category
+         *     whose validity periods overlap answer 409 CAPABILITY_OVERLAP. If-Match carries the
+         *     ETag of the location, which the replacement moves on.
+         */
+        put: operations["putProviderCapabilities"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Provider profiles of the tenant, newest first, with keyset paging. q searches the
+         *     organization name, the other filters narrow to one provider type, one network tier
+         *     or one status. An actor whose role grants are scoped to organizations sees only
+         *     the providers inside that scope; the filter is applied in the repository, so no
+         *     route can forget it.
+         */
+        get: operations["listProviders"];
+        put?: never;
+        /**
+         * @description Gives an organization the tenant already knows a provider profile. The
+         *     organization relationship must carry the PROVIDER role; one relationship may hold
+         *     only one profile, so a second answers 409 PROVIDER_PROFILE_EXISTS. The profile
+         *     starts in PENDING and is moved by the explicit status commands, never by a patch.
+         */
+        post: operations["createProvider"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/providers/{providerId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One provider profile of the tenant with its optimistic concurrency tag. A provider
+         *     outside the caller's organization scope answers 404, not 403, so the existence of
+         *     another provider does not leak.
+         */
+        get: operations["getProvider"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Merge-patch of provider type, network tier, contract dates and notes. The status is
+         *     absent on purpose: it is moved by the activate, suspend and terminate commands, so
+         *     every transition is auditable as an intent rather than as a field assignment. A
+         *     body carrying status or tenantOrganizationId answers 422 with field code IMMUTABLE.
+         */
+        patch: operations["patchProvider"];
+        trace?: never;
+    };
+    "/api/v1/providers/{providerId}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description PENDING or SUSPENDED to ACTIVE. Only an ACTIVE provider is returned by the
+         *     eligibility search, so this is the moment a contract starts being used. Any other
+         *     starting status answers 409 PROVIDER_TRANSITION_INVALID.
+         */
+        post: operations["activateProvider"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/providers/{providerId}/locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The places this provider works from, newest first, with keyset paging. A location
+         *     is where a service is delivered, so contracts price against it and the eligibility
+         *     answer names it.
+         */
+        get: operations["listProviderLocations"];
+        put?: never;
+        /**
+         * @description Adds a location to the provider. The code is unique within the provider (409
+         *     LOCATION_CODE_TAKEN) and immutable afterwards, because capabilities, contracts and
+         *     service requests are read against it. Latitude and longitude are plain columns for
+         *     putting a pin on a map; there is no distance search yet.
+         */
+        post: operations["createProviderLocation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/providers/{providerId}/practitioners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The practitioners registered at this provider, newest first, with keyset paging.
+         *     The registration number is never returned in plaintext: every response carries the
+         *     masked form only.
+         */
+        get: operations["listPractitioners"];
+        put?: never;
+        /**
+         * @description Registers a practitioner at the provider. The registration number is a
+         *     professional identity number and is treated exactly like a TCKN: encrypted at
+         *     rest, searchable only through a tenant-salted blind index, and never stored,
+         *     logged or returned in plaintext. It is unique within its issuing authority (409
+         *     PRACTITIONER_REGISTRATION_TAKEN). Requires `provider.practitioner.manage`.
+         */
+        post: operations["createPractitioner"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/providers/{providerId}/suspend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description ACTIVE to SUSPENDED with a reason. The profile, its locations and its
+         *     practitioners stay readable and nothing already delivered is undone; the provider
+         *     simply stops being offered by the search. Any other starting status answers 409
+         *     PROVIDER_TRANSITION_INVALID.
+         */
+        post: operations["suspendProvider"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/providers/{providerId}/terminate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Any status to TERMINATED with a reason. Termination is final: a terminated
+         *     provider accepts no further transition and answers 409
+         *     PROVIDER_TRANSITION_INVALID, because the contract history has to stay readable
+         *     exactly as it ended.
+         */
+        post: operations["terminateProvider"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/providers/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Answers the question eligibility and service requests actually ask: which provider
+         *     locations can deliver this service on this date. A capability naming a service
+         *     category covers every definition under it, including ones added later, so the
+         *     search resolves the category tree at read time. Providers that are not ACTIVE and
+         *     locations that are not ACTIVE are excluded, and the page walks the standard opaque
+         *     cursor.
+         */
+        get: operations["searchProviders"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1443,6 +1774,20 @@ export interface components {
             /** Format: date */
             validTo?: string;
         };
+        CreatePractitionerRequest: {
+            branchCode?: string;
+            fullName: string;
+            /** Format: uuid */
+            personId?: string;
+            registrationAuthority: components["schemas"]["RegistrationAuthority"];
+            /** @description Stored encrypted and blind-indexed; never returned, logged or echoed. */
+            registrationNumber: string;
+            title?: string;
+            /** Format: date */
+            validFrom?: string;
+            /** Format: date */
+            validTo?: string | null;
+        };
         CreateProgramRequest: {
             code: string;
             name: string;
@@ -1455,6 +1800,34 @@ export interface components {
             validFrom?: string;
             /** Format: date */
             validTo?: string;
+        };
+        CreateProviderLocationRequest: {
+            addressLine?: string;
+            city?: string;
+            code: string;
+            /** @default TR */
+            countryCode?: string;
+            district?: string;
+            /** Format: double */
+            latitude?: number;
+            /** Format: double */
+            longitude?: number;
+            name: string;
+            phone?: string;
+            postalCode?: string;
+            /** @default Europe/Istanbul */
+            timezone?: string;
+        };
+        CreateProviderRequest: {
+            /** Format: date */
+            contractedFrom?: string;
+            /** Format: date */
+            contractedTo?: string | null;
+            networkTier?: string;
+            notes?: string;
+            providerType: components["schemas"]["ProviderType"];
+            /** Format: uuid */
+            tenantOrganizationId: string;
         };
         CreateRelationshipRequest: {
             relationshipType: string;
@@ -2026,6 +2399,76 @@ export interface components {
             validTo?: string | null;
             versionNo: number;
         };
+        Practitioner: {
+            branchCode?: string | null;
+            fullName: string;
+            /** Format: uuid */
+            id: string;
+            locations?: components["schemas"]["PractitionerLocation"][];
+            /** @description The only representation of the registration number that ever leaves the server. */
+            maskedRegistrationNumber: string;
+            /**
+             * Format: uuid
+             * @description Set when the practitioner is also a member of the tenant.
+             */
+            personId?: string | null;
+            /** Format: uuid */
+            providerId: string;
+            registrationAuthority: components["schemas"]["RegistrationAuthority"];
+            rowVersion: number;
+            status: components["schemas"]["PractitionerStatus"];
+            title?: string | null;
+            /** Format: date */
+            validFrom?: string | null;
+            /** Format: date */
+            validTo?: string | null;
+        };
+        PractitionerLocation: {
+            /** Format: uuid */
+            id: string;
+            locationCode: string;
+            /** Format: uuid */
+            locationId: string;
+            locationName: string;
+            /** Format: uuid */
+            practitionerId: string;
+            role: components["schemas"]["PractitionerRole"];
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo?: string | null;
+        };
+        PractitionerLocationInput: {
+            /** Format: uuid */
+            locationId: string;
+            role: components["schemas"]["PractitionerRole"];
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo?: string | null;
+        };
+        PractitionerLocationList: {
+            items: components["schemas"]["PractitionerLocation"][];
+        };
+        PractitionerPage: {
+            items: components["schemas"]["Practitioner"][];
+            nextCursor?: string | null;
+        };
+        PractitionerRegistrationSearchRequest: {
+            registrationAuthority: components["schemas"]["RegistrationAuthority"];
+            /** @description Travels in the body only; never in a path segment or a query key. */
+            registrationNumber: string;
+        };
+        /**
+         * @description The role a practitioner holds at one location.
+         * @enum {string}
+         */
+        PractitionerRole: "ATTENDING" | "CONSULTANT" | "TECHNICIAN" | "ADMINISTRATIVE";
+        /**
+         * @description Lifecycle of a practitioner registration at a provider.
+         * @enum {string}
+         */
+        PractitionerStatus: "ACTIVE" | "SUSPENDED" | "ENDED";
         Problem: {
             code: string;
             detail?: string;
@@ -2067,9 +2510,152 @@ export interface components {
             items: components["schemas"]["Program"][];
             nextCursor?: string | null;
         };
+        Provider: {
+            /** Format: date */
+            contractedFrom?: string | null;
+            /** Format: date */
+            contractedTo?: string | null;
+            /** Format: uuid */
+            id: string;
+            /** @description The tenant's own tiering of its network, for example A or B. */
+            networkTier?: string | null;
+            notes?: string | null;
+            organizationName: string;
+            providerType: components["schemas"]["ProviderType"];
+            rowVersion: number;
+            status: components["schemas"]["ProviderStatus"];
+            /**
+             * Format: uuid
+             * @description The organization relationship this profile belongs to.
+             */
+            tenantOrganizationId: string;
+        };
+        ProviderCapability: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            locationId: string;
+            notes?: string | null;
+            serviceCategoryCode?: string | null;
+            /** Format: uuid */
+            serviceCategoryId?: string | null;
+            serviceDefinitionCode?: string | null;
+            /** Format: uuid */
+            serviceDefinitionId?: string | null;
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo?: string | null;
+        };
+        /**
+         * @description Exactly one of serviceDefinitionId and serviceCategoryId must be present; a
+         *     category covers every definition under it, including ones added later.
+         */
+        ProviderCapabilityInput: {
+            notes?: string;
+            /** Format: uuid */
+            serviceCategoryId?: string;
+            /** Format: uuid */
+            serviceDefinitionId?: string;
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo?: string | null;
+        };
+        ProviderCapabilityList: {
+            items: components["schemas"]["ProviderCapability"][];
+        };
+        ProviderLocation: {
+            addressLine?: string | null;
+            city?: string | null;
+            code: string;
+            countryCode: string;
+            district?: string | null;
+            /** Format: uuid */
+            id: string;
+            /** Format: double */
+            latitude?: number | null;
+            /** Format: double */
+            longitude?: number | null;
+            name: string;
+            phone?: string | null;
+            postalCode?: string | null;
+            /** Format: uuid */
+            providerId: string;
+            rowVersion: number;
+            status: components["schemas"]["ProviderLocationStatus"];
+            /** @description IANA time zone name; the tenant default is Europe/Istanbul. */
+            timezone: string;
+        };
+        ProviderLocationPage: {
+            items: components["schemas"]["ProviderLocation"][];
+            nextCursor?: string | null;
+        };
+        /**
+         * @description Lifecycle of one provider location.
+         * @enum {string}
+         */
+        ProviderLocationStatus: "ACTIVE" | "SUSPENDED" | "CLOSED";
+        ProviderPage: {
+            items: components["schemas"]["Provider"][];
+            nextCursor?: string | null;
+        };
+        ProviderSearchPage: {
+            /**
+             * Format: date
+             * @description The date the capabilities were resolved against.
+             */
+            asOf: string;
+            items: components["schemas"]["ProviderSearchResult"][];
+            nextCursor?: string | null;
+        };
+        ProviderSearchResult: {
+            city?: string | null;
+            district?: string | null;
+            /** Format: double */
+            latitude?: number | null;
+            locationCode: string;
+            /** Format: uuid */
+            locationId: string;
+            locationName: string;
+            /** Format: double */
+            longitude?: number | null;
+            /**
+             * @description DEFINITION when the location names the service definition itself, CATEGORY
+             *     when the coverage comes from a category above it in the tree.
+             * @enum {string}
+             */
+            matchedVia: "DEFINITION" | "CATEGORY";
+            networkTier?: string | null;
+            organizationName: string;
+            /** Format: uuid */
+            providerId: string;
+            providerType: components["schemas"]["ProviderType"];
+        };
+        /**
+         * @description Lifecycle of a provider profile; only ACTIVE providers are offered by the search.
+         * @enum {string}
+         */
+        ProviderStatus: "PENDING" | "ACTIVE" | "SUSPENDED" | "TERMINATED";
+        /**
+         * @description What kind of place the provider is; it drives the default location and capability picker.
+         * @enum {string}
+         */
+        ProviderType: "HOSPITAL" | "CLINIC" | "PHARMACY" | "LABORATORY" | "IMAGING" | "HOTEL" | "AGENCY" | "TRANSPORT" | "EDUCATION" | "SPORT" | "OTHER";
         ReasonCommand: {
             reasonCode: string;
             reasonText?: string;
+        };
+        /**
+         * @description The body that issued the practitioner's registration number.
+         * @enum {string}
+         */
+        RegistrationAuthority: "TTB" | "SB" | "TDB" | "TEB" | "OTHER";
+        ReplacePractitionerLocationsRequest: {
+            items: components["schemas"]["PractitionerLocationInput"][];
+        };
+        ReplaceProviderCapabilitiesRequest: {
+            items: components["schemas"]["ProviderCapabilityInput"][];
         };
         ReplaceServiceCodeMappingsRequest: {
             items: components["schemas"]["ServiceCodeMappingInput"][];
@@ -2327,6 +2913,22 @@ export interface components {
             /** Format: date */
             validTo?: string | null;
         };
+        /**
+         * @description Merge-patch body; registrationAuthority and registrationNumber are absent because
+         *     a registration is ended and re-registered rather than rewritten.
+         */
+        UpdatePractitionerRequest: {
+            branchCode?: string | null;
+            fullName?: string;
+            /** Format: uuid */
+            personId?: string | null;
+            status?: components["schemas"]["PractitionerStatus"];
+            title?: string | null;
+            /** Format: date */
+            validFrom?: string | null;
+            /** Format: date */
+            validTo?: string | null;
+        };
         UpdateProgramRequest: {
             name?: string;
             /** @enum {string} */
@@ -2335,6 +2937,36 @@ export interface components {
             validFrom?: string | null;
             /** Format: date */
             validTo?: string | null;
+        };
+        /** @description Merge-patch body; code is absent because it is immutable. */
+        UpdateProviderLocationRequest: {
+            addressLine?: string | null;
+            city?: string | null;
+            countryCode?: string;
+            district?: string | null;
+            /** Format: double */
+            latitude?: number | null;
+            /** Format: double */
+            longitude?: number | null;
+            name?: string;
+            phone?: string | null;
+            postalCode?: string | null;
+            status?: components["schemas"]["ProviderLocationStatus"];
+            timezone?: string;
+        };
+        /**
+         * @description Merge-patch body; status and tenantOrganizationId are absent because the status is
+         *     moved by the explicit commands and the organization relationship identifies the
+         *     profile.
+         */
+        UpdateProviderRequest: {
+            /** Format: date */
+            contractedFrom?: string | null;
+            /** Format: date */
+            contractedTo?: string | null;
+            networkTier?: string | null;
+            notes?: string | null;
+            providerType?: components["schemas"]["ProviderType"];
         };
         /** @description Merge-patch body; code is absent because it is immutable. */
         UpdateServiceCategoryRequest: {
@@ -2463,7 +3095,10 @@ export interface components {
         PersonId: string;
         PlanId: string;
         PlanVersionId: string;
+        PractitionerId: string;
         ProgramId: string;
+        ProviderId: string;
+        ProviderLocationId: string;
         RelationshipId: string;
         RequestId: string;
         ServiceCategoryId: string;
@@ -2494,7 +3129,10 @@ export type SchemaCreateOrganizationRequest = components['schemas']['CreateOrgan
 export type SchemaCreatePersonRequest = components['schemas']['CreatePersonRequest'];
 export type SchemaCreatePlanRequest = components['schemas']['CreatePlanRequest'];
 export type SchemaCreatePlanVersionRequest = components['schemas']['CreatePlanVersionRequest'];
+export type SchemaCreatePractitionerRequest = components['schemas']['CreatePractitionerRequest'];
 export type SchemaCreateProgramRequest = components['schemas']['CreateProgramRequest'];
+export type SchemaCreateProviderLocationRequest = components['schemas']['CreateProviderLocationRequest'];
+export type SchemaCreateProviderRequest = components['schemas']['CreateProviderRequest'];
 export type SchemaCreateRelationshipRequest = components['schemas']['CreateRelationshipRequest'];
 export type SchemaCreateServiceCategoryRequest = components['schemas']['CreateServiceCategoryRequest'];
 export type SchemaCreateServiceDefinitionRequest = components['schemas']['CreateServiceDefinitionRequest'];
@@ -2532,10 +3170,33 @@ export type SchemaPersonSummary = components['schemas']['PersonSummary'];
 export type SchemaPlan = components['schemas']['Plan'];
 export type SchemaPlanVersion = components['schemas']['PlanVersion'];
 export type SchemaPlanVersionSummary = components['schemas']['PlanVersionSummary'];
+export type SchemaPractitioner = components['schemas']['Practitioner'];
+export type SchemaPractitionerLocation = components['schemas']['PractitionerLocation'];
+export type SchemaPractitionerLocationInput = components['schemas']['PractitionerLocationInput'];
+export type SchemaPractitionerLocationList = components['schemas']['PractitionerLocationList'];
+export type SchemaPractitionerPage = components['schemas']['PractitionerPage'];
+export type SchemaPractitionerRegistrationSearchRequest = components['schemas']['PractitionerRegistrationSearchRequest'];
+export type SchemaPractitionerRole = components['schemas']['PractitionerRole'];
+export type SchemaPractitionerStatus = components['schemas']['PractitionerStatus'];
 export type SchemaProblem = components['schemas']['Problem'];
 export type SchemaProgram = components['schemas']['Program'];
 export type SchemaProgramPage = components['schemas']['ProgramPage'];
+export type SchemaProvider = components['schemas']['Provider'];
+export type SchemaProviderCapability = components['schemas']['ProviderCapability'];
+export type SchemaProviderCapabilityInput = components['schemas']['ProviderCapabilityInput'];
+export type SchemaProviderCapabilityList = components['schemas']['ProviderCapabilityList'];
+export type SchemaProviderLocation = components['schemas']['ProviderLocation'];
+export type SchemaProviderLocationPage = components['schemas']['ProviderLocationPage'];
+export type SchemaProviderLocationStatus = components['schemas']['ProviderLocationStatus'];
+export type SchemaProviderPage = components['schemas']['ProviderPage'];
+export type SchemaProviderSearchPage = components['schemas']['ProviderSearchPage'];
+export type SchemaProviderSearchResult = components['schemas']['ProviderSearchResult'];
+export type SchemaProviderStatus = components['schemas']['ProviderStatus'];
+export type SchemaProviderType = components['schemas']['ProviderType'];
 export type SchemaReasonCommand = components['schemas']['ReasonCommand'];
+export type SchemaRegistrationAuthority = components['schemas']['RegistrationAuthority'];
+export type SchemaReplacePractitionerLocationsRequest = components['schemas']['ReplacePractitionerLocationsRequest'];
+export type SchemaReplaceProviderCapabilitiesRequest = components['schemas']['ReplaceProviderCapabilitiesRequest'];
 export type SchemaReplaceServiceCodeMappingsRequest = components['schemas']['ReplaceServiceCodeMappingsRequest'];
 export type SchemaReviewComment = components['schemas']['ReviewComment'];
 export type SchemaServiceCategory = components['schemas']['ServiceCategory'];
@@ -2561,7 +3222,10 @@ export type SchemaUpdateOrganizationRequest = components['schemas']['UpdateOrgan
 export type SchemaUpdatePersonRequest = components['schemas']['UpdatePersonRequest'];
 export type SchemaUpdatePlanRequest = components['schemas']['UpdatePlanRequest'];
 export type SchemaUpdatePlanVersionRequest = components['schemas']['UpdatePlanVersionRequest'];
+export type SchemaUpdatePractitionerRequest = components['schemas']['UpdatePractitionerRequest'];
 export type SchemaUpdateProgramRequest = components['schemas']['UpdateProgramRequest'];
+export type SchemaUpdateProviderLocationRequest = components['schemas']['UpdateProviderLocationRequest'];
+export type SchemaUpdateProviderRequest = components['schemas']['UpdateProviderRequest'];
 export type SchemaUpdateServiceCategoryRequest = components['schemas']['UpdateServiceCategoryRequest'];
 export type SchemaUpdateServiceDefinitionRequest = components['schemas']['UpdateServiceDefinitionRequest'];
 export type SchemaUpdateServiceRequest = components['schemas']['UpdateServiceRequest'];
@@ -2590,7 +3254,10 @@ export type ParameterOrganizationId = components['parameters']['OrganizationId']
 export type ParameterPersonId = components['parameters']['PersonId'];
 export type ParameterPlanId = components['parameters']['PlanId'];
 export type ParameterPlanVersionId = components['parameters']['PlanVersionId'];
+export type ParameterPractitionerId = components['parameters']['PractitionerId'];
 export type ParameterProgramId = components['parameters']['ProgramId'];
+export type ParameterProviderId = components['parameters']['ProviderId'];
+export type ParameterProviderLocationId = components['parameters']['ProviderLocationId'];
 export type ParameterRelationshipId = components['parameters']['RelationshipId'];
 export type ParameterRequestId = components['parameters']['RequestId'];
 export type ParameterServiceCategoryId = components['parameters']['ServiceCategoryId'];
@@ -4670,6 +5337,188 @@ export interface operations {
             422: components["responses"]["ValidationError"];
         };
     };
+    getPractitioner: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                practitionerId: components["parameters"]["PractitionerId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Practitioner */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Practitioner"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    patchPractitioner: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                practitionerId: components["parameters"]["PractitionerId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/merge-patch+json": components["schemas"]["UpdatePractitionerRequest"];
+            };
+        };
+        responses: {
+            /** @description Practitioner updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Practitioner"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Body is not application/merge-patch+json */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    putPractitionerLocations: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                practitionerId: components["parameters"]["PractitionerId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplacePractitionerLocationsRequest"];
+            };
+        };
+        responses: {
+            /** @description Assignment set replaced */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PractitionerLocationList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    searchPractitionerByRegistration: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PractitionerRegistrationSearchRequest"];
+            };
+        };
+        responses: {
+            /** @description The practitioner carrying the registration number */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Practitioner"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
     listPrograms: {
         parameters: {
             query?: {
@@ -4890,6 +5739,736 @@ export interface operations {
             };
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getProviderLocation: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                locationId: components["parameters"]["ProviderLocationId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Provider location */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderLocation"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    patchProviderLocation: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                locationId: components["parameters"]["ProviderLocationId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/merge-patch+json": components["schemas"]["UpdateProviderLocationRequest"];
+            };
+        };
+        responses: {
+            /** @description Location updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderLocation"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Body is not application/merge-patch+json */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listProviderCapabilities: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                locationId: components["parameters"]["ProviderLocationId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Capabilities of the location */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderCapabilityList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    putProviderCapabilities: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                locationId: components["parameters"]["ProviderLocationId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplaceProviderCapabilitiesRequest"];
+            };
+        };
+        responses: {
+            /** @description Capability set replaced */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderCapabilityList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listProviders: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                /** @description Only providers in this tenant-defined network tier. */
+                networkTier?: string;
+                /** @description Only providers of this type. */
+                providerType?: components["schemas"]["ProviderType"];
+                /** @description Organization name search. */
+                q?: string;
+                /** @description Only providers in this status. */
+                status?: components["schemas"]["ProviderStatus"];
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Provider page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderPage"];
+                };
+            };
+            /** @description Cursor invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    createProvider: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateProviderRequest"];
+            };
+        };
+        responses: {
+            /** @description Provider profile created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Provider"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getProvider: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                providerId: components["parameters"]["ProviderId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Provider profile */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Provider"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    patchProvider: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                providerId: components["parameters"]["ProviderId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/merge-patch+json": components["schemas"]["UpdateProviderRequest"];
+            };
+        };
+        responses: {
+            /** @description Provider profile updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Provider"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Body is not application/merge-patch+json */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    activateProvider: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                providerId: components["parameters"]["ProviderId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Provider activated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Provider"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listProviderLocations: {
+        parameters: {
+            query?: {
+                /** @description Only locations in this city. */
+                city?: string;
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                /** @description Location code or name search. */
+                q?: string;
+                /** @description Only locations in this status. */
+                status?: components["schemas"]["ProviderLocationStatus"];
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                providerId: components["parameters"]["ProviderId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Provider location page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderLocationPage"];
+                };
+            };
+            /** @description Cursor invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    createProviderLocation: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                providerId: components["parameters"]["ProviderId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateProviderLocationRequest"];
+            };
+        };
+        responses: {
+            /** @description Location created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderLocation"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    listPractitioners: {
+        parameters: {
+            query?: {
+                /** @description Only practitioners of this specialty branch. */
+                branchCode?: string;
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                /** @description Practitioner name search. */
+                q?: string;
+                /** @description Only practitioners in this status. */
+                status?: components["schemas"]["PractitionerStatus"];
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                providerId: components["parameters"]["ProviderId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Practitioner page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PractitionerPage"];
+                };
+            };
+            /** @description Cursor invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    createPractitioner: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                providerId: components["parameters"]["ProviderId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePractitionerRequest"];
+            };
+        };
+        responses: {
+            /** @description Practitioner created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Practitioner"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    suspendProvider: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                providerId: components["parameters"]["ProviderId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonCommand"];
+            };
+        };
+        responses: {
+            /** @description Provider suspended */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Provider"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    terminateProvider: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                providerId: components["parameters"]["ProviderId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonCommand"];
+            };
+        };
+        responses: {
+            /** @description Provider terminated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Provider"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    searchProviders: {
+        parameters: {
+            query: {
+                /** @description Date the capability must be valid on; defaults to today. */
+                asOf?: string;
+                /** @description Only locations in this city. */
+                city?: string;
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                /** @description Location code or name search. */
+                q?: string;
+                /** @description The service definition the location must be able to deliver. */
+                serviceDefinitionId: string;
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Provider search page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderSearchPage"];
+                };
+            };
+            /** @description Cursor invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
             422: components["responses"]["ValidationError"];
         };
     };

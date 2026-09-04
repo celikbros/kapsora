@@ -233,7 +233,16 @@
     "SERVICE_DEFINITION_CODE_TAKEN": "Bu hizmet kodu zaten kullanılıyor.",
     "CODE_SYSTEM_TAKEN": "Bu kod sistemi ve sürümü zaten kayıtlı.",
     "CATEGORY_CYCLE": "Kategori kendi alt ağacına bağlanamaz.",
-    "CODE_MAPPING_OVERLAP": "Aynı kod için çakışan bir geçerlilik dönemi var."
+    "CODE_MAPPING_OVERLAP": "Aynı kod için çakışan bir geçerlilik dönemi var.",
+    "PROVIDER_NOT_FOUND": "Sağlayıcı bulunamadı.",
+    "PROVIDER_LOCATION_NOT_FOUND": "Sağlayıcı lokasyonu bulunamadı.",
+    "PRACTITIONER_NOT_FOUND": "Uygulayıcı bulunamadı.",
+    "PROVIDER_PROFILE_EXISTS": "Bu kurumun zaten bir sağlayıcı profili var.",
+    "PROVIDER_TRANSITION_INVALID": "Sağlayıcı bu duruma geçemez.",
+    "LOCATION_CODE_TAKEN": "Bu lokasyon kodu bu sağlayıcıda kullanılıyor.",
+    "CAPABILITY_OVERLAP": "Aynı hizmet için çakışan bir yetkinlik dönemi var.",
+    "PRACTITIONER_ASSIGNMENT_OVERLAP": "Aynı lokasyon ve görev için çakışan bir görevlendirme var.",
+    "PRACTITIONER_REGISTRATION_TAKEN": "Bu sicil numarası bu otoritede kayıtlı."
   },
   "fieldErrors": {
     "REQUIRED": "Zorunlu alan",

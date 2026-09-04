@@ -45,6 +45,9 @@ import (
 	"github.com/celikbros/kapsora/internal/platform/idempotency"
 	"github.com/celikbros/kapsora/internal/platform/logging"
 	"github.com/celikbros/kapsora/internal/platform/ratelimit"
+	providerapp "github.com/celikbros/kapsora/internal/provider/application"
+	providerpg "github.com/celikbros/kapsora/internal/provider/infrastructure/postgres"
+	providerhttp "github.com/celikbros/kapsora/internal/provider/transport/http"
 )
 
 const serviceName = "kapsora-api"
@@ -139,6 +142,13 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	providerSvc, err := providerapp.New(providerapp.Deps{
+		Pool: pool, Repo: providerpg.New(), Cipher: keys, Index: keys,
+		Audit: auditpg.New(), Cursors: cursors,
+	})
+	if err != nil {
+		return err
+	}
 	memberImports, err := memberimport.New(memberimport.Deps{
 		Pool: pool, Cipher: keys, Index: keys, Audit: auditpg.New(), Cursors: cursors, Logger: logger,
 	})
@@ -168,6 +178,7 @@ func run() error {
 		party:        partySvc,
 		benefit:      benefitSvc,
 		catalog:      catalogSvc,
+		providers:    providerSvc,
 		entitlements: entitlementSvc,
 		eligibility:  eligibilitySvc,
 		imports:      memberImports,
@@ -246,6 +257,7 @@ type routerDeps struct {
 	party        *partyapp.Service
 	benefit      *benefitapp.Service
 	catalog      *catalogapp.Service
+	providers    *providerapp.Service
 	entitlements *benefitledger.Service
 	eligibility  *benefiteligibility.Service
 	imports      *memberimport.Service
@@ -357,6 +369,24 @@ func newRouter(d routerDeps) http.Handler {
 			tenant.Route("/service-categories", func(r chi.Router) { catalogHandler.CategoryRoutes(r, catalogMW) })
 			tenant.Route("/service-definitions", func(r chi.Router) { catalogHandler.DefinitionRoutes(r, catalogMW) })
 			tenant.Route("/code-systems", func(r chi.Router) { catalogHandler.CodeSystemRoutes(r, catalogMW) })
+
+			// The provider network sits beside the catalog it points at: locations and
+			// practitioners are addressed directly, because a UI reaches them from a
+			// search result rather than by walking down from a provider.
+			providerHandler := providerhttp.NewHandler(d.providers, sessions, d.logger)
+			providerMW := providerhttp.Middlewares{
+				CreateProvider:     d.idempotent("provider_profile.create"),
+				CreateLocation:     d.idempotent("provider_location.create"),
+				CreatePractitioner: d.idempotent("practitioner.create"),
+				// Searching a registration number turns a professional identity number
+				// into a practitioner, so it gets the same per-actor budget as the member
+				// identifier search.
+				SearchRegistration: ratelimit.Middleware(d.limiter,
+					ratelimit.ScopedKey("provider.practitioner.search", tenantScope), identifierSearchRateLimit, d.logger),
+			}
+			tenant.Route("/providers", func(r chi.Router) { providerHandler.ProviderRoutes(r, providerMW) })
+			tenant.Route("/provider-locations", providerHandler.LocationRoutes)
+			tenant.Route("/practitioners", func(r chi.Router) { providerHandler.PractitionerRoutes(r, providerMW) })
 
 			// Eligibility checks change no business state and carry their own replay
 			// contract in benefit.eligibility_evaluation.idempotency_key, so the

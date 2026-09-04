@@ -194,7 +194,16 @@
     "SERVICE_DEFINITION_CODE_TAKEN": "That service code is already in use.",
     "CODE_SYSTEM_TAKEN": "That code system and version is already registered.",
     "CATEGORY_CYCLE": "A category cannot be placed inside its own subtree.",
-    "CODE_MAPPING_OVERLAP": "Another mapping for this code covers an overlapping period."
+    "CODE_MAPPING_OVERLAP": "Another mapping for this code covers an overlapping period.",
+    "PROVIDER_NOT_FOUND": "Provider not found.",
+    "PROVIDER_LOCATION_NOT_FOUND": "Provider location not found.",
+    "PRACTITIONER_NOT_FOUND": "Practitioner not found.",
+    "PROVIDER_PROFILE_EXISTS": "This organization already has a provider profile.",
+    "PROVIDER_TRANSITION_INVALID": "The provider cannot move to that status.",
+    "LOCATION_CODE_TAKEN": "That location code is already used by this provider.",
+    "CAPABILITY_OVERLAP": "Another capability for this service covers an overlapping period.",
+    "PRACTITIONER_ASSIGNMENT_OVERLAP": "Another assignment to this location and role covers an overlapping period.",
+    "PRACTITIONER_REGISTRATION_TAKEN": "That registration number is already registered with this authority."
   },
   "fieldErrors": {
     "REQUIRED": "Required",

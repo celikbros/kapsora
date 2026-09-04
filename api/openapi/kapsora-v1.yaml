@@ -43,6 +43,8 @@ tags:
     description: Genel hizmet talebi ve durum geçişleri
   - name: Catalog
     description: Hizmet kataloğu, dış kod sistemleri ve kod eşlemeleri
+  - name: Providers
+    description: Sağlayıcı profilleri, lokasyonlar, yetkinlikler ve uygulayıcılar
 paths:
   /health/live:
     get:
@@ -2865,6 +2867,866 @@ paths:
                 $ref: '#/components/schemas/Problem'
         '422':
           $ref: '#/components/responses/ValidationError'
+  /api/v1/providers:
+    get:
+      tags: [Providers]
+      operationId: listProviders
+      description: |
+        Provider profiles of the tenant, newest first, with keyset paging. q searches the
+        organization name, the other filters narrow to one provider type, one network tier
+        or one status. An actor whose role grants are scoped to organizations sees only
+        the providers inside that scope; the filter is applied in the repository, so no
+        route can forget it.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: q
+          in: query
+          description: Organization name search.
+          schema:
+            type: string
+            maxLength: 120
+        - name: providerType
+          in: query
+          description: Only providers of this type.
+          schema:
+            $ref: '#/components/schemas/ProviderType'
+        - name: status
+          in: query
+          description: Only providers in this status.
+          schema:
+            $ref: '#/components/schemas/ProviderStatus'
+        - name: networkTier
+          in: query
+          description: Only providers in this tenant-defined network tier.
+          schema:
+            type: string
+            maxLength: 32
+      responses:
+        '200':
+          description: Provider page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderPage'
+        '400':
+          description: Cursor invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags: [Providers]
+      operationId: createProvider
+      description: |
+        Gives an organization the tenant already knows a provider profile. The
+        organization relationship must carry the PROVIDER role; one relationship may hold
+        only one profile, so a second answers 409 PROVIDER_PROFILE_EXISTS. The profile
+        starts in PENDING and is moved by the explicit status commands, never by a patch.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProviderRequest'
+      responses:
+        '201':
+          description: Provider profile created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Provider'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/providers/search:
+    get:
+      tags: [Providers]
+      operationId: searchProviders
+      description: |
+        Answers the question eligibility and service requests actually ask: which provider
+        locations can deliver this service on this date. A capability naming a service
+        category covers every definition under it, including ones added later, so the
+        search resolves the category tree at read time. Providers that are not ACTIVE and
+        locations that are not ACTIVE are excluded, and the page walks the standard opaque
+        cursor.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: serviceDefinitionId
+          in: query
+          required: true
+          description: The service definition the location must be able to deliver.
+          schema:
+            type: string
+            format: uuid
+        - name: city
+          in: query
+          description: Only locations in this city.
+          schema:
+            type: string
+            maxLength: 120
+        - name: asOf
+          in: query
+          description: Date the capability must be valid on; defaults to today.
+          schema:
+            type: string
+            format: date
+        - name: q
+          in: query
+          description: Location code or name search.
+          schema:
+            type: string
+            maxLength: 120
+      responses:
+        '200':
+          description: Provider search page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderSearchPage'
+        '400':
+          description: Cursor invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/providers/{providerId}:
+    get:
+      tags: [Providers]
+      operationId: getProvider
+      description: |
+        One provider profile of the tenant with its optimistic concurrency tag. A provider
+        outside the caller's organization scope answers 404, not 403, so the existence of
+        another provider does not leak.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ProviderId'
+      responses:
+        '200':
+          description: Provider profile
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Provider'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Providers]
+      operationId: patchProvider
+      description: |
+        Merge-patch of provider type, network tier, contract dates and notes. The status is
+        absent on purpose: it is moved by the activate, suspend and terminate commands, so
+        every transition is auditable as an intent rather than as a field assignment. A
+        body carrying status or tenantOrganizationId answers 422 with field code IMMUTABLE.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ProviderId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: '#/components/schemas/UpdateProviderRequest'
+      responses:
+        '200':
+          description: Provider profile updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Provider'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '415':
+          description: Body is not application/merge-patch+json
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/providers/{providerId}/activate:
+    post:
+      tags: [Providers]
+      operationId: activateProvider
+      description: |
+        PENDING or SUSPENDED to ACTIVE. Only an ACTIVE provider is returned by the
+        eligibility search, so this is the moment a contract starts being used. Any other
+        starting status answers 409 PROVIDER_TRANSITION_INVALID.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ProviderId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: Provider activated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Provider'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/providers/{providerId}/suspend:
+    post:
+      tags: [Providers]
+      operationId: suspendProvider
+      description: |
+        ACTIVE to SUSPENDED with a reason. The profile, its locations and its
+        practitioners stay readable and nothing already delivered is undone; the provider
+        simply stops being offered by the search. Any other starting status answers 409
+        PROVIDER_TRANSITION_INVALID.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ProviderId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonCommand'
+      responses:
+        '200':
+          description: Provider suspended
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Provider'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/providers/{providerId}/terminate:
+    post:
+      tags: [Providers]
+      operationId: terminateProvider
+      description: |
+        Any status to TERMINATED with a reason. Termination is final: a terminated
+        provider accepts no further transition and answers 409
+        PROVIDER_TRANSITION_INVALID, because the contract history has to stay readable
+        exactly as it ended.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ProviderId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonCommand'
+      responses:
+        '200':
+          description: Provider terminated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Provider'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/providers/{providerId}/locations:
+    get:
+      tags: [Providers]
+      operationId: listProviderLocations
+      description: |
+        The places this provider works from, newest first, with keyset paging. A location
+        is where a service is delivered, so contracts price against it and the eligibility
+        answer names it.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ProviderId'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: q
+          in: query
+          description: Location code or name search.
+          schema:
+            type: string
+            maxLength: 120
+        - name: city
+          in: query
+          description: Only locations in this city.
+          schema:
+            type: string
+            maxLength: 120
+        - name: status
+          in: query
+          description: Only locations in this status.
+          schema:
+            $ref: '#/components/schemas/ProviderLocationStatus'
+      responses:
+        '200':
+          description: Provider location page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderLocationPage'
+        '400':
+          description: Cursor invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags: [Providers]
+      operationId: createProviderLocation
+      description: |
+        Adds a location to the provider. The code is unique within the provider (409
+        LOCATION_CODE_TAKEN) and immutable afterwards, because capabilities, contracts and
+        service requests are read against it. Latitude and longitude are plain columns for
+        putting a pin on a map; there is no distance search yet.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ProviderId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProviderLocationRequest'
+      responses:
+        '201':
+          description: Location created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderLocation'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/provider-locations/{locationId}:
+    get:
+      tags: [Providers]
+      operationId: getProviderLocation
+      description: |
+        One provider location with its optimistic concurrency tag. A location belonging to
+        a provider outside the caller's organization scope answers 404, not 403.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ProviderLocationId'
+      responses:
+        '200':
+          description: Provider location
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderLocation'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Providers]
+      operationId: patchProviderLocation
+      description: |
+        Merge-patch of the address, the contact details and the location status. The code
+        is immutable: a body carrying code answers 422 with field code IMMUTABLE.
+        Suspending or closing a location removes it from the eligibility search without
+        touching its capability history.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ProviderLocationId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: '#/components/schemas/UpdateProviderLocationRequest'
+      responses:
+        '200':
+          description: Location updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderLocation'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '415':
+          description: Body is not application/merge-patch+json
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/provider-locations/{locationId}/capabilities:
+    get:
+      tags: [Providers]
+      operationId: listProviderCapabilities
+      description: |
+        What this location can deliver and when. A row names either one service definition
+        or a whole service category; a category row covers the definitions added under it
+        later, which is why the search resolves the tree at read time instead of expanding
+        rows here. The set is short by design, so it is returned whole rather than paged.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ProviderLocationId'
+      responses:
+        '200':
+          description: Capabilities of the location
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderCapabilityList'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Providers]
+      operationId: putProviderCapabilities
+      description: |
+        Replaces the whole capability set of the location, because what matters is the
+        resulting coverage and a set replacement makes the overlap check one decision
+        instead of many. Two rows for the same service definition or the same category
+        whose validity periods overlap answer 409 CAPABILITY_OVERLAP. If-Match carries the
+        ETag of the location, which the replacement moves on.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ProviderLocationId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplaceProviderCapabilitiesRequest'
+      responses:
+        '200':
+          description: Capability set replaced
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderCapabilityList'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/providers/{providerId}/practitioners:
+    get:
+      tags: [Providers]
+      operationId: listPractitioners
+      description: |
+        The practitioners registered at this provider, newest first, with keyset paging.
+        The registration number is never returned in plaintext: every response carries the
+        masked form only.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ProviderId'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: q
+          in: query
+          description: Practitioner name search.
+          schema:
+            type: string
+            maxLength: 120
+        - name: status
+          in: query
+          description: Only practitioners in this status.
+          schema:
+            $ref: '#/components/schemas/PractitionerStatus'
+        - name: branchCode
+          in: query
+          description: Only practitioners of this specialty branch.
+          schema:
+            type: string
+            maxLength: 64
+      responses:
+        '200':
+          description: Practitioner page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PractitionerPage'
+        '400':
+          description: Cursor invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags: [Providers]
+      operationId: createPractitioner
+      description: |
+        Registers a practitioner at the provider. The registration number is a
+        professional identity number and is treated exactly like a TCKN: encrypted at
+        rest, searchable only through a tenant-salted blind index, and never stored,
+        logged or returned in plaintext. It is unique within its issuing authority (409
+        PRACTITIONER_REGISTRATION_TAKEN). Requires `provider.practitioner.manage`.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ProviderId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePractitionerRequest'
+      responses:
+        '201':
+          description: Practitioner created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Practitioner'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/practitioners/{practitionerId}:
+    get:
+      tags: [Providers]
+      operationId: getPractitioner
+      description: |
+        One practitioner with the masked registration number, the locations the
+        practitioner is assigned to and the optimistic concurrency tag. A practitioner of
+        a provider outside the caller's organization scope answers 404, not 403.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PractitionerId'
+      responses:
+        '200':
+          description: Practitioner
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Practitioner'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Providers]
+      operationId: patchPractitioner
+      description: |
+        Merge-patch of the name, title, branch, linked person, validity and status. The
+        registration authority and the registration number are immutable: a wrong number
+        is ended and re-registered rather than rewritten, because reports already signed
+        under it must keep resolving. A body carrying either answers 422 with field code
+        IMMUTABLE. Requires `provider.practitioner.manage`.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PractitionerId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: '#/components/schemas/UpdatePractitionerRequest'
+      responses:
+        '200':
+          description: Practitioner updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Practitioner'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '415':
+          description: Body is not application/merge-patch+json
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/practitioners/{practitionerId}/locations:
+    put:
+      tags: [Providers]
+      operationId: putPractitionerLocations
+      description: |
+        Replaces the whole set of locations the practitioner works at, in which role and
+        over which period. Two assignments to the same location in the same role whose
+        periods overlap answer 409 PRACTITIONER_ASSIGNMENT_OVERLAP. Every location must
+        belong to the practitioner's own provider. If-Match carries the ETag of the
+        practitioner, which the replacement moves on. Requires
+        `provider.practitioner.manage`.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PractitionerId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplacePractitionerLocationsRequest'
+      responses:
+        '200':
+          description: Assignment set replaced
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PractitionerLocationList'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/practitioners/search-by-registration:
+    post:
+      tags: [Providers]
+      operationId: searchPractitionerByRegistration
+      description: |
+        Finds the one practitioner carrying a registration number, through the
+        tenant-salted blind index. The number travels in the body and never in a path or a
+        query key, so it cannot reach a log, a proxy or a browser history; the answer
+        carries the masked form only. Requires `provider.practitioner.manage` and a recent
+        step-up, and every call is written to the access audit with the issuing authority
+        alone. Not idempotent and not cached.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PractitionerRegistrationSearchRequest'
+      responses:
+        '200':
+          description: The practitioner carrying the registration number
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Practitioner'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
 components:
   securitySchemes:
     sessionCookie:
@@ -3053,6 +3915,27 @@ components:
         format: uuid
     CodeSystemId:
       name: codeSystemId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ProviderId:
+      name: providerId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ProviderLocationId:
+      name: locationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PractitionerId:
+      name: practitionerId
       in: path
       required: true
       schema:
@@ -5283,3 +6166,571 @@ components:
           maxItems: 100
           items:
             $ref: '#/components/schemas/ServiceCodeMappingInput'
+    ProviderType:
+      type: string
+      description: What kind of place the provider is; it drives the default location and capability picker.
+      enum: [HOSPITAL, CLINIC, PHARMACY, LABORATORY, IMAGING, HOTEL, AGENCY, TRANSPORT, EDUCATION, SPORT, OTHER]
+    ProviderStatus:
+      type: string
+      description: Lifecycle of a provider profile; only ACTIVE providers are offered by the search.
+      enum: [PENDING, ACTIVE, SUSPENDED, TERMINATED]
+    ProviderLocationStatus:
+      type: string
+      description: Lifecycle of one provider location.
+      enum: [ACTIVE, SUSPENDED, CLOSED]
+    PractitionerStatus:
+      type: string
+      description: Lifecycle of a practitioner registration at a provider.
+      enum: [ACTIVE, SUSPENDED, ENDED]
+    PractitionerRole:
+      type: string
+      description: The role a practitioner holds at one location.
+      enum: [ATTENDING, CONSULTANT, TECHNICIAN, ADMINISTRATIVE]
+    RegistrationAuthority:
+      type: string
+      description: The body that issued the practitioner's registration number.
+      enum: [TTB, SB, TDB, TEB, OTHER]
+    Provider:
+      type: object
+      additionalProperties: false
+      required: [id, tenantOrganizationId, organizationName, providerType, status, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantOrganizationId:
+          type: string
+          format: uuid
+          description: The organization relationship this profile belongs to.
+        organizationName:
+          type: string
+        providerType:
+          $ref: '#/components/schemas/ProviderType'
+        status:
+          $ref: '#/components/schemas/ProviderStatus'
+        networkTier:
+          type: [string, 'null']
+          description: The tenant's own tiering of its network, for example A or B.
+        contractedFrom:
+          type: [string, 'null']
+          format: date
+        contractedTo:
+          type: [string, 'null']
+          format: date
+        notes:
+          type: [string, 'null']
+        rowVersion:
+          type: integer
+          minimum: 1
+    ProviderPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Provider'
+        nextCursor:
+          type: [string, 'null']
+    CreateProviderRequest:
+      type: object
+      additionalProperties: false
+      required: [tenantOrganizationId, providerType]
+      properties:
+        tenantOrganizationId:
+          type: string
+          format: uuid
+        providerType:
+          $ref: '#/components/schemas/ProviderType'
+        networkTier:
+          type: string
+          minLength: 1
+          maxLength: 32
+        contractedFrom:
+          type: string
+          format: date
+        contractedTo:
+          type: [string, 'null']
+          format: date
+        notes:
+          type: string
+          maxLength: 2000
+    UpdateProviderRequest:
+      type: object
+      additionalProperties: false
+      description: |
+        Merge-patch body; status and tenantOrganizationId are absent because the status is
+        moved by the explicit commands and the organization relationship identifies the
+        profile.
+      properties:
+        providerType:
+          $ref: '#/components/schemas/ProviderType'
+        networkTier:
+          type: [string, 'null']
+          minLength: 1
+          maxLength: 32
+        contractedFrom:
+          type: [string, 'null']
+          format: date
+        contractedTo:
+          type: [string, 'null']
+          format: date
+        notes:
+          type: [string, 'null']
+          maxLength: 2000
+    ProviderLocation:
+      type: object
+      additionalProperties: false
+      required: [id, providerId, code, name, countryCode, timezone, status, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        providerId:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        addressLine:
+          type: [string, 'null']
+        district:
+          type: [string, 'null']
+        city:
+          type: [string, 'null']
+        countryCode:
+          type: string
+          pattern: '^[A-Z]{2}$'
+        postalCode:
+          type: [string, 'null']
+        latitude:
+          type: [number, 'null']
+          format: double
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: [number, 'null']
+          format: double
+          minimum: -180
+          maximum: 180
+        timezone:
+          type: string
+          description: IANA time zone name; the tenant default is Europe/Istanbul.
+        phone:
+          type: [string, 'null']
+        status:
+          $ref: '#/components/schemas/ProviderLocationStatus'
+        rowVersion:
+          type: integer
+          minimum: 1
+    ProviderLocationPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProviderLocation'
+        nextCursor:
+          type: [string, 'null']
+    CreateProviderLocationRequest:
+      type: object
+      additionalProperties: false
+      required: [code, name]
+      properties:
+        code:
+          type: string
+          pattern: '^[A-Z0-9][A-Z0-9_-]{0,39}$'
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+        addressLine:
+          type: string
+          maxLength: 500
+        district:
+          type: string
+          maxLength: 120
+        city:
+          type: string
+          maxLength: 120
+        countryCode:
+          type: string
+          pattern: '^[A-Z]{2}$'
+          default: TR
+        postalCode:
+          type: string
+          maxLength: 20
+        latitude:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+        timezone:
+          type: string
+          maxLength: 64
+          default: Europe/Istanbul
+        phone:
+          type: string
+          maxLength: 40
+    UpdateProviderLocationRequest:
+      type: object
+      additionalProperties: false
+      description: Merge-patch body; code is absent because it is immutable.
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+        addressLine:
+          type: [string, 'null']
+          maxLength: 500
+        district:
+          type: [string, 'null']
+          maxLength: 120
+        city:
+          type: [string, 'null']
+          maxLength: 120
+        countryCode:
+          type: string
+          pattern: '^[A-Z]{2}$'
+        postalCode:
+          type: [string, 'null']
+          maxLength: 20
+        latitude:
+          type: [number, 'null']
+          format: double
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: [number, 'null']
+          format: double
+          minimum: -180
+          maximum: 180
+        timezone:
+          type: string
+          maxLength: 64
+        phone:
+          type: [string, 'null']
+          maxLength: 40
+        status:
+          $ref: '#/components/schemas/ProviderLocationStatus'
+    ProviderCapability:
+      type: object
+      additionalProperties: false
+      required: [id, locationId, validFrom]
+      properties:
+        id:
+          type: string
+          format: uuid
+        locationId:
+          type: string
+          format: uuid
+        serviceDefinitionId:
+          type: [string, 'null']
+          format: uuid
+        serviceDefinitionCode:
+          type: [string, 'null']
+        serviceCategoryId:
+          type: [string, 'null']
+          format: uuid
+        serviceCategoryCode:
+          type: [string, 'null']
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+        notes:
+          type: [string, 'null']
+    ProviderCapabilityList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProviderCapability'
+    ProviderCapabilityInput:
+      type: object
+      additionalProperties: false
+      required: [validFrom]
+      description: |
+        Exactly one of serviceDefinitionId and serviceCategoryId must be present; a
+        category covers every definition under it, including ones added later.
+      properties:
+        serviceDefinitionId:
+          type: string
+          format: uuid
+        serviceCategoryId:
+          type: string
+          format: uuid
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+        notes:
+          type: string
+          maxLength: 1000
+    ReplaceProviderCapabilitiesRequest:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/ProviderCapabilityInput'
+    Practitioner:
+      type: object
+      additionalProperties: false
+      required:
+        [id, providerId, fullName, registrationAuthority, maskedRegistrationNumber, status,
+         rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        providerId:
+          type: string
+          format: uuid
+        personId:
+          type: [string, 'null']
+          format: uuid
+          description: Set when the practitioner is also a member of the tenant.
+        fullName:
+          type: string
+        title:
+          type: [string, 'null']
+        branchCode:
+          type: [string, 'null']
+        registrationAuthority:
+          $ref: '#/components/schemas/RegistrationAuthority'
+        maskedRegistrationNumber:
+          type: string
+          description: The only representation of the registration number that ever leaves the server.
+        validFrom:
+          type: [string, 'null']
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+        status:
+          $ref: '#/components/schemas/PractitionerStatus'
+        rowVersion:
+          type: integer
+          minimum: 1
+        locations:
+          type: array
+          items:
+            $ref: '#/components/schemas/PractitionerLocation'
+    PractitionerPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Practitioner'
+        nextCursor:
+          type: [string, 'null']
+    CreatePractitionerRequest:
+      type: object
+      additionalProperties: false
+      required: [fullName, registrationAuthority, registrationNumber]
+      properties:
+        fullName:
+          type: string
+          minLength: 2
+          maxLength: 200
+        title:
+          type: string
+          maxLength: 120
+        branchCode:
+          type: string
+          maxLength: 64
+        personId:
+          type: string
+          format: uuid
+        registrationAuthority:
+          $ref: '#/components/schemas/RegistrationAuthority'
+        registrationNumber:
+          type: string
+          minLength: 1
+          maxLength: 80
+          description: Stored encrypted and blind-indexed; never returned, logged or echoed.
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+    UpdatePractitionerRequest:
+      type: object
+      additionalProperties: false
+      description: |
+        Merge-patch body; registrationAuthority and registrationNumber are absent because
+        a registration is ended and re-registered rather than rewritten.
+      properties:
+        fullName:
+          type: string
+          minLength: 2
+          maxLength: 200
+        title:
+          type: [string, 'null']
+          maxLength: 120
+        branchCode:
+          type: [string, 'null']
+          maxLength: 64
+        personId:
+          type: [string, 'null']
+          format: uuid
+        validFrom:
+          type: [string, 'null']
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+        status:
+          $ref: '#/components/schemas/PractitionerStatus'
+    PractitionerLocation:
+      type: object
+      additionalProperties: false
+      required: [id, practitionerId, locationId, locationCode, locationName, role, validFrom]
+      properties:
+        id:
+          type: string
+          format: uuid
+        practitionerId:
+          type: string
+          format: uuid
+        locationId:
+          type: string
+          format: uuid
+        locationCode:
+          type: string
+        locationName:
+          type: string
+        role:
+          $ref: '#/components/schemas/PractitionerRole'
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+    PractitionerLocationList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PractitionerLocation'
+    PractitionerLocationInput:
+      type: object
+      additionalProperties: false
+      required: [locationId, role, validFrom]
+      properties:
+        locationId:
+          type: string
+          format: uuid
+        role:
+          $ref: '#/components/schemas/PractitionerRole'
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+    ReplacePractitionerLocationsRequest:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/PractitionerLocationInput'
+    PractitionerRegistrationSearchRequest:
+      type: object
+      additionalProperties: false
+      required: [registrationAuthority, registrationNumber]
+      properties:
+        registrationAuthority:
+          $ref: '#/components/schemas/RegistrationAuthority'
+        registrationNumber:
+          type: string
+          minLength: 1
+          maxLength: 80
+          description: Travels in the body only; never in a path segment or a query key.
+    ProviderSearchResult:
+      type: object
+      additionalProperties: false
+      required:
+        [providerId, organizationName, providerType, locationId, locationCode, locationName,
+         matchedVia]
+      properties:
+        providerId:
+          type: string
+          format: uuid
+        organizationName:
+          type: string
+        providerType:
+          $ref: '#/components/schemas/ProviderType'
+        networkTier:
+          type: [string, 'null']
+        locationId:
+          type: string
+          format: uuid
+        locationCode:
+          type: string
+        locationName:
+          type: string
+        city:
+          type: [string, 'null']
+        district:
+          type: [string, 'null']
+        latitude:
+          type: [number, 'null']
+          format: double
+        longitude:
+          type: [number, 'null']
+          format: double
+        matchedVia:
+          type: string
+          description: |
+            DEFINITION when the location names the service definition itself, CATEGORY
+            when the coverage comes from a category above it in the tree.
+          enum: [DEFINITION, CATEGORY]
+    ProviderSearchPage:
+      type: object
+      additionalProperties: false
+      required: [items, asOf]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProviderSearchResult'
+        asOf:
+          type: string
+          format: date
+          description: The date the capabilities were resolved against.
+        nextCursor:
+          type: [string, 'null']

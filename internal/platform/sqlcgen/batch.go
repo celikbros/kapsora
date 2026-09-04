@@ -18,6 +18,129 @@ var (
 	ErrBatchAlreadyClosed = errors.New("batch already closed")
 )
 
+const createPractitionerLocation = `-- name: CreatePractitionerLocation :batchexec
+INSERT INTO provider.practitioner_location (tenant_id, practitioner_id, location_id, role,
+                                            valid_from, valid_to)
+VALUES ($1, $2, $3,
+        $4, $5, $6)
+`
+
+type CreatePractitionerLocationBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type CreatePractitionerLocationParams struct {
+	TenantID       uuid.UUID
+	PractitionerID uuid.UUID
+	LocationID     uuid.UUID
+	Role           string
+	ValidFrom      pgtype.Date
+	ValidTo        pgtype.Date
+}
+
+func (q *Queries) CreatePractitionerLocation(ctx context.Context, arg []CreatePractitionerLocationParams) *CreatePractitionerLocationBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.TenantID,
+			a.PractitionerID,
+			a.LocationID,
+			a.Role,
+			a.ValidFrom,
+			a.ValidTo,
+		}
+		batch.Queue(createPractitionerLocation, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &CreatePractitionerLocationBatchResults{br, len(arg), false}
+}
+
+func (b *CreatePractitionerLocationBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *CreatePractitionerLocationBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
+const createProviderCapability = `-- name: CreateProviderCapability :batchexec
+INSERT INTO provider.capability (tenant_id, location_id, service_definition_id,
+                                 service_category_id, valid_from, valid_to, notes)
+VALUES ($1, $2, $3,
+        $4, $5, $6,
+        $7)
+`
+
+type CreateProviderCapabilityBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type CreateProviderCapabilityParams struct {
+	TenantID            uuid.UUID
+	LocationID          uuid.UUID
+	ServiceDefinitionID uuid.NullUUID
+	ServiceCategoryID   uuid.NullUUID
+	ValidFrom           pgtype.Date
+	ValidTo             pgtype.Date
+	Notes               *string
+}
+
+func (q *Queries) CreateProviderCapability(ctx context.Context, arg []CreateProviderCapabilityParams) *CreateProviderCapabilityBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.TenantID,
+			a.LocationID,
+			a.ServiceDefinitionID,
+			a.ServiceCategoryID,
+			a.ValidFrom,
+			a.ValidTo,
+			a.Notes,
+		}
+		batch.Queue(createProviderCapability, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &CreateProviderCapabilityBatchResults{br, len(arg), false}
+}
+
+func (b *CreateProviderCapabilityBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *CreateProviderCapabilityBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
 const createServiceCodeMapping = `-- name: CreateServiceCodeMapping :batchexec
 INSERT INTO catalog.service_code_mapping (tenant_id, service_definition_id, code_system_id,
                                           code, valid_from, valid_to, is_primary)

@@ -22,6 +22,11 @@ const (
 	PurposeOrganizationTax  Purpose = "organization.tax_number"
 	PurposeBankAccount      Purpose = "billing.bank_account"
 	PurposeIntegratorSecret Purpose = "fiscal.integrator_secret"
+	// PurposePractitionerRegistration namespaces the professional registration number of
+	// a provider practitioner (WP-I3-02). It is a separate purpose from a person
+	// identifier so the same digits registered as a TCKN and as a registration number
+	// never produce the same blind index.
+	PurposePractitionerRegistration Purpose = "provider.practitioner_registration"
 )
 
 // BlindIndexSize is the byte length of every blind index (HMAC-SHA256).

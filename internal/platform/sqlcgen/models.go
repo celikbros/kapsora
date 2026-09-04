@@ -676,6 +676,89 @@ type PlatformTenantSetting struct {
 	UpdatedAt   time.Time
 }
 
+type ProviderCapability struct {
+	ID                  uuid.UUID
+	TenantID            uuid.UUID
+	LocationID          uuid.UUID
+	ServiceDefinitionID uuid.NullUUID
+	ServiceCategoryID   uuid.NullUUID
+	ValidFrom           pgtype.Date
+	ValidTo             pgtype.Date
+	Notes               *string
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
+	RowVersion          int64
+}
+
+type ProviderLocation struct {
+	ID                uuid.UUID
+	TenantID          uuid.UUID
+	ProviderProfileID uuid.UUID
+	Code              string
+	Name              string
+	AddressLine       *string
+	District          *string
+	City              *string
+	CountryCode       string
+	PostalCode        *string
+	Latitude          pgtype.Numeric
+	Longitude         pgtype.Numeric
+	Timezone          string
+	Phone             *string
+	Status            string
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+	RowVersion        int64
+}
+
+type ProviderPractitioner struct {
+	ID                       uuid.UUID
+	TenantID                 uuid.UUID
+	ProviderProfileID        uuid.UUID
+	PersonID                 uuid.NullUUID
+	FullName                 string
+	Title                    *string
+	BranchCode               *string
+	RegistrationAuthority    string
+	RegistrationNumberCipher []byte
+	RegistrationNumberHash   []byte
+	RegistrationNumberMasked string
+	ValidFrom                pgtype.Date
+	ValidTo                  pgtype.Date
+	Status                   string
+	CreatedAt                time.Time
+	UpdatedAt                time.Time
+	RowVersion               int64
+}
+
+type ProviderPractitionerLocation struct {
+	ID             uuid.UUID
+	TenantID       uuid.UUID
+	PractitionerID uuid.UUID
+	LocationID     uuid.UUID
+	Role           string
+	ValidFrom      pgtype.Date
+	ValidTo        pgtype.Date
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	RowVersion     int64
+}
+
+type ProviderProviderProfile struct {
+	ID                   uuid.UUID
+	TenantID             uuid.UUID
+	TenantOrganizationID uuid.UUID
+	ProviderType         string
+	Status               string
+	NetworkTier          *string
+	ContractedFrom       pgtype.Date
+	ContractedTo         pgtype.Date
+	Notes                *string
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
+	RowVersion           int64
+}
+
 type ServiceServiceRequest struct {
 	ID                           uuid.UUID
 	TenantID                     uuid.UUID
