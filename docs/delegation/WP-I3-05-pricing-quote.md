@@ -6,7 +6,7 @@
 | Size                       | M                                                                                                          |
 | Depends on                 | WP-I3-01, WP-I3-02, WP-I3-03, WP-I3-04, WP-I2-04 (eligibility)                                             |
 | Runs in parallel with      | WP-I3-06                                                                                                   |
-| Migration numbers assigned | `000023_pricing_quote.up.sql` (also seeds the one permission M3 adds, `pricing.quote`)                      |
+| Migration numbers assigned | `000023_pricing_quote.up.sql` (also seeds the one permission M3 adds, `pricing.quote`)                     |
 | OpenAPI operations owned   | `createPriceQuote`, `getPriceQuote`                                                                        |
 | Read first                 | v1.2 11.5, 11.6, 9.8; WP-I3-03 selection; WP-I2-04 eligibility snapshots (this mirrors their immutability) |
 
@@ -75,6 +75,12 @@ because prices move; an expired quote still reads back, and the response says it
 rather than hiding it.
 
 ### 2.3 API
+
+`pricing.quote` is the only permission M3 adds, so migration 000023 seeds it **and**
+`internal/identity/application/roles.go` must grant it to the roles that need a number
+before anything is booked: `PROGRAM_MANAGER`, `CONTRACT_MANAGER`, `FINANCIAL_REVIEWER`
+and `PROVIDER_STAFF`. Every other M3 permission was already seeded in migration 000008
+and already appears in the role templates.
 
 - `POST /api/v1/pricing/quotes` — permission `pricing.quote`, optional `Idempotency-Key`
   replaying the stored quote. Runs in one `REPEATABLE READ` transaction. Writes an
