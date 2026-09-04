@@ -9,13 +9,13 @@ useDefault = true
 
 [[allowlists]]
 description = """
-Generated code and lock files. api/generated/kapsorav1/kapsora_v1.gen.go embeds the whole
-OpenAPI document as base64 of a deflate stream (oapi-codegen), and the client types are
-generated the same way; those base64 chunks trip the generic high-entropy rules. Both files
-are reproduced from api/openapi/kapsora-v1.yaml by CI, which fails on any drift, so a
-secret could not survive there unnoticed.
+Generated code and lock files. The TypeScript client and the lock files carry long
+high-entropy strings by construction. All of them are reproduced from their sources by CI,
+which fails on any drift, so a secret could not survive there unnoticed.
+
+The Go server types used to embed the whole OpenAPI document as base64 and needed this
+allowlist most of all; embedded-spec is off now, so the blob is gone rather than excused.
 """
-targets = ["path"]
 paths = [
   '''^api/generated/''',
   '''^web/packages/api-client/src/generated/''',
@@ -28,7 +28,6 @@ description = """
 Documentation and examples: placeholder values such as CHANGE_ME, the sample keys in
 .env.example and the local-only passwords used by the runbooks and the native scripts.
 """
-targets = ["path"]
 paths = [
   '''^\.env\.example$''',
   '''^docs/''',

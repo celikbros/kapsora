@@ -5,21 +5,15 @@ package kapsorav1
 
 import (
 	"bytes"
-	"compress/flate"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
-	"net/url"
-	"path"
-	"strings"
 	"time"
 
-	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-chi/chi/v5"
 	"github.com/oapi-codegen/runtime"
 	openapi_types "github.com/oapi-codegen/runtime/types"
@@ -1741,6 +1735,231 @@ func (e ResolvePriceResultOutcome) Valid() bool {
 	}
 }
 
+// Defines values for RuleActionType.
+const (
+	ADJUSTPRICE            RuleActionType = "ADJUST_PRICE"
+	APPROVE                RuleActionType = "APPROVE"
+	PARTIALAPPROVE         RuleActionType = "PARTIAL_APPROVE"
+	REJECT                 RuleActionType = "REJECT"
+	REQUIREDOCUMENT        RuleActionType = "REQUIRE_DOCUMENT"
+	REQUIREFINANCIALREVIEW RuleActionType = "REQUIRE_FINANCIAL_REVIEW"
+	REQUIREMEDICALREVIEW   RuleActionType = "REQUIRE_MEDICAL_REVIEW"
+	REQUIREPREAUTH         RuleActionType = "REQUIRE_PREAUTH"
+	RESERVEENTITLEMENT     RuleActionType = "RESERVE_ENTITLEMENT"
+	SETLIMIT               RuleActionType = "SET_LIMIT"
+	WARN                   RuleActionType = "WARN"
+)
+
+// Valid indicates whether the value is a known member of the RuleActionType enum.
+func (e RuleActionType) Valid() bool {
+	switch e {
+	case ADJUSTPRICE:
+		return true
+	case APPROVE:
+		return true
+	case PARTIALAPPROVE:
+		return true
+	case REJECT:
+		return true
+	case REQUIREDOCUMENT:
+		return true
+	case REQUIREFINANCIALREVIEW:
+		return true
+	case REQUIREMEDICALREVIEW:
+		return true
+	case REQUIREPREAUTH:
+		return true
+	case RESERVEENTITLEMENT:
+		return true
+	case SETLIMIT:
+		return true
+	case WARN:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RuleInputType.
+const (
+	Bool      RuleInputType = "bool"
+	Double    RuleInputType = "double"
+	Duration  RuleInputType = "duration"
+	Int       RuleInputType = "int"
+	List      RuleInputType = "list"
+	Map       RuleInputType = "map"
+	String    RuleInputType = "string"
+	Timestamp RuleInputType = "timestamp"
+)
+
+// Valid indicates whether the value is a known member of the RuleInputType enum.
+func (e RuleInputType) Valid() bool {
+	switch e {
+	case Bool:
+		return true
+	case Double:
+		return true
+	case Duration:
+		return true
+	case Int:
+		return true
+	case List:
+		return true
+	case Map:
+		return true
+	case String:
+		return true
+	case Timestamp:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RuleOutcome.
+const (
+	RuleOutcomeAPPROVED          RuleOutcome = "APPROVED"
+	RuleOutcomePARTIALLYAPPROVED RuleOutcome = "PARTIALLY_APPROVED"
+	RuleOutcomeREJECTED          RuleOutcome = "REJECTED"
+	RuleOutcomeREVIEWREQUIRED    RuleOutcome = "REVIEW_REQUIRED"
+)
+
+// Valid indicates whether the value is a known member of the RuleOutcome enum.
+func (e RuleOutcome) Valid() bool {
+	switch e {
+	case RuleOutcomeAPPROVED:
+		return true
+	case RuleOutcomePARTIALLYAPPROVED:
+		return true
+	case RuleOutcomeREJECTED:
+		return true
+	case RuleOutcomeREVIEWREQUIRED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RuleSetPurpose.
+const (
+	ADJUDICATION     RuleSetPurpose = "ADJUDICATION"
+	DIAGNOSISSERVICE RuleSetPurpose = "DIAGNOSIS_SERVICE"
+	DOCUMENT         RuleSetPurpose = "DOCUMENT"
+	DUPLICATE        RuleSetPurpose = "DUPLICATE"
+	ELIGIBILITY      RuleSetPurpose = "ELIGIBILITY"
+	LIMIT            RuleSetPurpose = "LIMIT"
+	PREAUTH          RuleSetPurpose = "PREAUTH"
+	PRICE            RuleSetPurpose = "PRICE"
+)
+
+// Valid indicates whether the value is a known member of the RuleSetPurpose enum.
+func (e RuleSetPurpose) Valid() bool {
+	switch e {
+	case ADJUDICATION:
+		return true
+	case DIAGNOSISSERVICE:
+		return true
+	case DOCUMENT:
+		return true
+	case DUPLICATE:
+		return true
+	case ELIGIBILITY:
+		return true
+	case LIMIT:
+		return true
+	case PREAUTH:
+		return true
+	case PRICE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RuleSetStatus.
+const (
+	RuleSetStatusACTIVE   RuleSetStatus = "ACTIVE"
+	RuleSetStatusINACTIVE RuleSetStatus = "INACTIVE"
+)
+
+// Valid indicates whether the value is a known member of the RuleSetStatus enum.
+func (e RuleSetStatus) Valid() bool {
+	switch e {
+	case RuleSetStatusACTIVE:
+		return true
+	case RuleSetStatusINACTIVE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RuleSetVersionStatus.
+const (
+	RuleSetVersionStatusDRAFT       RuleSetVersionStatus = "DRAFT"
+	RuleSetVersionStatusPUBLISHED   RuleSetVersionStatus = "PUBLISHED"
+	RuleSetVersionStatusRETIRED     RuleSetVersionStatus = "RETIRED"
+	RuleSetVersionStatusUNDERREVIEW RuleSetVersionStatus = "UNDER_REVIEW"
+)
+
+// Valid indicates whether the value is a known member of the RuleSetVersionStatus enum.
+func (e RuleSetVersionStatus) Valid() bool {
+	switch e {
+	case RuleSetVersionStatusDRAFT:
+		return true
+	case RuleSetVersionStatusPUBLISHED:
+		return true
+	case RuleSetVersionStatusRETIRED:
+		return true
+	case RuleSetVersionStatusUNDERREVIEW:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RuleSeverity.
+const (
+	RuleSeverityERROR   RuleSeverity = "ERROR"
+	RuleSeverityINFO    RuleSeverity = "INFO"
+	RuleSeverityWARNING RuleSeverity = "WARNING"
+)
+
+// Valid indicates whether the value is a known member of the RuleSeverity enum.
+func (e RuleSeverity) Valid() bool {
+	switch e {
+	case RuleSeverityERROR:
+		return true
+	case RuleSeverityINFO:
+		return true
+	case RuleSeverityWARNING:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RuleTestCaseResultMismatches.
+const (
+	ACTIONS      RuleTestCaseResultMismatches = "ACTIONS"
+	EXPLANATIONS RuleTestCaseResultMismatches = "EXPLANATIONS"
+	OUTCOME      RuleTestCaseResultMismatches = "OUTCOME"
+)
+
+// Valid indicates whether the value is a known member of the RuleTestCaseResultMismatches enum.
+func (e RuleTestCaseResultMismatches) Valid() bool {
+	switch e {
+	case ACTIONS:
+		return true
+	case EXPLANATIONS:
+		return true
+	case OUTCOME:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ServiceDomain.
 const (
 	ServiceDomainACCOMMODATION ServiceDomain = "ACCOMMODATION"
@@ -2831,6 +3050,33 @@ type CreateRelationshipRequest struct {
 	TargetPersonId   openapi_types.UUID  `json:"targetPersonId"`
 	ValidFrom        openapi_types.Date  `json:"validFrom"`
 	ValidTo          *openapi_types.Date `json:"validTo,omitempty"`
+}
+
+// CreateRuleSetRequest defines model for CreateRuleSetRequest.
+type CreateRuleSetRequest struct {
+	Code string `json:"code"`
+
+	// DomainCode Closed list of service domains shared by categories and definitions.
+	DomainCode ServiceDomain `json:"domainCode"`
+	Name       string        `json:"name"`
+
+	// Purpose Which decision a rule set answers. A caller asking "what documents does this claim
+	// need" reads the DOCUMENT sets and never a PRICE one, so the purpose is what makes
+	// a set findable rather than a comment on it.
+	Purpose RuleSetPurpose `json:"purpose"`
+}
+
+// CreateRuleSetVersionRequest defines model for CreateRuleSetVersionRequest.
+type CreateRuleSetVersionRequest struct {
+	// CopyFromVersionId Another version of the same set whose schema, rules and test cases are copied.
+	CopyFromVersionId *openapi_types.UUID `json:"copyFromVersionId,omitempty"`
+
+	// InputSchema The variables a condition of this version may name, and their CEL types. A
+	// condition reaching anything not declared here fails to compile at authoring time.
+	InputSchema *RuleInputSchema    `json:"inputSchema,omitempty"`
+	Notes       *string             `json:"notes,omitempty"`
+	ValidFrom   *openapi_types.Date `json:"validFrom,omitempty"`
+	ValidTo     *openapi_types.Date `json:"validTo,omitempty"`
 }
 
 // CreateServiceCategoryRequest defines model for CreateServiceCategoryRequest.
@@ -4065,6 +4311,16 @@ type ReplaceProviderQuotasRequest struct {
 	Items []ProviderQuotaInput `json:"items"`
 }
 
+// ReplaceRuleTestCasesRequest defines model for ReplaceRuleTestCasesRequest.
+type ReplaceRuleTestCasesRequest struct {
+	Items []RuleTestCaseInput `json:"items"`
+}
+
+// ReplaceRulesRequest defines model for ReplaceRulesRequest.
+type ReplaceRulesRequest struct {
+	Items []RuleInput `json:"items"`
+}
+
 // ReplaceServiceCodeMappingsRequest defines model for ReplaceServiceCodeMappingsRequest.
 type ReplaceServiceCodeMappingsRequest struct {
 	Items []ServiceCodeMappingInput `json:"items"`
@@ -4140,6 +4396,329 @@ type ResolvedPrice struct {
 // ReviewComment defines model for ReviewComment.
 type ReviewComment struct {
 	Comment *string `json:"comment,omitempty"`
+}
+
+// Rule defines model for Rule.
+type Rule struct {
+	Actions []RuleAction `json:"actions"`
+
+	// Active An inactive rule is kept for the record and never compiled or evaluated.
+	Active bool   `json:"active"`
+	Code   string `json:"code"`
+
+	// Condition A CEL expression returning a boolean, compiled against the version's input schema.
+	Condition string `json:"condition"`
+
+	// ExplanationCode The code every line of the trace this rule produces carries.
+	ExplanationCode string `json:"explanationCode"`
+
+	// ExplanationParams Substitution parameters of the explanation; ids and codes only, never a name.
+	ExplanationParams *map[string]interface{} `json:"explanationParams,omitempty"`
+	Id                openapi_types.UUID      `json:"id"`
+	Name              string                  `json:"name"`
+
+	// Priority Ascending evaluation order; two rules of one version may not share a priority.
+	Priority         int                `json:"priority"`
+	RuleSetVersionId openapi_types.UUID `json:"ruleSetVersionId"`
+
+	// StopOnMatch Ends the pass as soon as this rule matches; recorded in the trace.
+	StopOnMatch bool `json:"stopOnMatch"`
+}
+
+// RuleAction defines model for RuleAction.
+type RuleAction struct {
+	// Payload The typed payload of the action, validated on write against the action type:
+	// REQUIRE_DOCUMENT needs a documentTypeCode, SET_LIMIT and RESERVE_ENTITLEMENT
+	// an amount, ADJUST_PRICE a method and a value. Every numeric value is an exact
+	// decimal string, never a JSON number.
+	Payload *map[string]interface{} `json:"payload,omitempty"`
+
+	// Type What a matched rule asks the caller to do. The engine returns actions and performs
+	// none of them: eligibility, authorization and adjudication decide what to do with
+	// them, and that separation is what lets a simulation run without writing a row.
+	Type RuleActionType `json:"type"`
+}
+
+// RuleActionType What a matched rule asks the caller to do. The engine returns actions and performs
+// none of them: eligibility, authorization and adjudication decide what to do with
+// them, and that separation is what lets a simulation run without writing a row.
+type RuleActionType string
+
+// RuleEvaluation defines model for RuleEvaluation.
+type RuleEvaluation struct {
+	DurationMs  *int                `json:"durationMs,omitempty"`
+	EvaluatedAt time.Time           `json:"evaluatedAt"`
+	EvaluatedBy *openapi_types.UUID `json:"evaluatedBy,omitempty"`
+	Id          openapi_types.UUID  `json:"id"`
+
+	// InputHash Lower-case hex SHA-256 of the canonical input; the same input twice gives the same hash.
+	InputHash string `json:"inputHash"`
+
+	// InputSnapshot The input as it is kept for audit: ids, dates, codes and quantities only.
+	// Anything that is neither of those is dropped before the row is written, so no
+	// identity number and no name ever reaches this column.
+	InputSnapshot map[string]interface{} `json:"inputSnapshot"`
+
+	// Outcome The one answer a whole pass folds to. Any REJECT wins; otherwise any REQUIRE_*
+	// means REVIEW_REQUIRED; otherwise any PARTIAL_APPROVE means PARTIALLY_APPROVED;
+	// APPROVED is what is left when nothing objected.
+	Outcome          RuleOutcome                `json:"outcome"`
+	Results          []RuleEvaluationResultLine `json:"results"`
+	RuleSetCode      *string                    `json:"ruleSetCode,omitempty"`
+	RuleSetId        openapi_types.UUID         `json:"ruleSetId"`
+	RuleSetVersionId openapi_types.UUID         `json:"ruleSetVersionId"`
+	SubjectId        *openapi_types.UUID        `json:"subjectId,omitempty"`
+
+	// SubjectType What was decided about, for example CLAIM or SERVICE_REQUEST.
+	SubjectType string `json:"subjectType"`
+	VersionNo   *int   `json:"versionNo,omitempty"`
+}
+
+// RuleEvaluationResultLine defines model for RuleEvaluationResultLine.
+type RuleEvaluationResultLine struct {
+	ActionPayload *map[string]interface{} `json:"actionPayload,omitempty"`
+
+	// ActionType The action this line asks for, absent when the rule did not match or carries none.
+	ActionType      *string             `json:"actionType,omitempty"`
+	ExplanationCode string              `json:"explanationCode"`
+	Matched         bool                `json:"matched"`
+	RuleCode        string              `json:"ruleCode"`
+	RuleId          *openapi_types.UUID `json:"ruleId,omitempty"`
+
+	// Sequence Position in the pass; the order the rules were considered in.
+	Sequence int `json:"sequence"`
+
+	// Severity How loud one line of the trace is; ERROR marks a rule that threw or timed out.
+	Severity RuleSeverity `json:"severity"`
+}
+
+// RuleEvaluationTrace defines model for RuleEvaluationTrace.
+type RuleEvaluationTrace struct {
+	DurationMs *int `json:"durationMs,omitempty"`
+
+	// Outcome The one answer a whole pass folds to. Any REJECT wins; otherwise any REQUIRE_*
+	// means REVIEW_REQUIRED; otherwise any PARTIAL_APPROVE means PARTIALLY_APPROVED;
+	// APPROVED is what is left when nothing objected.
+	Outcome          RuleOutcome                `json:"outcome"`
+	Results          []RuleEvaluationResultLine `json:"results"`
+	RuleSetVersionId openapi_types.UUID         `json:"ruleSetVersionId"`
+
+	// Status Lifecycle of a rule set version. PUBLISHED is the only status the engine ever
+	// evaluates for a recorded decision, and nothing about it may change afterwards.
+	Status    *RuleSetVersionStatus `json:"status,omitempty"`
+	VersionNo *int                  `json:"versionNo,omitempty"`
+}
+
+// RuleInput defines model for RuleInput.
+type RuleInput struct {
+	Actions           *[]RuleAction           `json:"actions,omitempty"`
+	Active            *bool                   `json:"active,omitempty"`
+	Code              string                  `json:"code"`
+	Condition         string                  `json:"condition"`
+	ExplanationCode   string                  `json:"explanationCode"`
+	ExplanationParams *map[string]interface{} `json:"explanationParams,omitempty"`
+	Name              string                  `json:"name"`
+	Priority          int                     `json:"priority"`
+	StopOnMatch       *bool                   `json:"stopOnMatch,omitempty"`
+}
+
+// RuleInputSchema The variables a condition of this version may name, and their CEL types. A
+// condition reaching anything not declared here fails to compile at authoring time.
+type RuleInputSchema map[string]RuleInputType
+
+// RuleInputType The CEL type of one declared input variable (ADR-023). The environment offers
+// these and nothing else: there is no type here that reaches a network, a file or a
+// database, which is how v1.2 11.7's prohibitions are kept — by absence.
+type RuleInputType string
+
+// RuleList defines model for RuleList.
+type RuleList struct {
+	Items []Rule `json:"items"`
+}
+
+// RuleOutcome The one answer a whole pass folds to. Any REJECT wins; otherwise any REQUIRE_*
+// means REVIEW_REQUIRED; otherwise any PARTIAL_APPROVE means PARTIALLY_APPROVED;
+// APPROVED is what is left when nothing objected.
+type RuleOutcome string
+
+// RuleSet defines model for RuleSet.
+type RuleSet struct {
+	Code string `json:"code"`
+
+	// DomainCode Closed list of service domains shared by categories and definitions.
+	DomainCode ServiceDomain      `json:"domainCode"`
+	Id         openapi_types.UUID `json:"id"`
+	Name       string             `json:"name"`
+
+	// Purpose Which decision a rule set answers. A caller asking "what documents does this claim
+	// need" reads the DOCUMENT sets and never a PRICE one, so the purpose is what makes
+	// a set findable rather than a comment on it.
+	Purpose    RuleSetPurpose `json:"purpose"`
+	RowVersion int            `json:"rowVersion"`
+
+	// Status Lifecycle of a rule set. INACTIVE stops it being offered for new decisions and
+	// changes nothing about the evaluations it already produced.
+	Status RuleSetStatus `json:"status"`
+
+	// VersionCount How many versions the set holds, drafts included.
+	VersionCount int `json:"versionCount"`
+}
+
+// RuleSetPage defines model for RuleSetPage.
+type RuleSetPage struct {
+	Items      []RuleSet `json:"items"`
+	NextCursor *string   `json:"nextCursor,omitempty"`
+}
+
+// RuleSetPurpose Which decision a rule set answers. A caller asking "what documents does this claim
+// need" reads the DOCUMENT sets and never a PRICE one, so the purpose is what makes
+// a set findable rather than a comment on it.
+type RuleSetPurpose string
+
+// RuleSetStatus Lifecycle of a rule set. INACTIVE stops it being offered for new decisions and
+// changes nothing about the evaluations it already produced.
+type RuleSetStatus string
+
+// RuleSetVersion defines model for RuleSetVersion.
+type RuleSetVersion struct {
+	// ContentHash Lower-case hex SHA-256 over the input schema and every rule, written at publish.
+	ContentHash *string            `json:"contentHash,omitempty"`
+	Id          openapi_types.UUID `json:"id"`
+
+	// InputSchema The variables a condition of this version may name, and their CEL types. A
+	// condition reaching anything not declared here fails to compile at authoring time.
+	InputSchema      RuleInputSchema     `json:"inputSchema"`
+	Notes            *string             `json:"notes,omitempty"`
+	PublishedAt      *time.Time          `json:"publishedAt,omitempty"`
+	PublishedBy      *openapi_types.UUID `json:"publishedBy,omitempty"`
+	RetireReasonCode *string             `json:"retireReasonCode,omitempty"`
+	ReviewComment    *string             `json:"reviewComment,omitempty"`
+	RowVersion       int                 `json:"rowVersion"`
+	RuleSetId        openapi_types.UUID  `json:"ruleSetId"`
+
+	// Rules The rules of the version in ascending priority order; 1 runs first.
+	Rules []Rule `json:"rules"`
+
+	// Status Lifecycle of a rule set version. PUBLISHED is the only status the engine ever
+	// evaluates for a recorded decision, and nothing about it may change afterwards.
+	Status      RuleSetVersionStatus `json:"status"`
+	SubmittedAt *time.Time           `json:"submittedAt,omitempty"`
+	SubmittedBy *openapi_types.UUID  `json:"submittedBy,omitempty"`
+	TestCases   []RuleTestCase       `json:"testCases"`
+	ValidFrom   *openapi_types.Date  `json:"validFrom,omitempty"`
+	ValidTo     *openapi_types.Date  `json:"validTo,omitempty"`
+	VersionNo   int                  `json:"versionNo"`
+}
+
+// RuleSetVersionList defines model for RuleSetVersionList.
+type RuleSetVersionList struct {
+	Items []RuleSetVersionSummary `json:"items"`
+}
+
+// RuleSetVersionStatus Lifecycle of a rule set version. PUBLISHED is the only status the engine ever
+// evaluates for a recorded decision, and nothing about it may change afterwards.
+type RuleSetVersionStatus string
+
+// RuleSetVersionSummary defines model for RuleSetVersionSummary.
+type RuleSetVersionSummary struct {
+	Id          openapi_types.UUID `json:"id"`
+	Notes       *string            `json:"notes,omitempty"`
+	PublishedAt *time.Time         `json:"publishedAt,omitempty"`
+	RowVersion  int                `json:"rowVersion"`
+	RuleCount   int                `json:"ruleCount"`
+	RuleSetId   openapi_types.UUID `json:"ruleSetId"`
+
+	// Status Lifecycle of a rule set version. PUBLISHED is the only status the engine ever
+	// evaluates for a recorded decision, and nothing about it may change afterwards.
+	Status RuleSetVersionStatus `json:"status"`
+
+	// TestCaseCount How many test cases the version holds; submit refuses while this is zero.
+	TestCaseCount int                 `json:"testCaseCount"`
+	ValidFrom     *openapi_types.Date `json:"validFrom,omitempty"`
+	ValidTo       *openapi_types.Date `json:"validTo,omitempty"`
+	VersionNo     int                 `json:"versionNo"`
+}
+
+// RuleSeverity How loud one line of the trace is; ERROR marks a rule that threw or timed out.
+type RuleSeverity string
+
+// RuleTestCase defines model for RuleTestCase.
+type RuleTestCase struct {
+	Code        string  `json:"code"`
+	Description *string `json:"description,omitempty"`
+
+	// ExpectedActions The actions the case must produce, in order. Null means the case does not
+	// assert on actions at all; an entry without a payload asserts only its type.
+	ExpectedActions *[]RuleAction `json:"expectedActions,omitempty"`
+
+	// ExpectedExplanations The explanation codes the case must produce, in order.
+	ExpectedExplanations []string `json:"expectedExplanations"`
+
+	// ExpectedOutcome The one answer a whole pass folds to. Any REJECT wins; otherwise any REQUIRE_*
+	// means REVIEW_REQUIRED; otherwise any PARTIAL_APPROVE means PARTIALLY_APPROVED;
+	// APPROVED is what is left when nothing objected.
+	ExpectedOutcome RuleOutcome        `json:"expectedOutcome"`
+	Id              openapi_types.UUID `json:"id"`
+
+	// Input One whole input document, keyed by the variables the input schema declares.
+	Input            map[string]interface{} `json:"input"`
+	RuleSetVersionId openapi_types.UUID     `json:"ruleSetVersionId"`
+}
+
+// RuleTestCaseInput defines model for RuleTestCaseInput.
+type RuleTestCaseInput struct {
+	Code                 string        `json:"code"`
+	Description          *string       `json:"description,omitempty"`
+	ExpectedActions      *[]RuleAction `json:"expectedActions,omitempty"`
+	ExpectedExplanations *[]string     `json:"expectedExplanations,omitempty"`
+
+	// ExpectedOutcome The one answer a whole pass folds to. Any REJECT wins; otherwise any REQUIRE_*
+	// means REVIEW_REQUIRED; otherwise any PARTIAL_APPROVE means PARTIALLY_APPROVED;
+	// APPROVED is what is left when nothing objected.
+	ExpectedOutcome RuleOutcome            `json:"expectedOutcome"`
+	Input           map[string]interface{} `json:"input"`
+}
+
+// RuleTestCaseList defines model for RuleTestCaseList.
+type RuleTestCaseList struct {
+	Items []RuleTestCase `json:"items"`
+}
+
+// RuleTestCaseResult defines model for RuleTestCaseResult.
+type RuleTestCaseResult struct {
+	ActualActions      []RuleAction `json:"actualActions"`
+	ActualExplanations []string     `json:"actualExplanations"`
+
+	// ActualOutcome The one answer a whole pass folds to. Any REJECT wins; otherwise any REQUIRE_*
+	// means REVIEW_REQUIRED; otherwise any PARTIAL_APPROVE means PARTIALLY_APPROVED;
+	// APPROVED is what is left when nothing objected.
+	ActualOutcome        RuleOutcome   `json:"actualOutcome"`
+	Code                 string        `json:"code"`
+	ExpectedActions      *[]RuleAction `json:"expectedActions,omitempty"`
+	ExpectedExplanations []string      `json:"expectedExplanations"`
+
+	// ExpectedOutcome The one answer a whole pass folds to. Any REJECT wins; otherwise any REQUIRE_*
+	// means REVIEW_REQUIRED; otherwise any PARTIAL_APPROVE means PARTIALLY_APPROVED;
+	// APPROVED is what is left when nothing objected.
+	ExpectedOutcome RuleOutcome `json:"expectedOutcome"`
+
+	// Mismatches Which of outcome, explanations or actions differed; empty when the case passed.
+	Mismatches []RuleTestCaseResultMismatches `json:"mismatches"`
+	Passed     bool                           `json:"passed"`
+}
+
+// RuleTestCaseResultMismatches defines model for RuleTestCaseResult.Mismatches.
+type RuleTestCaseResultMismatches string
+
+// RuleTestRunResult defines model for RuleTestRunResult.
+type RuleTestRunResult struct {
+	Cases  []RuleTestCaseResult `json:"cases"`
+	Failed int                  `json:"failed"`
+
+	// Passed True only when there is at least one case and every one of them passed.
+	Passed           bool               `json:"passed"`
+	RuleSetVersionId openapi_types.UUID `json:"ruleSetVersionId"`
+	Total            int                `json:"total"`
 }
 
 // ScoredPriceCandidate defines model for ScoredPriceCandidate.
@@ -4318,6 +4897,12 @@ type SessionInfo struct {
 
 // SettlementMethod How the provider is paid.
 type SettlementMethod string
+
+// SimulateRuleSetVersionRequest defines model for SimulateRuleSetVersionRequest.
+type SimulateRuleSetVersionRequest struct {
+	// Input One whole input document, keyed by the variables the input schema declares.
+	Input map[string]interface{} `json:"input"`
+}
 
 // SponsorMembership defines model for SponsorMembership.
 type SponsorMembership struct {
@@ -4522,6 +5107,26 @@ type UpdateProviderRequest struct {
 	ProviderType *ProviderType `json:"providerType,omitempty"`
 }
 
+// UpdateRuleSetRequest Merge-patch body. The code, the service domain and the purpose are absent because
+// they are what the set is; a body carrying one answers 422 with IMMUTABLE.
+type UpdateRuleSetRequest struct {
+	Name *string `json:"name,omitempty"`
+
+	// Status Lifecycle of a rule set. INACTIVE stops it being offered for new decisions and
+	// changes nothing about the evaluations it already produced.
+	Status *RuleSetStatus `json:"status,omitempty"`
+}
+
+// UpdateRuleSetVersionRequest Merge-patch body of a DRAFT rule set version.
+type UpdateRuleSetVersionRequest struct {
+	// InputSchema The variables a condition of this version may name, and their CEL types. A
+	// condition reaching anything not declared here fails to compile at authoring time.
+	InputSchema *RuleInputSchema    `json:"inputSchema,omitempty"`
+	Notes       *string             `json:"notes,omitempty"`
+	ValidFrom   *openapi_types.Date `json:"validFrom,omitempty"`
+	ValidTo     *openapi_types.Date `json:"validTo,omitempty"`
+}
+
 // UpdateServiceCategoryRequest Merge-patch body; code is absent because it is immutable.
 type UpdateServiceCategoryRequest struct {
 	Active   *bool               `json:"active,omitempty"`
@@ -4647,6 +5252,15 @@ type RelationshipId = openapi_types.UUID
 
 // RequestId defines model for RequestId.
 type RequestId = openapi_types.UUID
+
+// RuleEvaluationId defines model for RuleEvaluationId.
+type RuleEvaluationId = openapi_types.UUID
+
+// RuleSetId defines model for RuleSetId.
+type RuleSetId = openapi_types.UUID
+
+// RuleSetVersionId defines model for RuleSetVersionId.
+type RuleSetVersionId = openapi_types.UUID
 
 // ServiceCategoryId defines model for ServiceCategoryId.
 type ServiceCategoryId = openapi_types.UUID
@@ -5750,6 +6364,178 @@ type TerminateProviderParams struct {
 	XCSRFToken *CsrfHeader `json:"X-CSRF-Token,omitempty"`
 }
 
+// GetRuleEvaluationParams defines parameters for GetRuleEvaluation.
+type GetRuleEvaluationParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// GetRuleSetVersionParams defines parameters for GetRuleSetVersion.
+type GetRuleSetVersionParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// PatchRuleSetVersionParams defines parameters for PatchRuleSetVersion.
+type PatchRuleSetVersionParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// XCSRFToken Required when the request is authenticated with the BFF session cookie.
+	XCSRFToken *CsrfHeader `json:"X-CSRF-Token,omitempty"`
+}
+
+// PublishRuleSetVersionParams defines parameters for PublishRuleSetVersion.
+type PublishRuleSetVersionParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// XCSRFToken Required when the request is authenticated with the BFF session cookie.
+	XCSRFToken *CsrfHeader `json:"X-CSRF-Token,omitempty"`
+}
+
+// RetireRuleSetVersionParams defines parameters for RetireRuleSetVersion.
+type RetireRuleSetVersionParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// XCSRFToken Required when the request is authenticated with the BFF session cookie.
+	XCSRFToken *CsrfHeader `json:"X-CSRF-Token,omitempty"`
+}
+
+// PutRulesParams defines parameters for PutRules.
+type PutRulesParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// XCSRFToken Required when the request is authenticated with the BFF session cookie.
+	XCSRFToken *CsrfHeader `json:"X-CSRF-Token,omitempty"`
+}
+
+// SubmitRuleSetVersionParams defines parameters for SubmitRuleSetVersion.
+type SubmitRuleSetVersionParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// XCSRFToken Required when the request is authenticated with the BFF session cookie.
+	XCSRFToken *CsrfHeader `json:"X-CSRF-Token,omitempty"`
+}
+
+// PutRuleTestCasesParams defines parameters for PutRuleTestCases.
+type PutRuleTestCasesParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// XCSRFToken Required when the request is authenticated with the BFF session cookie.
+	XCSRFToken *CsrfHeader `json:"X-CSRF-Token,omitempty"`
+}
+
+// RunRuleTestsParams defines parameters for RunRuleTests.
+type RunRuleTestsParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// XCSRFToken Required when the request is authenticated with the BFF session cookie.
+	XCSRFToken *CsrfHeader `json:"X-CSRF-Token,omitempty"`
+}
+
+// SimulateRuleSetVersionParams defines parameters for SimulateRuleSetVersion.
+type SimulateRuleSetVersionParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// XCSRFToken Required when the request is authenticated with the BFF session cookie.
+	XCSRFToken *CsrfHeader `json:"X-CSRF-Token,omitempty"`
+}
+
+// ListRuleSetsParams defines parameters for ListRuleSets.
+type ListRuleSetsParams struct {
+	// Cursor Opaque cursor from the previous response.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Q Rule set code or name search.
+	Q *string `form:"q,omitempty" json:"q,omitempty"`
+
+	// DomainCode Only rule sets in this service domain.
+	DomainCode *ServiceDomain `form:"domainCode,omitempty" json:"domainCode,omitempty"`
+
+	// Purpose Only rule sets serving this purpose.
+	Purpose *RuleSetPurpose `form:"purpose,omitempty" json:"purpose,omitempty"`
+
+	// Status Only rule sets in this status.
+	Status *RuleSetStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// CreateRuleSetParams defines parameters for CreateRuleSet.
+type CreateRuleSetParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+
+	// XCSRFToken Required when the request is authenticated with the BFF session cookie.
+	XCSRFToken *CsrfHeader `json:"X-CSRF-Token,omitempty"`
+}
+
+// GetRuleSetParams defines parameters for GetRuleSet.
+type GetRuleSetParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// PatchRuleSetParams defines parameters for PatchRuleSet.
+type PatchRuleSetParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// XCSRFToken Required when the request is authenticated with the BFF session cookie.
+	XCSRFToken *CsrfHeader `json:"X-CSRF-Token,omitempty"`
+}
+
+// ListRuleSetVersionsParams defines parameters for ListRuleSetVersions.
+type ListRuleSetVersionsParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// CreateRuleSetVersionParams defines parameters for CreateRuleSetVersion.
+type CreateRuleSetVersionParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+
+	// XCSRFToken Required when the request is authenticated with the BFF session cookie.
+	XCSRFToken *CsrfHeader `json:"X-CSRF-Token,omitempty"`
+}
+
 // ListServiceCategoriesParams defines parameters for ListServiceCategories.
 type ListServiceCategoriesParams struct {
 	// Cursor Opaque cursor from the previous response.
@@ -6141,6 +6927,36 @@ type SuspendProviderJSONRequestBody = ReasonCommand
 // TerminateProviderJSONRequestBody defines body for TerminateProvider for application/json ContentType.
 type TerminateProviderJSONRequestBody = ReasonCommand
 
+// PatchRuleSetVersionApplicationMergePatchPlusJSONRequestBody defines body for PatchRuleSetVersion for application/merge-patch+json ContentType.
+type PatchRuleSetVersionApplicationMergePatchPlusJSONRequestBody = UpdateRuleSetVersionRequest
+
+// PublishRuleSetVersionJSONRequestBody defines body for PublishRuleSetVersion for application/json ContentType.
+type PublishRuleSetVersionJSONRequestBody = ReviewComment
+
+// RetireRuleSetVersionJSONRequestBody defines body for RetireRuleSetVersion for application/json ContentType.
+type RetireRuleSetVersionJSONRequestBody = ReasonCommand
+
+// PutRulesJSONRequestBody defines body for PutRules for application/json ContentType.
+type PutRulesJSONRequestBody = ReplaceRulesRequest
+
+// SubmitRuleSetVersionJSONRequestBody defines body for SubmitRuleSetVersion for application/json ContentType.
+type SubmitRuleSetVersionJSONRequestBody = ReviewComment
+
+// PutRuleTestCasesJSONRequestBody defines body for PutRuleTestCases for application/json ContentType.
+type PutRuleTestCasesJSONRequestBody = ReplaceRuleTestCasesRequest
+
+// SimulateRuleSetVersionJSONRequestBody defines body for SimulateRuleSetVersion for application/json ContentType.
+type SimulateRuleSetVersionJSONRequestBody = SimulateRuleSetVersionRequest
+
+// CreateRuleSetJSONRequestBody defines body for CreateRuleSet for application/json ContentType.
+type CreateRuleSetJSONRequestBody = CreateRuleSetRequest
+
+// PatchRuleSetApplicationMergePatchPlusJSONRequestBody defines body for PatchRuleSet for application/merge-patch+json ContentType.
+type PatchRuleSetApplicationMergePatchPlusJSONRequestBody = UpdateRuleSetRequest
+
+// CreateRuleSetVersionJSONRequestBody defines body for CreateRuleSetVersion for application/json ContentType.
+type CreateRuleSetVersionJSONRequestBody = CreateRuleSetVersionRequest
+
 // CreateServiceCategoryJSONRequestBody defines body for CreateServiceCategory for application/json ContentType.
 type CreateServiceCategoryJSONRequestBody = CreateServiceCategoryRequest
 
@@ -6485,6 +7301,54 @@ type ServerInterface interface {
 
 	// (POST /api/v1/providers/{providerId}/terminate)
 	TerminateProvider(w http.ResponseWriter, r *http.Request, providerId ProviderId, params TerminateProviderParams)
+
+	// (GET /api/v1/rule-evaluations/{ruleEvaluationId})
+	GetRuleEvaluation(w http.ResponseWriter, r *http.Request, ruleEvaluationId RuleEvaluationId, params GetRuleEvaluationParams)
+
+	// (GET /api/v1/rule-set-versions/{ruleSetVersionId})
+	GetRuleSetVersion(w http.ResponseWriter, r *http.Request, ruleSetVersionId RuleSetVersionId, params GetRuleSetVersionParams)
+
+	// (PATCH /api/v1/rule-set-versions/{ruleSetVersionId})
+	PatchRuleSetVersion(w http.ResponseWriter, r *http.Request, ruleSetVersionId RuleSetVersionId, params PatchRuleSetVersionParams)
+
+	// (POST /api/v1/rule-set-versions/{ruleSetVersionId}/publish)
+	PublishRuleSetVersion(w http.ResponseWriter, r *http.Request, ruleSetVersionId RuleSetVersionId, params PublishRuleSetVersionParams)
+
+	// (POST /api/v1/rule-set-versions/{ruleSetVersionId}/retire)
+	RetireRuleSetVersion(w http.ResponseWriter, r *http.Request, ruleSetVersionId RuleSetVersionId, params RetireRuleSetVersionParams)
+
+	// (PUT /api/v1/rule-set-versions/{ruleSetVersionId}/rules)
+	PutRules(w http.ResponseWriter, r *http.Request, ruleSetVersionId RuleSetVersionId, params PutRulesParams)
+
+	// (POST /api/v1/rule-set-versions/{ruleSetVersionId}/submit)
+	SubmitRuleSetVersion(w http.ResponseWriter, r *http.Request, ruleSetVersionId RuleSetVersionId, params SubmitRuleSetVersionParams)
+
+	// (PUT /api/v1/rule-set-versions/{ruleSetVersionId}/test-cases)
+	PutRuleTestCases(w http.ResponseWriter, r *http.Request, ruleSetVersionId RuleSetVersionId, params PutRuleTestCasesParams)
+
+	// (POST /api/v1/rule-set-versions/{ruleSetVersionId}/tests:run)
+	RunRuleTests(w http.ResponseWriter, r *http.Request, ruleSetVersionId RuleSetVersionId, params RunRuleTestsParams)
+
+	// (POST /api/v1/rule-set-versions/{ruleSetVersionId}:simulate)
+	SimulateRuleSetVersion(w http.ResponseWriter, r *http.Request, ruleSetVersionId RuleSetVersionId, params SimulateRuleSetVersionParams)
+
+	// (GET /api/v1/rule-sets)
+	ListRuleSets(w http.ResponseWriter, r *http.Request, params ListRuleSetsParams)
+
+	// (POST /api/v1/rule-sets)
+	CreateRuleSet(w http.ResponseWriter, r *http.Request, params CreateRuleSetParams)
+
+	// (GET /api/v1/rule-sets/{ruleSetId})
+	GetRuleSet(w http.ResponseWriter, r *http.Request, ruleSetId RuleSetId, params GetRuleSetParams)
+
+	// (PATCH /api/v1/rule-sets/{ruleSetId})
+	PatchRuleSet(w http.ResponseWriter, r *http.Request, ruleSetId RuleSetId, params PatchRuleSetParams)
+
+	// (GET /api/v1/rule-sets/{ruleSetId}/versions)
+	ListRuleSetVersions(w http.ResponseWriter, r *http.Request, ruleSetId RuleSetId, params ListRuleSetVersionsParams)
+
+	// (POST /api/v1/rule-sets/{ruleSetId}/versions)
+	CreateRuleSetVersion(w http.ResponseWriter, r *http.Request, ruleSetId RuleSetId, params CreateRuleSetVersionParams)
 
 	// (GET /api/v1/service-categories)
 	ListServiceCategories(w http.ResponseWriter, r *http.Request, params ListServiceCategoriesParams)
@@ -7068,6 +7932,86 @@ func (_ Unimplemented) SuspendProvider(w http.ResponseWriter, r *http.Request, p
 
 // (POST /api/v1/providers/{providerId}/terminate)
 func (_ Unimplemented) TerminateProvider(w http.ResponseWriter, r *http.Request, providerId ProviderId, params TerminateProviderParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/rule-evaluations/{ruleEvaluationId})
+func (_ Unimplemented) GetRuleEvaluation(w http.ResponseWriter, r *http.Request, ruleEvaluationId RuleEvaluationId, params GetRuleEvaluationParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/rule-set-versions/{ruleSetVersionId})
+func (_ Unimplemented) GetRuleSetVersion(w http.ResponseWriter, r *http.Request, ruleSetVersionId RuleSetVersionId, params GetRuleSetVersionParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PATCH /api/v1/rule-set-versions/{ruleSetVersionId})
+func (_ Unimplemented) PatchRuleSetVersion(w http.ResponseWriter, r *http.Request, ruleSetVersionId RuleSetVersionId, params PatchRuleSetVersionParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/rule-set-versions/{ruleSetVersionId}/publish)
+func (_ Unimplemented) PublishRuleSetVersion(w http.ResponseWriter, r *http.Request, ruleSetVersionId RuleSetVersionId, params PublishRuleSetVersionParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/rule-set-versions/{ruleSetVersionId}/retire)
+func (_ Unimplemented) RetireRuleSetVersion(w http.ResponseWriter, r *http.Request, ruleSetVersionId RuleSetVersionId, params RetireRuleSetVersionParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PUT /api/v1/rule-set-versions/{ruleSetVersionId}/rules)
+func (_ Unimplemented) PutRules(w http.ResponseWriter, r *http.Request, ruleSetVersionId RuleSetVersionId, params PutRulesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/rule-set-versions/{ruleSetVersionId}/submit)
+func (_ Unimplemented) SubmitRuleSetVersion(w http.ResponseWriter, r *http.Request, ruleSetVersionId RuleSetVersionId, params SubmitRuleSetVersionParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PUT /api/v1/rule-set-versions/{ruleSetVersionId}/test-cases)
+func (_ Unimplemented) PutRuleTestCases(w http.ResponseWriter, r *http.Request, ruleSetVersionId RuleSetVersionId, params PutRuleTestCasesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/rule-set-versions/{ruleSetVersionId}/tests:run)
+func (_ Unimplemented) RunRuleTests(w http.ResponseWriter, r *http.Request, ruleSetVersionId RuleSetVersionId, params RunRuleTestsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/rule-set-versions/{ruleSetVersionId}:simulate)
+func (_ Unimplemented) SimulateRuleSetVersion(w http.ResponseWriter, r *http.Request, ruleSetVersionId RuleSetVersionId, params SimulateRuleSetVersionParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/rule-sets)
+func (_ Unimplemented) ListRuleSets(w http.ResponseWriter, r *http.Request, params ListRuleSetsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/rule-sets)
+func (_ Unimplemented) CreateRuleSet(w http.ResponseWriter, r *http.Request, params CreateRuleSetParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/rule-sets/{ruleSetId})
+func (_ Unimplemented) GetRuleSet(w http.ResponseWriter, r *http.Request, ruleSetId RuleSetId, params GetRuleSetParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PATCH /api/v1/rule-sets/{ruleSetId})
+func (_ Unimplemented) PatchRuleSet(w http.ResponseWriter, r *http.Request, ruleSetId RuleSetId, params PatchRuleSetParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/rule-sets/{ruleSetId}/versions)
+func (_ Unimplemented) ListRuleSetVersions(w http.ResponseWriter, r *http.Request, ruleSetId RuleSetId, params ListRuleSetVersionsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/rule-sets/{ruleSetId}/versions)
+func (_ Unimplemented) CreateRuleSetVersion(w http.ResponseWriter, r *http.Request, ruleSetId RuleSetId, params CreateRuleSetVersionParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -15223,6 +16167,1346 @@ func (siw *ServerInterfaceWrapper) TerminateProvider(w http.ResponseWriter, r *h
 	handler.ServeHTTP(w, r)
 }
 
+// GetRuleEvaluation operation middleware
+func (siw *ServerInterfaceWrapper) GetRuleEvaluation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "ruleEvaluationId" -------------
+	var ruleEvaluationId RuleEvaluationId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "ruleEvaluationId", chi.URLParam(r, "ruleEvaluationId"), &ruleEvaluationId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "ruleEvaluationId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetRuleEvaluationParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetRuleEvaluation(w, r, ruleEvaluationId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetRuleSetVersion operation middleware
+func (siw *ServerInterfaceWrapper) GetRuleSetVersion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "ruleSetVersionId" -------------
+	var ruleSetVersionId RuleSetVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "ruleSetVersionId", chi.URLParam(r, "ruleSetVersionId"), &ruleSetVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "ruleSetVersionId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetRuleSetVersionParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetRuleSetVersion(w, r, ruleSetVersionId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PatchRuleSetVersion operation middleware
+func (siw *ServerInterfaceWrapper) PatchRuleSetVersion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "ruleSetVersionId" -------------
+	var ruleSetVersionId RuleSetVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "ruleSetVersionId", chi.URLParam(r, "ruleSetVersionId"), &ruleSetVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "ruleSetVersionId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PatchRuleSetVersionParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CsrfHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = &XCSRFToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PatchRuleSetVersion(w, r, ruleSetVersionId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PublishRuleSetVersion operation middleware
+func (siw *ServerInterfaceWrapper) PublishRuleSetVersion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "ruleSetVersionId" -------------
+	var ruleSetVersionId RuleSetVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "ruleSetVersionId", chi.URLParam(r, "ruleSetVersionId"), &ruleSetVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "ruleSetVersionId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PublishRuleSetVersionParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CsrfHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = &XCSRFToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PublishRuleSetVersion(w, r, ruleSetVersionId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RetireRuleSetVersion operation middleware
+func (siw *ServerInterfaceWrapper) RetireRuleSetVersion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "ruleSetVersionId" -------------
+	var ruleSetVersionId RuleSetVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "ruleSetVersionId", chi.URLParam(r, "ruleSetVersionId"), &ruleSetVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "ruleSetVersionId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RetireRuleSetVersionParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CsrfHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = &XCSRFToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RetireRuleSetVersion(w, r, ruleSetVersionId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutRules operation middleware
+func (siw *ServerInterfaceWrapper) PutRules(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "ruleSetVersionId" -------------
+	var ruleSetVersionId RuleSetVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "ruleSetVersionId", chi.URLParam(r, "ruleSetVersionId"), &ruleSetVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "ruleSetVersionId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PutRulesParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CsrfHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = &XCSRFToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutRules(w, r, ruleSetVersionId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SubmitRuleSetVersion operation middleware
+func (siw *ServerInterfaceWrapper) SubmitRuleSetVersion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "ruleSetVersionId" -------------
+	var ruleSetVersionId RuleSetVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "ruleSetVersionId", chi.URLParam(r, "ruleSetVersionId"), &ruleSetVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "ruleSetVersionId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SubmitRuleSetVersionParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CsrfHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = &XCSRFToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SubmitRuleSetVersion(w, r, ruleSetVersionId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutRuleTestCases operation middleware
+func (siw *ServerInterfaceWrapper) PutRuleTestCases(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "ruleSetVersionId" -------------
+	var ruleSetVersionId RuleSetVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "ruleSetVersionId", chi.URLParam(r, "ruleSetVersionId"), &ruleSetVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "ruleSetVersionId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PutRuleTestCasesParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CsrfHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = &XCSRFToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutRuleTestCases(w, r, ruleSetVersionId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RunRuleTests operation middleware
+func (siw *ServerInterfaceWrapper) RunRuleTests(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "ruleSetVersionId" -------------
+	var ruleSetVersionId RuleSetVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "ruleSetVersionId", chi.URLParam(r, "ruleSetVersionId"), &ruleSetVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "ruleSetVersionId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RunRuleTestsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CsrfHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = &XCSRFToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RunRuleTests(w, r, ruleSetVersionId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SimulateRuleSetVersion operation middleware
+func (siw *ServerInterfaceWrapper) SimulateRuleSetVersion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "ruleSetVersionId" -------------
+	var ruleSetVersionId RuleSetVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "ruleSetVersionId", chi.URLParam(r, "ruleSetVersionId"), &ruleSetVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "ruleSetVersionId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SimulateRuleSetVersionParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CsrfHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = &XCSRFToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SimulateRuleSetVersion(w, r, ruleSetVersionId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListRuleSets operation middleware
+func (siw *ServerInterfaceWrapper) ListRuleSets(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListRuleSetsParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "domainCode" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "domainCode", r.URL.Query(), &params.DomainCode, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "domainCode"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "domainCode", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "purpose" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "purpose", r.URL.Query(), &params.Purpose, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "purpose"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "purpose", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListRuleSets(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateRuleSet operation middleware
+func (siw *ServerInterfaceWrapper) CreateRuleSet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateRuleSetParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CsrfHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = &XCSRFToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateRuleSet(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetRuleSet operation middleware
+func (siw *ServerInterfaceWrapper) GetRuleSet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "ruleSetId" -------------
+	var ruleSetId RuleSetId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "ruleSetId", chi.URLParam(r, "ruleSetId"), &ruleSetId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "ruleSetId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetRuleSetParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetRuleSet(w, r, ruleSetId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PatchRuleSet operation middleware
+func (siw *ServerInterfaceWrapper) PatchRuleSet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "ruleSetId" -------------
+	var ruleSetId RuleSetId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "ruleSetId", chi.URLParam(r, "ruleSetId"), &ruleSetId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "ruleSetId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PatchRuleSetParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CsrfHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = &XCSRFToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PatchRuleSet(w, r, ruleSetId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListRuleSetVersions operation middleware
+func (siw *ServerInterfaceWrapper) ListRuleSetVersions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "ruleSetId" -------------
+	var ruleSetId RuleSetId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "ruleSetId", chi.URLParam(r, "ruleSetId"), &ruleSetId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "ruleSetId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListRuleSetVersionsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListRuleSetVersions(w, r, ruleSetId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateRuleSetVersion operation middleware
+func (siw *ServerInterfaceWrapper) CreateRuleSetVersion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "ruleSetId" -------------
+	var ruleSetId RuleSetId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "ruleSetId", chi.URLParam(r, "ruleSetId"), &ruleSetId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "ruleSetId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateRuleSetVersionParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CsrfHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = &XCSRFToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateRuleSetVersion(w, r, ruleSetId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListServiceCategories operation middleware
 func (siw *ServerInterfaceWrapper) ListServiceCategories(w http.ResponseWriter, r *http.Request) {
 
@@ -17257,6 +19541,54 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/prices:resolve", wrapper.ResolvePrice)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/rule-sets", wrapper.ListRuleSets)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/rule-sets", wrapper.CreateRuleSet)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/rule-sets/{ruleSetId}", wrapper.GetRuleSet)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/api/v1/rule-sets/{ruleSetId}", wrapper.PatchRuleSet)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/rule-sets/{ruleSetId}/versions", wrapper.ListRuleSetVersions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/rule-sets/{ruleSetId}/versions", wrapper.CreateRuleSetVersion)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/rule-set-versions/{ruleSetVersionId}", wrapper.GetRuleSetVersion)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/api/v1/rule-set-versions/{ruleSetVersionId}", wrapper.PatchRuleSetVersion)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/v1/rule-set-versions/{ruleSetVersionId}/rules", wrapper.PutRules)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/v1/rule-set-versions/{ruleSetVersionId}/test-cases", wrapper.PutRuleTestCases)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/rule-set-versions/{ruleSetVersionId}/tests:run", wrapper.RunRuleTests)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/rule-set-versions/{ruleSetVersionId}:simulate", wrapper.SimulateRuleSetVersion)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/rule-set-versions/{ruleSetVersionId}/submit", wrapper.SubmitRuleSetVersion)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/rule-set-versions/{ruleSetVersionId}/publish", wrapper.PublishRuleSetVersion)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/rule-set-versions/{ruleSetVersionId}/retire", wrapper.RetireRuleSetVersion)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/rule-evaluations/{ruleEvaluationId}", wrapper.GetRuleEvaluation)
 	})
 
 	return r
@@ -25538,6 +27870,1530 @@ func (response TerminateProvider428ApplicationProblemPlusJSONResponse) VisitTerm
 	return err
 }
 
+type GetRuleEvaluationRequestObject struct {
+	RuleEvaluationId RuleEvaluationId `json:"ruleEvaluationId"`
+	Params           GetRuleEvaluationParams
+}
+
+type GetRuleEvaluationResponseObject interface {
+	VisitGetRuleEvaluationResponse(w http.ResponseWriter) error
+}
+
+type GetRuleEvaluation200JSONResponse RuleEvaluation
+
+func (response GetRuleEvaluation200JSONResponse) VisitGetRuleEvaluationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetRuleEvaluation403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetRuleEvaluation403ApplicationProblemPlusJSONResponse) VisitGetRuleEvaluationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetRuleEvaluation404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetRuleEvaluation404ApplicationProblemPlusJSONResponse) VisitGetRuleEvaluationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetRuleSetVersionRequestObject struct {
+	RuleSetVersionId RuleSetVersionId `json:"ruleSetVersionId"`
+	Params           GetRuleSetVersionParams
+}
+
+type GetRuleSetVersionResponseObject interface {
+	VisitGetRuleSetVersionResponse(w http.ResponseWriter) error
+}
+
+type GetRuleSetVersion200ResponseHeaders struct {
+	ETag *string
+}
+
+type GetRuleSetVersion200JSONResponse struct {
+	Body    RuleSetVersion
+	Headers GetRuleSetVersion200ResponseHeaders
+}
+
+func (response GetRuleSetVersion200JSONResponse) VisitGetRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetRuleSetVersion403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetRuleSetVersion403ApplicationProblemPlusJSONResponse) VisitGetRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetRuleSetVersion404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetRuleSetVersion404ApplicationProblemPlusJSONResponse) VisitGetRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchRuleSetVersionRequestObject struct {
+	RuleSetVersionId RuleSetVersionId `json:"ruleSetVersionId"`
+	Params           PatchRuleSetVersionParams
+	Body             *PatchRuleSetVersionApplicationMergePatchPlusJSONRequestBody
+}
+
+type PatchRuleSetVersionResponseObject interface {
+	VisitPatchRuleSetVersionResponse(w http.ResponseWriter) error
+}
+
+type PatchRuleSetVersion200ResponseHeaders struct {
+	ETag *string
+}
+
+type PatchRuleSetVersion200JSONResponse struct {
+	Body    RuleSetVersion
+	Headers PatchRuleSetVersion200ResponseHeaders
+}
+
+func (response PatchRuleSetVersion200JSONResponse) VisitPatchRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchRuleSetVersion403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response PatchRuleSetVersion403ApplicationProblemPlusJSONResponse) VisitPatchRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchRuleSetVersion404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response PatchRuleSetVersion404ApplicationProblemPlusJSONResponse) VisitPatchRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchRuleSetVersion409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response PatchRuleSetVersion409ApplicationProblemPlusJSONResponse) VisitPatchRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchRuleSetVersion412ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchRuleSetVersion412ApplicationProblemPlusJSONResponse) VisitPatchRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchRuleSetVersion415ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchRuleSetVersion415ApplicationProblemPlusJSONResponse) VisitPatchRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(415)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchRuleSetVersion422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response PatchRuleSetVersion422ApplicationProblemPlusJSONResponse) VisitPatchRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchRuleSetVersion428ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchRuleSetVersion428ApplicationProblemPlusJSONResponse) VisitPatchRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishRuleSetVersionRequestObject struct {
+	RuleSetVersionId RuleSetVersionId `json:"ruleSetVersionId"`
+	Params           PublishRuleSetVersionParams
+	Body             *PublishRuleSetVersionJSONRequestBody
+}
+
+type PublishRuleSetVersionResponseObject interface {
+	VisitPublishRuleSetVersionResponse(w http.ResponseWriter) error
+}
+
+type PublishRuleSetVersion200ResponseHeaders struct {
+	ETag *string
+}
+
+type PublishRuleSetVersion200JSONResponse struct {
+	Body    RuleSetVersion
+	Headers PublishRuleSetVersion200ResponseHeaders
+}
+
+func (response PublishRuleSetVersion200JSONResponse) VisitPublishRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishRuleSetVersion403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response PublishRuleSetVersion403ApplicationProblemPlusJSONResponse) VisitPublishRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishRuleSetVersion404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response PublishRuleSetVersion404ApplicationProblemPlusJSONResponse) VisitPublishRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishRuleSetVersion409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response PublishRuleSetVersion409ApplicationProblemPlusJSONResponse) VisitPublishRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishRuleSetVersion412ApplicationProblemPlusJSONResponse Problem
+
+func (response PublishRuleSetVersion412ApplicationProblemPlusJSONResponse) VisitPublishRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishRuleSetVersion422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response PublishRuleSetVersion422ApplicationProblemPlusJSONResponse) VisitPublishRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishRuleSetVersion428ApplicationProblemPlusJSONResponse Problem
+
+func (response PublishRuleSetVersion428ApplicationProblemPlusJSONResponse) VisitPublishRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RetireRuleSetVersionRequestObject struct {
+	RuleSetVersionId RuleSetVersionId `json:"ruleSetVersionId"`
+	Params           RetireRuleSetVersionParams
+	Body             *RetireRuleSetVersionJSONRequestBody
+}
+
+type RetireRuleSetVersionResponseObject interface {
+	VisitRetireRuleSetVersionResponse(w http.ResponseWriter) error
+}
+
+type RetireRuleSetVersion200ResponseHeaders struct {
+	ETag *string
+}
+
+type RetireRuleSetVersion200JSONResponse struct {
+	Body    RuleSetVersion
+	Headers RetireRuleSetVersion200ResponseHeaders
+}
+
+func (response RetireRuleSetVersion200JSONResponse) VisitRetireRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RetireRuleSetVersion403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RetireRuleSetVersion403ApplicationProblemPlusJSONResponse) VisitRetireRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RetireRuleSetVersion404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response RetireRuleSetVersion404ApplicationProblemPlusJSONResponse) VisitRetireRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RetireRuleSetVersion409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response RetireRuleSetVersion409ApplicationProblemPlusJSONResponse) VisitRetireRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RetireRuleSetVersion412ApplicationProblemPlusJSONResponse Problem
+
+func (response RetireRuleSetVersion412ApplicationProblemPlusJSONResponse) VisitRetireRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RetireRuleSetVersion422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response RetireRuleSetVersion422ApplicationProblemPlusJSONResponse) VisitRetireRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RetireRuleSetVersion428ApplicationProblemPlusJSONResponse Problem
+
+func (response RetireRuleSetVersion428ApplicationProblemPlusJSONResponse) VisitRetireRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutRulesRequestObject struct {
+	RuleSetVersionId RuleSetVersionId `json:"ruleSetVersionId"`
+	Params           PutRulesParams
+	Body             *PutRulesJSONRequestBody
+}
+
+type PutRulesResponseObject interface {
+	VisitPutRulesResponse(w http.ResponseWriter) error
+}
+
+type PutRules200ResponseHeaders struct {
+	ETag *string
+}
+
+type PutRules200JSONResponse struct {
+	Body    RuleList
+	Headers PutRules200ResponseHeaders
+}
+
+func (response PutRules200JSONResponse) VisitPutRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutRules403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response PutRules403ApplicationProblemPlusJSONResponse) VisitPutRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutRules404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response PutRules404ApplicationProblemPlusJSONResponse) VisitPutRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutRules409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response PutRules409ApplicationProblemPlusJSONResponse) VisitPutRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutRules412ApplicationProblemPlusJSONResponse Problem
+
+func (response PutRules412ApplicationProblemPlusJSONResponse) VisitPutRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutRules422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response PutRules422ApplicationProblemPlusJSONResponse) VisitPutRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutRules428ApplicationProblemPlusJSONResponse Problem
+
+func (response PutRules428ApplicationProblemPlusJSONResponse) VisitPutRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitRuleSetVersionRequestObject struct {
+	RuleSetVersionId RuleSetVersionId `json:"ruleSetVersionId"`
+	Params           SubmitRuleSetVersionParams
+	Body             *SubmitRuleSetVersionJSONRequestBody
+}
+
+type SubmitRuleSetVersionResponseObject interface {
+	VisitSubmitRuleSetVersionResponse(w http.ResponseWriter) error
+}
+
+type SubmitRuleSetVersion200ResponseHeaders struct {
+	ETag *string
+}
+
+type SubmitRuleSetVersion200JSONResponse struct {
+	Body    RuleSetVersion
+	Headers SubmitRuleSetVersion200ResponseHeaders
+}
+
+func (response SubmitRuleSetVersion200JSONResponse) VisitSubmitRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitRuleSetVersion403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response SubmitRuleSetVersion403ApplicationProblemPlusJSONResponse) VisitSubmitRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitRuleSetVersion404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response SubmitRuleSetVersion404ApplicationProblemPlusJSONResponse) VisitSubmitRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitRuleSetVersion409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response SubmitRuleSetVersion409ApplicationProblemPlusJSONResponse) VisitSubmitRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitRuleSetVersion412ApplicationProblemPlusJSONResponse Problem
+
+func (response SubmitRuleSetVersion412ApplicationProblemPlusJSONResponse) VisitSubmitRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitRuleSetVersion422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response SubmitRuleSetVersion422ApplicationProblemPlusJSONResponse) VisitSubmitRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitRuleSetVersion428ApplicationProblemPlusJSONResponse Problem
+
+func (response SubmitRuleSetVersion428ApplicationProblemPlusJSONResponse) VisitSubmitRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutRuleTestCasesRequestObject struct {
+	RuleSetVersionId RuleSetVersionId `json:"ruleSetVersionId"`
+	Params           PutRuleTestCasesParams
+	Body             *PutRuleTestCasesJSONRequestBody
+}
+
+type PutRuleTestCasesResponseObject interface {
+	VisitPutRuleTestCasesResponse(w http.ResponseWriter) error
+}
+
+type PutRuleTestCases200ResponseHeaders struct {
+	ETag *string
+}
+
+type PutRuleTestCases200JSONResponse struct {
+	Body    RuleTestCaseList
+	Headers PutRuleTestCases200ResponseHeaders
+}
+
+func (response PutRuleTestCases200JSONResponse) VisitPutRuleTestCasesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutRuleTestCases403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response PutRuleTestCases403ApplicationProblemPlusJSONResponse) VisitPutRuleTestCasesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutRuleTestCases404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response PutRuleTestCases404ApplicationProblemPlusJSONResponse) VisitPutRuleTestCasesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutRuleTestCases409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response PutRuleTestCases409ApplicationProblemPlusJSONResponse) VisitPutRuleTestCasesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutRuleTestCases412ApplicationProblemPlusJSONResponse Problem
+
+func (response PutRuleTestCases412ApplicationProblemPlusJSONResponse) VisitPutRuleTestCasesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutRuleTestCases422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response PutRuleTestCases422ApplicationProblemPlusJSONResponse) VisitPutRuleTestCasesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutRuleTestCases428ApplicationProblemPlusJSONResponse Problem
+
+func (response PutRuleTestCases428ApplicationProblemPlusJSONResponse) VisitPutRuleTestCasesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RunRuleTestsRequestObject struct {
+	RuleSetVersionId RuleSetVersionId `json:"ruleSetVersionId"`
+	Params           RunRuleTestsParams
+}
+
+type RunRuleTestsResponseObject interface {
+	VisitRunRuleTestsResponse(w http.ResponseWriter) error
+}
+
+type RunRuleTests200JSONResponse RuleTestRunResult
+
+func (response RunRuleTests200JSONResponse) VisitRunRuleTestsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RunRuleTests403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RunRuleTests403ApplicationProblemPlusJSONResponse) VisitRunRuleTestsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RunRuleTests404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response RunRuleTests404ApplicationProblemPlusJSONResponse) VisitRunRuleTestsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RunRuleTests422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response RunRuleTests422ApplicationProblemPlusJSONResponse) VisitRunRuleTestsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SimulateRuleSetVersionRequestObject struct {
+	RuleSetVersionId RuleSetVersionId `json:"ruleSetVersionId"`
+	Params           SimulateRuleSetVersionParams
+	Body             *SimulateRuleSetVersionJSONRequestBody
+}
+
+type SimulateRuleSetVersionResponseObject interface {
+	VisitSimulateRuleSetVersionResponse(w http.ResponseWriter) error
+}
+
+type SimulateRuleSetVersion200JSONResponse RuleEvaluationTrace
+
+func (response SimulateRuleSetVersion200JSONResponse) VisitSimulateRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SimulateRuleSetVersion403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response SimulateRuleSetVersion403ApplicationProblemPlusJSONResponse) VisitSimulateRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SimulateRuleSetVersion404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response SimulateRuleSetVersion404ApplicationProblemPlusJSONResponse) VisitSimulateRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SimulateRuleSetVersion422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response SimulateRuleSetVersion422ApplicationProblemPlusJSONResponse) VisitSimulateRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRuleSetsRequestObject struct {
+	Params ListRuleSetsParams
+}
+
+type ListRuleSetsResponseObject interface {
+	VisitListRuleSetsResponse(w http.ResponseWriter) error
+}
+
+type ListRuleSets200JSONResponse RuleSetPage
+
+func (response ListRuleSets200JSONResponse) VisitListRuleSetsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRuleSets400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListRuleSets400ApplicationProblemPlusJSONResponse) VisitListRuleSetsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRuleSets403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListRuleSets403ApplicationProblemPlusJSONResponse) VisitListRuleSetsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRuleSets422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListRuleSets422ApplicationProblemPlusJSONResponse) VisitListRuleSetsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRuleSetRequestObject struct {
+	Params CreateRuleSetParams
+	Body   *CreateRuleSetJSONRequestBody
+}
+
+type CreateRuleSetResponseObject interface {
+	VisitCreateRuleSetResponse(w http.ResponseWriter) error
+}
+
+type CreateRuleSet201ResponseHeaders struct {
+	ETag *string
+}
+
+type CreateRuleSet201JSONResponse struct {
+	Body    RuleSet
+	Headers CreateRuleSet201ResponseHeaders
+}
+
+func (response CreateRuleSet201JSONResponse) VisitCreateRuleSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRuleSet403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CreateRuleSet403ApplicationProblemPlusJSONResponse) VisitCreateRuleSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRuleSet409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response CreateRuleSet409ApplicationProblemPlusJSONResponse) VisitCreateRuleSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRuleSet422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CreateRuleSet422ApplicationProblemPlusJSONResponse) VisitCreateRuleSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetRuleSetRequestObject struct {
+	RuleSetId RuleSetId `json:"ruleSetId"`
+	Params    GetRuleSetParams
+}
+
+type GetRuleSetResponseObject interface {
+	VisitGetRuleSetResponse(w http.ResponseWriter) error
+}
+
+type GetRuleSet200ResponseHeaders struct {
+	ETag *string
+}
+
+type GetRuleSet200JSONResponse struct {
+	Body    RuleSet
+	Headers GetRuleSet200ResponseHeaders
+}
+
+func (response GetRuleSet200JSONResponse) VisitGetRuleSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetRuleSet403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetRuleSet403ApplicationProblemPlusJSONResponse) VisitGetRuleSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetRuleSet404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetRuleSet404ApplicationProblemPlusJSONResponse) VisitGetRuleSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchRuleSetRequestObject struct {
+	RuleSetId RuleSetId `json:"ruleSetId"`
+	Params    PatchRuleSetParams
+	Body      *PatchRuleSetApplicationMergePatchPlusJSONRequestBody
+}
+
+type PatchRuleSetResponseObject interface {
+	VisitPatchRuleSetResponse(w http.ResponseWriter) error
+}
+
+type PatchRuleSet200ResponseHeaders struct {
+	ETag *string
+}
+
+type PatchRuleSet200JSONResponse struct {
+	Body    RuleSet
+	Headers PatchRuleSet200ResponseHeaders
+}
+
+func (response PatchRuleSet200JSONResponse) VisitPatchRuleSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchRuleSet403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response PatchRuleSet403ApplicationProblemPlusJSONResponse) VisitPatchRuleSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchRuleSet404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response PatchRuleSet404ApplicationProblemPlusJSONResponse) VisitPatchRuleSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchRuleSet412ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchRuleSet412ApplicationProblemPlusJSONResponse) VisitPatchRuleSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchRuleSet415ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchRuleSet415ApplicationProblemPlusJSONResponse) VisitPatchRuleSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(415)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchRuleSet422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response PatchRuleSet422ApplicationProblemPlusJSONResponse) VisitPatchRuleSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchRuleSet428ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchRuleSet428ApplicationProblemPlusJSONResponse) VisitPatchRuleSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRuleSetVersionsRequestObject struct {
+	RuleSetId RuleSetId `json:"ruleSetId"`
+	Params    ListRuleSetVersionsParams
+}
+
+type ListRuleSetVersionsResponseObject interface {
+	VisitListRuleSetVersionsResponse(w http.ResponseWriter) error
+}
+
+type ListRuleSetVersions200JSONResponse RuleSetVersionList
+
+func (response ListRuleSetVersions200JSONResponse) VisitListRuleSetVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRuleSetVersions403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListRuleSetVersions403ApplicationProblemPlusJSONResponse) VisitListRuleSetVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRuleSetVersions404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ListRuleSetVersions404ApplicationProblemPlusJSONResponse) VisitListRuleSetVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRuleSetVersionRequestObject struct {
+	RuleSetId RuleSetId `json:"ruleSetId"`
+	Params    CreateRuleSetVersionParams
+	Body      *CreateRuleSetVersionJSONRequestBody
+}
+
+type CreateRuleSetVersionResponseObject interface {
+	VisitCreateRuleSetVersionResponse(w http.ResponseWriter) error
+}
+
+type CreateRuleSetVersion201ResponseHeaders struct {
+	ETag *string
+}
+
+type CreateRuleSetVersion201JSONResponse struct {
+	Body    RuleSetVersion
+	Headers CreateRuleSetVersion201ResponseHeaders
+}
+
+func (response CreateRuleSetVersion201JSONResponse) VisitCreateRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRuleSetVersion403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CreateRuleSetVersion403ApplicationProblemPlusJSONResponse) VisitCreateRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRuleSetVersion404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CreateRuleSetVersion404ApplicationProblemPlusJSONResponse) VisitCreateRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRuleSetVersion409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response CreateRuleSetVersion409ApplicationProblemPlusJSONResponse) VisitCreateRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRuleSetVersion422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CreateRuleSetVersion422ApplicationProblemPlusJSONResponse) VisitCreateRuleSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListServiceCategoriesRequestObject struct {
 	Params ListServiceCategoriesParams
 }
@@ -27533,6 +31389,54 @@ type StrictServerInterface interface {
 
 	// (POST /api/v1/providers/{providerId}/terminate)
 	TerminateProvider(ctx context.Context, request TerminateProviderRequestObject) (TerminateProviderResponseObject, error)
+
+	// (GET /api/v1/rule-evaluations/{ruleEvaluationId})
+	GetRuleEvaluation(ctx context.Context, request GetRuleEvaluationRequestObject) (GetRuleEvaluationResponseObject, error)
+
+	// (GET /api/v1/rule-set-versions/{ruleSetVersionId})
+	GetRuleSetVersion(ctx context.Context, request GetRuleSetVersionRequestObject) (GetRuleSetVersionResponseObject, error)
+
+	// (PATCH /api/v1/rule-set-versions/{ruleSetVersionId})
+	PatchRuleSetVersion(ctx context.Context, request PatchRuleSetVersionRequestObject) (PatchRuleSetVersionResponseObject, error)
+
+	// (POST /api/v1/rule-set-versions/{ruleSetVersionId}/publish)
+	PublishRuleSetVersion(ctx context.Context, request PublishRuleSetVersionRequestObject) (PublishRuleSetVersionResponseObject, error)
+
+	// (POST /api/v1/rule-set-versions/{ruleSetVersionId}/retire)
+	RetireRuleSetVersion(ctx context.Context, request RetireRuleSetVersionRequestObject) (RetireRuleSetVersionResponseObject, error)
+
+	// (PUT /api/v1/rule-set-versions/{ruleSetVersionId}/rules)
+	PutRules(ctx context.Context, request PutRulesRequestObject) (PutRulesResponseObject, error)
+
+	// (POST /api/v1/rule-set-versions/{ruleSetVersionId}/submit)
+	SubmitRuleSetVersion(ctx context.Context, request SubmitRuleSetVersionRequestObject) (SubmitRuleSetVersionResponseObject, error)
+
+	// (PUT /api/v1/rule-set-versions/{ruleSetVersionId}/test-cases)
+	PutRuleTestCases(ctx context.Context, request PutRuleTestCasesRequestObject) (PutRuleTestCasesResponseObject, error)
+
+	// (POST /api/v1/rule-set-versions/{ruleSetVersionId}/tests:run)
+	RunRuleTests(ctx context.Context, request RunRuleTestsRequestObject) (RunRuleTestsResponseObject, error)
+
+	// (POST /api/v1/rule-set-versions/{ruleSetVersionId}:simulate)
+	SimulateRuleSetVersion(ctx context.Context, request SimulateRuleSetVersionRequestObject) (SimulateRuleSetVersionResponseObject, error)
+
+	// (GET /api/v1/rule-sets)
+	ListRuleSets(ctx context.Context, request ListRuleSetsRequestObject) (ListRuleSetsResponseObject, error)
+
+	// (POST /api/v1/rule-sets)
+	CreateRuleSet(ctx context.Context, request CreateRuleSetRequestObject) (CreateRuleSetResponseObject, error)
+
+	// (GET /api/v1/rule-sets/{ruleSetId})
+	GetRuleSet(ctx context.Context, request GetRuleSetRequestObject) (GetRuleSetResponseObject, error)
+
+	// (PATCH /api/v1/rule-sets/{ruleSetId})
+	PatchRuleSet(ctx context.Context, request PatchRuleSetRequestObject) (PatchRuleSetResponseObject, error)
+
+	// (GET /api/v1/rule-sets/{ruleSetId}/versions)
+	ListRuleSetVersions(ctx context.Context, request ListRuleSetVersionsRequestObject) (ListRuleSetVersionsResponseObject, error)
+
+	// (POST /api/v1/rule-sets/{ruleSetId}/versions)
+	CreateRuleSetVersion(ctx context.Context, request CreateRuleSetVersionRequestObject) (CreateRuleSetVersionResponseObject, error)
 
 	// (GET /api/v1/service-categories)
 	ListServiceCategories(ctx context.Context, request ListServiceCategoriesRequestObject) (ListServiceCategoriesResponseObject, error)
@@ -30754,6 +34658,512 @@ func (sh *strictHandler) TerminateProvider(w http.ResponseWriter, r *http.Reques
 	}
 }
 
+// GetRuleEvaluation operation middleware
+func (sh *strictHandler) GetRuleEvaluation(w http.ResponseWriter, r *http.Request, ruleEvaluationId RuleEvaluationId, params GetRuleEvaluationParams) {
+	var request GetRuleEvaluationRequestObject
+
+	request.RuleEvaluationId = ruleEvaluationId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetRuleEvaluation(ctx, request.(GetRuleEvaluationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetRuleEvaluation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetRuleEvaluationResponseObject); ok {
+		if err := validResponse.VisitGetRuleEvaluationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetRuleSetVersion operation middleware
+func (sh *strictHandler) GetRuleSetVersion(w http.ResponseWriter, r *http.Request, ruleSetVersionId RuleSetVersionId, params GetRuleSetVersionParams) {
+	var request GetRuleSetVersionRequestObject
+
+	request.RuleSetVersionId = ruleSetVersionId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetRuleSetVersion(ctx, request.(GetRuleSetVersionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetRuleSetVersion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetRuleSetVersionResponseObject); ok {
+		if err := validResponse.VisitGetRuleSetVersionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PatchRuleSetVersion operation middleware
+func (sh *strictHandler) PatchRuleSetVersion(w http.ResponseWriter, r *http.Request, ruleSetVersionId RuleSetVersionId, params PatchRuleSetVersionParams) {
+	var request PatchRuleSetVersionRequestObject
+
+	request.RuleSetVersionId = ruleSetVersionId
+	request.Params = params
+
+	var body PatchRuleSetVersionApplicationMergePatchPlusJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PatchRuleSetVersion(ctx, request.(PatchRuleSetVersionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PatchRuleSetVersion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PatchRuleSetVersionResponseObject); ok {
+		if err := validResponse.VisitPatchRuleSetVersionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PublishRuleSetVersion operation middleware
+func (sh *strictHandler) PublishRuleSetVersion(w http.ResponseWriter, r *http.Request, ruleSetVersionId RuleSetVersionId, params PublishRuleSetVersionParams) {
+	var request PublishRuleSetVersionRequestObject
+
+	request.RuleSetVersionId = ruleSetVersionId
+	request.Params = params
+
+	var body PublishRuleSetVersionJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PublishRuleSetVersion(ctx, request.(PublishRuleSetVersionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PublishRuleSetVersion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PublishRuleSetVersionResponseObject); ok {
+		if err := validResponse.VisitPublishRuleSetVersionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RetireRuleSetVersion operation middleware
+func (sh *strictHandler) RetireRuleSetVersion(w http.ResponseWriter, r *http.Request, ruleSetVersionId RuleSetVersionId, params RetireRuleSetVersionParams) {
+	var request RetireRuleSetVersionRequestObject
+
+	request.RuleSetVersionId = ruleSetVersionId
+	request.Params = params
+
+	var body RetireRuleSetVersionJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RetireRuleSetVersion(ctx, request.(RetireRuleSetVersionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RetireRuleSetVersion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RetireRuleSetVersionResponseObject); ok {
+		if err := validResponse.VisitRetireRuleSetVersionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutRules operation middleware
+func (sh *strictHandler) PutRules(w http.ResponseWriter, r *http.Request, ruleSetVersionId RuleSetVersionId, params PutRulesParams) {
+	var request PutRulesRequestObject
+
+	request.RuleSetVersionId = ruleSetVersionId
+	request.Params = params
+
+	var body PutRulesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutRules(ctx, request.(PutRulesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutRules")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutRulesResponseObject); ok {
+		if err := validResponse.VisitPutRulesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SubmitRuleSetVersion operation middleware
+func (sh *strictHandler) SubmitRuleSetVersion(w http.ResponseWriter, r *http.Request, ruleSetVersionId RuleSetVersionId, params SubmitRuleSetVersionParams) {
+	var request SubmitRuleSetVersionRequestObject
+
+	request.RuleSetVersionId = ruleSetVersionId
+	request.Params = params
+
+	var body SubmitRuleSetVersionJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SubmitRuleSetVersion(ctx, request.(SubmitRuleSetVersionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SubmitRuleSetVersion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SubmitRuleSetVersionResponseObject); ok {
+		if err := validResponse.VisitSubmitRuleSetVersionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutRuleTestCases operation middleware
+func (sh *strictHandler) PutRuleTestCases(w http.ResponseWriter, r *http.Request, ruleSetVersionId RuleSetVersionId, params PutRuleTestCasesParams) {
+	var request PutRuleTestCasesRequestObject
+
+	request.RuleSetVersionId = ruleSetVersionId
+	request.Params = params
+
+	var body PutRuleTestCasesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutRuleTestCases(ctx, request.(PutRuleTestCasesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutRuleTestCases")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutRuleTestCasesResponseObject); ok {
+		if err := validResponse.VisitPutRuleTestCasesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RunRuleTests operation middleware
+func (sh *strictHandler) RunRuleTests(w http.ResponseWriter, r *http.Request, ruleSetVersionId RuleSetVersionId, params RunRuleTestsParams) {
+	var request RunRuleTestsRequestObject
+
+	request.RuleSetVersionId = ruleSetVersionId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RunRuleTests(ctx, request.(RunRuleTestsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RunRuleTests")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RunRuleTestsResponseObject); ok {
+		if err := validResponse.VisitRunRuleTestsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SimulateRuleSetVersion operation middleware
+func (sh *strictHandler) SimulateRuleSetVersion(w http.ResponseWriter, r *http.Request, ruleSetVersionId RuleSetVersionId, params SimulateRuleSetVersionParams) {
+	var request SimulateRuleSetVersionRequestObject
+
+	request.RuleSetVersionId = ruleSetVersionId
+	request.Params = params
+
+	var body SimulateRuleSetVersionJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SimulateRuleSetVersion(ctx, request.(SimulateRuleSetVersionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SimulateRuleSetVersion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SimulateRuleSetVersionResponseObject); ok {
+		if err := validResponse.VisitSimulateRuleSetVersionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListRuleSets operation middleware
+func (sh *strictHandler) ListRuleSets(w http.ResponseWriter, r *http.Request, params ListRuleSetsParams) {
+	var request ListRuleSetsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListRuleSets(ctx, request.(ListRuleSetsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListRuleSets")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListRuleSetsResponseObject); ok {
+		if err := validResponse.VisitListRuleSetsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateRuleSet operation middleware
+func (sh *strictHandler) CreateRuleSet(w http.ResponseWriter, r *http.Request, params CreateRuleSetParams) {
+	var request CreateRuleSetRequestObject
+
+	request.Params = params
+
+	var body CreateRuleSetJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateRuleSet(ctx, request.(CreateRuleSetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateRuleSet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateRuleSetResponseObject); ok {
+		if err := validResponse.VisitCreateRuleSetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetRuleSet operation middleware
+func (sh *strictHandler) GetRuleSet(w http.ResponseWriter, r *http.Request, ruleSetId RuleSetId, params GetRuleSetParams) {
+	var request GetRuleSetRequestObject
+
+	request.RuleSetId = ruleSetId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetRuleSet(ctx, request.(GetRuleSetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetRuleSet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetRuleSetResponseObject); ok {
+		if err := validResponse.VisitGetRuleSetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PatchRuleSet operation middleware
+func (sh *strictHandler) PatchRuleSet(w http.ResponseWriter, r *http.Request, ruleSetId RuleSetId, params PatchRuleSetParams) {
+	var request PatchRuleSetRequestObject
+
+	request.RuleSetId = ruleSetId
+	request.Params = params
+
+	var body PatchRuleSetApplicationMergePatchPlusJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PatchRuleSet(ctx, request.(PatchRuleSetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PatchRuleSet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PatchRuleSetResponseObject); ok {
+		if err := validResponse.VisitPatchRuleSetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListRuleSetVersions operation middleware
+func (sh *strictHandler) ListRuleSetVersions(w http.ResponseWriter, r *http.Request, ruleSetId RuleSetId, params ListRuleSetVersionsParams) {
+	var request ListRuleSetVersionsRequestObject
+
+	request.RuleSetId = ruleSetId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListRuleSetVersions(ctx, request.(ListRuleSetVersionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListRuleSetVersions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListRuleSetVersionsResponseObject); ok {
+		if err := validResponse.VisitListRuleSetVersionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateRuleSetVersion operation middleware
+func (sh *strictHandler) CreateRuleSetVersion(w http.ResponseWriter, r *http.Request, ruleSetId RuleSetId, params CreateRuleSetVersionParams) {
+	var request CreateRuleSetVersionRequestObject
+
+	request.RuleSetId = ruleSetId
+	request.Params = params
+
+	var body CreateRuleSetVersionJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateRuleSetVersion(ctx, request.(CreateRuleSetVersionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateRuleSetVersion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateRuleSetVersionResponseObject); ok {
+		if err := validResponse.VisitCreateRuleSetVersionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListServiceCategories operation middleware
 func (sh *strictHandler) ListServiceCategories(w http.ResponseWriter, r *http.Request, params ListServiceCategoriesParams) {
 	var request ListServiceCategoriesRequestObject
@@ -31496,625 +35906,4 @@ func (sh *strictHandler) GetReadiness(w http.ResponseWriter, r *http.Request) {
 	} else if response != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
 	}
-}
-
-// Base64 encoded, compressed with deflate, json marshaled OpenAPI spec.
-// Stored as a slice of fixed-width chunks rather than one concatenated
-// const string: with thousands of chunks the chained `+` fold is several
-// times slower for the Go compiler than parsing a slice literal.
-var swaggerSpec = []string{
-	"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",
-	"v//r/wMAAP//",
-}
-
-// decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,
-// after base64-decoding and flate-decompressing the embedded blob.
-func decodeSpec() ([]byte, error) {
-	encoded := strings.Join(swaggerSpec, "")
-	compressed, err := base64.StdEncoding.DecodeString(encoded)
-	if err != nil {
-		return nil, fmt.Errorf("error base64 decoding spec: %w", err)
-	}
-	zr := flate.NewReader(bytes.NewReader(compressed))
-	var buf bytes.Buffer
-	if _, err := buf.ReadFrom(zr); err != nil {
-		return nil, fmt.Errorf("read flate: %w", err)
-	}
-	if err := zr.Close(); err != nil {
-		return nil, fmt.Errorf("close flate reader: %w", err)
-	}
-
-	return buf.Bytes(), nil
-}
-
-var rawSpec = decodeSpecCached()
-
-// a naive cache of the decoded OpenAPI spec
-func decodeSpecCached() func() ([]byte, error) {
-	data, err := decodeSpec()
-	return func() ([]byte, error) {
-		return data, err
-	}
-}
-
-// Constructs a synthetic filesystem for resolving external references when loading openapi specifications.
-func PathToRawSpec(pathToFile string) map[string]func() ([]byte, error) {
-	res := make(map[string]func() ([]byte, error))
-	if len(pathToFile) > 0 {
-		res[pathToFile] = rawSpec
-	}
-
-	return res
-}
-
-// GetSpec returns the OpenAPI specification corresponding to the generated
-// code in this file. External references in the spec are resolved through
-// PathToRawSpec; externally-referenced files must be embedded in their
-// corresponding Go packages (via the import-mapping feature). URL-based
-// external refs are not supported.
-func GetSpec() (swagger *openapi3.T, err error) {
-	resolvePath := PathToRawSpec("")
-
-	loader := openapi3.NewLoader()
-	loader.IsExternalRefsAllowed = true
-	loader.ReadFromURIFunc = func(loader *openapi3.Loader, url *url.URL) ([]byte, error) {
-		pathToFile := url.String()
-		pathToFile = path.Clean(pathToFile)
-		getSpec, ok := resolvePath[pathToFile]
-		if !ok {
-			err1 := fmt.Errorf("path not found: %s", pathToFile)
-			return nil, err1
-		}
-		return getSpec()
-	}
-	var specData []byte
-	specData, err = rawSpec()
-	if err != nil {
-		return
-	}
-	swagger, err = loader.LoadFromData(specData)
-	if err != nil {
-		return
-	}
-	return
-}
-
-// GetSpecJSON returns the raw JSON bytes of the embedded OpenAPI
-// specification: decompressed but not unmarshaled. External references
-// are not resolved here; the bytes are the spec exactly as embedded by
-// codegen. The result is cached at package init time, so repeated calls
-// are cheap.
-func GetSpecJSON() ([]byte, error) {
-	return rawSpec()
-}
-
-// GetSwagger returns the OpenAPI specification corresponding to the
-// generated code in this file.
-//
-// Deprecated: GetSwagger predates kin-openapi renaming openapi3.Swagger
-// to openapi3.T. Use [GetSpec] instead. This wrapper is retained for
-// backwards compatibility.
-func GetSwagger() (*openapi3.T, error) {
-	return GetSpec()
 }

@@ -5,6 +5,8 @@ generate:
   models: true
   chi-server: true
   strict-server: true
-  embedded-spec: true
+  # No embedded spec: nothing reads it, and the base64 of the deflated document is
+  # indistinguishable from a credential to every secret scanner that looks at the file.
+  embedded-spec: false
 output-options:
   skip-prune: false
