@@ -75,6 +75,21 @@ closing M1.
 Integration order: 01 → 02 → 03 → 04 → 05 → 06 (06 starts on mocks as soon as each
 contract lands). Migrations: 000014 (01, relationship versioning), 000015 (02), 000016 (03), 000017 (04), 000018 (05).
 
+## M3 work packages (issued 2026-09-04)
+
+| WP                                                                           | Title                                                                                       | Depends on         | Parallel with | Size | Owner  |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------ | ------------- | ---- | ------ |
+| [WP-I3-01](docs/delegation/WP-I3-01-catalog-and-code-systems.md)             | Service catalog API, external code systems, service code mapping                            | M2                 | 02            | M    | Claude |
+| [WP-I3-02](docs/delegation/WP-I3-02-provider-network.md)                     | Provider profiles, locations, capabilities, practitioners, provider search                  | 01                 | 01            | L    | Claude |
+| [WP-I3-03](docs/delegation/WP-I3-03-contracts-and-prices.md)                 | Contracts, versions (maker-checker), price lists, packages, quotas, deterministic selection | 01, 02             | 04            | L    | Claude |
+| [WP-I3-04](docs/delegation/WP-I3-04-rule-engine.md)                          | Rule sets, CEL rules, test cases, publish gate, immutable evaluations                       | M2, 01             | 03            | L    | Claude |
+| [WP-I3-05](docs/delegation/WP-I3-05-pricing-quote.md)                        | Pricing quote composing eligibility, price selection, rules and balances                    | 01-04              | 06            | M    | Claude |
+| [WP-I3-06](docs/delegation/WP-I3-06-frontend-catalog-providers-contracts.md) | Backoffice screens: catalog, providers, contracts, rules, quote                             | contracts of 01-05 | all           | L    | Claude |
+
+Integration order: 01 → 02 → 03 → 04 → 05 → 06 (06 starts on mocks as soon as each
+contract lands). Migrations: 000019 (01), 000020 (02), 000021 (03), 000022 (04), 000023 (05).
+New ADR required: ADR-022, the rule expression language (CEL).
+
 ## Cross-cutting tracks
 
 - **Security and privacy:** every WP carries the non-negotiable rules from the handbook
@@ -98,6 +113,7 @@ contract lands). Migrations: 000014 (01, relationship versioning), 000015 (02), 
 
 ## Status log
 
+- 2026-09-04 · M3 opened: six work packages WP-I3-01..06 written from plan v2.0 I3 and the v1.2 Phase 4 acceptance criteria; migration numbers 000019-000023 assigned. The milestone turns on two rules the baseline states plainly and this plan refuses to soften: one service date selects exactly one contract price or answers REVIEW_REQUIRED, never a coin flip; and a rule version reaches review only with a passing test case and is published only by a second person.
 - 2026-09-03 · WP-I2-06 delivered, closing M2: backoffice screens for members (list, create, detail tabs for identity, family, memberships, enrollments, entitlements with ledger, and eligibility), programs and plans, the plan version editor with maker-checker publishing, the entitlement adjustment approval queue, and member import from upload through review to apply. The identifier search and every publish, retire, approve, reject, upload and apply ask for the password again. Identity numbers stay in component state and are only ever shown masked; nothing goes into browser storage. Quantities stay decimal strings end to end. Two mock-versus-server divergences were corrected in the mock rather than worked around. 85 Vitest specs and 6 Playwright smoke flows pass, Impeccable reports no anti-patterns.
 - 2026-09-03 · WP-I2-05 delivered: member import with CSV_V1 parsing (delimiter and byte-order-mark tolerant, line-accurate errors), staging that never holds a plaintext identifier, validation and blind-index matching, a review queue for conflicts and invalid rows, and idempotent apply in transactional chunks (re-applying changes nothing; a new source version updates instead of duplicating). Migration 000018; schema version 18.
 - 2026-09-03 · WP-I2-04 delivered: eligibility check with as-of resolution (person, membership, enrollment, published plan version, balances including family-shared accounts), eleven explanation codes, per-item results, immutable evaluation snapshots without identifiers, idempotent replay and provider-scope enforcement. Migration 000017; schema version 17.
