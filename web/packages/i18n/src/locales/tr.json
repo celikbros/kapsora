@@ -12,7 +12,7 @@
     "programs": "Programlar ve Planlar",
     "wallets": "Hak Cüzdanları",
     "catalog": "Hizmet Kataloğu",
-    "providers": "Sağlayıcılar ve Sözleşmeler",
+    "providers": "Sağlayıcılar",
     "requests": "Talepler ve Onaylar",
     "health": "Sağlık",
     "lodging": "Konaklama",
@@ -27,7 +27,11 @@
     "organizations": "Kurumlar",
     "mainMenu": "Ana menü",
     "adjustments": "Hak Düzeltmeleri",
-    "imports": "Üye İçe Aktarma"
+    "imports": "Üye İçe Aktarma",
+    "contracts": "Sözleşmeler",
+    "rules": "Kurallar",
+    "pricing": "Fiyat Sorgusu",
+    "codeSystems": "Kod Sistemleri"
   },
   "auth": {
     "loginTitle": "Oturum aç",
@@ -280,7 +284,7 @@
     "RULE_COMPILE_FAILED": "Kural koşulu derlenemedi",
     "TESTS_REQUIRED": "En az bir test senaryosu gerekli",
     "TESTS_FAILING": "Bazı test senaryoları başarısız",
-    "DUPLICATE": "Bu değer bu kümede birden fazla kez var",
+    "DUPLICATE": "Aynı değer birden çok kez verilmiş",
     "REQUIRED": "Zorunlu alan",
     "LENGTH": "Uzunluk sınırların dışında",
     "FORMAT": "Biçim geçersiz",
@@ -320,7 +324,6 @@
     "IMMUTABLE": "Bu alan değiştirilemez",
     "DEPTH_EXCEEDED": "Kategori ağacı en fazla altı seviye olabilir",
     "PERIOD": "Bitiş tarihi başlangıçtan sonra olmalı",
-    "DUPLICATE": "Aynı değer birden çok kez verilmiş",
     "NOT_FOUND": "Seçilen kayıt bulunamadı",
     "MAX_ITEMS": "Satır sayısı üst sınırı aşıyor"
   },
@@ -859,5 +862,782 @@
     "allStatuses": "Tüm durumlar",
     "uploaded": "Dosya alındı ve doğrulanıyor.",
     "notAllowed": "Üye içe aktarma yetkiniz yok."
+  },
+  "catalog": {
+    "title": "Hizmet Kataloğu",
+    "intro": "Sistemin ortak sözlüğü: talep, fiyat, claim ve kural hep bir hizmet tanımını gösterir.",
+    "categories": {
+      "title": "Kategoriler",
+      "new": "Yeni kategori",
+      "createTitle": "Yeni kategori",
+      "editTitle": "Kategoriyi düzenle",
+      "empty": "Henüz kategori yok.",
+      "root": "Üst kategori yok"
+    },
+    "definitions": {
+      "title": "Hizmet tanımları",
+      "new": "Yeni hizmet",
+      "createTitle": "Yeni hizmet tanımı",
+      "detailTitle": "Hizmet tanımı",
+      "empty": "Hizmet tanımı bulunamadı.",
+      "emptyHint": "Filtreleri temizleyin ya da yeni bir hizmet tanımlayın."
+    },
+    "search": "Ad veya kod ara",
+    "statusFilter": "Durum",
+    "allStatuses": "Hepsi",
+    "active": "Aktif",
+    "inactive": "Pasif",
+    "fields": {
+      "code": "Kod",
+      "name": "Ad",
+      "description": "Açıklama",
+      "parent": "Üst kategori",
+      "category": "Kategori",
+      "domain": "Alan",
+      "fulfillmentMode": "Karşılama biçimi",
+      "defaultUnitType": "Varsayılan birim",
+      "requiresProvider": "Sağlayıcı gerekir",
+      "active": "Aktif"
+    },
+    "codeImmutableHint": "Kod oluşturulduktan sonra değiştirilemez; sözleşmeler ve claim kayıtları bu kodu gösterir. Yanlış bir kod pasife alınır ve yerine yenisi tanımlanır.",
+    "created": "Hizmet tanımı oluşturuldu.",
+    "updated": "Hizmet tanımı güncellendi.",
+    "categoryCreated": "Kategori oluşturuldu.",
+    "categoryUpdated": "Kategori güncellendi.",
+    "domains": {
+      "GENERIC": "Genel",
+      "HEALTH": "Sağlık",
+      "ACCOMMODATION": "Konaklama",
+      "ASSISTANCE": "Asistans",
+      "EDUCATION": "Eğitim",
+      "SPORT": "Spor",
+      "TRANSPORT": "Ulaşım",
+      "CARE": "Bakım",
+      "OTHER": "Diğer"
+    },
+    "fulfillment": {
+      "APPOINTMENT": "Randevu",
+      "RESERVATION": "Rezervasyon",
+      "WORK_ORDER": "İş emri",
+      "MEMBERSHIP": "Üyelik",
+      "SESSION": "Seans",
+      "VOUCHER": "Kupon",
+      "REIMBURSEMENT": "Geri ödeme",
+      "DIRECT": "Doğrudan"
+    },
+    "mappings": {
+      "title": "Dış kod eşleştirmeleri",
+      "empty": "Bu hizmet henüz bir dış kodla eşleştirilmedi.",
+      "add": "Eşleştirme ekle",
+      "remove": "Kaldır",
+      "columns": {
+        "system": "Kod sistemi",
+        "code": "Kod",
+        "period": "Geçerlilik",
+        "primary": "Birincil"
+      },
+      "saved": "Eşleştirmeler kaydedildi."
+    }
+  },
+  "codeSystems": {
+    "title": "Kod sistemleri",
+    "intro": "Tenantın kendi hizmetlerinin dış dünyada hangi kodla anıldığı: SUT, HUV, ICD-10 ve kurum içi sistemler.",
+    "new": "Yeni kod sistemi",
+    "createTitle": "Yeni kod sistemi",
+    "detailTitle": "Kod sistemi",
+    "empty": "Kod sistemi tanımlı değil.",
+    "fields": {
+      "code": "Kod",
+      "name": "Ad",
+      "version": "Sürüm",
+      "authority": "Yayınlayan",
+      "licensed": "Lisanslı içerik",
+      "status": "Durum",
+      "validFrom": "Başlangıç",
+      "validTo": "Bitiş"
+    },
+    "licensedHint": "Lisanslı içerik tenant dışına aktarılamaz.",
+    "authorities": {
+      "SGK": "SGK",
+      "SB": "Sağlık Bakanlığı",
+      "WHO": "WHO",
+      "TENANT": "Kurum içi",
+      "OTHER": "Diğer"
+    },
+    "values": {
+      "title": "Kodlar",
+      "search": "Kod veya açıklama ara",
+      "asOf": "Şu tarihte geçerli",
+      "asOfHint": "Geçmiş bir claim, o gün geçerli olan kodlara göre çözümlenir.",
+      "empty": "Bu tarihte geçerli kod bulunamadı.",
+      "columns": {
+        "code": "Kod",
+        "display": "Açıklama",
+        "period": "Geçerlilik"
+      },
+      "import": "Kod yükle",
+      "importTitle": "Kod listesi yükle",
+      "importHint": "Her çağrıda en fazla 5.000 satır. Bir satır hatalıysa hiçbiri yazılmaz.",
+      "imported": "{{created}} kod eklendi, {{updated}} güncellendi, {{skipped}} değişmedi."
+    },
+    "created": "Kod sistemi oluşturuldu.",
+    "updated": "Kod sistemi güncellendi."
+  },
+  "providers": {
+    "title": "Sağlayıcılar",
+    "intro": "Hizmeti kimin, nerede verdiği. Sözleşmeler bu kayıtlara fiyat bağlar.",
+    "new": "Yeni sağlayıcı",
+    "createTitle": "Yeni sağlayıcı",
+    "detailTitle": "Sağlayıcı",
+    "empty": "Sağlayıcı bulunamadı.",
+    "emptyHint": "Filtreleri temizleyin ya da yeni bir sağlayıcı ekleyin.",
+    "search": "Ad ara",
+    "typeFilter": "Sağlayıcı türü",
+    "allTypes": "Tüm türler",
+    "statusFilter": "Durum",
+    "allStatuses": "Tüm durumlar",
+    "cityFilter": "Şehir",
+    "columns": {
+      "name": "Ad",
+      "type": "Tür",
+      "tier": "Kademe",
+      "locations": "Lokasyon",
+      "status": "Durum"
+    },
+    "fields": {
+      "organization": "Kurum",
+      "providerType": "Sağlayıcı türü",
+      "networkTier": "Ağ kademesi",
+      "contractedFrom": "Anlaşma başlangıcı",
+      "contractedTo": "Anlaşma bitişi",
+      "notes": "Notlar",
+      "status": "Durum"
+    },
+    "statuses": {
+      "PENDING": "Beklemede",
+      "ACTIVE": "Aktif",
+      "SUSPENDED": "Askıda",
+      "TERMINATED": "Sonlandırıldı"
+    },
+    "types": {
+      "HOSPITAL": "Hastane",
+      "CLINIC": "Klinik",
+      "PHARMACY": "Eczane",
+      "LABORATORY": "Laboratuvar",
+      "IMAGING": "Görüntüleme",
+      "HOTEL": "Otel",
+      "AGENCY": "Acente",
+      "TRANSPORT": "Ulaşım",
+      "EDUCATION": "Eğitim",
+      "SPORT": "Spor",
+      "OTHER": "Diğer"
+    },
+    "activate": "Aktifleştir",
+    "suspend": "Askıya al",
+    "terminate": "Sonlandır",
+    "suspendTitle": "Sağlayıcıyı askıya al",
+    "terminateTitle": "Sağlayıcıyı sonlandır",
+    "terminateConfirm": "Sonlandırma geri alınamaz. Sağlayıcı bir daha aktifleştirilemez; yeni bir kayıt açmak gerekir.",
+    "reasonCode": "Sebep",
+    "reasonText": "Açıklama",
+    "activated": "Sağlayıcı aktifleştirildi.",
+    "suspended": "Sağlayıcı askıya alındı.",
+    "terminated": "Sağlayıcı sonlandırıldı.",
+    "created": "Sağlayıcı oluşturuldu.",
+    "updated": "Sağlayıcı güncellendi.",
+    "tabs": {
+      "profile": "Profil",
+      "locations": "Lokasyonlar",
+      "capabilities": "Yetkinlikler",
+      "practitioners": "Uygulayıcılar"
+    }
+  },
+  "locations": {
+    "title": "Lokasyonlar",
+    "new": "Yeni lokasyon",
+    "createTitle": "Yeni lokasyon",
+    "editTitle": "Lokasyonu düzenle",
+    "empty": "Bu sağlayıcının lokasyonu yok.",
+    "columns": {
+      "code": "Kod",
+      "name": "Ad",
+      "city": "Şehir",
+      "status": "Durum"
+    },
+    "fields": {
+      "code": "Kod",
+      "name": "Ad",
+      "addressLine": "Adres",
+      "district": "İlçe",
+      "city": "Şehir",
+      "postalCode": "Posta kodu",
+      "countryCode": "Ülke",
+      "phone": "Telefon",
+      "timezone": "Saat dilimi",
+      "latitude": "Enlem",
+      "longitude": "Boylam",
+      "status": "Durum"
+    },
+    "statuses": {
+      "ACTIVE": "Aktif",
+      "SUSPENDED": "Askıda",
+      "CLOSED": "Kapalı"
+    },
+    "created": "Lokasyon oluşturuldu.",
+    "updated": "Lokasyon güncellendi."
+  },
+  "capabilities": {
+    "title": "Yetkinlikler",
+    "intro": "Bu lokasyonda hangi hizmetin verilebildiği. Kategori seçilirse, sonradan o kategoriye eklenen hizmetler de kapsanır.",
+    "empty": "Bu lokasyon için yetkinlik tanımlı değil.",
+    "add": "Satır ekle",
+    "remove": "Kaldır",
+    "saved": "Yetkinlikler kaydedildi.",
+    "columns": {
+      "target": "Kapsam",
+      "period": "Geçerlilik",
+      "notes": "Not"
+    },
+    "fields": {
+      "targetType": "Kapsam türü",
+      "definition": "Hizmet",
+      "category": "Kategori",
+      "validFrom": "Başlangıç",
+      "validTo": "Bitiş"
+    },
+    "targets": {
+      "DEFINITION": "Tek hizmet",
+      "CATEGORY": "Kategori"
+    },
+    "matchedVia": {
+      "DEFINITION": "Doğrudan",
+      "CATEGORY": "Kategoriden"
+    }
+  },
+  "practitioners": {
+    "title": "Uygulayıcılar",
+    "new": "Yeni uygulayıcı",
+    "createTitle": "Yeni uygulayıcı",
+    "detailTitle": "Uygulayıcı",
+    "empty": "Bu sağlayıcının uygulayıcı kaydı yok.",
+    "search": "Sicil ile ara",
+    "searchTitle": "Sicil numarasıyla ara",
+    "searchIntro": "Numara hiçbir yerde saklanmaz, adres çubuğuna yazılmaz ve her sorgu denetim kaydına geçer.",
+    "columns": {
+      "name": "Ad",
+      "title": "Unvan",
+      "branch": "Branş",
+      "registration": "Sicil",
+      "status": "Durum"
+    },
+    "fields": {
+      "fullName": "Ad soyad",
+      "title": "Unvan",
+      "branchCode": "Branş",
+      "registrationAuthority": "Sicil kurumu",
+      "registrationNumber": "Sicil numarası",
+      "person": "Hak sahibi kaydı",
+      "validFrom": "Başlangıç",
+      "validTo": "Bitiş",
+      "status": "Durum"
+    },
+    "registrationHint": "Sicil numarası TCKN ile aynı korumaya tabidir: şifreli saklanır, yalnız maskeli gösterilir ve oluşturulduktan sonra değiştirilemez.",
+    "authorities": {
+      "TTB": "TTB",
+      "SB": "Sağlık Bakanlığı",
+      "TDB": "TDB",
+      "TEB": "TEB",
+      "OTHER": "Diğer"
+    },
+    "statuses": {
+      "ACTIVE": "Aktif",
+      "SUSPENDED": "Askıda",
+      "ENDED": "Sonlandı"
+    },
+    "created": "Uygulayıcı oluşturuldu.",
+    "updated": "Uygulayıcı güncellendi.",
+    "assignments": {
+      "title": "Görev yerleri",
+      "empty": "Görev yeri tanımlı değil.",
+      "add": "Görev yeri ekle",
+      "saved": "Görev yerleri kaydedildi.",
+      "columns": {
+        "location": "Lokasyon",
+        "role": "Görev",
+        "period": "Geçerlilik"
+      }
+    },
+    "roles": {
+      "ATTENDING": "Sorumlu hekim",
+      "CONSULTANT": "Konsültan",
+      "TECHNICIAN": "Teknisyen",
+      "ADMINISTRATIVE": "İdari"
+    }
+  },
+  "contracts": {
+    "title": "Sözleşmeler",
+    "intro": "Bir hizmetin sağlayıcıya ne ödendiği ve bunun ne kadarını hak sahibinin taşıdığı.",
+    "new": "Yeni sözleşme",
+    "createTitle": "Yeni sözleşme",
+    "detailTitle": "Sözleşme",
+    "empty": "Sözleşme bulunamadı.",
+    "emptyHint": "Filtreleri temizleyin ya da yeni bir sözleşme açın.",
+    "search": "Ad veya kod ara",
+    "statusFilter": "Durum",
+    "allStatuses": "Tüm durumlar",
+    "columns": {
+      "code": "Kod",
+      "name": "Ad",
+      "provider": "Sağlayıcı",
+      "payer": "Ödeyici",
+      "versions": "Sürüm",
+      "status": "Durum"
+    },
+    "fields": {
+      "code": "Kod",
+      "name": "Ad",
+      "payer": "Ödeyici kurum",
+      "sponsor": "Sponsor kurum",
+      "provider": "Sağlayıcı",
+      "domain": "Alan",
+      "status": "Durum"
+    },
+    "statuses": {
+      "DRAFT": "Taslak",
+      "ACTIVE": "Aktif",
+      "SUSPENDED": "Askıda",
+      "CLOSED": "Kapalı"
+    },
+    "changeStatus": "Durumu değiştir…",
+    "created": "Sözleşme oluşturuldu.",
+    "updated": "Sözleşme güncellendi.",
+    "versions": {
+      "title": "Sözleşme sürümleri",
+      "new": "Yeni sürüm",
+      "createTitle": "Yeni sözleşme sürümü",
+      "detailTitle": "Sözleşme sürümü",
+      "empty": "Bu sözleşmenin sürümü yok.",
+      "columns": {
+        "versionNo": "Sürüm",
+        "period": "Geçerlilik",
+        "currency": "Para birimi",
+        "published": "Yayın",
+        "status": "Durum"
+      },
+      "fields": {
+        "validFrom": "Başlangıç",
+        "validTo": "Bitiş",
+        "currency": "Para birimi",
+        "notes": "Notlar",
+        "configurationHash": "Yapılandırma özeti",
+        "submittedBy": "Gönderen",
+        "publishedBy": "Yayınlayan",
+        "reviewComment": "İnceleme notu"
+      },
+      "copyFrom": "Şu sürümden kopyala",
+      "copyFromNone": "Boş başla",
+      "statuses": {
+        "DRAFT": "Taslak",
+        "UNDER_REVIEW": "İncelemede",
+        "PUBLISHED": "Yayında",
+        "RETIRED": "Kullanımdan çıktı"
+      },
+      "submit": "İncelemeye gönder",
+      "publish": "Yayınla",
+      "retire": "Kullanımdan çıkar",
+      "submitConfirm": "Sürüm incelemeye gönderilir ve bundan sonra değiştirilemez. Yayına almayı başka biri onaylar.",
+      "publishConfirm": "Sürüm yayına alınır. Bu tarihten sonraki fiyatlar buna göre hesaplanır ve sürüm bir daha değiştirilemez.",
+      "retireConfirm": "Sürüm kullanımdan çıkarılır. Bu sürüme göre hesaplanmış geçmiş kayıtlar olduğu gibi kalır.",
+      "submitted": "Sürüm incelemeye gönderildi.",
+      "published": "Sürüm yayınlandı.",
+      "retired": "Sürüm kullanımdan çıkarıldı.",
+      "readOnly": "Yayınlanmış sürüm değiştirilemez. Yeni bir taslak açıp değişikliği orada yapın.",
+      "sameActorBlocked": "Bir sürümü inceleyip yayınlayan kişi, onu gönderen kişi olamaz. Başka bir yetkili yayınlamalı.",
+      "needsPriceItem": "İncelemeye göndermek için en az bir fiyat satırı gerekir.",
+      "retireReason": "Kullanımdan çıkarma sebebi"
+    }
+  },
+  "priceLists": {
+    "title": "Fiyat cetvelleri",
+    "empty": "Bu sürümde fiyat cetveli yok.",
+    "add": "Cetvel ekle",
+    "remove": "Kaldır",
+    "saved": "Fiyat cetvelleri kaydedildi.",
+    "fields": {
+      "code": "Kod",
+      "name": "Ad",
+      "priority": "Öncelik",
+      "seasonFrom": "Sezon başlangıcı",
+      "seasonTo": "Sezon bitişi",
+      "weekdays": "Günler"
+    },
+    "allDays": "Her gün",
+    "allYear": "Tüm yıl",
+    "weekdays": {
+      "MON": "Pzt",
+      "TUE": "Sal",
+      "WED": "Çar",
+      "THU": "Per",
+      "FRI": "Cum",
+      "SAT": "Cmt",
+      "SUN": "Paz"
+    }
+  },
+  "priceItems": {
+    "title": "Fiyat satırları",
+    "empty": "Bu cetvelde fiyat satırı yok.",
+    "add": "Satır ekle",
+    "remove": "Kaldır",
+    "saved": "Fiyat satırları kaydedildi.",
+    "columns": {
+      "scope": "Kapsam",
+      "location": "Lokasyon",
+      "method": "Yöntem",
+      "amount": "Tutar",
+      "bounds": "Alt/üst sınır",
+      "memberShare": "Hak sahibi payı",
+      "period": "Geçerlilik",
+      "priority": "Öncelik"
+    },
+    "fields": {
+      "scopeType": "Kapsam türü",
+      "definition": "Hizmet",
+      "category": "Kategori",
+      "package": "Paket",
+      "location": "Lokasyon",
+      "unitType": "Birim",
+      "method": "Fiyat yöntemi",
+      "amount": "Tutar",
+      "percent": "Yüzde",
+      "formulaKey": "Formül anahtarı",
+      "minAmount": "Alt sınır",
+      "maxAmount": "Üst sınır",
+      "shareMethod": "Pay yöntemi",
+      "shareAmount": "Pay tutarı",
+      "sharePercent": "Pay yüzdesi",
+      "validFrom": "Başlangıç",
+      "validTo": "Bitiş",
+      "priority": "Öncelik"
+    },
+    "scopes": {
+      "DEFINITION": "Hizmet",
+      "CATEGORY": "Kategori",
+      "PACKAGE": "Paket"
+    },
+    "methods": {
+      "FIXED": "Sabit",
+      "UNIT": "Birim başına",
+      "PERCENT_OF_LIST": "Talebin yüzdesi",
+      "FORMULA": "Formül"
+    },
+    "shareMethods": {
+      "NONE": "Yok",
+      "FIXED": "Sabit",
+      "PERCENT": "Yüzde"
+    },
+    "anyLocation": "Tüm lokasyonlar",
+    "priorityHint": "Aynı özgüllükteki iki satırda büyük öncelik kazanır. Öncelikler de eşitse sistem seçim yapmaz ve inceleme ister."
+  },
+  "packages": {
+    "title": "Paketler",
+    "empty": "Bu sürümde paket yok.",
+    "add": "Paket ekle",
+    "addLine": "Hizmet ekle",
+    "saved": "Paketler kaydedildi.",
+    "fields": {
+      "code": "Kod",
+      "name": "Ad",
+      "inclusionRule": "Kapsama kuralı",
+      "minLines": "En az kaç satır",
+      "includedQuantity": "Dahil miktar"
+    },
+    "rules": {
+      "ALL": "Tümü dahil",
+      "ANY_OF_N": "N tanesi"
+    }
+  },
+  "quotas": {
+    "title": "Kotalar",
+    "empty": "Bu sürümde kota yok.",
+    "add": "Kota ekle",
+    "saved": "Kotalar kaydedildi.",
+    "columns": {
+      "scope": "Kapsam",
+      "period": "Dönem",
+      "capacity": "Kapasite",
+      "consumed": "Kullanılan"
+    },
+    "fields": {
+      "location": "Lokasyon",
+      "definition": "Hizmet",
+      "periodType": "Dönem türü",
+      "periodFrom": "Dönem başlangıcı",
+      "periodTo": "Dönem bitişi",
+      "capacity": "Kapasite",
+      "allowOverdraft": "Aşıma izin ver"
+    },
+    "periods": {
+      "DAY": "Gün",
+      "WEEK": "Hafta",
+      "MONTH": "Ay",
+      "YEAR": "Yıl",
+      "CONTRACT": "Sözleşme boyu"
+    }
+  },
+  "paymentTerm": {
+    "title": "Ödeme koşulları",
+    "empty": "Bu sürümde ödeme koşulu tanımlı değil.",
+    "saved": "Ödeme koşulları kaydedildi.",
+    "fields": {
+      "dueDays": "Vade (gün)",
+      "settlementMethod": "Ödeme yöntemi",
+      "taxBehaviour": "KDV davranışı",
+      "vatRate": "KDV oranı",
+      "lateFeePercent": "Gecikme faizi"
+    },
+    "settlement": {
+      "BANK_TRANSFER": "Havale/EFT",
+      "OFFSET": "Mahsup",
+      "OTHER": "Diğer"
+    },
+    "tax": {
+      "EXCLUSIVE": "Hariç",
+      "INCLUSIVE": "Dahil",
+      "EXEMPT": "İstisna"
+    }
+  },
+  "rules": {
+    "title": "Kurallar",
+    "intro": "Müşteriden müşteriye değişen kararlar: hangi belge zorunlu, ne zaman ön onay gerekir, kim kapsamda.",
+    "new": "Yeni kural seti",
+    "createTitle": "Yeni kural seti",
+    "detailTitle": "Kural seti",
+    "empty": "Kural seti bulunamadı.",
+    "emptyHint": "Filtreleri temizleyin ya da yeni bir kural seti açın.",
+    "search": "Ad veya kod ara",
+    "purposeFilter": "Amaç",
+    "allPurposes": "Tüm amaçlar",
+    "columns": {
+      "code": "Kod",
+      "name": "Ad",
+      "purpose": "Amaç",
+      "domain": "Alan",
+      "versions": "Sürüm",
+      "status": "Durum"
+    },
+    "fields": {
+      "code": "Kod",
+      "name": "Ad",
+      "purpose": "Amaç",
+      "domain": "Alan",
+      "status": "Durum"
+    },
+    "statuses": {
+      "ACTIVE": "Aktif",
+      "INACTIVE": "Pasif"
+    },
+    "purposes": {
+      "ELIGIBILITY": "Uygunluk",
+      "DOCUMENT": "Belge zorunluluğu",
+      "PREAUTH": "Ön onay",
+      "LIMIT": "Limit",
+      "DUPLICATE": "Mükerrerlik",
+      "DIAGNOSIS_SERVICE": "Tanı-hizmet uyumu",
+      "PRICE": "Fiyat",
+      "ADJUDICATION": "Claim değerlendirme"
+    },
+    "created": "Kural seti oluşturuldu.",
+    "updated": "Kural seti güncellendi.",
+    "versions": {
+      "title": "Kural sürümleri",
+      "new": "Yeni sürüm",
+      "createTitle": "Yeni kural sürümü",
+      "detailTitle": "Kural sürümü",
+      "empty": "Bu setin sürümü yok.",
+      "columns": {
+        "versionNo": "Sürüm",
+        "period": "Geçerlilik",
+        "rules": "Kural",
+        "status": "Durum"
+      },
+      "fields": {
+        "validFrom": "Başlangıç",
+        "validTo": "Bitiş",
+        "notes": "Notlar",
+        "inputSchema": "Girdi değişkenleri",
+        "contentHash": "İçerik özeti",
+        "submittedBy": "Gönderen",
+        "publishedBy": "Yayınlayan"
+      },
+      "statuses": {
+        "DRAFT": "Taslak",
+        "UNDER_REVIEW": "İncelemede",
+        "PUBLISHED": "Yayında",
+        "RETIRED": "Kullanımdan çıktı"
+      },
+      "submit": "İncelemeye gönder",
+      "publish": "Yayınla",
+      "retire": "Kullanımdan çıkar",
+      "submitConfirm": "Sürüm incelemeye gönderilir ve bundan sonra değiştirilemez. Yayına almayı başka biri onaylar.",
+      "publishConfirm": "Sürüm yayına alınır. Bu tarihten sonraki kararlar buna göre verilir ve sürüm bir daha değiştirilemez.",
+      "retireConfirm": "Sürüm kullanımdan çıkarılır. Bu sürüme göre verilmiş geçmiş kararlar olduğu gibi kalır.",
+      "submitted": "Sürüm incelemeye gönderildi.",
+      "published": "Sürüm yayınlandı.",
+      "retired": "Sürüm kullanımdan çıkarıldı.",
+      "readOnly": "Yayınlanmış sürüm değiştirilemez. Yeni bir taslak açıp değişikliği orada yapın.",
+      "sameActorBlocked": "Bir sürümü inceleyip yayınlayan kişi, onu gönderen kişi olamaz. Başka bir yetkili yayınlamalı.",
+      "retireReason": "Kullanımdan çıkarma sebebi",
+      "testsRequired": "İncelemeye göndermek için en az bir test senaryosu gerekir.",
+      "testsFailing": "Şu senaryolar geçmiyor: {{codes}}"
+    },
+    "items": {
+      "title": "Kurallar",
+      "empty": "Bu sürümde kural yok.",
+      "add": "Kural ekle",
+      "remove": "Kaldır",
+      "saved": "Kurallar kaydedildi.",
+      "columns": {
+        "priority": "Sıra",
+        "code": "Kod",
+        "condition": "Koşul",
+        "actions": "Aksiyon",
+        "explanation": "Açıklama kodu"
+      },
+      "fields": {
+        "code": "Kod",
+        "name": "Ad",
+        "priority": "Sıra",
+        "condition": "Koşul (CEL)",
+        "explanationCode": "Açıklama kodu",
+        "stopOnMatch": "Eşleşince dur",
+        "active": "Aktif"
+      },
+      "priorityHint": "Kurallar sıraya göre küçükten büyüğe çalışır. İki kural aynı sırayı paylaşamaz.",
+      "conditionHint": "CEL ifadesi. Yalnız bu sürümde tanımlı değişkenler ve age(), overlaps() kullanılabilir; ağ, dosya ve sorgu erişimi yoktur.",
+      "compileError": "İfade derlenmedi"
+    },
+    "actions": {
+      "title": "Aksiyonlar",
+      "add": "Aksiyon ekle",
+      "APPROVE": "Onayla",
+      "REJECT": "Reddet",
+      "WARN": "Uyar",
+      "REQUIRE_DOCUMENT": "Belge iste",
+      "REQUIRE_PREAUTH": "Ön onay iste",
+      "REQUIRE_MEDICAL_REVIEW": "Tıbbi inceleme iste",
+      "REQUIRE_FINANCIAL_REVIEW": "Mali inceleme iste",
+      "PARTIAL_APPROVE": "Kısmen onayla",
+      "RESERVE_ENTITLEMENT": "Hak ayır",
+      "ADJUST_PRICE": "Fiyatı düzelt",
+      "SET_LIMIT": "Limit koy"
+    },
+    "tests": {
+      "title": "Test senaryoları",
+      "empty": "Bu sürümde test senaryosu yok. En az bir geçen senaryo olmadan sürüm incelemeye gönderilemez.",
+      "add": "Senaryo ekle",
+      "remove": "Kaldır",
+      "saved": "Test senaryoları kaydedildi.",
+      "run": "Testleri çalıştır",
+      "running": "Çalışıyor…",
+      "allPassed": "{{count}} senaryonun hepsi geçti.",
+      "someFailed": "{{failed}} / {{total}} senaryo geçmedi.",
+      "columns": {
+        "code": "Kod",
+        "description": "Açıklama",
+        "expected": "Beklenen",
+        "actual": "Gerçekleşen",
+        "result": "Sonuç"
+      },
+      "fields": {
+        "code": "Kod",
+        "description": "Açıklama",
+        "input": "Girdi (JSON)",
+        "expectedOutcome": "Beklenen sonuç",
+        "expectedExplanations": "Beklenen açıklama kodları"
+      },
+      "passed": "Geçti",
+      "failed": "Geçmedi"
+    },
+    "simulation": {
+      "title": "Simülasyon",
+      "intro": "Bir girdiyi bu sürüme karşı çalıştırır. Hiçbir kayıt yazılmaz, hiçbir bakiye değişmez.",
+      "run": "Çalıştır",
+      "input": "Girdi (JSON)",
+      "empty": "Henüz çalıştırılmadı.",
+      "trace": "İz",
+      "columns": {
+        "sequence": "#",
+        "rule": "Kural",
+        "matched": "Eşleşti",
+        "action": "Aksiyon",
+        "explanation": "Açıklama"
+      }
+    },
+    "outcomes": {
+      "APPROVED": "Onaylandı",
+      "REJECTED": "Reddedildi",
+      "REVIEW_REQUIRED": "İnceleme gerekiyor",
+      "PARTIALLY_APPROVED": "Kısmen onaylandı"
+    }
+  },
+  "pricing": {
+    "title": "Fiyat sorgusu",
+    "intro": "Bu hizmet, bu sağlayıcıda, bu tarihte ne tutar; ne kadarını plan karşılar, ne kadarını hak sahibi öder.",
+    "run": "Hesapla",
+    "running": "Hesaplanıyor…",
+    "empty": "Henüz sorgu yapılmadı.",
+    "disclaimer": "Bu bir fiyat bilgisidir, ön onay değildir. Hiçbir hak ayrılmaz ve hiçbir bakiye değişmez.",
+    "expired": "Bu teklifin geçerlilik süresi {{date}} tarihinde doldu. Fiyatlar değişmiş olabilir.",
+    "fields": {
+      "person": "Hak sahibi",
+      "serviceDate": "Hizmet tarihi",
+      "provider": "Sağlayıcı",
+      "location": "Lokasyon",
+      "program": "Program",
+      "service": "Hizmet",
+      "quantity": "Miktar",
+      "requestedAmount": "Talep edilen tutar",
+      "addItem": "Satır ekle",
+      "removeItem": "Kaldır"
+    },
+    "columns": {
+      "line": "Satır",
+      "requested": "Talep edilen",
+      "contract": "Sözleşme tutarı",
+      "covered": "Kapsanan",
+      "payer": "Ödeyici",
+      "member": "Hak sahibi"
+    },
+    "totals": "Toplam",
+    "sourcesTitle": "Bu sonuç neye dayanıyor",
+    "sources": {
+      "contractVersion": "Sözleşme sürümü",
+      "priceItem": "Fiyat satırı",
+      "planVersion": "Plan sürümü",
+      "ruleVersions": "Kural sürümleri",
+      "evaluation": "Uygunluk değerlendirmesi"
+    },
+    "quoteId": "Teklif no",
+    "outcomes": {
+      "QUOTED": "Fiyatlandı",
+      "PARTIAL": "Kısmen kapsanıyor",
+      "REVIEW_REQUIRED": "İnceleme gerekiyor",
+      "NOT_ELIGIBLE": "Kapsam dışı"
+    },
+    "reviewHint": "Bir tutar gösterilmiyor çünkü hangi fiyatın geçerli olduğu belirsiz. Aşağıdaki iki satırdan biri düzeltilmeli.",
+    "explanations": {
+      "NOT_ELIGIBLE": "Hak sahibi bu tarihte kapsamda değil; tutarın tamamı kendisine ait.",
+      "PRICE_NOT_FOUND": "Bu hizmet için geçerli bir sözleşme fiyatı bulunamadı.",
+      "PRICE_AMBIGUOUS": "Aynı özgüllükte iki fiyat eşleşti; sistem seçim yapmaz.",
+      "MEMBER_SHARE_APPLIED": "Sözleşmedeki katkı payı uygulandı.",
+      "LIMIT_APPLIED": "Bir kural planın karşılayacağı tutara üst sınır koydu.",
+      "PRICE_ADJUSTED": "Bir kural tutarı değiştirdi.",
+      "PRICE_CLAMPED_TO_MINIMUM": "Tutar sözleşmedeki alt sınıra çekildi.",
+      "PRICE_CLAMPED_TO_MAXIMUM": "Tutar sözleşmedeki üst sınıra çekildi.",
+      "BALANCE_INSUFFICIENT": "Hak bakiyesi kapsanan tutarın tamamına yetmedi.",
+      "ROUNDED_TO_CURRENCY": "Tutar para biriminin kuruşuna yuvarlandı.",
+      "PRICE_FORMULA_UNKNOWN": "Fiyat formülü çözülemedi; tutar hesaplanamaz.",
+      "REVIEW_REQUESTED_BY_RULE": "Bir kural bu satır için inceleme istedi."
+    }
   }
 }
