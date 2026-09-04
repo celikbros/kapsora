@@ -301,3 +301,53 @@ func TestAnEmptyQuoteIsQuoted(t *testing.T) {
 		t.Fatalf("res = %+v", res)
 	}
 }
+
+// Two services drawing on one entitlement account share its balance. Quoting each of them
+// the whole balance would tell a member they owe nothing for 600 TRY of services against a
+// 300 TRY account.
+func TestTwoLinesOnOneAccountShareItsBalance(t *testing.T) {
+	first := line(t, fixed(t, "300"), "300")
+	first.AccountKey = "PHYSIO"
+	second := line(t, fixed(t, "300"), "300")
+	second.LineNo = 2
+	second.AccountKey = "PHYSIO"
+
+	res := pricing.Calculate([]pricing.Item{first, second}, minorUnits)
+
+	if res.Items[0].Payer.String() != "300" || !res.Items[0].Member.IsZero() {
+		t.Fatalf("first line: payer %s member %s", res.Items[0].Payer, res.Items[0].Member)
+	}
+	if !res.Items[1].Payer.IsZero() || res.Items[1].Member.String() != "300" {
+		t.Fatalf("second line: payer %s member %s, want the balance already spent",
+			res.Items[1].Payer, res.Items[1].Member)
+	}
+	if res.Payer.String() != "300" || res.Member.String() != "300" {
+		t.Fatalf("totals: payer %s member %s", res.Payer, res.Member)
+	}
+}
+
+func TestLinesOnDifferentAccountsKeepTheirOwnBalances(t *testing.T) {
+	first := line(t, fixed(t, "300"), "300")
+	first.AccountKey = "PHYSIO"
+	second := line(t, fixed(t, "300"), "300")
+	second.LineNo = 2
+	second.AccountKey = "DENTAL"
+
+	res := pricing.Calculate([]pricing.Item{first, second}, minorUnits)
+	if res.Payer.String() != "600" || !res.Member.IsZero() {
+		t.Fatalf("payer %s member %s", res.Payer, res.Member)
+	}
+}
+
+// A line with no account key keeps the balance it was given, which is what a single-line
+// quote and every fixture without an account relies on.
+func TestLinesWithoutAnAccountKeyAreIndependent(t *testing.T) {
+	first := line(t, fixed(t, "300"), "300")
+	second := line(t, fixed(t, "300"), "300")
+	second.LineNo = 2
+
+	res := pricing.Calculate([]pricing.Item{first, second}, minorUnits)
+	if res.Payer.String() != "600" {
+		t.Fatalf("payer = %s, want 600", res.Payer)
+	}
+}

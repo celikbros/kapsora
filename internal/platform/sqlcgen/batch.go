@@ -234,6 +234,94 @@ func (b *CreatePriceItemBatchResults) Close() error {
 	return b.br.Close()
 }
 
+const createPriceQuoteItem = `-- name: CreatePriceQuoteItem :batchexec
+INSERT INTO contract.price_quote_item (
+    tenant_id, price_quote_id, line_no, service_definition_id, package_definition_id,
+    price_item_id, quantity, requested_amount, contract_amount, covered_amount,
+    payer_amount, member_amount, outcome, explanations)
+VALUES ($1, $2, $3,
+        $4, $5,
+        $6,
+        $7::text::numeric,
+        $8::text::numeric,
+        $9::text::numeric,
+        $10::text::numeric,
+        $11::text::numeric,
+        $12::text::numeric,
+        $13, $14)
+`
+
+type CreatePriceQuoteItemBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type CreatePriceQuoteItemParams struct {
+	TenantID            uuid.UUID
+	PriceQuoteID        uuid.UUID
+	LineNo              int32
+	ServiceDefinitionID uuid.NullUUID
+	PackageDefinitionID uuid.NullUUID
+	PriceItemID         uuid.NullUUID
+	Quantity            string
+	RequestedAmount     string
+	ContractAmount      string
+	CoveredAmount       string
+	PayerAmount         string
+	MemberAmount        string
+	Outcome             string
+	Explanations        []byte
+}
+
+// One priced line. The five figures are stored separately because an operator and a
+// member need to read them apart from one another (v1.2 11.6).
+func (q *Queries) CreatePriceQuoteItem(ctx context.Context, arg []CreatePriceQuoteItemParams) *CreatePriceQuoteItemBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.TenantID,
+			a.PriceQuoteID,
+			a.LineNo,
+			a.ServiceDefinitionID,
+			a.PackageDefinitionID,
+			a.PriceItemID,
+			a.Quantity,
+			a.RequestedAmount,
+			a.ContractAmount,
+			a.CoveredAmount,
+			a.PayerAmount,
+			a.MemberAmount,
+			a.Outcome,
+			a.Explanations,
+		}
+		batch.Queue(createPriceQuoteItem, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &CreatePriceQuoteItemBatchResults{br, len(arg), false}
+}
+
+func (b *CreatePriceQuoteItemBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *CreatePriceQuoteItemBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
 const createProviderCapability = `-- name: CreateProviderCapability :batchexec
 INSERT INTO provider.capability (tenant_id, location_id, service_definition_id,
                                  service_category_id, valid_from, valid_to, notes)

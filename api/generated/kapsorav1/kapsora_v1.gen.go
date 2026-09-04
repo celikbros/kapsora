@@ -1504,6 +1504,51 @@ func (e PriceMatchTarget) Valid() bool {
 	}
 }
 
+// Defines values for PriceQuoteExplanationSeverity.
+const (
+	PriceQuoteExplanationSeverityERROR   PriceQuoteExplanationSeverity = "ERROR"
+	PriceQuoteExplanationSeverityINFO    PriceQuoteExplanationSeverity = "INFO"
+	PriceQuoteExplanationSeverityWARNING PriceQuoteExplanationSeverity = "WARNING"
+)
+
+// Valid indicates whether the value is a known member of the PriceQuoteExplanationSeverity enum.
+func (e PriceQuoteExplanationSeverity) Valid() bool {
+	switch e {
+	case PriceQuoteExplanationSeverityERROR:
+		return true
+	case PriceQuoteExplanationSeverityINFO:
+		return true
+	case PriceQuoteExplanationSeverityWARNING:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PriceQuoteOutcome.
+const (
+	PriceQuoteOutcomeNOTELIGIBLE    PriceQuoteOutcome = "NOT_ELIGIBLE"
+	PriceQuoteOutcomePARTIAL        PriceQuoteOutcome = "PARTIAL"
+	PriceQuoteOutcomeQUOTED         PriceQuoteOutcome = "QUOTED"
+	PriceQuoteOutcomeREVIEWREQUIRED PriceQuoteOutcome = "REVIEW_REQUIRED"
+)
+
+// Valid indicates whether the value is a known member of the PriceQuoteOutcome enum.
+func (e PriceQuoteOutcome) Valid() bool {
+	switch e {
+	case PriceQuoteOutcomeNOTELIGIBLE:
+		return true
+	case PriceQuoteOutcomePARTIAL:
+		return true
+	case PriceQuoteOutcomeQUOTED:
+		return true
+	case PriceQuoteOutcomeREVIEWREQUIRED:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PricingMethod.
 const (
 	PricingMethodFIXED         PricingMethod = "FIXED"
@@ -3006,6 +3051,33 @@ type CreatePractitionerRequest struct {
 	ValidTo            *openapi_types.Date `json:"validTo,omitempty"`
 }
 
+// CreatePriceQuoteRequest defines model for CreatePriceQuoteRequest.
+type CreatePriceQuoteRequest struct {
+	// Context Recognised hints only, exactly as the eligibility check reads them: domain
+	// (HEALTH classifies the access audit row HEALTH instead of PERSONAL),
+	// entitlementCode for every line and entitlementCodes positionally per line.
+	// Anything else is ignored, never stored and never hashed.
+	Context *map[string]interface{} `json:"context,omitempty"`
+
+	// EligibilityEvaluationId An eligibility evaluation the caller already made for this person, recorded on
+	// the quote so the two can be read together. The quote never creates one itself:
+	// opening an entitlement account posts a ledger entry, and a quote must leave the
+	// ledger untouched.
+	EligibilityEvaluationId *openapi_types.UUID     `json:"eligibilityEvaluationId,omitempty"`
+	Items                   []PriceQuoteRequestItem `json:"items"`
+
+	// LocationId Where the service is delivered; a location-specific price needs it.
+	LocationId *openapi_types.UUID `json:"locationId,omitempty"`
+	PersonId   openapi_types.UUID  `json:"personId"`
+
+	// ProgramId Restricts the enrollment the eligibility step may use.
+	ProgramId         *openapi_types.UUID `json:"programId,omitempty"`
+	ProviderProfileId openapi_types.UUID  `json:"providerProfileId"`
+
+	// ServiceDate The day the service is delivered. The whole quote is made against it.
+	ServiceDate openapi_types.Date `json:"serviceDate"`
+}
+
 // CreateProgramRequest defines model for CreateProgramRequest.
 type CreateProgramRequest struct {
 	Code                  string              `json:"code"`
@@ -4036,6 +4108,132 @@ type PriceListList struct {
 // PriceMatchTarget What the price item names: the service definition itself, a package containing it,
 // or a category above it in the catalog tree.
 type PriceMatchTarget string
+
+// PriceQuote defines model for PriceQuote.
+type PriceQuote struct {
+	ContractAmount string `json:"contractAmount"`
+
+	// ContractVersionId The published contract version the winning prices came from.
+	ContractVersionId *openapi_types.UUID `json:"contractVersionId,omitempty"`
+	CoveredAmount     string              `json:"coveredAmount"`
+	CurrencyCode      string              `json:"currencyCode"`
+
+	// Disclaimer Plain-language statement that a quote is not an authorization and grants nothing:
+	// no reservation, no approval and no ledger movement. Carried through to the UI so
+	// nobody at a counter mistakes a quote for a decision.
+	Disclaimer              string              `json:"disclaimer"`
+	EligibilityEvaluationId *openapi_types.UUID `json:"eligibilityEvaluationId,omitempty"`
+
+	// Expired True when expiresAt has passed. An expired quote still reads back and says so
+	// rather than disappearing, because a member who was given a number is owed the
+	// reason it no longer holds.
+	Expired bool `json:"expired"`
+
+	// ExpiresAt When the quote stops holding, from the tenant setting pricing.quote_ttl_hours.
+	ExpiresAt time.Time          `json:"expiresAt"`
+	Id        openapi_types.UUID `json:"id"`
+
+	// Items One entry per requested line, in line order.
+	Items        []PriceQuoteItem    `json:"items"`
+	LocationId   *openapi_types.UUID `json:"locationId,omitempty"`
+	MemberAmount string              `json:"memberAmount"`
+
+	// Outcome The answer for one line or for the whole quote. QUOTED means the plan carries what
+	// the rules and the balance allow; PARTIAL means it carries part of it; NOT_ELIGIBLE
+	// still prices the service, because a member the plan does not cover may still choose
+	// to pay privately; REVIEW_REQUIRED means nobody may act on the line yet, and a quote
+	// in that state carries no payer and no member figure at all.
+	Outcome           PriceQuoteOutcome   `json:"outcome"`
+	PayerAmount       string              `json:"payerAmount"`
+	PersonId          openapi_types.UUID  `json:"personId"`
+	PlanVersionId     *openapi_types.UUID `json:"planVersionId,omitempty"`
+	ProgramId         *openapi_types.UUID `json:"programId,omitempty"`
+	ProviderProfileId openapi_types.UUID  `json:"providerProfileId"`
+	QuotedAt          time.Time           `json:"quotedAt"`
+	QuotedBy          *openapi_types.UUID `json:"quotedBy,omitempty"`
+	RequestedAmount   string              `json:"requestedAmount"`
+
+	// RuleSetVersionIds Every published PRICE rule set version that was evaluated for this quote.
+	RuleSetVersionIds []openapi_types.UUID `json:"ruleSetVersionIds"`
+	ServiceDate       openapi_types.Date   `json:"serviceDate"`
+}
+
+// PriceQuoteExplanation defines model for PriceQuoteExplanation.
+type PriceQuoteExplanation struct {
+	// Code Stable, machine-readable reason for a figure that is not simply the contract
+	// amount: NOT_ELIGIBLE, PRICE_NOT_FOUND, PRICE_AMBIGUOUS, MEMBER_SHARE_APPLIED,
+	// LIMIT_APPLIED, PRICE_ADJUSTED, PRICE_CLAMPED_TO_MINIMUM,
+	// PRICE_CLAMPED_TO_MAXIMUM, BALANCE_INSUFFICIENT, ROUNDED_TO_CURRENCY,
+	// PRICE_FORMULA_UNKNOWN or REVIEW_REQUESTED_BY_RULE.
+	Code     string                        `json:"code"`
+	Severity PriceQuoteExplanationSeverity `json:"severity"`
+
+	// Source The rule code that caused this line, when a rule caused it.
+	Source *string `json:"source,omitempty"`
+}
+
+// PriceQuoteExplanationSeverity defines model for PriceQuoteExplanation.Severity.
+type PriceQuoteExplanationSeverity string
+
+// PriceQuoteItem defines model for PriceQuoteItem.
+type PriceQuoteItem struct {
+	// ContractAmount What the contract says the line costs, before the plan carries any of it.
+	ContractAmount string `json:"contractAmount"`
+
+	// CoveredAmount How much of the contract amount the plan is willing to carry.
+	CoveredAmount string                  `json:"coveredAmount"`
+	Explanations  []PriceQuoteExplanation `json:"explanations"`
+
+	// LineNo The requested line position, counting from one.
+	LineNo int `json:"lineNo"`
+
+	// MemberAmount What the member pays out of pocket; payerAmount plus memberAmount is exactly the
+	// contract amount, which is why the rounding happens once and the member takes the
+	// difference.
+	MemberAmount string `json:"memberAmount"`
+
+	// Outcome The answer for one line or for the whole quote. QUOTED means the plan carries what
+	// the rules and the balance allow; PARTIAL means it carries part of it; NOT_ELIGIBLE
+	// still prices the service, because a member the plan does not cover may still choose
+	// to pay privately; REVIEW_REQUIRED means nobody may act on the line yet, and a quote
+	// in that state carries no payer and no member figure at all.
+	Outcome             PriceQuoteOutcome   `json:"outcome"`
+	PackageDefinitionId *openapi_types.UUID `json:"packageDefinitionId,omitempty"`
+
+	// PayerAmount What the payer ends up paying, capped by the entitlement balance.
+	PayerAmount string `json:"payerAmount"`
+
+	// PriceItemId The contract price item that won the selection; null when none did.
+	PriceItemId         *openapi_types.UUID `json:"priceItemId,omitempty"`
+	Quantity            string              `json:"quantity"`
+	RequestedAmount     string              `json:"requestedAmount"`
+	ServiceDefinitionId *openapi_types.UUID `json:"serviceDefinitionId,omitempty"`
+}
+
+// PriceQuoteOutcome The answer for one line or for the whole quote. QUOTED means the plan carries what
+// the rules and the balance allow; PARTIAL means it carries part of it; NOT_ELIGIBLE
+// still prices the service, because a member the plan does not cover may still choose
+// to pay privately; REVIEW_REQUIRED means nobody may act on the line yet, and a quote
+// in that state carries no payer and no member figure at all.
+type PriceQuoteOutcome string
+
+// PriceQuoteRequestItem defines model for PriceQuoteRequestItem.
+type PriceQuoteRequestItem struct {
+	// PackageDefinitionId The package being priced. Exactly one of this and serviceDefinitionId.
+	PackageDefinitionId *openapi_types.UUID `json:"packageDefinitionId,omitempty"`
+
+	// Quantity Exact decimal string, greater than zero; a UNIT price multiplies by it. Never a
+	// JSON number, because a quantity that passes through a float is a quantity that
+	// can come back different.
+	Quantity string `json:"quantity"`
+
+	// RequestedAmount What the provider asked for, as an exact decimal string. A PERCENT_OF_LIST price
+	// is a percentage of it.
+	RequestedAmount *string `json:"requestedAmount,omitempty"`
+
+	// ServiceDefinitionId The service being priced. Exactly one of this and packageDefinitionId.
+	ServiceDefinitionId *openapi_types.UUID `json:"serviceDefinitionId,omitempty"`
+}
 
 // PricingMethod How the amount of a price item is arrived at. FIXED and UNIT carry an amount,
 // PERCENT_OF_LIST a percent, FORMULA the key of a calculation rule.
@@ -5238,6 +5436,9 @@ type PractitionerId = openapi_types.UUID
 // PriceListId defines model for PriceListId.
 type PriceListId = openapi_types.UUID
 
+// PriceQuoteId defines model for PriceQuoteId.
+type PriceQuoteId = openapi_types.UUID
+
 // ProgramId defines model for ProgramId.
 type ProgramId = openapi_types.UUID
 
@@ -6100,6 +6301,24 @@ type ResolvePriceParams struct {
 	XCSRFToken *CsrfHeader `json:"X-CSRF-Token,omitempty"`
 }
 
+// CreatePriceQuoteParams defines parameters for CreatePriceQuote.
+type CreatePriceQuoteParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Optional on query-style POSTs; honoured when present.
+	IdempotencyKey *IdempotencyKeyOptional `json:"Idempotency-Key,omitempty"`
+
+	// XCSRFToken Required when the request is authenticated with the BFF session cookie.
+	XCSRFToken *CsrfHeader `json:"X-CSRF-Token,omitempty"`
+}
+
+// GetPriceQuoteParams defines parameters for GetPriceQuote.
+type GetPriceQuoteParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
 // ListProgramsParams defines parameters for ListPrograms.
 type ListProgramsParams struct {
 	// Cursor Opaque cursor from the previous response.
@@ -6894,6 +7113,9 @@ type PutPriceItemsJSONRequestBody = ReplacePriceItemsRequest
 // ResolvePriceJSONRequestBody defines body for ResolvePrice for application/json ContentType.
 type ResolvePriceJSONRequestBody = ResolvePriceRequest
 
+// CreatePriceQuoteJSONRequestBody defines body for CreatePriceQuote for application/json ContentType.
+type CreatePriceQuoteJSONRequestBody = CreatePriceQuoteRequest
+
 // CreateProgramJSONRequestBody defines body for CreateProgram for application/json ContentType.
 type CreateProgramJSONRequestBody = CreateProgramRequest
 
@@ -7235,6 +7457,12 @@ type ServerInterface interface {
 
 	// (POST /api/v1/prices:resolve)
 	ResolvePrice(w http.ResponseWriter, r *http.Request, params ResolvePriceParams)
+
+	// (POST /api/v1/pricing/quotes)
+	CreatePriceQuote(w http.ResponseWriter, r *http.Request, params CreatePriceQuoteParams)
+
+	// (GET /api/v1/pricing/quotes/{priceQuoteId})
+	GetPriceQuote(w http.ResponseWriter, r *http.Request, priceQuoteId PriceQuoteId, params GetPriceQuoteParams)
 
 	// (GET /api/v1/programs)
 	ListPrograms(w http.ResponseWriter, r *http.Request, params ListProgramsParams)
@@ -7822,6 +8050,16 @@ func (_ Unimplemented) PutPriceItems(w http.ResponseWriter, r *http.Request, pri
 
 // (POST /api/v1/prices:resolve)
 func (_ Unimplemented) ResolvePrice(w http.ResponseWriter, r *http.Request, params ResolvePriceParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/pricing/quotes)
+func (_ Unimplemented) CreatePriceQuote(w http.ResponseWriter, r *http.Request, params CreatePriceQuoteParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/pricing/quotes/{priceQuoteId})
+func (_ Unimplemented) GetPriceQuote(w http.ResponseWriter, r *http.Request, priceQuoteId PriceQuoteId, params GetPriceQuoteParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -14239,6 +14477,143 @@ func (siw *ServerInterfaceWrapper) ResolvePrice(w http.ResponseWriter, r *http.R
 	handler.ServeHTTP(w, r)
 }
 
+// CreatePriceQuote operation middleware
+func (siw *ServerInterfaceWrapper) CreatePriceQuote(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreatePriceQuoteParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKeyOptional
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	// ------------- Optional header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CsrfHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = &XCSRFToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreatePriceQuote(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetPriceQuote operation middleware
+func (siw *ServerInterfaceWrapper) GetPriceQuote(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "priceQuoteId" -------------
+	var priceQuoteId PriceQuoteId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "priceQuoteId", chi.URLParam(r, "priceQuoteId"), &priceQuoteId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "priceQuoteId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetPriceQuoteParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetPriceQuote(w, r, priceQuoteId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListPrograms operation middleware
 func (siw *ServerInterfaceWrapper) ListPrograms(w http.ResponseWriter, r *http.Request) {
 
@@ -19589,6 +19964,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/rule-evaluations/{ruleEvaluationId}", wrapper.GetRuleEvaluation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/pricing/quotes", wrapper.CreatePriceQuote)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/pricing/quotes/{priceQuoteId}", wrapper.GetPriceQuote)
 	})
 
 	return r
@@ -25922,6 +26303,167 @@ func (response ResolvePrice422ApplicationProblemPlusJSONResponse) VisitResolvePr
 	return err
 }
 
+type CreatePriceQuoteRequestObject struct {
+	Params CreatePriceQuoteParams
+	Body   *CreatePriceQuoteJSONRequestBody
+}
+
+type CreatePriceQuoteResponseObject interface {
+	VisitCreatePriceQuoteResponse(w http.ResponseWriter) error
+}
+
+type CreatePriceQuote200JSONResponse PriceQuote
+
+func (response CreatePriceQuote200JSONResponse) VisitCreatePriceQuoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePriceQuote403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CreatePriceQuote403ApplicationProblemPlusJSONResponse) VisitCreatePriceQuoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePriceQuote404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CreatePriceQuote404ApplicationProblemPlusJSONResponse) VisitCreatePriceQuoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePriceQuote409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response CreatePriceQuote409ApplicationProblemPlusJSONResponse) VisitCreatePriceQuoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePriceQuote422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CreatePriceQuote422ApplicationProblemPlusJSONResponse) VisitCreatePriceQuoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePriceQuote429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response CreatePriceQuote429ApplicationProblemPlusJSONResponse) VisitCreatePriceQuoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPriceQuoteRequestObject struct {
+	PriceQuoteId PriceQuoteId `json:"priceQuoteId"`
+	Params       GetPriceQuoteParams
+}
+
+type GetPriceQuoteResponseObject interface {
+	VisitGetPriceQuoteResponse(w http.ResponseWriter) error
+}
+
+type GetPriceQuote200JSONResponse PriceQuote
+
+func (response GetPriceQuote200JSONResponse) VisitGetPriceQuoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPriceQuote403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetPriceQuote403ApplicationProblemPlusJSONResponse) VisitGetPriceQuoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPriceQuote404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetPriceQuote404ApplicationProblemPlusJSONResponse) VisitGetPriceQuoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListProgramsRequestObject struct {
 	Params ListProgramsParams
 }
@@ -31324,6 +31866,12 @@ type StrictServerInterface interface {
 	// (POST /api/v1/prices:resolve)
 	ResolvePrice(ctx context.Context, request ResolvePriceRequestObject) (ResolvePriceResponseObject, error)
 
+	// (POST /api/v1/pricing/quotes)
+	CreatePriceQuote(ctx context.Context, request CreatePriceQuoteRequestObject) (CreatePriceQuoteResponseObject, error)
+
+	// (GET /api/v1/pricing/quotes/{priceQuoteId})
+	GetPriceQuote(ctx context.Context, request GetPriceQuoteRequestObject) (GetPriceQuoteResponseObject, error)
+
 	// (GET /api/v1/programs)
 	ListPrograms(ctx context.Context, request ListProgramsRequestObject) (ListProgramsResponseObject, error)
 
@@ -33985,6 +34533,66 @@ func (sh *strictHandler) ResolvePrice(w http.ResponseWriter, r *http.Request, pa
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ResolvePriceResponseObject); ok {
 		if err := validResponse.VisitResolvePriceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreatePriceQuote operation middleware
+func (sh *strictHandler) CreatePriceQuote(w http.ResponseWriter, r *http.Request, params CreatePriceQuoteParams) {
+	var request CreatePriceQuoteRequestObject
+
+	request.Params = params
+
+	var body CreatePriceQuoteJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreatePriceQuote(ctx, request.(CreatePriceQuoteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreatePriceQuote")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreatePriceQuoteResponseObject); ok {
+		if err := validResponse.VisitCreatePriceQuoteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetPriceQuote operation middleware
+func (sh *strictHandler) GetPriceQuote(w http.ResponseWriter, r *http.Request, priceQuoteId PriceQuoteId, params GetPriceQuoteParams) {
+	var request GetPriceQuoteRequestObject
+
+	request.PriceQuoteId = priceQuoteId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetPriceQuote(ctx, request.(GetPriceQuoteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetPriceQuote")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetPriceQuoteResponseObject); ok {
+		if err := validResponse.VisitGetPriceQuoteResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

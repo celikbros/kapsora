@@ -473,6 +473,52 @@ type ContractPriceList struct {
 	RowVersion        int64
 }
 
+type ContractPriceQuote struct {
+	ID                      uuid.UUID
+	TenantID                uuid.UUID
+	PersonID                uuid.UUID
+	ProgramID               uuid.NullUUID
+	ProviderProfileID       uuid.UUID
+	LocationID              uuid.NullUUID
+	ServiceDate             pgtype.Date
+	CurrencyCode            string
+	Outcome                 string
+	RequestedAmount         pgtype.Numeric
+	ContractAmount          pgtype.Numeric
+	CoveredAmount           pgtype.Numeric
+	PayerAmount             pgtype.Numeric
+	MemberAmount            pgtype.Numeric
+	RequestHash             []byte
+	RequestSnapshot         []byte
+	ResultSnapshot          []byte
+	ContractVersionID       uuid.NullUUID
+	PlanVersionID           uuid.NullUUID
+	EligibilityEvaluationID uuid.NullUUID
+	ExpiresAt               time.Time
+	QuotedAt                time.Time
+	QuotedBy                uuid.NullUUID
+	IdempotencyKey          *string
+}
+
+type ContractPriceQuoteItem struct {
+	ID                  uuid.UUID
+	TenantID            uuid.UUID
+	PriceQuoteID        uuid.UUID
+	LineNo              int32
+	ServiceDefinitionID uuid.NullUUID
+	PackageDefinitionID uuid.NullUUID
+	PriceItemID         uuid.NullUUID
+	Quantity            pgtype.Numeric
+	RequestedAmount     pgtype.Numeric
+	ContractAmount      pgtype.Numeric
+	CoveredAmount       pgtype.Numeric
+	PayerAmount         pgtype.Numeric
+	MemberAmount        pgtype.Numeric
+	Outcome             string
+	Explanations        []byte
+	CreatedAt           time.Time
+}
+
 type ContractProviderQuotum struct {
 	ID                  uuid.UUID
 	TenantID            uuid.UUID

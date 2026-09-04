@@ -1253,6 +1253,62 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/pricing/quotes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description What this service costs at this provider on this date, how much of it the plan
+         *     carries and what the member pays out of pocket. Each line is priced in one fixed
+         *     order — eligibility, the deterministic price selection, the contract amount, the
+         *     tenant's published PRICE rules, the entitlement balance, then the split — and every
+         *     step that moved a figure leaves an explanation code behind it, so a one kuruş
+         *     difference is never mysterious. A line whose price is ambiguous or missing makes the
+         *     whole quote REVIEW_REQUIRED and carries no member figure at all, because a guess
+         *     here is worse than an answer of "we do not know". A quote reserves nothing, moves no
+         *     balance and authorizes nothing; the disclaimer in the response says so, so nobody at
+         *     a counter mistakes one for an approval. It is stored so that the number quoted and
+         *     the number later claimed can be compared, and it expires (tenant setting
+         *     pricing.quote_ttl_hours, 72 hours by default) because prices move. Idempotency-Key
+         *     is optional and replays the stored quote unchanged.
+         */
+        post: operations["createPriceQuote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pricing/quotes/{priceQuoteId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One stored quote: the five figures per line and in total, the explanation codes
+         *     behind them, and the ids of the contract version, the price items, the plan version
+         *     and the rule set versions it was taken against. The row is append-only, so what
+         *     somebody was quoted cannot be rewritten afterwards. An expired quote is still
+         *     returned, with expired true and its expiresAt, rather than hidden: a member who was
+         *     given a number is owed the reason it no longer holds. A provider-scoped actor sees
+         *     only the quotes made for its own provider.
+         */
+        get: operations["getPriceQuote"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/programs": {
         parameters: {
             query?: never;
@@ -2563,6 +2619,45 @@ export interface components {
             /** Format: date */
             validTo?: string | null;
         };
+        CreatePriceQuoteRequest: {
+            /**
+             * @description Recognised hints only, exactly as the eligibility check reads them: domain
+             *     (HEALTH classifies the access audit row HEALTH instead of PERSONAL),
+             *     entitlementCode for every line and entitlementCodes positionally per line.
+             *     Anything else is ignored, never stored and never hashed.
+             */
+            context?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Format: uuid
+             * @description An eligibility evaluation the caller already made for this person, recorded on
+             *     the quote so the two can be read together. The quote never creates one itself:
+             *     opening an entitlement account posts a ledger entry, and a quote must leave the
+             *     ledger untouched.
+             */
+            eligibilityEvaluationId?: string | null;
+            items: components["schemas"]["PriceQuoteRequestItem"][];
+            /**
+             * Format: uuid
+             * @description Where the service is delivered; a location-specific price needs it.
+             */
+            locationId?: string | null;
+            /** Format: uuid */
+            personId: string;
+            /**
+             * Format: uuid
+             * @description Restricts the enrollment the eligibility step may use.
+             */
+            programId?: string | null;
+            /** Format: uuid */
+            providerProfileId: string;
+            /**
+             * Format: date
+             * @description The day the service is delivered. The whole quote is made against it.
+             */
+            serviceDate: string;
+        };
         CreateProgramRequest: {
             code: string;
             name: string;
@@ -3440,6 +3535,136 @@ export interface components {
          * @enum {string}
          */
         PriceMatchTarget: "DEFINITION" | "PACKAGE" | "CATEGORY";
+        PriceQuote: {
+            contractAmount: string;
+            /**
+             * Format: uuid
+             * @description The published contract version the winning prices came from.
+             */
+            contractVersionId?: string | null;
+            coveredAmount: string;
+            currencyCode: string;
+            /**
+             * @description Plain-language statement that a quote is not an authorization and grants nothing:
+             *     no reservation, no approval and no ledger movement. Carried through to the UI so
+             *     nobody at a counter mistakes a quote for a decision.
+             */
+            disclaimer: string;
+            /** Format: uuid */
+            eligibilityEvaluationId?: string | null;
+            /**
+             * @description True when expiresAt has passed. An expired quote still reads back and says so
+             *     rather than disappearing, because a member who was given a number is owed the
+             *     reason it no longer holds.
+             */
+            expired: boolean;
+            /**
+             * Format: date-time
+             * @description When the quote stops holding, from the tenant setting pricing.quote_ttl_hours.
+             */
+            expiresAt: string;
+            /** Format: uuid */
+            id: string;
+            /** @description One entry per requested line, in line order. */
+            items: components["schemas"]["PriceQuoteItem"][];
+            /** Format: uuid */
+            locationId?: string | null;
+            memberAmount: string;
+            outcome: components["schemas"]["PriceQuoteOutcome"];
+            payerAmount: string;
+            /** Format: uuid */
+            personId: string;
+            /** Format: uuid */
+            planVersionId?: string | null;
+            /** Format: uuid */
+            programId?: string | null;
+            /** Format: uuid */
+            providerProfileId: string;
+            /** Format: date-time */
+            quotedAt: string;
+            /** Format: uuid */
+            quotedBy?: string | null;
+            requestedAmount: string;
+            /** @description Every published PRICE rule set version that was evaluated for this quote. */
+            ruleSetVersionIds: string[];
+            /** Format: date */
+            serviceDate: string;
+        };
+        PriceQuoteExplanation: {
+            /**
+             * @description Stable, machine-readable reason for a figure that is not simply the contract
+             *     amount: NOT_ELIGIBLE, PRICE_NOT_FOUND, PRICE_AMBIGUOUS, MEMBER_SHARE_APPLIED,
+             *     LIMIT_APPLIED, PRICE_ADJUSTED, PRICE_CLAMPED_TO_MINIMUM,
+             *     PRICE_CLAMPED_TO_MAXIMUM, BALANCE_INSUFFICIENT, ROUNDED_TO_CURRENCY,
+             *     PRICE_FORMULA_UNKNOWN or REVIEW_REQUESTED_BY_RULE.
+             */
+            code: string;
+            /** @enum {string} */
+            severity: "INFO" | "WARNING" | "ERROR";
+            /** @description The rule code that caused this line, when a rule caused it. */
+            source?: string | null;
+        };
+        PriceQuoteItem: {
+            /** @description What the contract says the line costs, before the plan carries any of it. */
+            contractAmount: string;
+            /** @description How much of the contract amount the plan is willing to carry. */
+            coveredAmount: string;
+            explanations: components["schemas"]["PriceQuoteExplanation"][];
+            /** @description The requested line position, counting from one. */
+            lineNo: number;
+            /**
+             * @description What the member pays out of pocket; payerAmount plus memberAmount is exactly the
+             *     contract amount, which is why the rounding happens once and the member takes the
+             *     difference.
+             */
+            memberAmount: string;
+            outcome: components["schemas"]["PriceQuoteOutcome"];
+            /** Format: uuid */
+            packageDefinitionId?: string | null;
+            /** @description What the payer ends up paying, capped by the entitlement balance. */
+            payerAmount: string;
+            /**
+             * Format: uuid
+             * @description The contract price item that won the selection; null when none did.
+             */
+            priceItemId?: string | null;
+            quantity: string;
+            requestedAmount: string;
+            /** Format: uuid */
+            serviceDefinitionId?: string | null;
+        };
+        /**
+         * @description The answer for one line or for the whole quote. QUOTED means the plan carries what
+         *     the rules and the balance allow; PARTIAL means it carries part of it; NOT_ELIGIBLE
+         *     still prices the service, because a member the plan does not cover may still choose
+         *     to pay privately; REVIEW_REQUIRED means nobody may act on the line yet, and a quote
+         *     in that state carries no payer and no member figure at all.
+         * @enum {string}
+         */
+        PriceQuoteOutcome: "QUOTED" | "PARTIAL" | "REVIEW_REQUIRED" | "NOT_ELIGIBLE";
+        PriceQuoteRequestItem: {
+            /**
+             * Format: uuid
+             * @description The package being priced. Exactly one of this and serviceDefinitionId.
+             */
+            packageDefinitionId?: string;
+            /**
+             * @description Exact decimal string, greater than zero; a UNIT price multiplies by it. Never a
+             *     JSON number, because a quantity that passes through a float is a quantity that
+             *     can come back different.
+             */
+            quantity: string;
+            /**
+             * @description What the provider asked for, as an exact decimal string. A PERCENT_OF_LIST price
+             *     is a percentage of it.
+             */
+            requestedAmount?: string | null;
+            /**
+             * Format: uuid
+             * @description The service being priced. Exactly one of this and packageDefinitionId.
+             */
+            serviceDefinitionId?: string;
+        };
         /**
          * @description How the amount of a price item is arrived at. FIXED and UNIT carry an amount,
          *     PERCENT_OF_LIST a percent, FORMULA the key of a calculation rule.
@@ -4554,6 +4779,7 @@ export interface components {
         PlanVersionId: string;
         PractitionerId: string;
         PriceListId: string;
+        PriceQuoteId: string;
         ProgramId: string;
         ProviderId: string;
         ProviderLocationId: string;
@@ -4600,6 +4826,7 @@ export type SchemaCreatePersonRequest = components['schemas']['CreatePersonReque
 export type SchemaCreatePlanRequest = components['schemas']['CreatePlanRequest'];
 export type SchemaCreatePlanVersionRequest = components['schemas']['CreatePlanVersionRequest'];
 export type SchemaCreatePractitionerRequest = components['schemas']['CreatePractitionerRequest'];
+export type SchemaCreatePriceQuoteRequest = components['schemas']['CreatePriceQuoteRequest'];
 export type SchemaCreateProgramRequest = components['schemas']['CreateProgramRequest'];
 export type SchemaCreateProviderLocationRequest = components['schemas']['CreateProviderLocationRequest'];
 export type SchemaCreateProviderRequest = components['schemas']['CreateProviderRequest'];
@@ -4668,6 +4895,11 @@ export type SchemaPriceList = components['schemas']['PriceList'];
 export type SchemaPriceListInput = components['schemas']['PriceListInput'];
 export type SchemaPriceListList = components['schemas']['PriceListList'];
 export type SchemaPriceMatchTarget = components['schemas']['PriceMatchTarget'];
+export type SchemaPriceQuote = components['schemas']['PriceQuote'];
+export type SchemaPriceQuoteExplanation = components['schemas']['PriceQuoteExplanation'];
+export type SchemaPriceQuoteItem = components['schemas']['PriceQuoteItem'];
+export type SchemaPriceQuoteOutcome = components['schemas']['PriceQuoteOutcome'];
+export type SchemaPriceQuoteRequestItem = components['schemas']['PriceQuoteRequestItem'];
 export type SchemaPricingMethod = components['schemas']['PricingMethod'];
 export type SchemaProblem = components['schemas']['Problem'];
 export type SchemaProgram = components['schemas']['Program'];
@@ -4796,6 +5028,7 @@ export type ParameterPlanId = components['parameters']['PlanId'];
 export type ParameterPlanVersionId = components['parameters']['PlanVersionId'];
 export type ParameterPractitionerId = components['parameters']['PractitionerId'];
 export type ParameterPriceListId = components['parameters']['PriceListId'];
+export type ParameterPriceQuoteId = components['parameters']['PriceQuoteId'];
 export type ParameterProgramId = components['parameters']['ProgramId'];
 export type ParameterProviderId = components['parameters']['ProviderId'];
 export type ParameterProviderLocationId = components['parameters']['ProviderLocationId'];
@@ -8001,6 +8234,69 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             422: components["responses"]["ValidationError"];
+        };
+    };
+    createPriceQuote: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optional on query-style POSTs; honoured when present. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePriceQuoteRequest"];
+            };
+        };
+        responses: {
+            /** @description Stored price quote with every figure and the reasoning behind it */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PriceQuote"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getPriceQuote: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                priceQuoteId: components["parameters"]["PriceQuoteId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Stored price quote */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PriceQuote"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     listPrograms: {

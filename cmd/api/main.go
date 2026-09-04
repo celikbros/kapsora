@@ -48,6 +48,9 @@ import (
 	"github.com/celikbros/kapsora/internal/platform/idempotency"
 	"github.com/celikbros/kapsora/internal/platform/logging"
 	"github.com/celikbros/kapsora/internal/platform/ratelimit"
+	pricingapp "github.com/celikbros/kapsora/internal/pricing/application"
+	pricingpg "github.com/celikbros/kapsora/internal/pricing/infrastructure/postgres"
+	pricinghttp "github.com/celikbros/kapsora/internal/pricing/transport/http"
 	providerapp "github.com/celikbros/kapsora/internal/provider/application"
 	providerpg "github.com/celikbros/kapsora/internal/provider/infrastructure/postgres"
 	providerhttp "github.com/celikbros/kapsora/internal/provider/transport/http"
@@ -163,9 +166,22 @@ func run() error {
 	}
 	// The compiled rule programs are cached per rule set version. A published version
 	// never changes, so an entry can never go stale; the service refuses to cache a draft.
+	pricingPrograms := rulesapp.NewProgramCache(rulesapp.DefaultCacheSize)
 	rulesSvc, err := rulesapp.New(rulesapp.Deps{
 		Pool: pool, Repo: rulespg.New(), Audit: auditpg.New(), Cursors: cursors,
-		Programs: rulesapp.NewProgramCache(rulesapp.DefaultCacheSize),
+		Programs: pricingPrograms,
+	})
+	if err != nil {
+		return err
+	}
+	// The pricing quote sits on top of the contracts, the rules and the entitlement
+	// balances and writes to none of them: it reads a consistent picture of all three and
+	// stores the number it arrived at. It shares the rule program cache with the rule
+	// engine, because a published version compiled once is the same program either caller
+	// evaluates.
+	pricingSvc, err := pricingapp.New(pricingapp.Deps{
+		Pool: pool, Repo: pricingpg.New(), Audit: auditpg.New(),
+		Programs: pricingPrograms, Logger: logger,
 	})
 	if err != nil {
 		return err
@@ -202,6 +218,7 @@ func run() error {
 		providers:    providerSvc,
 		contracts:    contractSvc,
 		rules:        rulesSvc,
+		pricing:      pricingSvc,
 		entitlements: entitlementSvc,
 		eligibility:  eligibilitySvc,
 		imports:      memberImports,
@@ -283,6 +300,7 @@ type routerDeps struct {
 	providers    *providerapp.Service
 	contracts    *contractapp.Service
 	rules        *rulesapp.Service
+	pricing      *pricingapp.Service
 	entitlements *benefitledger.Service
 	eligibility  *benefiteligibility.Service
 	imports      *memberimport.Service
@@ -441,6 +459,13 @@ func newRouter(d routerDeps) http.Handler {
 			tenant.Route("/rule-sets", func(r chi.Router) { rulesHandler.RuleSetRoutes(r, rulesMW) })
 			tenant.Route("/rule-set-versions", rulesHandler.VersionRoutes)
 			tenant.Route("/rule-evaluations", rulesHandler.EvaluationRoutes)
+
+			// A quote is priced against the contracts, the rules and the balances above
+			// it and changes none of them. Its replay contract lives in
+			// contract.price_quote.idempotency_key, so the Idempotency-Key middleware is
+			// not applied here either.
+			pricingHandler := pricinghttp.NewHandler(d.pricing, sessions, d.logger)
+			tenant.Route("/pricing", pricingHandler.Routes)
 
 			// Eligibility checks change no business state and carry their own replay
 			// contract in benefit.eligibility_evaluation.idempotency_key, so the

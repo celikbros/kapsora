@@ -130,6 +130,10 @@ type Item struct {
 	NoPriceReason string
 	// Available is the entitlement balance this line may draw on.
 	Available Money
+	// AccountKey identifies the entitlement account behind Available. Lines sharing a key
+	// share one balance: two services drawing on the same account cannot each be told the
+	// whole of it. An empty key means the line has a balance of its own.
+	AccountKey string
 	// Eligible is the eligibility answer for this line.
 	Eligible bool
 	// Adjustments are the rule actions that bear on this line.
@@ -164,8 +168,26 @@ type Result struct {
 // is where the single rounding happens.
 func Calculate(items []Item, minorUnits int) Result {
 	res := Result{Items: make([]LineResult, 0, len(items))}
+	// One pool per entitlement account, drawn down as the lines consume it. Without this,
+	// two lines against a 300 balance would each be quoted 300 of cover and the member
+	// would be told they owe nothing for 600 of services.
+	pools := make(map[string]Money, len(items))
 	for _, item := range items {
+		if item.AccountKey != "" {
+			if remaining, seen := pools[item.AccountKey]; seen {
+				item.Available = remaining
+			} else {
+				pools[item.AccountKey] = item.Available
+			}
+		}
 		line := calculateLine(item, minorUnits)
+		if item.AccountKey != "" {
+			left := pools[item.AccountKey].Sub(line.Payer)
+			if left.IsNegative() {
+				left = domain.ZeroQuantity()
+			}
+			pools[item.AccountKey] = left
+		}
 		res.Items = append(res.Items, line)
 		res.Requested = res.Requested.Add(line.Requested)
 		res.Contract = res.Contract.Add(line.Contract)

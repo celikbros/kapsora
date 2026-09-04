@@ -1,0 +1,12 @@
+-- 000024: grant the application role its privileges on the quote tables.
+--
+-- platform.grant_app_schema_usage issues GRANT ... ON ALL TABLES, which is a snapshot of
+-- the tables that exist when it runs, not a standing rule for the schema. Migration
+-- 000021 granted the contract schema, and 000023 then added contract.price_quote and
+-- contract.price_quote_item without repeating it, so kapsora_app could neither read nor
+-- write a quote: every call answered SQLSTATE 42501.
+--
+-- 000023 is already applied, and an applied migration is never edited (ADR-016), so the
+-- grant arrives here. It is idempotent, and a database that never reached 23 without it
+-- loses nothing by running it again.
+SELECT platform.grant_app_schema_usage('contract');

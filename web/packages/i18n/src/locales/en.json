@@ -229,7 +229,13 @@
     "RULE_VERSION_IMMUTABLE": "A published rule version cannot be changed; open a new version.",
     "RULE_SET_VERSION_OVERLAP": "Another published version of this rule set covers those dates.",
     "RULE_VERSION_TRANSITION_INVALID": "The rule version cannot move to that status.",
-    "RULE_VERSION_NOT_PUBLISHED": "Only a published rule version can record a decision; use simulation for a draft."
+    "RULE_VERSION_NOT_PUBLISHED": "Only a published rule version can record a decision; use simulation for a draft.",
+    "PRICE_QUOTE_NOT_FOUND": "Price quote not found.",
+    "PRICE_QUOTE_PROVIDER_NOT_FOUND": "Provider profile not found.",
+    "PRICE_QUOTE_LOCATION_INVALID": "That location does not belong to this provider.",
+    "PRICE_QUOTE_PACKAGE_NOT_FOUND": "Package definition not found.",
+    "PRICE_QUOTE_ELIGIBILITY_INVALID": "That eligibility evaluation is not for this person.",
+    "PRICE_QUOTE_RETRY": "The data changed while the quote was being priced; send the same request again."
   },
   "fieldErrors": {
     "RULE_COMPILE_FAILED": "The rule condition did not compile",

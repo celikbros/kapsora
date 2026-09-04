@@ -49,6 +49,8 @@ tags:
     description: Sözleşmeler, sürümler, fiyat listeleri, paketler, kotalar ve ödeme koşulları
   - name: Rules
     description: Kural setleri, sürümler, CEL kuralları, test senaryoları ve değerlendirmeler
+  - name: Pricing
+    description: Fiyat teklifleri, kalem kırılımı ve teklif açıklamaları
 paths:
   /health/live:
     get:
@@ -5263,6 +5265,77 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /api/v1/pricing/quotes:
+    post:
+      tags: [Pricing]
+      operationId: createPriceQuote
+      description: |
+        What this service costs at this provider on this date, how much of it the plan
+        carries and what the member pays out of pocket. Each line is priced in one fixed
+        order — eligibility, the deterministic price selection, the contract amount, the
+        tenant's published PRICE rules, the entitlement balance, then the split — and every
+        step that moved a figure leaves an explanation code behind it, so a one kuruş
+        difference is never mysterious. A line whose price is ambiguous or missing makes the
+        whole quote REVIEW_REQUIRED and carries no member figure at all, because a guess
+        here is worse than an answer of "we do not know". A quote reserves nothing, moves no
+        balance and authorizes nothing; the disclaimer in the response says so, so nobody at
+        a counter mistakes one for an approval. It is stored so that the number quoted and
+        the number later claimed can be compared, and it expires (tenant setting
+        pricing.quote_ttl_hours, 72 hours by default) because prices move. Idempotency-Key
+        is optional and replays the stored quote unchanged.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKeyOptional'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePriceQuoteRequest'
+      responses:
+        '200':
+          description: Stored price quote with every figure and the reasoning behind it
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceQuote'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/pricing/quotes/{priceQuoteId}:
+    get:
+      tags: [Pricing]
+      operationId: getPriceQuote
+      description: |
+        One stored quote: the five figures per line and in total, the explanation codes
+        behind them, and the ids of the contract version, the price items, the plan version
+        and the rule set versions it was taken against. The row is append-only, so what
+        somebody was quoted cannot be rewritten afterwards. An expired quote is still
+        returned, with expired true and its expiresAt, rather than hidden: a member who was
+        given a number is owed the reason it no longer holds. A provider-scoped actor sees
+        only the quotes made for its own provider.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PriceQuoteId'
+      responses:
+        '200':
+          description: Stored price quote
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceQuote'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
 components:
   securitySchemes:
     sessionCookie:
@@ -5514,6 +5587,13 @@ components:
         format: uuid
     RuleEvaluationId:
       name: ruleEvaluationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PriceQuoteId:
+      name: priceQuoteId
       in: path
       required: true
       schema:
@@ -9766,3 +9846,230 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RuleEvaluationResultLine'
+    PriceQuoteOutcome:
+      type: string
+      description: |
+        The answer for one line or for the whole quote. QUOTED means the plan carries what
+        the rules and the balance allow; PARTIAL means it carries part of it; NOT_ELIGIBLE
+        still prices the service, because a member the plan does not cover may still choose
+        to pay privately; REVIEW_REQUIRED means nobody may act on the line yet, and a quote
+        in that state carries no payer and no member figure at all.
+      enum: [QUOTED, PARTIAL, REVIEW_REQUIRED, NOT_ELIGIBLE]
+    PriceQuoteExplanation:
+      type: object
+      additionalProperties: false
+      required: [code, severity]
+      properties:
+        code:
+          type: string
+          description: |
+            Stable, machine-readable reason for a figure that is not simply the contract
+            amount: NOT_ELIGIBLE, PRICE_NOT_FOUND, PRICE_AMBIGUOUS, MEMBER_SHARE_APPLIED,
+            LIMIT_APPLIED, PRICE_ADJUSTED, PRICE_CLAMPED_TO_MINIMUM,
+            PRICE_CLAMPED_TO_MAXIMUM, BALANCE_INSUFFICIENT, ROUNDED_TO_CURRENCY,
+            PRICE_FORMULA_UNKNOWN or REVIEW_REQUESTED_BY_RULE.
+        severity:
+          type: string
+          enum: [INFO, WARNING, ERROR]
+        source:
+          type: [string, 'null']
+          description: The rule code that caused this line, when a rule caused it.
+    PriceQuoteRequestItem:
+      type: object
+      additionalProperties: false
+      required: [quantity]
+      properties:
+        serviceDefinitionId:
+          type: string
+          format: uuid
+          description: The service being priced. Exactly one of this and packageDefinitionId.
+        packageDefinitionId:
+          type: string
+          format: uuid
+          description: The package being priced. Exactly one of this and serviceDefinitionId.
+        quantity:
+          type: string
+          description: |
+            Exact decimal string, greater than zero; a UNIT price multiplies by it. Never a
+            JSON number, because a quantity that passes through a float is a quantity that
+            can come back different.
+        requestedAmount:
+          type: [string, 'null']
+          description: |
+            What the provider asked for, as an exact decimal string. A PERCENT_OF_LIST price
+            is a percentage of it.
+    CreatePriceQuoteRequest:
+      type: object
+      additionalProperties: false
+      required: [personId, providerProfileId, serviceDate, items]
+      properties:
+        personId:
+          type: string
+          format: uuid
+        programId:
+          type: [string, 'null']
+          format: uuid
+          description: Restricts the enrollment the eligibility step may use.
+        providerProfileId:
+          type: string
+          format: uuid
+        locationId:
+          type: [string, 'null']
+          format: uuid
+          description: Where the service is delivered; a location-specific price needs it.
+        serviceDate:
+          type: string
+          format: date
+          description: The day the service is delivered. The whole quote is made against it.
+        eligibilityEvaluationId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            An eligibility evaluation the caller already made for this person, recorded on
+            the quote so the two can be read together. The quote never creates one itself:
+            opening an entitlement account posts a ledger entry, and a quote must leave the
+            ledger untouched.
+        items:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/PriceQuoteRequestItem'
+        context:
+          type: object
+          additionalProperties: true
+          description: |
+            Recognised hints only, exactly as the eligibility check reads them: domain
+            (HEALTH classifies the access audit row HEALTH instead of PERSONAL),
+            entitlementCode for every line and entitlementCodes positionally per line.
+            Anything else is ignored, never stored and never hashed.
+    PriceQuoteItem:
+      type: object
+      additionalProperties: false
+      required:
+        [lineNo, quantity, requestedAmount, contractAmount, coveredAmount, payerAmount,
+         memberAmount, outcome, explanations]
+      properties:
+        lineNo:
+          type: integer
+          minimum: 1
+          description: The requested line position, counting from one.
+        serviceDefinitionId:
+          type: [string, 'null']
+          format: uuid
+        packageDefinitionId:
+          type: [string, 'null']
+          format: uuid
+        priceItemId:
+          type: [string, 'null']
+          format: uuid
+          description: The contract price item that won the selection; null when none did.
+        quantity:
+          type: string
+        requestedAmount:
+          type: string
+        contractAmount:
+          type: string
+          description: What the contract says the line costs, before the plan carries any of it.
+        coveredAmount:
+          type: string
+          description: How much of the contract amount the plan is willing to carry.
+        payerAmount:
+          type: string
+          description: What the payer ends up paying, capped by the entitlement balance.
+        memberAmount:
+          type: string
+          description: |
+            What the member pays out of pocket; payerAmount plus memberAmount is exactly the
+            contract amount, which is why the rounding happens once and the member takes the
+            difference.
+        outcome:
+          $ref: '#/components/schemas/PriceQuoteOutcome'
+        explanations:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriceQuoteExplanation'
+    PriceQuote:
+      type: object
+      additionalProperties: false
+      required:
+        [id, personId, providerProfileId, serviceDate, currencyCode, outcome,
+         requestedAmount, contractAmount, coveredAmount, payerAmount, memberAmount,
+         items, ruleSetVersionIds, expiresAt, expired, quotedAt, disclaimer]
+      properties:
+        id:
+          type: string
+          format: uuid
+        personId:
+          type: string
+          format: uuid
+        programId:
+          type: [string, 'null']
+          format: uuid
+        providerProfileId:
+          type: string
+          format: uuid
+        locationId:
+          type: [string, 'null']
+          format: uuid
+        serviceDate:
+          type: string
+          format: date
+        currencyCode:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        outcome:
+          $ref: '#/components/schemas/PriceQuoteOutcome'
+        requestedAmount:
+          type: string
+        contractAmount:
+          type: string
+        coveredAmount:
+          type: string
+        payerAmount:
+          type: string
+        memberAmount:
+          type: string
+        items:
+          type: array
+          description: One entry per requested line, in line order.
+          items:
+            $ref: '#/components/schemas/PriceQuoteItem'
+        contractVersionId:
+          type: [string, 'null']
+          format: uuid
+          description: The published contract version the winning prices came from.
+        planVersionId:
+          type: [string, 'null']
+          format: uuid
+        ruleSetVersionIds:
+          type: array
+          description: Every published PRICE rule set version that was evaluated for this quote.
+          items:
+            type: string
+            format: uuid
+        eligibilityEvaluationId:
+          type: [string, 'null']
+          format: uuid
+        expiresAt:
+          type: string
+          format: date-time
+          description: When the quote stops holding, from the tenant setting pricing.quote_ttl_hours.
+        expired:
+          type: boolean
+          description: |
+            True when expiresAt has passed. An expired quote still reads back and says so
+            rather than disappearing, because a member who was given a number is owed the
+            reason it no longer holds.
+        quotedAt:
+          type: string
+          format: date-time
+        quotedBy:
+          type: [string, 'null']
+          format: uuid
+        disclaimer:
+          type: string
+          description: |
+            Plain-language statement that a quote is not an authorization and grants nothing:
+            no reservation, no approval and no ledger movement. Carried through to the UI so
+            nobody at a counter mistakes a quote for a decision.

@@ -268,7 +268,13 @@
     "RULE_VERSION_IMMUTABLE": "Yayınlanmış kural sürümü değiştirilemez; yeni bir sürüm açın.",
     "RULE_SET_VERSION_OVERLAP": "Bu tarih aralığında yayında başka bir kural sürümü var.",
     "RULE_VERSION_TRANSITION_INVALID": "Kural sürümü bu duruma geçemez.",
-    "RULE_VERSION_NOT_PUBLISHED": "Yalnız yayınlanmış bir kural sürümü karar kaydı üretebilir; taslak için simülasyonu kullanın."
+    "RULE_VERSION_NOT_PUBLISHED": "Yalnız yayınlanmış bir kural sürümü karar kaydı üretebilir; taslak için simülasyonu kullanın.",
+    "PRICE_QUOTE_NOT_FOUND": "Fiyat teklifi bulunamadı.",
+    "PRICE_QUOTE_PROVIDER_NOT_FOUND": "Sağlayıcı profili bulunamadı.",
+    "PRICE_QUOTE_LOCATION_INVALID": "Seçilen lokasyon bu sağlayıcıya ait değil.",
+    "PRICE_QUOTE_PACKAGE_NOT_FOUND": "Paket tanımı bulunamadı.",
+    "PRICE_QUOTE_ELIGIBILITY_INVALID": "Seçilen uygunluk değerlendirmesi bu hak sahibine ait değil.",
+    "PRICE_QUOTE_RETRY": "Teklif hesaplanırken veriler değişti; isteği aynen yeniden gönderin."
   },
   "fieldErrors": {
     "RULE_COMPILE_FAILED": "Kural koşulu derlenemedi",
