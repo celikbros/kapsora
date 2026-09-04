@@ -14,6 +14,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	auditpg "github.com/celikbros/kapsora/internal/audit/postgres"
+	authorizationapp "github.com/celikbros/kapsora/internal/authorization/application"
+	authorizationpg "github.com/celikbros/kapsora/internal/authorization/infrastructure/postgres"
 	"github.com/celikbros/kapsora/internal/benefit/ledger"
 	"github.com/celikbros/kapsora/internal/platform/config"
 	"github.com/celikbros/kapsora/internal/platform/db"
@@ -63,6 +65,18 @@ func run() error {
 		return err
 	}
 
+	// The authorization expiry job releases what a promise no longer holds. It drives the
+	// same movement engine, so a hold released here leaves the ledger exactly as a
+	// cancellation would. No cursor codec: this process answers no list, and asking it
+	// for one would only add a key the scheduler has no reason to hold.
+	authorizations, err := authorizationapp.New(authorizationapp.Deps{
+		Pool: pool, Repo: authorizationpg.New(), Ledger: entitlements.Ledger(),
+		Audit: auditpg.New(), Logger: logger,
+	})
+	if err != nil {
+		return err
+	}
+
 	registry := scheduler.NewRegistry()
 	registry.Register(scheduler.AuditEnsurePartitions(pool))
 	registry.Register(scheduler.OutboxRecoverStale(outbox.New(pool, outbox.Options{Logger: logger})))
@@ -70,6 +84,7 @@ func run() error {
 	registry.Register(scheduler.RateLimitPurge(ratelimit.NewPostgres(pool)))
 	registry.Register(scheduler.EntitlementReservationExpire(entitlements))
 	registry.Register(scheduler.EntitlementReconcile(entitlements))
+	registry.Register(scheduler.AuthorizationExpire(authorizations))
 	// scheduler.SessionCleanup(store) is registered once the identity session store
 	// (WP-I1-01) exists.
 	runner := scheduler.NewRunner(pool, registry, logger, 10*time.Minute)

@@ -1051,6 +1051,45 @@ type ServiceAppeal struct {
 	RowVersion        int64
 }
 
+type ServiceAuthorization struct {
+	ID                     uuid.UUID
+	TenantID               uuid.UUID
+	RequestID              uuid.UUID
+	AuthorizationReference string
+	ValidFrom              time.Time
+	ValidTo                time.Time
+	Status                 string
+	ReservedTotal          pgtype.Numeric
+	ConsumedTotal          pgtype.Numeric
+	CurrencyCode           *string
+	PriceQuoteID           uuid.NullUUID
+	ApprovedBy             uuid.NullUUID
+	ApprovedAt             time.Time
+	CancelReasonCode       *string
+	IdempotencyKey         string
+	CreatedAt              time.Time
+	CreatedBy              uuid.NullUUID
+	UpdatedAt              time.Time
+	UpdatedBy              uuid.NullUUID
+	RowVersion             int64
+}
+
+type ServiceAuthorizationItem struct {
+	ID                       uuid.UUID
+	TenantID                 uuid.UUID
+	AuthorizationID          uuid.UUID
+	RequestItemID            uuid.UUID
+	ServiceDefinitionID      uuid.UUID
+	ApprovedQuantity         pgtype.Numeric
+	ApprovedAmount           pgtype.Numeric
+	MemberAmount             pgtype.Numeric
+	EntitlementReservationID uuid.NullUUID
+	ConsumedQuantity         pgtype.Numeric
+	CreatedAt                time.Time
+	UpdatedAt                time.Time
+	RowVersion               int64
+}
+
 type ServiceCancellation struct {
 	ID               uuid.UUID
 	TenantID         uuid.UUID
@@ -1065,6 +1104,36 @@ type ServiceCancellation struct {
 	ReasonText       *string
 	CancelledAt      time.Time
 	CancelledBy      uuid.NullUUID
+}
+
+type ServiceFulfilment struct {
+	ID                  uuid.UUID
+	TenantID            uuid.UUID
+	FulfilmentReference string
+	AuthorizationID     uuid.UUID
+	ProviderProfileID   uuid.NullUUID
+	LocationID          uuid.NullUUID
+	PractitionerID      uuid.NullUUID
+	PerformedAt         time.Time
+	Status              string
+	CompletedAt         *time.Time
+	CancelledAt         *time.Time
+	CancelReasonCode    *string
+	RecordedBy          uuid.NullUUID
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
+	RowVersion          int64
+}
+
+type ServiceFulfilmentItem struct {
+	ID                  uuid.UUID
+	TenantID            uuid.UUID
+	FulfilmentID        uuid.UUID
+	AuthorizationItemID uuid.UUID
+	ServiceDefinitionID uuid.UUID
+	ActualQuantity      pgtype.Numeric
+	ActualAmount        pgtype.Numeric
+	CreatedAt           time.Time
 }
 
 type ServiceServiceRequest struct {
@@ -1132,6 +1201,25 @@ type ServiceServiceRequestVersion struct {
 	ReturnedBy       uuid.NullUUID
 	ReturnReasonCode *string
 	ReturnReasonText *string
+}
+
+type ServiceVoucher struct {
+	ID                uuid.UUID
+	TenantID          uuid.UUID
+	AuthorizationID   uuid.UUID
+	TokenHash         []byte
+	TokenMasked       string
+	ValidFrom         time.Time
+	ValidTo           time.Time
+	Status            string
+	RedeemedAt        *time.Time
+	RedeemedByActorID uuid.NullUUID
+	RevokeReasonCode  *string
+	IssuedAt          time.Time
+	IssuedBy          uuid.NullUUID
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+	RowVersion        int64
 }
 
 type SystemIdempotencyRecord struct {

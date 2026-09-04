@@ -1,0 +1,23 @@
+package scheduler
+
+import (
+	"context"
+	"time"
+
+	authorizationapp "github.com/celikbros/kapsora/internal/authorization/application"
+)
+
+// AuthorizationExpire releases the holds of authorizations past their end and marks them
+// EXPIRED (WP-I4-02 section 2.3). The sweep only looks at authorizations that still hold
+// entitlement and every release carries a key derived from the line it releases, so a
+// second run — or a run after a crash halfway through — releases nothing twice.
+func AuthorizationExpire(svc *authorizationapp.Service) Job {
+	return Job{
+		Code:  "authorization.expire",
+		Every: time.Minute,
+		Run: func(ctx context.Context) (Metrics, error) {
+			expired, err := svc.ExpireAuthorizations(ctx, time.Now().UTC())
+			return Metrics{"expired": expired}, err
+		},
+	}
+}

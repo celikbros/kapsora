@@ -17,6 +17,9 @@ import (
 
 	auditpg "github.com/celikbros/kapsora/internal/audit/postgres"
 	audithttp "github.com/celikbros/kapsora/internal/audit/transport/http"
+	authorizationapp "github.com/celikbros/kapsora/internal/authorization/application"
+	authorizationpg "github.com/celikbros/kapsora/internal/authorization/infrastructure/postgres"
+	authorizationhttp "github.com/celikbros/kapsora/internal/authorization/transport/http"
 	benefitapp "github.com/celikbros/kapsora/internal/benefit/application"
 	benefiteligibility "github.com/celikbros/kapsora/internal/benefit/eligibility"
 	benefitpg "github.com/celikbros/kapsora/internal/benefit/infrastructure/postgres"
@@ -199,6 +202,16 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	// An authorization is where an approval starts costing something. It drives the
+	// entitlement ledger of WP-I2-03 and writes no balance itself, so the account lock
+	// that makes concurrent holds safe is the one the ledger already takes.
+	authorizationSvc, err := authorizationapp.New(authorizationapp.Deps{
+		Pool: pool, Repo: authorizationpg.New(), Ledger: entitlementSvc.Ledger(),
+		Audit: auditpg.New(), Cursors: cursors, Logger: logger,
+	})
+	if err != nil {
+		return err
+	}
 	memberImports, err := memberimport.New(memberimport.Deps{
 		Pool: pool, Cipher: keys, Index: keys, Audit: auditpg.New(), Cursors: cursors, Logger: logger,
 	})
@@ -219,24 +232,25 @@ func run() error {
 	checker.Add("postgresql", health.PostgresCheck(pool))
 
 	router := newRouter(routerDeps{
-		cfg:          cfg,
-		pool:         pool,
-		logger:       logger,
-		checker:      checker,
-		ident:        ident,
-		orgs:         orgSvc,
-		party:        partySvc,
-		benefit:      benefitSvc,
-		catalog:      catalogSvc,
-		providers:    providerSvc,
-		contracts:    contractSvc,
-		rules:        rulesSvc,
-		pricing:      pricingSvc,
-		requests:     serviceRequestSvc,
-		entitlements: entitlementSvc,
-		eligibility:  eligibilitySvc,
-		imports:      memberImports,
-		limiter:      ratelimit.NewPostgres(pool),
+		cfg:            cfg,
+		pool:           pool,
+		logger:         logger,
+		checker:        checker,
+		ident:          ident,
+		orgs:           orgSvc,
+		party:          partySvc,
+		benefit:        benefitSvc,
+		catalog:        catalogSvc,
+		providers:      providerSvc,
+		contracts:      contractSvc,
+		rules:          rulesSvc,
+		pricing:        pricingSvc,
+		requests:       serviceRequestSvc,
+		authorizations: authorizationSvc,
+		entitlements:   entitlementSvc,
+		eligibility:    eligibilitySvc,
+		imports:        memberImports,
+		limiter:        ratelimit.NewPostgres(pool),
 	})
 
 	srv := &http.Server{
@@ -302,24 +316,25 @@ func newIdentity(cfg config.Config, pool *pgxpool.Pool, logger *slog.Logger) (id
 }
 
 type routerDeps struct {
-	cfg          config.Config
-	pool         *pgxpool.Pool
-	logger       *slog.Logger
-	checker      *health.Checker
-	ident        identityDeps
-	orgs         *orgapp.Service
-	party        *partyapp.Service
-	benefit      *benefitapp.Service
-	catalog      *catalogapp.Service
-	providers    *providerapp.Service
-	contracts    *contractapp.Service
-	rules        *rulesapp.Service
-	pricing      *pricingapp.Service
-	requests     *servicerequestapp.Service
-	entitlements *benefitledger.Service
-	eligibility  *benefiteligibility.Service
-	imports      *memberimport.Service
-	limiter      ratelimit.Limiter
+	cfg            config.Config
+	pool           *pgxpool.Pool
+	logger         *slog.Logger
+	checker        *health.Checker
+	ident          identityDeps
+	orgs           *orgapp.Service
+	party          *partyapp.Service
+	benefit        *benefitapp.Service
+	catalog        *catalogapp.Service
+	providers      *providerapp.Service
+	contracts      *contractapp.Service
+	rules          *rulesapp.Service
+	pricing        *pricingapp.Service
+	requests       *servicerequestapp.Service
+	authorizations *authorizationapp.Service
+	entitlements   *benefitledger.Service
+	eligibility    *benefiteligibility.Service
+	imports        *memberimport.Service
+	limiter        ratelimit.Limiter
 }
 
 func newRouter(d routerDeps) http.Handler {
@@ -497,6 +512,32 @@ func newRouter(d routerDeps) http.Handler {
 				Cancel:           d.idempotent("service_request.cancel"),
 			}
 			tenant.Route("/service-requests", func(r chi.Router) { requestHandler.Routes(r, requestMW) })
+
+			// An approval becomes a promise here, and the promise costs entitlement. Every
+			// command carries an Idempotency-Key: a retried browser submit must not reserve
+			// the same balance twice, and a retried redemption must not spend a voucher
+			// twice. /vouchers:redeem is mounted on the tenant router itself because the
+			// contract path is one literal segment rather than a sub-resource. issueVoucher
+			// is the one command with no Idempotency-Key: the middleware stores the response
+			// body for replay, and that response is the only place a voucher's plaintext
+			// ever exists.
+			authorizationHandler := authorizationhttp.NewHandler(d.authorizations, sessions, d.logger)
+			authorizationMW := authorizationhttp.Middlewares{
+				CreateAuthorization: d.idempotent("authorization.create"),
+				ExtendAuthorization: d.idempotent("authorization.extend"),
+				CancelAuthorization: d.idempotent("authorization.cancel"),
+				CreateFulfilment:    d.idempotent("fulfilment.create"),
+				CompleteFulfilment:  d.idempotent("fulfilment.complete"),
+				CancelFulfilment:    d.idempotent("fulfilment.cancel"),
+				RedeemVoucher:       d.idempotent("voucher.redeem"),
+			}
+			tenant.Route("/authorizations", func(r chi.Router) {
+				authorizationHandler.AuthorizationRoutes(r, authorizationMW)
+			})
+			tenant.Route("/fulfilments", func(r chi.Router) {
+				authorizationHandler.FulfilmentRoutes(r, authorizationMW)
+			})
+			authorizationHandler.VoucherRoutes(tenant, authorizationMW)
 
 			// Eligibility checks change no business state and carry their own replay
 			// contract in benefit.eligibility_evaluation.idempotency_key, so the

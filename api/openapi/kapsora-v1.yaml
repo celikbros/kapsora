@@ -51,6 +51,8 @@ tags:
     description: Kural setleri, sürümler, CEL kuralları, test senaryoları ve değerlendirmeler
   - name: Pricing
     description: Fiyat teklifleri, kalem kırılımı ve teklif açıklamaları
+  - name: Authorizations
+    description: Ön onaylar, hizmet kayıtları ve kuponlar
 paths:
   /health/live:
     get:
@@ -5769,6 +5771,532 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /api/v1/authorizations:
+    get:
+      tags: [Authorizations]
+      operationId: listAuthorizations
+      description: |
+        Authorizations of the tenant, newest first, with keyset paging. Every filter is
+        optional and they combine with AND. An authorization has no provider column of its
+        own, so a provider-scoped actor is bounded by the request the authorization was
+        granted against: an authorization raised for another provider is not on the page
+        and is not reachable by id either.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: status
+          in: query
+          description: Keep only the authorizations currently in this state.
+          schema:
+            $ref: '#/components/schemas/AuthorizationStatus'
+        - name: requestId
+          in: query
+          description: Keep only the authorizations granted against this service request.
+          schema:
+            type: string
+            format: uuid
+        - name: personId
+          in: query
+          description: Keep only the authorizations whose request was raised for this person.
+          schema:
+            type: string
+            format: uuid
+        - name: providerOrganizationId
+          in: query
+          description: Keep only the authorizations whose request names this provider organization.
+          schema:
+            type: string
+            format: uuid
+        - name: validFrom
+          in: query
+          description: Keep only the authorizations still valid at or after this instant.
+          schema:
+            type: string
+            format: date-time
+        - name: validTo
+          in: query
+          description: Keep only the authorizations that had already started by this instant.
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Authorization page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizationPage'
+        '400':
+          description: Cursor invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags: [Authorizations]
+      operationId: createAuthorization
+      description: |
+        Turns an approval into a promise that costs something. In one transaction the
+        approved lines of the request are read, entitlement is reserved for each of them
+        through the ledger, and the reservation id is written onto the line so release and
+        consume later act on the exact hold this authorization took. A refusal on any line
+        fails the whole authorization: a half-reserved approval is a promise nobody can
+        keep. The request must be APPROVED or PARTIALLY_APPROVED.
+
+        Idempotency-Key is required. Creating twice under one key returns the same
+        authorization and takes one set of reservations, never two.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAuthorization'
+      responses:
+        '201':
+          description: Authorization created and entitlement reserved
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Authorization'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/authorizations/{authorizationId}:
+    get:
+      tags: [Authorizations]
+      operationId: getAuthorization
+      description: |
+        One authorization with its lines and the vouchers issued against it. A caller
+        outside the provider boundary is answered 404 rather than 403: that such an
+        authorization exists at all is itself information about somebody else's business.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/AuthorizationId'
+      responses:
+        '200':
+          description: Authorization detail
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Authorization'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/authorizations/{authorizationId}/extend:
+    post:
+      tags: [Authorizations]
+      operationId: extendAuthorization
+      description: |
+        Moves validTo forward. It only ever moves forward and only while the authorization
+        is ACTIVE: shortening a promise somebody is relying on, or reviving one that has
+        been used up, cancelled or expired, are both refused with 409.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/AuthorizationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExtendAuthorization'
+      responses:
+        '200':
+          description: Authorization extended
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Authorization'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/authorizations/{authorizationId}/cancel:
+    post:
+      tags: [Authorizations]
+      operationId: cancelAuthorization
+      description: |
+        Withdraws the promise and releases every reservation that is still outstanding, in
+        one transaction. It needs a reason code, because an authorization that disappeared
+        without one leaves a member with nothing to appeal against. What was already
+        delivered stays consumed: cancelling a promise does not undo a service.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/AuthorizationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonCommand'
+      responses:
+        '200':
+          description: Authorization cancelled and its holds released
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Authorization'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/authorizations/{authorizationId}/vouchers:
+    post:
+      tags: [Authorizations]
+      operationId: issueVoucher
+      description: |
+        Issues the token the member shows at the counter. The plaintext is generated with a
+        cryptographic random source and returned once, in this response and nowhere else:
+        the database keeps only its SHA-256 digest and a masked tail, exactly as the
+        session cookie is handled. It never appears in a URL, a query key, a log line or an
+        audit row, and it cannot be read back — a lost voucher is reissued, not recovered.
+
+        This is the one command of the module that takes no Idempotency-Key. The
+        Idempotency-Key contract stores the response body so a replay can be answered from
+        it, and this response is the only place a voucher's plaintext ever exists; storing
+        it would put the token in a column. Issuing twice therefore issues two vouchers,
+        which costs nothing: a voucher moves no entitlement until it is redeemed.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/AuthorizationId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueVoucher'
+      responses:
+        '201':
+          description: Voucher issued; the token is in this body and is never shown again
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssuedVoucher'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/vouchers:redeem:
+    post:
+      tags: [Authorizations]
+      operationId: redeemVoucher
+      description: |
+        Redeems a voucher and records the fulfilment it was presented for, in one
+        transaction: a fulfilment that fails leaves the voucher unredeemed, and a second
+        redemption is answered 409 VOUCHER_ALREADY_REDEEMED. The token is sent in the body
+        rather than in the path or a query parameter, because a URL is written to access
+        logs, browser history and referrers, and a voucher in any of them is a voucher
+        somebody else can use.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RedeemVoucher'
+      responses:
+        '201':
+          description: Voucher redeemed and the fulfilment recorded
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Fulfilment'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/fulfilments:
+    get:
+      tags: [Authorizations]
+      operationId: listFulfilments
+      description: |
+        Fulfilments of the tenant, newest first, with keyset paging. The provider boundary
+        is the one of the authorization's request, so a provider only ever sees what was
+        delivered against its own promises.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: status
+          in: query
+          description: Keep only the fulfilments currently in this state.
+          schema:
+            $ref: '#/components/schemas/FulfilmentStatus'
+        - name: authorizationId
+          in: query
+          description: Keep only the fulfilments recorded against this authorization.
+          schema:
+            type: string
+            format: uuid
+        - name: providerProfileId
+          in: query
+          description: Keep only the fulfilments delivered by this provider.
+          schema:
+            type: string
+            format: uuid
+        - name: performedFrom
+          in: query
+          description: Keep only the fulfilments performed at or after this instant.
+          schema:
+            type: string
+            format: date-time
+        - name: performedTo
+          in: query
+          description: Keep only the fulfilments performed at or before this instant.
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Fulfilment page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FulfilmentPage'
+        '400':
+          description: Cursor invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags: [Authorizations]
+      operationId: createFulfilment
+      description: |
+        Records what is being delivered against an authorization. Nothing is consumed yet:
+        recording says a service happened, completing says the entitlement was spent on it,
+        and keeping them apart is what lets a mistaken record be cancelled without a ledger
+        reversal.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFulfilment'
+      responses:
+        '201':
+          description: Fulfilment recorded
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Fulfilment'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/fulfilments/{fulfilmentId}:
+    get:
+      tags: [Authorizations]
+      operationId: getFulfilment
+      description: One fulfilment with the lines it delivered.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/FulfilmentId'
+      responses:
+        '200':
+          description: Fulfilment detail
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Fulfilment'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/fulfilments/{fulfilmentId}/complete:
+    post:
+      tags: [Authorizations]
+      operationId: completeFulfilment
+      description: |
+        Consumes the entitlement the recorded lines actually used, item by item, from the
+        hold each authorization line took. Consuming more than was approved is refused with
+        422 OVER_FULFILMENT; consuming less leaves the remainder reserved until the
+        authorization expires or is cancelled, because a member who was promised six
+        sessions and had four still holds the other two.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/FulfilmentId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '200':
+          description: Fulfilment completed and the entitlement consumed
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Fulfilment'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/fulfilments/{fulfilmentId}/cancel:
+    post:
+      tags: [Authorizations]
+      operationId: cancelFulfilment
+      description: |
+        Withdraws a fulfilment that was recorded but never completed, with a reason. A
+        completed fulfilment has already consumed from the ledger and is answered 409: the
+        ledger is append-only and undoing a movement is a reversal, not a status change.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/FulfilmentId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonCommand'
+      responses:
+        '200':
+          description: Fulfilment cancelled
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Fulfilment'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+
 components:
   securitySchemes:
     sessionCookie:
@@ -5936,6 +6464,20 @@ components:
         format: uuid
     RequestId:
       name: requestId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    AuthorizationId:
+      name: authorizationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    FulfilmentId:
+      name: fulfilmentId
       in: path
       required: true
       schema:
@@ -7993,6 +8535,383 @@ components:
         reasonText:
           type: string
           maxLength: 1000
+    AuthorizationStatus:
+      type: string
+      description: |
+        State of a promise. It is read-only on every endpoint: an authorization moves when
+        entitlement moves, and there is no field a caller can set to change it.
+      enum: [ACTIVE, PARTIALLY_USED, USED, EXPIRED, CANCELLED]
+    Authorization:
+      type: object
+      additionalProperties: false
+      required: [id, requestId, reference, validFrom, validTo, status, reservedTotal, consumedTotal, items, vouchers, rowVersion, createdAt, approvedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        requestId:
+          type: string
+          format: uuid
+          description: The service request whose approval this authorization carries out.
+        reference:
+          type: string
+          description: Human-readable number of the authorization, readable over a telephone.
+        validFrom:
+          type: string
+          format: date-time
+        validTo:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/AuthorizationStatus'
+        reservedTotal:
+          $ref: '#/components/schemas/DecimalAmount'
+        consumedTotal:
+          $ref: '#/components/schemas/DecimalAmount'
+        currencyCode:
+          type: [string, 'null']
+          pattern: '^[A-Z]{3}$'
+        priceQuoteId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            The quote the approval was made against, so what was quoted and what was
+            authorized can be compared later. A quote grants nothing on its own.
+        approvedBy:
+          type: [string, 'null']
+          format: uuid
+        approvedAt:
+          type: string
+          format: date-time
+        cancelReasonCode:
+          type: [string, 'null']
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthorizationItem'
+        vouchers:
+          type: array
+          description: The vouchers issued against this authorization, never their tokens.
+          items:
+            $ref: '#/components/schemas/Voucher'
+        rowVersion:
+          type: integer
+          minimum: 1
+        createdAt:
+          type: string
+          format: date-time
+    AuthorizationItem:
+      type: object
+      additionalProperties: false
+      required: [id, requestItemId, serviceDefinitionId, approvedQuantity, memberAmount, consumedQuantity]
+      properties:
+        id:
+          type: string
+          format: uuid
+        requestItemId:
+          type: string
+          format: uuid
+        serviceDefinitionId:
+          type: string
+          format: uuid
+        approvedQuantity:
+          $ref: '#/components/schemas/DecimalAmount'
+        approvedAmount:
+          type: [string, 'null']
+        memberAmount:
+          $ref: '#/components/schemas/DecimalAmount'
+        entitlementReservationId:
+          type: [string, 'null']
+          format: uuid
+          description: The exact hold this line took on the entitlement ledger.
+        consumedQuantity:
+          $ref: '#/components/schemas/DecimalAmount'
+    AuthorizationPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Authorization'
+        nextCursor:
+          type: [string, 'null']
+    CreateAuthorization:
+      type: object
+      additionalProperties: false
+      required: [requestId, validTo]
+      description: |
+        The quantities are not sent: they are the ones the reviewer approved on the
+        request, and a caller who could choose them could promise more than was approved.
+      properties:
+        requestId:
+          type: string
+          format: uuid
+        validFrom:
+          type: string
+          format: date-time
+          description: When the promise starts; defaults to now.
+        validTo:
+          type: string
+          format: date-time
+          description: When the promise stops holding and the reservations are released.
+        priceQuoteId:
+          type: string
+          format: uuid
+        items:
+          type: array
+          maxItems: 100
+          description: |
+            The member's share per approved line, when the approval decided one. A line
+            that is not named here carries a member share of zero.
+          items:
+            $ref: '#/components/schemas/AuthorizationItemInput'
+    AuthorizationItemInput:
+      type: object
+      additionalProperties: false
+      required: [lineNo, memberAmount]
+      properties:
+        lineNo:
+          type: integer
+          minimum: 1
+          description: Line number of the request item this share belongs to.
+        memberAmount:
+          $ref: '#/components/schemas/DecimalAmount'
+    ExtendAuthorization:
+      type: object
+      additionalProperties: false
+      required: [validTo]
+      properties:
+        validTo:
+          type: string
+          format: date-time
+          description: The new end of the promise; it must be later than the current one.
+        reasonCode:
+          type: string
+          minLength: 2
+          maxLength: 80
+        reasonText:
+          type: string
+          maxLength: 1000
+    FulfilmentStatus:
+      type: string
+      description: |
+        State of a delivery record. RECORDED says a service happened, COMPLETED says the
+        entitlement was consumed for it, CANCELLED withdraws a record that never was.
+      enum: [RECORDED, COMPLETED, CANCELLED]
+    Fulfilment:
+      type: object
+      additionalProperties: false
+      required: [id, reference, authorizationId, performedAt, status, items, rowVersion, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        reference:
+          type: string
+        authorizationId:
+          type: string
+          format: uuid
+        providerProfileId:
+          type: [string, 'null']
+          format: uuid
+        locationId:
+          type: [string, 'null']
+          format: uuid
+        practitionerId:
+          type: [string, 'null']
+          format: uuid
+        performedAt:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/FulfilmentStatus'
+        completedAt:
+          type: [string, 'null']
+          format: date-time
+        cancelledAt:
+          type: [string, 'null']
+          format: date-time
+        cancelReasonCode:
+          type: [string, 'null']
+        recordedBy:
+          type: [string, 'null']
+          format: uuid
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/FulfilmentItem'
+        rowVersion:
+          type: integer
+          minimum: 1
+        createdAt:
+          type: string
+          format: date-time
+    FulfilmentItem:
+      type: object
+      additionalProperties: false
+      required: [id, authorizationItemId, serviceDefinitionId, actualQuantity]
+      properties:
+        id:
+          type: string
+          format: uuid
+        authorizationItemId:
+          type: string
+          format: uuid
+        serviceDefinitionId:
+          type: string
+          format: uuid
+        actualQuantity:
+          $ref: '#/components/schemas/DecimalAmount'
+        actualAmount:
+          type: [string, 'null']
+    FulfilmentPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Fulfilment'
+        nextCursor:
+          type: [string, 'null']
+    CreateFulfilment:
+      type: object
+      additionalProperties: false
+      required: [authorizationId, performedAt, items]
+      properties:
+        authorizationId:
+          type: string
+          format: uuid
+        providerProfileId:
+          type: string
+          format: uuid
+        locationId:
+          type: string
+          format: uuid
+        practitionerId:
+          type: string
+          format: uuid
+        performedAt:
+          type: string
+          format: date-time
+        items:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/FulfilmentItemInput'
+    FulfilmentItemInput:
+      type: object
+      additionalProperties: false
+      required: [authorizationItemId, actualQuantity]
+      description: |
+        What one authorized line actually delivered. Quantities are exact decimal strings,
+        never JSON numbers: a quantity that passed through a float is a quantity nobody can
+        reconcile against the ledger afterwards.
+      properties:
+        authorizationItemId:
+          type: string
+          format: uuid
+        actualQuantity:
+          $ref: '#/components/schemas/DecimalAmount'
+        actualAmount:
+          $ref: '#/components/schemas/DecimalAmount'
+    VoucherStatus:
+      type: string
+      enum: [ISSUED, REDEEMED, EXPIRED, REVOKED]
+    Voucher:
+      type: object
+      additionalProperties: false
+      required: [id, authorizationId, maskedToken, validFrom, validTo, status, issuedAt]
+      description: |
+        A voucher as anybody but its holder ever sees it. There is no token field here on
+        purpose: the plaintext exists once, in the issue response, and is never readable
+        again from any endpoint.
+      properties:
+        id:
+          type: string
+          format: uuid
+        authorizationId:
+          type: string
+          format: uuid
+        maskedToken:
+          type: string
+          description: The tail an operator reads back to confirm which voucher this is.
+        validFrom:
+          type: string
+          format: date-time
+        validTo:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/VoucherStatus'
+        redeemedAt:
+          type: [string, 'null']
+          format: date-time
+        redeemedByActorId:
+          type: [string, 'null']
+          format: uuid
+        issuedAt:
+          type: string
+          format: date-time
+    IssuedVoucher:
+      type: object
+      additionalProperties: false
+      required: [voucher, token]
+      description: |
+        The one response that carries the plaintext. Show it to the member, print it or let
+        them save it now: the server keeps only its digest and cannot produce it again.
+      properties:
+        voucher:
+          $ref: '#/components/schemas/Voucher'
+        token:
+          type: string
+          description: The plaintext voucher token, returned exactly once.
+    IssueVoucher:
+      type: object
+      additionalProperties: false
+      properties:
+        validFrom:
+          type: string
+          format: date-time
+          description: Defaults to the authorization's own start.
+        validTo:
+          type: string
+          format: date-time
+          description: |
+            Defaults to the authorization's end and may never outlive it: a voucher that
+            outlasts the hold behind it is a promise with nothing under it.
+    RedeemVoucher:
+      type: object
+      additionalProperties: false
+      required: [token, performedAt, items]
+      properties:
+        token:
+          type: string
+          minLength: 16
+          maxLength: 256
+          description: The plaintext the member presented; it is hashed and never stored.
+        providerProfileId:
+          type: string
+          format: uuid
+        locationId:
+          type: string
+          format: uuid
+        practitionerId:
+          type: string
+          format: uuid
+        performedAt:
+          type: string
+          format: date-time
+        items:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/FulfilmentItemInput'
     ServiceDomain:
       type: string
       description: Closed list of service domains shared by categories and definitions.

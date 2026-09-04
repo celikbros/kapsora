@@ -4,6 +4,133 @@
  */
 
 export interface paths {
+    "/api/v1/authorizations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Authorizations of the tenant, newest first, with keyset paging. Every filter is
+         *     optional and they combine with AND. An authorization has no provider column of its
+         *     own, so a provider-scoped actor is bounded by the request the authorization was
+         *     granted against: an authorization raised for another provider is not on the page
+         *     and is not reachable by id either.
+         */
+        get: operations["listAuthorizations"];
+        put?: never;
+        /**
+         * @description Turns an approval into a promise that costs something. In one transaction the
+         *     approved lines of the request are read, entitlement is reserved for each of them
+         *     through the ledger, and the reservation id is written onto the line so release and
+         *     consume later act on the exact hold this authorization took. A refusal on any line
+         *     fails the whole authorization: a half-reserved approval is a promise nobody can
+         *     keep. The request must be APPROVED or PARTIALLY_APPROVED.
+         *
+         *     Idempotency-Key is required. Creating twice under one key returns the same
+         *     authorization and takes one set of reservations, never two.
+         */
+        post: operations["createAuthorization"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/authorizations/{authorizationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One authorization with its lines and the vouchers issued against it. A caller
+         *     outside the provider boundary is answered 404 rather than 403: that such an
+         *     authorization exists at all is itself information about somebody else's business.
+         */
+        get: operations["getAuthorization"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/authorizations/{authorizationId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Withdraws the promise and releases every reservation that is still outstanding, in
+         *     one transaction. It needs a reason code, because an authorization that disappeared
+         *     without one leaves a member with nothing to appeal against. What was already
+         *     delivered stays consumed: cancelling a promise does not undo a service.
+         */
+        post: operations["cancelAuthorization"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/authorizations/{authorizationId}/extend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Moves validTo forward. It only ever moves forward and only while the authorization
+         *     is ACTIVE: shortening a promise somebody is relying on, or reviving one that has
+         *     been used up, cancelled or expired, are both refused with 409.
+         */
+        post: operations["extendAuthorization"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/authorizations/{authorizationId}/vouchers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Issues the token the member shows at the counter. The plaintext is generated with a
+         *     cryptographic random source and returned once, in this response and nowhere else:
+         *     the database keeps only its SHA-256 digest and a masked tail, exactly as the
+         *     session cookie is handled. It never appears in a URL, a query key, a log line or an
+         *     audit row, and it cannot be read back — a lost voucher is reissued, not recovered.
+         *
+         *     This is the one command of the module that takes no Idempotency-Key. The
+         *     Idempotency-Key contract stores the response body so a replay can be answered from
+         *     it, and this response is the only place a voucher's plaintext ever exists; storing
+         *     it would put the token in a column. Issuing twice therefore issues two vouchers,
+         *     which costs nothing: a voucher moves no entitlement until it is redeemed.
+         */
+        post: operations["issueVoucher"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/code-systems": {
         parameters: {
             query?: never;
@@ -571,6 +698,94 @@ export interface paths {
         put?: never;
         /** @description Rejects a pending adjustment with a reason; nothing moves. */
         post: operations["rejectEntitlementAdjustment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/fulfilments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Fulfilments of the tenant, newest first, with keyset paging. The provider boundary
+         *     is the one of the authorization's request, so a provider only ever sees what was
+         *     delivered against its own promises.
+         */
+        get: operations["listFulfilments"];
+        put?: never;
+        /**
+         * @description Records what is being delivered against an authorization. Nothing is consumed yet:
+         *     recording says a service happened, completing says the entitlement was spent on it,
+         *     and keeping them apart is what lets a mistaken record be cancelled without a ledger
+         *     reversal.
+         */
+        post: operations["createFulfilment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/fulfilments/{fulfilmentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description One fulfilment with the lines it delivered. */
+        get: operations["getFulfilment"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/fulfilments/{fulfilmentId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Withdraws a fulfilment that was recorded but never completed, with a reason. A
+         *     completed fulfilment has already consumed from the ledger and is answered 409: the
+         *     ledger is append-only and undoing a movement is a reversal, not a status change.
+         */
+        post: operations["cancelFulfilment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/fulfilments/{fulfilmentId}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Consumes the entitlement the recorded lines actually used, item by item, from the
+         *     hold each authorization line took. Consuming more than was approved is refused with
+         *     422 OVER_FULFILMENT; consuming less leaves the remainder reserved until the
+         *     authorization expires or is cancelled, because a member who was promised six
+         *     sessions and had four still holds the other two.
+         */
+        post: operations["completeFulfilment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2471,6 +2686,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/vouchers:redeem": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Redeems a voucher and records the fulfilment it was presented for, in one
+         *     transaction: a fulfilment that fails leaves the voucher unredeemed, and a second
+         *     redemption is answered 409 VOUCHER_ALREADY_REDEEMED. The token is sent in the body
+         *     rather than in the path or a query parameter, because a URL is written to access
+         *     logs, browser history and referrers, and a voucher in any of them is a voucher
+         *     somebody else can use.
+         */
+        post: operations["redeemVoucher"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health/live": {
         parameters: {
             query?: never;
@@ -2507,6 +2746,74 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        Authorization: {
+            /** Format: date-time */
+            approvedAt: string;
+            /** Format: uuid */
+            approvedBy?: string | null;
+            cancelReasonCode?: string | null;
+            consumedTotal: components["schemas"]["DecimalAmount"];
+            /** Format: date-time */
+            createdAt: string;
+            currencyCode?: string | null;
+            /** Format: uuid */
+            id: string;
+            items: components["schemas"]["AuthorizationItem"][];
+            /**
+             * Format: uuid
+             * @description The quote the approval was made against, so what was quoted and what was
+             *     authorized can be compared later. A quote grants nothing on its own.
+             */
+            priceQuoteId?: string | null;
+            /** @description Human-readable number of the authorization, readable over a telephone. */
+            reference: string;
+            /**
+             * Format: uuid
+             * @description The service request whose approval this authorization carries out.
+             */
+            requestId: string;
+            reservedTotal: components["schemas"]["DecimalAmount"];
+            rowVersion: number;
+            status: components["schemas"]["AuthorizationStatus"];
+            /** Format: date-time */
+            validFrom: string;
+            /** Format: date-time */
+            validTo: string;
+            /** @description The vouchers issued against this authorization, never their tokens. */
+            vouchers: components["schemas"]["Voucher"][];
+        };
+        AuthorizationItem: {
+            approvedAmount?: string | null;
+            approvedQuantity: components["schemas"]["DecimalAmount"];
+            consumedQuantity: components["schemas"]["DecimalAmount"];
+            /**
+             * Format: uuid
+             * @description The exact hold this line took on the entitlement ledger.
+             */
+            entitlementReservationId?: string | null;
+            /** Format: uuid */
+            id: string;
+            memberAmount: components["schemas"]["DecimalAmount"];
+            /** Format: uuid */
+            requestItemId: string;
+            /** Format: uuid */
+            serviceDefinitionId: string;
+        };
+        AuthorizationItemInput: {
+            /** @description Line number of the request item this share belongs to. */
+            lineNo: number;
+            memberAmount: components["schemas"]["DecimalAmount"];
+        };
+        AuthorizationPage: {
+            items: components["schemas"]["Authorization"][];
+            nextCursor?: string | null;
+        };
+        /**
+         * @description State of a promise. It is read-only on every endpoint: an authorization moves when
+         *     entitlement moves, and there is no field a caller can set to change it.
+         * @enum {string}
+         */
+        AuthorizationStatus: "ACTIVE" | "PARTIALLY_USED" | "USED" | "EXPIRED" | "CANCELLED";
         CodeSystem: {
             authority: components["schemas"]["CodeSystemAuthority"];
             code: string;
@@ -2683,6 +2990,31 @@ export interface components {
             reasonCode: string;
             reasonText?: string;
         };
+        /**
+         * @description The quantities are not sent: they are the ones the reviewer approved on the
+         *     request, and a caller who could choose them could promise more than was approved.
+         */
+        CreateAuthorization: {
+            /**
+             * @description The member's share per approved line, when the approval decided one. A line
+             *     that is not named here carries a member share of zero.
+             */
+            items?: components["schemas"]["AuthorizationItemInput"][];
+            /** Format: uuid */
+            priceQuoteId?: string;
+            /** Format: uuid */
+            requestId: string;
+            /**
+             * Format: date-time
+             * @description When the promise starts; defaults to now.
+             */
+            validFrom?: string;
+            /**
+             * Format: date-time
+             * @description When the promise stops holding and the reservations are released.
+             */
+            validTo: string;
+        };
         CreateCodeSystemRequest: {
             authority: components["schemas"]["CodeSystemAuthority"];
             code: string;
@@ -2734,6 +3066,19 @@ export interface components {
             validFrom: string;
             /** Format: date */
             validTo?: string;
+        };
+        CreateFulfilment: {
+            /** Format: uuid */
+            authorizationId: string;
+            items: components["schemas"]["FulfilmentItemInput"][];
+            /** Format: uuid */
+            locationId?: string;
+            /** Format: date-time */
+            performedAt: string;
+            /** Format: uuid */
+            practitionerId?: string;
+            /** Format: uuid */
+            providerProfileId?: string;
         };
         CreateMembershipRequest: {
             externalMemberNo?: string;
@@ -3209,11 +3554,78 @@ export interface components {
             /** @enum {string} */
             status: "HELD" | "PARTIALLY_CONSUMED" | "CONSUMED" | "RELEASED" | "EXPIRED";
         };
+        ExtendAuthorization: {
+            reasonCode?: string;
+            reasonText?: string;
+            /**
+             * Format: date-time
+             * @description The new end of the promise; it must be later than the current one.
+             */
+            validTo: string;
+        };
         /**
          * @description How a service definition is delivered once it is requested.
          * @enum {string}
          */
         FulfillmentMode: "APPOINTMENT" | "RESERVATION" | "WORK_ORDER" | "MEMBERSHIP" | "SESSION" | "VOUCHER" | "REIMBURSEMENT" | "DIRECT";
+        Fulfilment: {
+            /** Format: uuid */
+            authorizationId: string;
+            /** Format: date-time */
+            cancelledAt?: string | null;
+            cancelReasonCode?: string | null;
+            /** Format: date-time */
+            completedAt?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: uuid */
+            id: string;
+            items: components["schemas"]["FulfilmentItem"][];
+            /** Format: uuid */
+            locationId?: string | null;
+            /** Format: date-time */
+            performedAt: string;
+            /** Format: uuid */
+            practitionerId?: string | null;
+            /** Format: uuid */
+            providerProfileId?: string | null;
+            /** Format: uuid */
+            recordedBy?: string | null;
+            reference: string;
+            rowVersion: number;
+            status: components["schemas"]["FulfilmentStatus"];
+        };
+        FulfilmentItem: {
+            actualAmount?: string | null;
+            actualQuantity: components["schemas"]["DecimalAmount"];
+            /** Format: uuid */
+            authorizationItemId: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            serviceDefinitionId: string;
+        };
+        /**
+         * @description What one authorized line actually delivered. Quantities are exact decimal strings,
+         *     never JSON numbers: a quantity that passed through a float is a quantity nobody can
+         *     reconcile against the ledger afterwards.
+         */
+        FulfilmentItemInput: {
+            actualAmount?: components["schemas"]["DecimalAmount"];
+            actualQuantity: components["schemas"]["DecimalAmount"];
+            /** Format: uuid */
+            authorizationItemId: string;
+        };
+        FulfilmentPage: {
+            items: components["schemas"]["Fulfilment"][];
+            nextCursor?: string | null;
+        };
+        /**
+         * @description State of a delivery record. RECORDED says a service happened, COMPLETED says the
+         *     entitlement was consumed for it, CANCELLED withdraws a record that never was.
+         * @enum {string}
+         */
+        FulfilmentStatus: "RECORDED" | "COMPLETED" | "CANCELLED";
         HealthStatus: {
             checks?: {
                 [key: string]: string;
@@ -3234,6 +3646,28 @@ export interface components {
         };
         ImportCodeValuesRequest: {
             items: components["schemas"]["CodeValueInput"][];
+        };
+        /**
+         * @description The one response that carries the plaintext. Show it to the member, print it or let
+         *     them save it now: the server keeps only its digest and cannot produce it again.
+         */
+        IssuedVoucher: {
+            /** @description The plaintext voucher token, returned exactly once. */
+            token: string;
+            voucher: components["schemas"]["Voucher"];
+        };
+        IssueVoucher: {
+            /**
+             * Format: date-time
+             * @description Defaults to the authorization's own start.
+             */
+            validFrom?: string;
+            /**
+             * Format: date-time
+             * @description Defaults to the authorization's end and may never outlive it: a voucher that
+             *     outlasts the hold behind it is a promise with nothing under it.
+             */
+            validTo?: string;
         };
         LedgerEntry: {
             /** Format: uuid */
@@ -4091,6 +4525,19 @@ export interface components {
         ReasonCommand: {
             reasonCode: string;
             reasonText?: string;
+        };
+        RedeemVoucher: {
+            items: components["schemas"]["FulfilmentItemInput"][];
+            /** Format: uuid */
+            locationId?: string;
+            /** Format: date-time */
+            performedAt: string;
+            /** Format: uuid */
+            practitionerId?: string;
+            /** Format: uuid */
+            providerProfileId?: string;
+            /** @description The plaintext the member presented; it is hashed and never stored. */
+            token: string;
         };
         /**
          * @description The body that issued the practitioner's registration number.
@@ -5020,6 +5467,32 @@ export interface components {
             email?: string;
             tenants: components["schemas"]["TenantContext"][];
         };
+        /**
+         * @description A voucher as anybody but its holder ever sees it. There is no token field here on
+         *     purpose: the plaintext exists once, in the issue response, and is never readable
+         *     again from any endpoint.
+         */
+        Voucher: {
+            /** Format: uuid */
+            authorizationId: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            issuedAt: string;
+            /** @description The tail an operator reads back to confirm which voucher this is. */
+            maskedToken: string;
+            /** Format: date-time */
+            redeemedAt?: string | null;
+            /** Format: uuid */
+            redeemedByActorId?: string | null;
+            status: components["schemas"]["VoucherStatus"];
+            /** Format: date-time */
+            validFrom: string;
+            /** Format: date-time */
+            validTo: string;
+        };
+        /** @enum {string} */
+        VoucherStatus: "ISSUED" | "REDEEMED" | "EXPIRED" | "REVOKED";
     };
     responses: {
         /** @description Business state, duplicate idempotency key, or uniqueness conflict */
@@ -5082,6 +5555,7 @@ export interface components {
     parameters: {
         AccountId: string;
         AdjustmentId: string;
+        AuthorizationId: string;
         CodeSystemId: string;
         ContractId: string;
         ContractVersionId: string;
@@ -5091,6 +5565,7 @@ export interface components {
         Cursor: string;
         EnrollmentId: string;
         EvaluationId: string;
+        FulfilmentId: string;
         /** @description Client-generated unique key retained for at least 24 hours. */
         IdempotencyKey: string;
         /** @description Optional on query-style POSTs; honoured when present. */
@@ -5133,6 +5608,11 @@ export interface components {
     };
     pathItems: never;
 }
+export type SchemaAuthorization = components['schemas']['Authorization'];
+export type SchemaAuthorizationItem = components['schemas']['AuthorizationItem'];
+export type SchemaAuthorizationItemInput = components['schemas']['AuthorizationItemInput'];
+export type SchemaAuthorizationPage = components['schemas']['AuthorizationPage'];
+export type SchemaAuthorizationStatus = components['schemas']['AuthorizationStatus'];
 export type SchemaCodeSystem = components['schemas']['CodeSystem'];
 export type SchemaCodeSystemAuthority = components['schemas']['CodeSystemAuthority'];
 export type SchemaCodeSystemPage = components['schemas']['CodeSystemPage'];
@@ -5149,10 +5629,12 @@ export type SchemaContractVersionList = components['schemas']['ContractVersionLi
 export type SchemaContractVersionStatus = components['schemas']['ContractVersionStatus'];
 export type SchemaContractVersionSummary = components['schemas']['ContractVersionSummary'];
 export type SchemaCreateAdjustmentRequest = components['schemas']['CreateAdjustmentRequest'];
+export type SchemaCreateAuthorization = components['schemas']['CreateAuthorization'];
 export type SchemaCreateCodeSystemRequest = components['schemas']['CreateCodeSystemRequest'];
 export type SchemaCreateContractRequest = components['schemas']['CreateContractRequest'];
 export type SchemaCreateContractVersionRequest = components['schemas']['CreateContractVersionRequest'];
 export type SchemaCreateEnrollmentRequest = components['schemas']['CreateEnrollmentRequest'];
+export type SchemaCreateFulfilment = components['schemas']['CreateFulfilment'];
 export type SchemaCreateMembershipRequest = components['schemas']['CreateMembershipRequest'];
 export type SchemaCreateOrganizationRequest = components['schemas']['CreateOrganizationRequest'];
 export type SchemaCreatePersonRequest = components['schemas']['CreatePersonRequest'];
@@ -5183,10 +5665,18 @@ export type SchemaEntitlementAdjustment = components['schemas']['EntitlementAdju
 export type SchemaEntitlementDefinition = components['schemas']['EntitlementDefinition'];
 export type SchemaEntitlementDefinitionInput = components['schemas']['EntitlementDefinitionInput'];
 export type SchemaEntitlementReservation = components['schemas']['EntitlementReservation'];
+export type SchemaExtendAuthorization = components['schemas']['ExtendAuthorization'];
 export type SchemaFulfillmentMode = components['schemas']['FulfillmentMode'];
+export type SchemaFulfilment = components['schemas']['Fulfilment'];
+export type SchemaFulfilmentItem = components['schemas']['FulfilmentItem'];
+export type SchemaFulfilmentItemInput = components['schemas']['FulfilmentItemInput'];
+export type SchemaFulfilmentPage = components['schemas']['FulfilmentPage'];
+export type SchemaFulfilmentStatus = components['schemas']['FulfilmentStatus'];
 export type SchemaHealthStatus = components['schemas']['HealthStatus'];
 export type SchemaIdentifierSearchRequest = components['schemas']['IdentifierSearchRequest'];
 export type SchemaImportCodeValuesRequest = components['schemas']['ImportCodeValuesRequest'];
+export type SchemaIssuedVoucher = components['schemas']['IssuedVoucher'];
+export type SchemaIssueVoucher = components['schemas']['IssueVoucher'];
 export type SchemaLedgerEntry = components['schemas']['LedgerEntry'];
 export type SchemaLedgerPage = components['schemas']['LedgerPage'];
 export type SchemaMaskedIdentifier = components['schemas']['MaskedIdentifier'];
@@ -5255,6 +5745,7 @@ export type SchemaProviderType = components['schemas']['ProviderType'];
 export type SchemaPutPaymentTermRequest = components['schemas']['PutPaymentTermRequest'];
 export type SchemaQuotaPeriodType = components['schemas']['QuotaPeriodType'];
 export type SchemaReasonCommand = components['schemas']['ReasonCommand'];
+export type SchemaRedeemVoucher = components['schemas']['RedeemVoucher'];
 export type SchemaRegistrationAuthority = components['schemas']['RegistrationAuthority'];
 export type SchemaReplacePackageDefinitionsRequest = components['schemas']['ReplacePackageDefinitionsRequest'];
 export type SchemaReplacePractitionerLocationsRequest = components['schemas']['ReplacePractitionerLocationsRequest'];
@@ -5345,6 +5836,8 @@ export type SchemaUpdateServiceCategoryRequest = components['schemas']['UpdateSe
 export type SchemaUpdateServiceDefinitionRequest = components['schemas']['UpdateServiceDefinitionRequest'];
 export type SchemaUpdateServiceRequest = components['schemas']['UpdateServiceRequest'];
 export type SchemaUserContext = components['schemas']['UserContext'];
+export type SchemaVoucher = components['schemas']['Voucher'];
+export type SchemaVoucherStatus = components['schemas']['VoucherStatus'];
 export type ResponseConflict = components['responses']['Conflict'];
 export type ResponseForbidden = components['responses']['Forbidden'];
 export type ResponseNotFound = components['responses']['NotFound'];
@@ -5353,6 +5846,7 @@ export type ResponseUnauthorized = components['responses']['Unauthorized'];
 export type ResponseValidationError = components['responses']['ValidationError'];
 export type ParameterAccountId = components['parameters']['AccountId'];
 export type ParameterAdjustmentId = components['parameters']['AdjustmentId'];
+export type ParameterAuthorizationId = components['parameters']['AuthorizationId'];
 export type ParameterCodeSystemId = components['parameters']['CodeSystemId'];
 export type ParameterContractId = components['parameters']['ContractId'];
 export type ParameterContractVersionId = components['parameters']['ContractVersionId'];
@@ -5360,6 +5854,7 @@ export type ParameterCsrfHeader = components['parameters']['CsrfHeader'];
 export type ParameterCursor = components['parameters']['Cursor'];
 export type ParameterEnrollmentId = components['parameters']['EnrollmentId'];
 export type ParameterEvaluationId = components['parameters']['EvaluationId'];
+export type ParameterFulfilmentId = components['parameters']['FulfilmentId'];
 export type ParameterIdempotencyKey = components['parameters']['IdempotencyKey'];
 export type ParameterIdempotencyKeyOptional = components['parameters']['IdempotencyKeyOptional'];
 export type ParameterIfMatch = components['parameters']['IfMatch'];
@@ -5389,6 +5884,265 @@ export type ParameterTenantHeader = components['parameters']['TenantHeader'];
 export type HeaderETag = components['headers']['ETag'];
 export type $defs = Record<string, never>;
 export interface operations {
+    listAuthorizations: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                /** @description Keep only the authorizations whose request was raised for this person. */
+                personId?: string;
+                /** @description Keep only the authorizations whose request names this provider organization. */
+                providerOrganizationId?: string;
+                /** @description Keep only the authorizations granted against this service request. */
+                requestId?: string;
+                /** @description Keep only the authorizations currently in this state. */
+                status?: components["schemas"]["AuthorizationStatus"];
+                /** @description Keep only the authorizations still valid at or after this instant. */
+                validFrom?: string;
+                /** @description Keep only the authorizations that had already started by this instant. */
+                validTo?: string;
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authorization page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthorizationPage"];
+                };
+            };
+            /** @description Cursor invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    createAuthorization: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAuthorization"];
+            };
+        };
+        responses: {
+            /** @description Authorization created and entitlement reserved */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Authorization"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getAuthorization: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                authorizationId: components["parameters"]["AuthorizationId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authorization detail */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Authorization"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    cancelAuthorization: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                authorizationId: components["parameters"]["AuthorizationId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonCommand"];
+            };
+        };
+        responses: {
+            /** @description Authorization cancelled and its holds released */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Authorization"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    extendAuthorization: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                authorizationId: components["parameters"]["AuthorizationId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExtendAuthorization"];
+            };
+        };
+        responses: {
+            /** @description Authorization extended */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Authorization"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    issueVoucher: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                authorizationId: components["parameters"]["AuthorizationId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["IssueVoucher"];
+            };
+        };
+        responses: {
+            /** @description Voucher issued; the token is in this body and is never shown again */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IssuedVoucher"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
     listCodeSystems: {
         parameters: {
             query?: {
@@ -6845,6 +7599,225 @@ export interface operations {
             409: components["responses"]["Conflict"];
             /** @description ETag mismatch */
             412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listFulfilments: {
+        parameters: {
+            query?: {
+                /** @description Keep only the fulfilments recorded against this authorization. */
+                authorizationId?: string;
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                /** @description Keep only the fulfilments performed at or after this instant. */
+                performedFrom?: string;
+                /** @description Keep only the fulfilments performed at or before this instant. */
+                performedTo?: string;
+                /** @description Keep only the fulfilments delivered by this provider. */
+                providerProfileId?: string;
+                /** @description Keep only the fulfilments currently in this state. */
+                status?: components["schemas"]["FulfilmentStatus"];
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Fulfilment page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FulfilmentPage"];
+                };
+            };
+            /** @description Cursor invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    createFulfilment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateFulfilment"];
+            };
+        };
+        responses: {
+            /** @description Fulfilment recorded */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Fulfilment"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getFulfilment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                fulfilmentId: components["parameters"]["FulfilmentId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Fulfilment detail */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Fulfilment"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    cancelFulfilment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                fulfilmentId: components["parameters"]["FulfilmentId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonCommand"];
+            };
+        };
+        responses: {
+            /** @description Fulfilment cancelled */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Fulfilment"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    completeFulfilment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                fulfilmentId: components["parameters"]["FulfilmentId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Fulfilment completed and the entitlement consumed */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Fulfilment"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11559,6 +12532,41 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    redeemVoucher: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RedeemVoucher"];
+            };
+        };
+        responses: {
+            /** @description Voucher redeemed and the fulfilment recorded */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Fulfilment"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getLiveness: {
