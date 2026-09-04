@@ -1194,8 +1194,7 @@ export function buildWorld(
         // constraint the database enforces is a screen written against a row that cannot
         // exist.
         rejectReasonCode: status === 'REJECTED' ? 'NOT_COVERED_BY_PLAN' : null,
-        requiredDocumentTypes:
-          status === 'PENDING_DOCUMENT' ? ['MEDICAL_REPORT', 'INVOICE'] : null,
+        requiredDocumentTypes: status === 'PENDING_DOCUMENT' ? ['MEDICAL_REPORT', 'INVOICE'] : null,
         rowVersion: 1,
         items: [
           {
