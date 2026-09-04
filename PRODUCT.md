@@ -14,6 +14,11 @@ web (three apps: backoffice, provider portal, member PWA; one Go API behind them
   literate, works in long sessions on a desktop, cares about audit trails.
 - **Reviewer / auditor (backoffice)** — reads and approves; narrower permissions, same
   screens with controls hidden. Needs to see status, history and who did what.
+- **Configurator (backoffice)** — sets up what the operators then work inside: the
+  service catalog, provider contracts and their price sheets, and the rules that decide
+  documents, pre-approval and limits. A small number of trained people who work in the
+  densest screens in the product and write CEL by hand. They get real tools rather than
+  simplified ones, and a second person publishes what they wrote.
 - **Provider staff (provider portal)** — clinics, hospitals, hotels and other service
   providers. Fast entry: eligibility check, service request, claim, statement. Often on
   a shared desk computer between patients or guests.

@@ -2,146 +2,146 @@
 name: KAPSORA
 description: A benefits ledger for banks, insurers and providers — quiet, exact, and always able to say which tenant you are acting for.
 colors:
-  bg: "#F7F8FA"
-  surface: "#FFFFFF"
-  surface-2: "#EEF1F5"
-  surface-3: "#DFE4EB"
-  border: "#DCE2EA"
-  border-strong: "#B9C3D0"
-  fg: "#14202E"
-  fg-muted: "#4B5A6B"
-  fg-subtle: "#8A97A8"
-  primary: "#1F5FA8"
-  primary-hover: "#184C88"
-  primary-fg: "#FFFFFF"
-  primary-soft: "#E3EDF8"
-  success: "#1E7F4F"
-  success-soft: "#E4F4EB"
-  warning: "#9A6700"
-  warning-soft: "#FBF1D6"
-  danger: "#B42318"
-  danger-soft: "#FBE7E4"
-  info: "#1F5FA8"
-  info-soft: "#E3EDF8"
-  focus: "#3B82F6"
+  bg: '#F7F8FA'
+  surface: '#FFFFFF'
+  surface-2: '#EEF1F5'
+  surface-3: '#DFE4EB'
+  border: '#DCE2EA'
+  border-strong: '#B9C3D0'
+  fg: '#14202E'
+  fg-muted: '#4B5A6B'
+  fg-subtle: '#8A97A8'
+  primary: '#1F5FA8'
+  primary-hover: '#184C88'
+  primary-fg: '#FFFFFF'
+  primary-soft: '#E3EDF8'
+  success: '#1E7F4F'
+  success-soft: '#E4F4EB'
+  warning: '#9A6700'
+  warning-soft: '#FBF1D6'
+  danger: '#B42318'
+  danger-soft: '#FBE7E4'
+  info: '#1F5FA8'
+  info-soft: '#E3EDF8'
+  focus: '#3B82F6'
 typography:
   display:
-    fontFamily: "var(--font-sans)"
-    fontSize: "1.75rem"
+    fontFamily: 'var(--font-sans)'
+    fontSize: '1.75rem'
     fontWeight: 600
-    lineHeight: "2.25rem"
-    letterSpacing: "-0.01em"
+    lineHeight: '2.25rem'
+    letterSpacing: '-0.01em'
   headline:
-    fontFamily: "var(--font-sans)"
-    fontSize: "1.5rem"
+    fontFamily: 'var(--font-sans)'
+    fontSize: '1.5rem'
     fontWeight: 600
-    lineHeight: "2rem"
-    letterSpacing: "-0.01em"
+    lineHeight: '2rem'
+    letterSpacing: '-0.01em'
   title:
-    fontFamily: "var(--font-sans)"
-    fontSize: "1.125rem"
+    fontFamily: 'var(--font-sans)'
+    fontSize: '1.125rem'
     fontWeight: 600
-    lineHeight: "1.75rem"
-    letterSpacing: "normal"
+    lineHeight: '1.75rem'
+    letterSpacing: 'normal'
   body:
-    fontFamily: "var(--font-sans)"
-    fontSize: "0.875rem"
+    fontFamily: 'var(--font-sans)'
+    fontSize: '0.875rem'
     fontWeight: 400
-    lineHeight: "1.25rem"
-    letterSpacing: "normal"
+    lineHeight: '1.25rem'
+    letterSpacing: 'normal'
   label:
-    fontFamily: "var(--font-sans)"
-    fontSize: "0.875rem"
+    fontFamily: 'var(--font-sans)'
+    fontSize: '0.875rem'
     fontWeight: 500
-    lineHeight: "1.25rem"
-    letterSpacing: "normal"
+    lineHeight: '1.25rem'
+    letterSpacing: 'normal'
   caption:
-    fontFamily: "var(--font-sans)"
-    fontSize: "0.75rem"
+    fontFamily: 'var(--font-sans)'
+    fontSize: '0.75rem'
     fontWeight: 500
-    lineHeight: "1rem"
-    letterSpacing: "0.02em"
+    lineHeight: '1rem'
+    letterSpacing: '0.02em'
   mono:
-    fontFamily: "var(--font-mono)"
-    fontSize: "0.8125rem"
+    fontFamily: 'var(--font-mono)'
+    fontSize: '0.8125rem'
     fontWeight: 400
-    lineHeight: "1.25rem"
-    letterSpacing: "normal"
+    lineHeight: '1.25rem'
+    letterSpacing: 'normal'
 rounded:
-  sm: "0.25rem"
-  md: "0.375rem"
-  lg: "0.5rem"
-  xl: "0.75rem"
-  full: "9999px"
+  sm: '0.25rem'
+  md: '0.375rem'
+  lg: '0.5rem'
+  xl: '0.75rem'
+  full: '9999px'
 spacing:
-  xs: "0.25rem"
-  sm: "0.5rem"
-  md: "0.75rem"
-  lg: "1rem"
-  xl: "1.5rem"
-  2xl: "2rem"
+  xs: '0.25rem'
+  sm: '0.5rem'
+  md: '0.75rem'
+  lg: '1rem'
+  xl: '1.5rem'
+  2xl: '2rem'
 components:
   button-primary:
-    backgroundColor: "{colors.primary}"
-    textColor: "{colors.primary-fg}"
-    typography: "{typography.label}"
-    rounded: "{rounded.md}"
-    padding: "0.5rem 1rem"
+    backgroundColor: '{colors.primary}'
+    textColor: '{colors.primary-fg}'
+    typography: '{typography.label}'
+    rounded: '{rounded.md}'
+    padding: '0.5rem 1rem'
   button-primary-hover:
-    backgroundColor: "{colors.primary-hover}"
-    textColor: "{colors.primary-fg}"
+    backgroundColor: '{colors.primary-hover}'
+    textColor: '{colors.primary-fg}'
   button-secondary:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.fg}"
-    borderColor: "{colors.border-strong}"
-    typography: "{typography.label}"
-    rounded: "{rounded.md}"
-    padding: "0.5rem 1rem"
+    backgroundColor: '{colors.surface}'
+    textColor: '{colors.fg}'
+    borderColor: '{colors.border-strong}'
+    typography: '{typography.label}'
+    rounded: '{rounded.md}'
+    padding: '0.5rem 1rem'
   button-secondary-hover:
-    backgroundColor: "{colors.surface-2}"
-    textColor: "{colors.fg}"
+    backgroundColor: '{colors.surface-2}'
+    textColor: '{colors.fg}'
   button-danger:
-    backgroundColor: "{colors.danger}"
-    textColor: "{colors.primary-fg}"
-    typography: "{typography.label}"
-    rounded: "{rounded.md}"
-    padding: "0.5rem 1rem"
+    backgroundColor: '{colors.danger}'
+    textColor: '{colors.primary-fg}'
+    typography: '{typography.label}'
+    rounded: '{rounded.md}'
+    padding: '0.5rem 1rem'
   card:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.fg}"
-    borderColor: "{colors.border}"
-    rounded: "{rounded.lg}"
-    padding: "1.5rem"
+    backgroundColor: '{colors.surface}'
+    textColor: '{colors.fg}'
+    borderColor: '{colors.border}'
+    rounded: '{rounded.lg}'
+    padding: '1.5rem'
   input:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.fg}"
-    borderColor: "{colors.border-strong}"
-    typography: "{typography.body}"
-    rounded: "{rounded.md}"
-    padding: "0.5rem 0.75rem"
+    backgroundColor: '{colors.surface}'
+    textColor: '{colors.fg}'
+    borderColor: '{colors.border-strong}'
+    typography: '{typography.body}'
+    rounded: '{rounded.md}'
+    padding: '0.5rem 0.75rem'
   table-header:
-    backgroundColor: "{colors.surface-2}"
-    textColor: "{colors.fg-muted}"
-    typography: "{typography.caption}"
-    padding: "0.5rem 0.75rem"
+    backgroundColor: '{colors.surface-2}'
+    textColor: '{colors.fg-muted}'
+    typography: '{typography.caption}'
+    padding: '0.5rem 0.75rem'
   badge:
-    backgroundColor: "{colors.surface-2}"
-    textColor: "{colors.fg-muted}"
-    typography: "{typography.caption}"
-    rounded: "{rounded.full}"
-    padding: "0.125rem 0.5rem"
+    backgroundColor: '{colors.surface-2}'
+    textColor: '{colors.fg-muted}'
+    typography: '{typography.caption}'
+    rounded: '{rounded.full}'
+    padding: '0.125rem 0.5rem'
   tenant-dot:
-    rounded: "{rounded.full}"
-    size: "0.625rem"
+    rounded: '{rounded.full}'
+    size: '0.625rem'
   nav-item:
-    backgroundColor: "{colors.bg}"
-    textColor: "{colors.fg}"
-    typography: "{typography.label}"
-    rounded: "{rounded.md}"
-    padding: "0.5rem 0.75rem"
+    backgroundColor: '{colors.bg}'
+    textColor: '{colors.fg}'
+    typography: '{typography.label}'
+    rounded: '{rounded.md}'
+    padding: '0.5rem 0.75rem'
   nav-item-active:
-    backgroundColor: "{colors.primary-soft}"
-    textColor: "{colors.primary-hover}"
+    backgroundColor: '{colors.primary-soft}'
+    textColor: '{colors.primary-hover}'
 ---
 
 # Design System: KAPSORA
@@ -169,8 +169,8 @@ needs:
 **Mood:** calm, precise, institutional without being cold. A back office people work
 in for hours, on wide screens, with keyboard and tab order that just work.
 
-**Modes:** the backoffice is *Operate* (dense lists, forms, review). The provider portal
-is *Operate* with a fast-entry bias. The member app is *Read* first, *Experience* only
+**Modes:** the backoffice is _Operate_ (dense lists, forms, review). The provider portal
+is _Operate_ with a fast-entry bias. The member app is _Read_ first, _Experience_ only
 on the search and booking screens that arrive in later increments.
 
 **Anti-references:** the consumer fintech dashboard (big rounded metric cards, pastel
@@ -196,21 +196,21 @@ tokens). The frontmatter mirrors the light values in hex; **if they disagree,
 Light and dark are two value sets of the same names; `data-theme="dark"` on `<html>`
 redefines the tokens.
 
-| Role | Light | Dark | Use |
-|---|---|---|---|
-| `bg` | `#F7F8FA` | `#0F1620` | Page ground and sidebar. Never a card. |
-| `surface` | `#FFFFFF` | `#172130` | Cards, panels, inputs, menus, header. |
-| `surface-2` | `#EEF1F5` | `#1F2B3D` | Table headers, hover fills, code chips. |
-| `surface-3` | `#DFE4EB` | `#2A3850` | Deepest tonal step; rare. |
-| `border` | `#DCE2EA` | `#2A3850` | Default separation. |
-| `border-strong` | `#B9C3D0` | `#3B4C66` | Interactive edges: inputs, secondary buttons. |
-| `fg` | `#14202E` | `#EEF2F7` | Primary text. |
-| `fg-muted` | `#4B5A6B` | `#A6B3C4` | Secondary text, labels, captions. |
-| `fg-subtle` | `#8A97A8` | `#6E7E93` | Placeholders, disabled. Never for meaning. |
-| `primary` | `#1F5FA8` | `#6FA3E8` | The one call to action, active nav, links. |
-| `primary-soft` | `#E3EDF8` | `#1E3552` | Active nav background, selected rows. |
+| Role                                      | Light                                         | Dark                                          | Use                                                           |
+| ----------------------------------------- | --------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------- |
+| `bg`                                      | `#F7F8FA`                                     | `#0F1620`                                     | Page ground and sidebar. Never a card.                        |
+| `surface`                                 | `#FFFFFF`                                     | `#172130`                                     | Cards, panels, inputs, menus, header.                         |
+| `surface-2`                               | `#EEF1F5`                                     | `#1F2B3D`                                     | Table headers, hover fills, code chips.                       |
+| `surface-3`                               | `#DFE4EB`                                     | `#2A3850`                                     | Deepest tonal step; rare.                                     |
+| `border`                                  | `#DCE2EA`                                     | `#2A3850`                                     | Default separation.                                           |
+| `border-strong`                           | `#B9C3D0`                                     | `#3B4C66`                                     | Interactive edges: inputs, secondary buttons.                 |
+| `fg`                                      | `#14202E`                                     | `#EEF2F7`                                     | Primary text.                                                 |
+| `fg-muted`                                | `#4B5A6B`                                     | `#A6B3C4`                                     | Secondary text, labels, captions.                             |
+| `fg-subtle`                               | `#8A97A8`                                     | `#6E7E93`                                     | Placeholders, disabled. Never for meaning.                    |
+| `primary`                                 | `#1F5FA8`                                     | `#6FA3E8`                                     | The one call to action, active nav, links.                    |
+| `primary-soft`                            | `#E3EDF8`                                     | `#1E3552`                                     | Active nav background, selected rows.                         |
 | `success` / `warning` / `danger` / `info` | `#1E7F4F` / `#9A6700` / `#B42318` / `#1F5FA8` | `#4CC38A` / `#E5B546` / `#F0736A` / `#6FA3E8` | Status only: badges, alerts, toasts. Each has a `-soft` fill. |
-| `focus` | `#3B82F6` | `#3B82F6` | The focus ring, 2px, offset 2px, everywhere. |
+| `focus`                                   | `#3B82F6`                                     | `#3B82F6`                                     | The focus ring, 2px, offset 2px, everywhere.                  |
 
 Rules: one primary action per screen; status colours never decorate; text on `-soft`
 fills uses the strong colour of the same family and stays above AA contrast; the tenant
@@ -241,6 +241,58 @@ Turkish message for the code and the trace id. Status is a `Badge` with tone fro
 status, never a coloured row. The tenant is a `Badge` in the header with a 10px colour
 dot and a 3px accent line under the header — the only place the tenant colour appears
 as a line.
+
+## Patterns settled while building
+
+These were decided against real screens in M2 and M3. They are here so the next screen
+does not re-argue them.
+
+**A dense editable set is a table that edits in place.** Price items, entitlement
+definitions, rules, capabilities, mappings. The work is comparing rows against each other
+— which service, at which location, for how much — and a modal per row hides the very
+thing being compared. Add and remove are buttons under the table; the whole set saves at
+once, because the meaningful unit is the sheet, not the row.
+
+**Money is right-aligned and monospaced, and it is never a number.** Amounts arrive as
+decimal strings and are rendered as they arrive. The client does no arithmetic on money
+and no rounding: the one rounding in the system happens once, on the server, at the end of
+a calculation. Coordinates are the single exception where a float is correct — they are
+geography, not money.
+
+**A screen withholds a number rather than guessing one.** When a quote cannot be priced
+because two prices tie, it shows no member figure at all and says what is ambiguous. An
+operator who is shown a number reads it as the answer.
+
+**An explanation sits next to the thing it explains.** Per-line reasons go directly
+beneath that line's figures, not in a list at the foot of the page. A result that names
+its sources — contract version, plan version, rule versions — links to each of them.
+
+**Status decides the page.** On a version screen, a draft is editable, anything past draft
+is read-only and shows the hash it was published under, and the commands available are
+only the ones that status allows. The screen never offers a button the server will refuse.
+
+**A control the operator cannot use is absent, not disabled.** A disabled button is a
+question the operator cannot answer.
+
+**Hidden rather than refused, where existence is itself information.** A read-only caller
+does not see an unagreed draft contract version at all: 403 would confirm that terms are
+being renegotiated. The same rule sends another provider's row to 404.
+
+**When the machine has better words, use them.** A rule condition that does not compile
+shows the compiler's own message, because it says where the expression broke. A
+translated "it did not compile" would be worse than the untranslated truth.
+
+**People are chosen by name, never by identifier.** Nobody has a member's UUID in their
+head, and a form that asks for one is a demo rather than a tool. Identity numbers are
+entered once, shown masked afterwards, and searched only behind a password.
+
+**Code is treated as code.** The CEL condition field is monospaced with spellcheck and
+autocorrect off, and there is no visual rule builder: an operator writing rules is a
+trained user, and a half-built builder is worse than a good text field.
+
+**A tab strip sits on a line.** Triggers are square with a 2px underline; a rounded corner
+under a thick border fights the line it sits on, which is what the detector flagged the
+first time this component was written.
 
 ## Motion
 
