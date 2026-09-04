@@ -126,3 +126,61 @@ func (q Quantity) String() string {
 	}
 	return out
 }
+
+// scaleUnits is 10^QuantityScale, the divisor between a product of two micro-unit values
+// and a micro-unit value.
+var scaleUnits = new(big.Int).Exp(big.NewInt(10), big.NewInt(QuantityScale), nil)
+
+var hundredUnits = new(big.Int).Mul(big.NewInt(100), scaleUnits)
+
+// Mul returns q × o at the working scale, rounding half away from zero. Two values at
+// six decimals multiply to twelve, and the type carries six, so a product is the one
+// place ordinary arithmetic has to give something up; every other operation here is
+// exact. Pricing therefore does its single presentation rounding separately, with
+// RoundTo, and never relies on this one.
+func (q Quantity) Mul(o Quantity) Quantity {
+	product := new(big.Int).Mul(q.value(), o.value())
+	return Quantity{units: divRoundHalfAway(product, scaleUnits)}
+}
+
+// Percent returns p per cent of q, rounded half away from zero at the working scale. It
+// divides once rather than multiplying by a converted rate, so 20 % of 500 is exactly
+// 100 rather than 99.999999.
+func (q Quantity) Percent(p Quantity) Quantity {
+	product := new(big.Int).Mul(q.value(), p.value())
+	return Quantity{units: divRoundHalfAway(product, hundredUnits)}
+}
+
+// RoundTo returns q rounded half away from zero to the given number of decimals, which is
+// how a currency's minor unit is applied. A scale at or above the working scale is a
+// no-op; a negative scale is treated as zero.
+func (q Quantity) RoundTo(scale int) Quantity {
+	if scale >= QuantityScale {
+		return q
+	}
+	if scale < 0 {
+		scale = 0
+	}
+	factor := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(QuantityScale-scale)), nil)
+	rounded := divRoundHalfAway(q.value(), factor)
+	return Quantity{units: new(big.Int).Mul(rounded, factor)}
+}
+
+// divRoundHalfAway divides n by d, rounding halves away from zero. Half away from zero is
+// what invoices and tariffs mean by rounding: 2.5 kuruş becomes 3, and -2.5 becomes -3,
+// so a refund rounds the same distance as the charge it reverses.
+func divRoundHalfAway(n, d *big.Int) *big.Int {
+	quotient, remainder := new(big.Int).QuoRem(n, d, new(big.Int))
+	if remainder.Sign() == 0 {
+		return quotient
+	}
+	twice := new(big.Int).Abs(remainder)
+	twice.Lsh(twice, 1)
+	if twice.Cmp(new(big.Int).Abs(d)) < 0 {
+		return quotient
+	}
+	if n.Sign() < 0 {
+		return quotient.Sub(quotient, big.NewInt(1))
+	}
+	return quotient.Add(quotient, big.NewInt(1))
+}
