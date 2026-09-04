@@ -203,7 +203,22 @@
     "LOCATION_CODE_TAKEN": "That location code is already used by this provider.",
     "CAPABILITY_OVERLAP": "Another capability for this service covers an overlapping period.",
     "PRACTITIONER_ASSIGNMENT_OVERLAP": "Another assignment to this location and role covers an overlapping period.",
-    "PRACTITIONER_REGISTRATION_TAKEN": "That registration number is already registered with this authority."
+    "PRACTITIONER_REGISTRATION_TAKEN": "That registration number is already registered with this authority.",
+    "CONTRACT_NOT_FOUND": "Contract not found.",
+    "CONTRACT_VERSION_NOT_FOUND": "Contract version not found.",
+    "PRICE_LIST_NOT_FOUND": "Price list not found.",
+    "PAYMENT_TERM_NOT_FOUND": "This version has no payment term yet.",
+    "CONTRACT_PARTY_NOT_FOUND": "The payer, sponsor or provider was not found.",
+    "CONTRACT_CODE_TAKEN": "That contract code is already in use.",
+    "CONTRACT_TRANSITION_INVALID": "The contract cannot move to that status.",
+    "CONTRACT_VERSION_IMMUTABLE": "A published contract version cannot be changed; open a new version.",
+    "CONTRACT_VERSION_OVERLAP": "Another published version of this contract covers those dates.",
+    "CONTRACT_VERSION_TRANSITION_INVALID": "The contract version cannot move to that status.",
+    "PRICE_LIST_CODE_TAKEN": "That price list code is already used in this version.",
+    "PACKAGE_CODE_TAKEN": "That package code is already used in this version.",
+    "PROVIDER_QUOTA_DUPLICATE": "Two quotas cannot share the same scope and period.",
+    "PRICE_AMBIGUOUS": "Two prices are equally specific, so the system will not choose one. Give the price lists different priorities.",
+    "PRICE_NOT_FOUND": "No contracted price applies to this service on that date."
   },
   "fieldErrors": {
     "REQUIRED": "Required",

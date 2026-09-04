@@ -100,6 +100,299 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/contract-versions/{contractVersionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One contract version with its price lists, its review metadata and its
+         *     configuration hash. The price items of each list are paged separately, because a
+         *     health tariff runs to thousands of rows. A published version needs only
+         *     `contract.read`; a draft needs `contract.manage`, so a price nobody has agreed to
+         *     yet is not visible to everyone who may read the agreed one.
+         */
+        get: operations["getContractVersion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Merge-patch of the validity period, the currency and the notes of a DRAFT version.
+         *     A version that is not DRAFT answers 409 CONTRACT_VERSION_IMMUTABLE: everything
+         *     downstream was priced from the published sheet, so it cannot move underneath a
+         *     claim that already quoted it.
+         */
+        patch: operations["patchContractVersion"];
+        trace?: never;
+    };
+    "/api/v1/contract-versions/{contractVersionId}/package-definitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The packages of one contract version with their lines. A package is a named bundle
+         *     of service definitions with an included quantity each; a price item pointing at a
+         *     package prices the bundle as a whole rather than its parts. The set is short by
+         *     design, so it is returned whole rather than paged.
+         */
+        get: operations["listPackageDefinitions"];
+        /**
+         * @description Replaces the whole package set of a DRAFT version, lines included. A package
+         *     already present under the same code keeps its identity, so the price items
+         *     pointing at it survive the write; one absent from the body is deleted together
+         *     with the price items that priced it. ANY_OF_N needs minLines and ALL forbids it.
+         *     Any write to a version that is not DRAFT answers 409 CONTRACT_VERSION_IMMUTABLE.
+         */
+        put: operations["putPackageDefinitions"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/contract-versions/{contractVersionId}/payment-term": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description How and when the provider is paid under this version: the due days, the settlement
+         *     method, the tax behaviour and the rates. A version that has none answers 404, so a
+         *     screen can tell "not agreed yet" apart from "agreed as zero".
+         */
+        get: operations["getPaymentTerm"];
+        /**
+         * @description Writes the single payment term of a DRAFT version, creating it or replacing it in
+         *     place. EXCLUSIVE and INCLUSIVE tax behaviour both require a VAT rate; EXEMPT does
+         *     not. The rates are exact decimal strings. Any write to a version that is not DRAFT
+         *     answers 409 CONTRACT_VERSION_IMMUTABLE.
+         */
+        put: operations["putPaymentTerm"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/contract-versions/{contractVersionId}/price-lists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * @description Replaces the whole price list set of a DRAFT version, for the same reason provider
+         *     capabilities are replaced as a set: the meaningful unit is the price sheet, and a
+         *     set write makes consistency one decision. A list already present under the same
+         *     code keeps its identity and its price items; one absent from the body is deleted
+         *     with its items. Season and weekday mask exist because accommodation prices by date
+         *     and by day of the week, and a health contract simply leaves both null. Any write to
+         *     a version that is not DRAFT answers 409 CONTRACT_VERSION_IMMUTABLE. If-Match
+         *     carries the ETag of the contract version, which the replacement moves on.
+         */
+        put: operations["putPriceLists"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/contract-versions/{contractVersionId}/provider-quotas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The capacity the provider granted under this version: how much of a service, at
+         *     which location, over which period. Consuming a quota belongs to authorization, so
+         *     this module only stores and reads them; consumed is shown as it stands.
+         */
+        get: operations["listProviderQuotas"];
+        /**
+         * @description Replaces the whole quota set of a DRAFT version. A quota already present under the
+         *     same scope and period keeps its identity and its consumed counter; two rows with
+         *     the same location, service and period collide, because a scope that means
+         *     "everything" has to be unique too. Capacities are exact decimal strings. Any write
+         *     to a version that is not DRAFT answers 409 CONTRACT_VERSION_IMMUTABLE.
+         */
+        put: operations["putProviderQuotas"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/contract-versions/{contractVersionId}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Freezes a version under review. It needs `contract.publish`, a recent step-up and
+         *     an actor other than the one who submitted it; the same person answers 403
+         *     MAKER_CHECKER_SAME_ACTOR and the refusal is audited. Publishing writes a
+         *     configuration hash over the version's whole price content, so "what was agreed"
+         *     can be proved later. Two published versions of one contract may not cover the same
+         *     date: an overlap answers 409 CONTRACT_VERSION_OVERLAP.
+         */
+        post: operations["publishContractVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/contract-versions/{contractVersionId}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Closes a published version with a reason. It needs `contract.publish` and a recent
+         *     step-up. The version stays readable for every quote and claim priced from it and
+         *     stops being a candidate for new price lookups; the reason code is required so the
+         *     history says why the tariff was withdrawn.
+         */
+        post: operations["retireContractVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/contract-versions/{contractVersionId}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Moves a DRAFT version to UNDER_REVIEW and records the maker. A version with no
+         *     price list holding at least one price item is refused with 422 on field
+         *     priceLists: an empty sheet cannot be reviewed, and publishing it would make every
+         *     later price lookup answer PRICE_NOT_FOUND. The validity start is required too,
+         *     because a published version without one could never be selected by service date.
+         */
+        post: operations["submitContractVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/contracts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Contracts of the tenant, newest first, with keyset paging. A contract is the
+         *     agreement between one payer organization and one provider; what was actually
+         *     agreed lives in its versions. q searches the code and the name, the other filters
+         *     narrow to one provider, one payer, one service domain or one status.
+         */
+        get: operations["listContracts"];
+        put?: never;
+        /**
+         * @description Opens a contract between a payer organization relationship and a provider profile
+         *     of this tenant. The contract carries no prices of its own: it starts in DRAFT and
+         *     holds versions, and only a published version is ever read by a quote, an
+         *     authorization or a claim. The code is unique inside the tenant, so a second one
+         *     answers 409 CONTRACT_CODE_TAKEN.
+         */
+        post: operations["createContract"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/contracts/{contractId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One contract of the tenant with its parties and its optimistic concurrency tag.
+         *     The versions are read separately, because a long-running contract accumulates more
+         *     of them than a detail view wants to carry.
+         */
+        get: operations["getContract"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Merge-patch of the name, the sponsor organization and the contract status. The
+         *     code, the payer, the provider and the service domain are absent: they are what the
+         *     contract is, and every published version was agreed under them, so a body carrying
+         *     one answers 422 with field code IMMUTABLE. Suspending or closing a contract does
+         *     not change its versions; it only stops the price selection considering them.
+         */
+        patch: operations["patchContract"];
+        trace?: never;
+    };
+    "/api/v1/contracts/{contractId}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The version summaries of one contract, highest version number first. The price
+         *     sheet of a version is read through the version itself; this list is what a screen
+         *     shows to pick between "what we agreed then" and "what we agreed now".
+         */
+        get: operations["listContractVersions"];
+        put?: never;
+        /**
+         * @description Opens the next DRAFT version of a contract. copyFromVersionId copies the price
+         *     lists, price items, package definitions, quotas and payment term of another
+         *     version of the same contract, which is how a yearly price revision starts from
+         *     last year's sheet instead of from an empty page. The new version stays editable
+         *     until it is published.
+         */
+        post: operations["createContractVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/eligibility/checks": {
         parameters: {
             query?: never;
@@ -898,6 +1191,68 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/price-lists/{priceListId}/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The price items of one list, oldest first, with keyset paging. Every money value
+         *     crosses the wire as an exact decimal string and never as a JSON number: a tariff
+         *     row is what somebody is invoiced, and a float would silently round it. The ETag is
+         *     the one of the owning price list, which is what a replacement expects in If-Match.
+         */
+        get: operations["listPriceItems"];
+        /**
+         * @description Replaces the whole price item set of one list. Each row prices exactly one of a
+         *     service definition, a service category or a package definition, and may be
+         *     restricted to one location; the specificity ladder of the price selection depends
+         *     on that being true, so a row naming none or more than one is refused. Amounts are
+         *     exact decimal strings. The owning version must be DRAFT, otherwise the answer is
+         *     409 CONTRACT_VERSION_IMMUTABLE. If-Match carries the ETag of the price list.
+         */
+        put: operations["putPriceItems"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/prices:resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Which contracted price applies to this service, at this provider, on this date.
+         *     Only published versions of active contracts whose period contains the service date
+         *     are considered; inside them a price list must match the season and the weekday, and
+         *     an item must match its own period, the location and the service. The winner is the
+         *     most specific candidate: a price naming the definition beats one naming a package,
+         *     which beats one naming a category, a nearer ancestor category beats a further one,
+         *     and a location-specific price beats a tenant-wide one of the same tier. Remaining
+         *     ties are broken by item priority and then by list priority. When two candidates are
+         *     still equal the answer is REVIEW_REQUIRED with reason PRICE_AMBIGUOUS and the ids of
+         *     every tied item: the system never picks a winner among equals, because a random one
+         *     is a silent financial error that nothing anywhere reports. With no candidate at all
+         *     the answer is NOT_FOUND with reason PRICE_NOT_FOUND. Every considered candidate is
+         *     returned with its score, so a screen can explain the choice instead of asserting it.
+         *     Changes no state.
+         */
+        post: operations["resolvePrice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/programs": {
         parameters: {
             query?: never;
@@ -1671,6 +2026,94 @@ export interface components {
             items: components["schemas"]["CodeValue"][];
             nextCursor?: string | null;
         };
+        Contract: {
+            code: string;
+            domainCode: components["schemas"]["ServiceDomain"];
+            /** Format: uuid */
+            id: string;
+            name: string;
+            payerName?: string | null;
+            /**
+             * Format: uuid
+             * @description The tenant organization relationship that pays under this contract.
+             */
+            payerOrganizationId: string;
+            providerName?: string | null;
+            /** Format: uuid */
+            providerProfileId: string;
+            rowVersion: number;
+            sponsorName?: string | null;
+            /**
+             * Format: uuid
+             * @description The sponsor whose members this contract serves, when it is not the payer.
+             */
+            sponsorOrganizationId?: string | null;
+            status: components["schemas"]["ContractStatus"];
+        };
+        ContractPage: {
+            items: components["schemas"]["Contract"][];
+            nextCursor?: string | null;
+        };
+        /**
+         * @description Lifecycle of a contract. Only an ACTIVE contract's published versions are
+         *     considered by the price selection.
+         * @enum {string}
+         */
+        ContractStatus: "DRAFT" | "ACTIVE" | "SUSPENDED" | "CLOSED";
+        ContractVersion: {
+            /** @description Lower-case hex SHA-256 over the version's whole price content, written at publish. */
+            configurationHash?: string | null;
+            /** Format: uuid */
+            contractId: string;
+            currencyCode: string;
+            /** Format: uuid */
+            id: string;
+            notes?: string | null;
+            priceLists: components["schemas"]["PriceList"][];
+            /** Format: date-time */
+            publishedAt?: string | null;
+            /** Format: uuid */
+            publishedBy?: string | null;
+            retireReasonCode?: string | null;
+            reviewComment?: string | null;
+            rowVersion: number;
+            status: components["schemas"]["ContractVersionStatus"];
+            /** Format: date-time */
+            submittedAt?: string | null;
+            /** Format: uuid */
+            submittedBy?: string | null;
+            /** Format: date */
+            validFrom?: string | null;
+            /** Format: date */
+            validTo?: string | null;
+            versionNo: number;
+        };
+        ContractVersionList: {
+            items: components["schemas"]["ContractVersionSummary"][];
+        };
+        /**
+         * @description Lifecycle of a contract version. PUBLISHED is the only status a quote, an
+         *     authorization or a claim ever reads, and nothing about it may change afterwards.
+         * @enum {string}
+         */
+        ContractVersionStatus: "DRAFT" | "UNDER_REVIEW" | "PUBLISHED" | "RETIRED";
+        ContractVersionSummary: {
+            /** Format: uuid */
+            contractId: string;
+            currencyCode: string;
+            /** Format: uuid */
+            id: string;
+            notes?: string | null;
+            /** Format: date-time */
+            publishedAt?: string | null;
+            rowVersion: number;
+            status: components["schemas"]["ContractVersionStatus"];
+            /** Format: date */
+            validFrom?: string | null;
+            /** Format: date */
+            validTo?: string | null;
+            versionNo: number;
+        };
         CreateAdjustmentRequest: {
             /** @description Positive grants, negative removes from the available balance; never zero. */
             deltaQuantity: number;
@@ -1688,6 +2131,30 @@ export interface components {
             /** Format: date */
             validTo?: string;
             version: string;
+        };
+        CreateContractRequest: {
+            code: string;
+            domainCode: components["schemas"]["ServiceDomain"];
+            name: string;
+            /** Format: uuid */
+            payerOrganizationId: string;
+            /** Format: uuid */
+            providerProfileId: string;
+            /** Format: uuid */
+            sponsorOrganizationId?: string;
+        };
+        CreateContractVersionRequest: {
+            /**
+             * Format: uuid
+             * @description Another version of the same contract whose whole price content is copied.
+             */
+            copyFromVersionId?: string;
+            currencyCode?: string;
+            notes?: string;
+            /** Format: date */
+            validFrom?: string;
+            /** Format: date */
+            validTo?: string | null;
         };
         CreateEnrollmentRequest: {
             enrollmentReason?: string;
@@ -1888,6 +2355,16 @@ export interface components {
             /** Format: date */
             serviceDate: string;
         };
+        /**
+         * @description An exact numeric(20,6) money or quantity value as a decimal string. It is a string
+         *     and not a JSON number on purpose: a tariff row is what somebody is invoiced, and a
+         *     float would round it silently somewhere between the browser and the ledger.
+         */
+        DecimalAmount: string;
+        /** @description A percentage between 0 and 100 as an exact decimal string. */
+        DecimalPercent: string;
+        /** @description A rate with at most two decimals, as an exact decimal string. */
+        DecimalRate: string;
         EligibilityCheckRequest: {
             context?: {
                 [key: string]: unknown;
@@ -2236,6 +2713,11 @@ export interface components {
             status: "PENDING" | "VALID" | "INVALID" | "MATCHED" | "CONFLICT" | "APPLIED" | "SKIPPED";
         };
         /**
+         * @description How much of the price the member carries; NONE means the payer carries all of it.
+         * @enum {string}
+         */
+        MemberShareMethod: "NONE" | "FIXED" | "PERCENT";
+        /**
          * @description Tenant relationship with a global organization. `id` identifies the relationship
          *     (tenant_organization); `organizationId` identifies the shared legal entity.
          */
@@ -2287,6 +2769,46 @@ export interface components {
              */
             relationshipStatus: "PENDING" | "ACTIVE" | "SUSPENDED" | "TERMINATED";
         };
+        PackageDefinition: {
+            code: string;
+            /** Format: uuid */
+            contractVersionId: string;
+            /** Format: uuid */
+            id: string;
+            inclusionRule: components["schemas"]["PackageInclusionRule"];
+            lines: components["schemas"]["PackageLine"][];
+            minLines?: number | null;
+            name: string;
+        };
+        PackageDefinitionInput: {
+            code: string;
+            inclusionRule?: components["schemas"]["PackageInclusionRule"];
+            lines: components["schemas"]["PackageLineInput"][];
+            /** @description Required by ANY_OF_N and forbidden by ALL. */
+            minLines?: number | null;
+            name: string;
+        };
+        PackageDefinitionList: {
+            items: components["schemas"]["PackageDefinition"][];
+        };
+        /**
+         * @description ALL means every line of the package is included; ANY_OF_N means minLines of them
+         *     are, whichever the member uses.
+         * @enum {string}
+         */
+        PackageInclusionRule: "ALL" | "ANY_OF_N";
+        PackageLine: {
+            /** @description Exact numeric(20,6) quantity as a decimal string. */
+            includedQuantity: string;
+            serviceDefinitionCode?: string | null;
+            /** Format: uuid */
+            serviceDefinitionId: string;
+        };
+        PackageLineInput: {
+            includedQuantity: components["schemas"]["DecimalAmount"];
+            /** Format: uuid */
+            serviceDefinitionId: string;
+        };
         PartyCatalogEntry: {
             code: string;
             displayName: string;
@@ -2308,6 +2830,20 @@ export interface components {
             identifierTypes: components["schemas"]["PartyCatalogEntry"][];
             membershipTypes: components["schemas"]["PartyCatalogEntry"][];
             relationshipTypes: components["schemas"]["PartyCatalogEntry"][];
+        };
+        PaymentTerm: {
+            /** Format: uuid */
+            contractVersionId: string;
+            dueDays: number;
+            /** Format: uuid */
+            id: string;
+            /** @description Monthly late fee percentage as an exact decimal string. */
+            lateFeePercent?: string | null;
+            rowVersion: number;
+            settlementMethod: components["schemas"]["SettlementMethod"];
+            taxBehaviour: components["schemas"]["TaxBehaviour"];
+            /** @description VAT percentage as an exact decimal string. */
+            vatRate?: string | null;
         };
         Person: components["schemas"]["PersonSummary"] & {
             /** Format: date */
@@ -2469,6 +3005,120 @@ export interface components {
          * @enum {string}
          */
         PractitionerStatus: "ACTIVE" | "SUSPENDED" | "ENDED";
+        PriceItem: {
+            amount?: string | null;
+            formulaKey?: string | null;
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            locationId?: string | null;
+            maxAmount?: string | null;
+            memberShareAmount?: string | null;
+            memberShareMethod: components["schemas"]["MemberShareMethod"];
+            memberSharePercent?: string | null;
+            minAmount?: string | null;
+            packageDefinitionCode?: string | null;
+            /** Format: uuid */
+            packageDefinitionId?: string | null;
+            percent?: string | null;
+            /** Format: uuid */
+            priceListId: string;
+            pricingMethod: components["schemas"]["PricingMethod"];
+            priority: number;
+            serviceCategoryCode?: string | null;
+            /** Format: uuid */
+            serviceCategoryId?: string | null;
+            serviceDefinitionCode?: string | null;
+            /** Format: uuid */
+            serviceDefinitionId?: string | null;
+            unitType: components["schemas"]["ServiceUnitType"];
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo?: string | null;
+        };
+        /**
+         * @description Exactly one of serviceDefinitionId, serviceCategoryId and packageDefinitionId must
+         *     be present; the specificity ladder of the price selection depends on it.
+         */
+        PriceItemInput: {
+            amount?: components["schemas"]["DecimalAmount"];
+            formulaKey?: string;
+            /**
+             * Format: uuid
+             * @description Restricts the price to one location of the provider.
+             */
+            locationId?: string;
+            maxAmount?: components["schemas"]["DecimalAmount"];
+            memberShareAmount?: components["schemas"]["DecimalAmount"];
+            memberShareMethod?: components["schemas"]["MemberShareMethod"];
+            memberSharePercent?: components["schemas"]["DecimalPercent"];
+            minAmount?: components["schemas"]["DecimalAmount"];
+            /** Format: uuid */
+            packageDefinitionId?: string;
+            percent?: components["schemas"]["DecimalPercent"];
+            pricingMethod: components["schemas"]["PricingMethod"];
+            /** @default 100 */
+            priority?: number;
+            /** Format: uuid */
+            serviceCategoryId?: string;
+            /** Format: uuid */
+            serviceDefinitionId?: string;
+            unitType: components["schemas"]["ServiceUnitType"];
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo?: string | null;
+        };
+        PriceItemPage: {
+            items: components["schemas"]["PriceItem"][];
+            nextCursor?: string | null;
+        };
+        PriceList: {
+            code: string;
+            /** Format: uuid */
+            contractVersionId: string;
+            /** Format: uuid */
+            id: string;
+            /** @description How many price items the list currently holds. */
+            itemCount?: number;
+            name: string;
+            /** @description Higher wins when two equally specific price items tie. */
+            priority: number;
+            rowVersion: number;
+            /** Format: date */
+            seasonFrom?: string | null;
+            /** Format: date */
+            seasonTo?: string | null;
+            /** @description Bit 0 is Monday through bit 6 Sunday; null means every day. */
+            weekdayMask?: number | null;
+        };
+        PriceListInput: {
+            code: string;
+            name: string;
+            /** @default 100 */
+            priority?: number;
+            /** Format: date */
+            seasonFrom?: string | null;
+            /** Format: date */
+            seasonTo?: string | null;
+            weekdayMask?: number | null;
+        };
+        PriceListList: {
+            items: components["schemas"]["PriceList"][];
+        };
+        /**
+         * @description What the price item names: the service definition itself, a package containing it,
+         *     or a category above it in the catalog tree.
+         * @enum {string}
+         */
+        PriceMatchTarget: "DEFINITION" | "PACKAGE" | "CATEGORY";
+        /**
+         * @description How the amount of a price item is arrived at. FIXED and UNIT carry an amount,
+         *     PERCENT_OF_LIST a percent, FORMULA the key of a calculation rule.
+         * @enum {string}
+         */
+        PricingMethod: "FIXED" | "UNIT" | "PERCENT_OF_LIST" | "FORMULA";
         Problem: {
             code: string;
             detail?: string;
@@ -2600,6 +3250,43 @@ export interface components {
             items: components["schemas"]["Provider"][];
             nextCursor?: string | null;
         };
+        ProviderQuota: {
+            allowOverdraft: boolean;
+            /** @description Exact numeric(20,6) capacity as a decimal string. */
+            capacity: string;
+            /** @description How much of the capacity authorization has taken so far, as a decimal string. */
+            consumed: string;
+            /** Format: uuid */
+            contractVersionId: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            locationId?: string | null;
+            /** Format: date */
+            periodFrom: string;
+            /** Format: date */
+            periodTo: string;
+            periodType: components["schemas"]["QuotaPeriodType"];
+            /** Format: uuid */
+            serviceDefinitionId?: string | null;
+        };
+        ProviderQuotaInput: {
+            /** @default false */
+            allowOverdraft?: boolean;
+            capacity: components["schemas"]["DecimalAmount"];
+            /** Format: uuid */
+            locationId?: string;
+            /** Format: date */
+            periodFrom: string;
+            /** Format: date */
+            periodTo: string;
+            periodType: components["schemas"]["QuotaPeriodType"];
+            /** Format: uuid */
+            serviceDefinitionId?: string;
+        };
+        ProviderQuotaList: {
+            items: components["schemas"]["ProviderQuota"][];
+        };
         ProviderSearchPage: {
             /**
              * Format: date
@@ -2642,6 +3329,18 @@ export interface components {
          * @enum {string}
          */
         ProviderType: "HOSPITAL" | "CLINIC" | "PHARMACY" | "LABORATORY" | "IMAGING" | "HOTEL" | "AGENCY" | "TRANSPORT" | "EDUCATION" | "SPORT" | "OTHER";
+        PutPaymentTermRequest: {
+            dueDays: number;
+            lateFeePercent?: components["schemas"]["DecimalRate"];
+            settlementMethod: components["schemas"]["SettlementMethod"];
+            taxBehaviour: components["schemas"]["TaxBehaviour"];
+            vatRate?: components["schemas"]["DecimalRate"];
+        };
+        /**
+         * @description The period a provider quota is counted over; CONTRACT means the whole version.
+         * @enum {string}
+         */
+        QuotaPeriodType: "DAY" | "WEEK" | "MONTH" | "YEAR" | "CONTRACT";
         ReasonCommand: {
             reasonCode: string;
             reasonText?: string;
@@ -2651,17 +3350,106 @@ export interface components {
          * @enum {string}
          */
         RegistrationAuthority: "TTB" | "SB" | "TDB" | "TEB" | "OTHER";
+        ReplacePackageDefinitionsRequest: {
+            items: components["schemas"]["PackageDefinitionInput"][];
+        };
         ReplacePractitionerLocationsRequest: {
             items: components["schemas"]["PractitionerLocationInput"][];
+        };
+        ReplacePriceItemsRequest: {
+            items: components["schemas"]["PriceItemInput"][];
+        };
+        ReplacePriceListsRequest: {
+            items: components["schemas"]["PriceListInput"][];
         };
         ReplaceProviderCapabilitiesRequest: {
             items: components["schemas"]["ProviderCapabilityInput"][];
         };
+        ReplaceProviderQuotasRequest: {
+            items: components["schemas"]["ProviderQuotaInput"][];
+        };
         ReplaceServiceCodeMappingsRequest: {
             items: components["schemas"]["ServiceCodeMappingInput"][];
         };
+        ResolvedPrice: {
+            amount?: string | null;
+            contractCode: string;
+            /** Format: uuid */
+            contractId: string;
+            /** Format: uuid */
+            contractVersionId: string;
+            currencyCode: string;
+            formulaKey?: string | null;
+            /** Format: uuid */
+            locationId?: string | null;
+            matchedVia: components["schemas"]["PriceMatchTarget"];
+            maxAmount?: string | null;
+            memberShareAmount?: string | null;
+            memberShareMethod: components["schemas"]["MemberShareMethod"];
+            memberSharePercent?: string | null;
+            minAmount?: string | null;
+            percent?: string | null;
+            /** Format: uuid */
+            priceItemId: string;
+            priceListCode?: string | null;
+            /** Format: uuid */
+            priceListId: string;
+            pricingMethod: components["schemas"]["PricingMethod"];
+            unitType: components["schemas"]["ServiceUnitType"];
+            versionNo: number;
+        };
+        ResolvePriceRequest: {
+            /**
+             * Format: uuid
+             * @description Where it will be delivered, when that is already known.
+             */
+            locationId?: string;
+            /** Format: uuid */
+            providerProfileId: string;
+            /**
+             * Format: date
+             * @description The day the service is delivered; the whole selection is made against it.
+             */
+            serviceDate: string;
+            /** Format: uuid */
+            serviceDefinitionId: string;
+        };
+        ResolvePriceResult: {
+            /** @description Every candidate with its score, winners and losers alike, highest first. */
+            considered: components["schemas"]["ScoredPriceCandidate"][];
+            /**
+             * @description MATCHED when exactly one candidate scored highest, REVIEW_REQUIRED when several
+             *     tied at the top, NOT_FOUND when nothing matched at all.
+             * @enum {string}
+             */
+            outcome: "MATCHED" | "REVIEW_REQUIRED" | "NOT_FOUND";
+            /** @description PRICE_AMBIGUOUS or PRICE_NOT_FOUND; absent when a winner was found. */
+            reason?: string | null;
+            /** Format: date */
+            serviceDate: string;
+            /** @description Every candidate that tied at the top when the outcome is REVIEW_REQUIRED. */
+            tied: components["schemas"]["ResolvedPrice"][];
+            winner?: components["schemas"]["ResolvedPrice"];
+        };
         ReviewComment: {
             comment?: string;
+        };
+        ScoredPriceCandidate: {
+            /** Format: uuid */
+            contractVersionId: string;
+            /** @description Why it was ruled out, one of PERIOD, SEASON, WEEKDAY, LOCATION or SERVICE. */
+            excluded?: string | null;
+            itemPriority?: number;
+            listPriority?: number;
+            /** @description False for a candidate that was loaded and then ruled out. */
+            matched: boolean;
+            matchedVia: components["schemas"]["PriceMatchTarget"];
+            /** Format: uuid */
+            priceItemId: string;
+            /** Format: uuid */
+            priceListId: string;
+            /** @description Specificity score; the highest one wins and equal ones are a tie, never a coin flip. */
+            score: number;
         };
         ServiceCategory: {
             active: boolean;
@@ -2808,6 +3596,11 @@ export interface components {
             /** Format: date-time */
             stepUpExpiresAt: string | null;
         };
+        /**
+         * @description How the provider is paid.
+         * @enum {string}
+         */
+        SettlementMethod: "BANK_TRANSFER" | "OFFSET" | "OTHER";
         SponsorMembership: {
             externalMemberNo?: string | null;
             /** Format: uuid */
@@ -2832,6 +3625,11 @@ export interface components {
             /** Format: date */
             validTo?: string | null;
         };
+        /**
+         * @description Whether the agreed amounts already include VAT, exclude it, or are exempt.
+         * @enum {string}
+         */
+        TaxBehaviour: "EXCLUSIVE" | "INCLUSIVE" | "EXEMPT";
         TenantContext: {
             permissions: string[];
             scopes?: {
@@ -2858,6 +3656,25 @@ export interface components {
             name?: string;
             /** @enum {string} */
             status?: "ACTIVE" | "INACTIVE";
+            /** Format: date */
+            validTo?: string | null;
+        };
+        /**
+         * @description Merge-patch body. The code, the parties and the service domain are absent because
+         *     they are what the contract is; a body carrying one answers 422 with IMMUTABLE.
+         */
+        UpdateContractRequest: {
+            name?: string;
+            /** Format: uuid */
+            sponsorOrganizationId?: string | null;
+            status?: components["schemas"]["ContractStatus"];
+        };
+        /** @description Merge-patch body of a DRAFT contract version. */
+        UpdateContractVersionRequest: {
+            currencyCode?: string;
+            notes?: string | null;
+            /** Format: date */
+            validFrom?: string | null;
             /** Format: date */
             validTo?: string | null;
         };
@@ -3075,6 +3892,8 @@ export interface components {
         AccountId: string;
         AdjustmentId: string;
         CodeSystemId: string;
+        ContractId: string;
+        ContractVersionId: string;
         /** @description Required when the request is authenticated with the BFF session cookie. */
         CsrfHeader: string;
         /** @description Opaque cursor from the previous response. */
@@ -3096,6 +3915,7 @@ export interface components {
         PlanId: string;
         PlanVersionId: string;
         PractitionerId: string;
+        PriceListId: string;
         ProgramId: string;
         ProviderId: string;
         ProviderLocationId: string;
@@ -3121,8 +3941,17 @@ export type SchemaCodeValueImportError = components['schemas']['CodeValueImportE
 export type SchemaCodeValueImportResult = components['schemas']['CodeValueImportResult'];
 export type SchemaCodeValueInput = components['schemas']['CodeValueInput'];
 export type SchemaCodeValuePage = components['schemas']['CodeValuePage'];
+export type SchemaContract = components['schemas']['Contract'];
+export type SchemaContractPage = components['schemas']['ContractPage'];
+export type SchemaContractStatus = components['schemas']['ContractStatus'];
+export type SchemaContractVersion = components['schemas']['ContractVersion'];
+export type SchemaContractVersionList = components['schemas']['ContractVersionList'];
+export type SchemaContractVersionStatus = components['schemas']['ContractVersionStatus'];
+export type SchemaContractVersionSummary = components['schemas']['ContractVersionSummary'];
 export type SchemaCreateAdjustmentRequest = components['schemas']['CreateAdjustmentRequest'];
 export type SchemaCreateCodeSystemRequest = components['schemas']['CreateCodeSystemRequest'];
+export type SchemaCreateContractRequest = components['schemas']['CreateContractRequest'];
+export type SchemaCreateContractVersionRequest = components['schemas']['CreateContractVersionRequest'];
 export type SchemaCreateEnrollmentRequest = components['schemas']['CreateEnrollmentRequest'];
 export type SchemaCreateMembershipRequest = components['schemas']['CreateMembershipRequest'];
 export type SchemaCreateOrganizationRequest = components['schemas']['CreateOrganizationRequest'];
@@ -3137,6 +3966,9 @@ export type SchemaCreateRelationshipRequest = components['schemas']['CreateRelat
 export type SchemaCreateServiceCategoryRequest = components['schemas']['CreateServiceCategoryRequest'];
 export type SchemaCreateServiceDefinitionRequest = components['schemas']['CreateServiceDefinitionRequest'];
 export type SchemaCreateServiceRequest = components['schemas']['CreateServiceRequest'];
+export type SchemaDecimalAmount = components['schemas']['DecimalAmount'];
+export type SchemaDecimalPercent = components['schemas']['DecimalPercent'];
+export type SchemaDecimalRate = components['schemas']['DecimalRate'];
 export type SchemaEligibilityCheckRequest = components['schemas']['EligibilityCheckRequest'];
 export type SchemaEligibilityCheckResult = components['schemas']['EligibilityCheckResult'];
 export type SchemaEligibilityEvaluation = components['schemas']['EligibilityEvaluation'];
@@ -3157,12 +3989,20 @@ export type SchemaLedgerPage = components['schemas']['LedgerPage'];
 export type SchemaMaskedIdentifier = components['schemas']['MaskedIdentifier'];
 export type SchemaMemberImportBatch = components['schemas']['MemberImportBatch'];
 export type SchemaMemberImportRow = components['schemas']['MemberImportRow'];
+export type SchemaMemberShareMethod = components['schemas']['MemberShareMethod'];
 export type SchemaOrganization = components['schemas']['Organization'];
 export type SchemaOrganizationIdentifier = components['schemas']['OrganizationIdentifier'];
 export type SchemaOrganizationPage = components['schemas']['OrganizationPage'];
 export type SchemaOrganizationSummary = components['schemas']['OrganizationSummary'];
+export type SchemaPackageDefinition = components['schemas']['PackageDefinition'];
+export type SchemaPackageDefinitionInput = components['schemas']['PackageDefinitionInput'];
+export type SchemaPackageDefinitionList = components['schemas']['PackageDefinitionList'];
+export type SchemaPackageInclusionRule = components['schemas']['PackageInclusionRule'];
+export type SchemaPackageLine = components['schemas']['PackageLine'];
+export type SchemaPackageLineInput = components['schemas']['PackageLineInput'];
 export type SchemaPartyCatalogEntry = components['schemas']['PartyCatalogEntry'];
 export type SchemaPartyCatalogs = components['schemas']['PartyCatalogs'];
+export type SchemaPaymentTerm = components['schemas']['PaymentTerm'];
 export type SchemaPerson = components['schemas']['Person'];
 export type SchemaPersonPage = components['schemas']['PersonPage'];
 export type SchemaPersonRelationship = components['schemas']['PersonRelationship'];
@@ -3178,6 +4018,14 @@ export type SchemaPractitionerPage = components['schemas']['PractitionerPage'];
 export type SchemaPractitionerRegistrationSearchRequest = components['schemas']['PractitionerRegistrationSearchRequest'];
 export type SchemaPractitionerRole = components['schemas']['PractitionerRole'];
 export type SchemaPractitionerStatus = components['schemas']['PractitionerStatus'];
+export type SchemaPriceItem = components['schemas']['PriceItem'];
+export type SchemaPriceItemInput = components['schemas']['PriceItemInput'];
+export type SchemaPriceItemPage = components['schemas']['PriceItemPage'];
+export type SchemaPriceList = components['schemas']['PriceList'];
+export type SchemaPriceListInput = components['schemas']['PriceListInput'];
+export type SchemaPriceListList = components['schemas']['PriceListList'];
+export type SchemaPriceMatchTarget = components['schemas']['PriceMatchTarget'];
+export type SchemaPricingMethod = components['schemas']['PricingMethod'];
 export type SchemaProblem = components['schemas']['Problem'];
 export type SchemaProgram = components['schemas']['Program'];
 export type SchemaProgramPage = components['schemas']['ProgramPage'];
@@ -3189,16 +4037,29 @@ export type SchemaProviderLocation = components['schemas']['ProviderLocation'];
 export type SchemaProviderLocationPage = components['schemas']['ProviderLocationPage'];
 export type SchemaProviderLocationStatus = components['schemas']['ProviderLocationStatus'];
 export type SchemaProviderPage = components['schemas']['ProviderPage'];
+export type SchemaProviderQuota = components['schemas']['ProviderQuota'];
+export type SchemaProviderQuotaInput = components['schemas']['ProviderQuotaInput'];
+export type SchemaProviderQuotaList = components['schemas']['ProviderQuotaList'];
 export type SchemaProviderSearchPage = components['schemas']['ProviderSearchPage'];
 export type SchemaProviderSearchResult = components['schemas']['ProviderSearchResult'];
 export type SchemaProviderStatus = components['schemas']['ProviderStatus'];
 export type SchemaProviderType = components['schemas']['ProviderType'];
+export type SchemaPutPaymentTermRequest = components['schemas']['PutPaymentTermRequest'];
+export type SchemaQuotaPeriodType = components['schemas']['QuotaPeriodType'];
 export type SchemaReasonCommand = components['schemas']['ReasonCommand'];
 export type SchemaRegistrationAuthority = components['schemas']['RegistrationAuthority'];
+export type SchemaReplacePackageDefinitionsRequest = components['schemas']['ReplacePackageDefinitionsRequest'];
 export type SchemaReplacePractitionerLocationsRequest = components['schemas']['ReplacePractitionerLocationsRequest'];
+export type SchemaReplacePriceItemsRequest = components['schemas']['ReplacePriceItemsRequest'];
+export type SchemaReplacePriceListsRequest = components['schemas']['ReplacePriceListsRequest'];
 export type SchemaReplaceProviderCapabilitiesRequest = components['schemas']['ReplaceProviderCapabilitiesRequest'];
+export type SchemaReplaceProviderQuotasRequest = components['schemas']['ReplaceProviderQuotasRequest'];
 export type SchemaReplaceServiceCodeMappingsRequest = components['schemas']['ReplaceServiceCodeMappingsRequest'];
+export type SchemaResolvedPrice = components['schemas']['ResolvedPrice'];
+export type SchemaResolvePriceRequest = components['schemas']['ResolvePriceRequest'];
+export type SchemaResolvePriceResult = components['schemas']['ResolvePriceResult'];
 export type SchemaReviewComment = components['schemas']['ReviewComment'];
+export type SchemaScoredPriceCandidate = components['schemas']['ScoredPriceCandidate'];
 export type SchemaServiceCategory = components['schemas']['ServiceCategory'];
 export type SchemaServiceCategoryPage = components['schemas']['ServiceCategoryPage'];
 export type SchemaServiceCodeMapping = components['schemas']['ServiceCodeMapping'];
@@ -3212,10 +4073,14 @@ export type SchemaServiceRequestItem = components['schemas']['ServiceRequestItem
 export type SchemaServiceRequestPage = components['schemas']['ServiceRequestPage'];
 export type SchemaServiceUnitType = components['schemas']['ServiceUnitType'];
 export type SchemaSessionInfo = components['schemas']['SessionInfo'];
+export type SchemaSettlementMethod = components['schemas']['SettlementMethod'];
 export type SchemaSponsorMembership = components['schemas']['SponsorMembership'];
+export type SchemaTaxBehaviour = components['schemas']['TaxBehaviour'];
 export type SchemaTenantContext = components['schemas']['TenantContext'];
 export type SchemaTenantSummary = components['schemas']['TenantSummary'];
 export type SchemaUpdateCodeSystemRequest = components['schemas']['UpdateCodeSystemRequest'];
+export type SchemaUpdateContractRequest = components['schemas']['UpdateContractRequest'];
+export type SchemaUpdateContractVersionRequest = components['schemas']['UpdateContractVersionRequest'];
 export type SchemaUpdateEnrollmentRequest = components['schemas']['UpdateEnrollmentRequest'];
 export type SchemaUpdateMembershipRequest = components['schemas']['UpdateMembershipRequest'];
 export type SchemaUpdateOrganizationRequest = components['schemas']['UpdateOrganizationRequest'];
@@ -3239,6 +4104,8 @@ export type ResponseValidationError = components['responses']['ValidationError']
 export type ParameterAccountId = components['parameters']['AccountId'];
 export type ParameterAdjustmentId = components['parameters']['AdjustmentId'];
 export type ParameterCodeSystemId = components['parameters']['CodeSystemId'];
+export type ParameterContractId = components['parameters']['ContractId'];
+export type ParameterContractVersionId = components['parameters']['ContractVersionId'];
 export type ParameterCsrfHeader = components['parameters']['CsrfHeader'];
 export type ParameterCursor = components['parameters']['Cursor'];
 export type ParameterEnrollmentId = components['parameters']['EnrollmentId'];
@@ -3255,6 +4122,7 @@ export type ParameterPersonId = components['parameters']['PersonId'];
 export type ParameterPlanId = components['parameters']['PlanId'];
 export type ParameterPlanVersionId = components['parameters']['PlanVersionId'];
 export type ParameterPractitionerId = components['parameters']['PractitionerId'];
+export type ParameterPriceListId = components['parameters']['PriceListId'];
 export type ParameterProgramId = components['parameters']['ProgramId'];
 export type ParameterProviderId = components['parameters']['ProviderId'];
 export type ParameterProviderLocationId = components['parameters']['ProviderLocationId'];
@@ -3522,6 +4390,817 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getContractVersion: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                contractVersionId: components["parameters"]["ContractVersionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Contract version */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractVersion"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    patchContractVersion: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                contractVersionId: components["parameters"]["ContractVersionId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/merge-patch+json": components["schemas"]["UpdateContractVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description Contract version updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractVersion"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Body is not application/merge-patch+json */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listPackageDefinitions: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                contractVersionId: components["parameters"]["ContractVersionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Package definitions of the version */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PackageDefinitionList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    putPackageDefinitions: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                contractVersionId: components["parameters"]["ContractVersionId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplacePackageDefinitionsRequest"];
+            };
+        };
+        responses: {
+            /** @description Package set replaced */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PackageDefinitionList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getPaymentTerm: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                contractVersionId: components["parameters"]["ContractVersionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Payment term of the version */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentTerm"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    putPaymentTerm: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                contractVersionId: components["parameters"]["ContractVersionId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PutPaymentTermRequest"];
+            };
+        };
+        responses: {
+            /** @description Payment term written */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentTerm"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    putPriceLists: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                contractVersionId: components["parameters"]["ContractVersionId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplacePriceListsRequest"];
+            };
+        };
+        responses: {
+            /** @description Price list set replaced */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PriceListList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listProviderQuotas: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                contractVersionId: components["parameters"]["ContractVersionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Provider quotas of the version */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderQuotaList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    putProviderQuotas: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                contractVersionId: components["parameters"]["ContractVersionId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplaceProviderQuotasRequest"];
+            };
+        };
+        responses: {
+            /** @description Quota set replaced */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderQuotaList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    publishContractVersion: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                contractVersionId: components["parameters"]["ContractVersionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReviewComment"];
+            };
+        };
+        responses: {
+            /** @description Contract version published */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractVersion"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    retireContractVersion: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                contractVersionId: components["parameters"]["ContractVersionId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonCommand"];
+            };
+        };
+        responses: {
+            /** @description Contract version retired */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractVersion"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    submitContractVersion: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                contractVersionId: components["parameters"]["ContractVersionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReviewComment"];
+            };
+        };
+        responses: {
+            /** @description Contract version submitted for review */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractVersion"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listContracts: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description Only contracts in this service domain. */
+                domainCode?: components["schemas"]["ServiceDomain"];
+                limit?: components["parameters"]["Limit"];
+                /** @description Only contracts whose payer is this organization relationship. */
+                payerOrganizationId?: string;
+                /** @description Only contracts with this provider. */
+                providerProfileId?: string;
+                /** @description Contract code or name search. */
+                q?: string;
+                /** @description Only contracts in this status. */
+                status?: components["schemas"]["ContractStatus"];
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Contract page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractPage"];
+                };
+            };
+            /** @description Cursor invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    createContract: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateContractRequest"];
+            };
+        };
+        responses: {
+            /** @description Contract created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Contract"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getContract: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                contractId: components["parameters"]["ContractId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Contract */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Contract"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    patchContract: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                contractId: components["parameters"]["ContractId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/merge-patch+json": components["schemas"]["UpdateContractRequest"];
+            };
+        };
+        responses: {
+            /** @description Contract updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Contract"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Body is not application/merge-patch+json */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listContractVersions: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                contractId: components["parameters"]["ContractId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Contract versions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractVersionList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createContractVersion: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                contractId: components["parameters"]["ContractId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateContractVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description Contract version created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractVersion"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
             422: components["responses"]["ValidationError"];
         };
     };
@@ -5517,6 +7196,135 @@ export interface operations {
             404: components["responses"]["NotFound"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listPriceItems: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                priceListId: components["parameters"]["PriceListId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Price item page */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PriceItemPage"];
+                };
+            };
+            /** @description Cursor invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    putPriceItems: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                priceListId: components["parameters"]["PriceListId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplacePriceItemsRequest"];
+            };
+        };
+        responses: {
+            /** @description Price item set replaced */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PriceItemPage"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    resolvePrice: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolvePriceRequest"];
+            };
+        };
+        responses: {
+            /** @description Price resolution with the full candidate explanation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResolvePriceResult"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
         };
     };
     listPrograms: {

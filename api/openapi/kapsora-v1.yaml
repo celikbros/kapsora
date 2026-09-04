@@ -45,6 +45,8 @@ tags:
     description: Hizmet kataloğu, dış kod sistemleri ve kod eşlemeleri
   - name: Providers
     description: Sağlayıcı profilleri, lokasyonlar, yetkinlikler ve uygulayıcılar
+  - name: Contracts
+    description: Sözleşmeler, sürümler, fiyat listeleri, paketler, kotalar ve ödeme koşulları
 paths:
   /health/live:
     get:
@@ -3727,6 +3729,882 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+  /api/v1/contracts:
+    get:
+      tags: [Contracts]
+      operationId: listContracts
+      description: |
+        Contracts of the tenant, newest first, with keyset paging. A contract is the
+        agreement between one payer organization and one provider; what was actually
+        agreed lives in its versions. q searches the code and the name, the other filters
+        narrow to one provider, one payer, one service domain or one status.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: q
+          in: query
+          description: Contract code or name search.
+          schema:
+            type: string
+            maxLength: 120
+        - name: providerProfileId
+          in: query
+          description: Only contracts with this provider.
+          schema:
+            type: string
+            format: uuid
+        - name: payerOrganizationId
+          in: query
+          description: Only contracts whose payer is this organization relationship.
+          schema:
+            type: string
+            format: uuid
+        - name: domainCode
+          in: query
+          description: Only contracts in this service domain.
+          schema:
+            $ref: '#/components/schemas/ServiceDomain'
+        - name: status
+          in: query
+          description: Only contracts in this status.
+          schema:
+            $ref: '#/components/schemas/ContractStatus'
+      responses:
+        '200':
+          description: Contract page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractPage'
+        '400':
+          description: Cursor invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags: [Contracts]
+      operationId: createContract
+      description: |
+        Opens a contract between a payer organization relationship and a provider profile
+        of this tenant. The contract carries no prices of its own: it starts in DRAFT and
+        holds versions, and only a published version is ever read by a quote, an
+        authorization or a claim. The code is unique inside the tenant, so a second one
+        answers 409 CONTRACT_CODE_TAKEN.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateContractRequest'
+      responses:
+        '201':
+          description: Contract created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contract'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/contracts/{contractId}:
+    get:
+      tags: [Contracts]
+      operationId: getContract
+      description: |
+        One contract of the tenant with its parties and its optimistic concurrency tag.
+        The versions are read separately, because a long-running contract accumulates more
+        of them than a detail view wants to carry.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ContractId'
+      responses:
+        '200':
+          description: Contract
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contract'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Contracts]
+      operationId: patchContract
+      description: |
+        Merge-patch of the name, the sponsor organization and the contract status. The
+        code, the payer, the provider and the service domain are absent: they are what the
+        contract is, and every published version was agreed under them, so a body carrying
+        one answers 422 with field code IMMUTABLE. Suspending or closing a contract does
+        not change its versions; it only stops the price selection considering them.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ContractId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: '#/components/schemas/UpdateContractRequest'
+      responses:
+        '200':
+          description: Contract updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contract'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '415':
+          description: Body is not application/merge-patch+json
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/contracts/{contractId}/versions:
+    get:
+      tags: [Contracts]
+      operationId: listContractVersions
+      description: |
+        The version summaries of one contract, highest version number first. The price
+        sheet of a version is read through the version itself; this list is what a screen
+        shows to pick between "what we agreed then" and "what we agreed now".
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ContractId'
+      responses:
+        '200':
+          description: Contract versions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractVersionList'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Contracts]
+      operationId: createContractVersion
+      description: |
+        Opens the next DRAFT version of a contract. copyFromVersionId copies the price
+        lists, price items, package definitions, quotas and payment term of another
+        version of the same contract, which is how a yearly price revision starts from
+        last year's sheet instead of from an empty page. The new version stays editable
+        until it is published.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ContractId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateContractVersionRequest'
+      responses:
+        '201':
+          description: Contract version created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractVersion'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/contract-versions/{contractVersionId}:
+    get:
+      tags: [Contracts]
+      operationId: getContractVersion
+      description: |
+        One contract version with its price lists, its review metadata and its
+        configuration hash. The price items of each list are paged separately, because a
+        health tariff runs to thousands of rows. A published version needs only
+        `contract.read`; a draft needs `contract.manage`, so a price nobody has agreed to
+        yet is not visible to everyone who may read the agreed one.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ContractVersionId'
+      responses:
+        '200':
+          description: Contract version
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractVersion'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Contracts]
+      operationId: patchContractVersion
+      description: |
+        Merge-patch of the validity period, the currency and the notes of a DRAFT version.
+        A version that is not DRAFT answers 409 CONTRACT_VERSION_IMMUTABLE: everything
+        downstream was priced from the published sheet, so it cannot move underneath a
+        claim that already quoted it.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ContractVersionId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: '#/components/schemas/UpdateContractVersionRequest'
+      responses:
+        '200':
+          description: Contract version updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractVersion'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '415':
+          description: Body is not application/merge-patch+json
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/contract-versions/{contractVersionId}/submit:
+    post:
+      tags: [Contracts]
+      operationId: submitContractVersion
+      description: |
+        Moves a DRAFT version to UNDER_REVIEW and records the maker. A version with no
+        price list holding at least one price item is refused with 422 on field
+        priceLists: an empty sheet cannot be reviewed, and publishing it would make every
+        later price lookup answer PRICE_NOT_FOUND. The validity start is required too,
+        because a published version without one could never be selected by service date.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ContractVersionId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewComment'
+      responses:
+        '200':
+          description: Contract version submitted for review
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractVersion'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/contract-versions/{contractVersionId}/publish:
+    post:
+      tags: [Contracts]
+      operationId: publishContractVersion
+      description: |
+        Freezes a version under review. It needs `contract.publish`, a recent step-up and
+        an actor other than the one who submitted it; the same person answers 403
+        MAKER_CHECKER_SAME_ACTOR and the refusal is audited. Publishing writes a
+        configuration hash over the version's whole price content, so "what was agreed"
+        can be proved later. Two published versions of one contract may not cover the same
+        date: an overlap answers 409 CONTRACT_VERSION_OVERLAP.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ContractVersionId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewComment'
+      responses:
+        '200':
+          description: Contract version published
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractVersion'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/contract-versions/{contractVersionId}/retire:
+    post:
+      tags: [Contracts]
+      operationId: retireContractVersion
+      description: |
+        Closes a published version with a reason. It needs `contract.publish` and a recent
+        step-up. The version stays readable for every quote and claim priced from it and
+        stops being a candidate for new price lookups; the reason code is required so the
+        history says why the tariff was withdrawn.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ContractVersionId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonCommand'
+      responses:
+        '200':
+          description: Contract version retired
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractVersion'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/contract-versions/{contractVersionId}/price-lists:
+    put:
+      tags: [Contracts]
+      operationId: putPriceLists
+      description: |
+        Replaces the whole price list set of a DRAFT version, for the same reason provider
+        capabilities are replaced as a set: the meaningful unit is the price sheet, and a
+        set write makes consistency one decision. A list already present under the same
+        code keeps its identity and its price items; one absent from the body is deleted
+        with its items. Season and weekday mask exist because accommodation prices by date
+        and by day of the week, and a health contract simply leaves both null. Any write to
+        a version that is not DRAFT answers 409 CONTRACT_VERSION_IMMUTABLE. If-Match
+        carries the ETag of the contract version, which the replacement moves on.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ContractVersionId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplacePriceListsRequest'
+      responses:
+        '200':
+          description: Price list set replaced
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceListList'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/price-lists/{priceListId}/items:
+    get:
+      tags: [Contracts]
+      operationId: listPriceItems
+      description: |
+        The price items of one list, oldest first, with keyset paging. Every money value
+        crosses the wire as an exact decimal string and never as a JSON number: a tariff
+        row is what somebody is invoiced, and a float would silently round it. The ETag is
+        the one of the owning price list, which is what a replacement expects in If-Match.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PriceListId'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Price item page
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceItemPage'
+        '400':
+          description: Cursor invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Contracts]
+      operationId: putPriceItems
+      description: |
+        Replaces the whole price item set of one list. Each row prices exactly one of a
+        service definition, a service category or a package definition, and may be
+        restricted to one location; the specificity ladder of the price selection depends
+        on that being true, so a row naming none or more than one is refused. Amounts are
+        exact decimal strings. The owning version must be DRAFT, otherwise the answer is
+        409 CONTRACT_VERSION_IMMUTABLE. If-Match carries the ETag of the price list.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PriceListId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplacePriceItemsRequest'
+      responses:
+        '200':
+          description: Price item set replaced
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceItemPage'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/contract-versions/{contractVersionId}/package-definitions:
+    get:
+      tags: [Contracts]
+      operationId: listPackageDefinitions
+      description: |
+        The packages of one contract version with their lines. A package is a named bundle
+        of service definitions with an included quantity each; a price item pointing at a
+        package prices the bundle as a whole rather than its parts. The set is short by
+        design, so it is returned whole rather than paged.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ContractVersionId'
+      responses:
+        '200':
+          description: Package definitions of the version
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PackageDefinitionList'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Contracts]
+      operationId: putPackageDefinitions
+      description: |
+        Replaces the whole package set of a DRAFT version, lines included. A package
+        already present under the same code keeps its identity, so the price items
+        pointing at it survive the write; one absent from the body is deleted together
+        with the price items that priced it. ANY_OF_N needs minLines and ALL forbids it.
+        Any write to a version that is not DRAFT answers 409 CONTRACT_VERSION_IMMUTABLE.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ContractVersionId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplacePackageDefinitionsRequest'
+      responses:
+        '200':
+          description: Package set replaced
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PackageDefinitionList'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/contract-versions/{contractVersionId}/provider-quotas:
+    get:
+      tags: [Contracts]
+      operationId: listProviderQuotas
+      description: |
+        The capacity the provider granted under this version: how much of a service, at
+        which location, over which period. Consuming a quota belongs to authorization, so
+        this module only stores and reads them; consumed is shown as it stands.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ContractVersionId'
+      responses:
+        '200':
+          description: Provider quotas of the version
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderQuotaList'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Contracts]
+      operationId: putProviderQuotas
+      description: |
+        Replaces the whole quota set of a DRAFT version. A quota already present under the
+        same scope and period keeps its identity and its consumed counter; two rows with
+        the same location, service and period collide, because a scope that means
+        "everything" has to be unique too. Capacities are exact decimal strings. Any write
+        to a version that is not DRAFT answers 409 CONTRACT_VERSION_IMMUTABLE.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ContractVersionId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplaceProviderQuotasRequest'
+      responses:
+        '200':
+          description: Quota set replaced
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderQuotaList'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/contract-versions/{contractVersionId}/payment-term:
+    get:
+      tags: [Contracts]
+      operationId: getPaymentTerm
+      description: |
+        How and when the provider is paid under this version: the due days, the settlement
+        method, the tax behaviour and the rates. A version that has none answers 404, so a
+        screen can tell "not agreed yet" apart from "agreed as zero".
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ContractVersionId'
+      responses:
+        '200':
+          description: Payment term of the version
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentTerm'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Contracts]
+      operationId: putPaymentTerm
+      description: |
+        Writes the single payment term of a DRAFT version, creating it or replacing it in
+        place. EXCLUSIVE and INCLUSIVE tax behaviour both require a VAT rate; EXEMPT does
+        not. The rates are exact decimal strings. Any write to a version that is not DRAFT
+        answers 409 CONTRACT_VERSION_IMMUTABLE.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ContractVersionId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutPaymentTermRequest'
+      responses:
+        '200':
+          description: Payment term written
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentTerm'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/prices:resolve:
+    post:
+      tags: [Contracts]
+      operationId: resolvePrice
+      description: |
+        Which contracted price applies to this service, at this provider, on this date.
+        Only published versions of active contracts whose period contains the service date
+        are considered; inside them a price list must match the season and the weekday, and
+        an item must match its own period, the location and the service. The winner is the
+        most specific candidate: a price naming the definition beats one naming a package,
+        which beats one naming a category, a nearer ancestor category beats a further one,
+        and a location-specific price beats a tenant-wide one of the same tier. Remaining
+        ties are broken by item priority and then by list priority. When two candidates are
+        still equal the answer is REVIEW_REQUIRED with reason PRICE_AMBIGUOUS and the ids of
+        every tied item: the system never picks a winner among equals, because a random one
+        is a silent financial error that nothing anywhere reports. With no candidate at all
+        the answer is NOT_FOUND with reason PRICE_NOT_FOUND. Every considered candidate is
+        returned with its score, so a screen can explain the choice instead of asserting it.
+        Changes no state.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolvePriceRequest'
+      responses:
+        '200':
+          description: Price resolution with the full candidate explanation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResolvePriceResult'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
 components:
   securitySchemes:
     sessionCookie:
@@ -3936,6 +4814,27 @@ components:
         format: uuid
     PractitionerId:
       name: practitionerId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ContractId:
+      name: contractId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ContractVersionId:
+      name: contractVersionId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PriceListId:
+      name: priceListId
       in: path
       required: true
       schema:
@@ -6734,3 +7633,840 @@ components:
           description: The date the capabilities were resolved against.
         nextCursor:
           type: [string, 'null']
+    DecimalAmount:
+      type: string
+      description: |
+        An exact numeric(20,6) money or quantity value as a decimal string. It is a string
+        and not a JSON number on purpose: a tariff row is what somebody is invoiced, and a
+        float would round it silently somewhere between the browser and the ledger.
+      pattern: '^[0-9]{1,14}(\.[0-9]{1,6})?$'
+      maxLength: 21
+    DecimalPercent:
+      type: string
+      description: A percentage between 0 and 100 as an exact decimal string.
+      pattern: '^(100(\.0{1,6})?|[0-9]{1,2}(\.[0-9]{1,6})?)$'
+      maxLength: 10
+    DecimalRate:
+      type: string
+      description: A rate with at most two decimals, as an exact decimal string.
+      pattern: '^[0-9]{1,3}(\.[0-9]{1,2})?$'
+      maxLength: 6
+    ContractStatus:
+      type: string
+      description: |
+        Lifecycle of a contract. Only an ACTIVE contract's published versions are
+        considered by the price selection.
+      enum: [DRAFT, ACTIVE, SUSPENDED, CLOSED]
+    ContractVersionStatus:
+      type: string
+      description: |
+        Lifecycle of a contract version. PUBLISHED is the only status a quote, an
+        authorization or a claim ever reads, and nothing about it may change afterwards.
+      enum: [DRAFT, UNDER_REVIEW, PUBLISHED, RETIRED]
+    PricingMethod:
+      type: string
+      description: |
+        How the amount of a price item is arrived at. FIXED and UNIT carry an amount,
+        PERCENT_OF_LIST a percent, FORMULA the key of a calculation rule.
+      enum: [FIXED, UNIT, PERCENT_OF_LIST, FORMULA]
+    MemberShareMethod:
+      type: string
+      description: How much of the price the member carries; NONE means the payer carries all of it.
+      enum: [NONE, FIXED, PERCENT]
+    PackageInclusionRule:
+      type: string
+      description: |
+        ALL means every line of the package is included; ANY_OF_N means minLines of them
+        are, whichever the member uses.
+      enum: [ALL, ANY_OF_N]
+    QuotaPeriodType:
+      type: string
+      description: The period a provider quota is counted over; CONTRACT means the whole version.
+      enum: [DAY, WEEK, MONTH, YEAR, CONTRACT]
+    SettlementMethod:
+      type: string
+      description: How the provider is paid.
+      enum: [BANK_TRANSFER, OFFSET, OTHER]
+    TaxBehaviour:
+      type: string
+      description: Whether the agreed amounts already include VAT, exclude it, or are exempt.
+      enum: [EXCLUSIVE, INCLUSIVE, EXEMPT]
+    Contract:
+      type: object
+      additionalProperties: false
+      required: [id, code, name, payerOrganizationId, providerProfileId, domainCode, status, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        payerOrganizationId:
+          type: string
+          format: uuid
+          description: The tenant organization relationship that pays under this contract.
+        payerName:
+          type: [string, 'null']
+        providerProfileId:
+          type: string
+          format: uuid
+        providerName:
+          type: [string, 'null']
+        sponsorOrganizationId:
+          type: [string, 'null']
+          format: uuid
+          description: The sponsor whose members this contract serves, when it is not the payer.
+        sponsorName:
+          type: [string, 'null']
+        domainCode:
+          $ref: '#/components/schemas/ServiceDomain'
+        status:
+          $ref: '#/components/schemas/ContractStatus'
+        rowVersion:
+          type: integer
+          minimum: 1
+    ContractPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Contract'
+        nextCursor:
+          type: [string, 'null']
+    CreateContractRequest:
+      type: object
+      additionalProperties: false
+      required: [code, name, payerOrganizationId, providerProfileId, domainCode]
+      properties:
+        code:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_-]{1,39}$'
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+        payerOrganizationId:
+          type: string
+          format: uuid
+        providerProfileId:
+          type: string
+          format: uuid
+        sponsorOrganizationId:
+          type: string
+          format: uuid
+        domainCode:
+          $ref: '#/components/schemas/ServiceDomain'
+    UpdateContractRequest:
+      type: object
+      additionalProperties: false
+      description: |
+        Merge-patch body. The code, the parties and the service domain are absent because
+        they are what the contract is; a body carrying one answers 422 with IMMUTABLE.
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+        sponsorOrganizationId:
+          type: [string, 'null']
+          format: uuid
+        status:
+          $ref: '#/components/schemas/ContractStatus'
+    ContractVersionSummary:
+      type: object
+      additionalProperties: false
+      required: [id, contractId, versionNo, status, currencyCode, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        contractId:
+          type: string
+          format: uuid
+        versionNo:
+          type: integer
+          minimum: 1
+        status:
+          $ref: '#/components/schemas/ContractVersionStatus'
+        validFrom:
+          type: [string, 'null']
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+        currencyCode:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        notes:
+          type: [string, 'null']
+        publishedAt:
+          type: [string, 'null']
+          format: date-time
+        rowVersion:
+          type: integer
+          minimum: 1
+    ContractVersionList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContractVersionSummary'
+    ContractVersion:
+      type: object
+      additionalProperties: false
+      required: [id, contractId, versionNo, status, currencyCode, rowVersion, priceLists]
+      properties:
+        id:
+          type: string
+          format: uuid
+        contractId:
+          type: string
+          format: uuid
+        versionNo:
+          type: integer
+          minimum: 1
+        status:
+          $ref: '#/components/schemas/ContractVersionStatus'
+        validFrom:
+          type: [string, 'null']
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+        currencyCode:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        notes:
+          type: [string, 'null']
+        configurationHash:
+          type: [string, 'null']
+          description: Lower-case hex SHA-256 over the version's whole price content, written at publish.
+        submittedAt:
+          type: [string, 'null']
+          format: date-time
+        submittedBy:
+          type: [string, 'null']
+          format: uuid
+        publishedAt:
+          type: [string, 'null']
+          format: date-time
+        publishedBy:
+          type: [string, 'null']
+          format: uuid
+        reviewComment:
+          type: [string, 'null']
+        retireReasonCode:
+          type: [string, 'null']
+        priceLists:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriceList'
+        rowVersion:
+          type: integer
+          minimum: 1
+    CreateContractVersionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        copyFromVersionId:
+          type: string
+          format: uuid
+          description: Another version of the same contract whose whole price content is copied.
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+        currencyCode:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        notes:
+          type: string
+          maxLength: 2000
+    UpdateContractVersionRequest:
+      type: object
+      additionalProperties: false
+      description: Merge-patch body of a DRAFT contract version.
+      properties:
+        validFrom:
+          type: [string, 'null']
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+        currencyCode:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        notes:
+          type: [string, 'null']
+          maxLength: 2000
+    PriceList:
+      type: object
+      additionalProperties: false
+      required: [id, contractVersionId, code, name, priority, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        contractVersionId:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        priority:
+          type: integer
+          description: Higher wins when two equally specific price items tie.
+        seasonFrom:
+          type: [string, 'null']
+          format: date
+        seasonTo:
+          type: [string, 'null']
+          format: date
+        weekdayMask:
+          type: [integer, 'null']
+          minimum: 1
+          maximum: 127
+          description: Bit 0 is Monday through bit 6 Sunday; null means every day.
+        itemCount:
+          type: integer
+          minimum: 0
+          description: How many price items the list currently holds.
+        rowVersion:
+          type: integer
+          minimum: 1
+    PriceListInput:
+      type: object
+      additionalProperties: false
+      required: [code, name]
+      properties:
+        code:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_-]{1,39}$'
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+        priority:
+          type: integer
+          minimum: 0
+          maximum: 10000
+          default: 100
+        seasonFrom:
+          type: [string, 'null']
+          format: date
+        seasonTo:
+          type: [string, 'null']
+          format: date
+        weekdayMask:
+          type: [integer, 'null']
+          minimum: 1
+          maximum: 127
+    PriceListList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriceList'
+    ReplacePriceListsRequest:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/PriceListInput'
+    PriceItem:
+      type: object
+      additionalProperties: false
+      required: [id, priceListId, unitType, pricingMethod, memberShareMethod, validFrom, priority]
+      properties:
+        id:
+          type: string
+          format: uuid
+        priceListId:
+          type: string
+          format: uuid
+        serviceDefinitionId:
+          type: [string, 'null']
+          format: uuid
+        serviceDefinitionCode:
+          type: [string, 'null']
+        serviceCategoryId:
+          type: [string, 'null']
+          format: uuid
+        serviceCategoryCode:
+          type: [string, 'null']
+        packageDefinitionId:
+          type: [string, 'null']
+          format: uuid
+        packageDefinitionCode:
+          type: [string, 'null']
+        locationId:
+          type: [string, 'null']
+          format: uuid
+        unitType:
+          $ref: '#/components/schemas/ServiceUnitType'
+        pricingMethod:
+          $ref: '#/components/schemas/PricingMethod'
+        amount:
+          type: [string, 'null']
+        percent:
+          type: [string, 'null']
+        formulaKey:
+          type: [string, 'null']
+        minAmount:
+          type: [string, 'null']
+        maxAmount:
+          type: [string, 'null']
+        memberShareMethod:
+          $ref: '#/components/schemas/MemberShareMethod'
+        memberShareAmount:
+          type: [string, 'null']
+        memberSharePercent:
+          type: [string, 'null']
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+        priority:
+          type: integer
+    PriceItemInput:
+      type: object
+      additionalProperties: false
+      description: |
+        Exactly one of serviceDefinitionId, serviceCategoryId and packageDefinitionId must
+        be present; the specificity ladder of the price selection depends on it.
+      required: [unitType, pricingMethod, validFrom]
+      properties:
+        serviceDefinitionId:
+          type: string
+          format: uuid
+        serviceCategoryId:
+          type: string
+          format: uuid
+        packageDefinitionId:
+          type: string
+          format: uuid
+        locationId:
+          type: string
+          format: uuid
+          description: Restricts the price to one location of the provider.
+        unitType:
+          $ref: '#/components/schemas/ServiceUnitType'
+        pricingMethod:
+          $ref: '#/components/schemas/PricingMethod'
+        amount:
+          $ref: '#/components/schemas/DecimalAmount'
+        percent:
+          $ref: '#/components/schemas/DecimalPercent'
+        formulaKey:
+          type: string
+          maxLength: 120
+        minAmount:
+          $ref: '#/components/schemas/DecimalAmount'
+        maxAmount:
+          $ref: '#/components/schemas/DecimalAmount'
+        memberShareMethod:
+          $ref: '#/components/schemas/MemberShareMethod'
+        memberShareAmount:
+          $ref: '#/components/schemas/DecimalAmount'
+        memberSharePercent:
+          $ref: '#/components/schemas/DecimalPercent'
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+        priority:
+          type: integer
+          minimum: 0
+          maximum: 10000
+          default: 100
+    PriceItemPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriceItem'
+        nextCursor:
+          type: [string, 'null']
+    ReplacePriceItemsRequest:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          maxItems: 2000
+          items:
+            $ref: '#/components/schemas/PriceItemInput'
+    PackageLine:
+      type: object
+      additionalProperties: false
+      required: [serviceDefinitionId, includedQuantity]
+      properties:
+        serviceDefinitionId:
+          type: string
+          format: uuid
+        serviceDefinitionCode:
+          type: [string, 'null']
+        includedQuantity:
+          type: string
+          description: Exact numeric(20,6) quantity as a decimal string.
+    PackageLineInput:
+      type: object
+      additionalProperties: false
+      required: [serviceDefinitionId, includedQuantity]
+      properties:
+        serviceDefinitionId:
+          type: string
+          format: uuid
+        includedQuantity:
+          $ref: '#/components/schemas/DecimalAmount'
+    PackageDefinition:
+      type: object
+      additionalProperties: false
+      required: [id, contractVersionId, code, name, inclusionRule, lines]
+      properties:
+        id:
+          type: string
+          format: uuid
+        contractVersionId:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        inclusionRule:
+          $ref: '#/components/schemas/PackageInclusionRule'
+        minLines:
+          type: [integer, 'null']
+          minimum: 1
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/PackageLine'
+    PackageDefinitionInput:
+      type: object
+      additionalProperties: false
+      required: [code, name, lines]
+      properties:
+        code:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_-]{1,39}$'
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+        inclusionRule:
+          $ref: '#/components/schemas/PackageInclusionRule'
+        minLines:
+          type: [integer, 'null']
+          minimum: 1
+          description: Required by ANY_OF_N and forbidden by ALL.
+        lines:
+          type: array
+          minItems: 1
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/PackageLineInput'
+    PackageDefinitionList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PackageDefinition'
+    ReplacePackageDefinitionsRequest:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/PackageDefinitionInput'
+    ProviderQuota:
+      type: object
+      additionalProperties: false
+      required: [id, contractVersionId, periodType, periodFrom, periodTo, capacity, consumed, allowOverdraft]
+      properties:
+        id:
+          type: string
+          format: uuid
+        contractVersionId:
+          type: string
+          format: uuid
+        locationId:
+          type: [string, 'null']
+          format: uuid
+        serviceDefinitionId:
+          type: [string, 'null']
+          format: uuid
+        periodType:
+          $ref: '#/components/schemas/QuotaPeriodType'
+        periodFrom:
+          type: string
+          format: date
+        periodTo:
+          type: string
+          format: date
+        capacity:
+          type: string
+          description: Exact numeric(20,6) capacity as a decimal string.
+        consumed:
+          type: string
+          description: How much of the capacity authorization has taken so far, as a decimal string.
+        allowOverdraft:
+          type: boolean
+    ProviderQuotaInput:
+      type: object
+      additionalProperties: false
+      required: [periodType, periodFrom, periodTo, capacity]
+      properties:
+        locationId:
+          type: string
+          format: uuid
+        serviceDefinitionId:
+          type: string
+          format: uuid
+        periodType:
+          $ref: '#/components/schemas/QuotaPeriodType'
+        periodFrom:
+          type: string
+          format: date
+        periodTo:
+          type: string
+          format: date
+        capacity:
+          $ref: '#/components/schemas/DecimalAmount'
+        allowOverdraft:
+          type: boolean
+          default: false
+    ProviderQuotaList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProviderQuota'
+    ReplaceProviderQuotasRequest:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/ProviderQuotaInput'
+    PaymentTerm:
+      type: object
+      additionalProperties: false
+      required: [id, contractVersionId, dueDays, settlementMethod, taxBehaviour, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        contractVersionId:
+          type: string
+          format: uuid
+        dueDays:
+          type: integer
+          minimum: 0
+          maximum: 365
+        settlementMethod:
+          $ref: '#/components/schemas/SettlementMethod'
+        taxBehaviour:
+          $ref: '#/components/schemas/TaxBehaviour'
+        vatRate:
+          type: [string, 'null']
+          description: VAT percentage as an exact decimal string.
+        lateFeePercent:
+          type: [string, 'null']
+          description: Monthly late fee percentage as an exact decimal string.
+        rowVersion:
+          type: integer
+          minimum: 1
+    PutPaymentTermRequest:
+      type: object
+      additionalProperties: false
+      required: [dueDays, settlementMethod, taxBehaviour]
+      properties:
+        dueDays:
+          type: integer
+          minimum: 0
+          maximum: 365
+        settlementMethod:
+          $ref: '#/components/schemas/SettlementMethod'
+        taxBehaviour:
+          $ref: '#/components/schemas/TaxBehaviour'
+        vatRate:
+          $ref: '#/components/schemas/DecimalRate'
+        lateFeePercent:
+          $ref: '#/components/schemas/DecimalRate'
+    ResolvePriceRequest:
+      type: object
+      additionalProperties: false
+      required: [serviceDate, providerProfileId, serviceDefinitionId]
+      properties:
+        serviceDate:
+          type: string
+          format: date
+          description: The day the service is delivered; the whole selection is made against it.
+        providerProfileId:
+          type: string
+          format: uuid
+        serviceDefinitionId:
+          type: string
+          format: uuid
+        locationId:
+          type: string
+          format: uuid
+          description: Where it will be delivered, when that is already known.
+    PriceMatchTarget:
+      type: string
+      description: |
+        What the price item names: the service definition itself, a package containing it,
+        or a category above it in the catalog tree.
+      enum: [DEFINITION, PACKAGE, CATEGORY]
+    ResolvedPrice:
+      type: object
+      additionalProperties: false
+      required:
+        [priceItemId, priceListId, contractVersionId, contractId, contractCode, versionNo,
+         currencyCode, unitType, pricingMethod, memberShareMethod, matchedVia]
+      properties:
+        priceItemId:
+          type: string
+          format: uuid
+        priceListId:
+          type: string
+          format: uuid
+        priceListCode:
+          type: [string, 'null']
+        contractVersionId:
+          type: string
+          format: uuid
+        contractId:
+          type: string
+          format: uuid
+        contractCode:
+          type: string
+        versionNo:
+          type: integer
+          minimum: 1
+        currencyCode:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        locationId:
+          type: [string, 'null']
+          format: uuid
+        unitType:
+          $ref: '#/components/schemas/ServiceUnitType'
+        pricingMethod:
+          $ref: '#/components/schemas/PricingMethod'
+        amount:
+          type: [string, 'null']
+        percent:
+          type: [string, 'null']
+        formulaKey:
+          type: [string, 'null']
+        minAmount:
+          type: [string, 'null']
+        maxAmount:
+          type: [string, 'null']
+        memberShareMethod:
+          $ref: '#/components/schemas/MemberShareMethod'
+        memberShareAmount:
+          type: [string, 'null']
+        memberSharePercent:
+          type: [string, 'null']
+        matchedVia:
+          $ref: '#/components/schemas/PriceMatchTarget'
+    ScoredPriceCandidate:
+      type: object
+      additionalProperties: false
+      required: [priceItemId, priceListId, contractVersionId, score, matched, matchedVia]
+      properties:
+        priceItemId:
+          type: string
+          format: uuid
+        priceListId:
+          type: string
+          format: uuid
+        contractVersionId:
+          type: string
+          format: uuid
+        score:
+          type: integer
+          description: Specificity score; the highest one wins and equal ones are a tie, never a coin flip.
+        matched:
+          type: boolean
+          description: False for a candidate that was loaded and then ruled out.
+        excluded:
+          type: [string, 'null']
+          description: Why it was ruled out, one of PERIOD, SEASON, WEEKDAY, LOCATION or SERVICE.
+        matchedVia:
+          $ref: '#/components/schemas/PriceMatchTarget'
+        itemPriority:
+          type: integer
+        listPriority:
+          type: integer
+    ResolvePriceResult:
+      type: object
+      additionalProperties: false
+      required: [outcome, serviceDate, considered, tied]
+      properties:
+        outcome:
+          type: string
+          description: |
+            MATCHED when exactly one candidate scored highest, REVIEW_REQUIRED when several
+            tied at the top, NOT_FOUND when nothing matched at all.
+          enum: [MATCHED, REVIEW_REQUIRED, NOT_FOUND]
+        reason:
+          type: [string, 'null']
+          description: PRICE_AMBIGUOUS or PRICE_NOT_FOUND; absent when a winner was found.
+        serviceDate:
+          type: string
+          format: date
+        winner:
+          $ref: '#/components/schemas/ResolvedPrice'
+        tied:
+          type: array
+          description: Every candidate that tied at the top when the outcome is REVIEW_REQUIRED.
+          items:
+            $ref: '#/components/schemas/ResolvedPrice'
+        considered:
+          type: array
+          description: Every candidate with its score, winners and losers alike, highest first.
+          items:
+            $ref: '#/components/schemas/ScoredPriceCandidate'

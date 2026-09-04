@@ -242,7 +242,22 @@
     "LOCATION_CODE_TAKEN": "Bu lokasyon kodu bu sağlayıcıda kullanılıyor.",
     "CAPABILITY_OVERLAP": "Aynı hizmet için çakışan bir yetkinlik dönemi var.",
     "PRACTITIONER_ASSIGNMENT_OVERLAP": "Aynı lokasyon ve görev için çakışan bir görevlendirme var.",
-    "PRACTITIONER_REGISTRATION_TAKEN": "Bu sicil numarası bu otoritede kayıtlı."
+    "PRACTITIONER_REGISTRATION_TAKEN": "Bu sicil numarası bu otoritede kayıtlı.",
+    "CONTRACT_NOT_FOUND": "Sözleşme bulunamadı.",
+    "CONTRACT_VERSION_NOT_FOUND": "Sözleşme sürümü bulunamadı.",
+    "PRICE_LIST_NOT_FOUND": "Fiyat listesi bulunamadı.",
+    "PAYMENT_TERM_NOT_FOUND": "Bu sürüm için ödeme koşulu tanımlanmamış.",
+    "CONTRACT_PARTY_NOT_FOUND": "Ödeyen kurum, sponsor veya sağlayıcı bulunamadı.",
+    "CONTRACT_CODE_TAKEN": "Bu sözleşme kodu zaten kullanılıyor.",
+    "CONTRACT_TRANSITION_INVALID": "Sözleşme bu duruma geçemez.",
+    "CONTRACT_VERSION_IMMUTABLE": "Yayınlanmış sözleşme sürümü değiştirilemez; yeni bir sürüm açın.",
+    "CONTRACT_VERSION_OVERLAP": "Bu tarih aralığında yayında başka bir sözleşme sürümü var.",
+    "CONTRACT_VERSION_TRANSITION_INVALID": "Sözleşme sürümü bu duruma geçemez.",
+    "PRICE_LIST_CODE_TAKEN": "Bu fiyat listesi kodu bu sürümde kullanılıyor.",
+    "PACKAGE_CODE_TAKEN": "Bu paket kodu bu sürümde kullanılıyor.",
+    "PROVIDER_QUOTA_DUPLICATE": "Aynı kapsam ve dönem için birden fazla kota verilemez.",
+    "PRICE_AMBIGUOUS": "Aynı derecede uygun birden fazla fiyat var; sistem birini seçmez. Fiyat listelerini önceliklendirin.",
+    "PRICE_NOT_FOUND": "Bu tarihte bu hizmet için sözleşmeli bir fiyat bulunamadı."
   },
   "fieldErrors": {
     "REQUIRED": "Zorunlu alan",

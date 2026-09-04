@@ -359,6 +359,137 @@ type CatalogServiceDefinition struct {
 	RowVersion       int64
 }
 
+type ContractContract struct {
+	ID                    uuid.UUID
+	TenantID              uuid.UUID
+	Code                  string
+	Name                  string
+	PayerOrganizationID   uuid.UUID
+	ProviderProfileID     uuid.UUID
+	SponsorOrganizationID uuid.NullUUID
+	DomainCode            string
+	Status                string
+	CreatedAt             time.Time
+	UpdatedAt             time.Time
+	RowVersion            int64
+}
+
+type ContractContractVersion struct {
+	ID                uuid.UUID
+	TenantID          uuid.UUID
+	ContractID        uuid.UUID
+	VersionNo         int32
+	Status            string
+	ValidFrom         pgtype.Date
+	ValidTo           pgtype.Date
+	CurrencyCode      string
+	Notes             *string
+	ConfigurationHash *string
+	SubmittedAt       *time.Time
+	SubmittedBy       uuid.NullUUID
+	PublishedAt       *time.Time
+	PublishedBy       uuid.NullUUID
+	RetireReasonCode  *string
+	ReviewComment     *string
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+	RowVersion        int64
+}
+
+type ContractPackageDefinition struct {
+	ID                uuid.UUID
+	TenantID          uuid.UUID
+	ContractVersionID uuid.UUID
+	Code              string
+	Name              string
+	InclusionRule     string
+	MinLines          *int32
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+	RowVersion        int64
+}
+
+type ContractPackageLine struct {
+	ID                  uuid.UUID
+	TenantID            uuid.UUID
+	PackageDefinitionID uuid.UUID
+	ServiceDefinitionID uuid.UUID
+	IncludedQuantity    pgtype.Numeric
+	CreatedAt           time.Time
+}
+
+type ContractPaymentTerm struct {
+	ID                uuid.UUID
+	TenantID          uuid.UUID
+	ContractVersionID uuid.UUID
+	DueDays           int32
+	SettlementMethod  string
+	TaxBehaviour      string
+	VatRate           pgtype.Numeric
+	LateFeePercent    pgtype.Numeric
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+	RowVersion        int64
+}
+
+type ContractPriceItem struct {
+	ID                  uuid.UUID
+	TenantID            uuid.UUID
+	PriceListID         uuid.UUID
+	ServiceDefinitionID uuid.NullUUID
+	ServiceCategoryID   uuid.NullUUID
+	PackageDefinitionID uuid.NullUUID
+	LocationID          uuid.NullUUID
+	UnitType            string
+	PricingMethod       string
+	Amount              pgtype.Numeric
+	Percent             pgtype.Numeric
+	FormulaKey          *string
+	MinAmount           pgtype.Numeric
+	MaxAmount           pgtype.Numeric
+	MemberShareMethod   string
+	MemberShareAmount   pgtype.Numeric
+	MemberSharePercent  pgtype.Numeric
+	ValidFrom           pgtype.Date
+	ValidTo             pgtype.Date
+	Priority            int32
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
+	RowVersion          int64
+}
+
+type ContractPriceList struct {
+	ID                uuid.UUID
+	TenantID          uuid.UUID
+	ContractVersionID uuid.UUID
+	Code              string
+	Name              string
+	Priority          int32
+	SeasonFrom        pgtype.Date
+	SeasonTo          pgtype.Date
+	WeekdayMask       *int16
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+	RowVersion        int64
+}
+
+type ContractProviderQuotum struct {
+	ID                  uuid.UUID
+	TenantID            uuid.UUID
+	ContractVersionID   uuid.UUID
+	LocationID          uuid.NullUUID
+	ServiceDefinitionID uuid.NullUUID
+	PeriodType          string
+	PeriodFrom          pgtype.Date
+	PeriodTo            pgtype.Date
+	Capacity            pgtype.Numeric
+	Consumed            pgtype.Numeric
+	AllowOverdraft      bool
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
+	RowVersion          int64
+}
+
 type DirectoryOrganization struct {
 	ID               uuid.UUID
 	LegalName        string

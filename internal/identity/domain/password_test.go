@@ -2,6 +2,7 @@ package domain
 
 import (
 	"errors"
+	"math"
 	"strings"
 	"testing"
 	"time"
@@ -86,16 +87,32 @@ func TestValidatePassword(t *testing.T) {
 	}
 }
 
+// The property under test is a security one: an unknown username must cost about as much
+// as a known one, or the response time itself answers "does this account exist?".
+//
+// It is measured as the fastest of several runs rather than a single sample. A single
+// sample measures whatever else the machine was doing — one preemption in the middle of
+// either side skews the ratio by more than the property ever would — while the minimum is
+// the run that came closest to uncontended, which is the number the comparison is about.
 func TestBurnPasswordTimeCostsRoughlyTheSameAsAVerification(t *testing.T) {
 	hash, _ := HashPassword("correct horse battery staple", DefaultPasswordParams())
 
-	start := time.Now()
-	_, _, _ = VerifyPassword("wrong password entirely", hash, DefaultPasswordParams())
-	real := time.Since(start)
+	fastest := func(run func()) time.Duration {
+		best := time.Duration(math.MaxInt64)
+		for i := 0; i < 5; i++ {
+			start := time.Now()
+			run()
+			if d := time.Since(start); d < best {
+				best = d
+			}
+		}
+		return best
+	}
 
-	start = time.Now()
-	BurnPasswordTime("wrong password entirely")
-	dummy := time.Since(start)
+	real := fastest(func() {
+		_, _, _ = VerifyPassword("wrong password entirely", hash, DefaultPasswordParams())
+	})
+	dummy := fastest(func() { BurnPasswordTime("wrong password entirely") })
 
 	if real <= 0 || dummy <= 0 {
 		t.Fatal("measurements are degenerate")

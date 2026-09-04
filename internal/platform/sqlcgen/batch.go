@@ -18,6 +18,62 @@ var (
 	ErrBatchAlreadyClosed = errors.New("batch already closed")
 )
 
+const createPackageLine = `-- name: CreatePackageLine :batchexec
+INSERT INTO contract.package_line (tenant_id, package_definition_id, service_definition_id,
+                                   included_quantity)
+VALUES ($1, $2,
+        $3, $4::text::numeric)
+`
+
+type CreatePackageLineBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type CreatePackageLineParams struct {
+	TenantID            uuid.UUID
+	PackageDefinitionID uuid.UUID
+	ServiceDefinitionID uuid.UUID
+	IncludedQuantity    string
+}
+
+func (q *Queries) CreatePackageLine(ctx context.Context, arg []CreatePackageLineParams) *CreatePackageLineBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.TenantID,
+			a.PackageDefinitionID,
+			a.ServiceDefinitionID,
+			a.IncludedQuantity,
+		}
+		batch.Queue(createPackageLine, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &CreatePackageLineBatchResults{br, len(arg), false}
+}
+
+func (b *CreatePackageLineBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *CreatePackageLineBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
 const createPractitionerLocation = `-- name: CreatePractitionerLocation :batchexec
 INSERT INTO provider.practitioner_location (tenant_id, practitioner_id, location_id, role,
                                             valid_from, valid_to)
@@ -74,6 +130,106 @@ func (b *CreatePractitionerLocationBatchResults) Exec(f func(int, error)) {
 }
 
 func (b *CreatePractitionerLocationBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
+const createPriceItem = `-- name: CreatePriceItem :batchexec
+INSERT INTO contract.price_item (tenant_id, price_list_id, service_definition_id,
+                                 service_category_id, package_definition_id, location_id,
+                                 unit_type, pricing_method, amount, percent, formula_key,
+                                 min_amount, max_amount, member_share_method,
+                                 member_share_amount, member_share_percent,
+                                 valid_from, valid_to, priority)
+VALUES ($1, $2, $3,
+        $4, $5,
+        $6, $7, $8,
+        $9::text::numeric,
+        $10::text::numeric,
+        $11,
+        $12::text::numeric,
+        $13::text::numeric,
+        $14,
+        $15::text::numeric,
+        $16::text::numeric,
+        $17, $18, $19)
+`
+
+type CreatePriceItemBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type CreatePriceItemParams struct {
+	TenantID            uuid.UUID
+	PriceListID         uuid.UUID
+	ServiceDefinitionID uuid.NullUUID
+	ServiceCategoryID   uuid.NullUUID
+	PackageDefinitionID uuid.NullUUID
+	LocationID          uuid.NullUUID
+	UnitType            string
+	PricingMethod       string
+	Amount              *string
+	Percent             *string
+	FormulaKey          *string
+	MinAmount           *string
+	MaxAmount           *string
+	MemberShareMethod   string
+	MemberShareAmount   *string
+	MemberSharePercent  *string
+	ValidFrom           pgtype.Date
+	ValidTo             pgtype.Date
+	Priority            int32
+}
+
+func (q *Queries) CreatePriceItem(ctx context.Context, arg []CreatePriceItemParams) *CreatePriceItemBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.TenantID,
+			a.PriceListID,
+			a.ServiceDefinitionID,
+			a.ServiceCategoryID,
+			a.PackageDefinitionID,
+			a.LocationID,
+			a.UnitType,
+			a.PricingMethod,
+			a.Amount,
+			a.Percent,
+			a.FormulaKey,
+			a.MinAmount,
+			a.MaxAmount,
+			a.MemberShareMethod,
+			a.MemberShareAmount,
+			a.MemberSharePercent,
+			a.ValidFrom,
+			a.ValidTo,
+			a.Priority,
+		}
+		batch.Queue(createPriceItem, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &CreatePriceItemBatchResults{br, len(arg), false}
+}
+
+func (b *CreatePriceItemBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *CreatePriceItemBatchResults) Close() error {
 	b.closed = true
 	return b.br.Close()
 }

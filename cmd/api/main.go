@@ -25,6 +25,9 @@ import (
 	catalogapp "github.com/celikbros/kapsora/internal/catalog/application"
 	catalogpg "github.com/celikbros/kapsora/internal/catalog/infrastructure/postgres"
 	cataloghttp "github.com/celikbros/kapsora/internal/catalog/transport/http"
+	contractapp "github.com/celikbros/kapsora/internal/contract/application"
+	contractpg "github.com/celikbros/kapsora/internal/contract/infrastructure/postgres"
+	contracthttp "github.com/celikbros/kapsora/internal/contract/transport/http"
 	"github.com/celikbros/kapsora/internal/identity"
 	"github.com/celikbros/kapsora/internal/identity/application"
 	"github.com/celikbros/kapsora/internal/identity/domain"
@@ -149,6 +152,12 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	contractSvc, err := contractapp.New(contractapp.Deps{
+		Pool: pool, Repo: contractpg.New(), Audit: auditpg.New(), Cursors: cursors,
+	})
+	if err != nil {
+		return err
+	}
 	memberImports, err := memberimport.New(memberimport.Deps{
 		Pool: pool, Cipher: keys, Index: keys, Audit: auditpg.New(), Cursors: cursors, Logger: logger,
 	})
@@ -179,6 +188,7 @@ func run() error {
 		benefit:      benefitSvc,
 		catalog:      catalogSvc,
 		providers:    providerSvc,
+		contracts:    contractSvc,
 		entitlements: entitlementSvc,
 		eligibility:  eligibilitySvc,
 		imports:      memberImports,
@@ -258,6 +268,7 @@ type routerDeps struct {
 	benefit      *benefitapp.Service
 	catalog      *catalogapp.Service
 	providers    *providerapp.Service
+	contracts    *contractapp.Service
 	entitlements *benefitledger.Service
 	eligibility  *benefiteligibility.Service
 	imports      *memberimport.Service
@@ -387,6 +398,22 @@ func newRouter(d routerDeps) http.Handler {
 			tenant.Route("/providers", func(r chi.Router) { providerHandler.ProviderRoutes(r, providerMW) })
 			tenant.Route("/provider-locations", providerHandler.LocationRoutes)
 			tenant.Route("/practitioners", func(r chi.Router) { providerHandler.PractitionerRoutes(r, providerMW) })
+
+			// Contracts sit on top of the provider network and the catalog: a price
+			// item names a service or a category and may be tied to one location, and
+			// only a published version is ever read by a quote, an authorization or a
+			// claim.
+			contractHandler := contracthttp.NewHandler(d.contracts, sessions, d.logger)
+			contractMW := contracthttp.Middlewares{
+				CreateContract:        d.idempotent("contract.create"),
+				CreateContractVersion: d.idempotent("contract_version.create"),
+			}
+			tenant.Route("/contracts", func(r chi.Router) { contractHandler.ContractRoutes(r, contractMW) })
+			tenant.Route("/contract-versions", contractHandler.VersionRoutes)
+			tenant.Route("/price-lists", contractHandler.PriceListRoutes)
+			// The price lookup is a single literal path segment rather than a
+			// sub-resource, so it is registered on the tenant router itself.
+			contractHandler.PriceRoutes(tenant)
 
 			// Eligibility checks change no business state and carry their own replay
 			// contract in benefit.eligibility_evaluation.idempotency_key, so the
