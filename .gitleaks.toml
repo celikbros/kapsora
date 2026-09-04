@@ -1,36 +1,47 @@
 # gitleaks configuration for KAPSORA.
 #
-# Starts from the upstream default rules and adds allowlists for files that are
-# high-entropy by construction and contain no secrets. Real credentials never enter the
-# repository: .env is git-ignored and every example value is a placeholder.
+# Starts from the upstream default rules and allows the few things that are high-entropy
+# by construction and are not credentials. Real credentials never enter the repository:
+# .env is git-ignored and every example value is a placeholder.
+#
+# The allowlist is the singular [allowlist] table on purpose. gitleaks 8.24 silently
+# ignores the plural [[allowlists]] form when [extend] useDefault is set, so a config
+# written that way reports success over an empty set — which is what this file did from
+# the day it was added until 2026-09-04. Verified both ways with the gitleaks binary:
+# the entries below suppress their findings, and a planted secret in any other file is
+# still reported.
 
 [extend]
 useDefault = true
 
-[[allowlists]]
+[allowlist]
 description = """
-Generated code and lock files. The TypeScript client and the lock files carry long
-high-entropy strings by construction. All of them are reproduced from their sources by CI,
-which fails on any drift, so a secret could not survive there unnoticed.
+Paths that are high-entropy by construction:
 
-The Go server types used to embed the whole OpenAPI document as base64 and needed this
-allowlist most of all; embedded-spec is off now, so the blob is gone rather than excused.
+- web/packages/api-client/src/generated and the lock files carry long generated strings.
+  All of them are reproduced from their sources by CI, which fails on any drift, so a
+  secret could not survive there unnoticed.
+- .env.example, docs, deploy and the native scripts hold placeholders such as CHANGE_ME
+  and local-only passwords the runbooks print anyway.
+- tools/ is the git-ignored working directory of the local MinIO and ClamAV binaries.
+
+And one value that is not a secret at all: an idempotency key. A client chooses one per
+command so a retry cannot act twice; it authenticates nothing and grants nothing, and the
+generic rules cannot tell it from an API key because the field is called a key. It is
+matched on the line, so only that context is excused rather than the file around it.
 """
+regexTarget = "line"
+regexes = [
+  '''(?i)idempotency[-_]?key''',
+]
 paths = [
   '''^api/generated/''',
   '''^web/packages/api-client/src/generated/''',
   '''^pnpm-lock\.yaml$''',
   '''^go\.sum$''',
-]
-
-[[allowlists]]
-description = """
-Documentation and examples: placeholder values such as CHANGE_ME, the sample keys in
-.env.example and the local-only passwords used by the runbooks and the native scripts.
-"""
-paths = [
   '''^\.env\.example$''',
   '''^docs/''',
   '''^deploy/''',
   '''^scripts/native/''',
+  '''^tools/''',
 ]

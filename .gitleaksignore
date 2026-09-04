@@ -1,0 +1,7 @@
+# Findings that are not secrets, pinned by fingerprint so nothing else is excused.
+#
+# One historical commit named an idempotency key "testKey", which the generic rule reads
+# as a credential. The value is the literal "request-0001-request-0001-request" and the
+# current file calls it sampleIdempotencyKey; the commit itself cannot be renamed without
+# rewriting history, which would be a far worse trade than this line.
+12a133a085ee05f7c7ff1e78dc711d5973e8631a:internal/platform/idempotency/idempotency_test.go:generic-api-key:21
