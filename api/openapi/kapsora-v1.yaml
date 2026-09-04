@@ -41,6 +41,8 @@ tags:
     description: Hak sahipliği ve plan uygunluğu
   - name: Service Requests
     description: Genel hizmet talebi ve durum geçişleri
+  - name: Catalog
+    description: Hizmet kataloğu, dış kod sistemleri ve kod eşlemeleri
 paths:
   /health/live:
     get:
@@ -2227,6 +2229,619 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+  /api/v1/service-categories:
+    get:
+      tags: [Catalog]
+      operationId: listServiceCategories
+      description: |
+        Service categories of the tenant, newest first, with keyset paging. The picker
+        builds the tree from parentId; the filters narrow it to one branch, one service
+        domain or one activity state.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: q
+          in: query
+          description: Code or name search.
+          schema:
+            type: string
+            maxLength: 120
+        - name: parentId
+          in: query
+          description: Only the direct children of this category.
+          schema:
+            type: string
+            format: uuid
+        - name: domain
+          in: query
+          description: Only categories of this service domain.
+          schema:
+            $ref: '#/components/schemas/ServiceDomain'
+        - name: active
+          in: query
+          description: Only active (true) or only retired (false) categories.
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Service category page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceCategoryPage'
+        '400':
+          description: Cursor invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags: [Catalog]
+      operationId: createServiceCategory
+      description: |
+        Creates a category. The code is unique within the tenant (409 CATEGORY_CODE_TAKEN)
+        and immutable afterwards, because service definitions, contracts and claims are
+        read against it. A parentId that would close a loop answers 409 CATEGORY_CYCLE and
+        a branch deeper than six levels answers 422 with field code DEPTH_EXCEEDED.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateServiceCategoryRequest'
+      responses:
+        '201':
+          description: Category created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceCategory'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/service-categories/{categoryId}:
+    get:
+      tags: [Catalog]
+      operationId: getServiceCategory
+      description: One service category of the tenant with its optimistic concurrency tag.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ServiceCategoryId'
+      responses:
+        '200':
+          description: Service category
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceCategory'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Catalog]
+      operationId: patchServiceCategory
+      description: |
+        Merge-patch of name, parent and activity. The code is immutable: a body carrying
+        code answers 422 with field code IMMUTABLE. Re-parenting refuses a cycle with 409
+        CATEGORY_CYCLE and a resulting depth over six with 422 DEPTH_EXCEEDED.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ServiceCategoryId'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: '#/components/schemas/UpdateServiceCategoryRequest'
+      responses:
+        '200':
+          description: Category updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceCategory'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '415':
+          description: Body is not application/merge-patch+json
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/service-definitions:
+    get:
+      tags: [Catalog]
+      operationId: listServiceDefinitions
+      description: |
+        Service definitions of the tenant, newest first, with keyset paging. q searches
+        code and name; the other filters narrow to one category, one service domain or
+        one activity state.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: q
+          in: query
+          description: Code or name search.
+          schema:
+            type: string
+            maxLength: 120
+        - name: categoryId
+          in: query
+          description: Only definitions of this category.
+          schema:
+            type: string
+            format: uuid
+        - name: domain
+          in: query
+          description: Only definitions whose category carries this service domain.
+          schema:
+            $ref: '#/components/schemas/ServiceDomain'
+        - name: active
+          in: query
+          description: Only active (true) or only retired (false) definitions.
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Service definition page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceDefinitionPage'
+        '400':
+          description: Cursor invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags: [Catalog]
+      operationId: createServiceDefinition
+      description: |
+        Creates a service definition inside a category. The code is unique within the
+        tenant (409 SERVICE_DEFINITION_CODE_TAKEN) and immutable afterwards: a wrong code
+        is retired and replaced, never renamed, because contracts and claims point at it.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateServiceDefinitionRequest'
+      responses:
+        '201':
+          description: Service definition created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceDefinition'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/service-definitions/{definitionId}:
+    get:
+      tags: [Catalog]
+      operationId: getServiceDefinition
+      description: One service definition of the tenant with its optimistic concurrency tag.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ServiceDefinitionId'
+      responses:
+        '200':
+          description: Service definition
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceDefinition'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Catalog]
+      operationId: patchServiceDefinition
+      description: |
+        Merge-patch of category, name, description, fulfilment mode, unit type, provider
+        requirement and activity. The code is immutable: a body carrying code answers 422
+        with field code IMMUTABLE. Deactivating never cascades; it only stops the
+        definition being offered in new work.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ServiceDefinitionId'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: '#/components/schemas/UpdateServiceDefinitionRequest'
+      responses:
+        '200':
+          description: Service definition updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceDefinition'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '415':
+          description: Body is not application/merge-patch+json
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/service-definitions/{definitionId}/code-mappings:
+    get:
+      tags: [Catalog]
+      operationId: listServiceCodeMappings
+      description: |
+        Every external code this definition is reported under, ordered by code system and
+        validity start. The set is short by design, so it is returned whole rather than
+        paged.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ServiceDefinitionId'
+      responses:
+        '200':
+          description: Code mappings of the definition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceCodeMappingList'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Catalog]
+      operationId: putServiceCodeMappings
+      description: |
+        Replaces the whole mapping set of the definition. Two rows for the same code
+        system and code whose validity periods overlap answer 409 CODE_MAPPING_OVERLAP,
+        and so does a second primary mapping for the same code system over an overlapping
+        period. If-Match carries the ETag of the service definition, which the replacement
+        moves on.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ServiceDefinitionId'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplaceServiceCodeMappingsRequest'
+      responses:
+        '200':
+          description: Mapping set replaced
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceCodeMappingList'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/code-systems:
+    get:
+      tags: [Catalog]
+      operationId: listCodeSystems
+      description: |
+        External code systems known to the tenant, newest first, with keyset paging.
+        Editions of the same system live side by side, so SUT 2024 and SUT 2025 are two
+        rows.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: q
+          in: query
+          description: Code or name search.
+          schema:
+            type: string
+            maxLength: 120
+        - name: authority
+          in: query
+          description: Only systems published by this authority.
+          schema:
+            $ref: '#/components/schemas/CodeSystemAuthority'
+        - name: status
+          in: query
+          description: Only systems in this status.
+          schema:
+            type: string
+            enum: [ACTIVE, INACTIVE]
+      responses:
+        '200':
+          description: Code system page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CodeSystemPage'
+        '400':
+          description: Cursor invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags: [Catalog]
+      operationId: createCodeSystem
+      description: |
+        Registers one edition of a code system. Code and version together are unique
+        within the tenant (409 CODE_SYSTEM_TAKEN) and both are immutable, because mappings
+        and imported values hang off the row. Set licensed when the content may not leave
+        the tenant.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCodeSystemRequest'
+      responses:
+        '201':
+          description: Code system created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CodeSystem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/code-systems/{codeSystemId}:
+    patch:
+      tags: [Catalog]
+      operationId: patchCodeSystem
+      description: |
+        Merge-patch of name, authority, licensing, status and validity end. Code and
+        version are immutable: a body carrying either answers 422 with field code
+        IMMUTABLE.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/CodeSystemId'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: '#/components/schemas/UpdateCodeSystemRequest'
+      responses:
+        '200':
+          description: Code system updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CodeSystem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '415':
+          description: Body is not application/merge-patch+json
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/code-systems/{codeSystemId}/values:
+    get:
+      tags: [Catalog]
+      operationId: listCodeValues
+      description: |
+        Values of the system that are valid on asOf (today by default), so a claim from
+        last year resolves against the codes that were valid then. This is the only reader
+        of the table; code matches one value exactly and q searches display text and code.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/CodeSystemId'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: asOf
+          in: query
+          description: Date the values must be valid on; defaults to today.
+          schema:
+            type: string
+            format: date
+        - name: code
+          in: query
+          description: Exact code inside the system.
+          schema:
+            type: string
+            maxLength: 64
+        - name: q
+          in: query
+          description: Display text or code search.
+          schema:
+            type: string
+            maxLength: 120
+      responses:
+        '200':
+          description: Code value page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CodeValuePage'
+        '400':
+          description: Cursor invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/code-systems/{codeSystemId}/values:import:
+    post:
+      tags: [Catalog]
+      operationId: importCodeValues
+      description: |
+        Upserts up to 5000 values on (code, validFrom) in one transaction. The call is
+        all-or-nothing, so a rejected batch leaves nothing behind and the answer names the
+        array index and the field code of every rejected row. Larger systems are loaded by
+        repeating the call; the same Idempotency-Key replays the stored summary without a
+        second write.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/CodeSystemId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImportCodeValuesRequest'
+      responses:
+        '200':
+          description: Import summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CodeValueImportResult'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '413':
+          description: Request body larger than the import endpoint accepts
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
 components:
   securitySchemes:
     sessionCookie:
@@ -2394,6 +3009,27 @@ components:
         format: uuid
     RequestId:
       name: requestId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ServiceCategoryId:
+      name: categoryId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ServiceDefinitionId:
+      name: definitionId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    CodeSystemId:
+      name: codeSystemId
       in: path
       required: true
       schema:
@@ -4170,3 +4806,457 @@ components:
         reasonText:
           type: string
           maxLength: 1000
+    ServiceDomain:
+      type: string
+      description: Closed list of service domains shared by categories and definitions.
+      enum: [GENERIC, HEALTH, ACCOMMODATION, ASSISTANCE, EDUCATION, SPORT, TRANSPORT, CARE, OTHER]
+    FulfillmentMode:
+      type: string
+      description: How a service definition is delivered once it is requested.
+      enum: [APPOINTMENT, RESERVATION, WORK_ORDER, MEMBERSHIP, SESSION, VOUCHER, REIMBURSEMENT, DIRECT]
+    ServiceUnitType:
+      type: string
+      description: Unit a service definition is counted in.
+      enum: [MONEY, COUNT, NIGHT, SESSION, HOUR, KILOMETER, POINT]
+    CodeSystemAuthority:
+      type: string
+      description: Publisher of a code system; TENANT marks a sponsor-internal system.
+      enum: [SGK, SB, WHO, TENANT, OTHER]
+    ServiceCategory:
+      type: object
+      additionalProperties: false
+      required: [id, code, name, domain, active, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        parentId:
+          type: [string, 'null']
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        domain:
+          $ref: '#/components/schemas/ServiceDomain'
+        active:
+          type: boolean
+        rowVersion:
+          type: integer
+          minimum: 1
+    ServiceCategoryPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceCategory'
+        nextCursor:
+          type: [string, 'null']
+    CreateServiceCategoryRequest:
+      type: object
+      additionalProperties: false
+      required: [code, name, domain]
+      properties:
+        code:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]{1,63}$'
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+        domain:
+          $ref: '#/components/schemas/ServiceDomain'
+        parentId:
+          type: [string, 'null']
+          format: uuid
+        active:
+          type: boolean
+          default: true
+    UpdateServiceCategoryRequest:
+      type: object
+      additionalProperties: false
+      description: Merge-patch body; code is absent because it is immutable.
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+        parentId:
+          type: [string, 'null']
+          format: uuid
+        active:
+          type: boolean
+    ServiceDefinition:
+      type: object
+      additionalProperties: false
+      required:
+        [id, categoryId, categoryCode, domain, code, name, fulfillmentMode, defaultUnitType,
+         requiresProvider, active, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        categoryId:
+          type: string
+          format: uuid
+        categoryCode:
+          type: string
+        domain:
+          $ref: '#/components/schemas/ServiceDomain'
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: [string, 'null']
+        fulfillmentMode:
+          $ref: '#/components/schemas/FulfillmentMode'
+        defaultUnitType:
+          $ref: '#/components/schemas/ServiceUnitType'
+        requiresProvider:
+          type: boolean
+        active:
+          type: boolean
+        rowVersion:
+          type: integer
+          minimum: 1
+    ServiceDefinitionPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceDefinition'
+        nextCursor:
+          type: [string, 'null']
+    CreateServiceDefinitionRequest:
+      type: object
+      additionalProperties: false
+      required: [categoryId, code, name, fulfillmentMode, defaultUnitType]
+      properties:
+        categoryId:
+          type: string
+          format: uuid
+        code:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]{1,63}$'
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 2000
+        fulfillmentMode:
+          $ref: '#/components/schemas/FulfillmentMode'
+        defaultUnitType:
+          $ref: '#/components/schemas/ServiceUnitType'
+        requiresProvider:
+          type: boolean
+          default: true
+        active:
+          type: boolean
+          default: true
+    UpdateServiceDefinitionRequest:
+      type: object
+      additionalProperties: false
+      description: Merge-patch body; code is absent because it is immutable.
+      properties:
+        categoryId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+        description:
+          type: [string, 'null']
+          maxLength: 2000
+        fulfillmentMode:
+          $ref: '#/components/schemas/FulfillmentMode'
+        defaultUnitType:
+          $ref: '#/components/schemas/ServiceUnitType'
+        requiresProvider:
+          type: boolean
+        active:
+          type: boolean
+    CodeSystem:
+      type: object
+      additionalProperties: false
+      required: [id, code, name, version, authority, licensed, status, validFrom, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        version:
+          type: string
+        authority:
+          $ref: '#/components/schemas/CodeSystemAuthority'
+        licensed:
+          type: boolean
+          description: True when the content is licensed and may not leave the tenant.
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE]
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+        rowVersion:
+          type: integer
+          minimum: 1
+    CodeSystemPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CodeSystem'
+        nextCursor:
+          type: [string, 'null']
+    CreateCodeSystemRequest:
+      type: object
+      additionalProperties: false
+      required: [code, name, version, authority, validFrom]
+      properties:
+        code:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]{1,39}$'
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+        version:
+          type: string
+          minLength: 1
+          maxLength: 32
+        authority:
+          $ref: '#/components/schemas/CodeSystemAuthority'
+        licensed:
+          type: boolean
+          default: false
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: string
+          format: date
+    UpdateCodeSystemRequest:
+      type: object
+      additionalProperties: false
+      description: Merge-patch body; code and version are absent because they are immutable.
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+        authority:
+          $ref: '#/components/schemas/CodeSystemAuthority'
+        licensed:
+          type: boolean
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE]
+        validTo:
+          type: [string, 'null']
+          format: date
+    CodeValue:
+      type: object
+      additionalProperties: false
+      required: [id, codeSystemId, code, display, validFrom, active, attributes]
+      properties:
+        id:
+          type: string
+          format: uuid
+        codeSystemId:
+          type: string
+          format: uuid
+        code:
+          type: string
+        display:
+          type: string
+        parentCode:
+          type: [string, 'null']
+          description: Hierarchy inside the system as the publisher states it.
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+        active:
+          type: boolean
+        attributes:
+          type: object
+          additionalProperties: true
+          description: Publisher-specific attributes carried through unchanged.
+    CodeValuePage:
+      type: object
+      additionalProperties: false
+      required: [items, asOf]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CodeValue'
+        asOf:
+          type: string
+          format: date
+          description: Date the page was resolved against.
+        nextCursor:
+          type: [string, 'null']
+    CodeValueInput:
+      type: object
+      additionalProperties: false
+      required: [code, display, validFrom]
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 64
+        display:
+          type: string
+          minLength: 1
+          maxLength: 500
+        parentCode:
+          type: [string, 'null']
+          maxLength: 64
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+        active:
+          type: boolean
+          default: true
+        attributes:
+          type: object
+          additionalProperties: true
+    ImportCodeValuesRequest:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          minItems: 1
+          maxItems: 5000
+          items:
+            $ref: '#/components/schemas/CodeValueInput'
+    CodeValueImportError:
+      type: object
+      additionalProperties: false
+      required: [index, field, code]
+      properties:
+        index:
+          type: integer
+          minimum: 0
+          description: Position of the rejected row in the request array.
+        field:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+    CodeValueImportResult:
+      type: object
+      additionalProperties: false
+      required: [created, updated, skipped, errors]
+      properties:
+        created:
+          type: integer
+          minimum: 0
+        updated:
+          type: integer
+          minimum: 0
+        skipped:
+          type: integer
+          minimum: 0
+          description: Rows already stored with exactly these values.
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/CodeValueImportError'
+    ServiceCodeMapping:
+      type: object
+      additionalProperties: false
+      required: [id, serviceDefinitionId, codeSystemId, codeSystemCode, code, validFrom, primary]
+      properties:
+        id:
+          type: string
+          format: uuid
+        serviceDefinitionId:
+          type: string
+          format: uuid
+        codeSystemId:
+          type: string
+          format: uuid
+        codeSystemCode:
+          type: string
+        codeSystemVersion:
+          type: string
+        code:
+          type: string
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+        primary:
+          type: boolean
+          description: The code the definition is reported under by default.
+    ServiceCodeMappingList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceCodeMapping'
+    ServiceCodeMappingInput:
+      type: object
+      additionalProperties: false
+      required: [codeSystemId, code, validFrom]
+      properties:
+        codeSystemId:
+          type: string
+          format: uuid
+        code:
+          type: string
+          minLength: 1
+          maxLength: 64
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+        primary:
+          type: boolean
+          default: false
+    ReplaceServiceCodeMappingsRequest:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/ServiceCodeMappingInput'

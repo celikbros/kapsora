@@ -11,11 +11,74 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 var (
 	ErrBatchAlreadyClosed = errors.New("batch already closed")
 )
+
+const createServiceCodeMapping = `-- name: CreateServiceCodeMapping :batchexec
+INSERT INTO catalog.service_code_mapping (tenant_id, service_definition_id, code_system_id,
+                                          code, valid_from, valid_to, is_primary)
+VALUES ($1, $2, $3,
+        $4, $5, $6, $7)
+`
+
+type CreateServiceCodeMappingBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type CreateServiceCodeMappingParams struct {
+	TenantID            uuid.UUID
+	ServiceDefinitionID uuid.UUID
+	CodeSystemID        uuid.UUID
+	Code                string
+	ValidFrom           pgtype.Date
+	ValidTo             pgtype.Date
+	IsPrimary           bool
+}
+
+func (q *Queries) CreateServiceCodeMapping(ctx context.Context, arg []CreateServiceCodeMappingParams) *CreateServiceCodeMappingBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.TenantID,
+			a.ServiceDefinitionID,
+			a.CodeSystemID,
+			a.Code,
+			a.ValidFrom,
+			a.ValidTo,
+			a.IsPrimary,
+		}
+		batch.Queue(createServiceCodeMapping, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &CreateServiceCodeMappingBatchResults{br, len(arg), false}
+}
+
+func (b *CreateServiceCodeMappingBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *CreateServiceCodeMappingBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
 
 const insertImportRow = `-- name: InsertImportRow :batchexec
 INSERT INTO party.import_row (tenant_id, batch_id, row_no, source_record_id, payload,
@@ -83,6 +146,94 @@ func (b *InsertImportRowBatchResults) Exec(f func(int, error)) {
 }
 
 func (b *InsertImportRowBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
+const upsertCodeValue = `-- name: UpsertCodeValue :batchone
+INSERT INTO catalog.code_value (tenant_id, code_system_id, code, display, parent_code,
+                                valid_from, valid_to, active, attributes)
+VALUES ($1, $2, $3, $4,
+        $5, $6, $7,
+        $8, $9)
+ON CONFLICT (tenant_id, code_system_id, code, valid_from) DO UPDATE
+   SET display = excluded.display,
+       parent_code = excluded.parent_code,
+       valid_to = excluded.valid_to,
+       active = excluded.active,
+       attributes = excluded.attributes
+ WHERE (code_value.display, code_value.parent_code, code_value.valid_to,
+        code_value.active, code_value.attributes)
+       IS DISTINCT FROM (excluded.display, excluded.parent_code, excluded.valid_to,
+                         excluded.active, excluded.attributes)
+RETURNING id, (xmax = 0)::boolean AS created
+`
+
+type UpsertCodeValueBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type UpsertCodeValueParams struct {
+	TenantID     uuid.UUID
+	CodeSystemID uuid.UUID
+	Code         string
+	Display      string
+	ParentCode   *string
+	ValidFrom    pgtype.Date
+	ValidTo      pgtype.Date
+	Active       bool
+	Attributes   []byte
+}
+
+type UpsertCodeValueRow struct {
+	ID      uuid.UUID
+	Created bool
+}
+
+// Import upserts on (code, valid_from). A row whose payload is byte-for-byte what is
+// already stored updates nothing and returns no row, which the caller counts as skipped;
+// xmax distinguishes a fresh insert from an update of an existing row.
+func (q *Queries) UpsertCodeValue(ctx context.Context, arg []UpsertCodeValueParams) *UpsertCodeValueBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.TenantID,
+			a.CodeSystemID,
+			a.Code,
+			a.Display,
+			a.ParentCode,
+			a.ValidFrom,
+			a.ValidTo,
+			a.Active,
+			a.Attributes,
+		}
+		batch.Queue(upsertCodeValue, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &UpsertCodeValueBatchResults{br, len(arg), false}
+}
+
+func (b *UpsertCodeValueBatchResults) QueryRow(f func(int, UpsertCodeValueRow, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		var i UpsertCodeValueRow
+		if b.closed {
+			if f != nil {
+				f(t, i, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		row := b.br.QueryRow()
+		err := row.Scan(&i.ID, &i.Created)
+		if f != nil {
+			f(t, i, err)
+		}
+	}
+}
+
+func (b *UpsertCodeValueBatchResults) Close() error {
 	b.closed = true
 	return b.br.Close()
 }

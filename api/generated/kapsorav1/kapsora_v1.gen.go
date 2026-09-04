@@ -25,6 +25,51 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for CodeSystemStatus.
+const (
+	CodeSystemStatusACTIVE   CodeSystemStatus = "ACTIVE"
+	CodeSystemStatusINACTIVE CodeSystemStatus = "INACTIVE"
+)
+
+// Valid indicates whether the value is a known member of the CodeSystemStatus enum.
+func (e CodeSystemStatus) Valid() bool {
+	switch e {
+	case CodeSystemStatusACTIVE:
+		return true
+	case CodeSystemStatusINACTIVE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CodeSystemAuthority.
+const (
+	CodeSystemAuthorityOTHER  CodeSystemAuthority = "OTHER"
+	CodeSystemAuthoritySB     CodeSystemAuthority = "SB"
+	CodeSystemAuthoritySGK    CodeSystemAuthority = "SGK"
+	CodeSystemAuthorityTENANT CodeSystemAuthority = "TENANT"
+	CodeSystemAuthorityWHO    CodeSystemAuthority = "WHO"
+)
+
+// Valid indicates whether the value is a known member of the CodeSystemAuthority enum.
+func (e CodeSystemAuthority) Valid() bool {
+	switch e {
+	case CodeSystemAuthorityOTHER:
+		return true
+	case CodeSystemAuthoritySB:
+		return true
+	case CodeSystemAuthoritySGK:
+		return true
+	case CodeSystemAuthorityTENANT:
+		return true
+	case CodeSystemAuthorityWHO:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CreateEnrollmentRequestStatus.
 const (
 	CreateEnrollmentRequestStatusACTIVE  CreateEnrollmentRequestStatus = "ACTIVE"
@@ -673,6 +718,42 @@ func (e EntitlementReservationStatus) Valid() bool {
 	}
 }
 
+// Defines values for FulfillmentMode.
+const (
+	FulfillmentModeAPPOINTMENT   FulfillmentMode = "APPOINTMENT"
+	FulfillmentModeDIRECT        FulfillmentMode = "DIRECT"
+	FulfillmentModeMEMBERSHIP    FulfillmentMode = "MEMBERSHIP"
+	FulfillmentModeREIMBURSEMENT FulfillmentMode = "REIMBURSEMENT"
+	FulfillmentModeRESERVATION   FulfillmentMode = "RESERVATION"
+	FulfillmentModeSESSION       FulfillmentMode = "SESSION"
+	FulfillmentModeVOUCHER       FulfillmentMode = "VOUCHER"
+	FulfillmentModeWORKORDER     FulfillmentMode = "WORK_ORDER"
+)
+
+// Valid indicates whether the value is a known member of the FulfillmentMode enum.
+func (e FulfillmentMode) Valid() bool {
+	switch e {
+	case FulfillmentModeAPPOINTMENT:
+		return true
+	case FulfillmentModeDIRECT:
+		return true
+	case FulfillmentModeMEMBERSHIP:
+		return true
+	case FulfillmentModeREIMBURSEMENT:
+		return true
+	case FulfillmentModeRESERVATION:
+		return true
+	case FulfillmentModeSESSION:
+		return true
+	case FulfillmentModeVOUCHER:
+		return true
+	case FulfillmentModeWORKORDER:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for HealthStatusStatus.
 const (
 	DEGRADED HealthStatusStatus = "DEGRADED"
@@ -1300,6 +1381,45 @@ func (e ProgramStatus) Valid() bool {
 	}
 }
 
+// Defines values for ServiceDomain.
+const (
+	ServiceDomainACCOMMODATION ServiceDomain = "ACCOMMODATION"
+	ServiceDomainASSISTANCE    ServiceDomain = "ASSISTANCE"
+	ServiceDomainCARE          ServiceDomain = "CARE"
+	ServiceDomainEDUCATION     ServiceDomain = "EDUCATION"
+	ServiceDomainGENERIC       ServiceDomain = "GENERIC"
+	ServiceDomainHEALTH        ServiceDomain = "HEALTH"
+	ServiceDomainOTHER         ServiceDomain = "OTHER"
+	ServiceDomainSPORT         ServiceDomain = "SPORT"
+	ServiceDomainTRANSPORT     ServiceDomain = "TRANSPORT"
+)
+
+// Valid indicates whether the value is a known member of the ServiceDomain enum.
+func (e ServiceDomain) Valid() bool {
+	switch e {
+	case ServiceDomainACCOMMODATION:
+		return true
+	case ServiceDomainASSISTANCE:
+		return true
+	case ServiceDomainCARE:
+		return true
+	case ServiceDomainEDUCATION:
+		return true
+	case ServiceDomainGENERIC:
+		return true
+	case ServiceDomainHEALTH:
+		return true
+	case ServiceDomainOTHER:
+		return true
+	case ServiceDomainSPORT:
+		return true
+	case ServiceDomainTRANSPORT:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ServiceRequestChannel.
 const (
 	ServiceRequestChannelAPI            ServiceRequestChannel = "API"
@@ -1426,6 +1546,39 @@ func (e ServiceRequestItemStatus) Valid() bool {
 	}
 }
 
+// Defines values for ServiceUnitType.
+const (
+	ServiceUnitTypeCOUNT     ServiceUnitType = "COUNT"
+	ServiceUnitTypeHOUR      ServiceUnitType = "HOUR"
+	ServiceUnitTypeKILOMETER ServiceUnitType = "KILOMETER"
+	ServiceUnitTypeMONEY     ServiceUnitType = "MONEY"
+	ServiceUnitTypeNIGHT     ServiceUnitType = "NIGHT"
+	ServiceUnitTypePOINT     ServiceUnitType = "POINT"
+	ServiceUnitTypeSESSION   ServiceUnitType = "SESSION"
+)
+
+// Valid indicates whether the value is a known member of the ServiceUnitType enum.
+func (e ServiceUnitType) Valid() bool {
+	switch e {
+	case ServiceUnitTypeCOUNT:
+		return true
+	case ServiceUnitTypeHOUR:
+		return true
+	case ServiceUnitTypeKILOMETER:
+		return true
+	case ServiceUnitTypeMONEY:
+		return true
+	case ServiceUnitTypeNIGHT:
+		return true
+	case ServiceUnitTypePOINT:
+		return true
+	case ServiceUnitTypeSESSION:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SponsorMembershipStatus.
 const (
 	SponsorMembershipStatusACTIVE    SponsorMembershipStatus = "ACTIVE"
@@ -1468,6 +1621,24 @@ func (e TenantSummaryStatus) Valid() bool {
 	case TenantSummaryStatusPROVISIONING:
 		return true
 	case TenantSummaryStatusSUSPENDED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpdateCodeSystemRequestStatus.
+const (
+	UpdateCodeSystemRequestStatusACTIVE   UpdateCodeSystemRequestStatus = "ACTIVE"
+	UpdateCodeSystemRequestStatusINACTIVE UpdateCodeSystemRequestStatus = "INACTIVE"
+)
+
+// Valid indicates whether the value is a known member of the UpdateCodeSystemRequestStatus enum.
+func (e UpdateCodeSystemRequestStatus) Valid() bool {
+	switch e {
+	case UpdateCodeSystemRequestStatusACTIVE:
+		return true
+	case UpdateCodeSystemRequestStatusINACTIVE:
 		return true
 	default:
 		return false
@@ -1618,6 +1789,24 @@ func (e UpdateProgramRequestStatus) Valid() bool {
 	case UpdateProgramRequestStatusCLOSED:
 		return true
 	case UpdateProgramRequestStatusSUSPENDED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListCodeSystemsParamsStatus.
+const (
+	ListCodeSystemsParamsStatusACTIVE   ListCodeSystemsParamsStatus = "ACTIVE"
+	ListCodeSystemsParamsStatusINACTIVE ListCodeSystemsParamsStatus = "INACTIVE"
+)
+
+// Valid indicates whether the value is a known member of the ListCodeSystemsParamsStatus enum.
+func (e ListCodeSystemsParamsStatus) Valid() bool {
+	switch e {
+	case ListCodeSystemsParamsStatusACTIVE:
+		return true
+	case ListCodeSystemsParamsStatusINACTIVE:
 		return true
 	default:
 		return false
@@ -1879,12 +2068,109 @@ func (e ListServiceRequestsParamsStatus) Valid() bool {
 	}
 }
 
+// CodeSystem defines model for CodeSystem.
+type CodeSystem struct {
+	// Authority Publisher of a code system; TENANT marks a sponsor-internal system.
+	Authority CodeSystemAuthority `json:"authority"`
+	Code      string              `json:"code"`
+	Id        openapi_types.UUID  `json:"id"`
+
+	// Licensed True when the content is licensed and may not leave the tenant.
+	Licensed   bool                `json:"licensed"`
+	Name       string              `json:"name"`
+	RowVersion int                 `json:"rowVersion"`
+	Status     CodeSystemStatus    `json:"status"`
+	ValidFrom  openapi_types.Date  `json:"validFrom"`
+	ValidTo    *openapi_types.Date `json:"validTo,omitempty"`
+	Version    string              `json:"version"`
+}
+
+// CodeSystemStatus defines model for CodeSystem.Status.
+type CodeSystemStatus string
+
+// CodeSystemAuthority Publisher of a code system; TENANT marks a sponsor-internal system.
+type CodeSystemAuthority string
+
+// CodeSystemPage defines model for CodeSystemPage.
+type CodeSystemPage struct {
+	Items      []CodeSystem `json:"items"`
+	NextCursor *string      `json:"nextCursor,omitempty"`
+}
+
+// CodeValue defines model for CodeValue.
+type CodeValue struct {
+	Active bool `json:"active"`
+
+	// Attributes Publisher-specific attributes carried through unchanged.
+	Attributes   map[string]interface{} `json:"attributes"`
+	Code         string                 `json:"code"`
+	CodeSystemId openapi_types.UUID     `json:"codeSystemId"`
+	Display      string                 `json:"display"`
+	Id           openapi_types.UUID     `json:"id"`
+
+	// ParentCode Hierarchy inside the system as the publisher states it.
+	ParentCode *string             `json:"parentCode,omitempty"`
+	ValidFrom  openapi_types.Date  `json:"validFrom"`
+	ValidTo    *openapi_types.Date `json:"validTo,omitempty"`
+}
+
+// CodeValueImportError defines model for CodeValueImportError.
+type CodeValueImportError struct {
+	Code  string `json:"code"`
+	Field string `json:"field"`
+
+	// Index Position of the rejected row in the request array.
+	Index   int     `json:"index"`
+	Message *string `json:"message,omitempty"`
+}
+
+// CodeValueImportResult defines model for CodeValueImportResult.
+type CodeValueImportResult struct {
+	Created int                    `json:"created"`
+	Errors  []CodeValueImportError `json:"errors"`
+
+	// Skipped Rows already stored with exactly these values.
+	Skipped int `json:"skipped"`
+	Updated int `json:"updated"`
+}
+
+// CodeValueInput defines model for CodeValueInput.
+type CodeValueInput struct {
+	Active     *bool                   `json:"active,omitempty"`
+	Attributes *map[string]interface{} `json:"attributes,omitempty"`
+	Code       string                  `json:"code"`
+	Display    string                  `json:"display"`
+	ParentCode *string                 `json:"parentCode,omitempty"`
+	ValidFrom  openapi_types.Date      `json:"validFrom"`
+	ValidTo    *openapi_types.Date     `json:"validTo,omitempty"`
+}
+
+// CodeValuePage defines model for CodeValuePage.
+type CodeValuePage struct {
+	// AsOf Date the page was resolved against.
+	AsOf       openapi_types.Date `json:"asOf"`
+	Items      []CodeValue        `json:"items"`
+	NextCursor *string            `json:"nextCursor,omitempty"`
+}
+
 // CreateAdjustmentRequest defines model for CreateAdjustmentRequest.
 type CreateAdjustmentRequest struct {
 	// DeltaQuantity Positive grants, negative removes from the available balance; never zero.
 	DeltaQuantity json.Number `json:"deltaQuantity"`
 	ReasonCode    string      `json:"reasonCode"`
 	ReasonText    *string     `json:"reasonText,omitempty"`
+}
+
+// CreateCodeSystemRequest defines model for CreateCodeSystemRequest.
+type CreateCodeSystemRequest struct {
+	// Authority Publisher of a code system; TENANT marks a sponsor-internal system.
+	Authority CodeSystemAuthority `json:"authority"`
+	Code      string              `json:"code"`
+	Licensed  *bool               `json:"licensed,omitempty"`
+	Name      string              `json:"name"`
+	ValidFrom openapi_types.Date  `json:"validFrom"`
+	ValidTo   *openapi_types.Date `json:"validTo,omitempty"`
+	Version   string              `json:"version"`
 }
 
 // CreateEnrollmentRequest defines model for CreateEnrollmentRequest.
@@ -1992,6 +2278,33 @@ type CreateRelationshipRequest struct {
 	TargetPersonId   openapi_types.UUID  `json:"targetPersonId"`
 	ValidFrom        openapi_types.Date  `json:"validFrom"`
 	ValidTo          *openapi_types.Date `json:"validTo,omitempty"`
+}
+
+// CreateServiceCategoryRequest defines model for CreateServiceCategoryRequest.
+type CreateServiceCategoryRequest struct {
+	Active *bool  `json:"active,omitempty"`
+	Code   string `json:"code"`
+
+	// Domain Closed list of service domains shared by categories and definitions.
+	Domain   ServiceDomain       `json:"domain"`
+	Name     string              `json:"name"`
+	ParentId *openapi_types.UUID `json:"parentId,omitempty"`
+}
+
+// CreateServiceDefinitionRequest defines model for CreateServiceDefinitionRequest.
+type CreateServiceDefinitionRequest struct {
+	Active     *bool              `json:"active,omitempty"`
+	CategoryId openapi_types.UUID `json:"categoryId"`
+	Code       string             `json:"code"`
+
+	// DefaultUnitType Unit a service definition is counted in.
+	DefaultUnitType ServiceUnitType `json:"defaultUnitType"`
+	Description     *string         `json:"description,omitempty"`
+
+	// FulfillmentMode How a service definition is delivered once it is requested.
+	FulfillmentMode  FulfillmentMode `json:"fulfillmentMode"`
+	Name             string          `json:"name"`
+	RequiresProvider *bool           `json:"requiresProvider,omitempty"`
 }
 
 // CreateServiceRequest defines model for CreateServiceRequest.
@@ -2277,6 +2590,9 @@ type EntitlementReservationReferenceType string
 // EntitlementReservationStatus defines model for EntitlementReservation.Status.
 type EntitlementReservationStatus string
 
+// FulfillmentMode How a service definition is delivered once it is requested.
+type FulfillmentMode string
+
 // HealthStatus defines model for HealthStatus.
 type HealthStatus struct {
 	Checks    *map[string]string `json:"checks,omitempty"`
@@ -2293,6 +2609,11 @@ type IdentifierSearchRequest struct {
 	SponsorOrganizationId *openapi_types.UUID `json:"sponsorOrganizationId,omitempty"`
 	Type                  string              `json:"type"`
 	Value                 string              `json:"value"`
+}
+
+// ImportCodeValuesRequest defines model for ImportCodeValuesRequest.
+type ImportCodeValuesRequest struct {
+	Items []CodeValueInput `json:"items"`
 }
 
 // LedgerEntry defines model for LedgerEntry.
@@ -2674,10 +2995,94 @@ type ReasonCommand struct {
 	ReasonText *string `json:"reasonText,omitempty"`
 }
 
+// ReplaceServiceCodeMappingsRequest defines model for ReplaceServiceCodeMappingsRequest.
+type ReplaceServiceCodeMappingsRequest struct {
+	Items []ServiceCodeMappingInput `json:"items"`
+}
+
 // ReviewComment defines model for ReviewComment.
 type ReviewComment struct {
 	Comment *string `json:"comment,omitempty"`
 }
+
+// ServiceCategory defines model for ServiceCategory.
+type ServiceCategory struct {
+	Active bool   `json:"active"`
+	Code   string `json:"code"`
+
+	// Domain Closed list of service domains shared by categories and definitions.
+	Domain     ServiceDomain       `json:"domain"`
+	Id         openapi_types.UUID  `json:"id"`
+	Name       string              `json:"name"`
+	ParentId   *openapi_types.UUID `json:"parentId,omitempty"`
+	RowVersion int                 `json:"rowVersion"`
+}
+
+// ServiceCategoryPage defines model for ServiceCategoryPage.
+type ServiceCategoryPage struct {
+	Items      []ServiceCategory `json:"items"`
+	NextCursor *string           `json:"nextCursor,omitempty"`
+}
+
+// ServiceCodeMapping defines model for ServiceCodeMapping.
+type ServiceCodeMapping struct {
+	Code              string             `json:"code"`
+	CodeSystemCode    string             `json:"codeSystemCode"`
+	CodeSystemId      openapi_types.UUID `json:"codeSystemId"`
+	CodeSystemVersion *string            `json:"codeSystemVersion,omitempty"`
+	Id                openapi_types.UUID `json:"id"`
+
+	// Primary The code the definition is reported under by default.
+	Primary             bool                `json:"primary"`
+	ServiceDefinitionId openapi_types.UUID  `json:"serviceDefinitionId"`
+	ValidFrom           openapi_types.Date  `json:"validFrom"`
+	ValidTo             *openapi_types.Date `json:"validTo,omitempty"`
+}
+
+// ServiceCodeMappingInput defines model for ServiceCodeMappingInput.
+type ServiceCodeMappingInput struct {
+	Code         string              `json:"code"`
+	CodeSystemId openapi_types.UUID  `json:"codeSystemId"`
+	Primary      *bool               `json:"primary,omitempty"`
+	ValidFrom    openapi_types.Date  `json:"validFrom"`
+	ValidTo      *openapi_types.Date `json:"validTo,omitempty"`
+}
+
+// ServiceCodeMappingList defines model for ServiceCodeMappingList.
+type ServiceCodeMappingList struct {
+	Items []ServiceCodeMapping `json:"items"`
+}
+
+// ServiceDefinition defines model for ServiceDefinition.
+type ServiceDefinition struct {
+	Active       bool               `json:"active"`
+	CategoryCode string             `json:"categoryCode"`
+	CategoryId   openapi_types.UUID `json:"categoryId"`
+	Code         string             `json:"code"`
+
+	// DefaultUnitType Unit a service definition is counted in.
+	DefaultUnitType ServiceUnitType `json:"defaultUnitType"`
+	Description     *string         `json:"description,omitempty"`
+
+	// Domain Closed list of service domains shared by categories and definitions.
+	Domain ServiceDomain `json:"domain"`
+
+	// FulfillmentMode How a service definition is delivered once it is requested.
+	FulfillmentMode  FulfillmentMode    `json:"fulfillmentMode"`
+	Id               openapi_types.UUID `json:"id"`
+	Name             string             `json:"name"`
+	RequiresProvider bool               `json:"requiresProvider"`
+	RowVersion       int                `json:"rowVersion"`
+}
+
+// ServiceDefinitionPage defines model for ServiceDefinitionPage.
+type ServiceDefinitionPage struct {
+	Items      []ServiceDefinition `json:"items"`
+	NextCursor *string             `json:"nextCursor,omitempty"`
+}
+
+// ServiceDomain Closed list of service domains shared by categories and definitions.
+type ServiceDomain string
 
 // ServiceRequest defines model for ServiceRequest.
 type ServiceRequest struct {
@@ -2731,6 +3136,9 @@ type ServiceRequestPage struct {
 	Items      []ServiceRequest `json:"items"`
 	NextCursor *string          `json:"nextCursor,omitempty"`
 }
+
+// ServiceUnitType Unit a service definition is counted in.
+type ServiceUnitType string
 
 // SessionInfo defines model for SessionInfo.
 type SessionInfo struct {
@@ -2792,6 +3200,19 @@ type TenantSummary struct {
 
 // TenantSummaryStatus defines model for TenantSummary.Status.
 type TenantSummaryStatus string
+
+// UpdateCodeSystemRequest Merge-patch body; code and version are absent because they are immutable.
+type UpdateCodeSystemRequest struct {
+	// Authority Publisher of a code system; TENANT marks a sponsor-internal system.
+	Authority *CodeSystemAuthority           `json:"authority,omitempty"`
+	Licensed  *bool                          `json:"licensed,omitempty"`
+	Name      *string                        `json:"name,omitempty"`
+	Status    *UpdateCodeSystemRequestStatus `json:"status,omitempty"`
+	ValidTo   *openapi_types.Date            `json:"validTo,omitempty"`
+}
+
+// UpdateCodeSystemRequestStatus defines model for UpdateCodeSystemRequest.Status.
+type UpdateCodeSystemRequestStatus string
 
 // UpdateEnrollmentRequest defines model for UpdateEnrollmentRequest.
 type UpdateEnrollmentRequest struct {
@@ -2873,6 +3294,28 @@ type UpdateProgramRequest struct {
 // UpdateProgramRequestStatus defines model for UpdateProgramRequest.Status.
 type UpdateProgramRequestStatus string
 
+// UpdateServiceCategoryRequest Merge-patch body; code is absent because it is immutable.
+type UpdateServiceCategoryRequest struct {
+	Active   *bool               `json:"active,omitempty"`
+	Name     *string             `json:"name,omitempty"`
+	ParentId *openapi_types.UUID `json:"parentId,omitempty"`
+}
+
+// UpdateServiceDefinitionRequest Merge-patch body; code is absent because it is immutable.
+type UpdateServiceDefinitionRequest struct {
+	Active     *bool               `json:"active,omitempty"`
+	CategoryId *openapi_types.UUID `json:"categoryId,omitempty"`
+
+	// DefaultUnitType Unit a service definition is counted in.
+	DefaultUnitType *ServiceUnitType `json:"defaultUnitType,omitempty"`
+	Description     *string          `json:"description,omitempty"`
+
+	// FulfillmentMode How a service definition is delivered once it is requested.
+	FulfillmentMode  *FulfillmentMode `json:"fulfillmentMode,omitempty"`
+	Name             *string          `json:"name,omitempty"`
+	RequiresProvider *bool            `json:"requiresProvider,omitempty"`
+}
+
 // UpdateServiceRequest defines model for UpdateServiceRequest.
 type UpdateServiceRequest struct {
 	Items *[]struct {
@@ -2901,6 +3344,9 @@ type AccountId = openapi_types.UUID
 
 // AdjustmentId defines model for AdjustmentId.
 type AdjustmentId = openapi_types.UUID
+
+// CodeSystemId defines model for CodeSystemId.
+type CodeSystemId = openapi_types.UUID
 
 // CsrfHeader defines model for CsrfHeader.
 type CsrfHeader = string
@@ -2956,6 +3402,12 @@ type RelationshipId = openapi_types.UUID
 // RequestId defines model for RequestId.
 type RequestId = openapi_types.UUID
 
+// ServiceCategoryId defines model for ServiceCategoryId.
+type ServiceCategoryId = openapi_types.UUID
+
+// ServiceDefinitionId defines model for ServiceDefinitionId.
+type ServiceDefinitionId = openapi_types.UUID
+
 // TenantHeader defines model for TenantHeader.
 type TenantHeader = openapi_types.UUID
 
@@ -2976,6 +3428,74 @@ type Unauthorized = Problem
 
 // ValidationError defines model for ValidationError.
 type ValidationError = Problem
+
+// ListCodeSystemsParams defines parameters for ListCodeSystems.
+type ListCodeSystemsParams struct {
+	// Cursor Opaque cursor from the previous response.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Q Code or name search.
+	Q *string `form:"q,omitempty" json:"q,omitempty"`
+
+	// Authority Only systems published by this authority.
+	Authority *CodeSystemAuthority `form:"authority,omitempty" json:"authority,omitempty"`
+
+	// Status Only systems in this status.
+	Status *ListCodeSystemsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// ListCodeSystemsParamsStatus defines parameters for ListCodeSystems.
+type ListCodeSystemsParamsStatus string
+
+// CreateCodeSystemParams defines parameters for CreateCodeSystem.
+type CreateCodeSystemParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// PatchCodeSystemParams defines parameters for PatchCodeSystem.
+type PatchCodeSystemParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// ListCodeValuesParams defines parameters for ListCodeValues.
+type ListCodeValuesParams struct {
+	// Cursor Opaque cursor from the previous response.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// AsOf Date the values must be valid on; defaults to today.
+	AsOf *openapi_types.Date `form:"asOf,omitempty" json:"asOf,omitempty"`
+
+	// Code Exact code inside the system.
+	Code *string `form:"code,omitempty" json:"code,omitempty"`
+
+	// Q Display text or code search.
+	Q *string `form:"q,omitempty" json:"q,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// ImportCodeValuesParams defines parameters for ImportCodeValues.
+type ImportCodeValuesParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
 
 // CheckEligibilityParams defines parameters for CheckEligibility.
 type CheckEligibilityParams struct {
@@ -3507,6 +4027,113 @@ type CreatePlanParams struct {
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
+// ListServiceCategoriesParams defines parameters for ListServiceCategories.
+type ListServiceCategoriesParams struct {
+	// Cursor Opaque cursor from the previous response.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Q Code or name search.
+	Q *string `form:"q,omitempty" json:"q,omitempty"`
+
+	// ParentId Only the direct children of this category.
+	ParentId *openapi_types.UUID `form:"parentId,omitempty" json:"parentId,omitempty"`
+
+	// Domain Only categories of this service domain.
+	Domain *ServiceDomain `form:"domain,omitempty" json:"domain,omitempty"`
+
+	// Active Only active (true) or only retired (false) categories.
+	Active *bool `form:"active,omitempty" json:"active,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// CreateServiceCategoryParams defines parameters for CreateServiceCategory.
+type CreateServiceCategoryParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// GetServiceCategoryParams defines parameters for GetServiceCategory.
+type GetServiceCategoryParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// PatchServiceCategoryParams defines parameters for PatchServiceCategory.
+type PatchServiceCategoryParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// ListServiceDefinitionsParams defines parameters for ListServiceDefinitions.
+type ListServiceDefinitionsParams struct {
+	// Cursor Opaque cursor from the previous response.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Q Code or name search.
+	Q *string `form:"q,omitempty" json:"q,omitempty"`
+
+	// CategoryId Only definitions of this category.
+	CategoryId *openapi_types.UUID `form:"categoryId,omitempty" json:"categoryId,omitempty"`
+
+	// Domain Only definitions whose category carries this service domain.
+	Domain *ServiceDomain `form:"domain,omitempty" json:"domain,omitempty"`
+
+	// Active Only active (true) or only retired (false) definitions.
+	Active *bool `form:"active,omitempty" json:"active,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// CreateServiceDefinitionParams defines parameters for CreateServiceDefinition.
+type CreateServiceDefinitionParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// GetServiceDefinitionParams defines parameters for GetServiceDefinition.
+type GetServiceDefinitionParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// PatchServiceDefinitionParams defines parameters for PatchServiceDefinition.
+type PatchServiceDefinitionParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// ListServiceCodeMappingsParams defines parameters for ListServiceCodeMappings.
+type ListServiceCodeMappingsParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// PutServiceCodeMappingsParams defines parameters for PutServiceCodeMappings.
+type PutServiceCodeMappingsParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
 // ListServiceRequestsParams defines parameters for ListServiceRequests.
 type ListServiceRequestsParams struct {
 	// Cursor Opaque cursor from the previous response.
@@ -3626,6 +4253,15 @@ type SwitchTenantParams struct {
 	XCSRFToken *CsrfHeader `json:"X-CSRF-Token,omitempty"`
 }
 
+// CreateCodeSystemJSONRequestBody defines body for CreateCodeSystem for application/json ContentType.
+type CreateCodeSystemJSONRequestBody = CreateCodeSystemRequest
+
+// PatchCodeSystemApplicationMergePatchPlusJSONRequestBody defines body for PatchCodeSystem for application/merge-patch+json ContentType.
+type PatchCodeSystemApplicationMergePatchPlusJSONRequestBody = UpdateCodeSystemRequest
+
+// ImportCodeValuesJSONRequestBody defines body for ImportCodeValues for application/json ContentType.
+type ImportCodeValuesJSONRequestBody = ImportCodeValuesRequest
+
 // CheckEligibilityJSONRequestBody defines body for CheckEligibility for application/json ContentType.
 type CheckEligibilityJSONRequestBody = EligibilityCheckRequest
 
@@ -3710,6 +4346,21 @@ type UpdateProgramApplicationMergePatchPlusJSONRequestBody = UpdateProgramReques
 // CreatePlanJSONRequestBody defines body for CreatePlan for application/json ContentType.
 type CreatePlanJSONRequestBody = CreatePlanRequest
 
+// CreateServiceCategoryJSONRequestBody defines body for CreateServiceCategory for application/json ContentType.
+type CreateServiceCategoryJSONRequestBody = CreateServiceCategoryRequest
+
+// PatchServiceCategoryApplicationMergePatchPlusJSONRequestBody defines body for PatchServiceCategory for application/merge-patch+json ContentType.
+type PatchServiceCategoryApplicationMergePatchPlusJSONRequestBody = UpdateServiceCategoryRequest
+
+// CreateServiceDefinitionJSONRequestBody defines body for CreateServiceDefinition for application/json ContentType.
+type CreateServiceDefinitionJSONRequestBody = CreateServiceDefinitionRequest
+
+// PatchServiceDefinitionApplicationMergePatchPlusJSONRequestBody defines body for PatchServiceDefinition for application/merge-patch+json ContentType.
+type PatchServiceDefinitionApplicationMergePatchPlusJSONRequestBody = UpdateServiceDefinitionRequest
+
+// PutServiceCodeMappingsJSONRequestBody defines body for PutServiceCodeMappings for application/json ContentType.
+type PutServiceCodeMappingsJSONRequestBody = ReplaceServiceCodeMappingsRequest
+
 // CreateServiceRequestJSONRequestBody defines body for CreateServiceRequest for application/json ContentType.
 type CreateServiceRequestJSONRequestBody = CreateServiceRequest
 
@@ -3736,6 +4387,21 @@ type SwitchTenantJSONRequestBody SwitchTenantJSONBody
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+
+	// (GET /api/v1/code-systems)
+	ListCodeSystems(w http.ResponseWriter, r *http.Request, params ListCodeSystemsParams)
+
+	// (POST /api/v1/code-systems)
+	CreateCodeSystem(w http.ResponseWriter, r *http.Request, params CreateCodeSystemParams)
+
+	// (PATCH /api/v1/code-systems/{codeSystemId})
+	PatchCodeSystem(w http.ResponseWriter, r *http.Request, codeSystemId CodeSystemId, params PatchCodeSystemParams)
+
+	// (GET /api/v1/code-systems/{codeSystemId}/values)
+	ListCodeValues(w http.ResponseWriter, r *http.Request, codeSystemId CodeSystemId, params ListCodeValuesParams)
+
+	// (POST /api/v1/code-systems/{codeSystemId}/values:import)
+	ImportCodeValues(w http.ResponseWriter, r *http.Request, codeSystemId CodeSystemId, params ImportCodeValuesParams)
 
 	// (POST /api/v1/eligibility/checks)
 	CheckEligibility(w http.ResponseWriter, r *http.Request, params CheckEligibilityParams)
@@ -3899,6 +4565,36 @@ type ServerInterface interface {
 	// (POST /api/v1/programs/{programId}/plans)
 	CreatePlan(w http.ResponseWriter, r *http.Request, programId ProgramId, params CreatePlanParams)
 
+	// (GET /api/v1/service-categories)
+	ListServiceCategories(w http.ResponseWriter, r *http.Request, params ListServiceCategoriesParams)
+
+	// (POST /api/v1/service-categories)
+	CreateServiceCategory(w http.ResponseWriter, r *http.Request, params CreateServiceCategoryParams)
+
+	// (GET /api/v1/service-categories/{categoryId})
+	GetServiceCategory(w http.ResponseWriter, r *http.Request, categoryId ServiceCategoryId, params GetServiceCategoryParams)
+
+	// (PATCH /api/v1/service-categories/{categoryId})
+	PatchServiceCategory(w http.ResponseWriter, r *http.Request, categoryId ServiceCategoryId, params PatchServiceCategoryParams)
+
+	// (GET /api/v1/service-definitions)
+	ListServiceDefinitions(w http.ResponseWriter, r *http.Request, params ListServiceDefinitionsParams)
+
+	// (POST /api/v1/service-definitions)
+	CreateServiceDefinition(w http.ResponseWriter, r *http.Request, params CreateServiceDefinitionParams)
+
+	// (GET /api/v1/service-definitions/{definitionId})
+	GetServiceDefinition(w http.ResponseWriter, r *http.Request, definitionId ServiceDefinitionId, params GetServiceDefinitionParams)
+
+	// (PATCH /api/v1/service-definitions/{definitionId})
+	PatchServiceDefinition(w http.ResponseWriter, r *http.Request, definitionId ServiceDefinitionId, params PatchServiceDefinitionParams)
+
+	// (GET /api/v1/service-definitions/{definitionId}/code-mappings)
+	ListServiceCodeMappings(w http.ResponseWriter, r *http.Request, definitionId ServiceDefinitionId, params ListServiceCodeMappingsParams)
+
+	// (PUT /api/v1/service-definitions/{definitionId}/code-mappings)
+	PutServiceCodeMappings(w http.ResponseWriter, r *http.Request, definitionId ServiceDefinitionId, params PutServiceCodeMappingsParams)
+
 	// (GET /api/v1/service-requests)
 	ListServiceRequests(w http.ResponseWriter, r *http.Request, params ListServiceRequestsParams)
 
@@ -3948,6 +4644,31 @@ type ServerInterface interface {
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
+
+// (GET /api/v1/code-systems)
+func (_ Unimplemented) ListCodeSystems(w http.ResponseWriter, r *http.Request, params ListCodeSystemsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/code-systems)
+func (_ Unimplemented) CreateCodeSystem(w http.ResponseWriter, r *http.Request, params CreateCodeSystemParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PATCH /api/v1/code-systems/{codeSystemId})
+func (_ Unimplemented) PatchCodeSystem(w http.ResponseWriter, r *http.Request, codeSystemId CodeSystemId, params PatchCodeSystemParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/code-systems/{codeSystemId}/values)
+func (_ Unimplemented) ListCodeValues(w http.ResponseWriter, r *http.Request, codeSystemId CodeSystemId, params ListCodeValuesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/code-systems/{codeSystemId}/values:import)
+func (_ Unimplemented) ImportCodeValues(w http.ResponseWriter, r *http.Request, codeSystemId CodeSystemId, params ImportCodeValuesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // (POST /api/v1/eligibility/checks)
 func (_ Unimplemented) CheckEligibility(w http.ResponseWriter, r *http.Request, params CheckEligibilityParams) {
@@ -4219,6 +4940,56 @@ func (_ Unimplemented) CreatePlan(w http.ResponseWriter, r *http.Request, progra
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// (GET /api/v1/service-categories)
+func (_ Unimplemented) ListServiceCategories(w http.ResponseWriter, r *http.Request, params ListServiceCategoriesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/service-categories)
+func (_ Unimplemented) CreateServiceCategory(w http.ResponseWriter, r *http.Request, params CreateServiceCategoryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/service-categories/{categoryId})
+func (_ Unimplemented) GetServiceCategory(w http.ResponseWriter, r *http.Request, categoryId ServiceCategoryId, params GetServiceCategoryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PATCH /api/v1/service-categories/{categoryId})
+func (_ Unimplemented) PatchServiceCategory(w http.ResponseWriter, r *http.Request, categoryId ServiceCategoryId, params PatchServiceCategoryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/service-definitions)
+func (_ Unimplemented) ListServiceDefinitions(w http.ResponseWriter, r *http.Request, params ListServiceDefinitionsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/service-definitions)
+func (_ Unimplemented) CreateServiceDefinition(w http.ResponseWriter, r *http.Request, params CreateServiceDefinitionParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/service-definitions/{definitionId})
+func (_ Unimplemented) GetServiceDefinition(w http.ResponseWriter, r *http.Request, definitionId ServiceDefinitionId, params GetServiceDefinitionParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PATCH /api/v1/service-definitions/{definitionId})
+func (_ Unimplemented) PatchServiceDefinition(w http.ResponseWriter, r *http.Request, definitionId ServiceDefinitionId, params PatchServiceDefinitionParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/service-definitions/{definitionId}/code-mappings)
+func (_ Unimplemented) ListServiceCodeMappings(w http.ResponseWriter, r *http.Request, definitionId ServiceDefinitionId, params ListServiceCodeMappingsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PUT /api/v1/service-definitions/{definitionId}/code-mappings)
+func (_ Unimplemented) PutServiceCodeMappings(w http.ResponseWriter, r *http.Request, definitionId ServiceDefinitionId, params PutServiceCodeMappingsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // (GET /api/v1/service-requests)
 func (_ Unimplemented) ListServiceRequests(w http.ResponseWriter, r *http.Request, params ListServiceRequestsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -4302,6 +5073,457 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// ListCodeSystems operation middleware
+func (siw *ServerInterfaceWrapper) ListCodeSystems(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListCodeSystemsParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "authority" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "authority", r.URL.Query(), &params.Authority, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "authority"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "authority", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCodeSystems(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateCodeSystem operation middleware
+func (siw *ServerInterfaceWrapper) CreateCodeSystem(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateCodeSystemParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateCodeSystem(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PatchCodeSystem operation middleware
+func (siw *ServerInterfaceWrapper) PatchCodeSystem(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "codeSystemId" -------------
+	var codeSystemId CodeSystemId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "codeSystemId", chi.URLParam(r, "codeSystemId"), &codeSystemId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "codeSystemId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PatchCodeSystemParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PatchCodeSystem(w, r, codeSystemId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListCodeValues operation middleware
+func (siw *ServerInterfaceWrapper) ListCodeValues(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "codeSystemId" -------------
+	var codeSystemId CodeSystemId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "codeSystemId", chi.URLParam(r, "codeSystemId"), &codeSystemId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "codeSystemId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListCodeValuesParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "asOf" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "asOf", r.URL.Query(), &params.AsOf, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "asOf"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "asOf", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "code" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "code", r.URL.Query(), &params.Code, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "code"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "code", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCodeValues(w, r, codeSystemId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ImportCodeValues operation middleware
+func (siw *ServerInterfaceWrapper) ImportCodeValues(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "codeSystemId" -------------
+	var codeSystemId CodeSystemId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "codeSystemId", chi.URLParam(r, "codeSystemId"), &codeSystemId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "codeSystemId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ImportCodeValuesParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ImportCodeValues(w, r, codeSystemId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // CheckEligibility operation middleware
 func (siw *ServerInterfaceWrapper) CheckEligibility(w http.ResponseWriter, r *http.Request) {
@@ -8258,6 +9480,781 @@ func (siw *ServerInterfaceWrapper) CreatePlan(w http.ResponseWriter, r *http.Req
 	handler.ServeHTTP(w, r)
 }
 
+// ListServiceCategories operation middleware
+func (siw *ServerInterfaceWrapper) ListServiceCategories(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListServiceCategoriesParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "parentId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "parentId", r.URL.Query(), &params.ParentId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "parentId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "parentId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "domain" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "domain", r.URL.Query(), &params.Domain, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "domain"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "domain", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "active" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "active", r.URL.Query(), &params.Active, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "active"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "active", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListServiceCategories(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateServiceCategory operation middleware
+func (siw *ServerInterfaceWrapper) CreateServiceCategory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateServiceCategoryParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateServiceCategory(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetServiceCategory operation middleware
+func (siw *ServerInterfaceWrapper) GetServiceCategory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "categoryId" -------------
+	var categoryId ServiceCategoryId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "categoryId", chi.URLParam(r, "categoryId"), &categoryId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "categoryId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetServiceCategoryParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetServiceCategory(w, r, categoryId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PatchServiceCategory operation middleware
+func (siw *ServerInterfaceWrapper) PatchServiceCategory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "categoryId" -------------
+	var categoryId ServiceCategoryId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "categoryId", chi.URLParam(r, "categoryId"), &categoryId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "categoryId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PatchServiceCategoryParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PatchServiceCategory(w, r, categoryId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListServiceDefinitions operation middleware
+func (siw *ServerInterfaceWrapper) ListServiceDefinitions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListServiceDefinitionsParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "categoryId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "categoryId", r.URL.Query(), &params.CategoryId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "categoryId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "categoryId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "domain" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "domain", r.URL.Query(), &params.Domain, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "domain"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "domain", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "active" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "active", r.URL.Query(), &params.Active, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "active"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "active", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListServiceDefinitions(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateServiceDefinition operation middleware
+func (siw *ServerInterfaceWrapper) CreateServiceDefinition(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateServiceDefinitionParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateServiceDefinition(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetServiceDefinition operation middleware
+func (siw *ServerInterfaceWrapper) GetServiceDefinition(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "definitionId" -------------
+	var definitionId ServiceDefinitionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "definitionId", chi.URLParam(r, "definitionId"), &definitionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "definitionId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetServiceDefinitionParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetServiceDefinition(w, r, definitionId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PatchServiceDefinition operation middleware
+func (siw *ServerInterfaceWrapper) PatchServiceDefinition(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "definitionId" -------------
+	var definitionId ServiceDefinitionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "definitionId", chi.URLParam(r, "definitionId"), &definitionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "definitionId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PatchServiceDefinitionParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PatchServiceDefinition(w, r, definitionId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListServiceCodeMappings operation middleware
+func (siw *ServerInterfaceWrapper) ListServiceCodeMappings(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "definitionId" -------------
+	var definitionId ServiceDefinitionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "definitionId", chi.URLParam(r, "definitionId"), &definitionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "definitionId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListServiceCodeMappingsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListServiceCodeMappings(w, r, definitionId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutServiceCodeMappings operation middleware
+func (siw *ServerInterfaceWrapper) PutServiceCodeMappings(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "definitionId" -------------
+	var definitionId ServiceDefinitionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "definitionId", chi.URLParam(r, "definitionId"), &definitionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "definitionId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PutServiceCodeMappingsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutServiceCodeMappings(w, r, definitionId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListServiceRequests operation middleware
 func (siw *ServerInterfaceWrapper) ListServiceRequests(w http.ResponseWriter, r *http.Request) {
 
@@ -9347,6 +11344,51 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/service-requests/{requestId}/cancel", wrapper.CancelServiceRequest)
 	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/service-categories", wrapper.ListServiceCategories)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/service-categories", wrapper.CreateServiceCategory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/service-categories/{categoryId}", wrapper.GetServiceCategory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/api/v1/service-categories/{categoryId}", wrapper.PatchServiceCategory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/service-definitions", wrapper.ListServiceDefinitions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/service-definitions", wrapper.CreateServiceDefinition)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/service-definitions/{definitionId}", wrapper.GetServiceDefinition)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/api/v1/service-definitions/{definitionId}", wrapper.PatchServiceDefinition)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/service-definitions/{definitionId}/code-mappings", wrapper.ListServiceCodeMappings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/v1/service-definitions/{definitionId}/code-mappings", wrapper.PutServiceCodeMappings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/code-systems", wrapper.ListCodeSystems)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/code-systems", wrapper.CreateCodeSystem)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/api/v1/code-systems/{codeSystemId}", wrapper.PatchCodeSystem)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/code-systems/{codeSystemId}/values", wrapper.ListCodeValues)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/code-systems/{codeSystemId}/values:import", wrapper.ImportCodeValues)
+	})
 
 	return r
 }
@@ -9369,6 +11411,482 @@ type TooManyRequestsApplicationProblemPlusJSONResponse struct {
 type UnauthorizedApplicationProblemPlusJSONResponse Problem
 
 type ValidationErrorApplicationProblemPlusJSONResponse Problem
+
+type ListCodeSystemsRequestObject struct {
+	Params ListCodeSystemsParams
+}
+
+type ListCodeSystemsResponseObject interface {
+	VisitListCodeSystemsResponse(w http.ResponseWriter) error
+}
+
+type ListCodeSystems200JSONResponse CodeSystemPage
+
+func (response ListCodeSystems200JSONResponse) VisitListCodeSystemsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListCodeSystems400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListCodeSystems400ApplicationProblemPlusJSONResponse) VisitListCodeSystemsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListCodeSystems403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListCodeSystems403ApplicationProblemPlusJSONResponse) VisitListCodeSystemsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListCodeSystems422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListCodeSystems422ApplicationProblemPlusJSONResponse) VisitListCodeSystemsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCodeSystemRequestObject struct {
+	Params CreateCodeSystemParams
+	Body   *CreateCodeSystemJSONRequestBody
+}
+
+type CreateCodeSystemResponseObject interface {
+	VisitCreateCodeSystemResponse(w http.ResponseWriter) error
+}
+
+type CreateCodeSystem201ResponseHeaders struct {
+	ETag *string
+}
+
+type CreateCodeSystem201JSONResponse struct {
+	Body    CodeSystem
+	Headers CreateCodeSystem201ResponseHeaders
+}
+
+func (response CreateCodeSystem201JSONResponse) VisitCreateCodeSystemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCodeSystem403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CreateCodeSystem403ApplicationProblemPlusJSONResponse) VisitCreateCodeSystemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCodeSystem409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response CreateCodeSystem409ApplicationProblemPlusJSONResponse) VisitCreateCodeSystemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCodeSystem422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CreateCodeSystem422ApplicationProblemPlusJSONResponse) VisitCreateCodeSystemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchCodeSystemRequestObject struct {
+	CodeSystemId CodeSystemId `json:"codeSystemId"`
+	Params       PatchCodeSystemParams
+	Body         *PatchCodeSystemApplicationMergePatchPlusJSONRequestBody
+}
+
+type PatchCodeSystemResponseObject interface {
+	VisitPatchCodeSystemResponse(w http.ResponseWriter) error
+}
+
+type PatchCodeSystem200ResponseHeaders struct {
+	ETag *string
+}
+
+type PatchCodeSystem200JSONResponse struct {
+	Body    CodeSystem
+	Headers PatchCodeSystem200ResponseHeaders
+}
+
+func (response PatchCodeSystem200JSONResponse) VisitPatchCodeSystemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchCodeSystem403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response PatchCodeSystem403ApplicationProblemPlusJSONResponse) VisitPatchCodeSystemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchCodeSystem404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response PatchCodeSystem404ApplicationProblemPlusJSONResponse) VisitPatchCodeSystemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchCodeSystem409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response PatchCodeSystem409ApplicationProblemPlusJSONResponse) VisitPatchCodeSystemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchCodeSystem412ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchCodeSystem412ApplicationProblemPlusJSONResponse) VisitPatchCodeSystemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchCodeSystem415ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchCodeSystem415ApplicationProblemPlusJSONResponse) VisitPatchCodeSystemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(415)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchCodeSystem422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response PatchCodeSystem422ApplicationProblemPlusJSONResponse) VisitPatchCodeSystemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchCodeSystem428ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchCodeSystem428ApplicationProblemPlusJSONResponse) VisitPatchCodeSystemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListCodeValuesRequestObject struct {
+	CodeSystemId CodeSystemId `json:"codeSystemId"`
+	Params       ListCodeValuesParams
+}
+
+type ListCodeValuesResponseObject interface {
+	VisitListCodeValuesResponse(w http.ResponseWriter) error
+}
+
+type ListCodeValues200JSONResponse CodeValuePage
+
+func (response ListCodeValues200JSONResponse) VisitListCodeValuesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListCodeValues400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListCodeValues400ApplicationProblemPlusJSONResponse) VisitListCodeValuesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListCodeValues403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListCodeValues403ApplicationProblemPlusJSONResponse) VisitListCodeValuesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListCodeValues404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ListCodeValues404ApplicationProblemPlusJSONResponse) VisitListCodeValuesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListCodeValues422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListCodeValues422ApplicationProblemPlusJSONResponse) VisitListCodeValuesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportCodeValuesRequestObject struct {
+	CodeSystemId CodeSystemId `json:"codeSystemId"`
+	Params       ImportCodeValuesParams
+	Body         *ImportCodeValuesJSONRequestBody
+}
+
+type ImportCodeValuesResponseObject interface {
+	VisitImportCodeValuesResponse(w http.ResponseWriter) error
+}
+
+type ImportCodeValues200JSONResponse CodeValueImportResult
+
+func (response ImportCodeValues200JSONResponse) VisitImportCodeValuesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportCodeValues403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ImportCodeValues403ApplicationProblemPlusJSONResponse) VisitImportCodeValuesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportCodeValues404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ImportCodeValues404ApplicationProblemPlusJSONResponse) VisitImportCodeValuesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportCodeValues409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response ImportCodeValues409ApplicationProblemPlusJSONResponse) VisitImportCodeValuesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportCodeValues413ApplicationProblemPlusJSONResponse Problem
+
+func (response ImportCodeValues413ApplicationProblemPlusJSONResponse) VisitImportCodeValuesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(413)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportCodeValues422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ImportCodeValues422ApplicationProblemPlusJSONResponse) VisitImportCodeValuesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
 
 type CheckEligibilityRequestObject struct {
 	Params CheckEligibilityParams
@@ -13033,6 +15551,895 @@ func (response CreatePlan422ApplicationProblemPlusJSONResponse) VisitCreatePlanR
 	return err
 }
 
+type ListServiceCategoriesRequestObject struct {
+	Params ListServiceCategoriesParams
+}
+
+type ListServiceCategoriesResponseObject interface {
+	VisitListServiceCategoriesResponse(w http.ResponseWriter) error
+}
+
+type ListServiceCategories200JSONResponse ServiceCategoryPage
+
+func (response ListServiceCategories200JSONResponse) VisitListServiceCategoriesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListServiceCategories400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListServiceCategories400ApplicationProblemPlusJSONResponse) VisitListServiceCategoriesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListServiceCategories403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListServiceCategories403ApplicationProblemPlusJSONResponse) VisitListServiceCategoriesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListServiceCategories422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListServiceCategories422ApplicationProblemPlusJSONResponse) VisitListServiceCategoriesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateServiceCategoryRequestObject struct {
+	Params CreateServiceCategoryParams
+	Body   *CreateServiceCategoryJSONRequestBody
+}
+
+type CreateServiceCategoryResponseObject interface {
+	VisitCreateServiceCategoryResponse(w http.ResponseWriter) error
+}
+
+type CreateServiceCategory201ResponseHeaders struct {
+	ETag *string
+}
+
+type CreateServiceCategory201JSONResponse struct {
+	Body    ServiceCategory
+	Headers CreateServiceCategory201ResponseHeaders
+}
+
+func (response CreateServiceCategory201JSONResponse) VisitCreateServiceCategoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateServiceCategory403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CreateServiceCategory403ApplicationProblemPlusJSONResponse) VisitCreateServiceCategoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateServiceCategory409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response CreateServiceCategory409ApplicationProblemPlusJSONResponse) VisitCreateServiceCategoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateServiceCategory422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CreateServiceCategory422ApplicationProblemPlusJSONResponse) VisitCreateServiceCategoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetServiceCategoryRequestObject struct {
+	CategoryId ServiceCategoryId `json:"categoryId"`
+	Params     GetServiceCategoryParams
+}
+
+type GetServiceCategoryResponseObject interface {
+	VisitGetServiceCategoryResponse(w http.ResponseWriter) error
+}
+
+type GetServiceCategory200ResponseHeaders struct {
+	ETag *string
+}
+
+type GetServiceCategory200JSONResponse struct {
+	Body    ServiceCategory
+	Headers GetServiceCategory200ResponseHeaders
+}
+
+func (response GetServiceCategory200JSONResponse) VisitGetServiceCategoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetServiceCategory403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetServiceCategory403ApplicationProblemPlusJSONResponse) VisitGetServiceCategoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetServiceCategory404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetServiceCategory404ApplicationProblemPlusJSONResponse) VisitGetServiceCategoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchServiceCategoryRequestObject struct {
+	CategoryId ServiceCategoryId `json:"categoryId"`
+	Params     PatchServiceCategoryParams
+	Body       *PatchServiceCategoryApplicationMergePatchPlusJSONRequestBody
+}
+
+type PatchServiceCategoryResponseObject interface {
+	VisitPatchServiceCategoryResponse(w http.ResponseWriter) error
+}
+
+type PatchServiceCategory200ResponseHeaders struct {
+	ETag *string
+}
+
+type PatchServiceCategory200JSONResponse struct {
+	Body    ServiceCategory
+	Headers PatchServiceCategory200ResponseHeaders
+}
+
+func (response PatchServiceCategory200JSONResponse) VisitPatchServiceCategoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchServiceCategory403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response PatchServiceCategory403ApplicationProblemPlusJSONResponse) VisitPatchServiceCategoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchServiceCategory404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response PatchServiceCategory404ApplicationProblemPlusJSONResponse) VisitPatchServiceCategoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchServiceCategory409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response PatchServiceCategory409ApplicationProblemPlusJSONResponse) VisitPatchServiceCategoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchServiceCategory412ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchServiceCategory412ApplicationProblemPlusJSONResponse) VisitPatchServiceCategoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchServiceCategory415ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchServiceCategory415ApplicationProblemPlusJSONResponse) VisitPatchServiceCategoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(415)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchServiceCategory422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response PatchServiceCategory422ApplicationProblemPlusJSONResponse) VisitPatchServiceCategoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchServiceCategory428ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchServiceCategory428ApplicationProblemPlusJSONResponse) VisitPatchServiceCategoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListServiceDefinitionsRequestObject struct {
+	Params ListServiceDefinitionsParams
+}
+
+type ListServiceDefinitionsResponseObject interface {
+	VisitListServiceDefinitionsResponse(w http.ResponseWriter) error
+}
+
+type ListServiceDefinitions200JSONResponse ServiceDefinitionPage
+
+func (response ListServiceDefinitions200JSONResponse) VisitListServiceDefinitionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListServiceDefinitions400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListServiceDefinitions400ApplicationProblemPlusJSONResponse) VisitListServiceDefinitionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListServiceDefinitions403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListServiceDefinitions403ApplicationProblemPlusJSONResponse) VisitListServiceDefinitionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListServiceDefinitions422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListServiceDefinitions422ApplicationProblemPlusJSONResponse) VisitListServiceDefinitionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateServiceDefinitionRequestObject struct {
+	Params CreateServiceDefinitionParams
+	Body   *CreateServiceDefinitionJSONRequestBody
+}
+
+type CreateServiceDefinitionResponseObject interface {
+	VisitCreateServiceDefinitionResponse(w http.ResponseWriter) error
+}
+
+type CreateServiceDefinition201ResponseHeaders struct {
+	ETag *string
+}
+
+type CreateServiceDefinition201JSONResponse struct {
+	Body    ServiceDefinition
+	Headers CreateServiceDefinition201ResponseHeaders
+}
+
+func (response CreateServiceDefinition201JSONResponse) VisitCreateServiceDefinitionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateServiceDefinition403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CreateServiceDefinition403ApplicationProblemPlusJSONResponse) VisitCreateServiceDefinitionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateServiceDefinition409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response CreateServiceDefinition409ApplicationProblemPlusJSONResponse) VisitCreateServiceDefinitionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateServiceDefinition422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CreateServiceDefinition422ApplicationProblemPlusJSONResponse) VisitCreateServiceDefinitionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetServiceDefinitionRequestObject struct {
+	DefinitionId ServiceDefinitionId `json:"definitionId"`
+	Params       GetServiceDefinitionParams
+}
+
+type GetServiceDefinitionResponseObject interface {
+	VisitGetServiceDefinitionResponse(w http.ResponseWriter) error
+}
+
+type GetServiceDefinition200ResponseHeaders struct {
+	ETag *string
+}
+
+type GetServiceDefinition200JSONResponse struct {
+	Body    ServiceDefinition
+	Headers GetServiceDefinition200ResponseHeaders
+}
+
+func (response GetServiceDefinition200JSONResponse) VisitGetServiceDefinitionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetServiceDefinition403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetServiceDefinition403ApplicationProblemPlusJSONResponse) VisitGetServiceDefinitionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetServiceDefinition404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetServiceDefinition404ApplicationProblemPlusJSONResponse) VisitGetServiceDefinitionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchServiceDefinitionRequestObject struct {
+	DefinitionId ServiceDefinitionId `json:"definitionId"`
+	Params       PatchServiceDefinitionParams
+	Body         *PatchServiceDefinitionApplicationMergePatchPlusJSONRequestBody
+}
+
+type PatchServiceDefinitionResponseObject interface {
+	VisitPatchServiceDefinitionResponse(w http.ResponseWriter) error
+}
+
+type PatchServiceDefinition200ResponseHeaders struct {
+	ETag *string
+}
+
+type PatchServiceDefinition200JSONResponse struct {
+	Body    ServiceDefinition
+	Headers PatchServiceDefinition200ResponseHeaders
+}
+
+func (response PatchServiceDefinition200JSONResponse) VisitPatchServiceDefinitionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchServiceDefinition403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response PatchServiceDefinition403ApplicationProblemPlusJSONResponse) VisitPatchServiceDefinitionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchServiceDefinition404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response PatchServiceDefinition404ApplicationProblemPlusJSONResponse) VisitPatchServiceDefinitionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchServiceDefinition409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response PatchServiceDefinition409ApplicationProblemPlusJSONResponse) VisitPatchServiceDefinitionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchServiceDefinition412ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchServiceDefinition412ApplicationProblemPlusJSONResponse) VisitPatchServiceDefinitionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchServiceDefinition415ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchServiceDefinition415ApplicationProblemPlusJSONResponse) VisitPatchServiceDefinitionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(415)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchServiceDefinition422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response PatchServiceDefinition422ApplicationProblemPlusJSONResponse) VisitPatchServiceDefinitionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchServiceDefinition428ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchServiceDefinition428ApplicationProblemPlusJSONResponse) VisitPatchServiceDefinitionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListServiceCodeMappingsRequestObject struct {
+	DefinitionId ServiceDefinitionId `json:"definitionId"`
+	Params       ListServiceCodeMappingsParams
+}
+
+type ListServiceCodeMappingsResponseObject interface {
+	VisitListServiceCodeMappingsResponse(w http.ResponseWriter) error
+}
+
+type ListServiceCodeMappings200JSONResponse ServiceCodeMappingList
+
+func (response ListServiceCodeMappings200JSONResponse) VisitListServiceCodeMappingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListServiceCodeMappings403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListServiceCodeMappings403ApplicationProblemPlusJSONResponse) VisitListServiceCodeMappingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListServiceCodeMappings404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ListServiceCodeMappings404ApplicationProblemPlusJSONResponse) VisitListServiceCodeMappingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutServiceCodeMappingsRequestObject struct {
+	DefinitionId ServiceDefinitionId `json:"definitionId"`
+	Params       PutServiceCodeMappingsParams
+	Body         *PutServiceCodeMappingsJSONRequestBody
+}
+
+type PutServiceCodeMappingsResponseObject interface {
+	VisitPutServiceCodeMappingsResponse(w http.ResponseWriter) error
+}
+
+type PutServiceCodeMappings200ResponseHeaders struct {
+	ETag *string
+}
+
+type PutServiceCodeMappings200JSONResponse struct {
+	Body    ServiceCodeMappingList
+	Headers PutServiceCodeMappings200ResponseHeaders
+}
+
+func (response PutServiceCodeMappings200JSONResponse) VisitPutServiceCodeMappingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutServiceCodeMappings403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response PutServiceCodeMappings403ApplicationProblemPlusJSONResponse) VisitPutServiceCodeMappingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutServiceCodeMappings404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response PutServiceCodeMappings404ApplicationProblemPlusJSONResponse) VisitPutServiceCodeMappingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutServiceCodeMappings409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response PutServiceCodeMappings409ApplicationProblemPlusJSONResponse) VisitPutServiceCodeMappingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutServiceCodeMappings412ApplicationProblemPlusJSONResponse Problem
+
+func (response PutServiceCodeMappings412ApplicationProblemPlusJSONResponse) VisitPutServiceCodeMappingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutServiceCodeMappings422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response PutServiceCodeMappings422ApplicationProblemPlusJSONResponse) VisitPutServiceCodeMappingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutServiceCodeMappings428ApplicationProblemPlusJSONResponse Problem
+
+func (response PutServiceCodeMappings428ApplicationProblemPlusJSONResponse) VisitPutServiceCodeMappingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListServiceRequestsRequestObject struct {
 	Params ListServiceRequestsParams
 }
@@ -13837,6 +17244,21 @@ func (response GetReadiness503ApplicationProblemPlusJSONResponse) VisitGetReadin
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 
+	// (GET /api/v1/code-systems)
+	ListCodeSystems(ctx context.Context, request ListCodeSystemsRequestObject) (ListCodeSystemsResponseObject, error)
+
+	// (POST /api/v1/code-systems)
+	CreateCodeSystem(ctx context.Context, request CreateCodeSystemRequestObject) (CreateCodeSystemResponseObject, error)
+
+	// (PATCH /api/v1/code-systems/{codeSystemId})
+	PatchCodeSystem(ctx context.Context, request PatchCodeSystemRequestObject) (PatchCodeSystemResponseObject, error)
+
+	// (GET /api/v1/code-systems/{codeSystemId}/values)
+	ListCodeValues(ctx context.Context, request ListCodeValuesRequestObject) (ListCodeValuesResponseObject, error)
+
+	// (POST /api/v1/code-systems/{codeSystemId}/values:import)
+	ImportCodeValues(ctx context.Context, request ImportCodeValuesRequestObject) (ImportCodeValuesResponseObject, error)
+
 	// (POST /api/v1/eligibility/checks)
 	CheckEligibility(ctx context.Context, request CheckEligibilityRequestObject) (CheckEligibilityResponseObject, error)
 
@@ -13999,6 +17421,36 @@ type StrictServerInterface interface {
 	// (POST /api/v1/programs/{programId}/plans)
 	CreatePlan(ctx context.Context, request CreatePlanRequestObject) (CreatePlanResponseObject, error)
 
+	// (GET /api/v1/service-categories)
+	ListServiceCategories(ctx context.Context, request ListServiceCategoriesRequestObject) (ListServiceCategoriesResponseObject, error)
+
+	// (POST /api/v1/service-categories)
+	CreateServiceCategory(ctx context.Context, request CreateServiceCategoryRequestObject) (CreateServiceCategoryResponseObject, error)
+
+	// (GET /api/v1/service-categories/{categoryId})
+	GetServiceCategory(ctx context.Context, request GetServiceCategoryRequestObject) (GetServiceCategoryResponseObject, error)
+
+	// (PATCH /api/v1/service-categories/{categoryId})
+	PatchServiceCategory(ctx context.Context, request PatchServiceCategoryRequestObject) (PatchServiceCategoryResponseObject, error)
+
+	// (GET /api/v1/service-definitions)
+	ListServiceDefinitions(ctx context.Context, request ListServiceDefinitionsRequestObject) (ListServiceDefinitionsResponseObject, error)
+
+	// (POST /api/v1/service-definitions)
+	CreateServiceDefinition(ctx context.Context, request CreateServiceDefinitionRequestObject) (CreateServiceDefinitionResponseObject, error)
+
+	// (GET /api/v1/service-definitions/{definitionId})
+	GetServiceDefinition(ctx context.Context, request GetServiceDefinitionRequestObject) (GetServiceDefinitionResponseObject, error)
+
+	// (PATCH /api/v1/service-definitions/{definitionId})
+	PatchServiceDefinition(ctx context.Context, request PatchServiceDefinitionRequestObject) (PatchServiceDefinitionResponseObject, error)
+
+	// (GET /api/v1/service-definitions/{definitionId}/code-mappings)
+	ListServiceCodeMappings(ctx context.Context, request ListServiceCodeMappingsRequestObject) (ListServiceCodeMappingsResponseObject, error)
+
+	// (PUT /api/v1/service-definitions/{definitionId}/code-mappings)
+	PutServiceCodeMappings(ctx context.Context, request PutServiceCodeMappingsRequestObject) (PutServiceCodeMappingsResponseObject, error)
+
 	// (GET /api/v1/service-requests)
 	ListServiceRequests(ctx context.Context, request ListServiceRequestsRequestObject) (ListServiceRequestsResponseObject, error)
 
@@ -14082,6 +17534,160 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// ListCodeSystems operation middleware
+func (sh *strictHandler) ListCodeSystems(w http.ResponseWriter, r *http.Request, params ListCodeSystemsParams) {
+	var request ListCodeSystemsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCodeSystems(ctx, request.(ListCodeSystemsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCodeSystems")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCodeSystemsResponseObject); ok {
+		if err := validResponse.VisitListCodeSystemsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateCodeSystem operation middleware
+func (sh *strictHandler) CreateCodeSystem(w http.ResponseWriter, r *http.Request, params CreateCodeSystemParams) {
+	var request CreateCodeSystemRequestObject
+
+	request.Params = params
+
+	var body CreateCodeSystemJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateCodeSystem(ctx, request.(CreateCodeSystemRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateCodeSystem")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateCodeSystemResponseObject); ok {
+		if err := validResponse.VisitCreateCodeSystemResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PatchCodeSystem operation middleware
+func (sh *strictHandler) PatchCodeSystem(w http.ResponseWriter, r *http.Request, codeSystemId CodeSystemId, params PatchCodeSystemParams) {
+	var request PatchCodeSystemRequestObject
+
+	request.CodeSystemId = codeSystemId
+	request.Params = params
+
+	var body PatchCodeSystemApplicationMergePatchPlusJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PatchCodeSystem(ctx, request.(PatchCodeSystemRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PatchCodeSystem")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PatchCodeSystemResponseObject); ok {
+		if err := validResponse.VisitPatchCodeSystemResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListCodeValues operation middleware
+func (sh *strictHandler) ListCodeValues(w http.ResponseWriter, r *http.Request, codeSystemId CodeSystemId, params ListCodeValuesParams) {
+	var request ListCodeValuesRequestObject
+
+	request.CodeSystemId = codeSystemId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCodeValues(ctx, request.(ListCodeValuesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCodeValues")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCodeValuesResponseObject); ok {
+		if err := validResponse.VisitListCodeValuesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ImportCodeValues operation middleware
+func (sh *strictHandler) ImportCodeValues(w http.ResponseWriter, r *http.Request, codeSystemId CodeSystemId, params ImportCodeValuesParams) {
+	var request ImportCodeValuesRequestObject
+
+	request.CodeSystemId = codeSystemId
+	request.Params = params
+
+	var body ImportCodeValuesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ImportCodeValues(ctx, request.(ImportCodeValuesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ImportCodeValues")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ImportCodeValuesResponseObject); ok {
+		if err := validResponse.VisitImportCodeValuesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // CheckEligibility operation middleware
@@ -15734,6 +19340,307 @@ func (sh *strictHandler) CreatePlan(w http.ResponseWriter, r *http.Request, prog
 	}
 }
 
+// ListServiceCategories operation middleware
+func (sh *strictHandler) ListServiceCategories(w http.ResponseWriter, r *http.Request, params ListServiceCategoriesParams) {
+	var request ListServiceCategoriesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListServiceCategories(ctx, request.(ListServiceCategoriesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListServiceCategories")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListServiceCategoriesResponseObject); ok {
+		if err := validResponse.VisitListServiceCategoriesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateServiceCategory operation middleware
+func (sh *strictHandler) CreateServiceCategory(w http.ResponseWriter, r *http.Request, params CreateServiceCategoryParams) {
+	var request CreateServiceCategoryRequestObject
+
+	request.Params = params
+
+	var body CreateServiceCategoryJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateServiceCategory(ctx, request.(CreateServiceCategoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateServiceCategory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateServiceCategoryResponseObject); ok {
+		if err := validResponse.VisitCreateServiceCategoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetServiceCategory operation middleware
+func (sh *strictHandler) GetServiceCategory(w http.ResponseWriter, r *http.Request, categoryId ServiceCategoryId, params GetServiceCategoryParams) {
+	var request GetServiceCategoryRequestObject
+
+	request.CategoryId = categoryId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetServiceCategory(ctx, request.(GetServiceCategoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetServiceCategory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetServiceCategoryResponseObject); ok {
+		if err := validResponse.VisitGetServiceCategoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PatchServiceCategory operation middleware
+func (sh *strictHandler) PatchServiceCategory(w http.ResponseWriter, r *http.Request, categoryId ServiceCategoryId, params PatchServiceCategoryParams) {
+	var request PatchServiceCategoryRequestObject
+
+	request.CategoryId = categoryId
+	request.Params = params
+
+	var body PatchServiceCategoryApplicationMergePatchPlusJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PatchServiceCategory(ctx, request.(PatchServiceCategoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PatchServiceCategory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PatchServiceCategoryResponseObject); ok {
+		if err := validResponse.VisitPatchServiceCategoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListServiceDefinitions operation middleware
+func (sh *strictHandler) ListServiceDefinitions(w http.ResponseWriter, r *http.Request, params ListServiceDefinitionsParams) {
+	var request ListServiceDefinitionsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListServiceDefinitions(ctx, request.(ListServiceDefinitionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListServiceDefinitions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListServiceDefinitionsResponseObject); ok {
+		if err := validResponse.VisitListServiceDefinitionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateServiceDefinition operation middleware
+func (sh *strictHandler) CreateServiceDefinition(w http.ResponseWriter, r *http.Request, params CreateServiceDefinitionParams) {
+	var request CreateServiceDefinitionRequestObject
+
+	request.Params = params
+
+	var body CreateServiceDefinitionJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateServiceDefinition(ctx, request.(CreateServiceDefinitionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateServiceDefinition")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateServiceDefinitionResponseObject); ok {
+		if err := validResponse.VisitCreateServiceDefinitionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetServiceDefinition operation middleware
+func (sh *strictHandler) GetServiceDefinition(w http.ResponseWriter, r *http.Request, definitionId ServiceDefinitionId, params GetServiceDefinitionParams) {
+	var request GetServiceDefinitionRequestObject
+
+	request.DefinitionId = definitionId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetServiceDefinition(ctx, request.(GetServiceDefinitionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetServiceDefinition")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetServiceDefinitionResponseObject); ok {
+		if err := validResponse.VisitGetServiceDefinitionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PatchServiceDefinition operation middleware
+func (sh *strictHandler) PatchServiceDefinition(w http.ResponseWriter, r *http.Request, definitionId ServiceDefinitionId, params PatchServiceDefinitionParams) {
+	var request PatchServiceDefinitionRequestObject
+
+	request.DefinitionId = definitionId
+	request.Params = params
+
+	var body PatchServiceDefinitionApplicationMergePatchPlusJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PatchServiceDefinition(ctx, request.(PatchServiceDefinitionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PatchServiceDefinition")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PatchServiceDefinitionResponseObject); ok {
+		if err := validResponse.VisitPatchServiceDefinitionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListServiceCodeMappings operation middleware
+func (sh *strictHandler) ListServiceCodeMappings(w http.ResponseWriter, r *http.Request, definitionId ServiceDefinitionId, params ListServiceCodeMappingsParams) {
+	var request ListServiceCodeMappingsRequestObject
+
+	request.DefinitionId = definitionId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListServiceCodeMappings(ctx, request.(ListServiceCodeMappingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListServiceCodeMappings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListServiceCodeMappingsResponseObject); ok {
+		if err := validResponse.VisitListServiceCodeMappingsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutServiceCodeMappings operation middleware
+func (sh *strictHandler) PutServiceCodeMappings(w http.ResponseWriter, r *http.Request, definitionId ServiceDefinitionId, params PutServiceCodeMappingsParams) {
+	var request PutServiceCodeMappingsRequestObject
+
+	request.DefinitionId = definitionId
+	request.Params = params
+
+	var body PutServiceCodeMappingsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutServiceCodeMappings(ctx, request.(PutServiceCodeMappingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutServiceCodeMappings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutServiceCodeMappingsResponseObject); ok {
+		if err := validResponse.VisitPutServiceCodeMappingsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListServiceRequests operation middleware
 func (sh *strictHandler) ListServiceRequests(w http.ResponseWriter, r *http.Request, params ListServiceRequestsParams) {
 	var request ListServiceRequestsRequestObject
@@ -16182,264 +20089,323 @@ func (sh *strictHandler) GetReadiness(w http.ResponseWriter, r *http.Request) {
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
+	"b5CcYY6ys8Th4p8+fPr/AwAA//8=",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

@@ -284,6 +284,38 @@ type BenefitProgramType struct {
 	UpdatedAt   time.Time
 }
 
+type CatalogCodeSystem struct {
+	ID         uuid.UUID
+	TenantID   uuid.UUID
+	Code       string
+	Name       string
+	Version    string
+	Authority  string
+	Licensed   bool
+	Status     string
+	ValidFrom  pgtype.Date
+	ValidTo    pgtype.Date
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	RowVersion int64
+}
+
+type CatalogCodeValue struct {
+	ID           uuid.UUID
+	TenantID     uuid.UUID
+	CodeSystemID uuid.UUID
+	Code         string
+	Display      string
+	ParentCode   *string
+	ValidFrom    pgtype.Date
+	ValidTo      pgtype.Date
+	Active       bool
+	Attributes   []byte
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	RowVersion   int64
+}
+
 type CatalogServiceCategory struct {
 	ID         uuid.UUID
 	TenantID   uuid.UUID
@@ -293,6 +325,22 @@ type CatalogServiceCategory struct {
 	DomainCode string
 	Active     bool
 	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	RowVersion int64
+}
+
+type CatalogServiceCodeMapping struct {
+	ID                  uuid.UUID
+	TenantID            uuid.UUID
+	ServiceDefinitionID uuid.UUID
+	CodeSystemID        uuid.UUID
+	Code                string
+	ValidFrom           pgtype.Date
+	ValidTo             pgtype.Date
+	IsPrimary           bool
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
+	RowVersion          int64
 }
 
 type CatalogServiceDefinition struct {

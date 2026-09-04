@@ -186,7 +186,15 @@
     "PERMISSION_DENIED": "You are not allowed to do this.",
     "VALIDATION_FAILED": "Some fields need attention.",
     "RESOURCE_NOT_FOUND": "The record was not found.",
-    "ETAG_MISMATCH": "The record changed while you were editing."
+    "ETAG_MISMATCH": "The record changed while you were editing.",
+    "SERVICE_CATEGORY_NOT_FOUND": "The service category was not found.",
+    "SERVICE_DEFINITION_NOT_FOUND": "The service definition was not found.",
+    "CODE_SYSTEM_NOT_FOUND": "The code system was not found.",
+    "CATEGORY_CODE_TAKEN": "That category code is already in use.",
+    "SERVICE_DEFINITION_CODE_TAKEN": "That service code is already in use.",
+    "CODE_SYSTEM_TAKEN": "That code system and version is already registered.",
+    "CATEGORY_CYCLE": "A category cannot be placed inside its own subtree.",
+    "CODE_MAPPING_OVERLAP": "Another mapping for this code covers an overlapping period."
   },
   "fieldErrors": {
     "REQUIRED": "Required",
@@ -204,7 +212,13 @@
     "MAX_LENGTH": "At most {{max}} characters",
     "PATTERN": "Allowed characters: letters, digits, '.', '_', '-'",
     "HEADER_INVALID": "The header row does not match the expected columns",
-    "EMPTY_FILE": "The file has no rows"
+    "EMPTY_FILE": "The file has no rows",
+    "IMMUTABLE": "This field cannot be changed",
+    "DEPTH_EXCEEDED": "The category tree may be at most six levels deep",
+    "PERIOD": "The end date must be after the start date",
+    "DUPLICATE": "The same value was given more than once",
+    "NOT_FOUND": "The selected record was not found",
+    "MAX_ITEMS": "Too many rows in one call"
   },
   "people": {
     "title": "Members",

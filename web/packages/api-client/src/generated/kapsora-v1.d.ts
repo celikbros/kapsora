@@ -4,6 +4,98 @@
  */
 
 export interface paths {
+    "/api/v1/code-systems": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description External code systems known to the tenant, newest first, with keyset paging.
+         *     Editions of the same system live side by side, so SUT 2024 and SUT 2025 are two
+         *     rows.
+         */
+        get: operations["listCodeSystems"];
+        put?: never;
+        /**
+         * @description Registers one edition of a code system. Code and version together are unique
+         *     within the tenant (409 CODE_SYSTEM_TAKEN) and both are immutable, because mappings
+         *     and imported values hang off the row. Set licensed when the content may not leave
+         *     the tenant.
+         */
+        post: operations["createCodeSystem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/code-systems/{codeSystemId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Merge-patch of name, authority, licensing, status and validity end. Code and
+         *     version are immutable: a body carrying either answers 422 with field code
+         *     IMMUTABLE.
+         */
+        patch: operations["patchCodeSystem"];
+        trace?: never;
+    };
+    "/api/v1/code-systems/{codeSystemId}/values": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Values of the system that are valid on asOf (today by default), so a claim from
+         *     last year resolves against the codes that were valid then. This is the only reader
+         *     of the table; code matches one value exactly and q searches display text and code.
+         */
+        get: operations["listCodeValues"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/code-systems/{codeSystemId}/values:import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Upserts up to 5000 values on (code, validFrom) in one transaction. The call is
+         *     all-or-nothing, so a rejected batch leaves nothing behind and the answer names the
+         *     array index and the field code of every rejected row. Larger systems are loaded by
+         *     repeating the call; the same Idempotency-Key replays the stored summary without a
+         *     second write.
+         */
+        post: operations["importCodeValues"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/eligibility/checks": {
         parameters: {
             query?: never;
@@ -786,6 +878,132 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/service-categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Service categories of the tenant, newest first, with keyset paging. The picker
+         *     builds the tree from parentId; the filters narrow it to one branch, one service
+         *     domain or one activity state.
+         */
+        get: operations["listServiceCategories"];
+        put?: never;
+        /**
+         * @description Creates a category. The code is unique within the tenant (409 CATEGORY_CODE_TAKEN)
+         *     and immutable afterwards, because service definitions, contracts and claims are
+         *     read against it. A parentId that would close a loop answers 409 CATEGORY_CYCLE and
+         *     a branch deeper than six levels answers 422 with field code DEPTH_EXCEEDED.
+         */
+        post: operations["createServiceCategory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/service-categories/{categoryId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description One service category of the tenant with its optimistic concurrency tag. */
+        get: operations["getServiceCategory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Merge-patch of name, parent and activity. The code is immutable: a body carrying
+         *     code answers 422 with field code IMMUTABLE. Re-parenting refuses a cycle with 409
+         *     CATEGORY_CYCLE and a resulting depth over six with 422 DEPTH_EXCEEDED.
+         */
+        patch: operations["patchServiceCategory"];
+        trace?: never;
+    };
+    "/api/v1/service-definitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Service definitions of the tenant, newest first, with keyset paging. q searches
+         *     code and name; the other filters narrow to one category, one service domain or
+         *     one activity state.
+         */
+        get: operations["listServiceDefinitions"];
+        put?: never;
+        /**
+         * @description Creates a service definition inside a category. The code is unique within the
+         *     tenant (409 SERVICE_DEFINITION_CODE_TAKEN) and immutable afterwards: a wrong code
+         *     is retired and replaced, never renamed, because contracts and claims point at it.
+         */
+        post: operations["createServiceDefinition"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/service-definitions/{definitionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description One service definition of the tenant with its optimistic concurrency tag. */
+        get: operations["getServiceDefinition"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Merge-patch of category, name, description, fulfilment mode, unit type, provider
+         *     requirement and activity. The code is immutable: a body carrying code answers 422
+         *     with field code IMMUTABLE. Deactivating never cascades; it only stops the
+         *     definition being offered in new work.
+         */
+        patch: operations["patchServiceDefinition"];
+        trace?: never;
+    };
+    "/api/v1/service-definitions/{definitionId}/code-mappings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Every external code this definition is reported under, ordered by code system and
+         *     validity start. The set is short by design, so it is returned whole rather than
+         *     paged.
+         */
+        get: operations["listServiceCodeMappings"];
+        /**
+         * @description Replaces the whole mapping set of the definition. Two rows for the same code
+         *     system and code whose validity periods overlap answer 409 CODE_MAPPING_OVERLAP,
+         *     and so does a second primary mapping for the same code system over an overlapping
+         *     period. If-Match carries the ETag of the service definition, which the replacement
+         *     moves on.
+         */
+        put: operations["putServiceCodeMappings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/service-requests": {
         parameters: {
             query?: never;
@@ -1036,11 +1254,105 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        CodeSystem: {
+            authority: components["schemas"]["CodeSystemAuthority"];
+            code: string;
+            /** Format: uuid */
+            id: string;
+            /** @description True when the content is licensed and may not leave the tenant. */
+            licensed: boolean;
+            name: string;
+            rowVersion: number;
+            /** @enum {string} */
+            status: "ACTIVE" | "INACTIVE";
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo?: string | null;
+            version: string;
+        };
+        /**
+         * @description Publisher of a code system; TENANT marks a sponsor-internal system.
+         * @enum {string}
+         */
+        CodeSystemAuthority: "SGK" | "SB" | "WHO" | "TENANT" | "OTHER";
+        CodeSystemPage: {
+            items: components["schemas"]["CodeSystem"][];
+            nextCursor?: string | null;
+        };
+        CodeValue: {
+            active: boolean;
+            /** @description Publisher-specific attributes carried through unchanged. */
+            attributes: {
+                [key: string]: unknown;
+            };
+            code: string;
+            /** Format: uuid */
+            codeSystemId: string;
+            display: string;
+            /** Format: uuid */
+            id: string;
+            /** @description Hierarchy inside the system as the publisher states it. */
+            parentCode?: string | null;
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo?: string | null;
+        };
+        CodeValueImportError: {
+            code: string;
+            field: string;
+            /** @description Position of the rejected row in the request array. */
+            index: number;
+            message?: string;
+        };
+        CodeValueImportResult: {
+            created: number;
+            errors: components["schemas"]["CodeValueImportError"][];
+            /** @description Rows already stored with exactly these values. */
+            skipped: number;
+            updated: number;
+        };
+        CodeValueInput: {
+            /** @default true */
+            active?: boolean;
+            attributes?: {
+                [key: string]: unknown;
+            };
+            code: string;
+            display: string;
+            parentCode?: string | null;
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo?: string | null;
+        };
+        CodeValuePage: {
+            /**
+             * Format: date
+             * @description Date the page was resolved against.
+             */
+            asOf: string;
+            items: components["schemas"]["CodeValue"][];
+            nextCursor?: string | null;
+        };
         CreateAdjustmentRequest: {
             /** @description Positive grants, negative removes from the available balance; never zero. */
             deltaQuantity: number;
             reasonCode: string;
             reasonText?: string;
+        };
+        CreateCodeSystemRequest: {
+            authority: components["schemas"]["CodeSystemAuthority"];
+            code: string;
+            /** @default false */
+            licensed?: boolean;
+            name: string;
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo?: string;
+            version: string;
         };
         CreateEnrollmentRequest: {
             enrollmentReason?: string;
@@ -1148,6 +1460,28 @@ export interface components {
             validFrom: string;
             /** Format: date */
             validTo?: string;
+        };
+        CreateServiceCategoryRequest: {
+            /** @default true */
+            active?: boolean;
+            code: string;
+            domain: components["schemas"]["ServiceDomain"];
+            name: string;
+            /** Format: uuid */
+            parentId?: string | null;
+        };
+        CreateServiceDefinitionRequest: {
+            /** @default true */
+            active?: boolean;
+            /** Format: uuid */
+            categoryId: string;
+            code: string;
+            defaultUnitType: components["schemas"]["ServiceUnitType"];
+            description?: string;
+            fulfillmentMode: components["schemas"]["FulfillmentMode"];
+            name: string;
+            /** @default true */
+            requiresProvider?: boolean;
         };
         CreateServiceRequest: {
             /** @enum {string} */
@@ -1404,6 +1738,11 @@ export interface components {
             /** @enum {string} */
             status: "HELD" | "PARTIALLY_CONSUMED" | "CONSUMED" | "RELEASED" | "EXPIRED";
         };
+        /**
+         * @description How a service definition is delivered once it is requested.
+         * @enum {string}
+         */
+        FulfillmentMode: "APPOINTMENT" | "RESERVATION" | "WORK_ORDER" | "MEMBERSHIP" | "SESSION" | "VOUCHER" | "REIMBURSEMENT" | "DIRECT";
         HealthStatus: {
             checks?: {
                 [key: string]: string;
@@ -1421,6 +1760,9 @@ export interface components {
             sponsorOrganizationId?: string;
             type: string;
             value: string;
+        };
+        ImportCodeValuesRequest: {
+            items: components["schemas"]["CodeValueInput"][];
         };
         LedgerEntry: {
             /** Format: uuid */
@@ -1725,9 +2067,83 @@ export interface components {
             reasonCode: string;
             reasonText?: string;
         };
+        ReplaceServiceCodeMappingsRequest: {
+            items: components["schemas"]["ServiceCodeMappingInput"][];
+        };
         ReviewComment: {
             comment?: string;
         };
+        ServiceCategory: {
+            active: boolean;
+            code: string;
+            domain: components["schemas"]["ServiceDomain"];
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** Format: uuid */
+            parentId?: string | null;
+            rowVersion: number;
+        };
+        ServiceCategoryPage: {
+            items: components["schemas"]["ServiceCategory"][];
+            nextCursor?: string | null;
+        };
+        ServiceCodeMapping: {
+            code: string;
+            codeSystemCode: string;
+            /** Format: uuid */
+            codeSystemId: string;
+            codeSystemVersion?: string;
+            /** Format: uuid */
+            id: string;
+            /** @description The code the definition is reported under by default. */
+            primary: boolean;
+            /** Format: uuid */
+            serviceDefinitionId: string;
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo?: string | null;
+        };
+        ServiceCodeMappingInput: {
+            code: string;
+            /** Format: uuid */
+            codeSystemId: string;
+            /** @default false */
+            primary?: boolean;
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo?: string | null;
+        };
+        ServiceCodeMappingList: {
+            items: components["schemas"]["ServiceCodeMapping"][];
+        };
+        ServiceDefinition: {
+            active: boolean;
+            categoryCode: string;
+            /** Format: uuid */
+            categoryId: string;
+            code: string;
+            defaultUnitType: components["schemas"]["ServiceUnitType"];
+            description?: string | null;
+            domain: components["schemas"]["ServiceDomain"];
+            fulfillmentMode: components["schemas"]["FulfillmentMode"];
+            /** Format: uuid */
+            id: string;
+            name: string;
+            requiresProvider: boolean;
+            rowVersion: number;
+        };
+        ServiceDefinitionPage: {
+            items: components["schemas"]["ServiceDefinition"][];
+            nextCursor?: string | null;
+        };
+        /**
+         * @description Closed list of service domains shared by categories and definitions.
+         * @enum {string}
+         */
+        ServiceDomain: "GENERIC" | "HEALTH" | "ACCOMMODATION" | "ASSISTANCE" | "EDUCATION" | "SPORT" | "TRANSPORT" | "CARE" | "OTHER";
         ServiceRequest: {
             /** @enum {string} */
             channel: "BACKOFFICE" | "PROVIDER_PORTAL" | "MEMBER_PORTAL" | "API" | "BATCH_IMPORT" | "CALL_CENTER";
@@ -1779,6 +2195,11 @@ export interface components {
             items: components["schemas"]["ServiceRequest"][];
             nextCursor?: string | null;
         };
+        /**
+         * @description Unit a service definition is counted in.
+         * @enum {string}
+         */
+        ServiceUnitType: "MONEY" | "COUNT" | "NIGHT" | "SESSION" | "HOUR" | "KILOMETER" | "POINT";
         SessionInfo: {
             /** Format: uuid */
             activeTenantId: string | null;
@@ -1840,6 +2261,16 @@ export interface components {
             /** @enum {string} */
             status: "PROVISIONING" | "ACTIVE" | "SUSPENDED" | "CLOSED";
         };
+        /** @description Merge-patch body; code and version are absent because they are immutable. */
+        UpdateCodeSystemRequest: {
+            authority?: components["schemas"]["CodeSystemAuthority"];
+            licensed?: boolean;
+            name?: string;
+            /** @enum {string} */
+            status?: "ACTIVE" | "INACTIVE";
+            /** Format: date */
+            validTo?: string | null;
+        };
         UpdateEnrollmentRequest: {
             /** @enum {string} */
             status?: "ACTIVE" | "SUSPENDED" | "ENDED";
@@ -1900,6 +2331,24 @@ export interface components {
             validFrom?: string | null;
             /** Format: date */
             validTo?: string | null;
+        };
+        /** @description Merge-patch body; code is absent because it is immutable. */
+        UpdateServiceCategoryRequest: {
+            active?: boolean;
+            name?: string;
+            /** Format: uuid */
+            parentId?: string | null;
+        };
+        /** @description Merge-patch body; code is absent because it is immutable. */
+        UpdateServiceDefinitionRequest: {
+            active?: boolean;
+            /** Format: uuid */
+            categoryId?: string;
+            defaultUnitType?: components["schemas"]["ServiceUnitType"];
+            description?: string | null;
+            fulfillmentMode?: components["schemas"]["FulfillmentMode"];
+            name?: string;
+            requiresProvider?: boolean;
         };
         UpdateServiceRequest: {
             items?: {
@@ -1989,6 +2438,7 @@ export interface components {
     parameters: {
         AccountId: string;
         AdjustmentId: string;
+        CodeSystemId: string;
         /** @description Required when the request is authenticated with the BFF session cookie. */
         CsrfHeader: string;
         /** @description Opaque cursor from the previous response. */
@@ -2012,6 +2462,8 @@ export interface components {
         ProgramId: string;
         RelationshipId: string;
         RequestId: string;
+        ServiceCategoryId: string;
+        ServiceDefinitionId: string;
         /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
         TenantHeader: string;
     };
@@ -2022,7 +2474,16 @@ export interface components {
     };
     pathItems: never;
 }
+export type SchemaCodeSystem = components['schemas']['CodeSystem'];
+export type SchemaCodeSystemAuthority = components['schemas']['CodeSystemAuthority'];
+export type SchemaCodeSystemPage = components['schemas']['CodeSystemPage'];
+export type SchemaCodeValue = components['schemas']['CodeValue'];
+export type SchemaCodeValueImportError = components['schemas']['CodeValueImportError'];
+export type SchemaCodeValueImportResult = components['schemas']['CodeValueImportResult'];
+export type SchemaCodeValueInput = components['schemas']['CodeValueInput'];
+export type SchemaCodeValuePage = components['schemas']['CodeValuePage'];
 export type SchemaCreateAdjustmentRequest = components['schemas']['CreateAdjustmentRequest'];
+export type SchemaCreateCodeSystemRequest = components['schemas']['CreateCodeSystemRequest'];
 export type SchemaCreateEnrollmentRequest = components['schemas']['CreateEnrollmentRequest'];
 export type SchemaCreateMembershipRequest = components['schemas']['CreateMembershipRequest'];
 export type SchemaCreateOrganizationRequest = components['schemas']['CreateOrganizationRequest'];
@@ -2031,6 +2492,8 @@ export type SchemaCreatePlanRequest = components['schemas']['CreatePlanRequest']
 export type SchemaCreatePlanVersionRequest = components['schemas']['CreatePlanVersionRequest'];
 export type SchemaCreateProgramRequest = components['schemas']['CreateProgramRequest'];
 export type SchemaCreateRelationshipRequest = components['schemas']['CreateRelationshipRequest'];
+export type SchemaCreateServiceCategoryRequest = components['schemas']['CreateServiceCategoryRequest'];
+export type SchemaCreateServiceDefinitionRequest = components['schemas']['CreateServiceDefinitionRequest'];
 export type SchemaCreateServiceRequest = components['schemas']['CreateServiceRequest'];
 export type SchemaEligibilityCheckRequest = components['schemas']['EligibilityCheckRequest'];
 export type SchemaEligibilityCheckResult = components['schemas']['EligibilityCheckResult'];
@@ -2043,8 +2506,10 @@ export type SchemaEntitlementAdjustment = components['schemas']['EntitlementAdju
 export type SchemaEntitlementDefinition = components['schemas']['EntitlementDefinition'];
 export type SchemaEntitlementDefinitionInput = components['schemas']['EntitlementDefinitionInput'];
 export type SchemaEntitlementReservation = components['schemas']['EntitlementReservation'];
+export type SchemaFulfillmentMode = components['schemas']['FulfillmentMode'];
 export type SchemaHealthStatus = components['schemas']['HealthStatus'];
 export type SchemaIdentifierSearchRequest = components['schemas']['IdentifierSearchRequest'];
+export type SchemaImportCodeValuesRequest = components['schemas']['ImportCodeValuesRequest'];
 export type SchemaLedgerEntry = components['schemas']['LedgerEntry'];
 export type SchemaLedgerPage = components['schemas']['LedgerPage'];
 export type SchemaMaskedIdentifier = components['schemas']['MaskedIdentifier'];
@@ -2067,14 +2532,25 @@ export type SchemaProblem = components['schemas']['Problem'];
 export type SchemaProgram = components['schemas']['Program'];
 export type SchemaProgramPage = components['schemas']['ProgramPage'];
 export type SchemaReasonCommand = components['schemas']['ReasonCommand'];
+export type SchemaReplaceServiceCodeMappingsRequest = components['schemas']['ReplaceServiceCodeMappingsRequest'];
 export type SchemaReviewComment = components['schemas']['ReviewComment'];
+export type SchemaServiceCategory = components['schemas']['ServiceCategory'];
+export type SchemaServiceCategoryPage = components['schemas']['ServiceCategoryPage'];
+export type SchemaServiceCodeMapping = components['schemas']['ServiceCodeMapping'];
+export type SchemaServiceCodeMappingInput = components['schemas']['ServiceCodeMappingInput'];
+export type SchemaServiceCodeMappingList = components['schemas']['ServiceCodeMappingList'];
+export type SchemaServiceDefinition = components['schemas']['ServiceDefinition'];
+export type SchemaServiceDefinitionPage = components['schemas']['ServiceDefinitionPage'];
+export type SchemaServiceDomain = components['schemas']['ServiceDomain'];
 export type SchemaServiceRequest = components['schemas']['ServiceRequest'];
 export type SchemaServiceRequestItem = components['schemas']['ServiceRequestItem'];
 export type SchemaServiceRequestPage = components['schemas']['ServiceRequestPage'];
+export type SchemaServiceUnitType = components['schemas']['ServiceUnitType'];
 export type SchemaSessionInfo = components['schemas']['SessionInfo'];
 export type SchemaSponsorMembership = components['schemas']['SponsorMembership'];
 export type SchemaTenantContext = components['schemas']['TenantContext'];
 export type SchemaTenantSummary = components['schemas']['TenantSummary'];
+export type SchemaUpdateCodeSystemRequest = components['schemas']['UpdateCodeSystemRequest'];
 export type SchemaUpdateEnrollmentRequest = components['schemas']['UpdateEnrollmentRequest'];
 export type SchemaUpdateMembershipRequest = components['schemas']['UpdateMembershipRequest'];
 export type SchemaUpdateOrganizationRequest = components['schemas']['UpdateOrganizationRequest'];
@@ -2082,6 +2558,8 @@ export type SchemaUpdatePersonRequest = components['schemas']['UpdatePersonReque
 export type SchemaUpdatePlanRequest = components['schemas']['UpdatePlanRequest'];
 export type SchemaUpdatePlanVersionRequest = components['schemas']['UpdatePlanVersionRequest'];
 export type SchemaUpdateProgramRequest = components['schemas']['UpdateProgramRequest'];
+export type SchemaUpdateServiceCategoryRequest = components['schemas']['UpdateServiceCategoryRequest'];
+export type SchemaUpdateServiceDefinitionRequest = components['schemas']['UpdateServiceDefinitionRequest'];
 export type SchemaUpdateServiceRequest = components['schemas']['UpdateServiceRequest'];
 export type SchemaUserContext = components['schemas']['UserContext'];
 export type ResponseConflict = components['responses']['Conflict'];
@@ -2092,6 +2570,7 @@ export type ResponseUnauthorized = components['responses']['Unauthorized'];
 export type ResponseValidationError = components['responses']['ValidationError'];
 export type ParameterAccountId = components['parameters']['AccountId'];
 export type ParameterAdjustmentId = components['parameters']['AdjustmentId'];
+export type ParameterCodeSystemId = components['parameters']['CodeSystemId'];
 export type ParameterCsrfHeader = components['parameters']['CsrfHeader'];
 export type ParameterCursor = components['parameters']['Cursor'];
 export type ParameterEnrollmentId = components['parameters']['EnrollmentId'];
@@ -2110,10 +2589,243 @@ export type ParameterPlanVersionId = components['parameters']['PlanVersionId'];
 export type ParameterProgramId = components['parameters']['ProgramId'];
 export type ParameterRelationshipId = components['parameters']['RelationshipId'];
 export type ParameterRequestId = components['parameters']['RequestId'];
+export type ParameterServiceCategoryId = components['parameters']['ServiceCategoryId'];
+export type ParameterServiceDefinitionId = components['parameters']['ServiceDefinitionId'];
 export type ParameterTenantHeader = components['parameters']['TenantHeader'];
 export type HeaderETag = components['headers']['ETag'];
 export type $defs = Record<string, never>;
 export interface operations {
+    listCodeSystems: {
+        parameters: {
+            query?: {
+                /** @description Only systems published by this authority. */
+                authority?: components["schemas"]["CodeSystemAuthority"];
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                /** @description Code or name search. */
+                q?: string;
+                /** @description Only systems in this status. */
+                status?: "ACTIVE" | "INACTIVE";
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Code system page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodeSystemPage"];
+                };
+            };
+            /** @description Cursor invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    createCodeSystem: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCodeSystemRequest"];
+            };
+        };
+        responses: {
+            /** @description Code system created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodeSystem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    patchCodeSystem: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                codeSystemId: components["parameters"]["CodeSystemId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/merge-patch+json": components["schemas"]["UpdateCodeSystemRequest"];
+            };
+        };
+        responses: {
+            /** @description Code system updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodeSystem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Body is not application/merge-patch+json */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listCodeValues: {
+        parameters: {
+            query?: {
+                /** @description Date the values must be valid on; defaults to today. */
+                asOf?: string;
+                /** @description Exact code inside the system. */
+                code?: string;
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                /** @description Display text or code search. */
+                q?: string;
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                codeSystemId: components["parameters"]["CodeSystemId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Code value page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodeValuePage"];
+                };
+            };
+            /** @description Cursor invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    importCodeValues: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                codeSystemId: components["parameters"]["CodeSystemId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportCodeValuesRequest"];
+            };
+        };
+        responses: {
+            /** @description Import summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodeValueImportResult"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description Request body larger than the import endpoint accepts */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+        };
+    };
     checkEligibility: {
         parameters: {
             query?: never;
@@ -4147,6 +4859,427 @@ export interface operations {
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             422: components["responses"]["ValidationError"];
+        };
+    };
+    listServiceCategories: {
+        parameters: {
+            query?: {
+                /** @description Only active (true) or only retired (false) categories. */
+                active?: boolean;
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description Only categories of this service domain. */
+                domain?: components["schemas"]["ServiceDomain"];
+                limit?: components["parameters"]["Limit"];
+                /** @description Only the direct children of this category. */
+                parentId?: string;
+                /** @description Code or name search. */
+                q?: string;
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Service category page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceCategoryPage"];
+                };
+            };
+            /** @description Cursor invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    createServiceCategory: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateServiceCategoryRequest"];
+            };
+        };
+        responses: {
+            /** @description Category created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceCategory"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getServiceCategory: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                categoryId: components["parameters"]["ServiceCategoryId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Service category */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceCategory"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    patchServiceCategory: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                categoryId: components["parameters"]["ServiceCategoryId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/merge-patch+json": components["schemas"]["UpdateServiceCategoryRequest"];
+            };
+        };
+        responses: {
+            /** @description Category updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceCategory"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Body is not application/merge-patch+json */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listServiceDefinitions: {
+        parameters: {
+            query?: {
+                /** @description Only active (true) or only retired (false) definitions. */
+                active?: boolean;
+                /** @description Only definitions of this category. */
+                categoryId?: string;
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description Only definitions whose category carries this service domain. */
+                domain?: components["schemas"]["ServiceDomain"];
+                limit?: components["parameters"]["Limit"];
+                /** @description Code or name search. */
+                q?: string;
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Service definition page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceDefinitionPage"];
+                };
+            };
+            /** @description Cursor invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    createServiceDefinition: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateServiceDefinitionRequest"];
+            };
+        };
+        responses: {
+            /** @description Service definition created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceDefinition"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getServiceDefinition: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                definitionId: components["parameters"]["ServiceDefinitionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Service definition */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceDefinition"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    patchServiceDefinition: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                definitionId: components["parameters"]["ServiceDefinitionId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/merge-patch+json": components["schemas"]["UpdateServiceDefinitionRequest"];
+            };
+        };
+        responses: {
+            /** @description Service definition updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceDefinition"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Body is not application/merge-patch+json */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listServiceCodeMappings: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                definitionId: components["parameters"]["ServiceDefinitionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Code mappings of the definition */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceCodeMappingList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    putServiceCodeMappings: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                definitionId: components["parameters"]["ServiceDefinitionId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplaceServiceCodeMappingsRequest"];
+            };
+        };
+        responses: {
+            /** @description Mapping set replaced */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceCodeMappingList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
         };
     };
     listServiceRequests: {

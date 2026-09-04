@@ -76,7 +76,11 @@ func (l *eventLog) codes() []string {
 func newFixture(t *testing.T, username string) *fixture {
 	t.Helper()
 	h := dbtest.New(t)
-	clock := &testClock{now: time.Date(2026, 9, 3, 9, 0, 0, 0, time.UTC)}
+	// Anchored to the real clock, not to a calendar date. Sessions are written with an
+	// expiry derived from this clock, but GetSession filters on the database's own
+	// clock_timestamp(); a pinned date means every session these tests create is already
+	// expired from the database's point of view the day after that date.
+	clock := &testClock{now: time.Now().UTC().Truncate(time.Second)}
 	events := &eventLog{}
 
 	svc, err := application.New(application.Deps{

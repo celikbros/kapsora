@@ -4,6 +4,14 @@
 -- internal system a sponsor already runs. A code is only valid for a period, so a claim
 -- from last year must resolve against the codes that were valid then, not today's.
 
+-- catalog.service_category was created in 000006 without the concurrency columns every
+-- other editable resource has, which would have forced its API to invent a second
+-- optimistic-concurrency mechanism. Give it the standard pair instead.
+ALTER TABLE catalog.service_category
+    ADD COLUMN updated_at  timestamptz NOT NULL DEFAULT clock_timestamp(),
+    ADD COLUMN row_version bigint NOT NULL DEFAULT 1;
+SELECT platform.attach_touch_row('catalog.service_category'::regclass);
+
 CREATE TABLE catalog.code_system (
     id                  uuid PRIMARY KEY DEFAULT uuidv7(),
     tenant_id           uuid NOT NULL REFERENCES platform.tenant(id) ON DELETE RESTRICT,

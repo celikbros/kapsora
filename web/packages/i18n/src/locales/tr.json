@@ -225,7 +225,15 @@
     "IMPORT_DUPLICATE": "Bu dosya bu kaynak sürümüyle zaten yüklendi.",
     "IMPORT_STATE_INVALID": "İçe aktarma bu işleme uygun durumda değil.",
     "IMPORT_ROW_NOT_REVIEWABLE": "Bu satır bu kararı alamaz.",
-    "IMPORT_FILE_TOO_LARGE": "Dosya çok büyük."
+    "IMPORT_FILE_TOO_LARGE": "Dosya çok büyük.",
+    "SERVICE_CATEGORY_NOT_FOUND": "Hizmet kategorisi bulunamadı.",
+    "SERVICE_DEFINITION_NOT_FOUND": "Hizmet tanımı bulunamadı.",
+    "CODE_SYSTEM_NOT_FOUND": "Kod sistemi bulunamadı.",
+    "CATEGORY_CODE_TAKEN": "Bu kategori kodu zaten kullanılıyor.",
+    "SERVICE_DEFINITION_CODE_TAKEN": "Bu hizmet kodu zaten kullanılıyor.",
+    "CODE_SYSTEM_TAKEN": "Bu kod sistemi ve sürümü zaten kayıtlı.",
+    "CATEGORY_CYCLE": "Kategori kendi alt ağacına bağlanamaz.",
+    "CODE_MAPPING_OVERLAP": "Aynı kod için çakışan bir geçerlilik dönemi var."
   },
   "fieldErrors": {
     "REQUIRED": "Zorunlu alan",
@@ -263,7 +271,13 @@
     "QUANTITY_INVALID": "Miktar geçersiz",
     "QUANTITY_ZERO": "Miktar sıfır olamaz",
     "HEADER_INVALID": "Dosyanın başlık satırı beklenen sütunlarla uyuşmuyor",
-    "EMPTY_FILE": "Dosyada hiç satır yok"
+    "EMPTY_FILE": "Dosyada hiç satır yok",
+    "IMMUTABLE": "Bu alan değiştirilemez",
+    "DEPTH_EXCEEDED": "Kategori ağacı en fazla altı seviye olabilir",
+    "PERIOD": "Bitiş tarihi başlangıçtan sonra olmalı",
+    "DUPLICATE": "Aynı değer birden çok kez verilmiş",
+    "NOT_FOUND": "Seçilen kayıt bulunamadı",
+    "MAX_ITEMS": "Satır sayısı üst sınırı aşıyor"
   },
   "people": {
     "title": "Hak Sahipleri",

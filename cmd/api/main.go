@@ -22,6 +22,9 @@ import (
 	benefitpg "github.com/celikbros/kapsora/internal/benefit/infrastructure/postgres"
 	benefitledger "github.com/celikbros/kapsora/internal/benefit/ledger"
 	benefithttp "github.com/celikbros/kapsora/internal/benefit/transport/http"
+	catalogapp "github.com/celikbros/kapsora/internal/catalog/application"
+	catalogpg "github.com/celikbros/kapsora/internal/catalog/infrastructure/postgres"
+	cataloghttp "github.com/celikbros/kapsora/internal/catalog/transport/http"
 	"github.com/celikbros/kapsora/internal/identity"
 	"github.com/celikbros/kapsora/internal/identity/application"
 	"github.com/celikbros/kapsora/internal/identity/domain"
@@ -130,6 +133,12 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	catalogSvc, err := catalogapp.New(catalogapp.Deps{
+		Pool: pool, Repo: catalogpg.New(), Audit: auditpg.New(), Cursors: cursors,
+	})
+	if err != nil {
+		return err
+	}
 	memberImports, err := memberimport.New(memberimport.Deps{
 		Pool: pool, Cipher: keys, Index: keys, Audit: auditpg.New(), Cursors: cursors, Logger: logger,
 	})
@@ -158,6 +167,7 @@ func run() error {
 		orgs:         orgSvc,
 		party:        partySvc,
 		benefit:      benefitSvc,
+		catalog:      catalogSvc,
 		entitlements: entitlementSvc,
 		eligibility:  eligibilitySvc,
 		imports:      memberImports,
@@ -235,6 +245,7 @@ type routerDeps struct {
 	orgs         *orgapp.Service
 	party        *partyapp.Service
 	benefit      *benefitapp.Service
+	catalog      *catalogapp.Service
 	entitlements *benefitledger.Service
 	eligibility  *benefiteligibility.Service
 	imports      *memberimport.Service
@@ -332,6 +343,21 @@ func newRouter(d routerDeps) http.Handler {
 			})
 			tenant.Route("/entitlement-adjustments", entitlementHandler.AdjustmentRoutes)
 
+			// The catalog is the vocabulary every later module speaks, so it mounts
+			// beside the benefit routes rather than under them.
+			catalogHandler := cataloghttp.NewHandler(d.catalog, sessions, d.logger)
+			catalogMW := cataloghttp.Middlewares{
+				CreateCategory:   d.idempotent("catalog_category.create"),
+				CreateDefinition: d.idempotent("service_definition.create"),
+				CreateCodeSystem: d.idempotent("code_system.create"),
+				// A 5000 row code value batch is far larger than any other command body,
+				// so the replay record hashes a bigger request than the default allows.
+				ImportCodeValues: d.idempotentLarge("code_value.import", codeValueImportBodyLimit),
+			}
+			tenant.Route("/service-categories", func(r chi.Router) { catalogHandler.CategoryRoutes(r, catalogMW) })
+			tenant.Route("/service-definitions", func(r chi.Router) { catalogHandler.DefinitionRoutes(r, catalogMW) })
+			tenant.Route("/code-systems", func(r chi.Router) { catalogHandler.CodeSystemRoutes(r, catalogMW) })
+
 			// Eligibility checks change no business state and carry their own replay
 			// contract in benefit.eligibility_evaluation.idempotency_key, so the
 			// Idempotency-Key middleware is not applied to them.
@@ -349,12 +375,26 @@ func newRouter(d routerDeps) http.Handler {
 	return r
 }
 
+// codeValueImportBodyLimit is the largest code value import body the API accepts; the
+// contract caps the batch at 5000 rows (WP-I3-01 section 2.3).
+const codeValueImportBodyLimit = 8 << 20
+
 // idempotent builds the Idempotency-Key middleware for one command code.
 func (d routerDeps) idempotent(commandCode string) func(http.Handler) http.Handler {
 	return idempotency.Middleware(d.pool, idempotency.Options{
 		CommandCode: commandCode,
 		Scope:       idempotencyScope,
 		Logger:      d.logger,
+	})
+}
+
+// idempotentLarge is idempotent with a raised request body ceiling, for the bulk imports.
+func (d routerDeps) idempotentLarge(commandCode string, maxRequestBytes int64) func(http.Handler) http.Handler {
+	return idempotency.Middleware(d.pool, idempotency.Options{
+		CommandCode:     commandCode,
+		Scope:           idempotencyScope,
+		MaxRequestBytes: maxRequestBytes,
+		Logger:          d.logger,
 	})
 }
 
