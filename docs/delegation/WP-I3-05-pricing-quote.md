@@ -6,7 +6,7 @@
 | Size                       | M                                                                                                          |
 | Depends on                 | WP-I3-01, WP-I3-02, WP-I3-03, WP-I3-04, WP-I2-04 (eligibility)                                             |
 | Runs in parallel with      | WP-I3-06                                                                                                   |
-| Migration numbers assigned | `000023_pricing_quote.up.sql`                                                                              |
+| Migration numbers assigned | `000023_pricing_quote.up.sql` (also seeds the one permission M3 adds, `pricing.quote`)                      |
 | OpenAPI operations owned   | `createPriceQuote`, `getPriceQuote`                                                                        |
 | Read first                 | v1.2 11.5, 11.6, 9.8; WP-I3-03 selection; WP-I2-04 eligibility snapshots (this mirrors their immutability) |
 

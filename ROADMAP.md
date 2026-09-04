@@ -88,7 +88,7 @@ contract lands). Migrations: 000014 (01, relationship versioning), 000015 (02), 
 
 Integration order: 01 → 02 → 03 → 04 → 05 → 06 (06 starts on mocks as soon as each
 contract lands). Migrations: 000019 (01), 000020 (02), 000021 (03), 000022 (04), 000023 (05).
-New ADR required: ADR-022, the rule expression language (CEL).
+ADR-023 fixes the rule expression language (CEL); ADR-022 was already taken by the identity decision.
 
 ## Cross-cutting tracks
 

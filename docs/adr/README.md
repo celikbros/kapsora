@@ -27,3 +27,5 @@ ilgili v1.2 bölümüne referans verir; plan v2.0 ile gelen kararlar ayrıntıl�
 | 019 | Muhasebe kanonik modeli ve ERP adapter'ları | Accepted | Plan v2.0 2.7 |
 | 020 | I0 araç ve sürüm sapmaları (Go 1.27, decimal, XML doğrulama, TS istemci, CI servis konteyneri) | Accepted | 02.09.2026 onayı |
 | 021 | Konteynersiz çalışma zamanı: Docker/Kubernetes yok, systemd + doğal servisler, Valkey ertelendi | Accepted | İş sahibi kararı 02.09.2026 |
+| 022 | KAPSORA kendi kullanıcılarını doğrular; MVP'de dış kimlik sağlayıcı yok (ADR-005'i geçersiz kılar) | Accepted | İş sahibi kararı 03.09.2026 |
+| 023 | Kural ifadeleri CEL ile yazılır | Accepted | v1.2 9.9, 11.7; WP-I3-04 |

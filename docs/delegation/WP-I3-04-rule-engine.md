@@ -8,7 +8,7 @@
 | Runs in parallel with      | WP-I3-03                                                                                                                                                                                                                                                                                                  |
 | Migration numbers assigned | `000022_rules_engine.up.sql`                                                                                                                                                                                                                                                                              |
 | OpenAPI operations owned   | `listRuleSets`, `createRuleSet`, `getRuleSet`, `patchRuleSet`, `listRuleSetVersions`, `createRuleSetVersion`, `getRuleSetVersion`, `putRules`, `putRuleTestCases`, `runRuleTests`, `simulateRuleSetVersion`, `submitRuleSetVersion`, `publishRuleSetVersion`, `retireRuleSetVersion`, `getRuleEvaluation` |
-| Read first                 | v1.2 9.9, 11.7, 16.6 (rules rows); WP-I2-04 eligibility (its explanation model is the one rules extend); ADR-015. New ADR required: **ADR-022 rule expression language**                                                                                                                                  |
+| Read first                 | v1.2 9.9, 11.7, 16.6 (rules rows); WP-I2-04 eligibility (its explanation model is the one rules extend); ADR-015. New ADR required: **ADR-023 rule expression language**                                                                                                                                  |
 
 ## 1. Goal
 
@@ -20,7 +20,7 @@ recorded with the exact version that produced every answer.
 
 ## 2. Scope
 
-### 2.1 Expression language (write ADR-022 first)
+### 2.1 Expression language (ADR-023, already written)
 
 Rules are **CEL** (`github.com/google/cel-go`), not a home-made DSL and not embedded
 scripting. CEL is a good fit for the constraints v1.2 11.7 sets: it is total (no unbounded
@@ -93,7 +93,7 @@ passes** (422, field `testCases`, code `TESTS_REQUIRED` or `TESTS_FAILING` with 
 case codes). `publish` needs a different actor and a step-up, exactly as contract and plan
 versions. This is v1.2 11.7's first line and the reason the test-case table exists at all.
 
-`POST .../versions/{id}/tests:run` (`rules.manage`) runs the cases against the draft and
+`POST .../versions/{id}/tests:run` (`rule.draft`) runs the cases against the draft and
 returns per-case actual versus expected. `POST .../versions/{id}:simulate` runs one
 supplied input against a draft or published version and returns the full trace **without
 writing an evaluation row and without any side effect** — v1.2 11.7's "simulation creates
@@ -126,5 +126,5 @@ plus its authoring API.
 - [ ] A published version never changes, and every evaluation names the version that
       produced it and the rules that fired, in order, with explanation codes.
 - [ ] Simulation of production data produces no row and no side effect.
-- [ ] ADR-022 written; OpenAPI, generated code, Spectral and `oasdiff` clean; schema
+- [ ] ADR-023 written (done: `docs/adr/ADR-023.md`); OpenAPI, generated code, Spectral and `oasdiff` clean; schema
       version 22.

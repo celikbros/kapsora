@@ -69,8 +69,9 @@ Every table: RLS through `platform.enable_tenant_rls`, touch trigger, composite 
 ### 2.2 API shape
 
 - Providers, locations and practitioners are `ETag`/`If-Match` merge-patch resources.
-  Permissions: `provider.read` and `provider.manage` (add both to migration 000020's
-  permission seed and to the admin role).
+  Permissions `provider.read`, `provider.manage` and `provider.practitioner.manage` are
+  already seeded (migration 000008); practitioner writes take the third one because a
+  registration number is sensitive.
 - Capabilities and practitioner-location assignments are replaced as a set
   (`PUT .../capabilities`, `PUT .../locations`) rather than patched row by row, because
   what matters is the resulting coverage and a set replacement makes the overlap check one
