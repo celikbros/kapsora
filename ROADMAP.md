@@ -90,6 +90,22 @@ Integration order: 01 → 02 → 03 → 04 → 05 → 06 (06 starts on mocks as 
 contract lands). Migrations: 000019 (01), 000020 (02), 000021 (03), 000022 (04), 000023 (05).
 ADR-023 fixes the rule expression language (CEL); ADR-022 was already taken by the identity decision.
 
+## M4 work packages (issued 2026-09-04)
+
+| WP                                                                                 | Title                                                                                 | Depends on                            | Parallel with | Size | Owner  |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------- | ------------- | ---- | ------ |
+| [WP-I4-01](docs/delegation/WP-I4-01-service-requests.md)                           | Service requests: versions, items, explicit transitions, the submit gate              | M2, M3                                | 04            | L    | Claude |
+| [WP-I4-02](docs/delegation/WP-I4-02-authorization-and-fulfilment.md)               | Authorization reserving entitlement, fulfilment consuming it, vouchers                | 01, WP-I2-03                          | 03            | L    | Claude |
+| [WP-I4-03](docs/delegation/WP-I4-03-workflow-and-worklist.md)                      | Work queues, work items, SLA snapshot and escalation, approval policy                 | 01                                    | 02            | L    | Claude |
+| [WP-I4-04](docs/delegation/WP-I4-04-document-pipeline.md)                          | Documents: upload, quarantine, ClamAV scan, secure storage, legal hold                | M1 (native ClamAV and object storage) | 01            | L    | Claude |
+| [WP-I4-05](docs/delegation/WP-I4-05-notifications.md)                              | Notification templates, messages, delivery, preferences                               | 01, WP-I1-04 outbox                   | 03            | M    | Claude |
+| [WP-I4-06](docs/delegation/WP-I4-06-frontend-requests-worklist-provider-portal.md) | Screens: requests, worklist, documents, notifications — and the first provider portal | contracts of 01-05                    | all           | L    | Claude |
+
+Integration order: 01 → 02 → 03 → 04 → 05 → 06 (06 starts on mocks as soon as each
+contract lands). Migrations: 000025 (01), 000026 (02), 000027 (03), 000028 (04), 000029 (05).
+The provider portal ships its first real screens here; `web/apps/provider` has been an
+empty shell since M1.
+
 ## Cross-cutting tracks
 
 - **Security and privacy:** every WP carries the non-negotiable rules from the handbook
@@ -114,6 +130,7 @@ ADR-023 fixes the rule expression language (CEL); ADR-022 was already taken by t
 ## Status log
 
 - 2026-09-04 · M3 opened: six work packages WP-I3-01..06 written from plan v2.0 I3 and the v1.2 Phase 4 acceptance criteria; migration numbers 000019-000023 assigned. The milestone turns on two rules the baseline states plainly and this plan refuses to soften: one service date selects exactly one contract price or answers REVIEW_REQUIRED, never a coin flip; and a rule version reaches review only with a passing test case and is published only by a second person.
+- 2026-09-04 · M4 opened: six work packages WP-I4-01..06 written from plan v2.0 I4 and the v1.2 Phase 5 acceptance criteria; migration numbers 000025-000029 assigned. Three rules from the baseline are written into the specs rather than left to the implementation: no endpoint anywhere writes a status, so every move is a command with its own precondition and reason; return and reject are different things, because collapsing them makes a correctable mistake read as a refusal; and a work item is judged by the SLA it was given, not the one its queue has today.
 - 2026-09-04 · Owner: the Nettefatura web-service application and the accounting-program choice move to the end of the queue. Neither blocks anything now, and there is no running product to integrate with yet; M8 and M9 keep their place in the increment order but their external inputs are not chased until the work in front of them is done.
 - 2026-09-04 · M3 closed. WP-I3-06 delivered the backoffice screens for the catalog and its code systems, the provider network, contracts with their price sheets, the rule sets with their publishing gate, and the price quote. 152 Vitest specs and 11 Playwright flows pass, Impeccable reports no anti-patterns, and CI is green on all six jobs. Three screens arrived navigating around the router because Link is typed against the registered route tree; they now use it, which also meant declaring routes one by one rather than mapping over a list, since a .map() erases the path literals and turns every link into an unchecked string.
 - 2026-09-04 · M3 backend delivered (WP-I3-01..05): the service catalog with external code systems, the provider network with encrypted practitioner registrations, contracts with maker-checker publishing and deterministic price selection, the CEL rule engine with its publishing gate, and the pricing quote. Migrations 000019-000024; schema version 24.
