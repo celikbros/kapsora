@@ -1099,6 +1099,189 @@ func (e MemberShareMethod) Valid() bool {
 	}
 }
 
+// Defines values for NotificationChannel.
+const (
+	EMAIL NotificationChannel = "EMAIL"
+	INAPP NotificationChannel = "INAPP"
+	PUSH  NotificationChannel = "PUSH"
+	SMS   NotificationChannel = "SMS"
+)
+
+// Valid indicates whether the value is a known member of the NotificationChannel enum.
+func (e NotificationChannel) Valid() bool {
+	switch e {
+	case EMAIL:
+		return true
+	case INAPP:
+		return true
+	case PUSH:
+		return true
+	case SMS:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NotificationDeliveryOutcome.
+const (
+	NotificationDeliveryOutcomeACCEPTED NotificationDeliveryOutcome = "ACCEPTED"
+	NotificationDeliveryOutcomeBOUNCED  NotificationDeliveryOutcome = "BOUNCED"
+	NotificationDeliveryOutcomeERROR    NotificationDeliveryOutcome = "ERROR"
+	NotificationDeliveryOutcomeREJECTED NotificationDeliveryOutcome = "REJECTED"
+)
+
+// Valid indicates whether the value is a known member of the NotificationDeliveryOutcome enum.
+func (e NotificationDeliveryOutcome) Valid() bool {
+	switch e {
+	case NotificationDeliveryOutcomeACCEPTED:
+		return true
+	case NotificationDeliveryOutcomeBOUNCED:
+		return true
+	case NotificationDeliveryOutcomeERROR:
+		return true
+	case NotificationDeliveryOutcomeREJECTED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NotificationMessageStatus.
+const (
+	NotificationMessageStatusFAILED     NotificationMessageStatus = "FAILED"
+	NotificationMessageStatusQUEUED     NotificationMessageStatus = "QUEUED"
+	NotificationMessageStatusSENDING    NotificationMessageStatus = "SENDING"
+	NotificationMessageStatusSENT       NotificationMessageStatus = "SENT"
+	NotificationMessageStatusSUPPRESSED NotificationMessageStatus = "SUPPRESSED"
+)
+
+// Valid indicates whether the value is a known member of the NotificationMessageStatus enum.
+func (e NotificationMessageStatus) Valid() bool {
+	switch e {
+	case NotificationMessageStatusFAILED:
+		return true
+	case NotificationMessageStatusQUEUED:
+		return true
+	case NotificationMessageStatusSENDING:
+		return true
+	case NotificationMessageStatusSENT:
+		return true
+	case NotificationMessageStatusSUPPRESSED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NotificationRecipientType.
+const (
+	ACTOR        NotificationRecipientType = "ACTOR"
+	ORGANIZATION NotificationRecipientType = "ORGANIZATION"
+	PERSON       NotificationRecipientType = "PERSON"
+)
+
+// Valid indicates whether the value is a known member of the NotificationRecipientType enum.
+func (e NotificationRecipientType) Valid() bool {
+	switch e {
+	case ACTOR:
+		return true
+	case ORGANIZATION:
+		return true
+	case PERSON:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NotificationSafeVariable.
+const (
+	Amount       NotificationSafeVariable = "amount"
+	Currency     NotificationSafeVariable = "currency"
+	DeepLink     NotificationSafeVariable = "deep_link"
+	EventDate    NotificationSafeVariable = "event_date"
+	ExpiresAt    NotificationSafeVariable = "expires_at"
+	GivenName    NotificationSafeVariable = "given_name"
+	ProgramName  NotificationSafeVariable = "program_name"
+	ProviderName NotificationSafeVariable = "provider_name"
+	ReferenceNo  NotificationSafeVariable = "reference_no"
+	StatusCode   NotificationSafeVariable = "status_code"
+)
+
+// Valid indicates whether the value is a known member of the NotificationSafeVariable enum.
+func (e NotificationSafeVariable) Valid() bool {
+	switch e {
+	case Amount:
+		return true
+	case Currency:
+		return true
+	case DeepLink:
+		return true
+	case EventDate:
+		return true
+	case ExpiresAt:
+		return true
+	case GivenName:
+		return true
+	case ProgramName:
+		return true
+	case ProviderName:
+		return true
+	case ReferenceNo:
+		return true
+	case StatusCode:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NotificationSuppressionReason.
+const (
+	NOADDRESS          NotificationSuppressionReason = "NO_ADDRESS"
+	NOTEMPLATE         NotificationSuppressionReason = "NO_TEMPLATE"
+	PREFERENCEDISABLED NotificationSuppressionReason = "PREFERENCE_DISABLED"
+	QUIETHOURS         NotificationSuppressionReason = "QUIET_HOURS"
+)
+
+// Valid indicates whether the value is a known member of the NotificationSuppressionReason enum.
+func (e NotificationSuppressionReason) Valid() bool {
+	switch e {
+	case NOADDRESS:
+		return true
+	case NOTEMPLATE:
+		return true
+	case PREFERENCEDISABLED:
+		return true
+	case QUIETHOURS:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NotificationTemplateStatus.
+const (
+	NotificationTemplateStatusDRAFT     NotificationTemplateStatus = "DRAFT"
+	NotificationTemplateStatusPUBLISHED NotificationTemplateStatus = "PUBLISHED"
+	NotificationTemplateStatusRETIRED   NotificationTemplateStatus = "RETIRED"
+)
+
+// Valid indicates whether the value is a known member of the NotificationTemplateStatus enum.
+func (e NotificationTemplateStatus) Valid() bool {
+	switch e {
+	case NotificationTemplateStatusDRAFT:
+		return true
+	case NotificationTemplateStatusPUBLISHED:
+		return true
+	case NotificationTemplateStatusRETIRED:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for OrganizationOrganizationKind.
 const (
 	OrganizationOrganizationKindBANK       OrganizationOrganizationKind = "BANK"
@@ -3421,6 +3604,27 @@ type CreateMembershipRequest struct {
 // CreateMembershipRequestStatus defines model for CreateMembershipRequest.Status.
 type CreateMembershipRequestStatus string
 
+// CreateNotificationTemplate defines model for CreateNotificationTemplate.
+type CreateNotificationTemplate struct {
+	// Body The text, with double-brace placeholders for the declared variables. A brace
+	// pair the renderer would not substitute is refused rather than sent verbatim.
+	Body string `json:"body"`
+
+	// Channel How a message reaches somebody. EMAIL goes through SMTP; SMS is recorded until a
+	// provider is chosen; PUSH is recorded and not delivered in this milestone; INAPP is
+	// delivered by being recorded, because the message log is what a screen reads.
+	Channel NotificationChannel `json:"channel"`
+
+	// DeclaredVariables Exactly the variables the body and subject use. Neither a declared variable the
+	// text never mentions nor a placeholder nobody declared is accepted.
+	DeclaredVariables *[]NotificationSafeVariable `json:"declaredVariables,omitempty"`
+	EventCode         string                      `json:"eventCode"`
+	Locale            string                      `json:"locale"`
+
+	// Subject Required for EMAIL and refused for every other channel.
+	Subject *string `json:"subject,omitempty"`
+}
+
 // CreateOrganizationRequest defines model for CreateOrganizationRequest.
 type CreateOrganizationRequest struct {
 	CountryCode *string `json:"countryCode,omitempty"`
@@ -4327,6 +4531,204 @@ type MemberImportRowStatus string
 // MemberShareMethod How much of the price the member carries; NONE means the payer carries all of it.
 type MemberShareMethod string
 
+// NotificationChannel How a message reaches somebody. EMAIL goes through SMTP; SMS is recorded until a
+// provider is chosen; PUSH is recorded and not delivered in this milestone; INAPP is
+// delivered by being recorded, because the message log is what a screen reads.
+type NotificationChannel string
+
+// NotificationDelivery defines model for NotificationDelivery.
+type NotificationDelivery struct {
+	AttemptNo   int       `json:"attemptNo"`
+	AttemptedAt time.Time `json:"attemptedAt"`
+
+	// Detail The provider's answer, bounded and with addresses removed: a bounce quotes the
+	// recipient, and that quote would otherwise be stored here forever.
+	Detail    *string            `json:"detail,omitempty"`
+	Id        openapi_types.UUID `json:"id"`
+	MessageId openapi_types.UUID `json:"messageId"`
+
+	// Outcome What one attempt came back with. REJECTED and BOUNCED are the provider's final word
+	// and stop the retries; ERROR is a provider that could not be reached, which is the
+	// one outcome worth trying again.
+	Outcome NotificationDeliveryOutcome `json:"outcome"`
+
+	// ProviderCode Who took the message. SMTP is a mail server; SMS_STUB, PUSH_RECORDER and
+	// INAPP_RECORDER mean the attempt was recorded and the message never left the
+	// platform.
+	ProviderCode      string  `json:"providerCode"`
+	ProviderMessageId *string `json:"providerMessageId,omitempty"`
+}
+
+// NotificationDeliveryOutcome What one attempt came back with. REJECTED and BOUNCED are the provider's final word
+// and stop the retries; ERROR is a provider that could not be reached, which is the
+// one outcome worth trying again.
+type NotificationDeliveryOutcome string
+
+// NotificationMessage defines model for NotificationMessage.
+type NotificationMessage struct {
+	BodyRendered *string `json:"bodyRendered,omitempty"`
+
+	// Channel How a message reaches somebody. EMAIL goes through SMTP; SMS is recorded until a
+	// provider is chosen; PUSH is recorded and not delivered in this milestone; INAPP is
+	// delivered by being recorded, because the message log is what a screen reads.
+	Channel       NotificationChannel       `json:"channel"`
+	CreatedAt     time.Time                 `json:"createdAt"`
+	EventCode     string                    `json:"eventCode"`
+	Id            openapi_types.UUID        `json:"id"`
+	Locale        string                    `json:"locale"`
+	RecipientId   openapi_types.UUID        `json:"recipientId"`
+	RecipientType NotificationRecipientType `json:"recipientType"`
+
+	// ResentFromMessageId The message this one is a resend of.
+	ResentFromMessageId *openapi_types.UUID `json:"resentFromMessageId,omitempty"`
+	RowVersion          int64               `json:"rowVersion"`
+
+	// SafeVariables The values this message was rendered from. They are on the log because an
+	// operator needs to see what the member would have been sent even when the
+	// message was suppressed, and they are safe by construction.
+	SafeVariables map[string]string `json:"safeVariables"`
+	SentAt        *time.Time        `json:"sentAt,omitempty"`
+
+	// Status SUPPRESSED is the status that matters: it is a message that was deliberately not
+	// sent, with a reason, so a member who was not told can be shown to have not been
+	// told.
+	Status          NotificationMessageStatus `json:"status"`
+	SubjectRendered *string                   `json:"subjectRendered,omitempty"`
+
+	// SuppressedReason Set exactly when the status is SUPPRESSED.
+	SuppressedReason *NotificationSuppressionReason `json:"suppressedReason,omitempty"`
+
+	// TemplateId The template that produced this text, and its version. Both are null on a
+	// message that was suppressed before anything was rendered.
+	TemplateId        *openapi_types.UUID `json:"templateId,omitempty"`
+	TemplateVersionNo *int                `json:"templateVersionNo,omitempty"`
+}
+
+// NotificationMessageDetail defines model for NotificationMessageDetail.
+type NotificationMessageDetail struct {
+	Deliveries []NotificationDelivery `json:"deliveries"`
+	Message    NotificationMessage    `json:"message"`
+}
+
+// NotificationMessagePage defines model for NotificationMessagePage.
+type NotificationMessagePage struct {
+	Items      []NotificationMessage `json:"items"`
+	NextCursor *string               `json:"nextCursor,omitempty"`
+}
+
+// NotificationMessageStatus SUPPRESSED is the status that matters: it is a message that was deliberately not
+// sent, with a reason, so a member who was not told can be shown to have not been
+// told.
+type NotificationMessageStatus string
+
+// NotificationPreference defines model for NotificationPreference.
+type NotificationPreference struct {
+	// Channel How a message reaches somebody. EMAIL goes through SMTP; SMS is recorded until a
+	// provider is chosen; PUSH is recorded and not delivered in this milestone; INAPP is
+	// delivered by being recorded, because the message log is what a screen reads.
+	Channel   NotificationChannel `json:"channel"`
+	CreatedAt time.Time           `json:"createdAt"`
+	Enabled   bool                `json:"enabled"`
+
+	// EventCode Null means every event on this channel.
+	EventCode       *string                   `json:"eventCode,omitempty"`
+	Id              openapi_types.UUID        `json:"id"`
+	QuietHoursEnd   *string                   `json:"quietHoursEnd,omitempty"`
+	QuietHoursStart *string                   `json:"quietHoursStart,omitempty"`
+	RecipientId     openapi_types.UUID        `json:"recipientId"`
+	RecipientType   NotificationRecipientType `json:"recipientType"`
+	RowVersion      int64                     `json:"rowVersion"`
+
+	// Timezone IANA zone name the quiet hours are read in.
+	Timezone string `json:"timezone"`
+}
+
+// NotificationPreferenceInput defines model for NotificationPreferenceInput.
+type NotificationPreferenceInput struct {
+	// Channel How a message reaches somebody. EMAIL goes through SMTP; SMS is recorded until a
+	// provider is chosen; PUSH is recorded and not delivered in this milestone; INAPP is
+	// delivered by being recorded, because the message log is what a screen reads.
+	Channel NotificationChannel `json:"channel"`
+	Enabled bool                `json:"enabled"`
+
+	// EventCode Absent means every event on this channel.
+	EventCode     *string `json:"eventCode,omitempty"`
+	QuietHoursEnd *string `json:"quietHoursEnd,omitempty"`
+
+	// QuietHoursStart Given with quietHoursEnd or not at all.
+	QuietHoursStart *string `json:"quietHoursStart,omitempty"`
+
+	// Timezone IANA zone name; defaults to Europe/Istanbul.
+	Timezone *string `json:"timezone,omitempty"`
+}
+
+// NotificationPreferenceList defines model for NotificationPreferenceList.
+type NotificationPreferenceList struct {
+	Items []NotificationPreference `json:"items"`
+}
+
+// NotificationRecipientType defines model for NotificationRecipientType.
+type NotificationRecipientType string
+
+// NotificationSafeVariable The whole of what a notification may carry. A variable outside this list is refused
+// at render time rather than dropped, and each of these has a shape of its own that
+// its value must have: a given name has no digits at all, a status is a code, a date
+// is a date, an amount is a decimal, and a deep link is a path with no query string,
+// so there is nowhere in any of them to put a diagnosis, an identity number or
+// something an operator typed into a comment.
+//
+// deep_link is a path rather than a URL, and the product prefixes its own base. That
+// is what "no secret in a link" means here: there is nowhere in the value for a token
+// to ride along, so a link can only point at a screen the recipient has to sign in to
+// see. A voucher's plaintext is never one of these values.
+type NotificationSafeVariable string
+
+// NotificationSuppressionReason Why nobody was told. PREFERENCE_DISABLED is somebody who asked not to hear about
+// this; QUIET_HOURS is the middle of their night in their own time zone; NO_TEMPLATE
+// is an event nobody has written a message for yet; NO_ADDRESS is a recipient the
+// platform holds no address for on that channel.
+type NotificationSuppressionReason string
+
+// NotificationTemplate defines model for NotificationTemplate.
+type NotificationTemplate struct {
+	Body string `json:"body"`
+
+	// Channel How a message reaches somebody. EMAIL goes through SMTP; SMS is recorded until a
+	// provider is chosen; PUSH is recorded and not delivered in this milestone; INAPP is
+	// delivered by being recorded, because the message log is what a screen reads.
+	Channel           NotificationChannel        `json:"channel"`
+	CreatedAt         time.Time                  `json:"createdAt"`
+	DeclaredVariables []NotificationSafeVariable `json:"declaredVariables"`
+
+	// EventCode The domain event this message is written for.
+	EventCode   string              `json:"eventCode"`
+	Id          openapi_types.UUID  `json:"id"`
+	Locale      string              `json:"locale"`
+	PublishedAt *time.Time          `json:"publishedAt,omitempty"`
+	PublishedBy *openapi_types.UUID `json:"publishedBy,omitempty"`
+	RowVersion  int64               `json:"rowVersion"`
+
+	// Status A draft renders nothing. A published template is immutable and there is at most one
+	// per event, channel and language. A retired one is what a published template becomes
+	// when a newer version replaces it; it never comes back.
+	Status NotificationTemplateStatus `json:"status"`
+
+	// Subject Present for EMAIL and absent for every other channel.
+	Subject   *string `json:"subject,omitempty"`
+	VersionNo int     `json:"versionNo"`
+}
+
+// NotificationTemplatePage defines model for NotificationTemplatePage.
+type NotificationTemplatePage struct {
+	Items      []NotificationTemplate `json:"items"`
+	NextCursor *string                `json:"nextCursor,omitempty"`
+}
+
+// NotificationTemplateStatus A draft renders nothing. A published template is immutable and there is at most one
+// per event, channel and language. A retired one is what a published template becomes
+// when a newer version replaces it; it never comes back.
+type NotificationTemplateStatus string
+
 // Organization Tenant relationship with a global organization. `id` identifies the relationship
 // (tenant_organization); `organizationId` identifies the shared legal entity.
 type Organization struct {
@@ -5214,6 +5616,13 @@ type PutApprovalPolicies struct {
 	// Policies The whole set for this action. An empty array is a legitimate request: it means
 	// this action needs no policy at all, and it removes whatever was there.
 	Policies []ApprovalPolicyInput `json:"policies"`
+}
+
+// PutNotificationPreferences defines model for PutNotificationPreferences.
+type PutNotificationPreferences struct {
+	Preferences   []NotificationPreferenceInput `json:"preferences"`
+	RecipientId   openapi_types.UUID            `json:"recipientId"`
+	RecipientType NotificationRecipientType     `json:"recipientType"`
 }
 
 // PutPaymentTermRequest defines model for PutPaymentTermRequest.
@@ -6500,6 +6909,12 @@ type Limit = int
 // MembershipId defines model for MembershipId.
 type MembershipId = openapi_types.UUID
 
+// NotificationMessageId defines model for NotificationMessageId.
+type NotificationMessageId = openapi_types.UUID
+
+// NotificationTemplateId defines model for NotificationTemplateId.
+type NotificationTemplateId = openapi_types.UUID
+
 // OrganizationId defines model for OrganizationId.
 type OrganizationId = openapi_types.UUID
 
@@ -7293,6 +7708,113 @@ type PutLegalHoldParams struct {
 
 // ReleaseLegalHoldParams defines parameters for ReleaseLegalHold.
 type ReleaseLegalHoldParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ListNotificationMessagesParams defines parameters for ListNotificationMessages.
+type ListNotificationMessagesParams struct {
+	// Cursor Opaque cursor from the previous response.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// EventCode Keep only the messages of one domain event.
+	EventCode *string `form:"eventCode,omitempty" json:"eventCode,omitempty"`
+
+	// Channel Keep only the messages of one channel.
+	Channel *NotificationChannel `form:"channel,omitempty" json:"channel,omitempty"`
+
+	// Status Keep only the messages in one state.
+	Status *NotificationMessageStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// RecipientType With recipientId, keep only the messages sent to one recipient.
+	RecipientType *NotificationRecipientType `form:"recipientType,omitempty" json:"recipientType,omitempty"`
+
+	// RecipientId With recipientType, keep only the messages sent to one recipient.
+	RecipientId *openapi_types.UUID `form:"recipientId,omitempty" json:"recipientId,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// GetNotificationMessageParams defines parameters for GetNotificationMessage.
+type GetNotificationMessageParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// ResendNotificationMessageParams defines parameters for ResendNotificationMessage.
+type ResendNotificationMessageParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// GetNotificationPreferencesParams defines parameters for GetNotificationPreferences.
+type GetNotificationPreferencesParams struct {
+	RecipientType NotificationRecipientType `form:"recipientType" json:"recipientType"`
+	RecipientId   openapi_types.UUID        `form:"recipientId" json:"recipientId"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// PutNotificationPreferencesParams defines parameters for PutNotificationPreferences.
+type PutNotificationPreferencesParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ListNotificationTemplatesParams defines parameters for ListNotificationTemplates.
+type ListNotificationTemplatesParams struct {
+	// Cursor Opaque cursor from the previous response.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// EventCode Keep only the templates of one domain event.
+	EventCode *string `form:"eventCode,omitempty" json:"eventCode,omitempty"`
+
+	// Channel Keep only the templates of one channel.
+	Channel *NotificationChannel `form:"channel,omitempty" json:"channel,omitempty"`
+
+	// Locale Keep only the templates of one language.
+	Locale *string `form:"locale,omitempty" json:"locale,omitempty"`
+
+	// Status Keep only the drafts, the published ones or the retired ones.
+	Status *NotificationTemplateStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// CreateNotificationTemplateParams defines parameters for CreateNotificationTemplate.
+type CreateNotificationTemplateParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// GetNotificationTemplateParams defines parameters for GetNotificationTemplate.
+type GetNotificationTemplateParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// PublishNotificationTemplateParams defines parameters for PublishNotificationTemplate.
+type PublishNotificationTemplateParams struct {
 	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
 	XTenantID TenantHeader `json:"X-Tenant-ID"`
 
@@ -8646,6 +9168,12 @@ type ReviewMemberImportRowJSONRequestBody ReviewMemberImportRowJSONBody
 // PutLegalHoldJSONRequestBody defines body for PutLegalHold for application/json ContentType.
 type PutLegalHoldJSONRequestBody = CreateLegalHold
 
+// PutNotificationPreferencesJSONRequestBody defines body for PutNotificationPreferences for application/json ContentType.
+type PutNotificationPreferencesJSONRequestBody = PutNotificationPreferences
+
+// CreateNotificationTemplateJSONRequestBody defines body for CreateNotificationTemplate for application/json ContentType.
+type CreateNotificationTemplateJSONRequestBody = CreateNotificationTemplate
+
 // CreateTenantOrganizationJSONRequestBody defines body for CreateTenantOrganization for application/json ContentType.
 type CreateTenantOrganizationJSONRequestBody = CreateOrganizationRequest
 
@@ -9050,6 +9578,33 @@ type ServerInterface interface {
 
 	// (GET /api/v1/me)
 	GetCurrentUserContext(w http.ResponseWriter, r *http.Request)
+
+	// (GET /api/v1/notification-messages)
+	ListNotificationMessages(w http.ResponseWriter, r *http.Request, params ListNotificationMessagesParams)
+
+	// (GET /api/v1/notification-messages/{messageId})
+	GetNotificationMessage(w http.ResponseWriter, r *http.Request, messageId NotificationMessageId, params GetNotificationMessageParams)
+
+	// (POST /api/v1/notification-messages/{messageId}/resend)
+	ResendNotificationMessage(w http.ResponseWriter, r *http.Request, messageId NotificationMessageId, params ResendNotificationMessageParams)
+
+	// (GET /api/v1/notification-preferences)
+	GetNotificationPreferences(w http.ResponseWriter, r *http.Request, params GetNotificationPreferencesParams)
+
+	// (PUT /api/v1/notification-preferences)
+	PutNotificationPreferences(w http.ResponseWriter, r *http.Request, params PutNotificationPreferencesParams)
+
+	// (GET /api/v1/notification-templates)
+	ListNotificationTemplates(w http.ResponseWriter, r *http.Request, params ListNotificationTemplatesParams)
+
+	// (POST /api/v1/notification-templates)
+	CreateNotificationTemplate(w http.ResponseWriter, r *http.Request, params CreateNotificationTemplateParams)
+
+	// (GET /api/v1/notification-templates/{templateId})
+	GetNotificationTemplate(w http.ResponseWriter, r *http.Request, templateId NotificationTemplateId, params GetNotificationTemplateParams)
+
+	// (POST /api/v1/notification-templates/{templateId}/publish)
+	PublishNotificationTemplate(w http.ResponseWriter, r *http.Request, templateId NotificationTemplateId, params PublishNotificationTemplateParams)
 
 	// (GET /api/v1/organizations)
 	ListOrganizations(w http.ResponseWriter, r *http.Request, params ListOrganizationsParams)
@@ -9738,6 +10293,51 @@ func (_ Unimplemented) ReleaseLegalHold(w http.ResponseWriter, r *http.Request, 
 
 // (GET /api/v1/me)
 func (_ Unimplemented) GetCurrentUserContext(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/notification-messages)
+func (_ Unimplemented) ListNotificationMessages(w http.ResponseWriter, r *http.Request, params ListNotificationMessagesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/notification-messages/{messageId})
+func (_ Unimplemented) GetNotificationMessage(w http.ResponseWriter, r *http.Request, messageId NotificationMessageId, params GetNotificationMessageParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/notification-messages/{messageId}/resend)
+func (_ Unimplemented) ResendNotificationMessage(w http.ResponseWriter, r *http.Request, messageId NotificationMessageId, params ResendNotificationMessageParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/notification-preferences)
+func (_ Unimplemented) GetNotificationPreferences(w http.ResponseWriter, r *http.Request, params GetNotificationPreferencesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PUT /api/v1/notification-preferences)
+func (_ Unimplemented) PutNotificationPreferences(w http.ResponseWriter, r *http.Request, params PutNotificationPreferencesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/notification-templates)
+func (_ Unimplemented) ListNotificationTemplates(w http.ResponseWriter, r *http.Request, params ListNotificationTemplatesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/notification-templates)
+func (_ Unimplemented) CreateNotificationTemplate(w http.ResponseWriter, r *http.Request, params CreateNotificationTemplateParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/notification-templates/{templateId})
+func (_ Unimplemented) GetNotificationTemplate(w http.ResponseWriter, r *http.Request, templateId NotificationTemplateId, params GetNotificationTemplateParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/notification-templates/{templateId}/publish)
+func (_ Unimplemented) PublishNotificationTemplate(w http.ResponseWriter, r *http.Request, templateId NotificationTemplateId, params PublishNotificationTemplateParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -15602,6 +16202,757 @@ func (siw *ServerInterfaceWrapper) GetCurrentUserContext(w http.ResponseWriter, 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetCurrentUserContext(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListNotificationMessages operation middleware
+func (siw *ServerInterfaceWrapper) ListNotificationMessages(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListNotificationMessagesParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "eventCode" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "eventCode", r.URL.Query(), &params.EventCode, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "eventCode"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "eventCode", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "channel" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "channel", r.URL.Query(), &params.Channel, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "channel"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "channel", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "recipientType" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "recipientType", r.URL.Query(), &params.RecipientType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "recipientType"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "recipientType", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "recipientId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "recipientId", r.URL.Query(), &params.RecipientId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "recipientId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "recipientId", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListNotificationMessages(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetNotificationMessage operation middleware
+func (siw *ServerInterfaceWrapper) GetNotificationMessage(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "messageId" -------------
+	var messageId NotificationMessageId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "messageId", chi.URLParam(r, "messageId"), &messageId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "messageId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetNotificationMessageParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetNotificationMessage(w, r, messageId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ResendNotificationMessage operation middleware
+func (siw *ServerInterfaceWrapper) ResendNotificationMessage(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "messageId" -------------
+	var messageId NotificationMessageId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "messageId", chi.URLParam(r, "messageId"), &messageId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "messageId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ResendNotificationMessageParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ResendNotificationMessage(w, r, messageId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetNotificationPreferences operation middleware
+func (siw *ServerInterfaceWrapper) GetNotificationPreferences(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetNotificationPreferencesParams
+
+	// ------------- Required query parameter "recipientType" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "recipientType", r.URL.Query(), &params.RecipientType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "recipientType"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "recipientType", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "recipientId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "recipientId", r.URL.Query(), &params.RecipientId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "recipientId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "recipientId", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetNotificationPreferences(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutNotificationPreferences operation middleware
+func (siw *ServerInterfaceWrapper) PutNotificationPreferences(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PutNotificationPreferencesParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutNotificationPreferences(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListNotificationTemplates operation middleware
+func (siw *ServerInterfaceWrapper) ListNotificationTemplates(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListNotificationTemplatesParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "eventCode" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "eventCode", r.URL.Query(), &params.EventCode, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "eventCode"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "eventCode", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "channel" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "channel", r.URL.Query(), &params.Channel, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "channel"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "channel", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "locale" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "locale", r.URL.Query(), &params.Locale, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "locale"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "locale", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListNotificationTemplates(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateNotificationTemplate operation middleware
+func (siw *ServerInterfaceWrapper) CreateNotificationTemplate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateNotificationTemplateParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateNotificationTemplate(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetNotificationTemplate operation middleware
+func (siw *ServerInterfaceWrapper) GetNotificationTemplate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "templateId" -------------
+	var templateId NotificationTemplateId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "templateId", chi.URLParam(r, "templateId"), &templateId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "templateId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetNotificationTemplateParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetNotificationTemplate(w, r, templateId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PublishNotificationTemplate operation middleware
+func (siw *ServerInterfaceWrapper) PublishNotificationTemplate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "templateId" -------------
+	var templateId NotificationTemplateId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "templateId", chi.URLParam(r, "templateId"), &templateId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "templateId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PublishNotificationTemplateParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PublishNotificationTemplate(w, r, templateId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -25566,6 +26917,33 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/legal-holds/{legalHoldId}/release", wrapper.ReleaseLegalHold)
 	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/notification-templates", wrapper.ListNotificationTemplates)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/notification-templates", wrapper.CreateNotificationTemplate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/notification-templates/{templateId}", wrapper.GetNotificationTemplate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/notification-templates/{templateId}/publish", wrapper.PublishNotificationTemplate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/notification-messages", wrapper.ListNotificationMessages)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/notification-messages/{messageId}", wrapper.GetNotificationMessage)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/notification-messages/{messageId}/resend", wrapper.ResendNotificationMessage)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/notification-preferences", wrapper.GetNotificationPreferences)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/v1/notification-preferences", wrapper.PutNotificationPreferences)
+	})
 
 	return r
 }
@@ -31081,6 +32459,737 @@ func (response GetCurrentUserContext401ApplicationProblemPlusJSONResponse) Visit
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListNotificationMessagesRequestObject struct {
+	Params ListNotificationMessagesParams
+}
+
+type ListNotificationMessagesResponseObject interface {
+	VisitListNotificationMessagesResponse(w http.ResponseWriter) error
+}
+
+type ListNotificationMessages200JSONResponse NotificationMessagePage
+
+func (response ListNotificationMessages200JSONResponse) VisitListNotificationMessagesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListNotificationMessages400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListNotificationMessages400ApplicationProblemPlusJSONResponse) VisitListNotificationMessagesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListNotificationMessages403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListNotificationMessages403ApplicationProblemPlusJSONResponse) VisitListNotificationMessagesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListNotificationMessages422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListNotificationMessages422ApplicationProblemPlusJSONResponse) VisitListNotificationMessagesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetNotificationMessageRequestObject struct {
+	MessageId NotificationMessageId `json:"messageId"`
+	Params    GetNotificationMessageParams
+}
+
+type GetNotificationMessageResponseObject interface {
+	VisitGetNotificationMessageResponse(w http.ResponseWriter) error
+}
+
+type GetNotificationMessage200JSONResponse NotificationMessageDetail
+
+func (response GetNotificationMessage200JSONResponse) VisitGetNotificationMessageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetNotificationMessage403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetNotificationMessage403ApplicationProblemPlusJSONResponse) VisitGetNotificationMessageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetNotificationMessage404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetNotificationMessage404ApplicationProblemPlusJSONResponse) VisitGetNotificationMessageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResendNotificationMessageRequestObject struct {
+	MessageId NotificationMessageId `json:"messageId"`
+	Params    ResendNotificationMessageParams
+}
+
+type ResendNotificationMessageResponseObject interface {
+	VisitResendNotificationMessageResponse(w http.ResponseWriter) error
+}
+
+type ResendNotificationMessage201JSONResponse NotificationMessage
+
+func (response ResendNotificationMessage201JSONResponse) VisitResendNotificationMessageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResendNotificationMessage403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ResendNotificationMessage403ApplicationProblemPlusJSONResponse) VisitResendNotificationMessageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResendNotificationMessage404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ResendNotificationMessage404ApplicationProblemPlusJSONResponse) VisitResendNotificationMessageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResendNotificationMessage409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response ResendNotificationMessage409ApplicationProblemPlusJSONResponse) VisitResendNotificationMessageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResendNotificationMessage422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ResendNotificationMessage422ApplicationProblemPlusJSONResponse) VisitResendNotificationMessageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResendNotificationMessage429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response ResendNotificationMessage429ApplicationProblemPlusJSONResponse) VisitResendNotificationMessageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetNotificationPreferencesRequestObject struct {
+	Params GetNotificationPreferencesParams
+}
+
+type GetNotificationPreferencesResponseObject interface {
+	VisitGetNotificationPreferencesResponse(w http.ResponseWriter) error
+}
+
+type GetNotificationPreferences200JSONResponse NotificationPreferenceList
+
+func (response GetNotificationPreferences200JSONResponse) VisitGetNotificationPreferencesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetNotificationPreferences403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetNotificationPreferences403ApplicationProblemPlusJSONResponse) VisitGetNotificationPreferencesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetNotificationPreferences422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response GetNotificationPreferences422ApplicationProblemPlusJSONResponse) VisitGetNotificationPreferencesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutNotificationPreferencesRequestObject struct {
+	Params PutNotificationPreferencesParams
+	Body   *PutNotificationPreferencesJSONRequestBody
+}
+
+type PutNotificationPreferencesResponseObject interface {
+	VisitPutNotificationPreferencesResponse(w http.ResponseWriter) error
+}
+
+type PutNotificationPreferences200JSONResponse NotificationPreferenceList
+
+func (response PutNotificationPreferences200JSONResponse) VisitPutNotificationPreferencesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutNotificationPreferences403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response PutNotificationPreferences403ApplicationProblemPlusJSONResponse) VisitPutNotificationPreferencesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutNotificationPreferences409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response PutNotificationPreferences409ApplicationProblemPlusJSONResponse) VisitPutNotificationPreferencesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutNotificationPreferences422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response PutNotificationPreferences422ApplicationProblemPlusJSONResponse) VisitPutNotificationPreferencesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutNotificationPreferences429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response PutNotificationPreferences429ApplicationProblemPlusJSONResponse) VisitPutNotificationPreferencesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListNotificationTemplatesRequestObject struct {
+	Params ListNotificationTemplatesParams
+}
+
+type ListNotificationTemplatesResponseObject interface {
+	VisitListNotificationTemplatesResponse(w http.ResponseWriter) error
+}
+
+type ListNotificationTemplates200JSONResponse NotificationTemplatePage
+
+func (response ListNotificationTemplates200JSONResponse) VisitListNotificationTemplatesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListNotificationTemplates400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListNotificationTemplates400ApplicationProblemPlusJSONResponse) VisitListNotificationTemplatesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListNotificationTemplates403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListNotificationTemplates403ApplicationProblemPlusJSONResponse) VisitListNotificationTemplatesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListNotificationTemplates422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListNotificationTemplates422ApplicationProblemPlusJSONResponse) VisitListNotificationTemplatesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateNotificationTemplateRequestObject struct {
+	Params CreateNotificationTemplateParams
+	Body   *CreateNotificationTemplateJSONRequestBody
+}
+
+type CreateNotificationTemplateResponseObject interface {
+	VisitCreateNotificationTemplateResponse(w http.ResponseWriter) error
+}
+
+type CreateNotificationTemplate201ResponseHeaders struct {
+	ETag *string
+}
+
+type CreateNotificationTemplate201JSONResponse struct {
+	Body    NotificationTemplate
+	Headers CreateNotificationTemplate201ResponseHeaders
+}
+
+func (response CreateNotificationTemplate201JSONResponse) VisitCreateNotificationTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateNotificationTemplate403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CreateNotificationTemplate403ApplicationProblemPlusJSONResponse) VisitCreateNotificationTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateNotificationTemplate409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response CreateNotificationTemplate409ApplicationProblemPlusJSONResponse) VisitCreateNotificationTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateNotificationTemplate422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CreateNotificationTemplate422ApplicationProblemPlusJSONResponse) VisitCreateNotificationTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateNotificationTemplate429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response CreateNotificationTemplate429ApplicationProblemPlusJSONResponse) VisitCreateNotificationTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetNotificationTemplateRequestObject struct {
+	TemplateId NotificationTemplateId `json:"templateId"`
+	Params     GetNotificationTemplateParams
+}
+
+type GetNotificationTemplateResponseObject interface {
+	VisitGetNotificationTemplateResponse(w http.ResponseWriter) error
+}
+
+type GetNotificationTemplate200ResponseHeaders struct {
+	ETag *string
+}
+
+type GetNotificationTemplate200JSONResponse struct {
+	Body    NotificationTemplate
+	Headers GetNotificationTemplate200ResponseHeaders
+}
+
+func (response GetNotificationTemplate200JSONResponse) VisitGetNotificationTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetNotificationTemplate403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetNotificationTemplate403ApplicationProblemPlusJSONResponse) VisitGetNotificationTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetNotificationTemplate404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetNotificationTemplate404ApplicationProblemPlusJSONResponse) VisitGetNotificationTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishNotificationTemplateRequestObject struct {
+	TemplateId NotificationTemplateId `json:"templateId"`
+	Params     PublishNotificationTemplateParams
+}
+
+type PublishNotificationTemplateResponseObject interface {
+	VisitPublishNotificationTemplateResponse(w http.ResponseWriter) error
+}
+
+type PublishNotificationTemplate200ResponseHeaders struct {
+	ETag *string
+}
+
+type PublishNotificationTemplate200JSONResponse struct {
+	Body    NotificationTemplate
+	Headers PublishNotificationTemplate200ResponseHeaders
+}
+
+func (response PublishNotificationTemplate200JSONResponse) VisitPublishNotificationTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishNotificationTemplate403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response PublishNotificationTemplate403ApplicationProblemPlusJSONResponse) VisitPublishNotificationTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishNotificationTemplate404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response PublishNotificationTemplate404ApplicationProblemPlusJSONResponse) VisitPublishNotificationTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishNotificationTemplate409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response PublishNotificationTemplate409ApplicationProblemPlusJSONResponse) VisitPublishNotificationTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishNotificationTemplate412ApplicationProblemPlusJSONResponse Problem
+
+func (response PublishNotificationTemplate412ApplicationProblemPlusJSONResponse) VisitPublishNotificationTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishNotificationTemplate422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response PublishNotificationTemplate422ApplicationProblemPlusJSONResponse) VisitPublishNotificationTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishNotificationTemplate428ApplicationProblemPlusJSONResponse Problem
+
+func (response PublishNotificationTemplate428ApplicationProblemPlusJSONResponse) VisitPublishNotificationTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -41833,6 +43942,33 @@ type StrictServerInterface interface {
 	// (GET /api/v1/me)
 	GetCurrentUserContext(ctx context.Context, request GetCurrentUserContextRequestObject) (GetCurrentUserContextResponseObject, error)
 
+	// (GET /api/v1/notification-messages)
+	ListNotificationMessages(ctx context.Context, request ListNotificationMessagesRequestObject) (ListNotificationMessagesResponseObject, error)
+
+	// (GET /api/v1/notification-messages/{messageId})
+	GetNotificationMessage(ctx context.Context, request GetNotificationMessageRequestObject) (GetNotificationMessageResponseObject, error)
+
+	// (POST /api/v1/notification-messages/{messageId}/resend)
+	ResendNotificationMessage(ctx context.Context, request ResendNotificationMessageRequestObject) (ResendNotificationMessageResponseObject, error)
+
+	// (GET /api/v1/notification-preferences)
+	GetNotificationPreferences(ctx context.Context, request GetNotificationPreferencesRequestObject) (GetNotificationPreferencesResponseObject, error)
+
+	// (PUT /api/v1/notification-preferences)
+	PutNotificationPreferences(ctx context.Context, request PutNotificationPreferencesRequestObject) (PutNotificationPreferencesResponseObject, error)
+
+	// (GET /api/v1/notification-templates)
+	ListNotificationTemplates(ctx context.Context, request ListNotificationTemplatesRequestObject) (ListNotificationTemplatesResponseObject, error)
+
+	// (POST /api/v1/notification-templates)
+	CreateNotificationTemplate(ctx context.Context, request CreateNotificationTemplateRequestObject) (CreateNotificationTemplateResponseObject, error)
+
+	// (GET /api/v1/notification-templates/{templateId})
+	GetNotificationTemplate(ctx context.Context, request GetNotificationTemplateRequestObject) (GetNotificationTemplateResponseObject, error)
+
+	// (POST /api/v1/notification-templates/{templateId}/publish)
+	PublishNotificationTemplate(ctx context.Context, request PublishNotificationTemplateRequestObject) (PublishNotificationTemplateResponseObject, error)
+
 	// (GET /api/v1/organizations)
 	ListOrganizations(ctx context.Context, request ListOrganizationsRequestObject) (ListOrganizationsResponseObject, error)
 
@@ -44215,6 +46351,258 @@ func (sh *strictHandler) GetCurrentUserContext(w http.ResponseWriter, r *http.Re
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetCurrentUserContextResponseObject); ok {
 		if err := validResponse.VisitGetCurrentUserContextResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListNotificationMessages operation middleware
+func (sh *strictHandler) ListNotificationMessages(w http.ResponseWriter, r *http.Request, params ListNotificationMessagesParams) {
+	var request ListNotificationMessagesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListNotificationMessages(ctx, request.(ListNotificationMessagesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListNotificationMessages")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListNotificationMessagesResponseObject); ok {
+		if err := validResponse.VisitListNotificationMessagesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetNotificationMessage operation middleware
+func (sh *strictHandler) GetNotificationMessage(w http.ResponseWriter, r *http.Request, messageId NotificationMessageId, params GetNotificationMessageParams) {
+	var request GetNotificationMessageRequestObject
+
+	request.MessageId = messageId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetNotificationMessage(ctx, request.(GetNotificationMessageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetNotificationMessage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetNotificationMessageResponseObject); ok {
+		if err := validResponse.VisitGetNotificationMessageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ResendNotificationMessage operation middleware
+func (sh *strictHandler) ResendNotificationMessage(w http.ResponseWriter, r *http.Request, messageId NotificationMessageId, params ResendNotificationMessageParams) {
+	var request ResendNotificationMessageRequestObject
+
+	request.MessageId = messageId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ResendNotificationMessage(ctx, request.(ResendNotificationMessageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ResendNotificationMessage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ResendNotificationMessageResponseObject); ok {
+		if err := validResponse.VisitResendNotificationMessageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetNotificationPreferences operation middleware
+func (sh *strictHandler) GetNotificationPreferences(w http.ResponseWriter, r *http.Request, params GetNotificationPreferencesParams) {
+	var request GetNotificationPreferencesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetNotificationPreferences(ctx, request.(GetNotificationPreferencesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetNotificationPreferences")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetNotificationPreferencesResponseObject); ok {
+		if err := validResponse.VisitGetNotificationPreferencesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutNotificationPreferences operation middleware
+func (sh *strictHandler) PutNotificationPreferences(w http.ResponseWriter, r *http.Request, params PutNotificationPreferencesParams) {
+	var request PutNotificationPreferencesRequestObject
+
+	request.Params = params
+
+	var body PutNotificationPreferencesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutNotificationPreferences(ctx, request.(PutNotificationPreferencesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutNotificationPreferences")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutNotificationPreferencesResponseObject); ok {
+		if err := validResponse.VisitPutNotificationPreferencesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListNotificationTemplates operation middleware
+func (sh *strictHandler) ListNotificationTemplates(w http.ResponseWriter, r *http.Request, params ListNotificationTemplatesParams) {
+	var request ListNotificationTemplatesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListNotificationTemplates(ctx, request.(ListNotificationTemplatesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListNotificationTemplates")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListNotificationTemplatesResponseObject); ok {
+		if err := validResponse.VisitListNotificationTemplatesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateNotificationTemplate operation middleware
+func (sh *strictHandler) CreateNotificationTemplate(w http.ResponseWriter, r *http.Request, params CreateNotificationTemplateParams) {
+	var request CreateNotificationTemplateRequestObject
+
+	request.Params = params
+
+	var body CreateNotificationTemplateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateNotificationTemplate(ctx, request.(CreateNotificationTemplateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateNotificationTemplate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateNotificationTemplateResponseObject); ok {
+		if err := validResponse.VisitCreateNotificationTemplateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetNotificationTemplate operation middleware
+func (sh *strictHandler) GetNotificationTemplate(w http.ResponseWriter, r *http.Request, templateId NotificationTemplateId, params GetNotificationTemplateParams) {
+	var request GetNotificationTemplateRequestObject
+
+	request.TemplateId = templateId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetNotificationTemplate(ctx, request.(GetNotificationTemplateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetNotificationTemplate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetNotificationTemplateResponseObject); ok {
+		if err := validResponse.VisitGetNotificationTemplateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PublishNotificationTemplate operation middleware
+func (sh *strictHandler) PublishNotificationTemplate(w http.ResponseWriter, r *http.Request, templateId NotificationTemplateId, params PublishNotificationTemplateParams) {
+	var request PublishNotificationTemplateRequestObject
+
+	request.TemplateId = templateId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PublishNotificationTemplate(ctx, request.(PublishNotificationTemplateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PublishNotificationTemplate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PublishNotificationTemplateResponseObject); ok {
+		if err := validResponse.VisitPublishNotificationTemplateResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

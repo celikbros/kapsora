@@ -285,7 +285,15 @@
     "DOCUMENT_STORE_UNAVAILABLE": "The document store cannot be reached right now. Try again shortly.",
     "LEGAL_HOLD_NOT_FOUND": "The legal hold was not found.",
     "LEGAL_HOLD_EXISTS": "An active legal hold already covers that target.",
-    "LEGAL_HOLD_ALREADY_RELEASED": "The legal hold has already been released."
+    "LEGAL_HOLD_ALREADY_RELEASED": "The legal hold has already been released.",
+    "NOTIFICATION_TEMPLATE_NOT_FOUND": "The notification template was not found.",
+    "NOTIFICATION_TEMPLATE_NOT_DRAFT": "Only a draft template can be published.",
+    "NOTIFICATION_TEMPLATE_IMMUTABLE": "A published template cannot be changed; publish a new version.",
+    "NOTIFICATION_TEMPLATE_VERSION_EXISTS": "That template version already exists.",
+    "NOTIFICATION_TEMPLATE_MISSING": "No template is published for that event, channel and language.",
+    "NOTIFICATION_MESSAGE_NOT_FOUND": "The notification was not found.",
+    "NOTIFICATION_MESSAGE_NOT_RESENDABLE": "That notification cannot be sent again.",
+    "NOTIFICATION_RECIPIENT_OPTED_OUT": "The recipient has turned this notification off."
   },
   "fieldErrors": {
     "RULE_COMPILE_FAILED": "The rule condition did not compile",

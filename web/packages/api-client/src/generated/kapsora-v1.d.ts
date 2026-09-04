@@ -1164,6 +1164,208 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/notification-messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description What was actually sent, to whom, newest first, with keyset paging.
+         *
+         *     Suppressed messages are on this list like any other, which is the point of it. A
+         *     member who was not told — because they turned this off, because it was the middle of
+         *     their night, because nobody has written a template for the event, or because the
+         *     platform holds no address for them — has a row saying so and naming the reason. An
+         *     operator asked "was the member told" can answer it either way.
+         */
+        get: operations["listNotificationMessages"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notification-messages/{messageId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One message with every attempt made on it. The attempts travel with it because a
+         *     status alone does not answer the question: a message that says SENT after two
+         *     failures and one that went first time are the same status and different stories.
+         */
+        get: operations["getNotificationMessage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notification-messages/{messageId}/resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Sends what one message said, again.
+         *
+         *     It writes a new message rather than re-queuing the old one. The original is evidence
+         *     of what happened — it went out at this time, it failed twice, it was refused — and
+         *     re-queuing it would overwrite that story with the new one. The copy carries the same
+         *     rendered text and names the message it came from, so the log shows both halves.
+         *
+         *     A message with no rendered body cannot be resent: it was suppressed before anything
+         *     was written, so there is nothing to send. Neither is a recipient who has turned this
+         *     notification off — an operator clicking a button must not override somebody's own
+         *     answer to "do you want to hear about this". Quiet hours are deliberately not
+         *     re-checked: an operator resending has already decided about the timing.
+         */
+        post: operations["resendNotificationMessage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notification-preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description What one recipient has said about being told things: which channels are on, and the
+         *     hours they would rather not hear from anybody. An empty list means nobody has said
+         *     anything, which is not the same as everything being off — a transactional
+         *     notification about somebody's own benefit is sent unless they asked otherwise.
+         */
+        get: operations["getNotificationPreferences"];
+        /**
+         * @description Replaces the whole preference set of one recipient, in one transaction. It is a
+         *     replace rather than a merge because the set is read as a whole: a merge would leave
+         *     behind a channel the person believed they had turned off, and they would keep being
+         *     written to on it.
+         *
+         *     eventCode absent means "every event on this channel", which is how somebody turns a
+         *     channel off once instead of once per event. A row that names the event wins over the
+         *     row that names none, so "no e-mail except this one" is expressible.
+         *
+         *     Quiet hours are a pair or are absent, and they are read in timezone rather than the
+         *     server's: a member in Berlin and one in Istanbul do not share a night. A message
+         *     that arrives inside the window is not delayed — it is suppressed with the reason,
+         *     and the log shows the member was not told and why.
+         */
+        put: operations["putNotificationPreferences"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notification-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The tenant's message templates, newest first, with keyset paging. A template is a
+         *     version: publishing one retires the version it replaces, and every version stays on
+         *     this list so the message somebody was sent last month can still be read next to the
+         *     template that produced it.
+         */
+        get: operations["listNotificationTemplates"];
+        put?: never;
+        /**
+         * @description Writes a draft. Nothing renders from a draft: the send path reads the published
+         *     template for an event, channel and language, and there is at most one, so a
+         *     half-written message cannot reach anybody while it is being written.
+         *
+         *     `declaredVariables` is the closed list the renderer works from and it may only name
+         *     variables from the safe catalogue. That catalogue is the whole of what a
+         *     notification may carry — a given name, a reference number, a status word, a date, an
+         *     amount with its currency, a provider or program name, and a link into the product —
+         *     and there is deliberately no slot in it for a diagnosis, an identity number or
+         *     anything an operator typed into a comment.
+         *
+         *     The list and the placeholders the body actually uses must be the same set. A
+         *     declared variable the body never mentions is a value every caller has to supply for
+         *     nothing; a placeholder nobody declared is a hole in the message.
+         *
+         *     The version number is not a field: it is computed from the versions that already
+         *     exist for this event, channel and language.
+         */
+        post: operations["createNotificationTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notification-templates/{templateId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description One template version with its body and its declared variables. */
+        get: operations["getNotificationTemplate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notification-templates/{templateId}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Makes this draft the template that renders its event from now on, and retires the
+         *     version it replaces in the same transaction.
+         *
+         *     Publishing retires rather than refuses. Refusing until somebody retired the old one
+         *     would leave the event with no published template for however long the two commands
+         *     are apart, and a message that arrived in that gap would be suppressed for want of
+         *     one. Replacing in one transaction has no such gap: a message rendered a microsecond
+         *     either side finds exactly one template, the older one before and the newer one
+         *     after.
+         *
+         *     A published template is immutable. The retired version keeps everything it said,
+         *     and the messages it produced name it by id and version and carry their own rendered
+         *     text, so retiring it changes nothing about what anybody was told.
+         */
+        post: operations["publishNotificationTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/organizations": {
         parameters: {
             query?: never;
@@ -3665,6 +3867,23 @@ export interface components {
             /** Format: date */
             validTo?: string;
         };
+        CreateNotificationTemplate: {
+            /**
+             * @description The text, with double-brace placeholders for the declared variables. A brace
+             *     pair the renderer would not substitute is refused rather than sent verbatim.
+             */
+            body: string;
+            channel: components["schemas"]["NotificationChannel"];
+            /**
+             * @description Exactly the variables the body and subject use. Neither a declared variable the
+             *     text never mentions nor a placeholder nobody declared is accepted.
+             */
+            declaredVariables?: components["schemas"]["NotificationSafeVariable"][];
+            eventCode: string;
+            locale: string;
+            /** @description Required for EMAIL and refused for every other channel. */
+            subject?: string;
+        };
         CreateOrganizationRequest: {
             /** @default TR */
             countryCode?: string;
@@ -4528,6 +4747,189 @@ export interface components {
          */
         MemberShareMethod: "NONE" | "FIXED" | "PERCENT";
         /**
+         * @description How a message reaches somebody. EMAIL goes through SMTP; SMS is recorded until a
+         *     provider is chosen; PUSH is recorded and not delivered in this milestone; INAPP is
+         *     delivered by being recorded, because the message log is what a screen reads.
+         * @enum {string}
+         */
+        NotificationChannel: "EMAIL" | "SMS" | "PUSH" | "INAPP";
+        NotificationDelivery: {
+            /** Format: date-time */
+            attemptedAt: string;
+            attemptNo: number;
+            /**
+             * @description The provider's answer, bounded and with addresses removed: a bounce quotes the
+             *     recipient, and that quote would otherwise be stored here forever.
+             */
+            detail?: string | null;
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            messageId: string;
+            outcome: components["schemas"]["NotificationDeliveryOutcome"];
+            /**
+             * @description Who took the message. SMTP is a mail server; SMS_STUB, PUSH_RECORDER and
+             *     INAPP_RECORDER mean the attempt was recorded and the message never left the
+             *     platform.
+             */
+            providerCode: string;
+            providerMessageId?: string | null;
+        };
+        /**
+         * @description What one attempt came back with. REJECTED and BOUNCED are the provider's final word
+         *     and stop the retries; ERROR is a provider that could not be reached, which is the
+         *     one outcome worth trying again.
+         * @enum {string}
+         */
+        NotificationDeliveryOutcome: "ACCEPTED" | "REJECTED" | "BOUNCED" | "ERROR";
+        NotificationMessage: {
+            bodyRendered?: string | null;
+            channel: components["schemas"]["NotificationChannel"];
+            /** Format: date-time */
+            createdAt: string;
+            eventCode: string;
+            /** Format: uuid */
+            id: string;
+            locale: string;
+            /** Format: uuid */
+            recipientId: string;
+            recipientType: components["schemas"]["NotificationRecipientType"];
+            /**
+             * Format: uuid
+             * @description The message this one is a resend of.
+             */
+            resentFromMessageId?: string | null;
+            /** Format: int64 */
+            rowVersion: number;
+            /**
+             * @description The values this message was rendered from. They are on the log because an
+             *     operator needs to see what the member would have been sent even when the
+             *     message was suppressed, and they are safe by construction.
+             */
+            safeVariables: {
+                [key: string]: string;
+            };
+            /** Format: date-time */
+            sentAt?: string | null;
+            status: components["schemas"]["NotificationMessageStatus"];
+            subjectRendered?: string | null;
+            /** @description Set exactly when the status is SUPPRESSED. */
+            suppressedReason?: components["schemas"]["NotificationSuppressionReason"] | null;
+            /**
+             * Format: uuid
+             * @description The template that produced this text, and its version. Both are null on a
+             *     message that was suppressed before anything was rendered.
+             */
+            templateId?: string | null;
+            templateVersionNo?: number | null;
+        };
+        NotificationMessageDetail: {
+            deliveries: components["schemas"]["NotificationDelivery"][];
+            message: components["schemas"]["NotificationMessage"];
+        };
+        NotificationMessagePage: {
+            items: components["schemas"]["NotificationMessage"][];
+            nextCursor?: string | null;
+        };
+        /**
+         * @description SUPPRESSED is the status that matters: it is a message that was deliberately not
+         *     sent, with a reason, so a member who was not told can be shown to have not been
+         *     told.
+         * @enum {string}
+         */
+        NotificationMessageStatus: "QUEUED" | "SENDING" | "SENT" | "FAILED" | "SUPPRESSED";
+        NotificationPreference: {
+            channel: components["schemas"]["NotificationChannel"];
+            /** Format: date-time */
+            createdAt: string;
+            enabled: boolean;
+            /** @description Null means every event on this channel. */
+            eventCode?: string | null;
+            /** Format: uuid */
+            id: string;
+            quietHoursEnd?: string | null;
+            quietHoursStart?: string | null;
+            /** Format: uuid */
+            recipientId: string;
+            recipientType: components["schemas"]["NotificationRecipientType"];
+            /** Format: int64 */
+            rowVersion: number;
+            /** @description IANA zone name the quiet hours are read in. */
+            timezone: string;
+        };
+        NotificationPreferenceInput: {
+            channel: components["schemas"]["NotificationChannel"];
+            enabled: boolean;
+            /** @description Absent means every event on this channel. */
+            eventCode?: string;
+            quietHoursEnd?: string;
+            /** @description Given with quietHoursEnd or not at all. */
+            quietHoursStart?: string;
+            /** @description IANA zone name; defaults to Europe/Istanbul. */
+            timezone?: string;
+        };
+        NotificationPreferenceList: {
+            items: components["schemas"]["NotificationPreference"][];
+        };
+        /** @enum {string} */
+        NotificationRecipientType: "PERSON" | "ACTOR" | "ORGANIZATION";
+        /**
+         * @description The whole of what a notification may carry. A variable outside this list is refused
+         *     at render time rather than dropped, and each of these has a shape of its own that
+         *     its value must have: a given name has no digits at all, a status is a code, a date
+         *     is a date, an amount is a decimal, and a deep link is a path with no query string,
+         *     so there is nowhere in any of them to put a diagnosis, an identity number or
+         *     something an operator typed into a comment.
+         *
+         *     deep_link is a path rather than a URL, and the product prefixes its own base. That
+         *     is what "no secret in a link" means here: there is nowhere in the value for a token
+         *     to ride along, so a link can only point at a screen the recipient has to sign in to
+         *     see. A voucher's plaintext is never one of these values.
+         * @enum {string}
+         */
+        NotificationSafeVariable: "given_name" | "reference_no" | "status_code" | "event_date" | "expires_at" | "amount" | "currency" | "provider_name" | "program_name" | "deep_link";
+        /**
+         * @description Why nobody was told. PREFERENCE_DISABLED is somebody who asked not to hear about
+         *     this; QUIET_HOURS is the middle of their night in their own time zone; NO_TEMPLATE
+         *     is an event nobody has written a message for yet; NO_ADDRESS is a recipient the
+         *     platform holds no address for on that channel.
+         * @enum {string}
+         */
+        NotificationSuppressionReason: "PREFERENCE_DISABLED" | "QUIET_HOURS" | "NO_TEMPLATE" | "NO_ADDRESS";
+        NotificationTemplate: {
+            body: string;
+            channel: components["schemas"]["NotificationChannel"];
+            /** Format: date-time */
+            createdAt: string;
+            declaredVariables: components["schemas"]["NotificationSafeVariable"][];
+            /** @description The domain event this message is written for. */
+            eventCode: string;
+            /** Format: uuid */
+            id: string;
+            locale: string;
+            /** Format: date-time */
+            publishedAt?: string | null;
+            /** Format: uuid */
+            publishedBy?: string | null;
+            /** Format: int64 */
+            rowVersion: number;
+            status: components["schemas"]["NotificationTemplateStatus"];
+            /** @description Present for EMAIL and absent for every other channel. */
+            subject?: string | null;
+            versionNo: number;
+        };
+        NotificationTemplatePage: {
+            items: components["schemas"]["NotificationTemplate"][];
+            nextCursor?: string | null;
+        };
+        /**
+         * @description A draft renders nothing. A published template is immutable and there is at most one
+         *     per event, channel and language. A retired one is what a published template becomes
+         *     when a newer version replaces it; it never comes back.
+         * @enum {string}
+         */
+        NotificationTemplateStatus: "DRAFT" | "PUBLISHED" | "RETIRED";
+        /**
          * @description Tenant relationship with a global organization. `id` identifies the relationship
          *     (tenant_organization); `organizationId` identifies the shared legal entity.
          */
@@ -5309,6 +5711,12 @@ export interface components {
              *     this action needs no policy at all, and it removes whatever was there.
              */
             policies: components["schemas"]["ApprovalPolicyInput"][];
+        };
+        PutNotificationPreferences: {
+            preferences: components["schemas"]["NotificationPreferenceInput"][];
+            /** Format: uuid */
+            recipientId: string;
+            recipientType: components["schemas"]["NotificationRecipientType"];
         };
         PutPaymentTermRequest: {
             dueDays: number;
@@ -6507,6 +6915,8 @@ export interface components {
         LegalHoldId: string;
         Limit: number;
         MembershipId: string;
+        NotificationMessageId: string;
+        NotificationTemplateId: string;
         OrganizationId: string;
         PersonId: string;
         PlanId: string;
@@ -6579,6 +6989,7 @@ export type SchemaCreateEnrollmentRequest = components['schemas']['CreateEnrollm
 export type SchemaCreateFulfilment = components['schemas']['CreateFulfilment'];
 export type SchemaCreateLegalHold = components['schemas']['CreateLegalHold'];
 export type SchemaCreateMembershipRequest = components['schemas']['CreateMembershipRequest'];
+export type SchemaCreateNotificationTemplate = components['schemas']['CreateNotificationTemplate'];
 export type SchemaCreateOrganizationRequest = components['schemas']['CreateOrganizationRequest'];
 export type SchemaCreatePersonRequest = components['schemas']['CreatePersonRequest'];
 export type SchemaCreatePlanRequest = components['schemas']['CreatePlanRequest'];
@@ -6637,6 +7048,22 @@ export type SchemaMaskedIdentifier = components['schemas']['MaskedIdentifier'];
 export type SchemaMemberImportBatch = components['schemas']['MemberImportBatch'];
 export type SchemaMemberImportRow = components['schemas']['MemberImportRow'];
 export type SchemaMemberShareMethod = components['schemas']['MemberShareMethod'];
+export type SchemaNotificationChannel = components['schemas']['NotificationChannel'];
+export type SchemaNotificationDelivery = components['schemas']['NotificationDelivery'];
+export type SchemaNotificationDeliveryOutcome = components['schemas']['NotificationDeliveryOutcome'];
+export type SchemaNotificationMessage = components['schemas']['NotificationMessage'];
+export type SchemaNotificationMessageDetail = components['schemas']['NotificationMessageDetail'];
+export type SchemaNotificationMessagePage = components['schemas']['NotificationMessagePage'];
+export type SchemaNotificationMessageStatus = components['schemas']['NotificationMessageStatus'];
+export type SchemaNotificationPreference = components['schemas']['NotificationPreference'];
+export type SchemaNotificationPreferenceInput = components['schemas']['NotificationPreferenceInput'];
+export type SchemaNotificationPreferenceList = components['schemas']['NotificationPreferenceList'];
+export type SchemaNotificationRecipientType = components['schemas']['NotificationRecipientType'];
+export type SchemaNotificationSafeVariable = components['schemas']['NotificationSafeVariable'];
+export type SchemaNotificationSuppressionReason = components['schemas']['NotificationSuppressionReason'];
+export type SchemaNotificationTemplate = components['schemas']['NotificationTemplate'];
+export type SchemaNotificationTemplatePage = components['schemas']['NotificationTemplatePage'];
+export type SchemaNotificationTemplateStatus = components['schemas']['NotificationTemplateStatus'];
 export type SchemaOrganization = components['schemas']['Organization'];
 export type SchemaOrganizationIdentifier = components['schemas']['OrganizationIdentifier'];
 export type SchemaOrganizationPage = components['schemas']['OrganizationPage'];
@@ -6699,6 +7126,7 @@ export type SchemaProviderSearchResult = components['schemas']['ProviderSearchRe
 export type SchemaProviderStatus = components['schemas']['ProviderStatus'];
 export type SchemaProviderType = components['schemas']['ProviderType'];
 export type SchemaPutApprovalPolicies = components['schemas']['PutApprovalPolicies'];
+export type SchemaPutNotificationPreferences = components['schemas']['PutNotificationPreferences'];
 export type SchemaPutPaymentTermRequest = components['schemas']['PutPaymentTermRequest'];
 export type SchemaQuotaPeriodType = components['schemas']['QuotaPeriodType'];
 export type SchemaReasonCommand = components['schemas']['ReasonCommand'];
@@ -6832,6 +7260,8 @@ export type ParameterImportRowId = components['parameters']['ImportRowId'];
 export type ParameterLegalHoldId = components['parameters']['LegalHoldId'];
 export type ParameterLimit = components['parameters']['Limit'];
 export type ParameterMembershipId = components['parameters']['MembershipId'];
+export type ParameterNotificationMessageId = components['parameters']['NotificationMessageId'];
+export type ParameterNotificationTemplateId = components['parameters']['NotificationTemplateId'];
 export type ParameterOrganizationId = components['parameters']['OrganizationId'];
 export type ParameterPersonId = components['parameters']['PersonId'];
 export type ParameterPlanId = components['parameters']['PlanId'];
@@ -9531,6 +9961,334 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    listNotificationMessages: {
+        parameters: {
+            query?: {
+                /** @description Keep only the messages of one channel. */
+                channel?: components["schemas"]["NotificationChannel"];
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description Keep only the messages of one domain event. */
+                eventCode?: string;
+                limit?: components["parameters"]["Limit"];
+                /** @description With recipientType, keep only the messages sent to one recipient. */
+                recipientId?: string;
+                /** @description With recipientId, keep only the messages sent to one recipient. */
+                recipientType?: components["schemas"]["NotificationRecipientType"];
+                /** @description Keep only the messages in one state. */
+                status?: components["schemas"]["NotificationMessageStatus"];
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Message page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationMessagePage"];
+                };
+            };
+            /** @description Cursor invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getNotificationMessage: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                messageId: components["parameters"]["NotificationMessageId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Message with its delivery attempts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationMessageDetail"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    resendNotificationMessage: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                messageId: components["parameters"]["NotificationMessageId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A new message carrying the same text, queued for its channel */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationMessage"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getNotificationPreferences: {
+        parameters: {
+            query: {
+                recipientId: string;
+                recipientType: components["schemas"]["NotificationRecipientType"];
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The recipient's notification preferences */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationPreferenceList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    putNotificationPreferences: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PutNotificationPreferences"];
+            };
+        };
+        responses: {
+            /** @description Preference set written */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationPreferenceList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listNotificationTemplates: {
+        parameters: {
+            query?: {
+                /** @description Keep only the templates of one channel. */
+                channel?: components["schemas"]["NotificationChannel"];
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description Keep only the templates of one domain event. */
+                eventCode?: string;
+                limit?: components["parameters"]["Limit"];
+                /** @description Keep only the templates of one language. */
+                locale?: string;
+                /** @description Keep only the drafts, the published ones or the retired ones. */
+                status?: components["schemas"]["NotificationTemplateStatus"];
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Template page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationTemplatePage"];
+                };
+            };
+            /** @description Cursor invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    createNotificationTemplate: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateNotificationTemplate"];
+            };
+        };
+        responses: {
+            /** @description Draft template written */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationTemplate"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getNotificationTemplate: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                templateId: components["parameters"]["NotificationTemplateId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Template */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationTemplate"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    publishNotificationTemplate: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                templateId: components["parameters"]["NotificationTemplateId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Template published and the version it replaced retired */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationTemplate"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
         };
     };
     listOrganizations: {

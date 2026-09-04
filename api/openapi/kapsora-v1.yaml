@@ -57,6 +57,8 @@ tags:
     description: İş kuyrukları, iş kalemleri, yorumlar ve onay politikaları
   - name: Documents
     description: Belge yükleme, karantina taraması, güvenli indirme ve hukuki saklama
+  - name: Notifications
+    description: Bildirim şablonları, gönderilen mesajlar, gönderim denemeleri ve tercihler
 paths:
   /health/live:
     get:
@@ -7221,6 +7223,377 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+  /api/v1/notification-templates:
+    get:
+      tags: [Notifications]
+      operationId: listNotificationTemplates
+      description: |
+        The tenant's message templates, newest first, with keyset paging. A template is a
+        version: publishing one retires the version it replaces, and every version stays on
+        this list so the message somebody was sent last month can still be read next to the
+        template that produced it.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: eventCode
+          in: query
+          description: Keep only the templates of one domain event.
+          schema:
+            type: string
+            pattern: '^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*){1,4}$'
+        - name: channel
+          in: query
+          description: Keep only the templates of one channel.
+          schema:
+            $ref: '#/components/schemas/NotificationChannel'
+        - name: locale
+          in: query
+          description: Keep only the templates of one language.
+          schema:
+            type: string
+            pattern: '^[a-z]{2}(-[A-Z]{2})?$'
+        - name: status
+          in: query
+          description: Keep only the drafts, the published ones or the retired ones.
+          schema:
+            $ref: '#/components/schemas/NotificationTemplateStatus'
+      responses:
+        '200':
+          description: Template page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationTemplatePage'
+        '400':
+          description: Cursor invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags: [Notifications]
+      operationId: createNotificationTemplate
+      description: |
+        Writes a draft. Nothing renders from a draft: the send path reads the published
+        template for an event, channel and language, and there is at most one, so a
+        half-written message cannot reach anybody while it is being written.
+
+        `declaredVariables` is the closed list the renderer works from and it may only name
+        variables from the safe catalogue. That catalogue is the whole of what a
+        notification may carry — a given name, a reference number, a status word, a date, an
+        amount with its currency, a provider or program name, and a link into the product —
+        and there is deliberately no slot in it for a diagnosis, an identity number or
+        anything an operator typed into a comment.
+
+        The list and the placeholders the body actually uses must be the same set. A
+        declared variable the body never mentions is a value every caller has to supply for
+        nothing; a placeholder nobody declared is a hole in the message.
+
+        The version number is not a field: it is computed from the versions that already
+        exist for this event, channel and language.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateNotificationTemplate'
+      responses:
+        '201':
+          description: Draft template written
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationTemplate'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/notification-templates/{templateId}:
+    get:
+      tags: [Notifications]
+      operationId: getNotificationTemplate
+      description: |
+        One template version with its body and its declared variables.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/NotificationTemplateId'
+      responses:
+        '200':
+          description: Template
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationTemplate'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/notification-templates/{templateId}/publish:
+    post:
+      tags: [Notifications]
+      operationId: publishNotificationTemplate
+      description: |
+        Makes this draft the template that renders its event from now on, and retires the
+        version it replaces in the same transaction.
+
+        Publishing retires rather than refuses. Refusing until somebody retired the old one
+        would leave the event with no published template for however long the two commands
+        are apart, and a message that arrived in that gap would be suppressed for want of
+        one. Replacing in one transaction has no such gap: a message rendered a microsecond
+        either side finds exactly one template, the older one before and the newer one
+        after.
+
+        A published template is immutable. The retired version keeps everything it said,
+        and the messages it produced name it by id and version and carry their own rendered
+        text, so retiring it changes nothing about what anybody was told.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/NotificationTemplateId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Template published and the version it replaced retired
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationTemplate'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/notification-messages:
+    get:
+      tags: [Notifications]
+      operationId: listNotificationMessages
+      description: |
+        What was actually sent, to whom, newest first, with keyset paging.
+
+        Suppressed messages are on this list like any other, which is the point of it. A
+        member who was not told — because they turned this off, because it was the middle of
+        their night, because nobody has written a template for the event, or because the
+        platform holds no address for them — has a row saying so and naming the reason. An
+        operator asked "was the member told" can answer it either way.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: eventCode
+          in: query
+          description: Keep only the messages of one domain event.
+          schema:
+            type: string
+            pattern: '^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*){1,4}$'
+        - name: channel
+          in: query
+          description: Keep only the messages of one channel.
+          schema:
+            $ref: '#/components/schemas/NotificationChannel'
+        - name: status
+          in: query
+          description: Keep only the messages in one state.
+          schema:
+            $ref: '#/components/schemas/NotificationMessageStatus'
+        - name: recipientType
+          in: query
+          description: With recipientId, keep only the messages sent to one recipient.
+          schema:
+            $ref: '#/components/schemas/NotificationRecipientType'
+        - name: recipientId
+          in: query
+          description: With recipientType, keep only the messages sent to one recipient.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Message page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationMessagePage'
+        '400':
+          description: Cursor invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/notification-messages/{messageId}:
+    get:
+      tags: [Notifications]
+      operationId: getNotificationMessage
+      description: |
+        One message with every attempt made on it. The attempts travel with it because a
+        status alone does not answer the question: a message that says SENT after two
+        failures and one that went first time are the same status and different stories.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/NotificationMessageId'
+      responses:
+        '200':
+          description: Message with its delivery attempts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationMessageDetail'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/notification-messages/{messageId}/resend:
+    post:
+      tags: [Notifications]
+      operationId: resendNotificationMessage
+      description: |
+        Sends what one message said, again.
+
+        It writes a new message rather than re-queuing the old one. The original is evidence
+        of what happened — it went out at this time, it failed twice, it was refused — and
+        re-queuing it would overwrite that story with the new one. The copy carries the same
+        rendered text and names the message it came from, so the log shows both halves.
+
+        A message with no rendered body cannot be resent: it was suppressed before anything
+        was written, so there is nothing to send. Neither is a recipient who has turned this
+        notification off — an operator clicking a button must not override somebody's own
+        answer to "do you want to hear about this". Quiet hours are deliberately not
+        re-checked: an operator resending has already decided about the timing.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/NotificationMessageId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: A new message carrying the same text, queued for its channel
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationMessage'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/notification-preferences:
+    get:
+      tags: [Notifications]
+      operationId: getNotificationPreferences
+      description: |
+        What one recipient has said about being told things: which channels are on, and the
+        hours they would rather not hear from anybody. An empty list means nobody has said
+        anything, which is not the same as everything being off — a transactional
+        notification about somebody's own benefit is sent unless they asked otherwise.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: recipientType
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/NotificationRecipientType'
+        - name: recipientId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The recipient's notification preferences
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPreferenceList'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    put:
+      tags: [Notifications]
+      operationId: putNotificationPreferences
+      description: |
+        Replaces the whole preference set of one recipient, in one transaction. It is a
+        replace rather than a merge because the set is read as a whole: a merge would leave
+        behind a channel the person believed they had turned off, and they would keep being
+        written to on it.
+
+        eventCode absent means "every event on this channel", which is how somebody turns a
+        channel off once instead of once per event. A row that names the event wins over the
+        row that names none, so "no e-mail except this one" is expressible.
+
+        Quiet hours are a pair or are absent, and they are read in timezone rather than the
+        server's: a member in Berlin and one in Istanbul do not share a night. A message
+        that arrives inside the window is not delayed — it is suppressed with the reason,
+        and the log shows the member was not told and why.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutNotificationPreferences'
+      responses:
+        '200':
+          description: Preference set written
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPreferenceList'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
 components:
   securitySchemes:
     sessionCookie:
@@ -7538,6 +7911,20 @@ components:
         format: uuid
     PriceQuoteId:
       name: priceQuoteId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    NotificationTemplateId:
+      name: templateId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    NotificationMessageId:
+      name: messageId
       in: path
       required: true
       schema:
@@ -13332,3 +13719,355 @@ components:
         rowVersion:
           type: integer
           format: int64
+    NotificationChannel:
+      type: string
+      enum: [EMAIL, SMS, PUSH, INAPP]
+      description: |
+        How a message reaches somebody. EMAIL goes through SMTP; SMS is recorded until a
+        provider is chosen; PUSH is recorded and not delivered in this milestone; INAPP is
+        delivered by being recorded, because the message log is what a screen reads.
+    NotificationTemplateStatus:
+      type: string
+      enum: [DRAFT, PUBLISHED, RETIRED]
+      description: |
+        A draft renders nothing. A published template is immutable and there is at most one
+        per event, channel and language. A retired one is what a published template becomes
+        when a newer version replaces it; it never comes back.
+    NotificationMessageStatus:
+      type: string
+      enum: [QUEUED, SENDING, SENT, FAILED, SUPPRESSED]
+      description: |
+        SUPPRESSED is the status that matters: it is a message that was deliberately not
+        sent, with a reason, so a member who was not told can be shown to have not been
+        told.
+    NotificationRecipientType:
+      type: string
+      enum: [PERSON, ACTOR, ORGANIZATION]
+    NotificationSuppressionReason:
+      type: string
+      enum: [PREFERENCE_DISABLED, QUIET_HOURS, NO_TEMPLATE, NO_ADDRESS]
+      description: |
+        Why nobody was told. PREFERENCE_DISABLED is somebody who asked not to hear about
+        this; QUIET_HOURS is the middle of their night in their own time zone; NO_TEMPLATE
+        is an event nobody has written a message for yet; NO_ADDRESS is a recipient the
+        platform holds no address for on that channel.
+    NotificationDeliveryOutcome:
+      type: string
+      enum: [ACCEPTED, REJECTED, BOUNCED, ERROR]
+      description: |
+        What one attempt came back with. REJECTED and BOUNCED are the provider's final word
+        and stop the retries; ERROR is a provider that could not be reached, which is the
+        one outcome worth trying again.
+    NotificationSafeVariable:
+      type: string
+      enum:
+        - given_name
+        - reference_no
+        - status_code
+        - event_date
+        - expires_at
+        - amount
+        - currency
+        - provider_name
+        - program_name
+        - deep_link
+      description: |
+        The whole of what a notification may carry. A variable outside this list is refused
+        at render time rather than dropped, and each of these has a shape of its own that
+        its value must have: a given name has no digits at all, a status is a code, a date
+        is a date, an amount is a decimal, and a deep link is a path with no query string,
+        so there is nowhere in any of them to put a diagnosis, an identity number or
+        something an operator typed into a comment.
+
+        deep_link is a path rather than a URL, and the product prefixes its own base. That
+        is what "no secret in a link" means here: there is nowhere in the value for a token
+        to ride along, so a link can only point at a screen the recipient has to sign in to
+        see. A voucher's plaintext is never one of these values.
+    NotificationTemplate:
+      type: object
+      additionalProperties: false
+      required: [id, eventCode, channel, locale, versionNo, status, body, declaredVariables, createdAt, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        eventCode:
+          type: string
+          description: The domain event this message is written for.
+        channel:
+          $ref: '#/components/schemas/NotificationChannel'
+        locale:
+          type: string
+        versionNo:
+          type: integer
+          minimum: 1
+        status:
+          $ref: '#/components/schemas/NotificationTemplateStatus'
+        subject:
+          type: [string, 'null']
+          maxLength: 200
+          description: Present for EMAIL and absent for every other channel.
+        body:
+          type: string
+          maxLength: 5000
+        declaredVariables:
+          type: array
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/NotificationSafeVariable'
+        publishedAt:
+          type: [string, 'null']
+          format: date-time
+        publishedBy:
+          type: [string, 'null']
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        rowVersion:
+          type: integer
+          format: int64
+    NotificationTemplatePage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationTemplate'
+        nextCursor:
+          type: [string, 'null']
+    CreateNotificationTemplate:
+      type: object
+      additionalProperties: false
+      required: [eventCode, channel, locale, body]
+      properties:
+        eventCode:
+          type: string
+          pattern: '^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*){1,4}$'
+        channel:
+          $ref: '#/components/schemas/NotificationChannel'
+        locale:
+          type: string
+          pattern: '^[a-z]{2}(-[A-Z]{2})?$'
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Required for EMAIL and refused for every other channel.
+        body:
+          type: string
+          minLength: 1
+          maxLength: 5000
+          description: |
+            The text, with double-brace placeholders for the declared variables. A brace
+            pair the renderer would not substitute is refused rather than sent verbatim.
+        declaredVariables:
+          type: array
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/NotificationSafeVariable'
+          description: |
+            Exactly the variables the body and subject use. Neither a declared variable the
+            text never mentions nor a placeholder nobody declared is accepted.
+    NotificationMessage:
+      type: object
+      additionalProperties: false
+      required: [id, eventCode, recipientType, recipientId, channel, locale, safeVariables, status, createdAt, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        eventCode:
+          type: string
+        recipientType:
+          $ref: '#/components/schemas/NotificationRecipientType'
+        recipientId:
+          type: string
+          format: uuid
+        channel:
+          $ref: '#/components/schemas/NotificationChannel'
+        locale:
+          type: string
+        templateId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            The template that produced this text, and its version. Both are null on a
+            message that was suppressed before anything was rendered.
+        templateVersionNo:
+          type: [integer, 'null']
+        subjectRendered:
+          type: [string, 'null']
+          maxLength: 200
+        bodyRendered:
+          type: [string, 'null']
+          maxLength: 10000
+        safeVariables:
+          type: object
+          additionalProperties:
+            type: string
+          description: |
+            The values this message was rendered from. They are on the log because an
+            operator needs to see what the member would have been sent even when the
+            message was suppressed, and they are safe by construction.
+        status:
+          $ref: '#/components/schemas/NotificationMessageStatus'
+        suppressedReason:
+          oneOf:
+            - $ref: '#/components/schemas/NotificationSuppressionReason'
+            - type: 'null'
+          description: Set exactly when the status is SUPPRESSED.
+        resentFromMessageId:
+          type: [string, 'null']
+          format: uuid
+          description: The message this one is a resend of.
+        createdAt:
+          type: string
+          format: date-time
+        sentAt:
+          type: [string, 'null']
+          format: date-time
+        rowVersion:
+          type: integer
+          format: int64
+    NotificationMessagePage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationMessage'
+        nextCursor:
+          type: [string, 'null']
+    NotificationDelivery:
+      type: object
+      additionalProperties: false
+      required: [id, messageId, attemptNo, providerCode, outcome, attemptedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        messageId:
+          type: string
+          format: uuid
+        attemptNo:
+          type: integer
+          minimum: 1
+        providerCode:
+          type: string
+          description: |
+            Who took the message. SMTP is a mail server; SMS_STUB, PUSH_RECORDER and
+            INAPP_RECORDER mean the attempt was recorded and the message never left the
+            platform.
+        providerMessageId:
+          type: [string, 'null']
+        outcome:
+          $ref: '#/components/schemas/NotificationDeliveryOutcome'
+        detail:
+          type: [string, 'null']
+          maxLength: 500
+          description: |
+            The provider's answer, bounded and with addresses removed: a bounce quotes the
+            recipient, and that quote would otherwise be stored here forever.
+        attemptedAt:
+          type: string
+          format: date-time
+    NotificationMessageDetail:
+      type: object
+      additionalProperties: false
+      required: [message, deliveries]
+      properties:
+        message:
+          $ref: '#/components/schemas/NotificationMessage'
+        deliveries:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationDelivery'
+    NotificationPreference:
+      type: object
+      additionalProperties: false
+      required: [id, recipientType, recipientId, channel, enabled, timezone, createdAt, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        recipientType:
+          $ref: '#/components/schemas/NotificationRecipientType'
+        recipientId:
+          type: string
+          format: uuid
+        eventCode:
+          type: [string, 'null']
+          description: Null means every event on this channel.
+        channel:
+          $ref: '#/components/schemas/NotificationChannel'
+        enabled:
+          type: boolean
+        quietHoursStart:
+          type: [string, 'null']
+          pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
+        quietHoursEnd:
+          type: [string, 'null']
+          pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
+        timezone:
+          type: string
+          description: IANA zone name the quiet hours are read in.
+        createdAt:
+          type: string
+          format: date-time
+        rowVersion:
+          type: integer
+          format: int64
+    NotificationPreferenceList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationPreference'
+    PutNotificationPreferences:
+      type: object
+      additionalProperties: false
+      required: [recipientType, recipientId, preferences]
+      properties:
+        recipientType:
+          $ref: '#/components/schemas/NotificationRecipientType'
+        recipientId:
+          type: string
+          format: uuid
+        preferences:
+          type: array
+          maxItems: 40
+          items:
+            $ref: '#/components/schemas/NotificationPreferenceInput'
+    NotificationPreferenceInput:
+      type: object
+      additionalProperties: false
+      required: [channel, enabled]
+      properties:
+        eventCode:
+          type: string
+          pattern: '^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*){1,4}$'
+          description: Absent means every event on this channel.
+        channel:
+          $ref: '#/components/schemas/NotificationChannel'
+        enabled:
+          type: boolean
+        quietHoursStart:
+          type: string
+          pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
+          description: Given with quietHoursEnd or not at all.
+        quietHoursEnd:
+          type: string
+          pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 60
+          description: IANA zone name; defaults to Europe/Istanbul.

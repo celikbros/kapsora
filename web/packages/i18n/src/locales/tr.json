@@ -328,7 +328,15 @@
     "DOCUMENT_STORE_UNAVAILABLE": "Belge deposuna şu anda ulaşılamıyor. Kısa bir süre sonra yeniden deneyin.",
     "LEGAL_HOLD_NOT_FOUND": "Hukuki saklama kaydı bulunamadı.",
     "LEGAL_HOLD_EXISTS": "Bu hedef için etkin bir hukuki saklama zaten var.",
-    "LEGAL_HOLD_ALREADY_RELEASED": "Hukuki saklama zaten kaldırılmış."
+    "LEGAL_HOLD_ALREADY_RELEASED": "Hukuki saklama zaten kaldırılmış.",
+    "NOTIFICATION_TEMPLATE_NOT_FOUND": "Bildirim şablonu bulunamadı.",
+    "NOTIFICATION_TEMPLATE_NOT_DRAFT": "Yalnızca taslak şablon yayınlanabilir.",
+    "NOTIFICATION_TEMPLATE_IMMUTABLE": "Yayınlanmış şablon değiştirilemez; yeni bir sürüm oluşturun.",
+    "NOTIFICATION_TEMPLATE_VERSION_EXISTS": "Bu şablon sürümü zaten var.",
+    "NOTIFICATION_TEMPLATE_MISSING": "Bu olay, kanal ve dil için yayınlanmış şablon yok.",
+    "NOTIFICATION_MESSAGE_NOT_FOUND": "Bildirim kaydı bulunamadı.",
+    "NOTIFICATION_MESSAGE_NOT_RESENDABLE": "Bu bildirim yeniden gönderilemez.",
+    "NOTIFICATION_RECIPIENT_OPTED_OUT": "Alıcı bu bildirimi kapatmış."
   },
   "fieldErrors": {
     "RULE_COMPILE_FAILED": "Kural koşulu derlenemedi",

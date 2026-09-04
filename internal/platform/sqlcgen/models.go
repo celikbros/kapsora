@@ -736,6 +736,83 @@ type IamTenantMembership struct {
 	RowVersion       int64
 }
 
+type NotificationDelivery struct {
+	ID                uuid.UUID
+	TenantID          uuid.UUID
+	MessageID         uuid.UUID
+	AttemptNo         int32
+	ProviderCode      string
+	ProviderMessageID *string
+	Outcome           string
+	Detail            *string
+	AttemptedAt       time.Time
+	CreatedAt         time.Time
+	CreatedBy         uuid.NullUUID
+}
+
+type NotificationMessage struct {
+	ID                  uuid.UUID
+	TenantID            uuid.UUID
+	EventCode           string
+	RecipientType       string
+	RecipientID         uuid.UUID
+	Channel             string
+	Locale              string
+	TemplateID          uuid.NullUUID
+	TemplateVersionNo   *int32
+	SubjectRendered     *string
+	BodyRendered        *string
+	SafeVariables       []byte
+	Status              string
+	SuppressedReason    *string
+	DedupeKey           *string
+	ResentFromMessageID uuid.NullUUID
+	CreatedAt           time.Time
+	CreatedBy           uuid.NullUUID
+	SentAt              *time.Time
+	UpdatedAt           time.Time
+	UpdatedBy           uuid.NullUUID
+	RowVersion          int64
+}
+
+type NotificationPreference struct {
+	ID              uuid.UUID
+	TenantID        uuid.UUID
+	RecipientType   string
+	RecipientID     uuid.UUID
+	EventCode       *string
+	Channel         string
+	Enabled         bool
+	QuietHoursStart pgtype.Time
+	QuietHoursEnd   pgtype.Time
+	Timezone        string
+	CreatedAt       time.Time
+	CreatedBy       uuid.NullUUID
+	UpdatedAt       time.Time
+	UpdatedBy       uuid.NullUUID
+	RowVersion      int64
+}
+
+type NotificationTemplate struct {
+	ID                uuid.UUID
+	TenantID          uuid.UUID
+	EventCode         string
+	Channel           string
+	Locale            string
+	VersionNo         int32
+	Status            string
+	Subject           *string
+	Body              string
+	DeclaredVariables []string
+	PublishedAt       *time.Time
+	PublishedBy       uuid.NullUUID
+	CreatedAt         time.Time
+	CreatedBy         uuid.NullUUID
+	UpdatedAt         time.Time
+	UpdatedBy         uuid.NullUUID
+	RowVersion        int64
+}
+
 type PartyIdentifierType struct {
 	TenantID        uuid.UUID
 	Code            string

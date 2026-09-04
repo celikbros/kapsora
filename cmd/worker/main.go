@@ -19,6 +19,10 @@ import (
 	"github.com/celikbros/kapsora/internal/benefit/ledger"
 	documentapp "github.com/celikbros/kapsora/internal/document/application"
 	documentpg "github.com/celikbros/kapsora/internal/document/infrastructure/postgres"
+	notificationapp "github.com/celikbros/kapsora/internal/notification/application"
+	"github.com/celikbros/kapsora/internal/notification/domain"
+	"github.com/celikbros/kapsora/internal/notification/infrastructure/channel"
+	notificationpg "github.com/celikbros/kapsora/internal/notification/infrastructure/postgres"
 	"github.com/celikbros/kapsora/internal/party/memberimport"
 	"github.com/celikbros/kapsora/internal/platform/antivirus"
 	"github.com/celikbros/kapsora/internal/platform/config"
@@ -26,6 +30,7 @@ import (
 	"github.com/celikbros/kapsora/internal/platform/db"
 	"github.com/celikbros/kapsora/internal/platform/httpx"
 	"github.com/celikbros/kapsora/internal/platform/logging"
+	"github.com/celikbros/kapsora/internal/platform/mail"
 	"github.com/celikbros/kapsora/internal/platform/objectstore"
 	"github.com/celikbros/kapsora/internal/platform/outbox"
 )
@@ -91,6 +96,14 @@ func run() error {
 		return err
 	}
 
+	// Notifications. This is the only process that talks to a mail server, and it holds an
+	// adapter for all four channels: a worker asked to send on a channel it has no adapter
+	// for answers an error rather than recording a delivery that did not happen.
+	notifications, err := newNotifications(cfg, pool, logger)
+	if err != nil {
+		return err
+	}
+
 	dispatcher := outbox.New(pool, outbox.Options{Logger: logger})
 	// A new enrollment opens its entitlement accounts here rather than in the request
 	// that created it: the accounts follow the plan configuration, and the handler is
@@ -106,6 +119,14 @@ func run() error {
 	// and a scanner that cannot be reached leaves the file FAILED and retryable rather
 	// than promoted.
 	dispatcher.Handle(documentapp.ScanRequestedEvent, documents.HandleScanRequested)
+	// Notifications. A module asks for one by publishing an event inside its own business
+	// transaction; nothing is rendered, written or sent until that transaction commits and
+	// this handler picks the event up. Both handlers are idempotent: the message table is
+	// unique on the deduplication key, so a redelivered event finds the message the first
+	// delivery wrote and continues from wherever it stopped rather than telling somebody
+	// twice.
+	dispatcher.Handle(notificationapp.NotifyRequestedEvent, notifications.HandleNotifyRequested)
+	dispatcher.Handle(notificationapp.SendRequestedEvent, notifications.HandleSendRequested)
 
 	go reportBacklog(ctx, logger, dispatcher)
 
@@ -144,6 +165,39 @@ func newDocuments(cfg config.Config, pool *pgxpool.Pool, logger *slog.Logger) (*
 			UploadTTL:        cfg.Documents.UploadURLTTL,
 			DownloadTTL:      cfg.Documents.DownloadURLTTL,
 			EncryptionKeyRef: cfg.Documents.EncryptionKeyRef,
+		},
+	})
+}
+
+// newNotifications builds the notification service with an adapter for every channel. The
+// SMTP client does not connect here: a relay that is down at start-up must not stop the
+// worker, because the messages it cannot send stay queued and are retried, which is
+// exactly what should happen.
+func newNotifications(cfg config.Config, pool *pgxpool.Pool, logger *slog.Logger) (*notificationapp.Service, error) {
+	smtp, err := mail.NewSMTP(mail.SMTPOptions{
+		Address: cfg.Notifications.SMTPAddr, From: cfg.Notifications.SMTPFrom,
+		Username: cfg.Notifications.SMTPUsername, Password: cfg.Notifications.SMTPPassword,
+		StartTLS: cfg.Notifications.SMTPStartTLS, Timeout: cfg.Notifications.SMTPTimeout,
+	})
+	if err != nil {
+		return nil, err
+	}
+	email, err := channel.NewEmail(smtp)
+	if err != nil {
+		return nil, err
+	}
+	return notificationapp.New(notificationapp.Deps{
+		Pool: pool, Repo: notificationpg.New(), Audit: auditpg.New(),
+		LinkBase: cfg.Notifications.LinkBase, Logger: logger,
+		Senders: map[string]notificationapp.ChannelSender{
+			domain.ChannelEmail: email,
+			// SMS has no provider yet and PUSH has no device registry; both record the
+			// attempt so the message is in the log with a delivery row saying it was never
+			// handed to anybody. INAPP is delivered by being recorded: the message log is
+			// what a screen reads.
+			domain.ChannelSMS:   channel.NewSMS(logger),
+			domain.ChannelPush:  channel.NewPush(logger),
+			domain.ChannelInApp: channel.NewInApp(logger),
 		},
 	})
 }

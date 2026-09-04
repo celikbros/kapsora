@@ -39,6 +39,9 @@ import (
 	"github.com/celikbros/kapsora/internal/identity/domain"
 	identitypg "github.com/celikbros/kapsora/internal/identity/infrastructure/postgres"
 	identityhttp "github.com/celikbros/kapsora/internal/identity/transport/http"
+	notificationapp "github.com/celikbros/kapsora/internal/notification/application"
+	notificationpg "github.com/celikbros/kapsora/internal/notification/infrastructure/postgres"
+	notificationhttp "github.com/celikbros/kapsora/internal/notification/transport/http"
 	orgapp "github.com/celikbros/kapsora/internal/organization/application"
 	organizationpg "github.com/celikbros/kapsora/internal/organization/infrastructure/postgres"
 	organizationhttp "github.com/celikbros/kapsora/internal/organization/transport/http"
@@ -235,6 +238,18 @@ func run() error {
 		return err
 	}
 
+	// Notifications. This process holds no channel adapter at all: publishing a template
+	// and resending a message both write a row and an outbox event, and the worker is the
+	// only thing that talks to a mail server. An adapter wired in here would be one the API
+	// never calls, and an HTTP request must never be able to wait on a relay.
+	notificationSvc, err := notificationapp.New(notificationapp.Deps{
+		Pool: pool, Repo: notificationpg.New(), Audit: auditpg.New(), Cursors: cursors,
+		LinkBase: cfg.Notifications.LinkBase, Logger: logger,
+	})
+	if err != nil {
+		return err
+	}
+
 	// Documents. The API hands out presigned URLs and never touches a file body: this
 	// process needs the object store to sign them, and no scanner at all — scanning is the
 	// worker's job, and a scanner wired in here would be one this process never calls.
@@ -273,6 +288,7 @@ func run() error {
 		authorizations: authorizationSvc,
 		workflows:      workflowSvc,
 		documents:      documentSvc,
+		notifications:  notificationSvc,
 		entitlements:   entitlementSvc,
 		eligibility:    eligibilitySvc,
 		imports:        memberImports,
@@ -391,6 +407,7 @@ type routerDeps struct {
 	authorizations *authorizationapp.Service
 	workflows      *workflowapp.Service
 	documents      *documentapp.Service
+	notifications  *notificationapp.Service
 	entitlements   *benefitledger.Service
 	eligibility    *benefiteligibility.Service
 	imports        *memberimport.Service
@@ -643,6 +660,28 @@ func newRouter(d routerDeps) http.Handler {
 			})
 			tenant.Route("/legal-holds", func(r chi.Router) {
 				documentHandler.LegalHoldRoutes(r, documentMW)
+			})
+
+			// Notifications. Templates are configuration, the message log is a record of
+			// what members were actually told, and preferences are what they asked for;
+			// the three sit side by side because an operator answering "was this member
+			// told, and why not" walks all three. Nothing here sends anything: publish and
+			// resend write a row and an outbox event, and the worker does the rest.
+			notificationHandler := notificationhttp.NewHandler(d.notifications, sessions, d.logger)
+			notificationMW := notificationhttp.Middlewares{
+				CreateTemplate:  d.idempotent("notification_template.create"),
+				PublishTemplate: d.idempotent("notification_template.publish"),
+				ResendMessage:   d.idempotent("notification_message.resend"),
+				PutPreferences:  d.idempotent("notification_preference.put"),
+			}
+			tenant.Route("/notification-templates", func(r chi.Router) {
+				notificationHandler.TemplateRoutes(r, notificationMW)
+			})
+			tenant.Route("/notification-messages", func(r chi.Router) {
+				notificationHandler.MessageRoutes(r, notificationMW)
+			})
+			tenant.Route("/notification-preferences", func(r chi.Router) {
+				notificationHandler.PreferenceRoutes(r, notificationMW)
 			})
 
 			// Eligibility checks change no business state and carry their own replay

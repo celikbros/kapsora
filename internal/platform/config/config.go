@@ -35,6 +35,36 @@ type Config struct {
 	ShutdownTimeout time.Duration
 	Session         SessionConfig
 	Documents       DocumentConfig
+	Notifications   NotificationConfig
+}
+
+// NotificationConfig configures where a notification goes and what a link in one points
+// at (WP-I4-05, ADR-021: Mailpit runs as a native process locally, a customer relay in
+// production; there is no container anywhere in this project).
+//
+// Everything here has a working local default, so Load never fails on it: the API sends
+// nothing and needs only the link base, and a worker whose relay is down leaves its
+// messages queued and retries rather than refusing to start.
+type NotificationConfig struct {
+	// SMTPAddr is host:port of the mail server.
+	SMTPAddr string
+	// SMTPFrom is the envelope and header sender. It has to be an address the relay
+	// accepts as its own, so it is configuration rather than a caller's choice.
+	SMTPFrom string
+	// SMTPUsername and SMTPPassword authenticate to a real relay. They are only ever sent
+	// over TLS: the client refuses to authenticate in clear text rather than quietly
+	// sending the password anyway, which is why StartTLS is required alongside them.
+	SMTPUsername string
+	SMTPPassword string
+	// SMTPStartTLS upgrades the connection when the server offers it. It is off for the
+	// local Mailpit, which offers no TLS at all, and on for every relay.
+	SMTPStartTLS bool
+	// SMTPTimeout bounds one whole exchange, connection included.
+	SMTPTimeout time.Duration
+	// LinkBase is prefixed to the path a notification's deep link carries. The path never
+	// holds a query string, so this plus a path is the whole of the URL a recipient sees —
+	// and it points at a screen they have to sign in to reach.
+	LinkBase string
 }
 
 // DocumentConfig configures the object store a file actually lives in and the malware
@@ -130,7 +160,47 @@ func Load(serviceName string) (Config, error) {
 	if cfg.Documents, err = loadDocuments(); err != nil {
 		return cfg, err
 	}
+	if cfg.Notifications, err = loadNotifications(); err != nil {
+		return cfg, err
+	}
 	return cfg, nil
+}
+
+// loadNotifications reads the mail relay and the public link base. It fails only on a
+// value that is present and unusable, or on a combination that would put a password on
+// the wire in clear text.
+func loadNotifications() (NotificationConfig, error) {
+	n := NotificationConfig{
+		SMTPAddr:     envOr("KAPSORA_SMTP_ADDR", "127.0.0.1:1025"),
+		SMTPFrom:     envOr("KAPSORA_SMTP_FROM", "kapsora@kapsora.local"),
+		SMTPUsername: os.Getenv("KAPSORA_SMTP_USERNAME"),
+		SMTPPassword: os.Getenv("KAPSORA_SMTP_PASSWORD"),
+		LinkBase:     envOr("KAPSORA_PUBLIC_BASE_URL", "https://kapsora.local"),
+	}
+	if raw, ok := os.LookupEnv("KAPSORA_SMTP_STARTTLS"); ok && raw != "" {
+		v, err := strconv.ParseBool(raw)
+		if err != nil {
+			return n, fmt.Errorf("KAPSORA_SMTP_STARTTLS must be true or false: %w", err)
+		}
+		n.SMTPStartTLS = v
+	}
+	timeout, err := envInt("KAPSORA_SMTP_TIMEOUT_SECONDS", 30)
+	if err != nil {
+		return n, err
+	}
+	if timeout < 1 || timeout > 600 {
+		return n, fmt.Errorf("KAPSORA_SMTP_TIMEOUT_SECONDS must be between 1 and 600, got %d", timeout)
+	}
+	n.SMTPTimeout = time.Duration(timeout) * time.Second
+	if n.SMTPUsername != "" && !n.SMTPStartTLS {
+		return n, errors.New("KAPSORA_SMTP_USERNAME requires KAPSORA_SMTP_STARTTLS=true; a relay password must not be sent in clear text")
+	}
+	// A link base carrying a query string would be a link base carrying a token, which is
+	// the one thing a notification link may never do.
+	if strings.ContainsAny(n.LinkBase, "?#") {
+		return n, fmt.Errorf("KAPSORA_PUBLIC_BASE_URL must not carry a query string or a fragment, got %q", n.LinkBase)
+	}
+	return n, nil
 }
 
 // loadDocuments reads the object store and scanner settings. It fails only on a value that
