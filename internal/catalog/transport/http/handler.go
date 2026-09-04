@@ -89,6 +89,7 @@ func (h *Handler) DefinitionRoutes(r chi.Router, mw Middlewares) {
 func (h *Handler) CodeSystemRoutes(r chi.Router, mw Middlewares) {
 	r.Get("/", h.ListCodeSystems)
 	r.With(wrap(mw.CreateCodeSystem)).Post("/", h.CreateCodeSystem)
+	r.Get("/{codeSystemId}", h.GetCodeSystem)
 	r.Patch("/{codeSystemId}", h.PatchCodeSystem)
 	r.Get("/{codeSystemId}/values", h.ListCodeValues)
 	r.With(wrap(mw.ImportCodeValues)).Post("/{codeSystemId}/values:import", h.ImportCodeValues)

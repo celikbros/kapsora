@@ -2698,6 +2698,29 @@ paths:
         '422':
           $ref: '#/components/responses/ValidationError'
   /api/v1/code-systems/{codeSystemId}:
+    get:
+      tags: [Catalog]
+      operationId: getCodeSystem
+      description: |
+        One code system with its current ETag, which the caller needs before it can
+        patch the system.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/CodeSystemId'
+      responses:
+        '200':
+          description: Code system
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CodeSystem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
     patch:
       tags: [Catalog]
       operationId: patchCodeSystem

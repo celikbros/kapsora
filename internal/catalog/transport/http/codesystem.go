@@ -40,6 +40,26 @@ func (h *Handler) ListCodeSystems(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, out)
 }
 
+// GetCodeSystem implements getCodeSystem. A caller needs this to learn the ETag before
+// it can patch the system.
+func (h *Handler) GetCodeSystem(w http.ResponseWriter, r *http.Request) {
+	rc, ok := h.require(w, r, PermissionRead)
+	if !ok {
+		return
+	}
+	id, ok := h.pathUUID(w, r, "codeSystemId", application.ErrCodeSystemNotFound)
+	if !ok {
+		return
+	}
+	system, err := h.svc.GetCodeSystem(r.Context(), rc, id)
+	if err != nil {
+		h.writeError(w, r, err)
+		return
+	}
+	w.Header().Set("ETag", etag(system.RowVersion))
+	writeJSON(w, http.StatusOK, codeSystemView(system))
+}
+
 // CreateCodeSystem implements createCodeSystem.
 func (h *Handler) CreateCodeSystem(w http.ResponseWriter, r *http.Request) {
 	rc, ok := h.require(w, r, PermissionManage)
