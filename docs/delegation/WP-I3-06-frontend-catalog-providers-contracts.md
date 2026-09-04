@@ -10,6 +10,32 @@
 | OpenAPI operations owned   | none (consumes)                                                                                      |
 | Read first                 | `DESIGN.md`, `PRODUCT.md` (Impeccable), WP-I2-06 as delivered (its patterns are the house style now) |
 
+> **Delivered in-house, 04.09.2026.** Screens live under `web/apps/backoffice/src/` in
+> `catalog/`, `providers/`, `contracts/`, `rules/` and `pricing/`; routes and the menu are
+> wired in `router.tsx` and `nav.ts`. Decisions taken while delivering:
+>
+> - **Routes are declared one by one, never mapped.** `createRoute` keeps the path as a
+>   literal type, and that literal is what makes `Link` and `useNavigate` check a path at
+>   compile time. A `.map()` over a list of paths erases it and every link silently
+>   becomes an unchecked string — which is why three of the five screen sets first arrived
+>   navigating around the router entirely.
+> - **The price sheet edits in place.** The work is comparing thirty rows against each
+>   other, and a modal per row hides the thing being compared.
+> - **The quote screen names its sources and withholds a number when it has none.** A
+>   `REVIEW_REQUIRED` answer shows no member figure: an operator who is shown a number
+>   reads it as the answer.
+> - **The quote picks its person by name.** The first version asked for a member's
+>   identifier, which nobody has in their head.
+> - **A draft contract version offers the price list its prices need.** Without it the
+>   sheet was unreachable and the screen simply said it was empty.
+> - **Coordinates are the one float.** They are geography, not money; `numeric(9,6)` is
+>   nine significant digits, which a double holds exactly.
+> - **A compile error shows the compiler's own words.** A translated key would win over
+>   the server's message and say only "it did not compile", which does not say where.
+> - The menu entry "Sağlayıcılar ve Sözleşmeler" pointed at the organization directory as
+>   a placeholder; providers and contracts are real now, so each has its own entry.
+> - Tests: 152 Vitest specs across the workspace, 11 Playwright flows, Impeccable clean.
+
 ## 1. Goal
 
 Give an operator the screens to build the vocabulary, the network, the money and the rules
