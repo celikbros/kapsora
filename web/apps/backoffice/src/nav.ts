@@ -42,6 +42,20 @@ export const NAV_ENTRIES: NavEntry[] = [
   },
   { key: 'catalog', path: '/catalog', labelKey: 'nav.catalog', implemented: false },
   {
+    key: 'contracts',
+    path: '/contracts',
+    labelKey: 'nav.contracts',
+    implemented: true,
+    permission: 'contract.read',
+  },
+  {
+    key: 'pricing',
+    path: '/pricing',
+    labelKey: 'nav.pricing',
+    implemented: true,
+    permission: 'pricing.quote',
+  },
+  {
     key: 'providers',
     path: '/organizations',
     labelKey: 'nav.providers',

@@ -8,6 +8,11 @@ import {
 } from '@tanstack/react-router';
 import { AdjustmentQueuePage } from './adjustments/AdjustmentQueuePage';
 import type { AppServices } from './api';
+import { ContractCreatePage } from './contracts/ContractCreatePage';
+import { ContractDetailPage } from './contracts/ContractDetailPage';
+import { ContractListPage, type ContractListSearch } from './contracts/ContractListPage';
+import { ContractVersionPage } from './contracts/ContractVersionPage';
+import { QuotePage } from './pricing/QuotePage';
 import { ImportDetailPage } from './imports/ImportDetailPage';
 import { ImportListPage } from './imports/ImportListPage';
 import { ImportUploadPage } from './imports/ImportUploadPage';
@@ -219,6 +224,44 @@ const adjustmentsRoute = createRoute({
   component: AdjustmentQueuePage,
 });
 
+function contractListSearch(raw: Record<string, unknown>): ContractListSearch {
+  const out: ContractListSearch = {};
+  const status = raw['status'];
+  if (status === 'DRAFT' || status === 'ACTIVE' || status === 'SUSPENDED' || status === 'CLOSED') {
+    out.status = status;
+  }
+  if (typeof raw['q'] === 'string' && raw['q'] !== '') out.q = raw['q'];
+  if (typeof raw['cursor'] === 'string' && raw['cursor'] !== '') out.cursor = raw['cursor'];
+  return out;
+}
+
+const contractsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/contracts',
+  validateSearch: contractListSearch,
+  component: ContractListPage,
+});
+const contractCreateRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/contracts/new',
+  component: ContractCreatePage,
+});
+const contractDetailRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/contracts/$contractId',
+  component: ContractDetailPage,
+});
+const contractVersionRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/contract-versions/$contractVersionId',
+  component: ContractVersionPage,
+});
+const pricingRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/pricing',
+  component: QuotePage,
+});
+
 const importsRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/imports',
@@ -263,6 +306,11 @@ const routeTree = rootRoute.addChildren([
     importsRoute,
     importUploadRoute,
     importDetailRoute,
+    contractsRoute,
+    contractCreateRoute,
+    contractDetailRoute,
+    contractVersionRoute,
+    pricingRoute,
     ...soonRoutes,
   ]),
 ]);
