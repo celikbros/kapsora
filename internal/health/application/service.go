@@ -25,10 +25,18 @@ type Service struct {
 	reports   ReportRepository
 	workItems WorkItemPort
 	stays     StayPort
-	audit     audit.Recorder
-	cursors   *httpx.CursorCodec
-	logger    *slog.Logger
-	now       func() time.Time
+	// stayRepo, requests and authorizations are WP-I5-03's three collaborators: the stay's
+	// own tables, the request its preauthorization is, and the hold that request's approval
+	// produces. A process wired with none of them serves the case and the report and answers
+	// every stay endpoint with a refusal, which is the honest behaviour of a deployment that
+	// has not been given them.
+	stayRepo       StayRepository
+	requests       RequestPort
+	authorizations AuthorizationPort
+	audit          audit.Recorder
+	cursors        *httpx.CursorCodec
+	logger         *slog.Logger
+	now            func() time.Time
 }
 
 // Deps are the collaborators of the service.
@@ -49,10 +57,20 @@ type Deps struct {
 	// asking the scheduler for a cursor key would only add a secret it has no reason to
 	// hold.
 	Cursors *httpx.CursorCodec
-	// Stays answers whether a case still has an inpatient stay running. WP-I5-03 replaces
-	// the default; nil means "none open", which is the truth until it lands.
-	Stays  StayPort
-	Logger *slog.Logger
+	// Stays answers whether a case still has an inpatient stay running. It defaults to
+	// StayRepo when one is given and to "none open" when neither is: a schema with no stays
+	// in it could honestly give no other answer.
+	Stays StayPort
+	// StayRepo is the inpatient stay's own persistence port (WP-I5-03). nil leaves the stay
+	// endpoints unavailable rather than half-working.
+	StayRepo StayRepository
+	// Requests raises the PREAUTHORIZATION a stay is, inside the create command's own
+	// transaction; Authorizations takes, extends and gives back the hold its approval
+	// produces. Both default to a port that refuses, so a process that was never given them
+	// says so rather than writing half an admission.
+	Requests       RequestPort
+	Authorizations AuthorizationPort
+	Logger         *slog.Logger
 	// Now defaults to time.Now; tests pin it so a close is deterministic.
 	Now func() time.Time
 }
@@ -66,7 +84,17 @@ func New(d Deps) (*Service, error) {
 		d.Audit = audit.NopRecorder{}
 	}
 	if d.Stays == nil {
-		d.Stays = NoOpenStays{}
+		if d.StayRepo != nil {
+			d.Stays = repoStays{d.StayRepo}
+		} else {
+			d.Stays = NoOpenStays{}
+		}
+	}
+	if d.Requests == nil {
+		d.Requests = NoRequests{}
+	}
+	if d.Authorizations == nil {
+		d.Authorizations = NoAuthorizations{}
 	}
 	if d.WorkItems == nil {
 		d.WorkItems = NoWorkItems{}
@@ -79,7 +107,9 @@ func New(d Deps) (*Service, error) {
 	}
 	return &Service{
 		pool: d.Pool, repo: d.Repo, reports: d.Reports, workItems: d.WorkItems,
-		stays: d.Stays, audit: d.Audit, cursors: d.Cursors, logger: d.Logger, now: d.Now,
+		stays: d.Stays, stayRepo: d.StayRepo, requests: d.Requests,
+		authorizations: d.Authorizations, audit: d.Audit, cursors: d.Cursors,
+		logger: d.Logger, now: d.Now,
 	}, nil
 }
 

@@ -359,7 +359,17 @@
     "MEDICAL_REPORT_DOCUMENT_REQUIRED": "Rapor dosyası yüklenip taraması tamamlanmadan gönderim yapılamaz.",
     "MEDICAL_REPORT_SUPERSEDES_INVALID": "Bu rapor düzeltilemez; yalnızca zincirin en son karara bağlanmış sürümü düzeltilebilir.",
     "MEDICAL_REPORT_SERVICE_UNKNOWN": "Hizmet tanımı katalogda bulunamadı.",
-    "MEDICAL_REPORT_CASE_MISMATCH": "Seçilen vaka başka bir hak sahibine ait."
+    "MEDICAL_REPORT_CASE_MISMATCH": "Seçilen vaka başka bir hak sahibine ait.",
+    "INPATIENT_STAY_NOT_FOUND": "Yatış kaydı bulunamadı ya da bu kurumda görünmüyor.",
+    "STAY_EXTENSION_NOT_FOUND": "Yatış uzatma kaydı bulunamadı.",
+    "INPATIENT_STAY_ALREADY_OPEN": "Bu vakada bu sağlayıcıda açık bir yatış var. Yeni yatış açmadan önce mevcut yatışı taburcu edin ya da iptal edin.",
+    "STAY_EXTENSION_PENDING": "Karara bağlanmamış bir uzatma talebi var. Yeni uzatma istemeden önce bekleyen uzatmanın sonuçlanmasını bekleyin.",
+    "ADMISSION_DATE_OUT_OF_WINDOW": "Yatış tarihi izin verilen aralığın dışında. Geriye ve ileriye dönük sınırlar tenant ayarlarında belirlenir.",
+    "INPATIENT_STAY_TRANSITION_INVALID": "Yatış bu durumdayken bu işlem yapılamaz.",
+    "STAY_SEGMENT_OVERLAP": "Segmentler aynı saatleri paylaşamaz. Refakatçi dışındaki segmentler çakışamaz.",
+    "INPATIENT_ADMISSION_SERVICE_UNKNOWN": "Yatış hizmet tanımı katalogda bulunamadı; etkin bir INPATIENT_DAY tanımı gerekir.",
+    "INPATIENT_STAY_DIAGNOSIS_MISMATCH": "Yatış tanısı bu vakaya ait değil.",
+    "INPATIENT_STAY_NOT_DISCHARGED": "Yatış henüz taburcu edilmedi; mutabakat yalnızca taburcu sonrası hesaplanır."
   },
   "fieldErrors": {
     "RULE_COMPILE_FAILED": "Kural koşulu derlenemedi",

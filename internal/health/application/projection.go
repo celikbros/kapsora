@@ -1,6 +1,10 @@
 package application
 
 import (
+	"time"
+
+	"github.com/google/uuid"
+
 	"github.com/celikbros/kapsora/internal/health/domain"
 	"github.com/celikbros/kapsora/internal/identity"
 )
@@ -226,4 +230,76 @@ type ReportPage struct {
 type UsagePage struct {
 	Items      []ReportUsageRecord
 	NextCursor string
+}
+
+// projectStay returns the stay as the caller may see it.
+//
+// What the financial projection keeps is what a claims reviewer needs to reconcile a bill:
+// the dates, the provider, the location, the status, the request and authorization it hangs
+// off, and every figure of the reconciliation. What it drops is the one field from which a
+// diagnosis could be inferred — that the admission has a recorded diagnosis at all is a fact
+// about the patient, and an id beside a name is an invitation to go and look it up.
+func projectStay(rec StayRecord, p Projection) StayRecord {
+	// The case's sensitivity is what decided this projection, and it is itself clinical. It
+	// is cleared in both projections because it is not a field of the stay at all: no mapper
+	// below has anything to render it into.
+	rec.CaseSensitivity = ""
+	if p == ProjectionClinical {
+		return rec
+	}
+	rec.AdmissionDiagnosisID = nil
+	return rec
+}
+
+// projectStayExtensions applies the projection over a stay's extensions, returning a new
+// slice so the caller's rows are never mutated in place. The day count, the reason code and
+// the decision survive both projections — they are what the reconciliation and the claim are
+// checked against — and the reason text does not: "solunum sıkıntısı devam ediyor" is a
+// diagnosis in a sentence.
+func projectStayExtensions(rows []StayExtensionRecord, p Projection) []StayExtensionRecord {
+	out := make([]StayExtensionRecord, 0, len(rows))
+	for _, row := range rows {
+		if p != ProjectionClinical {
+			row.ReasonText = nil
+		}
+		out = append(out, row)
+	}
+	return out
+}
+
+// StayView is one stay with its extensions and segments, already projected. There is no way
+// to build one except through the service, and nothing downstream re-reads the unprojected
+// row.
+type StayView struct {
+	Projection Projection
+	Stay       StayRecord
+	Extensions []StayExtensionRecord
+	Segments   []StaySegmentRecord
+}
+
+// StayPage is one page of stays, each already projected.
+type StayPage struct {
+	Items      []StayView
+	NextCursor string
+}
+
+// StayReconciliation is what a discharge settled: what was promised, what was used, what was
+// given back, and whether the admission ran over what anybody approved. Every figure is the
+// exact decimal text the numeric column holds, because a day count that passed through a
+// float would be a day count two systems disagree about.
+//
+// It carries nothing clinical, so it has no projection of its own: it is the financial half
+// of a stay by construction.
+type StayReconciliation struct {
+	StayID          uuid.UUID
+	AuthorizationID *uuid.UUID
+	AdmissionAt     time.Time
+	DischargeAt     time.Time
+	AuthorizedDays  string
+	ActualDays      string
+	ReleasedDays    string
+	// OverAuthorization is what the claim raises as an exception (WP-I5-04): the admission
+	// used more days than anybody approved, and nothing was released because there was
+	// nothing left to release.
+	OverAuthorization bool
 }

@@ -320,3 +320,14 @@ type NoOpenStays struct{}
 func (NoOpenStays) OpenStays(context.Context, pgx.Tx, uuid.UUID, uuid.UUID) (int, error) {
 	return 0, nil
 }
+
+// repoStays is the StayPort a service wired with the inpatient stay's repository gets for
+// free. It exists so cmd/api names one collaborator rather than the same one twice, and so
+// that "the case has an open stay" and "one open stay per case and provider" are answered by
+// the same three statuses in the same statement.
+type repoStays struct{ repo StayRepository }
+
+// OpenStays implements StayPort.
+func (r repoStays) OpenStays(ctx context.Context, tx pgx.Tx, tenantID, caseID uuid.UUID) (int, error) {
+	return r.repo.CountOpenStays(ctx, tx, tenantID, caseID)
+}

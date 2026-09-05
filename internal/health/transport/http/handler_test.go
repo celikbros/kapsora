@@ -104,8 +104,14 @@ func newServer(t *testing.T) *server { //nolint:funlen // one linear fixture rea
 		t.Fatal(err)
 	}
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	// StayRepo is wired and the two gateways are not, on purpose. What these tests are about
+	// is what leaves the process — the routes, the ETag, the problem codes and the
+	// projection — and none of that needs a request to be raised or a hold to be taken.
+	// WP-I5-03's own tests drive the whole admission against the real request and
+	// authorization modules; a second copy of that fixture here would test them twice.
 	svc, err := application.New(application.Deps{
 		Pool: h.App, Repo: healthpg.New(), Reports: healthpg.NewReports(),
+		StayRepo:  healthpg.NewStays(),
 		WorkItems: healthpg.NewWorkItems(logger), Audit: auditpg.New(), Cursors: cursors,
 		Logger: logger,
 	})
@@ -160,6 +166,9 @@ func newServer(t *testing.T) *server { //nolint:funlen // one linear fixture rea
 	router.Route("/api/v1/health-access-log", handler.AccessLogRoutes)
 	router.Route("/api/v1/medical-reports", func(r chi.Router) {
 		handler.ReportRoutes(r, healthhttp.ReportMiddlewares{})
+	})
+	router.Route("/api/v1/inpatient-stays", func(r chi.Router) {
+		handler.StayRoutes(r, healthhttp.StayMiddlewares{})
 	})
 	s.handler = router
 	return s

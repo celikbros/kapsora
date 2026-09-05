@@ -15,10 +15,15 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	auditpg "github.com/celikbros/kapsora/internal/audit/postgres"
+	authorizationapp "github.com/celikbros/kapsora/internal/authorization/application"
+	authorizationpg "github.com/celikbros/kapsora/internal/authorization/infrastructure/postgres"
 	benefitapp "github.com/celikbros/kapsora/internal/benefit/application"
 	"github.com/celikbros/kapsora/internal/benefit/ledger"
 	documentapp "github.com/celikbros/kapsora/internal/document/application"
 	documentpg "github.com/celikbros/kapsora/internal/document/infrastructure/postgres"
+	healthapp "github.com/celikbros/kapsora/internal/health/application"
+	healthgw "github.com/celikbros/kapsora/internal/health/infrastructure/gateway"
+	healthpg "github.com/celikbros/kapsora/internal/health/infrastructure/postgres"
 	notificationapp "github.com/celikbros/kapsora/internal/notification/application"
 	"github.com/celikbros/kapsora/internal/notification/domain"
 	"github.com/celikbros/kapsora/internal/notification/infrastructure/channel"
@@ -34,6 +39,7 @@ import (
 	"github.com/celikbros/kapsora/internal/platform/mail"
 	"github.com/celikbros/kapsora/internal/platform/objectstore"
 	"github.com/celikbros/kapsora/internal/platform/outbox"
+	servicerequestapp "github.com/celikbros/kapsora/internal/servicerequest/application"
 )
 
 const serviceName = "kapsora-worker"
@@ -105,6 +111,20 @@ func run() error {
 		return err
 	}
 
+	// The inpatient stay's side of a decided request (WP-I5-03). It lives here rather than
+	// in the API because that is the point of the seam: a medical reviewer decides an
+	// admission where they decide every request, and the stay moves afterwards, in a
+	// different process, without the reviewer's own transaction depending on it.
+	//
+	// This service is given the stay repository and the authorization gateway and nothing
+	// else it does not need: it never raises a request, so the request port is left at its
+	// refusing default, and a bug that tried to raise one here would say so rather than
+	// quietly working.
+	stays, err := newStays(pool, entitlements.Ledger(), logger)
+	if err != nil {
+		return err
+	}
+
 	dispatcher := outbox.New(pool, outbox.Options{Logger: logger})
 	// A new enrollment opens its entitlement accounts here rather than in the request
 	// that created it: the accounts follow the plan configuration, and the handler is
@@ -128,6 +148,12 @@ func run() error {
 	// twice.
 	dispatcher.Handle(notificationapp.NotifyRequestedEvent, notifications.HandleNotifyRequested)
 	dispatcher.Handle(notificationapp.SendRequestedEvent, notifications.HandleSendRequested)
+	// A decided service request. Most of them are not admissions and this handler quietly
+	// recognises none of its own in them; the ones that are move the stay to AUTHORIZED with
+	// a hold taken for the days the reviewer actually approved, or to REJECTED with none.
+	// It is idempotent by predicate rather than by flag, so a redelivery finds nothing left
+	// to do rather than reserving the same entitlement twice.
+	dispatcher.Handle(servicerequestapp.DecidedEvent, stays.HandleServiceRequestDecided)
 
 	go reportBacklog(ctx, logger, dispatcher)
 
@@ -225,4 +251,27 @@ func reportBacklog(ctx context.Context, logger *slog.Logger, d *outbox.Dispatche
 		case <-ticker.C:
 		}
 	}
+}
+
+// newStays builds the health service the decided-request subscription needs: the stay's own
+// tables, and WP-I4-02 behind the narrow port that takes, extends and gives back a hold.
+//
+// The movement engine is the one this process already holds, not a second one. Two ledgers
+// over one database would take two different account locks for the same account, which is
+// exactly the way a no-double-spend rule stops holding.
+func newStays(pool *pgxpool.Pool, movements authorizationapp.Ledger,
+	logger *slog.Logger,
+) (*healthapp.Service, error) {
+	authorizations, err := authorizationapp.New(authorizationapp.Deps{
+		Pool: pool, Repo: authorizationpg.New(), Ledger: movements,
+		Audit: auditpg.New(), Logger: logger,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return healthapp.New(healthapp.Deps{
+		Pool: pool, Repo: healthpg.New(), Reports: healthpg.NewReports(),
+		StayRepo: healthpg.NewStays(), Authorizations: healthgw.NewAuthorizations(authorizations),
+		Audit: auditpg.New(), Logger: logger,
+	})
 }

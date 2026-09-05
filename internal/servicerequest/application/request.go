@@ -106,6 +106,26 @@ func (s *Service) Get(ctx context.Context, rc identity.RequestContext, id uuid.U
 // Create opens a request in DRAFT with its first version and its lines. Nothing is decided
 // here: the gate runs at submit, and a draft is only a form somebody is filling in.
 func (s *Service) Create(ctx context.Context, rc identity.RequestContext, in NewRequestInput) (RequestView, error) {
+	var out RequestView
+	err := s.withTx(ctx, rc, func(ctx context.Context, tx pgx.Tx) error {
+		view, err := s.CreateInTx(ctx, tx, rc, in)
+		out = view
+		return err
+	})
+	return out, err
+}
+
+// CreateInTx is Create inside a transaction the caller already holds.
+//
+// It exists for one consumer: an inpatient stay (WP-I5-03) is a PREAUTHORIZATION request
+// plus a stay row, and the two have to commit together — a stay with no request is a stay
+// nobody can decide, and a request raised for a stay that rolled back is work nobody can
+// explain. Everything the endpoint does happens here, which is the point: the validation,
+// the provider scope, the catalogue check and the status event are one body, so a caller
+// coming in this way cannot skip half of them.
+func (s *Service) CreateInTx(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
+	in NewRequestInput,
+) (RequestView, error) {
 	day := domain.DateOnly(in.ServiceDate)
 	if err := domain.ValidateNewRequest(domain.NewRequest{
 		RequestType: in.RequestType, ServiceDate: in.ServiceDate,
@@ -118,46 +138,40 @@ func (s *Service) Create(ctx context.Context, rc identity.RequestContext, in New
 		return RequestView{}, fieldError("enrollmentId", "REQUIRED",
 			"hak sahibi ve plan kaydı zorunlu")
 	}
+	if err := s.checkProviderScope(rc, in.ProviderOrganizationID); err != nil {
+		return RequestView{}, err
+	}
+	programID, err := s.checkTargets(ctx, tx, rc.TenantID, in, day)
+	if err != nil {
+		return RequestView{}, err
+	}
+	// The program is the enrollment's. A caller that named one has just been checked
+	// against it; a caller that named none — a provider may read neither programs nor
+	// enrollments — gets it from here.
+	in.ProgramID = programID
+	items, err := s.itemRows(ctx, tx, rc.TenantID, in.RequestType, in.ProviderOrganizationID, in.Items)
+	if err != nil {
+		return RequestView{}, err
+	}
 
-	var out RequestView
-	err := s.withTx(ctx, rc, func(ctx context.Context, tx pgx.Tx) error {
-		if err := s.checkProviderScope(rc, in.ProviderOrganizationID); err != nil {
-			return err
-		}
-		programID, err := s.checkTargets(ctx, tx, rc.TenantID, in, day)
-		if err != nil {
-			return err
-		}
-		// The program is the enrollment's. A caller that named one has just been checked
-		// against it; a caller that named none — a provider may read neither programs nor
-		// enrollments — gets it from here.
-		in.ProgramID = programID
-		items, err := s.itemRows(ctx, tx, rc.TenantID, in.RequestType, in.ProviderOrganizationID, in.Items)
-		if err != nil {
-			return err
-		}
-
-		record, err := s.createWithReference(ctx, tx, rc, in, day)
-		if err != nil {
-			return err
-		}
-		version, err := s.repo.CreateVersion(ctx, tx, rc.TenantID, NewVersionRow{
-			ServiceRequestID: record.ID, VersionNo: 1, ActorID: actorPtr(rc.Principal.ActorID),
-		})
-		if err != nil {
-			return err
-		}
-		if err := s.repo.ReplaceItems(ctx, tx, rc.TenantID, version.ID, items); err != nil {
-			return err
-		}
-		if err := s.transition(ctx, tx, rc, record.ID, "", domain.StatusDraft, "CREATE", "", nil,
-			map[string]any{"version_no": 1, "item_count": len(items)}); err != nil {
-			return err
-		}
-		out, err = s.reload(ctx, tx, rc.TenantID, record.ID, scopeOf(rc))
-		return err
+	record, err := s.createWithReference(ctx, tx, rc, in, day)
+	if err != nil {
+		return RequestView{}, err
+	}
+	version, err := s.repo.CreateVersion(ctx, tx, rc.TenantID, NewVersionRow{
+		ServiceRequestID: record.ID, VersionNo: 1, ActorID: actorPtr(rc.Principal.ActorID),
 	})
-	return out, err
+	if err != nil {
+		return RequestView{}, err
+	}
+	if err := s.repo.ReplaceItems(ctx, tx, rc.TenantID, version.ID, items); err != nil {
+		return RequestView{}, err
+	}
+	if err := s.transition(ctx, tx, rc, record.ID, "", domain.StatusDraft, "CREATE", "", nil,
+		map[string]any{"version_no": 1, "item_count": len(items)}); err != nil {
+		return RequestView{}, err
+	}
+	return s.reload(ctx, tx, rc.TenantID, record.ID, scopeOf(rc))
 }
 
 // createWithReference retries a reference collision rather than reporting it. The tail is

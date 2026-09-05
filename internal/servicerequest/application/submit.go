@@ -71,92 +71,111 @@ const snapshotVersion = 1
 func (s *Service) Submit(ctx context.Context, rc identity.RequestContext, id uuid.UUID,
 	comment *string, expected int64,
 ) (RequestView, error) {
-	if err := domain.ValidateComment(comment); err != nil {
-		return RequestView{}, err
-	}
-
 	var out RequestView
 	err := s.withTx(ctx, rc, func(ctx context.Context, tx pgx.Tx) error {
-		current, err := s.repo.LockRequest(ctx, tx, rc.TenantID, id, scopeOf(rc))
-		if err != nil {
-			return err
-		}
-		if _, ok := domain.Target(domain.CommandSubmit, current.Status); !ok {
-			return ErrTransitionInvalid
-		}
-		if current.RowVersion != expected {
-			return ErrVersionMismatch
-		}
-		version, err := s.repo.GetDraftVersion(ctx, tx, rc.TenantID, id)
-		if err != nil {
-			return err
-		}
-		items, err := s.repo.ListItems(ctx, tx, rc.TenantID, version.ID)
-		if err != nil {
-			return err
-		}
-		definitions, err := s.definitionsOf(ctx, tx, rc.TenantID, items)
-		if err != nil {
-			return err
-		}
-		if err := validateForSubmit(current, items); err != nil {
-			return err
-		}
-
-		decision, err := s.runGate(ctx, tx, rc, current, items, definitions)
-		if err != nil {
-			return err
-		}
-
-		now := s.now().UTC()
-		snapshot, err := buildSnapshot(current, items, decision, now)
-		if err != nil {
-			return err
-		}
-		if err := s.repo.FreezeVersion(ctx, tx, rc.TenantID, version.ID, FreezeRow{
-			Snapshot: snapshot, SubmittedAt: now, ActorID: actorPtr(rc.Principal.ActorID),
-		}); err != nil {
-			return err
-		}
-		if err := s.repo.MarkSubmitted(ctx, tx, rc.TenantID, id, SubmitRow{
-			Status: decision.Status, SubmittedAt: now,
-			EligibilityEvaluationID: decision.EligibilityEvaluationID,
-			RuleEvaluationID:        decision.RuleEvaluationID,
-			RequiredDocumentTypes:   decision.RequiredDocumentTypes,
-			ReviewComment:           trimmedPtr(comment),
-			ActorID:                 actorPtr(rc.Principal.ActorID),
-		}, expected); err != nil {
-			return err
-		}
-
-		// Two events, because two things happened: somebody submitted, and then the gate
-		// decided. Folding them into one would lose the moment the request was handed over.
-		if err := s.transition(ctx, tx, rc, id, domain.StatusDraft, domain.StatusSubmitted,
-			domain.CommandSubmit, "", trimmedPtr(comment),
-			map[string]any{"version_no": version.VersionNo}); err != nil {
-			return err
-		}
-		if err := s.transition(ctx, tx, rc, id, domain.StatusSubmitted, decision.Status,
-			domain.CommandGate, decision.ReasonCode, nil, decision.metadata(version.VersionNo)); err != nil {
-			return err
-		}
-		// The gate decided, so somebody has to be told what it decided. A request the
-		// gate approved outright is a decision like any other; one waiting for a document
-		// is the provider being asked for something.
-		switch decision.Status {
-		case domain.StatusPendingDocument:
-			if err := s.notifyPendingDocument(ctx, tx, rc, current); err != nil {
-				return err
-			}
-		case domain.StatusApproved:
-			if err := s.notifyDecided(ctx, tx, rc, current, decision.Status); err != nil {
-				return err
-			}
-		}
-		out, err = s.reload(ctx, tx, rc.TenantID, id, scopeOf(rc))
+		view, err := s.SubmitInTx(ctx, tx, rc, id, comment, expected)
+		out = view
 		return err
 	})
 	return out, err
+}
+
+// SubmitInTx is Submit inside a transaction the caller already holds. It exists for the
+// same consumer CreateInTx does: an admission is asked for and handed over in one act, and
+// a stay whose request never reached the gate would be a stay nobody could decide.
+//
+// The whole gate runs here — the eligibility evaluation, the rule trace, the document
+// requirement and the two status events — because the point of the seam is that there is
+// one gate. A caller that ran half of it would be a second gate that could disagree with
+// the one the reviewer reads on the request page.
+func (s *Service) SubmitInTx(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
+	id uuid.UUID, comment *string, expected int64,
+) (RequestView, error) {
+	if err := domain.ValidateComment(comment); err != nil {
+		return RequestView{}, err
+	}
+	current, err := s.repo.LockRequest(ctx, tx, rc.TenantID, id, scopeOf(rc))
+	if err != nil {
+		return RequestView{}, err
+	}
+	if _, ok := domain.Target(domain.CommandSubmit, current.Status); !ok {
+		return RequestView{}, ErrTransitionInvalid
+	}
+	if current.RowVersion != expected {
+		return RequestView{}, ErrVersionMismatch
+	}
+	version, err := s.repo.GetDraftVersion(ctx, tx, rc.TenantID, id)
+	if err != nil {
+		return RequestView{}, err
+	}
+	items, err := s.repo.ListItems(ctx, tx, rc.TenantID, version.ID)
+	if err != nil {
+		return RequestView{}, err
+	}
+	definitions, err := s.definitionsOf(ctx, tx, rc.TenantID, items)
+	if err != nil {
+		return RequestView{}, err
+	}
+	if err := validateForSubmit(current, items); err != nil {
+		return RequestView{}, err
+	}
+
+	decision, err := s.runGate(ctx, tx, rc, current, items, definitions)
+	if err != nil {
+		return RequestView{}, err
+	}
+
+	now := s.now().UTC()
+	snapshot, err := buildSnapshot(current, items, decision, now)
+	if err != nil {
+		return RequestView{}, err
+	}
+	if err := s.repo.FreezeVersion(ctx, tx, rc.TenantID, version.ID, FreezeRow{
+		Snapshot: snapshot, SubmittedAt: now, ActorID: actorPtr(rc.Principal.ActorID),
+	}); err != nil {
+		return RequestView{}, err
+	}
+	if err := s.repo.MarkSubmitted(ctx, tx, rc.TenantID, id, SubmitRow{
+		Status: decision.Status, SubmittedAt: now,
+		EligibilityEvaluationID: decision.EligibilityEvaluationID,
+		RuleEvaluationID:        decision.RuleEvaluationID,
+		RequiredDocumentTypes:   decision.RequiredDocumentTypes,
+		ReviewComment:           trimmedPtr(comment),
+		ActorID:                 actorPtr(rc.Principal.ActorID),
+	}, expected); err != nil {
+		return RequestView{}, err
+	}
+
+	// Two events, because two things happened: somebody submitted, and then the gate
+	// decided. Folding them into one would lose the moment the request was handed over.
+	if err := s.transition(ctx, tx, rc, id, domain.StatusDraft, domain.StatusSubmitted,
+		domain.CommandSubmit, "", trimmedPtr(comment),
+		map[string]any{"version_no": version.VersionNo}); err != nil {
+		return RequestView{}, err
+	}
+	if err := s.transition(ctx, tx, rc, id, domain.StatusSubmitted, decision.Status,
+		domain.CommandGate, decision.ReasonCode, nil, decision.metadata(version.VersionNo)); err != nil {
+		return RequestView{}, err
+	}
+	// The gate decided, so somebody has to be told what it decided. A request the gate
+	// approved outright is a decision like any other; one waiting for a document is the
+	// provider being asked for something.
+	switch decision.Status {
+	case domain.StatusPendingDocument:
+		if err := s.notifyPendingDocument(ctx, tx, rc, current); err != nil {
+			return RequestView{}, err
+		}
+	case domain.StatusApproved:
+		if err := s.notifyDecided(ctx, tx, rc, current, decision.Status); err != nil {
+			return RequestView{}, err
+		}
+		// The gate approved it outright, so it is decided and anything waiting on that
+		// decision has to hear about it — an admission included.
+		if err := s.publishDecided(ctx, tx, rc, current, decision.Status); err != nil {
+			return RequestView{}, err
+		}
+	}
+	return s.reload(ctx, tx, rc.TenantID, id, scopeOf(rc))
 }
 
 // validateForSubmit is the first step of the gate: a version nobody could act on never

@@ -8748,6 +8748,477 @@ paths:
         '422':
           $ref: '#/components/responses/ValidationError'
 
+  /api/v1/inpatient-stays:
+    get:
+      tags: [Clinical]
+      operationId: listInpatientStays
+      description: |
+        Admissions, newest first. Each row is served in the projection the caller has earned:
+        a caller without `health.clinical.read`, or one reading a sensitive case without
+        `health.sensitive.read`, gets the financial half — every date, every figure of the
+        reconciliation and every segment, and no `admissionDiagnosisId` and no extension
+        reason text.
+
+        A list never answers 428. Refusing the whole page over one sensitive row would make it
+        useless, and refusing that one row would say which row is sensitive.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/AccessPurposeHeader'
+        - $ref: '#/components/parameters/AccessReasonHeader'
+        - name: caseId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: personId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: providerOrganizationId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/InpatientStayStatus'
+        - name: admittedFrom
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: admittedTo
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Inpatient stay page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InpatientStayPage'
+        '400':
+          description: Cursor invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags: [Clinical]
+      operationId: createInpatientStay
+      description: |
+        Asks for an admission. One transaction does all of it: the admission date is checked
+        against the tenant's backdating and future-dating window
+        (`health.inpatient.backdate_days` / `health.inpatient.future_days`, defaulting to 3
+        and 30), a PREAUTHORIZATION service request is raised for `estimatedDays` of the
+        tenant's inpatient admission service and put straight through the request gate, and
+        the stay is written REQUESTED.
+
+        The stay is not authorized here and cannot be. A medical reviewer decides the request
+        on the request page, where they decide every request, and the stay follows: it becomes
+        AUTHORIZED with an authorization attached, or REJECTED with none. The reviewer never
+        learns that a stay exists.
+
+        Refusals worth knowing about:
+
+        * `422 ADMISSION_DATE_OUT_OF_WINDOW` — the admission is dated outside the window.
+        * `409 INPATIENT_STAY_ALREADY_OPEN` — this case already has a REQUESTED, AUTHORIZED or
+          ADMITTED stay at this provider. It is a partial unique index rather than a check the
+          service makes first, so two callers arriving together are refused by the database
+          and exactly one stay exists afterwards.
+        * `422 INPATIENT_ADMISSION_SERVICE_UNKNOWN` — the tenant's catalogue has no active
+          `INPATIENT_DAY` definition, so there is nothing to book the days against.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/AccessPurposeHeader'
+        - $ref: '#/components/parameters/AccessReasonHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInpatientStay'
+      responses:
+        '201':
+          description: Stay requested
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            Location:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InpatientStay'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            The case already has an open stay at this provider. INPATIENT_STAY_ALREADY_OPEN.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/inpatient-stays/{stayId}:
+    get:
+      tags: [Clinical]
+      operationId: getInpatientStay
+      description: |
+        One admission with its extensions and its segments.
+
+        This is the read that demands a purpose. A stay on a SENSITIVE case read by a caller
+        holding `health.clinical.read` and `health.sensitive.read` but sending no
+        `X-Access-Purpose` is answered 428 ACCESS_PURPOSE_REQUIRED, and the refusal is
+        recorded as a DENIED access event with resource type `inpatient_stay`.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/StayId'
+        - $ref: '#/components/parameters/AccessPurposeHeader'
+        - $ref: '#/components/parameters/AccessReasonHeader'
+      responses:
+        '200':
+          description: Inpatient stay
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InpatientStay'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: |
+            The stay belongs to a sensitive case and the caller stated no access purpose.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/inpatient-stays/{stayId}/extensions:
+    post:
+      tags: [Clinical]
+      operationId: extendInpatientStay
+      description: |
+        Asks for more days on an admission somebody has already approved. It raises the
+        extension's own PREAUTHORIZATION request, which the same reviewer decides on the same
+        page; on approval the added days are reserved by the extension's own authorization and
+        the admission's authorization has its validity moved forward.
+
+        Two refusals, both of them the point of the operation:
+
+        * `409 INPATIENT_STAY_TRANSITION_INVALID` — the stay is not AUTHORIZED or ADMITTED.
+          Extending something nobody has decided is asking for more of nothing.
+        * `409 STAY_EXTENSION_PENDING` — an earlier extension has not been decided. It is a
+          partial unique index as well as a check, so two callers racing each other are
+          refused by the database.
+
+        `reasonText` is clinical. It is stored, served only in the clinical projection, and
+        never carried by a notification, an audit detail or a work item title.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/StayId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/AccessPurposeHeader'
+        - $ref: '#/components/parameters/AccessReasonHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExtendInpatientStay'
+      responses:
+        '200':
+          description: Extension requested
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InpatientStay'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            The stay cannot be extended now, or an earlier extension is undecided.
+            INPATIENT_STAY_TRANSITION_INVALID, STAY_EXTENSION_PENDING.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: If-Match did not match
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match is missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/inpatient-stays/{stayId}/segments:
+    put:
+      tags: [Clinical]
+      operationId: putStaySegments
+      description: |
+        Replaces the stay's whole segment set: where the patient was, hour by hour. The set is
+        the unit, because a segment id is not something anything else hangs off. An empty
+        array clears it.
+
+        Two segments of the same stay may not claim the same hours, and that is an exclusion
+        constraint over a half-open time range rather than only a check in the service. The
+        range being half-open is what makes a ward segment ending at 14:00 and an intensive
+        care segment beginning at 14:00 a transfer rather than an overlap.
+
+        COMPANION is outside the constraint. The relative sleeping in the room overlaps the
+        patient's own segment by definition, and a rule that forbade it would make the true
+        record unrecordable.
+
+        Recording where somebody actually is *is* the admission: the first set on an
+        AUTHORIZED stay moves it to ADMITTED. There is no separate admit command.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/StayId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/AccessPurposeHeader'
+        - $ref: '#/components/parameters/AccessReasonHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutStaySegments'
+      responses:
+        '200':
+          description: Segments replaced
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InpatientStay'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            Two segments claim the same hours, or the stay is not in a state that has
+            segments. STAY_SEGMENT_OVERLAP, INPATIENT_STAY_TRANSITION_INVALID.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: If-Match did not match
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match is missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/inpatient-stays/{stayId}/discharge:
+    post:
+      tags: [Clinical]
+      operationId: dischargeInpatientStay
+      description: |
+        Ends an admission and settles up, in one transaction.
+
+        The discharge moment is recorded, every segment nobody ended is ended at that moment,
+        the actual day count is computed as the elapsed time rounded up to whole days and
+        never less than 1, and **the days that were reserved and never used are released** on
+        the authorization. A stay that ran over what was approved releases nothing and is
+        flagged `overAuthorization`, for the claim to raise as an exception.
+
+        Running it twice releases nothing twice: the update names the two live statuses and
+        the row version the caller read, so the second discharge matches no row, and the
+        ledger key the release is posted under is derived from the line and the reason rather
+        than from a clock.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/StayId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/AccessPurposeHeader'
+        - $ref: '#/components/parameters/AccessReasonHeader'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DischargeInpatientStay'
+      responses:
+        '200':
+          description: Stay discharged
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InpatientStay'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            The stay is not AUTHORIZED or ADMITTED. INPATIENT_STAY_TRANSITION_INVALID.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: If-Match did not match
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match is missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/inpatient-stays/{stayId}/cancel:
+    post:
+      tags: [Clinical]
+      operationId: cancelInpatientStay
+      description: |
+        Withdraws an admission nobody has finished. Every undecided extension is cancelled
+        with it and everything the authorization still holds is released: an admission that
+        did not happen has held nothing, and quietly keeping the hold would charge a member
+        for a bed they never slept in.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/StayId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/AccessPurposeHeader'
+        - $ref: '#/components/parameters/AccessReasonHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelInpatientStay'
+      responses:
+        '200':
+          description: Stay cancelled
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InpatientStay'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            The stay has already finished. INPATIENT_STAY_TRANSITION_INVALID.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: If-Match did not match
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match is missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/inpatient-stays/{stayId}/reconciliation:
+    get:
+      tags: [Clinical]
+      operationId: getInpatientStayReconciliation
+      description: |
+        What the discharge settled: the days that were authorized, the days that were actually
+        used, the days that were released back to the member's entitlement, and whether the
+        admission ran over what anybody approved. Every figure is an exact decimal string.
+
+        It answers only for a discharged stay. A reconciliation is what the settlement was,
+        and a stay still running has not settled anything: answering "authorized 5, used
+        nothing, released nothing" for somebody currently in a bed would be read as a
+        completed settlement by the next thing that consumed it. A live stay is
+        `409 INPATIENT_STAY_NOT_DISCHARGED`.
+
+        It carries nothing clinical, so it has no projection: it is the financial half of a
+        stay by construction.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/StayId'
+        - $ref: '#/components/parameters/AccessPurposeHeader'
+        - $ref: '#/components/parameters/AccessReasonHeader'
+      responses:
+        '200':
+          description: Reconciliation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StayReconciliation'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            The stay has not been discharged. INPATIENT_STAY_NOT_DISCHARGED.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
 components:
   securitySchemes:
     sessionCookie:
@@ -9100,6 +9571,13 @@ components:
         format: uuid
     ReportId:
       name: reportId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    StayId:
+      name: stayId
       in: path
       required: true
       schema:
@@ -16142,3 +16620,348 @@ components:
         reviewComment:
           type: [string, 'null']
           maxLength: 4000
+    InpatientStayStatus:
+      type: string
+      enum: [REQUESTED, AUTHORIZED, ADMITTED, DISCHARGED, CANCELLED, REJECTED]
+      description: |
+        REQUESTED, AUTHORIZED and ADMITTED are the three the one-open-stay rule calls open: a
+        case may have at most one stay in any of them at any one provider. AUTHORIZED and
+        REJECTED are not given by an endpoint of this module — they are what the stay becomes
+        when the reviewer decides its preauthorization request.
+    StayExtensionStatus:
+      type: string
+      enum: [REQUESTED, APPROVED, REJECTED, CANCELLED]
+    StaySegmentType:
+      type: string
+      enum: [WARD, ICU, SURGERY, OBSERVATION, COMPANION]
+      description: |
+        COMPANION is the relative staying in the room. It is the one type outside the overlap
+        constraint, because a companion is in the room while the patient is.
+    InpatientStay:
+      type: object
+      additionalProperties: false
+      required:
+        [id, caseId, personId, providerOrganizationId, admissionAt, estimatedDays,
+         expectedDischargeAt, status, projection, serviceRequestId, overAuthorization,
+         extensions, segments, createdAt, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        caseId:
+          type: string
+          format: uuid
+        personId:
+          type: string
+          format: uuid
+        providerOrganizationId:
+          type: string
+          format: uuid
+        locationId:
+          type: [string, 'null']
+          format: uuid
+        attendingPractitionerId:
+          type: [string, 'null']
+          format: uuid
+        admissionAt:
+          type: string
+          format: date-time
+        estimatedDays:
+          type: integer
+          minimum: 1
+        expectedDischargeAt:
+          type: string
+          format: date-time
+          description: |
+            Derived from the admission and the estimate at write, and moved forward by every
+            approved extension. It is what the authorization's validity is set from.
+        dischargeAt:
+          type: [string, 'null']
+          format: date-time
+        status:
+          $ref: '#/components/schemas/InpatientStayStatus'
+        projection:
+          $ref: '#/components/schemas/HealthProjection'
+        serviceRequestId:
+          type: string
+          format: uuid
+          description: The PREAUTHORIZATION request a reviewer decides the admission on.
+        authorizationId:
+          type: [string, 'null']
+          format: uuid
+        admissionDiagnosisId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            Present only in the clinical projection. That an admission has a recorded
+            diagnosis at all is a fact about the patient.
+        authorizedDays:
+          type: [string, 'null']
+          pattern: '^[0-9]{1,14}(\.[0-9]{1,6})?$'
+          description: |
+            What the reviewer actually approved, which is not always what was asked for, plus
+            every approved extension. Exact decimal as a string, never a JSON number. Absent
+            until the request is decided.
+        actualDays:
+          type: [string, 'null']
+          pattern: '^[0-9]{1,14}(\.[0-9]{1,6})?$'
+          description: Written at discharge; absent before it.
+        releasedDays:
+          type: [string, 'null']
+          pattern: '^[0-9]{1,14}(\.[0-9]{1,6})?$'
+          description: |
+            What was given back to the member's entitlement at discharge. Absent before it.
+        overAuthorization:
+          type: boolean
+          description: |
+            The admission used more days than were approved. Nothing was released, and the
+            claim raises it as an exception.
+        cancelReasonCode:
+          type: [string, 'null']
+        extensions:
+          type: array
+          items:
+            $ref: '#/components/schemas/StayExtension'
+        segments:
+          type: array
+          description: |
+            Where the patient was, hour by hour. Served in both projections: it is what a
+            claim is priced from, and a claims reviewer who could not see an intensive care
+            night could not check the bill for one.
+          items:
+            $ref: '#/components/schemas/StaySegment'
+        createdAt:
+          type: string
+          format: date-time
+        rowVersion:
+          type: integer
+          format: int64
+    InpatientStayPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InpatientStay'
+        nextCursor:
+          type: [string, 'null']
+    StayExtension:
+      type: object
+      additionalProperties: false
+      required:
+        [id, stayId, sequenceNo, additionalDays, reasonCode, serviceRequestId, status,
+         createdAt, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        stayId:
+          type: string
+          format: uuid
+        sequenceNo:
+          type: integer
+          minimum: 1
+        additionalDays:
+          type: integer
+          minimum: 1
+        reasonCode:
+          type: string
+        reasonText:
+          type: [string, 'null']
+          maxLength: 1000
+          description: |
+            Why the doctor wants more days, in the doctor's words. Clinical text, present only
+            in the clinical projection.
+        serviceRequestId:
+          type: string
+          format: uuid
+        authorizationId:
+          type: [string, 'null']
+          format: uuid
+          description: The extension's own hold, which is where the added days are reserved.
+        status:
+          $ref: '#/components/schemas/StayExtensionStatus'
+        createdAt:
+          type: string
+          format: date-time
+        rowVersion:
+          type: integer
+          format: int64
+    StaySegment:
+      type: object
+      additionalProperties: false
+      required: [id, stayId, segmentType, startsAt, createdAt, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        stayId:
+          type: string
+          format: uuid
+        segmentType:
+          $ref: '#/components/schemas/StaySegmentType'
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: [string, 'null']
+          format: date-time
+          description: |
+            Null while the segment is still running. Discharge ends every open segment at the
+            discharge moment.
+        roomCode:
+          type: [string, 'null']
+          maxLength: 32
+        bedCode:
+          type: [string, 'null']
+          maxLength: 32
+        createdAt:
+          type: string
+          format: date-time
+        rowVersion:
+          type: integer
+          format: int64
+    StaySegmentInput:
+      type: object
+      additionalProperties: false
+      required: [segmentType, startsAt]
+      properties:
+        segmentType:
+          $ref: '#/components/schemas/StaySegmentType'
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: [string, 'null']
+          format: date-time
+        roomCode:
+          type: [string, 'null']
+          pattern: '^[A-Za-z0-9][A-Za-z0-9 ._/-]{0,31}$'
+        bedCode:
+          type: [string, 'null']
+          pattern: '^[A-Za-z0-9][A-Za-z0-9 ._/-]{0,31}$'
+    CreateInpatientStay:
+      type: object
+      additionalProperties: false
+      required: [caseId, providerOrganizationId, admissionAt, estimatedDays]
+      properties:
+        caseId:
+          type: string
+          format: uuid
+        providerOrganizationId:
+          type: string
+          format: uuid
+        locationId:
+          type: [string, 'null']
+          format: uuid
+        attendingPractitionerId:
+          type: [string, 'null']
+          format: uuid
+        admissionAt:
+          type: string
+          format: date-time
+          description: |
+            Checked against the tenant's backdating and future-dating window. Outside it the
+            answer is 422 ADMISSION_DATE_OUT_OF_WINDOW.
+        estimatedDays:
+          type: integer
+          minimum: 1
+          maximum: 365
+          description: |
+            How long the admission is expected to take. It becomes the requested quantity of
+            the preauthorization and the length of the authorization's validity.
+        admissionDiagnosisId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            A diagnosis of one of this case's own encounters. A diagnosis from another case is
+            refused: an id alone would never say it belonged to somebody else.
+    ExtendInpatientStay:
+      type: object
+      additionalProperties: false
+      required: [additionalDays, reasonCode]
+      properties:
+        additionalDays:
+          type: integer
+          minimum: 1
+          maximum: 365
+        reasonCode:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_.:-]{1,79}$'
+          description: Why, as a code. A reason nobody can count is a reason nobody can act on.
+        reasonText:
+          type: [string, 'null']
+          maxLength: 1000
+          description: |
+            Clinical text: it is stored on the extension, served only in the clinical
+            projection, and never carried by a notification or an audit detail.
+    PutStaySegments:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/StaySegmentInput'
+          description: The whole set. An empty array clears the stay's segments.
+    DischargeInpatientStay:
+      type: object
+      additionalProperties: false
+      properties:
+        dischargeAt:
+          type: [string, 'null']
+          format: date-time
+          description: |
+            When the patient went home. Defaults to now; it may not be before the admission or
+            in the future.
+    CancelInpatientStay:
+      type: object
+      additionalProperties: false
+      required: [reasonCode]
+      properties:
+        reasonCode:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_.:-]{1,79}$'
+        reasonText:
+          type: [string, 'null']
+          maxLength: 1000
+    StayReconciliation:
+      type: object
+      additionalProperties: false
+      required:
+        [stayId, admissionAt, dischargeAt, authorizedDays, actualDays, releasedDays,
+         overAuthorization]
+      properties:
+        stayId:
+          type: string
+          format: uuid
+        authorizationId:
+          type: [string, 'null']
+          format: uuid
+        admissionAt:
+          type: string
+          format: date-time
+        dischargeAt:
+          type: string
+          format: date-time
+        authorizedDays:
+          type: string
+          pattern: '^[0-9]{1,14}(\.[0-9]{1,6})?$'
+          description: |
+            Exact decimal as a string, never a JSON number: a day count that depended on
+            binary rounding would be a day count two systems disagree about.
+        actualDays:
+          type: string
+          pattern: '^[0-9]{1,14}(\.[0-9]{1,6})?$'
+        releasedDays:
+          type: string
+          pattern: '^[0-9]{1,14}(\.[0-9]{1,6})?$'
+          description: |
+            What was given back. Zero when the admission used everything it was approved for,
+            and zero when it ran over.
+        overAuthorization:
+          type: boolean

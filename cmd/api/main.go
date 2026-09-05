@@ -35,6 +35,7 @@ import (
 	documentpg "github.com/celikbros/kapsora/internal/document/infrastructure/postgres"
 	documenthttp "github.com/celikbros/kapsora/internal/document/transport/http"
 	healthapp "github.com/celikbros/kapsora/internal/health/application"
+	healthgw "github.com/celikbros/kapsora/internal/health/infrastructure/gateway"
 	healthpg "github.com/celikbros/kapsora/internal/health/infrastructure/postgres"
 	healthhttp "github.com/celikbros/kapsora/internal/health/transport/http"
 	"github.com/celikbros/kapsora/internal/identity"
@@ -235,9 +236,19 @@ func run() error {
 	// report raises a work item through healthpg.WorkItems, which writes it in the report
 	// command's own transaction, and a reviewer claiming that item starts the review through
 	// the claim hook below. Neither package imports the other; this is where they meet.
+	//
+	// The inpatient stay (WP-I5-03) is wired here too, and it is the only place in the
+	// process where the health module meets the request and the authorization modules. It
+	// meets them through two narrow ports: it may raise a preauthorization and it may take,
+	// extend and give back a hold, and there is no method on either that would let it decide
+	// anything about entitlement. The decision itself arrives the other way round — through
+	// the outbox, in kapsora-worker — so nothing in this process moves a stay.
 	healthSvc, err := healthapp.New(healthapp.Deps{
 		Pool: pool, Repo: healthpg.New(), Reports: healthpg.NewReports(),
-		WorkItems: healthpg.NewWorkItems(logger), Audit: auditpg.New(),
+		StayRepo:       healthpg.NewStays(),
+		Requests:       healthgw.NewRequests(serviceRequestSvc),
+		Authorizations: healthgw.NewAuthorizations(authorizationSvc),
+		WorkItems:      healthpg.NewWorkItems(logger), Audit: auditpg.New(),
 		Cursors: cursors, Logger: logger,
 	})
 	if err != nil {
@@ -705,6 +716,22 @@ func newRouter(d routerDeps) http.Handler {
 				healthHandler.EncounterRoutes(r, healthMW)
 			})
 			tenant.Route("/health-access-log", healthHandler.AccessLogRoutes)
+
+			// The inpatient stay. Every command takes If-Match and an idempotency key: an
+			// admission replayed by a flaky network reserves entitlement once, and a
+			// discharge replayed releases once. There is no approve route — the reviewer
+			// decides the admission on the request page, and the stay follows through the
+			// outbox subscription kapsora-worker registers.
+			stayMW := healthhttp.StayMiddlewares{
+				CreateStay:  d.idempotent("inpatient_stay.create"),
+				ExtendStay:  d.idempotent("inpatient_stay.extend"),
+				PutSegments: d.idempotent("inpatient_stay.segments.put"),
+				Discharge:   d.idempotent("inpatient_stay.discharge"),
+				CancelStay:  d.idempotent("inpatient_stay.cancel"),
+			}
+			tenant.Route("/inpatient-stays", func(r chi.Router) {
+				healthHandler.StayRoutes(r, stayMW)
+			})
 
 			// The treatment report. Everything that moves one takes If-Match, and every
 			// command that changes state is idempotency-keyed: a submission replayed by a

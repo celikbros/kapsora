@@ -1144,6 +1144,36 @@ func (e HealthStatusStatus) Valid() bool {
 	}
 }
 
+// Defines values for InpatientStayStatus.
+const (
+	InpatientStayStatusADMITTED   InpatientStayStatus = "ADMITTED"
+	InpatientStayStatusAUTHORIZED InpatientStayStatus = "AUTHORIZED"
+	InpatientStayStatusCANCELLED  InpatientStayStatus = "CANCELLED"
+	InpatientStayStatusDISCHARGED InpatientStayStatus = "DISCHARGED"
+	InpatientStayStatusREJECTED   InpatientStayStatus = "REJECTED"
+	InpatientStayStatusREQUESTED  InpatientStayStatus = "REQUESTED"
+)
+
+// Valid indicates whether the value is a known member of the InpatientStayStatus enum.
+func (e InpatientStayStatus) Valid() bool {
+	switch e {
+	case InpatientStayStatusADMITTED:
+		return true
+	case InpatientStayStatusAUTHORIZED:
+		return true
+	case InpatientStayStatusCANCELLED:
+		return true
+	case InpatientStayStatusDISCHARGED:
+		return true
+	case InpatientStayStatusREJECTED:
+		return true
+	case InpatientStayStatusREQUESTED:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for LedgerEntryMovementType.
 const (
 	ADJUST  LedgerEntryMovementType = "ADJUST"
@@ -2962,6 +2992,57 @@ func (e SponsorMembershipStatus) Valid() bool {
 	}
 }
 
+// Defines values for StayExtensionStatus.
+const (
+	StayExtensionStatusAPPROVED  StayExtensionStatus = "APPROVED"
+	StayExtensionStatusCANCELLED StayExtensionStatus = "CANCELLED"
+	StayExtensionStatusREJECTED  StayExtensionStatus = "REJECTED"
+	StayExtensionStatusREQUESTED StayExtensionStatus = "REQUESTED"
+)
+
+// Valid indicates whether the value is a known member of the StayExtensionStatus enum.
+func (e StayExtensionStatus) Valid() bool {
+	switch e {
+	case StayExtensionStatusAPPROVED:
+		return true
+	case StayExtensionStatusCANCELLED:
+		return true
+	case StayExtensionStatusREJECTED:
+		return true
+	case StayExtensionStatusREQUESTED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StaySegmentType.
+const (
+	COMPANION   StaySegmentType = "COMPANION"
+	ICU         StaySegmentType = "ICU"
+	OBSERVATION StaySegmentType = "OBSERVATION"
+	SURGERY     StaySegmentType = "SURGERY"
+	WARD        StaySegmentType = "WARD"
+)
+
+// Valid indicates whether the value is a known member of the StaySegmentType enum.
+func (e StaySegmentType) Valid() bool {
+	switch e {
+	case COMPANION:
+		return true
+	case ICU:
+		return true
+	case OBSERVATION:
+		return true
+	case SURGERY:
+		return true
+	case WARD:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for TaxBehaviour.
 const (
 	EXCLUSIVE TaxBehaviour = "EXCLUSIVE"
@@ -3568,6 +3649,246 @@ func (e ReviewMemberImportRowJSONBodyDecision) Valid() bool {
 	}
 }
 
+// Defines values for ListInpatientStaysParamsXAccessPurpose.
+const (
+	ListInpatientStaysParamsXAccessPurposeAUDIT            ListInpatientStaysParamsXAccessPurpose = "AUDIT"
+	ListInpatientStaysParamsXAccessPurposeCLAIMREVIEW      ListInpatientStaysParamsXAccessPurpose = "CLAIM_REVIEW"
+	ListInpatientStaysParamsXAccessPurposeMEDICALREVIEW    ListInpatientStaysParamsXAccessPurpose = "MEDICAL_REVIEW"
+	ListInpatientStaysParamsXAccessPurposeMEMBERREQUEST    ListInpatientStaysParamsXAccessPurpose = "MEMBER_REQUEST"
+	ListInpatientStaysParamsXAccessPurposePREAUTHORIZATION ListInpatientStaysParamsXAccessPurpose = "PRE_AUTHORIZATION"
+	ListInpatientStaysParamsXAccessPurposeTREATMENT        ListInpatientStaysParamsXAccessPurpose = "TREATMENT"
+)
+
+// Valid indicates whether the value is a known member of the ListInpatientStaysParamsXAccessPurpose enum.
+func (e ListInpatientStaysParamsXAccessPurpose) Valid() bool {
+	switch e {
+	case ListInpatientStaysParamsXAccessPurposeAUDIT:
+		return true
+	case ListInpatientStaysParamsXAccessPurposeCLAIMREVIEW:
+		return true
+	case ListInpatientStaysParamsXAccessPurposeMEDICALREVIEW:
+		return true
+	case ListInpatientStaysParamsXAccessPurposeMEMBERREQUEST:
+		return true
+	case ListInpatientStaysParamsXAccessPurposePREAUTHORIZATION:
+		return true
+	case ListInpatientStaysParamsXAccessPurposeTREATMENT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateInpatientStayParamsXAccessPurpose.
+const (
+	CreateInpatientStayParamsXAccessPurposeAUDIT            CreateInpatientStayParamsXAccessPurpose = "AUDIT"
+	CreateInpatientStayParamsXAccessPurposeCLAIMREVIEW      CreateInpatientStayParamsXAccessPurpose = "CLAIM_REVIEW"
+	CreateInpatientStayParamsXAccessPurposeMEDICALREVIEW    CreateInpatientStayParamsXAccessPurpose = "MEDICAL_REVIEW"
+	CreateInpatientStayParamsXAccessPurposeMEMBERREQUEST    CreateInpatientStayParamsXAccessPurpose = "MEMBER_REQUEST"
+	CreateInpatientStayParamsXAccessPurposePREAUTHORIZATION CreateInpatientStayParamsXAccessPurpose = "PRE_AUTHORIZATION"
+	CreateInpatientStayParamsXAccessPurposeTREATMENT        CreateInpatientStayParamsXAccessPurpose = "TREATMENT"
+)
+
+// Valid indicates whether the value is a known member of the CreateInpatientStayParamsXAccessPurpose enum.
+func (e CreateInpatientStayParamsXAccessPurpose) Valid() bool {
+	switch e {
+	case CreateInpatientStayParamsXAccessPurposeAUDIT:
+		return true
+	case CreateInpatientStayParamsXAccessPurposeCLAIMREVIEW:
+		return true
+	case CreateInpatientStayParamsXAccessPurposeMEDICALREVIEW:
+		return true
+	case CreateInpatientStayParamsXAccessPurposeMEMBERREQUEST:
+		return true
+	case CreateInpatientStayParamsXAccessPurposePREAUTHORIZATION:
+		return true
+	case CreateInpatientStayParamsXAccessPurposeTREATMENT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetInpatientStayParamsXAccessPurpose.
+const (
+	GetInpatientStayParamsXAccessPurposeAUDIT            GetInpatientStayParamsXAccessPurpose = "AUDIT"
+	GetInpatientStayParamsXAccessPurposeCLAIMREVIEW      GetInpatientStayParamsXAccessPurpose = "CLAIM_REVIEW"
+	GetInpatientStayParamsXAccessPurposeMEDICALREVIEW    GetInpatientStayParamsXAccessPurpose = "MEDICAL_REVIEW"
+	GetInpatientStayParamsXAccessPurposeMEMBERREQUEST    GetInpatientStayParamsXAccessPurpose = "MEMBER_REQUEST"
+	GetInpatientStayParamsXAccessPurposePREAUTHORIZATION GetInpatientStayParamsXAccessPurpose = "PRE_AUTHORIZATION"
+	GetInpatientStayParamsXAccessPurposeTREATMENT        GetInpatientStayParamsXAccessPurpose = "TREATMENT"
+)
+
+// Valid indicates whether the value is a known member of the GetInpatientStayParamsXAccessPurpose enum.
+func (e GetInpatientStayParamsXAccessPurpose) Valid() bool {
+	switch e {
+	case GetInpatientStayParamsXAccessPurposeAUDIT:
+		return true
+	case GetInpatientStayParamsXAccessPurposeCLAIMREVIEW:
+		return true
+	case GetInpatientStayParamsXAccessPurposeMEDICALREVIEW:
+		return true
+	case GetInpatientStayParamsXAccessPurposeMEMBERREQUEST:
+		return true
+	case GetInpatientStayParamsXAccessPurposePREAUTHORIZATION:
+		return true
+	case GetInpatientStayParamsXAccessPurposeTREATMENT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CancelInpatientStayParamsXAccessPurpose.
+const (
+	CancelInpatientStayParamsXAccessPurposeAUDIT            CancelInpatientStayParamsXAccessPurpose = "AUDIT"
+	CancelInpatientStayParamsXAccessPurposeCLAIMREVIEW      CancelInpatientStayParamsXAccessPurpose = "CLAIM_REVIEW"
+	CancelInpatientStayParamsXAccessPurposeMEDICALREVIEW    CancelInpatientStayParamsXAccessPurpose = "MEDICAL_REVIEW"
+	CancelInpatientStayParamsXAccessPurposeMEMBERREQUEST    CancelInpatientStayParamsXAccessPurpose = "MEMBER_REQUEST"
+	CancelInpatientStayParamsXAccessPurposePREAUTHORIZATION CancelInpatientStayParamsXAccessPurpose = "PRE_AUTHORIZATION"
+	CancelInpatientStayParamsXAccessPurposeTREATMENT        CancelInpatientStayParamsXAccessPurpose = "TREATMENT"
+)
+
+// Valid indicates whether the value is a known member of the CancelInpatientStayParamsXAccessPurpose enum.
+func (e CancelInpatientStayParamsXAccessPurpose) Valid() bool {
+	switch e {
+	case CancelInpatientStayParamsXAccessPurposeAUDIT:
+		return true
+	case CancelInpatientStayParamsXAccessPurposeCLAIMREVIEW:
+		return true
+	case CancelInpatientStayParamsXAccessPurposeMEDICALREVIEW:
+		return true
+	case CancelInpatientStayParamsXAccessPurposeMEMBERREQUEST:
+		return true
+	case CancelInpatientStayParamsXAccessPurposePREAUTHORIZATION:
+		return true
+	case CancelInpatientStayParamsXAccessPurposeTREATMENT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DischargeInpatientStayParamsXAccessPurpose.
+const (
+	DischargeInpatientStayParamsXAccessPurposeAUDIT            DischargeInpatientStayParamsXAccessPurpose = "AUDIT"
+	DischargeInpatientStayParamsXAccessPurposeCLAIMREVIEW      DischargeInpatientStayParamsXAccessPurpose = "CLAIM_REVIEW"
+	DischargeInpatientStayParamsXAccessPurposeMEDICALREVIEW    DischargeInpatientStayParamsXAccessPurpose = "MEDICAL_REVIEW"
+	DischargeInpatientStayParamsXAccessPurposeMEMBERREQUEST    DischargeInpatientStayParamsXAccessPurpose = "MEMBER_REQUEST"
+	DischargeInpatientStayParamsXAccessPurposePREAUTHORIZATION DischargeInpatientStayParamsXAccessPurpose = "PRE_AUTHORIZATION"
+	DischargeInpatientStayParamsXAccessPurposeTREATMENT        DischargeInpatientStayParamsXAccessPurpose = "TREATMENT"
+)
+
+// Valid indicates whether the value is a known member of the DischargeInpatientStayParamsXAccessPurpose enum.
+func (e DischargeInpatientStayParamsXAccessPurpose) Valid() bool {
+	switch e {
+	case DischargeInpatientStayParamsXAccessPurposeAUDIT:
+		return true
+	case DischargeInpatientStayParamsXAccessPurposeCLAIMREVIEW:
+		return true
+	case DischargeInpatientStayParamsXAccessPurposeMEDICALREVIEW:
+		return true
+	case DischargeInpatientStayParamsXAccessPurposeMEMBERREQUEST:
+		return true
+	case DischargeInpatientStayParamsXAccessPurposePREAUTHORIZATION:
+		return true
+	case DischargeInpatientStayParamsXAccessPurposeTREATMENT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ExtendInpatientStayParamsXAccessPurpose.
+const (
+	ExtendInpatientStayParamsXAccessPurposeAUDIT            ExtendInpatientStayParamsXAccessPurpose = "AUDIT"
+	ExtendInpatientStayParamsXAccessPurposeCLAIMREVIEW      ExtendInpatientStayParamsXAccessPurpose = "CLAIM_REVIEW"
+	ExtendInpatientStayParamsXAccessPurposeMEDICALREVIEW    ExtendInpatientStayParamsXAccessPurpose = "MEDICAL_REVIEW"
+	ExtendInpatientStayParamsXAccessPurposeMEMBERREQUEST    ExtendInpatientStayParamsXAccessPurpose = "MEMBER_REQUEST"
+	ExtendInpatientStayParamsXAccessPurposePREAUTHORIZATION ExtendInpatientStayParamsXAccessPurpose = "PRE_AUTHORIZATION"
+	ExtendInpatientStayParamsXAccessPurposeTREATMENT        ExtendInpatientStayParamsXAccessPurpose = "TREATMENT"
+)
+
+// Valid indicates whether the value is a known member of the ExtendInpatientStayParamsXAccessPurpose enum.
+func (e ExtendInpatientStayParamsXAccessPurpose) Valid() bool {
+	switch e {
+	case ExtendInpatientStayParamsXAccessPurposeAUDIT:
+		return true
+	case ExtendInpatientStayParamsXAccessPurposeCLAIMREVIEW:
+		return true
+	case ExtendInpatientStayParamsXAccessPurposeMEDICALREVIEW:
+		return true
+	case ExtendInpatientStayParamsXAccessPurposeMEMBERREQUEST:
+		return true
+	case ExtendInpatientStayParamsXAccessPurposePREAUTHORIZATION:
+		return true
+	case ExtendInpatientStayParamsXAccessPurposeTREATMENT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetInpatientStayReconciliationParamsXAccessPurpose.
+const (
+	GetInpatientStayReconciliationParamsXAccessPurposeAUDIT            GetInpatientStayReconciliationParamsXAccessPurpose = "AUDIT"
+	GetInpatientStayReconciliationParamsXAccessPurposeCLAIMREVIEW      GetInpatientStayReconciliationParamsXAccessPurpose = "CLAIM_REVIEW"
+	GetInpatientStayReconciliationParamsXAccessPurposeMEDICALREVIEW    GetInpatientStayReconciliationParamsXAccessPurpose = "MEDICAL_REVIEW"
+	GetInpatientStayReconciliationParamsXAccessPurposeMEMBERREQUEST    GetInpatientStayReconciliationParamsXAccessPurpose = "MEMBER_REQUEST"
+	GetInpatientStayReconciliationParamsXAccessPurposePREAUTHORIZATION GetInpatientStayReconciliationParamsXAccessPurpose = "PRE_AUTHORIZATION"
+	GetInpatientStayReconciliationParamsXAccessPurposeTREATMENT        GetInpatientStayReconciliationParamsXAccessPurpose = "TREATMENT"
+)
+
+// Valid indicates whether the value is a known member of the GetInpatientStayReconciliationParamsXAccessPurpose enum.
+func (e GetInpatientStayReconciliationParamsXAccessPurpose) Valid() bool {
+	switch e {
+	case GetInpatientStayReconciliationParamsXAccessPurposeAUDIT:
+		return true
+	case GetInpatientStayReconciliationParamsXAccessPurposeCLAIMREVIEW:
+		return true
+	case GetInpatientStayReconciliationParamsXAccessPurposeMEDICALREVIEW:
+		return true
+	case GetInpatientStayReconciliationParamsXAccessPurposeMEMBERREQUEST:
+		return true
+	case GetInpatientStayReconciliationParamsXAccessPurposePREAUTHORIZATION:
+		return true
+	case GetInpatientStayReconciliationParamsXAccessPurposeTREATMENT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PutStaySegmentsParamsXAccessPurpose.
+const (
+	PutStaySegmentsParamsXAccessPurposeAUDIT            PutStaySegmentsParamsXAccessPurpose = "AUDIT"
+	PutStaySegmentsParamsXAccessPurposeCLAIMREVIEW      PutStaySegmentsParamsXAccessPurpose = "CLAIM_REVIEW"
+	PutStaySegmentsParamsXAccessPurposeMEDICALREVIEW    PutStaySegmentsParamsXAccessPurpose = "MEDICAL_REVIEW"
+	PutStaySegmentsParamsXAccessPurposeMEMBERREQUEST    PutStaySegmentsParamsXAccessPurpose = "MEMBER_REQUEST"
+	PutStaySegmentsParamsXAccessPurposePREAUTHORIZATION PutStaySegmentsParamsXAccessPurpose = "PRE_AUTHORIZATION"
+	PutStaySegmentsParamsXAccessPurposeTREATMENT        PutStaySegmentsParamsXAccessPurpose = "TREATMENT"
+)
+
+// Valid indicates whether the value is a known member of the PutStaySegmentsParamsXAccessPurpose enum.
+func (e PutStaySegmentsParamsXAccessPurpose) Valid() bool {
+	switch e {
+	case PutStaySegmentsParamsXAccessPurposeAUDIT:
+		return true
+	case PutStaySegmentsParamsXAccessPurposeCLAIMREVIEW:
+		return true
+	case PutStaySegmentsParamsXAccessPurposeMEDICALREVIEW:
+		return true
+	case PutStaySegmentsParamsXAccessPurposeMEMBERREQUEST:
+		return true
+	case PutStaySegmentsParamsXAccessPurposePREAUTHORIZATION:
+		return true
+	case PutStaySegmentsParamsXAccessPurposeTREATMENT:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListMedicalReportsParamsXAccessPurpose.
 const (
 	ListMedicalReportsParamsXAccessPurposeAUDIT            ListMedicalReportsParamsXAccessPurpose = "AUDIT"
@@ -3856,6 +4177,12 @@ type AuthorizationPage struct {
 // AuthorizationStatus State of a promise. It is read-only on every endpoint: an authorization moves when
 // entitlement moves, and there is no field a caller can set to change it.
 type AuthorizationStatus string
+
+// CancelInpatientStay defines model for CancelInpatientStay.
+type CancelInpatientStay struct {
+	ReasonCode string  `json:"reasonCode"`
+	ReasonText *string `json:"reasonText,omitempty"`
+}
 
 // CloseHealthCase defines model for CloseHealthCase.
 type CloseHealthCase struct {
@@ -4185,6 +4512,25 @@ type CreateHealthCase struct {
 	// ServiceRequestId The DIRECT_SERVICE or PREAUTHORIZATION request the case was opened for. Null for
 	// a case a provider opened standalone.
 	ServiceRequestId *openapi_types.UUID `json:"serviceRequestId,omitempty"`
+}
+
+// CreateInpatientStay defines model for CreateInpatientStay.
+type CreateInpatientStay struct {
+	// AdmissionAt Checked against the tenant's backdating and future-dating window. Outside it the
+	// answer is 422 ADMISSION_DATE_OUT_OF_WINDOW.
+	AdmissionAt time.Time `json:"admissionAt"`
+
+	// AdmissionDiagnosisId A diagnosis of one of this case's own encounters. A diagnosis from another case is
+	// refused: an id alone would never say it belonged to somebody else.
+	AdmissionDiagnosisId    *openapi_types.UUID `json:"admissionDiagnosisId,omitempty"`
+	AttendingPractitionerId *openapi_types.UUID `json:"attendingPractitionerId,omitempty"`
+	CaseId                  openapi_types.UUID  `json:"caseId"`
+
+	// EstimatedDays How long the admission is expected to take. It becomes the requested quantity of
+	// the preauthorization and the length of the authorization's validity.
+	EstimatedDays          int                 `json:"estimatedDays"`
+	LocationId             *openapi_types.UUID `json:"locationId,omitempty"`
+	ProviderOrganizationId openapi_types.UUID  `json:"providerOrganizationId"`
 }
 
 // CreateLegalHold defines model for CreateLegalHold.
@@ -4585,6 +4931,13 @@ type DiagnosisList struct {
 
 // DiagnosisType defines model for DiagnosisType.
 type DiagnosisType string
+
+// DischargeInpatientStay defines model for DischargeInpatientStay.
+type DischargeInpatientStay struct {
+	// DischargeAt When the patient went home. Defaults to now; it may not be before the admission or
+	// in the future.
+	DischargeAt *time.Time `json:"dischargeAt,omitempty"`
+}
 
 // Document defines model for Document.
 type Document struct {
@@ -5070,6 +5423,18 @@ type ExtendAuthorization struct {
 	ValidTo time.Time `json:"validTo"`
 }
 
+// ExtendInpatientStay defines model for ExtendInpatientStay.
+type ExtendInpatientStay struct {
+	AdditionalDays int `json:"additionalDays"`
+
+	// ReasonCode Why, as a code. A reason nobody can count is a reason nobody can act on.
+	ReasonCode string `json:"reasonCode"`
+
+	// ReasonText Clinical text: it is stored on the extension, served only in the clinical
+	// projection, and never carried by a notification or an audit detail.
+	ReasonText *string `json:"reasonText,omitempty"`
+}
+
 // FulfillmentMode How a service definition is delivered once it is requested.
 type FulfillmentMode string
 
@@ -5232,6 +5597,78 @@ type IdentifierSearchRequest struct {
 type ImportCodeValuesRequest struct {
 	Items []CodeValueInput `json:"items"`
 }
+
+// InpatientStay defines model for InpatientStay.
+type InpatientStay struct {
+	// ActualDays Written at discharge; absent before it.
+	ActualDays  *string   `json:"actualDays,omitempty"`
+	AdmissionAt time.Time `json:"admissionAt"`
+
+	// AdmissionDiagnosisId Present only in the clinical projection. That an admission has a recorded
+	// diagnosis at all is a fact about the patient.
+	AdmissionDiagnosisId    *openapi_types.UUID `json:"admissionDiagnosisId,omitempty"`
+	AttendingPractitionerId *openapi_types.UUID `json:"attendingPractitionerId,omitempty"`
+	AuthorizationId         *openapi_types.UUID `json:"authorizationId,omitempty"`
+
+	// AuthorizedDays What the reviewer actually approved, which is not always what was asked for, plus
+	// every approved extension. Exact decimal as a string, never a JSON number. Absent
+	// until the request is decided.
+	AuthorizedDays   *string            `json:"authorizedDays,omitempty"`
+	CancelReasonCode *string            `json:"cancelReasonCode,omitempty"`
+	CaseId           openapi_types.UUID `json:"caseId"`
+	CreatedAt        time.Time          `json:"createdAt"`
+	DischargeAt      *time.Time         `json:"dischargeAt,omitempty"`
+	EstimatedDays    int                `json:"estimatedDays"`
+
+	// ExpectedDischargeAt Derived from the admission and the estimate at write, and moved forward by every
+	// approved extension. It is what the authorization's validity is set from.
+	ExpectedDischargeAt time.Time           `json:"expectedDischargeAt"`
+	Extensions          []StayExtension     `json:"extensions"`
+	Id                  openapi_types.UUID  `json:"id"`
+	LocationId          *openapi_types.UUID `json:"locationId,omitempty"`
+
+	// OverAuthorization The admission used more days than were approved. Nothing was released, and the
+	// claim raises it as an exception.
+	OverAuthorization bool               `json:"overAuthorization"`
+	PersonId          openapi_types.UUID `json:"personId"`
+
+	// Projection Which half of the record was served. It reports what the caller holds, which the
+	// caller already knows, so it reveals nothing about the patient — and it is what lets
+	// a screen say "you may not see clinical detail" instead of showing a record with
+	// holes in it.
+	Projection             HealthProjection   `json:"projection"`
+	ProviderOrganizationId openapi_types.UUID `json:"providerOrganizationId"`
+
+	// ReleasedDays What was given back to the member's entitlement at discharge. Absent before it.
+	ReleasedDays *string `json:"releasedDays,omitempty"`
+	RowVersion   int64   `json:"rowVersion"`
+
+	// Segments Where the patient was, hour by hour. Served in both projections: it is what a
+	// claim is priced from, and a claims reviewer who could not see an intensive care
+	// night could not check the bill for one.
+	Segments []StaySegment `json:"segments"`
+
+	// ServiceRequestId The PREAUTHORIZATION request a reviewer decides the admission on.
+	ServiceRequestId openapi_types.UUID `json:"serviceRequestId"`
+
+	// Status REQUESTED, AUTHORIZED and ADMITTED are the three the one-open-stay rule calls open: a
+	// case may have at most one stay in any of them at any one provider. AUTHORIZED and
+	// REJECTED are not given by an endpoint of this module — they are what the stay becomes
+	// when the reviewer decides its preauthorization request.
+	Status InpatientStayStatus `json:"status"`
+}
+
+// InpatientStayPage defines model for InpatientStayPage.
+type InpatientStayPage struct {
+	Items      []InpatientStay `json:"items"`
+	NextCursor *string         `json:"nextCursor,omitempty"`
+}
+
+// InpatientStayStatus REQUESTED, AUTHORIZED and ADMITTED are the three the one-open-stay rule calls open: a
+// case may have at most one stay in any of them at any one provider. AUTHORIZED and
+// REJECTED are not given by an endpoint of this module — they are what the stay becomes
+// when the reviewer decides its preauthorization request.
+type InpatientStayStatus string
 
 // IssueVoucher defines model for IssueVoucher.
 type IssueVoucher struct {
@@ -6707,6 +7144,12 @@ type PutPaymentTermRequest struct {
 	VatRate *DecimalRate `json:"vatRate,omitempty"`
 }
 
+// PutStaySegments defines model for PutStaySegments.
+type PutStaySegments struct {
+	// Items The whole set. An empty array clears the stay's segments.
+	Items []StaySegmentInput `json:"items"`
+}
+
 // QuotaPeriodType The period a provider quota is counted over; CONTRACT means the whole version.
 type QuotaPeriodType string
 
@@ -7553,6 +7996,82 @@ type SponsorMembership struct {
 // SponsorMembershipStatus defines model for SponsorMembership.Status.
 type SponsorMembershipStatus string
 
+// StayExtension defines model for StayExtension.
+type StayExtension struct {
+	AdditionalDays int `json:"additionalDays"`
+
+	// AuthorizationId The extension's own hold, which is where the added days are reserved.
+	AuthorizationId *openapi_types.UUID `json:"authorizationId,omitempty"`
+	CreatedAt       time.Time           `json:"createdAt"`
+	Id              openapi_types.UUID  `json:"id"`
+	ReasonCode      string              `json:"reasonCode"`
+
+	// ReasonText Why the doctor wants more days, in the doctor's words. Clinical text, present only
+	// in the clinical projection.
+	ReasonText       *string             `json:"reasonText,omitempty"`
+	RowVersion       int64               `json:"rowVersion"`
+	SequenceNo       int                 `json:"sequenceNo"`
+	ServiceRequestId openapi_types.UUID  `json:"serviceRequestId"`
+	Status           StayExtensionStatus `json:"status"`
+	StayId           openapi_types.UUID  `json:"stayId"`
+}
+
+// StayExtensionStatus defines model for StayExtensionStatus.
+type StayExtensionStatus string
+
+// StayReconciliation defines model for StayReconciliation.
+type StayReconciliation struct {
+	ActualDays      string              `json:"actualDays"`
+	AdmissionAt     time.Time           `json:"admissionAt"`
+	AuthorizationId *openapi_types.UUID `json:"authorizationId,omitempty"`
+
+	// AuthorizedDays Exact decimal as a string, never a JSON number: a day count that depended on
+	// binary rounding would be a day count two systems disagree about.
+	AuthorizedDays    string    `json:"authorizedDays"`
+	DischargeAt       time.Time `json:"dischargeAt"`
+	OverAuthorization bool      `json:"overAuthorization"`
+
+	// ReleasedDays What was given back. Zero when the admission used everything it was approved for,
+	// and zero when it ran over.
+	ReleasedDays string             `json:"releasedDays"`
+	StayId       openapi_types.UUID `json:"stayId"`
+}
+
+// StaySegment defines model for StaySegment.
+type StaySegment struct {
+	BedCode   *string   `json:"bedCode,omitempty"`
+	CreatedAt time.Time `json:"createdAt"`
+
+	// EndsAt Null while the segment is still running. Discharge ends every open segment at the
+	// discharge moment.
+	EndsAt     *time.Time         `json:"endsAt,omitempty"`
+	Id         openapi_types.UUID `json:"id"`
+	RoomCode   *string            `json:"roomCode,omitempty"`
+	RowVersion int64              `json:"rowVersion"`
+
+	// SegmentType COMPANION is the relative staying in the room. It is the one type outside the overlap
+	// constraint, because a companion is in the room while the patient is.
+	SegmentType StaySegmentType    `json:"segmentType"`
+	StartsAt    time.Time          `json:"startsAt"`
+	StayId      openapi_types.UUID `json:"stayId"`
+}
+
+// StaySegmentInput defines model for StaySegmentInput.
+type StaySegmentInput struct {
+	BedCode  *string    `json:"bedCode,omitempty"`
+	EndsAt   *time.Time `json:"endsAt,omitempty"`
+	RoomCode *string    `json:"roomCode,omitempty"`
+
+	// SegmentType COMPANION is the relative staying in the room. It is the one type outside the overlap
+	// constraint, because a companion is in the room while the patient is.
+	SegmentType StaySegmentType `json:"segmentType"`
+	StartsAt    time.Time       `json:"startsAt"`
+}
+
+// StaySegmentType COMPANION is the relative staying in the room. It is the one type outside the overlap
+// constraint, because a companion is in the room while the patient is.
+type StaySegmentType string
+
 // TaxBehaviour Whether the agreed amounts already include VAT, exclude it, or are exempt.
 type TaxBehaviour string
 
@@ -8067,6 +8586,9 @@ type ServiceDefinitionId = openapi_types.UUID
 
 // ServiceRequestVersionNo defines model for ServiceRequestVersionNo.
 type ServiceRequestVersionNo = int
+
+// StayId defines model for StayId.
+type StayId = openapi_types.UUID
 
 // TenantHeader defines model for TenantHeader.
 type TenantHeader = openapi_types.UUID
@@ -9000,6 +9522,259 @@ type ReviewMemberImportRowParams struct {
 
 // ReviewMemberImportRowJSONBodyDecision defines parameters for ReviewMemberImportRow.
 type ReviewMemberImportRowJSONBodyDecision string
+
+// ListInpatientStaysParams defines parameters for ListInpatientStays.
+type ListInpatientStaysParams struct {
+	// Cursor Opaque cursor from the previous response.
+	Cursor                 *Cursor              `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit                  *Limit               `form:"limit,omitempty" json:"limit,omitempty"`
+	CaseId                 *openapi_types.UUID  `form:"caseId,omitempty" json:"caseId,omitempty"`
+	PersonId               *openapi_types.UUID  `form:"personId,omitempty" json:"personId,omitempty"`
+	ProviderOrganizationId *openapi_types.UUID  `form:"providerOrganizationId,omitempty" json:"providerOrganizationId,omitempty"`
+	Status                 *InpatientStayStatus `form:"status,omitempty" json:"status,omitempty"`
+	AdmittedFrom           *time.Time           `form:"admittedFrom,omitempty" json:"admittedFrom,omitempty"`
+	AdmittedTo             *time.Time           `form:"admittedTo,omitempty" json:"admittedTo,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// XAccessPurpose Why the caller is opening clinical data, as a code from the clinical access purpose
+	// reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+	// MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+	// read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+	// event, because "who read this" without "why" is not an answer a data protection
+	// review can use.
+	XAccessPurpose *ListInpatientStaysParamsXAccessPurpose `json:"X-Access-Purpose,omitempty"`
+
+	// XAccessReason Free text beside the purpose, at most 200 characters once decoded, kept on the access
+	// event. It never carries an identifier: the event already names the person and the
+	// actor.
+	//
+	// The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+	// ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+	// the Turkish somebody would actually type. A value with no percent sequences decodes
+	// to itself, so a plain ASCII reason may be sent as it is.
+	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+}
+
+// ListInpatientStaysParamsXAccessPurpose defines parameters for ListInpatientStays.
+type ListInpatientStaysParamsXAccessPurpose string
+
+// CreateInpatientStayParams defines parameters for CreateInpatientStay.
+type CreateInpatientStayParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+
+	// XAccessPurpose Why the caller is opening clinical data, as a code from the clinical access purpose
+	// reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+	// MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+	// read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+	// event, because "who read this" without "why" is not an answer a data protection
+	// review can use.
+	XAccessPurpose *CreateInpatientStayParamsXAccessPurpose `json:"X-Access-Purpose,omitempty"`
+
+	// XAccessReason Free text beside the purpose, at most 200 characters once decoded, kept on the access
+	// event. It never carries an identifier: the event already names the person and the
+	// actor.
+	//
+	// The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+	// ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+	// the Turkish somebody would actually type. A value with no percent sequences decodes
+	// to itself, so a plain ASCII reason may be sent as it is.
+	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+}
+
+// CreateInpatientStayParamsXAccessPurpose defines parameters for CreateInpatientStay.
+type CreateInpatientStayParamsXAccessPurpose string
+
+// GetInpatientStayParams defines parameters for GetInpatientStay.
+type GetInpatientStayParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// XAccessPurpose Why the caller is opening clinical data, as a code from the clinical access purpose
+	// reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+	// MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+	// read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+	// event, because "who read this" without "why" is not an answer a data protection
+	// review can use.
+	XAccessPurpose *GetInpatientStayParamsXAccessPurpose `json:"X-Access-Purpose,omitempty"`
+
+	// XAccessReason Free text beside the purpose, at most 200 characters once decoded, kept on the access
+	// event. It never carries an identifier: the event already names the person and the
+	// actor.
+	//
+	// The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+	// ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+	// the Turkish somebody would actually type. A value with no percent sequences decodes
+	// to itself, so a plain ASCII reason may be sent as it is.
+	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+}
+
+// GetInpatientStayParamsXAccessPurpose defines parameters for GetInpatientStay.
+type GetInpatientStayParamsXAccessPurpose string
+
+// CancelInpatientStayParams defines parameters for CancelInpatientStay.
+type CancelInpatientStayParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+
+	// XAccessPurpose Why the caller is opening clinical data, as a code from the clinical access purpose
+	// reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+	// MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+	// read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+	// event, because "who read this" without "why" is not an answer a data protection
+	// review can use.
+	XAccessPurpose *CancelInpatientStayParamsXAccessPurpose `json:"X-Access-Purpose,omitempty"`
+
+	// XAccessReason Free text beside the purpose, at most 200 characters once decoded, kept on the access
+	// event. It never carries an identifier: the event already names the person and the
+	// actor.
+	//
+	// The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+	// ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+	// the Turkish somebody would actually type. A value with no percent sequences decodes
+	// to itself, so a plain ASCII reason may be sent as it is.
+	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+}
+
+// CancelInpatientStayParamsXAccessPurpose defines parameters for CancelInpatientStay.
+type CancelInpatientStayParamsXAccessPurpose string
+
+// DischargeInpatientStayParams defines parameters for DischargeInpatientStay.
+type DischargeInpatientStayParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+
+	// XAccessPurpose Why the caller is opening clinical data, as a code from the clinical access purpose
+	// reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+	// MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+	// read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+	// event, because "who read this" without "why" is not an answer a data protection
+	// review can use.
+	XAccessPurpose *DischargeInpatientStayParamsXAccessPurpose `json:"X-Access-Purpose,omitempty"`
+
+	// XAccessReason Free text beside the purpose, at most 200 characters once decoded, kept on the access
+	// event. It never carries an identifier: the event already names the person and the
+	// actor.
+	//
+	// The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+	// ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+	// the Turkish somebody would actually type. A value with no percent sequences decodes
+	// to itself, so a plain ASCII reason may be sent as it is.
+	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+}
+
+// DischargeInpatientStayParamsXAccessPurpose defines parameters for DischargeInpatientStay.
+type DischargeInpatientStayParamsXAccessPurpose string
+
+// ExtendInpatientStayParams defines parameters for ExtendInpatientStay.
+type ExtendInpatientStayParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+
+	// XAccessPurpose Why the caller is opening clinical data, as a code from the clinical access purpose
+	// reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+	// MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+	// read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+	// event, because "who read this" without "why" is not an answer a data protection
+	// review can use.
+	XAccessPurpose *ExtendInpatientStayParamsXAccessPurpose `json:"X-Access-Purpose,omitempty"`
+
+	// XAccessReason Free text beside the purpose, at most 200 characters once decoded, kept on the access
+	// event. It never carries an identifier: the event already names the person and the
+	// actor.
+	//
+	// The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+	// ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+	// the Turkish somebody would actually type. A value with no percent sequences decodes
+	// to itself, so a plain ASCII reason may be sent as it is.
+	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+}
+
+// ExtendInpatientStayParamsXAccessPurpose defines parameters for ExtendInpatientStay.
+type ExtendInpatientStayParamsXAccessPurpose string
+
+// GetInpatientStayReconciliationParams defines parameters for GetInpatientStayReconciliation.
+type GetInpatientStayReconciliationParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// XAccessPurpose Why the caller is opening clinical data, as a code from the clinical access purpose
+	// reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+	// MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+	// read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+	// event, because "who read this" without "why" is not an answer a data protection
+	// review can use.
+	XAccessPurpose *GetInpatientStayReconciliationParamsXAccessPurpose `json:"X-Access-Purpose,omitempty"`
+
+	// XAccessReason Free text beside the purpose, at most 200 characters once decoded, kept on the access
+	// event. It never carries an identifier: the event already names the person and the
+	// actor.
+	//
+	// The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+	// ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+	// the Turkish somebody would actually type. A value with no percent sequences decodes
+	// to itself, so a plain ASCII reason may be sent as it is.
+	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+}
+
+// GetInpatientStayReconciliationParamsXAccessPurpose defines parameters for GetInpatientStayReconciliation.
+type GetInpatientStayReconciliationParamsXAccessPurpose string
+
+// PutStaySegmentsParams defines parameters for PutStaySegments.
+type PutStaySegmentsParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+
+	// XAccessPurpose Why the caller is opening clinical data, as a code from the clinical access purpose
+	// reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+	// MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+	// read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+	// event, because "who read this" without "why" is not an answer a data protection
+	// review can use.
+	XAccessPurpose *PutStaySegmentsParamsXAccessPurpose `json:"X-Access-Purpose,omitempty"`
+
+	// XAccessReason Free text beside the purpose, at most 200 characters once decoded, kept on the access
+	// event. It never carries an identifier: the event already names the person and the
+	// actor.
+	//
+	// The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+	// ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+	// the Turkish somebody would actually type. A value with no percent sequences decodes
+	// to itself, so a plain ASCII reason may be sent as it is.
+	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+}
+
+// PutStaySegmentsParamsXAccessPurpose defines parameters for PutStaySegments.
+type PutStaySegmentsParamsXAccessPurpose string
 
 // PutLegalHoldParams defines parameters for PutLegalHold.
 type PutLegalHoldParams struct {
@@ -10699,6 +11474,21 @@ type CancelMemberImportJSONRequestBody = ReasonCommand
 // ReviewMemberImportRowJSONRequestBody defines body for ReviewMemberImportRow for application/json ContentType.
 type ReviewMemberImportRowJSONRequestBody ReviewMemberImportRowJSONBody
 
+// CreateInpatientStayJSONRequestBody defines body for CreateInpatientStay for application/json ContentType.
+type CreateInpatientStayJSONRequestBody = CreateInpatientStay
+
+// CancelInpatientStayJSONRequestBody defines body for CancelInpatientStay for application/json ContentType.
+type CancelInpatientStayJSONRequestBody = CancelInpatientStay
+
+// DischargeInpatientStayJSONRequestBody defines body for DischargeInpatientStay for application/json ContentType.
+type DischargeInpatientStayJSONRequestBody = DischargeInpatientStay
+
+// ExtendInpatientStayJSONRequestBody defines body for ExtendInpatientStay for application/json ContentType.
+type ExtendInpatientStayJSONRequestBody = ExtendInpatientStay
+
+// PutStaySegmentsJSONRequestBody defines body for PutStaySegments for application/json ContentType.
+type PutStaySegmentsJSONRequestBody = PutStaySegments
+
 // PutLegalHoldJSONRequestBody defines body for PutLegalHold for application/json ContentType.
 type PutLegalHoldJSONRequestBody = CreateLegalHold
 
@@ -11314,6 +12104,30 @@ type ServerInterface interface {
 
 	// (POST /api/v1/imports/members/{importId}/rows/{rowId}/review)
 	ReviewMemberImportRow(w http.ResponseWriter, r *http.Request, importId ImportId, rowId ImportRowId, params ReviewMemberImportRowParams)
+
+	// (GET /api/v1/inpatient-stays)
+	ListInpatientStays(w http.ResponseWriter, r *http.Request, params ListInpatientStaysParams)
+
+	// (POST /api/v1/inpatient-stays)
+	CreateInpatientStay(w http.ResponseWriter, r *http.Request, params CreateInpatientStayParams)
+
+	// (GET /api/v1/inpatient-stays/{stayId})
+	GetInpatientStay(w http.ResponseWriter, r *http.Request, stayId StayId, params GetInpatientStayParams)
+
+	// (POST /api/v1/inpatient-stays/{stayId}/cancel)
+	CancelInpatientStay(w http.ResponseWriter, r *http.Request, stayId StayId, params CancelInpatientStayParams)
+
+	// (POST /api/v1/inpatient-stays/{stayId}/discharge)
+	DischargeInpatientStay(w http.ResponseWriter, r *http.Request, stayId StayId, params DischargeInpatientStayParams)
+
+	// (POST /api/v1/inpatient-stays/{stayId}/extensions)
+	ExtendInpatientStay(w http.ResponseWriter, r *http.Request, stayId StayId, params ExtendInpatientStayParams)
+
+	// (GET /api/v1/inpatient-stays/{stayId}/reconciliation)
+	GetInpatientStayReconciliation(w http.ResponseWriter, r *http.Request, stayId StayId, params GetInpatientStayReconciliationParams)
+
+	// (PUT /api/v1/inpatient-stays/{stayId}/segments)
+	PutStaySegments(w http.ResponseWriter, r *http.Request, stayId StayId, params PutStaySegmentsParams)
 
 	// (POST /api/v1/legal-holds)
 	PutLegalHold(w http.ResponseWriter, r *http.Request, params PutLegalHoldParams)
@@ -12113,6 +12927,46 @@ func (_ Unimplemented) ListMemberImportRows(w http.ResponseWriter, r *http.Reque
 
 // (POST /api/v1/imports/members/{importId}/rows/{rowId}/review)
 func (_ Unimplemented) ReviewMemberImportRow(w http.ResponseWriter, r *http.Request, importId ImportId, rowId ImportRowId, params ReviewMemberImportRowParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/inpatient-stays)
+func (_ Unimplemented) ListInpatientStays(w http.ResponseWriter, r *http.Request, params ListInpatientStaysParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/inpatient-stays)
+func (_ Unimplemented) CreateInpatientStay(w http.ResponseWriter, r *http.Request, params CreateInpatientStayParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/inpatient-stays/{stayId})
+func (_ Unimplemented) GetInpatientStay(w http.ResponseWriter, r *http.Request, stayId StayId, params GetInpatientStayParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/inpatient-stays/{stayId}/cancel)
+func (_ Unimplemented) CancelInpatientStay(w http.ResponseWriter, r *http.Request, stayId StayId, params CancelInpatientStayParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/inpatient-stays/{stayId}/discharge)
+func (_ Unimplemented) DischargeInpatientStay(w http.ResponseWriter, r *http.Request, stayId StayId, params DischargeInpatientStayParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/inpatient-stays/{stayId}/extensions)
+func (_ Unimplemented) ExtendInpatientStay(w http.ResponseWriter, r *http.Request, stayId StayId, params ExtendInpatientStayParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/inpatient-stays/{stayId}/reconciliation)
+func (_ Unimplemented) GetInpatientStayReconciliation(w http.ResponseWriter, r *http.Request, stayId StayId, params GetInpatientStayReconciliationParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PUT /api/v1/inpatient-stays/{stayId}/segments)
+func (_ Unimplemented) PutStaySegments(w http.ResponseWriter, r *http.Request, stayId StayId, params PutStaySegmentsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -18812,6 +19666,1035 @@ func (siw *ServerInterfaceWrapper) ReviewMemberImportRow(w http.ResponseWriter, 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ReviewMemberImportRow(w, r, importId, rowId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListInpatientStays operation middleware
+func (siw *ServerInterfaceWrapper) ListInpatientStays(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListInpatientStaysParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "caseId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "caseId", r.URL.Query(), &params.CaseId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "caseId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "caseId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "personId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "personId", r.URL.Query(), &params.PersonId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "personId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "personId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "providerOrganizationId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "providerOrganizationId", r.URL.Query(), &params.ProviderOrganizationId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "providerOrganizationId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "providerOrganizationId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "admittedFrom" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "admittedFrom", r.URL.Query(), &params.AdmittedFrom, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "admittedFrom"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "admittedFrom", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "admittedTo" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "admittedTo", r.URL.Query(), &params.AdmittedTo, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "admittedTo"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "admittedTo", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-Access-Purpose" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Purpose")]; found {
+		var XAccessPurpose ListInpatientStaysParamsXAccessPurpose
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Purpose", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Purpose", valueList[0], &XAccessPurpose, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Purpose", Err: err})
+			return
+		}
+
+		params.XAccessPurpose = &XAccessPurpose
+
+	}
+
+	// ------------- Optional header parameter "X-Access-Reason" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Reason")]; found {
+		var XAccessReason AccessReasonHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Reason", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Reason", valueList[0], &XAccessReason, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Reason", Err: err})
+			return
+		}
+
+		params.XAccessReason = &XAccessReason
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListInpatientStays(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateInpatientStay operation middleware
+func (siw *ServerInterfaceWrapper) CreateInpatientStay(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateInpatientStayParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-Access-Purpose" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Purpose")]; found {
+		var XAccessPurpose CreateInpatientStayParamsXAccessPurpose
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Purpose", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Purpose", valueList[0], &XAccessPurpose, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Purpose", Err: err})
+			return
+		}
+
+		params.XAccessPurpose = &XAccessPurpose
+
+	}
+
+	// ------------- Optional header parameter "X-Access-Reason" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Reason")]; found {
+		var XAccessReason AccessReasonHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Reason", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Reason", valueList[0], &XAccessReason, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Reason", Err: err})
+			return
+		}
+
+		params.XAccessReason = &XAccessReason
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateInpatientStay(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetInpatientStay operation middleware
+func (siw *ServerInterfaceWrapper) GetInpatientStay(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "stayId" -------------
+	var stayId StayId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "stayId", chi.URLParam(r, "stayId"), &stayId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "stayId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetInpatientStayParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-Access-Purpose" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Purpose")]; found {
+		var XAccessPurpose GetInpatientStayParamsXAccessPurpose
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Purpose", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Purpose", valueList[0], &XAccessPurpose, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Purpose", Err: err})
+			return
+		}
+
+		params.XAccessPurpose = &XAccessPurpose
+
+	}
+
+	// ------------- Optional header parameter "X-Access-Reason" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Reason")]; found {
+		var XAccessReason AccessReasonHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Reason", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Reason", valueList[0], &XAccessReason, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Reason", Err: err})
+			return
+		}
+
+		params.XAccessReason = &XAccessReason
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetInpatientStay(w, r, stayId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CancelInpatientStay operation middleware
+func (siw *ServerInterfaceWrapper) CancelInpatientStay(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "stayId" -------------
+	var stayId StayId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "stayId", chi.URLParam(r, "stayId"), &stayId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "stayId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CancelInpatientStayParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-Access-Purpose" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Purpose")]; found {
+		var XAccessPurpose CancelInpatientStayParamsXAccessPurpose
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Purpose", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Purpose", valueList[0], &XAccessPurpose, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Purpose", Err: err})
+			return
+		}
+
+		params.XAccessPurpose = &XAccessPurpose
+
+	}
+
+	// ------------- Optional header parameter "X-Access-Reason" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Reason")]; found {
+		var XAccessReason AccessReasonHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Reason", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Reason", valueList[0], &XAccessReason, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Reason", Err: err})
+			return
+		}
+
+		params.XAccessReason = &XAccessReason
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CancelInpatientStay(w, r, stayId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DischargeInpatientStay operation middleware
+func (siw *ServerInterfaceWrapper) DischargeInpatientStay(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "stayId" -------------
+	var stayId StayId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "stayId", chi.URLParam(r, "stayId"), &stayId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "stayId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DischargeInpatientStayParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-Access-Purpose" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Purpose")]; found {
+		var XAccessPurpose DischargeInpatientStayParamsXAccessPurpose
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Purpose", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Purpose", valueList[0], &XAccessPurpose, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Purpose", Err: err})
+			return
+		}
+
+		params.XAccessPurpose = &XAccessPurpose
+
+	}
+
+	// ------------- Optional header parameter "X-Access-Reason" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Reason")]; found {
+		var XAccessReason AccessReasonHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Reason", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Reason", valueList[0], &XAccessReason, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Reason", Err: err})
+			return
+		}
+
+		params.XAccessReason = &XAccessReason
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DischargeInpatientStay(w, r, stayId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ExtendInpatientStay operation middleware
+func (siw *ServerInterfaceWrapper) ExtendInpatientStay(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "stayId" -------------
+	var stayId StayId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "stayId", chi.URLParam(r, "stayId"), &stayId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "stayId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ExtendInpatientStayParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-Access-Purpose" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Purpose")]; found {
+		var XAccessPurpose ExtendInpatientStayParamsXAccessPurpose
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Purpose", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Purpose", valueList[0], &XAccessPurpose, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Purpose", Err: err})
+			return
+		}
+
+		params.XAccessPurpose = &XAccessPurpose
+
+	}
+
+	// ------------- Optional header parameter "X-Access-Reason" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Reason")]; found {
+		var XAccessReason AccessReasonHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Reason", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Reason", valueList[0], &XAccessReason, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Reason", Err: err})
+			return
+		}
+
+		params.XAccessReason = &XAccessReason
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ExtendInpatientStay(w, r, stayId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetInpatientStayReconciliation operation middleware
+func (siw *ServerInterfaceWrapper) GetInpatientStayReconciliation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "stayId" -------------
+	var stayId StayId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "stayId", chi.URLParam(r, "stayId"), &stayId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "stayId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetInpatientStayReconciliationParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-Access-Purpose" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Purpose")]; found {
+		var XAccessPurpose GetInpatientStayReconciliationParamsXAccessPurpose
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Purpose", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Purpose", valueList[0], &XAccessPurpose, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Purpose", Err: err})
+			return
+		}
+
+		params.XAccessPurpose = &XAccessPurpose
+
+	}
+
+	// ------------- Optional header parameter "X-Access-Reason" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Reason")]; found {
+		var XAccessReason AccessReasonHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Reason", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Reason", valueList[0], &XAccessReason, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Reason", Err: err})
+			return
+		}
+
+		params.XAccessReason = &XAccessReason
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetInpatientStayReconciliation(w, r, stayId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutStaySegments operation middleware
+func (siw *ServerInterfaceWrapper) PutStaySegments(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "stayId" -------------
+	var stayId StayId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "stayId", chi.URLParam(r, "stayId"), &stayId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "stayId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PutStaySegmentsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-Access-Purpose" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Purpose")]; found {
+		var XAccessPurpose PutStaySegmentsParamsXAccessPurpose
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Purpose", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Purpose", valueList[0], &XAccessPurpose, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Purpose", Err: err})
+			return
+		}
+
+		params.XAccessPurpose = &XAccessPurpose
+
+	}
+
+	// ------------- Optional header parameter "X-Access-Reason" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Reason")]; found {
+		var XAccessReason AccessReasonHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Reason", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Reason", valueList[0], &XAccessReason, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Reason", Err: err})
+			return
+		}
+
+		params.XAccessReason = &XAccessReason
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutStaySegments(w, r, stayId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -31210,6 +33093,30 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/medical-reports/{reportId}/usages", wrapper.ListMedicalReportUsages)
 	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/inpatient-stays", wrapper.ListInpatientStays)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/inpatient-stays", wrapper.CreateInpatientStay)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/inpatient-stays/{stayId}", wrapper.GetInpatientStay)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/inpatient-stays/{stayId}/extensions", wrapper.ExtendInpatientStay)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/v1/inpatient-stays/{stayId}/segments", wrapper.PutStaySegments)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/inpatient-stays/{stayId}/discharge", wrapper.DischargeInpatientStay)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/inpatient-stays/{stayId}/cancel", wrapper.CancelInpatientStay)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/inpatient-stays/{stayId}/reconciliation", wrapper.GetInpatientStayReconciliation)
+	})
 
 	return r
 }
@@ -37339,6 +39246,868 @@ func (response ReviewMemberImportRow422ApplicationProblemPlusJSONResponse) Visit
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListInpatientStaysRequestObject struct {
+	Params ListInpatientStaysParams
+}
+
+type ListInpatientStaysResponseObject interface {
+	VisitListInpatientStaysResponse(w http.ResponseWriter) error
+}
+
+type ListInpatientStays200JSONResponse InpatientStayPage
+
+func (response ListInpatientStays200JSONResponse) VisitListInpatientStaysResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListInpatientStays400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListInpatientStays400ApplicationProblemPlusJSONResponse) VisitListInpatientStaysResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListInpatientStays403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListInpatientStays403ApplicationProblemPlusJSONResponse) VisitListInpatientStaysResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListInpatientStays422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListInpatientStays422ApplicationProblemPlusJSONResponse) VisitListInpatientStaysResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateInpatientStayRequestObject struct {
+	Params CreateInpatientStayParams
+	Body   *CreateInpatientStayJSONRequestBody
+}
+
+type CreateInpatientStayResponseObject interface {
+	VisitCreateInpatientStayResponse(w http.ResponseWriter) error
+}
+
+type CreateInpatientStay201ResponseHeaders struct {
+	ETag     *string
+	Location *string
+}
+
+type CreateInpatientStay201JSONResponse struct {
+	Body    InpatientStay
+	Headers CreateInpatientStay201ResponseHeaders
+}
+
+func (response CreateInpatientStay201JSONResponse) VisitCreateInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	if response.Headers.Location != nil {
+		w.Header().Set("Location", fmt.Sprint(*response.Headers.Location))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateInpatientStay403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CreateInpatientStay403ApplicationProblemPlusJSONResponse) VisitCreateInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateInpatientStay404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CreateInpatientStay404ApplicationProblemPlusJSONResponse) VisitCreateInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateInpatientStay409ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateInpatientStay409ApplicationProblemPlusJSONResponse) VisitCreateInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateInpatientStay422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CreateInpatientStay422ApplicationProblemPlusJSONResponse) VisitCreateInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateInpatientStay429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response CreateInpatientStay429ApplicationProblemPlusJSONResponse) VisitCreateInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetInpatientStayRequestObject struct {
+	StayId StayId `json:"stayId"`
+	Params GetInpatientStayParams
+}
+
+type GetInpatientStayResponseObject interface {
+	VisitGetInpatientStayResponse(w http.ResponseWriter) error
+}
+
+type GetInpatientStay200ResponseHeaders struct {
+	ETag *string
+}
+
+type GetInpatientStay200JSONResponse struct {
+	Body    InpatientStay
+	Headers GetInpatientStay200ResponseHeaders
+}
+
+func (response GetInpatientStay200JSONResponse) VisitGetInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetInpatientStay403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetInpatientStay403ApplicationProblemPlusJSONResponse) VisitGetInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetInpatientStay404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetInpatientStay404ApplicationProblemPlusJSONResponse) VisitGetInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetInpatientStay422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response GetInpatientStay422ApplicationProblemPlusJSONResponse) VisitGetInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetInpatientStay428ApplicationProblemPlusJSONResponse Problem
+
+func (response GetInpatientStay428ApplicationProblemPlusJSONResponse) VisitGetInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelInpatientStayRequestObject struct {
+	StayId StayId `json:"stayId"`
+	Params CancelInpatientStayParams
+	Body   *CancelInpatientStayJSONRequestBody
+}
+
+type CancelInpatientStayResponseObject interface {
+	VisitCancelInpatientStayResponse(w http.ResponseWriter) error
+}
+
+type CancelInpatientStay200ResponseHeaders struct {
+	ETag *string
+}
+
+type CancelInpatientStay200JSONResponse struct {
+	Body    InpatientStay
+	Headers CancelInpatientStay200ResponseHeaders
+}
+
+func (response CancelInpatientStay200JSONResponse) VisitCancelInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelInpatientStay403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CancelInpatientStay403ApplicationProblemPlusJSONResponse) VisitCancelInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelInpatientStay404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CancelInpatientStay404ApplicationProblemPlusJSONResponse) VisitCancelInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelInpatientStay409ApplicationProblemPlusJSONResponse Problem
+
+func (response CancelInpatientStay409ApplicationProblemPlusJSONResponse) VisitCancelInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelInpatientStay412ApplicationProblemPlusJSONResponse Problem
+
+func (response CancelInpatientStay412ApplicationProblemPlusJSONResponse) VisitCancelInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelInpatientStay422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CancelInpatientStay422ApplicationProblemPlusJSONResponse) VisitCancelInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelInpatientStay428ApplicationProblemPlusJSONResponse Problem
+
+func (response CancelInpatientStay428ApplicationProblemPlusJSONResponse) VisitCancelInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DischargeInpatientStayRequestObject struct {
+	StayId StayId `json:"stayId"`
+	Params DischargeInpatientStayParams
+	Body   *DischargeInpatientStayJSONRequestBody
+}
+
+type DischargeInpatientStayResponseObject interface {
+	VisitDischargeInpatientStayResponse(w http.ResponseWriter) error
+}
+
+type DischargeInpatientStay200ResponseHeaders struct {
+	ETag *string
+}
+
+type DischargeInpatientStay200JSONResponse struct {
+	Body    InpatientStay
+	Headers DischargeInpatientStay200ResponseHeaders
+}
+
+func (response DischargeInpatientStay200JSONResponse) VisitDischargeInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DischargeInpatientStay403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DischargeInpatientStay403ApplicationProblemPlusJSONResponse) VisitDischargeInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DischargeInpatientStay404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response DischargeInpatientStay404ApplicationProblemPlusJSONResponse) VisitDischargeInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DischargeInpatientStay409ApplicationProblemPlusJSONResponse Problem
+
+func (response DischargeInpatientStay409ApplicationProblemPlusJSONResponse) VisitDischargeInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DischargeInpatientStay412ApplicationProblemPlusJSONResponse Problem
+
+func (response DischargeInpatientStay412ApplicationProblemPlusJSONResponse) VisitDischargeInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DischargeInpatientStay422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response DischargeInpatientStay422ApplicationProblemPlusJSONResponse) VisitDischargeInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DischargeInpatientStay428ApplicationProblemPlusJSONResponse Problem
+
+func (response DischargeInpatientStay428ApplicationProblemPlusJSONResponse) VisitDischargeInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExtendInpatientStayRequestObject struct {
+	StayId StayId `json:"stayId"`
+	Params ExtendInpatientStayParams
+	Body   *ExtendInpatientStayJSONRequestBody
+}
+
+type ExtendInpatientStayResponseObject interface {
+	VisitExtendInpatientStayResponse(w http.ResponseWriter) error
+}
+
+type ExtendInpatientStay200ResponseHeaders struct {
+	ETag *string
+}
+
+type ExtendInpatientStay200JSONResponse struct {
+	Body    InpatientStay
+	Headers ExtendInpatientStay200ResponseHeaders
+}
+
+func (response ExtendInpatientStay200JSONResponse) VisitExtendInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExtendInpatientStay403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ExtendInpatientStay403ApplicationProblemPlusJSONResponse) VisitExtendInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExtendInpatientStay404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ExtendInpatientStay404ApplicationProblemPlusJSONResponse) VisitExtendInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExtendInpatientStay409ApplicationProblemPlusJSONResponse Problem
+
+func (response ExtendInpatientStay409ApplicationProblemPlusJSONResponse) VisitExtendInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExtendInpatientStay412ApplicationProblemPlusJSONResponse Problem
+
+func (response ExtendInpatientStay412ApplicationProblemPlusJSONResponse) VisitExtendInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExtendInpatientStay422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ExtendInpatientStay422ApplicationProblemPlusJSONResponse) VisitExtendInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExtendInpatientStay428ApplicationProblemPlusJSONResponse Problem
+
+func (response ExtendInpatientStay428ApplicationProblemPlusJSONResponse) VisitExtendInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetInpatientStayReconciliationRequestObject struct {
+	StayId StayId `json:"stayId"`
+	Params GetInpatientStayReconciliationParams
+}
+
+type GetInpatientStayReconciliationResponseObject interface {
+	VisitGetInpatientStayReconciliationResponse(w http.ResponseWriter) error
+}
+
+type GetInpatientStayReconciliation200JSONResponse StayReconciliation
+
+func (response GetInpatientStayReconciliation200JSONResponse) VisitGetInpatientStayReconciliationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetInpatientStayReconciliation403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetInpatientStayReconciliation403ApplicationProblemPlusJSONResponse) VisitGetInpatientStayReconciliationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetInpatientStayReconciliation404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetInpatientStayReconciliation404ApplicationProblemPlusJSONResponse) VisitGetInpatientStayReconciliationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetInpatientStayReconciliation409ApplicationProblemPlusJSONResponse Problem
+
+func (response GetInpatientStayReconciliation409ApplicationProblemPlusJSONResponse) VisitGetInpatientStayReconciliationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetInpatientStayReconciliation422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response GetInpatientStayReconciliation422ApplicationProblemPlusJSONResponse) VisitGetInpatientStayReconciliationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutStaySegmentsRequestObject struct {
+	StayId StayId `json:"stayId"`
+	Params PutStaySegmentsParams
+	Body   *PutStaySegmentsJSONRequestBody
+}
+
+type PutStaySegmentsResponseObject interface {
+	VisitPutStaySegmentsResponse(w http.ResponseWriter) error
+}
+
+type PutStaySegments200ResponseHeaders struct {
+	ETag *string
+}
+
+type PutStaySegments200JSONResponse struct {
+	Body    InpatientStay
+	Headers PutStaySegments200ResponseHeaders
+}
+
+func (response PutStaySegments200JSONResponse) VisitPutStaySegmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutStaySegments403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response PutStaySegments403ApplicationProblemPlusJSONResponse) VisitPutStaySegmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutStaySegments404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response PutStaySegments404ApplicationProblemPlusJSONResponse) VisitPutStaySegmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutStaySegments409ApplicationProblemPlusJSONResponse Problem
+
+func (response PutStaySegments409ApplicationProblemPlusJSONResponse) VisitPutStaySegmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutStaySegments412ApplicationProblemPlusJSONResponse Problem
+
+func (response PutStaySegments412ApplicationProblemPlusJSONResponse) VisitPutStaySegmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutStaySegments422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response PutStaySegments422ApplicationProblemPlusJSONResponse) VisitPutStaySegmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutStaySegments428ApplicationProblemPlusJSONResponse Problem
+
+func (response PutStaySegments428ApplicationProblemPlusJSONResponse) VisitPutStaySegmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -50621,6 +53390,30 @@ type StrictServerInterface interface {
 	// (POST /api/v1/imports/members/{importId}/rows/{rowId}/review)
 	ReviewMemberImportRow(ctx context.Context, request ReviewMemberImportRowRequestObject) (ReviewMemberImportRowResponseObject, error)
 
+	// (GET /api/v1/inpatient-stays)
+	ListInpatientStays(ctx context.Context, request ListInpatientStaysRequestObject) (ListInpatientStaysResponseObject, error)
+
+	// (POST /api/v1/inpatient-stays)
+	CreateInpatientStay(ctx context.Context, request CreateInpatientStayRequestObject) (CreateInpatientStayResponseObject, error)
+
+	// (GET /api/v1/inpatient-stays/{stayId})
+	GetInpatientStay(ctx context.Context, request GetInpatientStayRequestObject) (GetInpatientStayResponseObject, error)
+
+	// (POST /api/v1/inpatient-stays/{stayId}/cancel)
+	CancelInpatientStay(ctx context.Context, request CancelInpatientStayRequestObject) (CancelInpatientStayResponseObject, error)
+
+	// (POST /api/v1/inpatient-stays/{stayId}/discharge)
+	DischargeInpatientStay(ctx context.Context, request DischargeInpatientStayRequestObject) (DischargeInpatientStayResponseObject, error)
+
+	// (POST /api/v1/inpatient-stays/{stayId}/extensions)
+	ExtendInpatientStay(ctx context.Context, request ExtendInpatientStayRequestObject) (ExtendInpatientStayResponseObject, error)
+
+	// (GET /api/v1/inpatient-stays/{stayId}/reconciliation)
+	GetInpatientStayReconciliation(ctx context.Context, request GetInpatientStayReconciliationRequestObject) (GetInpatientStayReconciliationResponseObject, error)
+
+	// (PUT /api/v1/inpatient-stays/{stayId}/segments)
+	PutStaySegments(ctx context.Context, request PutStaySegmentsRequestObject) (PutStaySegmentsResponseObject, error)
+
 	// (POST /api/v1/legal-holds)
 	PutLegalHold(ctx context.Context, request PutLegalHoldRequestObject) (PutLegalHoldResponseObject, error)
 
@@ -53271,6 +56064,258 @@ func (sh *strictHandler) ReviewMemberImportRow(w http.ResponseWriter, r *http.Re
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ReviewMemberImportRowResponseObject); ok {
 		if err := validResponse.VisitReviewMemberImportRowResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListInpatientStays operation middleware
+func (sh *strictHandler) ListInpatientStays(w http.ResponseWriter, r *http.Request, params ListInpatientStaysParams) {
+	var request ListInpatientStaysRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListInpatientStays(ctx, request.(ListInpatientStaysRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListInpatientStays")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListInpatientStaysResponseObject); ok {
+		if err := validResponse.VisitListInpatientStaysResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateInpatientStay operation middleware
+func (sh *strictHandler) CreateInpatientStay(w http.ResponseWriter, r *http.Request, params CreateInpatientStayParams) {
+	var request CreateInpatientStayRequestObject
+
+	request.Params = params
+
+	var body CreateInpatientStayJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateInpatientStay(ctx, request.(CreateInpatientStayRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateInpatientStay")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateInpatientStayResponseObject); ok {
+		if err := validResponse.VisitCreateInpatientStayResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetInpatientStay operation middleware
+func (sh *strictHandler) GetInpatientStay(w http.ResponseWriter, r *http.Request, stayId StayId, params GetInpatientStayParams) {
+	var request GetInpatientStayRequestObject
+
+	request.StayId = stayId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetInpatientStay(ctx, request.(GetInpatientStayRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetInpatientStay")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetInpatientStayResponseObject); ok {
+		if err := validResponse.VisitGetInpatientStayResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CancelInpatientStay operation middleware
+func (sh *strictHandler) CancelInpatientStay(w http.ResponseWriter, r *http.Request, stayId StayId, params CancelInpatientStayParams) {
+	var request CancelInpatientStayRequestObject
+
+	request.StayId = stayId
+	request.Params = params
+
+	var body CancelInpatientStayJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CancelInpatientStay(ctx, request.(CancelInpatientStayRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CancelInpatientStay")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CancelInpatientStayResponseObject); ok {
+		if err := validResponse.VisitCancelInpatientStayResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DischargeInpatientStay operation middleware
+func (sh *strictHandler) DischargeInpatientStay(w http.ResponseWriter, r *http.Request, stayId StayId, params DischargeInpatientStayParams) {
+	var request DischargeInpatientStayRequestObject
+
+	request.StayId = stayId
+	request.Params = params
+
+	var body DischargeInpatientStayJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DischargeInpatientStay(ctx, request.(DischargeInpatientStayRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DischargeInpatientStay")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DischargeInpatientStayResponseObject); ok {
+		if err := validResponse.VisitDischargeInpatientStayResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ExtendInpatientStay operation middleware
+func (sh *strictHandler) ExtendInpatientStay(w http.ResponseWriter, r *http.Request, stayId StayId, params ExtendInpatientStayParams) {
+	var request ExtendInpatientStayRequestObject
+
+	request.StayId = stayId
+	request.Params = params
+
+	var body ExtendInpatientStayJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ExtendInpatientStay(ctx, request.(ExtendInpatientStayRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ExtendInpatientStay")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ExtendInpatientStayResponseObject); ok {
+		if err := validResponse.VisitExtendInpatientStayResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetInpatientStayReconciliation operation middleware
+func (sh *strictHandler) GetInpatientStayReconciliation(w http.ResponseWriter, r *http.Request, stayId StayId, params GetInpatientStayReconciliationParams) {
+	var request GetInpatientStayReconciliationRequestObject
+
+	request.StayId = stayId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetInpatientStayReconciliation(ctx, request.(GetInpatientStayReconciliationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetInpatientStayReconciliation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetInpatientStayReconciliationResponseObject); ok {
+		if err := validResponse.VisitGetInpatientStayReconciliationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutStaySegments operation middleware
+func (sh *strictHandler) PutStaySegments(w http.ResponseWriter, r *http.Request, stayId StayId, params PutStaySegmentsParams) {
+	var request PutStaySegmentsRequestObject
+
+	request.StayId = stayId
+	request.Params = params
+
+	var body PutStaySegmentsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutStaySegments(ctx, request.(PutStaySegmentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutStaySegments")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutStaySegmentsResponseObject); ok {
+		if err := validResponse.VisitPutStaySegmentsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

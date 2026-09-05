@@ -232,6 +232,48 @@ func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) 
 	case errors.Is(err, application.ErrReportCaseNotFound):
 		problem(w, r, http.StatusNotFound, "health-cases/not-found", "HEALTH_CASE_NOT_FOUND",
 			"Sağlık vakası bulunamadı", "")
+	case errors.Is(err, application.ErrStayNotFound):
+		problem(w, r, http.StatusNotFound, "inpatient-stays/not-found", "INPATIENT_STAY_NOT_FOUND",
+			"Yatış kaydı bulunamadı", "")
+	case errors.Is(err, application.ErrExtensionNotFound):
+		problem(w, r, http.StatusNotFound, "inpatient-stays/extension-not-found",
+			"STAY_EXTENSION_NOT_FOUND", "Yatış uzatma kaydı bulunamadı", "")
+	case errors.Is(err, application.ErrStayAlreadyOpen):
+		// The rule the whole package exists for, as the caller hears it. 409 rather than
+		// 422: nothing about the request is malformed, there is simply already an admission
+		// running, and the second one would reserve the same entitlement twice.
+		problem(w, r, http.StatusConflict, "inpatient-stays/already-open",
+			"INPATIENT_STAY_ALREADY_OPEN", "Bu vakada bu sağlayıcıda açık bir yatış var",
+			"Yeni yatış açmadan önce mevcut yatışı taburcu edin ya da iptal edin.")
+	case errors.Is(err, application.ErrStayExtensionPending):
+		problem(w, r, http.StatusConflict, "inpatient-stays/extension-pending",
+			"STAY_EXTENSION_PENDING", "Karara bağlanmamış bir uzatma talebi var",
+			"Yeni uzatma istemeden önce bekleyen uzatmanın sonuçlanmasını bekleyin.")
+	case errors.Is(err, application.ErrAdmissionOutOfWindow):
+		problem(w, r, http.StatusUnprocessableEntity, "inpatient-stays/admission-window",
+			"ADMISSION_DATE_OUT_OF_WINDOW", "Yatış tarihi izin verilen aralığın dışında",
+			"Geriye ve ileriye dönük yatış tarihi sınırları tenant ayarlarında belirlenir.")
+	case errors.Is(err, application.ErrStayTransitionInvalid):
+		problem(w, r, http.StatusConflict, "inpatient-stays/transition-invalid",
+			"INPATIENT_STAY_TRANSITION_INVALID", "Yatış bu durumda bu işleme uygun değil", "")
+	case errors.Is(err, application.ErrStayCaseClosed):
+		problem(w, r, http.StatusConflict, "health-cases/closed", "HEALTH_CASE_CLOSED",
+			"Sağlık vakası kapalı", "Kapanmış bir vakaya yatış eklenemez.")
+	case errors.Is(err, application.ErrSegmentOverlap):
+		problem(w, r, http.StatusConflict, "inpatient-stays/segment-overlap",
+			"STAY_SEGMENT_OVERLAP", "Segmentler aynı saatleri paylaşamaz",
+			"Refakatçi dışındaki segmentler çakışamaz; devir anında biri bitip diğeri başlamalı.")
+	case errors.Is(err, application.ErrAdmissionServiceUnknown):
+		problem(w, r, http.StatusUnprocessableEntity, "inpatient-stays/admission-service-unknown",
+			"INPATIENT_ADMISSION_SERVICE_UNKNOWN", "Yatış hizmet tanımı katalogda bulunamadı",
+			"Katalogda etkin bir INPATIENT_DAY hizmet tanımı olmalı.")
+	case errors.Is(err, application.ErrAdmissionDiagnosisMismatch):
+		problem(w, r, http.StatusUnprocessableEntity, "inpatient-stays/diagnosis-mismatch",
+			"INPATIENT_STAY_DIAGNOSIS_MISMATCH", "Yatış tanısı bu vakaya ait değil", "")
+	case errors.Is(err, application.ErrStayNotDischarged):
+		problem(w, r, http.StatusConflict, "inpatient-stays/not-discharged",
+			"INPATIENT_STAY_NOT_DISCHARGED", "Yatış henüz taburcu edilmedi",
+			"Mutabakat yalnızca taburcu edilmiş bir yatış için hesaplanır.")
 	case errors.Is(err, application.ErrVersionMismatch):
 		problem(w, r, http.StatusPreconditionFailed, "generic/etag-mismatch", "ETAG_MISMATCH",
 			"Kayıt bu arada değişti", "Güncel sürümü alıp değişikliğinizi yeniden uygulayın.")

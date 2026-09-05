@@ -727,6 +727,33 @@ type HealthHealthCase struct {
 	RowVersion             int64
 }
 
+type HealthInpatientStay struct {
+	ID                      uuid.UUID
+	TenantID                uuid.UUID
+	CaseID                  uuid.UUID
+	ProviderOrganizationID  uuid.UUID
+	LocationID              uuid.NullUUID
+	AttendingPractitionerID uuid.NullUUID
+	AdmissionAt             time.Time
+	EstimatedDays           int32
+	ExpectedDischargeAt     time.Time
+	DischargeAt             *time.Time
+	Status                  string
+	ServiceRequestID        uuid.UUID
+	AuthorizationID         uuid.NullUUID
+	AdmissionDiagnosisID    uuid.NullUUID
+	AuthorizedDays          pgtype.Numeric
+	ActualDays              pgtype.Numeric
+	ReleasedDays            pgtype.Numeric
+	OverAuthorization       bool
+	CancelReasonCode        *string
+	CreatedAt               time.Time
+	CreatedBy               uuid.NullUUID
+	UpdatedAt               time.Time
+	UpdatedBy               uuid.NullUUID
+	RowVersion              int64
+}
+
 type HealthMedicalReport struct {
 	ID                            uuid.UUID
 	TenantID                      uuid.UUID
@@ -782,6 +809,40 @@ type HealthMedicalReportUsage struct {
 	UsedByID   uuid.UUID
 	UsedAt     time.Time
 	CreatedBy  uuid.NullUUID
+}
+
+type HealthStayExtension struct {
+	ID               uuid.UUID
+	TenantID         uuid.UUID
+	StayID           uuid.UUID
+	SequenceNo       int32
+	AdditionalDays   int32
+	ReasonCode       string
+	ReasonText       *string
+	ServiceRequestID uuid.UUID
+	AuthorizationID  uuid.NullUUID
+	Status           string
+	CreatedAt        time.Time
+	CreatedBy        uuid.NullUUID
+	UpdatedAt        time.Time
+	UpdatedBy        uuid.NullUUID
+	RowVersion       int64
+}
+
+type HealthStaySegment struct {
+	ID          uuid.UUID
+	TenantID    uuid.UUID
+	StayID      uuid.UUID
+	SegmentType string
+	StartsAt    time.Time
+	EndsAt      *time.Time
+	RoomCode    *string
+	BedCode     *string
+	CreatedAt   time.Time
+	CreatedBy   uuid.NullUUID
+	UpdatedAt   time.Time
+	UpdatedBy   uuid.NullUUID
+	RowVersion  int64
 }
 
 type IamAccessGrant struct {

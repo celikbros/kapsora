@@ -181,3 +181,90 @@ func reportOf(r medicalReport) application.ReportRecord {
 		CreatedAt: r.CreatedAt, RowVersion: r.RowVersion, CaseSensitivity: r.CaseSensitivity,
 	}
 }
+
+// The four reads of health.inpatient_stay select the same columns and sqlc gives each of them
+// its own row type; the extensions do the same. They are narrowed to one shape here and
+// mapped once, for the same reason the case rows above are: a column carried in one read and
+// dropped in another would be a field that silently stopped arriving in half the endpoints,
+// and here one of those fields is what the projection decides on.
+
+type inpatientStay struct {
+	ID                      uuid.UUID
+	CaseID                  uuid.UUID
+	ProviderOrganizationID  uuid.UUID
+	LocationID              uuid.NullUUID
+	AttendingPractitionerID uuid.NullUUID
+	AdmissionAt             time.Time
+	EstimatedDays           int32
+	ExpectedDischargeAt     time.Time
+	DischargeAt             *time.Time
+	Status                  string
+	ServiceRequestID        uuid.UUID
+	AuthorizationID         uuid.NullUUID
+	AdmissionDiagnosisID    uuid.NullUUID
+	AuthorizedDays          string
+	ActualDays              string
+	ReleasedDays            string
+	OverAuthorization       bool
+	CancelReasonCode        *string
+	CreatedAt               time.Time
+	RowVersion              int64
+	CaseSensitivity         string
+	PersonID                uuid.UUID
+}
+
+func fetchedStayRow(r sqlcgen.GetInpatientStayRow) inpatientStay  { return inpatientStay(r) }
+func lockedStayRow(r sqlcgen.LockInpatientStayRow) inpatientStay  { return inpatientStay(r) }
+func listedStayRow(r sqlcgen.ListInpatientStaysRow) inpatientStay { return inpatientStay(r) }
+
+func lockedStayByRequestRow(r sqlcgen.LockInpatientStayByRequestRow) inpatientStay {
+	return inpatientStay(r)
+}
+
+func stayOf(r inpatientStay) application.StayRecord {
+	return application.StayRecord{
+		ID: r.ID, CaseID: r.CaseID, PersonID: r.PersonID,
+		ProviderOrganizationID: r.ProviderOrganizationID, LocationID: uuidPtr(r.LocationID),
+		AttendingPractitionerID: uuidPtr(r.AttendingPractitionerID),
+		AdmissionAt:             r.AdmissionAt, EstimatedDays: int(r.EstimatedDays),
+		ExpectedDischargeAt: r.ExpectedDischargeAt, DischargeAt: r.DischargeAt,
+		Status: r.Status, ServiceRequestID: r.ServiceRequestID,
+		AuthorizationID:      uuidPtr(r.AuthorizationID),
+		AdmissionDiagnosisID: uuidPtr(r.AdmissionDiagnosisID),
+		AuthorizedDays:       r.AuthorizedDays, ActualDays: r.ActualDays,
+		ReleasedDays: r.ReleasedDays, OverAuthorization: r.OverAuthorization,
+		CancelReasonCode: r.CancelReasonCode, CreatedAt: r.CreatedAt,
+		RowVersion: r.RowVersion, CaseSensitivity: r.CaseSensitivity,
+	}
+}
+
+type stayExtension struct {
+	ID               uuid.UUID
+	StayID           uuid.UUID
+	SequenceNo       int32
+	AdditionalDays   int32
+	ReasonCode       string
+	ReasonText       *string
+	ServiceRequestID uuid.UUID
+	AuthorizationID  uuid.NullUUID
+	Status           string
+	CreatedAt        time.Time
+	RowVersion       int64
+}
+
+func createdExtensionRow(r sqlcgen.CreateStayExtensionRow) stayExtension { return stayExtension(r) }
+func listedExtensionRow(r sqlcgen.ListStayExtensionsRow) stayExtension   { return stayExtension(r) }
+
+func lockedExtensionRow(r sqlcgen.LockStayExtensionByRequestRow) stayExtension {
+	return stayExtension(r)
+}
+
+func extensionOf(r stayExtension) application.StayExtensionRecord {
+	return application.StayExtensionRecord{
+		ID: r.ID, StayID: r.StayID, SequenceNo: int(r.SequenceNo),
+		AdditionalDays: int(r.AdditionalDays), ReasonCode: r.ReasonCode,
+		ReasonText: r.ReasonText, ServiceRequestID: r.ServiceRequestID,
+		AuthorizationID: uuidPtr(r.AuthorizationID), Status: r.Status,
+		CreatedAt: r.CreatedAt, RowVersion: r.RowVersion,
+	}
+}

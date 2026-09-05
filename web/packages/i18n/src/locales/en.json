@@ -315,7 +315,17 @@
     "MEDICAL_REPORT_DOCUMENT_REQUIRED": "A report cannot be submitted before its file is uploaded and scanned.",
     "MEDICAL_REPORT_SUPERSEDES_INVALID": "This report cannot be corrected; only the newest decided version of a chain can be.",
     "MEDICAL_REPORT_SERVICE_UNKNOWN": "The service definition was not found in the catalogue.",
-    "MEDICAL_REPORT_CASE_MISMATCH": "The selected case belongs to another member."
+    "MEDICAL_REPORT_CASE_MISMATCH": "The selected case belongs to another member.",
+    "INPATIENT_STAY_NOT_FOUND": "The inpatient stay was not found, or is not visible in this organization.",
+    "STAY_EXTENSION_NOT_FOUND": "The stay extension was not found.",
+    "INPATIENT_STAY_ALREADY_OPEN": "This case already has an open stay at this provider. Discharge or cancel it before opening another.",
+    "STAY_EXTENSION_PENDING": "An earlier extension has not been decided. Wait for it before asking for another.",
+    "ADMISSION_DATE_OUT_OF_WINDOW": "The admission date is outside the allowed window. The backdating and future-dating limits are tenant settings.",
+    "INPATIENT_STAY_TRANSITION_INVALID": "That action is not possible while the stay is in this state.",
+    "STAY_SEGMENT_OVERLAP": "Two segments cannot claim the same hours. Only a companion may overlap the patient's own segment.",
+    "INPATIENT_ADMISSION_SERVICE_UNKNOWN": "The inpatient admission service was not found in the catalogue; an active INPATIENT_DAY definition is required.",
+    "INPATIENT_STAY_DIAGNOSIS_MISMATCH": "The admission diagnosis does not belong to this case.",
+    "INPATIENT_STAY_NOT_DISCHARGED": "The stay has not been discharged; a reconciliation exists only after discharge."
   },
   "fieldErrors": {
     "RULE_COMPILE_FAILED": "The rule condition did not compile",

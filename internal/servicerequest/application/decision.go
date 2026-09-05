@@ -146,6 +146,11 @@ func (s *Service) Reject(ctx context.Context, rc identity.RequestContext, id uui
 		if err := s.notifyDecided(ctx, tx, rc, current, domain.StatusRejected); err != nil {
 			return err
 		}
+		// And anything hanging off this request hears about it, without this package
+		// knowing what that is. An inpatient stay (WP-I5-03) is refused here.
+		if err := s.publishDecided(ctx, tx, rc, current, domain.StatusRejected); err != nil {
+			return err
+		}
 		out, err = s.reload(ctx, tx, rc.TenantID, id, scopeOf(rc))
 		return err
 	})
@@ -208,6 +213,12 @@ func (s *Service) decide(ctx context.Context, rc identity.RequestContext, id uui
 			return err
 		}
 		if err := s.notifyDecided(ctx, tx, rc, current, status); err != nil {
+			return err
+		}
+		// The same event a rejection publishes, with the status it landed on. An inpatient
+		// stay becomes AUTHORIZED off the back of this one, with an authorization taken for
+		// the days the reviewer actually approved.
+		if err := s.publishDecided(ctx, tx, rc, current, status); err != nil {
 			return err
 		}
 		out, err = s.reload(ctx, tx, rc.TenantID, id, scopeOf(rc))

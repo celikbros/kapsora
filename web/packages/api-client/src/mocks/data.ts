@@ -985,6 +985,79 @@ export interface StoredMedicalReportService {
 
 export type StoredMedicalReportUsage = Schemas['MedicalReportUsage'] & { tenantId: string };
 
+/**
+ * One health.inpatient_stay row, with every column the database has. The projection is
+ * applied when the handlers answer, in one place, exactly as the Go repository leaves it to
+ * the service.
+ *
+ * A stay has no sensitivity of its own: it is as sensitive as the case it hangs off, which is
+ * why there is no `sensitivity` column here — the same reason a medical report has none.
+ *
+ * The three day counts are exact decimals as strings and are null until there is something to
+ * say: `authorizedDays` until the request is decided, `actualDays` and `releasedDays` until
+ * the discharge.
+ */
+export interface StoredInpatientStay {
+  id: string;
+  tenantId: string;
+  caseId: string;
+  personId: string;
+  providerOrganizationId: string;
+  locationId: string | null;
+  attendingPractitionerId: string | null;
+  admissionAt: string;
+  estimatedDays: number;
+  expectedDischargeAt: string;
+  dischargeAt: string | null;
+  status: Schemas['InpatientStayStatus'];
+  serviceRequestId: string;
+  authorizationId: string | null;
+  /** Clinical: that an admission has a recorded diagnosis at all is a fact about the patient. */
+  admissionDiagnosisId: string | null;
+  authorizedDays: string | null;
+  actualDays: string | null;
+  releasedDays: string | null;
+  overAuthorization: boolean;
+  cancelReasonCode: string | null;
+  createdAt: string;
+  rowVersion: number;
+}
+
+/** One health.stay_extension row. `reasonText` is clinical; the code and the days are not. */
+export interface StoredStayExtension {
+  id: string;
+  tenantId: string;
+  stayId: string;
+  sequenceNo: number;
+  additionalDays: number;
+  reasonCode: string;
+  /** Clinical: served only in the clinical projection. */
+  reasonText: string | null;
+  serviceRequestId: string;
+  authorizationId: string | null;
+  status: Schemas['StayExtensionStatus'];
+  createdAt: string;
+  rowVersion: number;
+}
+
+/**
+ * One health.stay_segment row. Nothing here is clinical in the projection's sense: where
+ * somebody slept and for how long is what a claim is priced from, and a claims reviewer who
+ * could not see an intensive care night could not check the bill for one.
+ */
+export interface StoredStaySegment {
+  id: string;
+  tenantId: string;
+  stayId: string;
+  segmentType: Schemas['StaySegmentType'];
+  startsAt: string;
+  endsAt: string | null;
+  roomCode: string | null;
+  bedCode: string | null;
+  createdAt: string;
+  rowVersion: number;
+}
+
 export type ScanVerdict = 'CLEAN' | 'INFECTED' | 'FAILED';
 
 /** Reference catalogs; tenant-independent so every tenant sees the same options. */
@@ -1364,6 +1437,15 @@ export interface MockWorld {
    * which version of a report. Append-only in the schema and treated as append-only here.
    */
   medicalReportUsages: StoredMedicalReportUsage[];
+  /**
+   * The inpatient stay, its extensions and its segments (WP-I5-03). They are three arrays
+   * rather than one nested shape because that is what the schema is: an extension and a
+   * segment each have their own lifecycle, and a screen pages the stays without ever loading
+   * every segment of every one of them.
+   */
+  inpatientStays: StoredInpatientStay[];
+  stayExtensions: StoredStayExtension[];
+  staySegments: StoredStaySegment[];
   /**
    * Moves a document on from SCANNING the way the scan worker does. It is the mock's
    * stand-in for the worker, so a screen can show "taranıyor" and then a verdict without
@@ -4028,6 +4110,91 @@ export function buildWorld(
     usedAt: isoDaysAgo(base, 10),
   });
 
+  // The inpatient stay (WP-I5-03), appended at the very end for the same reason the medical
+  // reports are: `buildWorld` runs off one seeded random stream, and an id drawn earlier
+  // would change which organizations a small world gets and break four unrelated app tests.
+  //
+  // One admitted stay, because that is the state a screen has the most to draw: a ward night
+  // followed by an intensive care night, and one extension a reviewer has already approved.
+  // Its preauthorization is the fixture's own approved request rather than a request invented
+  // here — a stay whose request page 404s would be a fixture that teaches a screen to link
+  // nowhere.
+  const stayRequest = serviceRequests.find(
+    (r) => r.tenantId === demoA.id && r.status === 'APPROVED',
+  )!;
+  const stayAdmissionAt = isoDaysAgo(base, 6);
+  const inpatientStay: StoredInpatientStay = {
+    id: nextId(-6 * 86_400_000),
+    tenantId: demoA.id,
+    caseId: caseStandard.id,
+    personId: familyPrincipal.id,
+    providerOrganizationId: providerRel.id,
+    locationId: locationIstanbul.id,
+    attendingPractitionerId: practitioners[0]!.id,
+    admissionAt: stayAdmissionAt,
+    estimatedDays: 4,
+    // Four days asked for, five authorized: the approved extension below added the fifth,
+    // and the expected discharge moved with it.
+    expectedDischargeAt: isoDaysAgo(base, -1),
+    dischargeAt: null,
+    status: 'ADMITTED',
+    serviceRequestId: stayRequest.id,
+    authorizationId: nextId(),
+    admissionDiagnosisId: null,
+    authorizedDays: '5',
+    actualDays: null,
+    releasedDays: null,
+    overAuthorization: false,
+    cancelReasonCode: null,
+    createdAt: stayAdmissionAt,
+    rowVersion: 4,
+  };
+  const inpatientStays: StoredInpatientStay[] = [inpatientStay];
+  const stayExtensions: StoredStayExtension[] = [
+    {
+      id: nextId(-4 * 86_400_000),
+      tenantId: demoA.id,
+      stayId: inpatientStay.id,
+      sequenceNo: 1,
+      additionalDays: 1,
+      reasonCode: 'COMPLICATION',
+      reasonText: 'Ateş devam ettiği için bir gün daha gözlem gerekiyor.',
+      serviceRequestId: stayRequest.id,
+      authorizationId: nextId(),
+      status: 'APPROVED',
+      createdAt: isoDaysAgo(base, 4),
+      rowVersion: 2,
+    },
+  ];
+  // Two segments, meeting rather than overlapping: a transfer from the ward to intensive
+  // care. The second is open, because the patient is still there.
+  const staySegments: StoredStaySegment[] = [
+    {
+      id: nextId(-6 * 86_400_000),
+      tenantId: demoA.id,
+      stayId: inpatientStay.id,
+      segmentType: 'WARD',
+      startsAt: stayAdmissionAt,
+      endsAt: isoDaysAgo(base, 4),
+      roomCode: 'A-214',
+      bedCode: '1',
+      createdAt: stayAdmissionAt,
+      rowVersion: 1,
+    },
+    {
+      id: nextId(-4 * 86_400_000),
+      tenantId: demoA.id,
+      stayId: inpatientStay.id,
+      segmentType: 'ICU',
+      startsAt: isoDaysAgo(base, 4),
+      endsAt: null,
+      roomCode: 'YB-3',
+      bedCode: '2',
+      createdAt: isoDaysAgo(base, 4),
+      rowVersion: 1,
+    },
+  ];
+
   return {
     tenants,
     accounts,
@@ -4088,6 +4255,9 @@ export function buildWorld(
     medicalReports,
     medicalReportServices,
     medicalReportUsages,
+    inpatientStays,
+    stayExtensions,
+    staySegments,
     advanceScan,
     nextId,
     random,

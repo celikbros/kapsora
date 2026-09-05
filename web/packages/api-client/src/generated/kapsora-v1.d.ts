@@ -1300,6 +1300,227 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/inpatient-stays": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Admissions, newest first. Each row is served in the projection the caller has earned:
+         *     a caller without `health.clinical.read`, or one reading a sensitive case without
+         *     `health.sensitive.read`, gets the financial half — every date, every figure of the
+         *     reconciliation and every segment, and no `admissionDiagnosisId` and no extension
+         *     reason text.
+         *
+         *     A list never answers 428. Refusing the whole page over one sensitive row would make it
+         *     useless, and refusing that one row would say which row is sensitive.
+         */
+        get: operations["listInpatientStays"];
+        put?: never;
+        /**
+         * @description Asks for an admission. One transaction does all of it: the admission date is checked
+         *     against the tenant's backdating and future-dating window
+         *     (`health.inpatient.backdate_days` / `health.inpatient.future_days`, defaulting to 3
+         *     and 30), a PREAUTHORIZATION service request is raised for `estimatedDays` of the
+         *     tenant's inpatient admission service and put straight through the request gate, and
+         *     the stay is written REQUESTED.
+         *
+         *     The stay is not authorized here and cannot be. A medical reviewer decides the request
+         *     on the request page, where they decide every request, and the stay follows: it becomes
+         *     AUTHORIZED with an authorization attached, or REJECTED with none. The reviewer never
+         *     learns that a stay exists.
+         *
+         *     Refusals worth knowing about:
+         *
+         *     * `422 ADMISSION_DATE_OUT_OF_WINDOW` — the admission is dated outside the window.
+         *     * `409 INPATIENT_STAY_ALREADY_OPEN` — this case already has a REQUESTED, AUTHORIZED or
+         *       ADMITTED stay at this provider. It is a partial unique index rather than a check the
+         *       service makes first, so two callers arriving together are refused by the database
+         *       and exactly one stay exists afterwards.
+         *     * `422 INPATIENT_ADMISSION_SERVICE_UNKNOWN` — the tenant's catalogue has no active
+         *       `INPATIENT_DAY` definition, so there is nothing to book the days against.
+         */
+        post: operations["createInpatientStay"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inpatient-stays/{stayId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One admission with its extensions and its segments.
+         *
+         *     This is the read that demands a purpose. A stay on a SENSITIVE case read by a caller
+         *     holding `health.clinical.read` and `health.sensitive.read` but sending no
+         *     `X-Access-Purpose` is answered 428 ACCESS_PURPOSE_REQUIRED, and the refusal is
+         *     recorded as a DENIED access event with resource type `inpatient_stay`.
+         */
+        get: operations["getInpatientStay"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inpatient-stays/{stayId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Withdraws an admission nobody has finished. Every undecided extension is cancelled
+         *     with it and everything the authorization still holds is released: an admission that
+         *     did not happen has held nothing, and quietly keeping the hold would charge a member
+         *     for a bed they never slept in.
+         */
+        post: operations["cancelInpatientStay"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inpatient-stays/{stayId}/discharge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Ends an admission and settles up, in one transaction.
+         *
+         *     The discharge moment is recorded, every segment nobody ended is ended at that moment,
+         *     the actual day count is computed as the elapsed time rounded up to whole days and
+         *     never less than 1, and **the days that were reserved and never used are released** on
+         *     the authorization. A stay that ran over what was approved releases nothing and is
+         *     flagged `overAuthorization`, for the claim to raise as an exception.
+         *
+         *     Running it twice releases nothing twice: the update names the two live statuses and
+         *     the row version the caller read, so the second discharge matches no row, and the
+         *     ledger key the release is posted under is derived from the line and the reason rather
+         *     than from a clock.
+         */
+        post: operations["dischargeInpatientStay"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inpatient-stays/{stayId}/extensions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Asks for more days on an admission somebody has already approved. It raises the
+         *     extension's own PREAUTHORIZATION request, which the same reviewer decides on the same
+         *     page; on approval the added days are reserved by the extension's own authorization and
+         *     the admission's authorization has its validity moved forward.
+         *
+         *     Two refusals, both of them the point of the operation:
+         *
+         *     * `409 INPATIENT_STAY_TRANSITION_INVALID` — the stay is not AUTHORIZED or ADMITTED.
+         *       Extending something nobody has decided is asking for more of nothing.
+         *     * `409 STAY_EXTENSION_PENDING` — an earlier extension has not been decided. It is a
+         *       partial unique index as well as a check, so two callers racing each other are
+         *       refused by the database.
+         *
+         *     `reasonText` is clinical. It is stored, served only in the clinical projection, and
+         *     never carried by a notification, an audit detail or a work item title.
+         */
+        post: operations["extendInpatientStay"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inpatient-stays/{stayId}/reconciliation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description What the discharge settled: the days that were authorized, the days that were actually
+         *     used, the days that were released back to the member's entitlement, and whether the
+         *     admission ran over what anybody approved. Every figure is an exact decimal string.
+         *
+         *     It answers only for a discharged stay. A reconciliation is what the settlement was,
+         *     and a stay still running has not settled anything: answering "authorized 5, used
+         *     nothing, released nothing" for somebody currently in a bed would be read as a
+         *     completed settlement by the next thing that consumed it. A live stay is
+         *     `409 INPATIENT_STAY_NOT_DISCHARGED`.
+         *
+         *     It carries nothing clinical, so it has no projection: it is the financial half of a
+         *     stay by construction.
+         */
+        get: operations["getInpatientStayReconciliation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inpatient-stays/{stayId}/segments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * @description Replaces the stay's whole segment set: where the patient was, hour by hour. The set is
+         *     the unit, because a segment id is not something anything else hangs off. An empty
+         *     array clears it.
+         *
+         *     Two segments of the same stay may not claim the same hours, and that is an exclusion
+         *     constraint over a half-open time range rather than only a check in the service. The
+         *     range being half-open is what makes a ward segment ending at 14:00 and an intensive
+         *     care segment beginning at 14:00 a transfer rather than an overlap.
+         *
+         *     COMPANION is outside the constraint. The relative sleeping in the room overlaps the
+         *     patient's own segment by definition, and a rule that forbade it would make the true
+         *     record unrecordable.
+         *
+         *     Recording where somebody actually is *is* the admission: the first set on an
+         *     AUTHORIZED stay moves it to ADMITTED. There is no separate admit command.
+         */
+        put: operations["putStaySegments"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/legal-holds": {
         parameters: {
             query?: never;
@@ -4056,6 +4277,10 @@ export interface components {
          * @enum {string}
          */
         AuthorizationStatus: "ACTIVE" | "PARTIALLY_USED" | "USED" | "EXPIRED" | "CANCELLED";
+        CancelInpatientStay: {
+            reasonCode: string;
+            reasonText?: string | null;
+        };
         CloseHealthCase: {
             /**
              * @description Free text kept on the audit row, not on the case. Two hundred characters is the
@@ -4410,6 +4635,33 @@ export interface components {
              *     a case a provider opened standalone.
              */
             serviceRequestId?: string | null;
+        };
+        CreateInpatientStay: {
+            /**
+             * Format: date-time
+             * @description Checked against the tenant's backdating and future-dating window. Outside it the
+             *     answer is 422 ADMISSION_DATE_OUT_OF_WINDOW.
+             */
+            admissionAt: string;
+            /**
+             * Format: uuid
+             * @description A diagnosis of one of this case's own encounters. A diagnosis from another case is
+             *     refused: an id alone would never say it belonged to somebody else.
+             */
+            admissionDiagnosisId?: string | null;
+            /** Format: uuid */
+            attendingPractitionerId?: string | null;
+            /** Format: uuid */
+            caseId: string;
+            /**
+             * @description How long the admission is expected to take. It becomes the requested quantity of
+             *     the preauthorization and the length of the authorization's validity.
+             */
+            estimatedDays: number;
+            /** Format: uuid */
+            locationId?: string | null;
+            /** Format: uuid */
+            providerOrganizationId: string;
         };
         CreateLegalHold: {
             /** Format: uuid */
@@ -4813,6 +5065,14 @@ export interface components {
         };
         /** @enum {string} */
         DiagnosisType: "PRIMARY" | "SECONDARY" | "SUSPECTED";
+        DischargeInpatientStay: {
+            /**
+             * Format: date-time
+             * @description When the patient went home. Defaults to now; it may not be before the admission or
+             *     in the future.
+             */
+            dischargeAt?: string | null;
+        };
         Document: {
             /**
              * @description Which of the two worlds the bytes are in. It is never `secure` unless the scan
@@ -5271,6 +5531,16 @@ export interface components {
              */
             validTo: string;
         };
+        ExtendInpatientStay: {
+            additionalDays: number;
+            /** @description Why, as a code. A reason nobody can count is a reason nobody can act on. */
+            reasonCode: string;
+            /**
+             * @description Clinical text: it is stored on the extension, served only in the clinical
+             *     projection, and never carried by a notification or an audit detail.
+             */
+            reasonText?: string | null;
+        };
         /**
          * @description How a service definition is delivered once it is requested.
          * @enum {string}
@@ -5431,6 +5701,85 @@ export interface components {
         ImportCodeValuesRequest: {
             items: components["schemas"]["CodeValueInput"][];
         };
+        InpatientStay: {
+            /** @description Written at discharge; absent before it. */
+            actualDays?: string | null;
+            /** Format: date-time */
+            admissionAt: string;
+            /**
+             * Format: uuid
+             * @description Present only in the clinical projection. That an admission has a recorded
+             *     diagnosis at all is a fact about the patient.
+             */
+            admissionDiagnosisId?: string | null;
+            /** Format: uuid */
+            attendingPractitionerId?: string | null;
+            /** Format: uuid */
+            authorizationId?: string | null;
+            /**
+             * @description What the reviewer actually approved, which is not always what was asked for, plus
+             *     every approved extension. Exact decimal as a string, never a JSON number. Absent
+             *     until the request is decided.
+             */
+            authorizedDays?: string | null;
+            cancelReasonCode?: string | null;
+            /** Format: uuid */
+            caseId: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            dischargeAt?: string | null;
+            estimatedDays: number;
+            /**
+             * Format: date-time
+             * @description Derived from the admission and the estimate at write, and moved forward by every
+             *     approved extension. It is what the authorization's validity is set from.
+             */
+            expectedDischargeAt: string;
+            extensions: components["schemas"]["StayExtension"][];
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            locationId?: string | null;
+            /**
+             * @description The admission used more days than were approved. Nothing was released, and the
+             *     claim raises it as an exception.
+             */
+            overAuthorization: boolean;
+            /** Format: uuid */
+            personId: string;
+            projection: components["schemas"]["HealthProjection"];
+            /** Format: uuid */
+            providerOrganizationId: string;
+            /** @description What was given back to the member's entitlement at discharge. Absent before it. */
+            releasedDays?: string | null;
+            /** Format: int64 */
+            rowVersion: number;
+            /**
+             * @description Where the patient was, hour by hour. Served in both projections: it is what a
+             *     claim is priced from, and a claims reviewer who could not see an intensive care
+             *     night could not check the bill for one.
+             */
+            segments: components["schemas"]["StaySegment"][];
+            /**
+             * Format: uuid
+             * @description The PREAUTHORIZATION request a reviewer decides the admission on.
+             */
+            serviceRequestId: string;
+            status: components["schemas"]["InpatientStayStatus"];
+        };
+        InpatientStayPage: {
+            items: components["schemas"]["InpatientStay"][];
+            nextCursor?: string | null;
+        };
+        /**
+         * @description REQUESTED, AUTHORIZED and ADMITTED are the three the one-open-stay rule calls open: a
+         *     case may have at most one stay in any of them at any one provider. AUTHORIZED and
+         *     REJECTED are not given by an endpoint of this module — they are what the stay becomes
+         *     when the reviewer decides its preauthorization request.
+         * @enum {string}
+         */
+        InpatientStayStatus: "REQUESTED" | "AUTHORIZED" | "ADMITTED" | "DISCHARGED" | "CANCELLED" | "REJECTED";
         /**
          * @description The one response that carries the plaintext. Show it to the member, print it or let
          *     them save it now: the server keeps only its digest and cannot produce it again.
@@ -6784,6 +7133,10 @@ export interface components {
             taxBehaviour: components["schemas"]["TaxBehaviour"];
             vatRate?: components["schemas"]["DecimalRate"];
         };
+        PutStaySegments: {
+            /** @description The whole set. An empty array clears the stay's segments. */
+            items: components["schemas"]["StaySegmentInput"][];
+        };
         /**
          * @description The period a provider quota is counted over; CONTRACT means the whole version.
          * @enum {string}
@@ -7547,6 +7900,92 @@ export interface components {
             /** Format: date */
             validTo?: string | null;
         };
+        StayExtension: {
+            additionalDays: number;
+            /**
+             * Format: uuid
+             * @description The extension's own hold, which is where the added days are reserved.
+             */
+            authorizationId?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: uuid */
+            id: string;
+            reasonCode: string;
+            /**
+             * @description Why the doctor wants more days, in the doctor's words. Clinical text, present only
+             *     in the clinical projection.
+             */
+            reasonText?: string | null;
+            /** Format: int64 */
+            rowVersion: number;
+            sequenceNo: number;
+            /** Format: uuid */
+            serviceRequestId: string;
+            status: components["schemas"]["StayExtensionStatus"];
+            /** Format: uuid */
+            stayId: string;
+        };
+        /** @enum {string} */
+        StayExtensionStatus: "REQUESTED" | "APPROVED" | "REJECTED" | "CANCELLED";
+        StayReconciliation: {
+            actualDays: string;
+            /** Format: date-time */
+            admissionAt: string;
+            /** Format: uuid */
+            authorizationId?: string | null;
+            /**
+             * @description Exact decimal as a string, never a JSON number: a day count that depended on
+             *     binary rounding would be a day count two systems disagree about.
+             */
+            authorizedDays: string;
+            /** Format: date-time */
+            dischargeAt: string;
+            overAuthorization: boolean;
+            /**
+             * @description What was given back. Zero when the admission used everything it was approved for,
+             *     and zero when it ran over.
+             */
+            releasedDays: string;
+            /** Format: uuid */
+            stayId: string;
+        };
+        StaySegment: {
+            bedCode?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @description Null while the segment is still running. Discharge ends every open segment at the
+             *     discharge moment.
+             */
+            endsAt?: string | null;
+            /** Format: uuid */
+            id: string;
+            roomCode?: string | null;
+            /** Format: int64 */
+            rowVersion: number;
+            segmentType: components["schemas"]["StaySegmentType"];
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: uuid */
+            stayId: string;
+        };
+        StaySegmentInput: {
+            bedCode?: string | null;
+            /** Format: date-time */
+            endsAt?: string | null;
+            roomCode?: string | null;
+            segmentType: components["schemas"]["StaySegmentType"];
+            /** Format: date-time */
+            startsAt: string;
+        };
+        /**
+         * @description COMPANION is the relative staying in the room. It is the one type outside the overlap
+         *     constraint, because a companion is in the room while the patient is.
+         * @enum {string}
+         */
+        StaySegmentType: "WARD" | "ICU" | "SURGERY" | "OBSERVATION" | "COMPANION";
         /**
          * @description Whether the agreed amounts already include VAT, exclude it, or are exempt.
          * @enum {string}
@@ -8039,6 +8478,7 @@ export interface components {
          *     than by id because the number is what the reviewer and the requester both see.
          */
         ServiceRequestVersionNo: number;
+        StayId: string;
         /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
         TenantHeader: string;
         WorkItemId: string;
@@ -8061,6 +8501,7 @@ export type SchemaAuthorizationItem = components['schemas']['AuthorizationItem']
 export type SchemaAuthorizationItemInput = components['schemas']['AuthorizationItemInput'];
 export type SchemaAuthorizationPage = components['schemas']['AuthorizationPage'];
 export type SchemaAuthorizationStatus = components['schemas']['AuthorizationStatus'];
+export type SchemaCancelInpatientStay = components['schemas']['CancelInpatientStay'];
 export type SchemaCloseHealthCase = components['schemas']['CloseHealthCase'];
 export type SchemaCodeSystem = components['schemas']['CodeSystem'];
 export type SchemaCodeSystemAuthority = components['schemas']['CodeSystemAuthority'];
@@ -8090,6 +8531,7 @@ export type SchemaCreateEncounter = components['schemas']['CreateEncounter'];
 export type SchemaCreateEnrollmentRequest = components['schemas']['CreateEnrollmentRequest'];
 export type SchemaCreateFulfilment = components['schemas']['CreateFulfilment'];
 export type SchemaCreateHealthCase = components['schemas']['CreateHealthCase'];
+export type SchemaCreateInpatientStay = components['schemas']['CreateInpatientStay'];
 export type SchemaCreateLegalHold = components['schemas']['CreateLegalHold'];
 export type SchemaCreateMedicalReport = components['schemas']['CreateMedicalReport'];
 export type SchemaCreateMembershipRequest = components['schemas']['CreateMembershipRequest'];
@@ -8119,6 +8561,7 @@ export type SchemaDiagnosis = components['schemas']['Diagnosis'];
 export type SchemaDiagnosisInput = components['schemas']['DiagnosisInput'];
 export type SchemaDiagnosisList = components['schemas']['DiagnosisList'];
 export type SchemaDiagnosisType = components['schemas']['DiagnosisType'];
+export type SchemaDischargeInpatientStay = components['schemas']['DischargeInpatientStay'];
 export type SchemaDocument = components['schemas']['Document'];
 export type SchemaDocumentClassification = components['schemas']['DocumentClassification'];
 export type SchemaDocumentDownload = components['schemas']['DocumentDownload'];
@@ -8143,6 +8586,7 @@ export type SchemaEntitlementMapping = components['schemas']['EntitlementMapping
 export type SchemaEntitlementMappingInput = components['schemas']['EntitlementMappingInput'];
 export type SchemaEntitlementReservation = components['schemas']['EntitlementReservation'];
 export type SchemaExtendAuthorization = components['schemas']['ExtendAuthorization'];
+export type SchemaExtendInpatientStay = components['schemas']['ExtendInpatientStay'];
 export type SchemaFulfillmentMode = components['schemas']['FulfillmentMode'];
 export type SchemaFulfilment = components['schemas']['Fulfilment'];
 export type SchemaFulfilmentItem = components['schemas']['FulfilmentItem'];
@@ -8160,6 +8604,9 @@ export type SchemaHealthProjection = components['schemas']['HealthProjection'];
 export type SchemaHealthStatus = components['schemas']['HealthStatus'];
 export type SchemaIdentifierSearchRequest = components['schemas']['IdentifierSearchRequest'];
 export type SchemaImportCodeValuesRequest = components['schemas']['ImportCodeValuesRequest'];
+export type SchemaInpatientStay = components['schemas']['InpatientStay'];
+export type SchemaInpatientStayPage = components['schemas']['InpatientStayPage'];
+export type SchemaInpatientStayStatus = components['schemas']['InpatientStayStatus'];
 export type SchemaIssuedVoucher = components['schemas']['IssuedVoucher'];
 export type SchemaIssueVoucher = components['schemas']['IssueVoucher'];
 export type SchemaLedgerEntry = components['schemas']['LedgerEntry'];
@@ -8263,6 +8710,7 @@ export type SchemaPutEncounterDiagnoses = components['schemas']['PutEncounterDia
 export type SchemaPutMedicalReportServices = components['schemas']['PutMedicalReportServices'];
 export type SchemaPutNotificationPreferences = components['schemas']['PutNotificationPreferences'];
 export type SchemaPutPaymentTermRequest = components['schemas']['PutPaymentTermRequest'];
+export type SchemaPutStaySegments = components['schemas']['PutStaySegments'];
 export type SchemaQuotaPeriodType = components['schemas']['QuotaPeriodType'];
 export type SchemaReasonCommand = components['schemas']['ReasonCommand'];
 export type SchemaReassignWorkItem = components['schemas']['ReassignWorkItem'];
@@ -8337,6 +8785,12 @@ export type SchemaSessionInfo = components['schemas']['SessionInfo'];
 export type SchemaSettlementMethod = components['schemas']['SettlementMethod'];
 export type SchemaSimulateRuleSetVersionRequest = components['schemas']['SimulateRuleSetVersionRequest'];
 export type SchemaSponsorMembership = components['schemas']['SponsorMembership'];
+export type SchemaStayExtension = components['schemas']['StayExtension'];
+export type SchemaStayExtensionStatus = components['schemas']['StayExtensionStatus'];
+export type SchemaStayReconciliation = components['schemas']['StayReconciliation'];
+export type SchemaStaySegment = components['schemas']['StaySegment'];
+export type SchemaStaySegmentInput = components['schemas']['StaySegmentInput'];
+export type SchemaStaySegmentType = components['schemas']['StaySegmentType'];
 export type SchemaTaxBehaviour = components['schemas']['TaxBehaviour'];
 export type SchemaTenantContext = components['schemas']['TenantContext'];
 export type SchemaTenantSummary = components['schemas']['TenantSummary'];
@@ -8421,6 +8875,7 @@ export type ParameterRuleSetVersionId = components['parameters']['RuleSetVersion
 export type ParameterServiceCategoryId = components['parameters']['ServiceCategoryId'];
 export type ParameterServiceDefinitionId = components['parameters']['ServiceDefinitionId'];
 export type ParameterServiceRequestVersionNo = components['parameters']['ServiceRequestVersionNo'];
+export type ParameterStayId = components['parameters']['StayId'];
 export type ParameterTenantHeader = components['parameters']['TenantHeader'];
 export type ParameterWorkItemId = components['parameters']['WorkItemId'];
 export type ParameterWorkQueueId = components['parameters']['WorkQueueId'];
@@ -11461,6 +11916,591 @@ export interface operations {
                 };
             };
             422: components["responses"]["ValidationError"];
+        };
+    };
+    listInpatientStays: {
+        parameters: {
+            query?: {
+                admittedFrom?: string;
+                admittedTo?: string;
+                caseId?: string;
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                personId?: string;
+                providerOrganizationId?: string;
+                status?: components["schemas"]["InpatientStayStatus"];
+            };
+            header: {
+                /**
+                 * @description Why the caller is opening clinical data, as a code from the clinical access purpose
+                 *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+                 *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+                 *     read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+                 *     event, because "who read this" without "why" is not an answer a data protection
+                 *     review can use.
+                 */
+                "X-Access-Purpose"?: components["parameters"]["AccessPurposeHeader"];
+                /**
+                 * @description Free text beside the purpose, at most 200 characters once decoded, kept on the access
+                 *     event. It never carries an identifier: the event already names the person and the
+                 *     actor.
+                 *
+                 *     The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+                 *     ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+                 *     the Turkish somebody would actually type. A value with no percent sequences decodes
+                 *     to itself, so a plain ASCII reason may be sent as it is.
+                 */
+                "X-Access-Reason"?: components["parameters"]["AccessReasonHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Inpatient stay page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InpatientStayPage"];
+                };
+            };
+            /** @description Cursor invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    createInpatientStay: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /**
+                 * @description Why the caller is opening clinical data, as a code from the clinical access purpose
+                 *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+                 *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+                 *     read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+                 *     event, because "who read this" without "why" is not an answer a data protection
+                 *     review can use.
+                 */
+                "X-Access-Purpose"?: components["parameters"]["AccessPurposeHeader"];
+                /**
+                 * @description Free text beside the purpose, at most 200 characters once decoded, kept on the access
+                 *     event. It never carries an identifier: the event already names the person and the
+                 *     actor.
+                 *
+                 *     The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+                 *     ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+                 *     the Turkish somebody would actually type. A value with no percent sequences decodes
+                 *     to itself, so a plain ASCII reason may be sent as it is.
+                 */
+                "X-Access-Reason"?: components["parameters"]["AccessReasonHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateInpatientStay"];
+            };
+        };
+        responses: {
+            /** @description Stay requested */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InpatientStay"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The case already has an open stay at this provider. INPATIENT_STAY_ALREADY_OPEN. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getInpatientStay: {
+        parameters: {
+            query?: never;
+            header: {
+                /**
+                 * @description Why the caller is opening clinical data, as a code from the clinical access purpose
+                 *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+                 *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+                 *     read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+                 *     event, because "who read this" without "why" is not an answer a data protection
+                 *     review can use.
+                 */
+                "X-Access-Purpose"?: components["parameters"]["AccessPurposeHeader"];
+                /**
+                 * @description Free text beside the purpose, at most 200 characters once decoded, kept on the access
+                 *     event. It never carries an identifier: the event already names the person and the
+                 *     actor.
+                 *
+                 *     The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+                 *     ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+                 *     the Turkish somebody would actually type. A value with no percent sequences decodes
+                 *     to itself, so a plain ASCII reason may be sent as it is.
+                 */
+                "X-Access-Reason"?: components["parameters"]["AccessReasonHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                stayId: components["parameters"]["StayId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Inpatient stay */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InpatientStay"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
+            /** @description The stay belongs to a sensitive case and the caller stated no access purpose. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    cancelInpatientStay: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /**
+                 * @description Why the caller is opening clinical data, as a code from the clinical access purpose
+                 *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+                 *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+                 *     read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+                 *     event, because "who read this" without "why" is not an answer a data protection
+                 *     review can use.
+                 */
+                "X-Access-Purpose"?: components["parameters"]["AccessPurposeHeader"];
+                /**
+                 * @description Free text beside the purpose, at most 200 characters once decoded, kept on the access
+                 *     event. It never carries an identifier: the event already names the person and the
+                 *     actor.
+                 *
+                 *     The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+                 *     ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+                 *     the Turkish somebody would actually type. A value with no percent sequences decodes
+                 *     to itself, so a plain ASCII reason may be sent as it is.
+                 */
+                "X-Access-Reason"?: components["parameters"]["AccessReasonHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                stayId: components["parameters"]["StayId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelInpatientStay"];
+            };
+        };
+        responses: {
+            /** @description Stay cancelled */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InpatientStay"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The stay has already finished. INPATIENT_STAY_TRANSITION_INVALID. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description If-Match did not match */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match is missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    dischargeInpatientStay: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /**
+                 * @description Why the caller is opening clinical data, as a code from the clinical access purpose
+                 *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+                 *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+                 *     read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+                 *     event, because "who read this" without "why" is not an answer a data protection
+                 *     review can use.
+                 */
+                "X-Access-Purpose"?: components["parameters"]["AccessPurposeHeader"];
+                /**
+                 * @description Free text beside the purpose, at most 200 characters once decoded, kept on the access
+                 *     event. It never carries an identifier: the event already names the person and the
+                 *     actor.
+                 *
+                 *     The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+                 *     ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+                 *     the Turkish somebody would actually type. A value with no percent sequences decodes
+                 *     to itself, so a plain ASCII reason may be sent as it is.
+                 */
+                "X-Access-Reason"?: components["parameters"]["AccessReasonHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                stayId: components["parameters"]["StayId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DischargeInpatientStay"];
+            };
+        };
+        responses: {
+            /** @description Stay discharged */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InpatientStay"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The stay is not AUTHORIZED or ADMITTED. INPATIENT_STAY_TRANSITION_INVALID. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description If-Match did not match */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match is missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    extendInpatientStay: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /**
+                 * @description Why the caller is opening clinical data, as a code from the clinical access purpose
+                 *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+                 *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+                 *     read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+                 *     event, because "who read this" without "why" is not an answer a data protection
+                 *     review can use.
+                 */
+                "X-Access-Purpose"?: components["parameters"]["AccessPurposeHeader"];
+                /**
+                 * @description Free text beside the purpose, at most 200 characters once decoded, kept on the access
+                 *     event. It never carries an identifier: the event already names the person and the
+                 *     actor.
+                 *
+                 *     The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+                 *     ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+                 *     the Turkish somebody would actually type. A value with no percent sequences decodes
+                 *     to itself, so a plain ASCII reason may be sent as it is.
+                 */
+                "X-Access-Reason"?: components["parameters"]["AccessReasonHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                stayId: components["parameters"]["StayId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExtendInpatientStay"];
+            };
+        };
+        responses: {
+            /** @description Extension requested */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InpatientStay"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /**
+             * @description The stay cannot be extended now, or an earlier extension is undecided.
+             *     INPATIENT_STAY_TRANSITION_INVALID, STAY_EXTENSION_PENDING.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description If-Match did not match */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match is missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getInpatientStayReconciliation: {
+        parameters: {
+            query?: never;
+            header: {
+                /**
+                 * @description Why the caller is opening clinical data, as a code from the clinical access purpose
+                 *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+                 *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+                 *     read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+                 *     event, because "who read this" without "why" is not an answer a data protection
+                 *     review can use.
+                 */
+                "X-Access-Purpose"?: components["parameters"]["AccessPurposeHeader"];
+                /**
+                 * @description Free text beside the purpose, at most 200 characters once decoded, kept on the access
+                 *     event. It never carries an identifier: the event already names the person and the
+                 *     actor.
+                 *
+                 *     The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+                 *     ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+                 *     the Turkish somebody would actually type. A value with no percent sequences decodes
+                 *     to itself, so a plain ASCII reason may be sent as it is.
+                 */
+                "X-Access-Reason"?: components["parameters"]["AccessReasonHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                stayId: components["parameters"]["StayId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reconciliation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StayReconciliation"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The stay has not been discharged. INPATIENT_STAY_NOT_DISCHARGED. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    putStaySegments: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /**
+                 * @description Why the caller is opening clinical data, as a code from the clinical access purpose
+                 *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+                 *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+                 *     read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+                 *     event, because "who read this" without "why" is not an answer a data protection
+                 *     review can use.
+                 */
+                "X-Access-Purpose"?: components["parameters"]["AccessPurposeHeader"];
+                /**
+                 * @description Free text beside the purpose, at most 200 characters once decoded, kept on the access
+                 *     event. It never carries an identifier: the event already names the person and the
+                 *     actor.
+                 *
+                 *     The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+                 *     ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+                 *     the Turkish somebody would actually type. A value with no percent sequences decodes
+                 *     to itself, so a plain ASCII reason may be sent as it is.
+                 */
+                "X-Access-Reason"?: components["parameters"]["AccessReasonHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                stayId: components["parameters"]["StayId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PutStaySegments"];
+            };
+        };
+        responses: {
+            /** @description Segments replaced */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InpatientStay"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /**
+             * @description Two segments claim the same hours, or the stay is not in a state that has
+             *     segments. STAY_SEGMENT_OVERLAP, INPATIENT_STAY_TRANSITION_INVALID.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description If-Match did not match */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match is missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
         };
     };
     putLegalHold: {
