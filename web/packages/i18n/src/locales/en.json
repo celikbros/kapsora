@@ -295,7 +295,18 @@
     "NOTIFICATION_TEMPLATE_MISSING": "No template is published for that event, channel and language.",
     "NOTIFICATION_MESSAGE_NOT_FOUND": "The notification was not found.",
     "NOTIFICATION_MESSAGE_NOT_RESENDABLE": "That notification cannot be sent again.",
-    "NOTIFICATION_RECIPIENT_OPTED_OUT": "The recipient has turned this notification off."
+    "NOTIFICATION_RECIPIENT_OPTED_OUT": "The recipient has turned this notification off.",
+    "HEALTH_CASE_NOT_FOUND": "The health case was not found, or is not visible in this organization.",
+    "ENCOUNTER_NOT_FOUND": "The encounter was not found, or is not visible in this organization.",
+    "CLINICAL_READ_REQUIRED": "Seeing clinical detail (diagnoses, clinical notes) needs an additional permission.",
+    "ACCESS_PURPOSE_REQUIRED": "State your access purpose before opening this record.",
+    "HEALTH_CASE_CLOSED": "The health case is closed; nothing can be added to a closed case.",
+    "HEALTH_CASE_ENCOUNTER_OPEN": "The case has an encounter that has not ended. End them all before closing the case.",
+    "HEALTH_CASE_STAY_OPEN": "The case has an open inpatient stay. Complete the discharge before closing the case.",
+    "HEALTH_CASE_ENROLLMENT_MISMATCH": "The enrollment does not belong to this person or programme.",
+    "HEALTH_CASE_REQUEST_NOT_ELIGIBLE": "This request cannot open a health case; only a direct service or pre-authorization on a health service can.",
+    "HEALTH_CASE_PROVIDER_SCOPE": "You cannot act on behalf of this provider.",
+    "HEALTH_CASE_PROVIDER_UNKNOWN": "The selected organization is not a provider of this tenant."
   },
   "fieldErrors": {
     "RULE_COMPILE_FAILED": "The rule condition did not compile",
@@ -323,7 +334,9 @@
     "PERIOD": "The end date must be after the start date",
     "NOT_FOUND": "The selected record was not found",
     "MAX_ITEMS": "Too many rows in one call",
-    "PRIORITY_DUPLICATE": "Another rule already uses this position"
+    "PRIORITY_DUPLICATE": "Another rule already uses this position",
+    "DUPLICATE_PRIMARY": "An encounter may have only one primary diagnosis",
+    "INACTIVE": "This record is no longer in use"
   },
   "people": {
     "title": "Members",

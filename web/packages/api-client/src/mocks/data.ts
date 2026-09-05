@@ -832,6 +832,62 @@ export type StoredNotificationPreference = Schemas['NotificationPreference'] & {
 };
 
 /** The verdict a scan may come back with; PENDING and SCANNING are states, not verdicts. */
+/**
+ * M5. The stored rows carry every column the database has, clinical fields included, exactly
+ * as the Go repository does: the mock's health handlers apply the projection when they
+ * answer, in one place, so a divergence between the two is a divergence in one function
+ * rather than a field somebody forgot in a mapper.
+ */
+export interface StoredHealthCase {
+  id: string;
+  tenantId: string;
+  personId: string;
+  programId: string;
+  enrollmentId: string;
+  caseType: Schemas['HealthCaseType'];
+  providerOrganizationId: string | null;
+  openedAt: string;
+  closedAt: string | null;
+  status: Schemas['HealthCaseStatus'];
+  /** Derived from the diagnoses the case carries; never sent by a caller. */
+  sensitivity: Schemas['HealthCaseSensitivity'];
+  serviceRequestId: string | null;
+  createdAt: string;
+  rowVersion: number;
+}
+
+export interface StoredEncounter {
+  id: string;
+  tenantId: string;
+  caseId: string;
+  encounterType: Schemas['EncounterType'];
+  startedAt: string;
+  endedAt: string | null;
+  locationId: string | null;
+  practitionerId: string | null;
+  /** Clinical: served only in the clinical projection. */
+  branchCode: string | null;
+  /** Clinical: the one free-text clinical field in the module. */
+  notesClinical: string | null;
+  createdAt: string;
+  rowVersion: number;
+}
+
+export interface StoredDiagnosis {
+  id: string;
+  tenantId: string;
+  encounterId: string;
+  codeSystemId: string;
+  codeValueId: string;
+  diagnosisType: Schemas['DiagnosisType'];
+  /** Read from the code value's own attributes at write time. */
+  sensitive: boolean;
+  recordedAt: string;
+  recordedBy: string | null;
+}
+
+export type StoredHealthAccessEvent = Schemas['HealthAccessEvent'] & { tenantId: string };
+
 export type ScanVerdict = 'CLEAN' | 'INFECTED' | 'FAILED';
 
 /** Reference catalogs; tenant-independent so every tenant sees the same options. */
@@ -998,6 +1054,34 @@ const PROVIDER_PERMISSIONS = [
   'provider.read',
 ];
 
+/**
+ * SPONSOR_HR as internal/identity/application/roles.go grants it, and no wider. This is the
+ * role WP-I5-01 exists for: it may see that a member has an open health case and may never
+ * see what the case is about. health.clinical.read is absent on purpose, and m5.test.ts
+ * asserts the absence rather than trusting this list to stay short.
+ */
+const SPONSOR_HR_PERMISSIONS = [
+  'member.read',
+  'service_request.read',
+  'health.case.read',
+  'entitlement.read',
+  'report.read',
+];
+
+/** MEDICAL_REVIEWER's health half: clinical detail plus the sensitive-category grant. */
+const MEDICAL_REVIEWER_PERMISSIONS = [
+  'member.read',
+  'service_request.read',
+  'service_request.review',
+  'health.case.read',
+  'health.clinical.read',
+  'health.sensitive.read',
+  'document.read',
+  'worklist.read',
+  'worklist.claim',
+  'audit.read',
+];
+
 const ORG_PREFIXES = [
   'Anadolu',
   'Marmara',
@@ -1152,6 +1236,16 @@ export interface MockWorld {
   notificationMessages: StoredNotificationMessage[];
   notificationDeliveries: StoredNotificationDelivery[];
   notificationPreferences: StoredNotificationPreference[];
+  // M5.
+  healthCases: StoredHealthCase[];
+  encounters: StoredEncounter[];
+  diagnoses: StoredDiagnosis[];
+  /**
+   * The clinical access log. The handlers append to it exactly where the Go service writes
+   * an audit.access_event, so "who looked and why" is answerable in the mock too — and a
+   * screen that shows it has something to show.
+   */
+  healthAccessEvents: StoredHealthAccessEvent[];
   /**
    * Moves a document on from SCANNING the way the scan worker does. It is the mock's
    * stand-in for the worker, so a screen can show "taranıyor" and then a verdict without
@@ -3473,6 +3567,152 @@ export function buildWorld(
     return doc;
   }
 
+  // ICD-10 is a code system like any other; WP-I5-05 seeds the real one. Two codes are
+  // enough here, and what matters about the second is not its text: it is that the code
+  // value itself says its category is one v1.2 11.10 protects further. The Go side reads
+  // exactly this — catalog.code_value.attributes ->> 'sensitive' — so a diagnosis is
+  // sensitive in the mock for the same reason it is sensitive on the server.
+  const codeSystemIcd: StoredCodeSystem = {
+    id: nextId(),
+    tenantId: demoA.id,
+    code: 'ICD10',
+    name: 'ICD-10',
+    version: '2026',
+    authority: 'WHO',
+    licensed: false,
+    status: 'ACTIVE',
+    validFrom: '2026-01-01',
+    validTo: null,
+    rowVersion: 1,
+  };
+  const icdPlain: StoredCodeValue = {
+    id: nextId(),
+    tenantId: demoA.id,
+    codeSystemId: codeSystemIcd.id,
+    code: 'J06.9',
+    display: 'Üst solunum yolu enfeksiyonu',
+    parentCode: 'J00-J99',
+    validFrom: '2026-01-01',
+    validTo: null,
+    active: true,
+    attributes: { chapter: 'X' },
+  };
+  const icdSensitive: StoredCodeValue = {
+    id: nextId(),
+    tenantId: demoA.id,
+    codeSystemId: codeSystemIcd.id,
+    code: 'F32.1',
+    display: 'Orta düzeyde depresif atak',
+    parentCode: 'F00-F99',
+    validFrom: '2026-01-01',
+    validTo: null,
+    active: true,
+    attributes: { chapter: 'V', sensitive: true },
+  };
+  codeValues.push(icdPlain, icdSensitive);
+
+  // The two M5 accounts. They are appended here rather than declared with the others so
+  // that adding them shifts none of the seeded random draws above: `buildWorld` runs off one
+  // seeded stream, and an extra id taken early changes which organizations a small world
+  // gets — which is exactly how adding a fixture broke four unrelated app tests once.
+  accounts.push(
+    {
+      actorId: nextId(),
+      username: 'sponsor.hr',
+      displayName: 'Selin İnsan Kaynakları',
+      email: 'sponsor.hr@example.invalid',
+      memberships: [{ tenantCode: 'DEMO_A', permissions: SPONSOR_HR_PERMISSIONS }],
+    },
+    {
+      actorId: nextId(),
+      username: 'doctor.a',
+      displayName: 'Demet Tıbbi Değerlendirici',
+      email: 'doctor.a@example.invalid',
+      memberships: [{ tenantCode: 'DEMO_A', permissions: MEDICAL_REVIEWER_PERMISSIONS }],
+    },
+  );
+
+  // M5: two cases for the same member. One is ordinary and one carries a diagnosis from a
+  // protected category, which is what makes the sponsor-HR criterion testable at all: the
+  // sponsor's HR user must not be able to tell the two apart.
+  const healthCase = (
+    caseType: Schemas['HealthCaseType'],
+    daysAgo: number,
+    sensitivity: Schemas['HealthCaseSensitivity'],
+  ): StoredHealthCase => ({
+    id: nextId(daysAgo * -86_400_000),
+    tenantId: demoA.id,
+    personId: familyPrincipal.id,
+    programId: programHealth.id,
+    enrollmentId: familyEnrollment.id,
+    caseType,
+    providerOrganizationId: providerRel.id,
+    openedAt: isoDaysAgo(base, daysAgo),
+    closedAt: null,
+    status: 'OPEN',
+    sensitivity,
+    serviceRequestId: null,
+    createdAt: isoDaysAgo(base, daysAgo),
+    rowVersion: 1,
+  });
+  const caseStandard = healthCase('OUTPATIENT', 20, 'STANDARD');
+  const caseSensitive = healthCase('CHRONIC', 12, 'SENSITIVE');
+  const healthCases: StoredHealthCase[] = [caseStandard, caseSensitive];
+
+  const encounter = (
+    row: StoredHealthCase,
+    daysAgo: number,
+    branchCode: string,
+    notesClinical: string,
+  ): StoredEncounter => ({
+    id: nextId(daysAgo * -86_400_000),
+    tenantId: demoA.id,
+    caseId: row.id,
+    encounterType: 'OUTPATIENT',
+    startedAt: isoDaysAgo(base, daysAgo),
+    endedAt: isoDaysAgo(base, daysAgo - 1),
+    locationId: locationIstanbul.id,
+    practitionerId: practitioners[0]!.id,
+    branchCode,
+    notesClinical,
+    createdAt: isoDaysAgo(base, daysAgo),
+    rowVersion: 1,
+  });
+  const encounterStandard = encounter(
+    caseStandard,
+    20,
+    'KBB',
+    'Boğaz ağrısı ve öksürük şikayeti; iki gün istirahat önerildi.',
+  );
+  const encounterSensitive = encounter(
+    caseSensitive,
+    12,
+    'PSK',
+    'Hasta uyku düzeninden şikayetçi olduğunu belirtti.',
+  );
+  const encounters: StoredEncounter[] = [encounterStandard, encounterSensitive];
+
+  const diagnosis = (
+    row: StoredEncounter,
+    value: StoredCodeValue,
+    diagnosisType: Schemas['DiagnosisType'],
+  ): StoredDiagnosis => ({
+    id: nextId(),
+    tenantId: demoA.id,
+    encounterId: row.id,
+    codeSystemId: value.codeSystemId,
+    codeValueId: value.id,
+    diagnosisType,
+    // Read from the code value, exactly as the server reads it at write time.
+    sensitive: value.attributes.sensitive === true,
+    recordedAt: row.startedAt,
+    recordedBy: null,
+  });
+  const diagnoses: StoredDiagnosis[] = [
+    diagnosis(encounterStandard, icdPlain, 'PRIMARY'),
+    diagnosis(encounterSensitive, icdSensitive, 'PRIMARY'),
+  ];
+
   return {
     tenants,
     accounts,
@@ -3494,7 +3734,7 @@ export function buildWorld(
     importRows: [],
     serviceCategories,
     serviceDefinitions,
-    codeSystems: [codeSystemSut],
+    codeSystems: [codeSystemSut, codeSystemIcd],
     codeValues,
     codeMappings,
     providers,
@@ -3524,6 +3764,10 @@ export function buildWorld(
     notificationMessages,
     notificationDeliveries,
     notificationPreferences,
+    healthCases,
+    encounters,
+    diagnoses,
+    healthAccessEvents: [],
     advanceScan,
     nextId,
     random,

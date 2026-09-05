@@ -753,6 +753,65 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/encounters/{encounterId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One encounter, in the projection the caller has earned. The financial projection
+         *     carries its dates, location and practitioner and neither its branch code nor its
+         *     clinical notes.
+         */
+        get: operations["getEncounter"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/encounters/{encounterId}/diagnoses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The encounter's diagnoses, primary first.
+         *
+         *     A caller holding health.case.read but not health.clinical.read is answered 403
+         *     CLINICAL_READ_REQUIRED rather than an empty list. That is the whole point of the
+         *     endpoint's shape: an empty list would tell the caller the encounter has no
+         *     diagnosis, which is a clinical fact it may not have.
+         *
+         *     A caller holding clinical read whose case is sensitive and who does not hold
+         *     health.sensitive.read gets the same 403 for the same reason: a refusal that named
+         *     sensitivity would say the case carries a psychiatric, genetic or reproductive health
+         *     category, which is exactly the fact being protected.
+         */
+        get: operations["listEncounterDiagnoses"];
+        /**
+         * @description Replaces the encounter's diagnoses as a whole: the set is the unit, and a diagnosis
+         *     id is not something anything else hangs off. A second PRIMARY is refused with 422 —
+         *     every downstream rule asks "what was this for" and expects one answer.
+         *
+         *     `sensitive` is not accepted from the caller. It is read from each code value's own
+         *     category in the catalogue, and the case's sensitivity is recomputed from the
+         *     diagnoses that were actually stored.
+         */
+        put: operations["putEncounterDiagnoses"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/enrollments": {
         parameters: {
             query?: never;
@@ -978,6 +1037,150 @@ export interface paths {
          *     sessions and had four still holds the other two.
          */
         post: operations["completeFulfilment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/health-access-log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Who looked at a person's clinical data, when, and why. This is the member's own
+         *     right to know, answered from audit.access_event rather than from anything this
+         *     module keeps for itself.
+         *
+         *     It carries only HEALTH-classified reads, and the financial projection is deliberately
+         *     absent from it: a read that saw no clinical detail is not a clinical access. A
+         *     refused sensitive read is present, with outcome DENIED.
+         */
+        get: operations["listHealthAccessLog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/health-cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The tenant's health cases, newest first, with keyset paging.
+         *
+         *     Every row on the page is served in one of two projections, decided by what the
+         *     caller holds and applied before the record is serialised — never by a screen
+         *     dropping fields. A caller holding health.clinical.read sees the clinical projection:
+         *     everything, including each encounter's branch code and clinical notes. A caller
+         *     holding only health.case.read sees the financial projection: identity, type, dates,
+         *     provider and status, and nothing from which a diagnosis could be inferred — no
+         *     branch code, no clinical notes, no sensitivity, no diagnosis count. `projection`
+         *     says which one was served, so a screen can say "you may not see clinical detail"
+         *     rather than silently show half a record.
+         *
+         *     A SENSITIVE case is served in the clinical projection only to a caller who also
+         *     holds health.sensitive.read and states a purpose in X-Access-Purpose; without either
+         *     it appears in the financial projection like any other case, because its sensitivity
+         *     is itself sensitive. A list never answers 428 — a single read does.
+         *
+         *     Each row served in the clinical projection writes an audit.access_event with
+         *     data_classification HEALTH and access_type SEARCH. The financial projection writes
+         *     none: it carries nothing clinical.
+         */
+        get: operations["listHealthCases"];
+        put?: never;
+        /**
+         * @description Opens a case for a member, either from a service request of type DIRECT_SERVICE or
+         *     PREAUTHORIZATION or standalone by a provider. The enrollment has to belong to the
+         *     person and the program named, which is checked rather than trusted.
+         *
+         *     A new case is always STANDARD: sensitivity is derived from the diagnoses recorded
+         *     against its encounters and is never sent by a caller. A caller that could set it
+         *     could clear it.
+         */
+        post: operations["createHealthCase"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/health-cases/{caseId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One case with its encounters, in the projection the caller has earned.
+         *
+         *     This is the read that demands a purpose. A SENSITIVE case read by a caller holding
+         *     health.clinical.read and health.sensitive.read but sending no X-Access-Purpose is
+         *     answered 428 ACCESS_PURPOSE_REQUIRED and the refusal is recorded as a DENIED access
+         *     event: "who tried" is as much a part of the record as "who looked". A caller holding
+         *     clinical read but not the sensitive grant is served the financial projection instead
+         *     of being refused, because a refusal would itself say the case is sensitive.
+         */
+        get: operations["getHealthCase"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/health-cases/{caseId}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Closes a case. Every encounter has to have ended and no inpatient stay may still be
+         *     open: a case closed over an open encounter is a case nobody can bill and a member
+         *     nobody can account for.
+         */
+        post: operations["closeHealthCase"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/health-cases/{caseId}/encounters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Records one contact inside a case: when it started, where, with whom, and the
+         *     clinical notes if there are any.
+         *
+         *     notesClinical is the one free-text clinical field in this module. It is classified
+         *     HEALTH and is never returned to a caller without health.clinical.read, which is why
+         *     writing one needs that grant as well: a caller who may not read clinical detail has
+         *     no business writing it.
+         */
+        post: operations["createEncounter"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3537,6 +3740,14 @@ export interface components {
          * @enum {string}
          */
         AuthorizationStatus: "ACTIVE" | "PARTIALLY_USED" | "USED" | "EXPIRED" | "CANCELLED";
+        CloseHealthCase: {
+            /**
+             * @description Free text kept on the audit row, not on the case. Two hundred characters is the
+             *     audit detail limit: a longer value would be dropped by the sanitiser without
+             *     anybody being told, so it is refused here instead.
+             */
+            reasonText?: string | null;
+        };
         CodeSystem: {
             authority: components["schemas"]["CodeSystemAuthority"];
             code: string;
@@ -3811,6 +4022,19 @@ export interface components {
              */
             requiredPermission?: string;
         };
+        CreateEncounter: {
+            branchCode?: string | null;
+            encounterType: components["schemas"]["EncounterType"];
+            /** Format: date-time */
+            endedAt?: string | null;
+            /** Format: uuid */
+            locationId?: string | null;
+            notesClinical?: string | null;
+            /** Format: uuid */
+            practitionerId?: string | null;
+            /** Format: date-time */
+            startedAt: string;
+        };
         CreateEnrollmentRequest: {
             enrollmentReason?: string;
             /** Format: uuid */
@@ -3839,6 +4063,37 @@ export interface components {
             practitionerId?: string;
             /** Format: uuid */
             providerProfileId?: string;
+        };
+        CreateHealthCase: {
+            caseType: components["schemas"]["HealthCaseType"];
+            /** Format: uuid */
+            enrollmentId: string;
+            /**
+             * Format: date-time
+             * @description Defaults to now; may not be in the future.
+             */
+            openedAt?: string | null;
+            /** Format: uuid */
+            personId: string;
+            /**
+             * Format: uuid
+             * @description Optional: an enrollment belongs to exactly one program, so the server derives it
+             *     and refuses a caller that names a different one. A provider-scoped actor may
+             *     read neither programs nor enrollments and could not repeat an id it never saw.
+             */
+            programId?: string | null;
+            /**
+             * Format: uuid
+             * @description The provider the case belongs to. A provider-scoped caller may only name an
+             *     organization it holds, and one holding exactly one does not have to say which.
+             */
+            providerOrganizationId?: string | null;
+            /**
+             * Format: uuid
+             * @description The DIRECT_SERVICE or PREAUTHORIZATION request the case was opened for. Null for
+             *     a case a provider opened standalone.
+             */
+            serviceRequestId?: string | null;
         };
         CreateLegalHold: {
             /** Format: uuid */
@@ -4155,6 +4410,45 @@ export interface components {
         DecimalPercent: string;
         /** @description A rate with at most two decimals, as an exact decimal string. */
         DecimalRate: string;
+        Diagnosis: {
+            code: string;
+            /** @description The code system the diagnosis was coded in, for example ICD10. */
+            codeSystemCode: string;
+            /** Format: uuid */
+            codeSystemId: string;
+            /** Format: uuid */
+            codeValueId: string;
+            diagnosisType: components["schemas"]["DiagnosisType"];
+            display: string;
+            /** Format: uuid */
+            encounterId: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            recordedAt: string;
+            /** Format: uuid */
+            recordedBy?: string | null;
+            /**
+             * @description Read from the code value's own category when the diagnosis was written, never
+             *     sent by a caller. It appears only here, where the caller already holds the
+             *     clinical read this endpoint requires.
+             */
+            sensitive: boolean;
+        };
+        DiagnosisInput: {
+            /**
+             * Format: uuid
+             * @description The catalogue code value. Its code system and its sensitivity are read from the
+             *     catalogue, so neither is a field a caller can disagree with.
+             */
+            codeValueId: string;
+            diagnosisType: components["schemas"]["DiagnosisType"];
+        };
+        DiagnosisList: {
+            items: components["schemas"]["Diagnosis"][];
+        };
+        /** @enum {string} */
+        DiagnosisType: "PRIMARY" | "SECONDARY" | "SUSPECTED";
         Document: {
             /**
              * @description Which of the two worlds the bytes are in. It is never `secure` unless the scan
@@ -4375,6 +4669,35 @@ export interface components {
             /** Format: date */
             serviceDate: string;
         };
+        Encounter: {
+            /**
+             * @description The medical branch, from a code system. Present only in the clinical
+             *     projection: a branch of "onkoloji" is a diagnosis anybody can read off a roster.
+             */
+            branchCode?: string | null;
+            /** Format: uuid */
+            caseId: string;
+            /** Format: date-time */
+            createdAt: string;
+            encounterType: components["schemas"]["EncounterType"];
+            /** Format: date-time */
+            endedAt?: string | null;
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            locationId?: string | null;
+            /** @description Present only in the clinical projection. */
+            notesClinical?: string | null;
+            /** Format: uuid */
+            practitionerId?: string | null;
+            projection: components["schemas"]["HealthProjection"];
+            /** Format: int64 */
+            rowVersion: number;
+            /** Format: date-time */
+            startedAt: string;
+        };
+        /** @enum {string} */
+        EncounterType: "OUTPATIENT" | "INPATIENT" | "EMERGENCY" | "TELEHEALTH";
         EndPeriodCommand: {
             /** Format: date */
             endsOn: string;
@@ -4589,6 +4912,82 @@ export interface components {
          * @enum {string}
          */
         FulfilmentStatus: "RECORDED" | "COMPLETED" | "CANCELLED";
+        HealthAccessEvent: {
+            /** @enum {string} */
+            accessType: "VIEW" | "SEARCH" | "DOWNLOAD" | "EXPORT" | "PRINT" | "BREAK_GLASS";
+            /** Format: uuid */
+            actorId: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            membershipId?: string | null;
+            /** Format: date-time */
+            occurredAt: string;
+            /** @enum {string} */
+            outcome: "SUCCESS" | "DENIED";
+            /** Format: uuid */
+            personId?: string | null;
+            purposeCode?: string | null;
+            reasonText?: string | null;
+            /** Format: uuid */
+            resourceId?: string | null;
+            resourceType: string;
+        };
+        HealthAccessLogPage: {
+            items: components["schemas"]["HealthAccessEvent"][];
+            nextCursor?: string | null;
+        };
+        HealthCase: {
+            caseType: components["schemas"]["HealthCaseType"];
+            /** Format: date-time */
+            closedAt?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            encounters: components["schemas"]["Encounter"][];
+            /** Format: uuid */
+            enrollmentId: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            openedAt: string;
+            /** Format: uuid */
+            personId: string;
+            /** Format: uuid */
+            programId: string;
+            projection: components["schemas"]["HealthProjection"];
+            /** Format: uuid */
+            providerOrganizationId?: string | null;
+            /** Format: int64 */
+            rowVersion: number;
+            /** @description Present only in the clinical projection. */
+            sensitivity?: components["schemas"]["HealthCaseSensitivity"];
+            /** Format: uuid */
+            serviceRequestId?: string | null;
+            status: components["schemas"]["HealthCaseStatus"];
+        };
+        HealthCasePage: {
+            items: components["schemas"]["HealthCase"][];
+            nextCursor?: string | null;
+        };
+        /**
+         * @description Whether any diagnosis on the case falls in a category v1.2 11.10 protects further
+         *     (psychiatry, genetics, reproductive health). It is itself clinical and appears only
+         *     in the clinical projection.
+         * @enum {string}
+         */
+        HealthCaseSensitivity: "STANDARD" | "SENSITIVE";
+        /** @enum {string} */
+        HealthCaseStatus: "OPEN" | "CLOSED";
+        /** @enum {string} */
+        HealthCaseType: "OUTPATIENT" | "INPATIENT" | "CHRONIC" | "MATERNITY" | "OTHER";
+        /**
+         * @description Which half of the record was served. It reports what the caller holds, which the
+         *     caller already knows, so it reveals nothing about the patient — and it is what lets
+         *     a screen say "you may not see clinical detail" instead of showing a record with
+         *     holes in it.
+         * @enum {string}
+         */
+        HealthProjection: "CLINICAL" | "FINANCIAL";
         HealthStatus: {
             checks?: {
                 [key: string]: string;
@@ -5722,6 +6121,10 @@ export interface components {
              *     this action needs no policy at all, and it removes whatever was there.
              */
             policies: components["schemas"]["ApprovalPolicyInput"][];
+        };
+        PutEncounterDiagnoses: {
+            /** @description The whole set. An empty array clears the encounter's diagnoses. */
+            items: components["schemas"]["DiagnosisInput"][];
         };
         PutNotificationPreferences: {
             preferences: components["schemas"]["NotificationPreferenceInput"][];
@@ -6900,9 +7303,30 @@ export interface components {
         };
     };
     parameters: {
+        /**
+         * @description Why the caller is opening clinical data, as a code from the clinical access purpose
+         *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+         *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+         *     read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+         *     event, because "who read this" without "why" is not an answer a data protection
+         *     review can use.
+         */
+        AccessPurposeHeader: "TREATMENT" | "PRE_AUTHORIZATION" | "CLAIM_REVIEW" | "MEDICAL_REVIEW" | "AUDIT" | "MEMBER_REQUEST";
+        /**
+         * @description Free text beside the purpose, at most 200 characters once decoded, kept on the access
+         *     event. It never carries an identifier: the event already names the person and the
+         *     actor.
+         *
+         *     The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+         *     ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+         *     the Turkish somebody would actually type. A value with no percent sequences decodes
+         *     to itself, so a plain ASCII reason may be sent as it is.
+         */
+        AccessReasonHeader: string;
         AccountId: string;
         AdjustmentId: string;
         AuthorizationId: string;
+        CaseId: string;
         CodeSystemId: string;
         ContractId: string;
         ContractVersionId: string;
@@ -6912,6 +7336,7 @@ export interface components {
         Cursor: string;
         DocumentId: string;
         DocumentLinkId: string;
+        EncounterId: string;
         EnrollmentId: string;
         EvaluationId: string;
         FulfilmentId: string;
@@ -6972,6 +7397,7 @@ export type SchemaAuthorizationItem = components['schemas']['AuthorizationItem']
 export type SchemaAuthorizationItemInput = components['schemas']['AuthorizationItemInput'];
 export type SchemaAuthorizationPage = components['schemas']['AuthorizationPage'];
 export type SchemaAuthorizationStatus = components['schemas']['AuthorizationStatus'];
+export type SchemaCloseHealthCase = components['schemas']['CloseHealthCase'];
 export type SchemaCodeSystem = components['schemas']['CodeSystem'];
 export type SchemaCodeSystemAuthority = components['schemas']['CodeSystemAuthority'];
 export type SchemaCodeSystemPage = components['schemas']['CodeSystemPage'];
@@ -6996,8 +7422,10 @@ export type SchemaCreateCodeSystemRequest = components['schemas']['CreateCodeSys
 export type SchemaCreateContractRequest = components['schemas']['CreateContractRequest'];
 export type SchemaCreateContractVersionRequest = components['schemas']['CreateContractVersionRequest'];
 export type SchemaCreateDocumentLink = components['schemas']['CreateDocumentLink'];
+export type SchemaCreateEncounter = components['schemas']['CreateEncounter'];
 export type SchemaCreateEnrollmentRequest = components['schemas']['CreateEnrollmentRequest'];
 export type SchemaCreateFulfilment = components['schemas']['CreateFulfilment'];
+export type SchemaCreateHealthCase = components['schemas']['CreateHealthCase'];
 export type SchemaCreateLegalHold = components['schemas']['CreateLegalHold'];
 export type SchemaCreateMembershipRequest = components['schemas']['CreateMembershipRequest'];
 export type SchemaCreateNotificationTemplate = components['schemas']['CreateNotificationTemplate'];
@@ -7021,6 +7449,10 @@ export type SchemaCreateWorkQueue = components['schemas']['CreateWorkQueue'];
 export type SchemaDecimalAmount = components['schemas']['DecimalAmount'];
 export type SchemaDecimalPercent = components['schemas']['DecimalPercent'];
 export type SchemaDecimalRate = components['schemas']['DecimalRate'];
+export type SchemaDiagnosis = components['schemas']['Diagnosis'];
+export type SchemaDiagnosisInput = components['schemas']['DiagnosisInput'];
+export type SchemaDiagnosisList = components['schemas']['DiagnosisList'];
+export type SchemaDiagnosisType = components['schemas']['DiagnosisType'];
 export type SchemaDocument = components['schemas']['Document'];
 export type SchemaDocumentClassification = components['schemas']['DocumentClassification'];
 export type SchemaDocumentDownload = components['schemas']['DocumentDownload'];
@@ -7032,6 +7464,8 @@ export type SchemaDownloadDocument = components['schemas']['DownloadDocument'];
 export type SchemaEligibilityCheckRequest = components['schemas']['EligibilityCheckRequest'];
 export type SchemaEligibilityCheckResult = components['schemas']['EligibilityCheckResult'];
 export type SchemaEligibilityEvaluation = components['schemas']['EligibilityEvaluation'];
+export type SchemaEncounter = components['schemas']['Encounter'];
+export type SchemaEncounterType = components['schemas']['EncounterType'];
 export type SchemaEndPeriodCommand = components['schemas']['EndPeriodCommand'];
 export type SchemaEnrollment = components['schemas']['Enrollment'];
 export type SchemaEnrollmentPage = components['schemas']['EnrollmentPage'];
@@ -7047,6 +7481,14 @@ export type SchemaFulfilmentItem = components['schemas']['FulfilmentItem'];
 export type SchemaFulfilmentItemInput = components['schemas']['FulfilmentItemInput'];
 export type SchemaFulfilmentPage = components['schemas']['FulfilmentPage'];
 export type SchemaFulfilmentStatus = components['schemas']['FulfilmentStatus'];
+export type SchemaHealthAccessEvent = components['schemas']['HealthAccessEvent'];
+export type SchemaHealthAccessLogPage = components['schemas']['HealthAccessLogPage'];
+export type SchemaHealthCase = components['schemas']['HealthCase'];
+export type SchemaHealthCasePage = components['schemas']['HealthCasePage'];
+export type SchemaHealthCaseSensitivity = components['schemas']['HealthCaseSensitivity'];
+export type SchemaHealthCaseStatus = components['schemas']['HealthCaseStatus'];
+export type SchemaHealthCaseType = components['schemas']['HealthCaseType'];
+export type SchemaHealthProjection = components['schemas']['HealthProjection'];
 export type SchemaHealthStatus = components['schemas']['HealthStatus'];
 export type SchemaIdentifierSearchRequest = components['schemas']['IdentifierSearchRequest'];
 export type SchemaImportCodeValuesRequest = components['schemas']['ImportCodeValuesRequest'];
@@ -7137,6 +7579,7 @@ export type SchemaProviderSearchResult = components['schemas']['ProviderSearchRe
 export type SchemaProviderStatus = components['schemas']['ProviderStatus'];
 export type SchemaProviderType = components['schemas']['ProviderType'];
 export type SchemaPutApprovalPolicies = components['schemas']['PutApprovalPolicies'];
+export type SchemaPutEncounterDiagnoses = components['schemas']['PutEncounterDiagnoses'];
 export type SchemaPutNotificationPreferences = components['schemas']['PutNotificationPreferences'];
 export type SchemaPutPaymentTermRequest = components['schemas']['PutPaymentTermRequest'];
 export type SchemaQuotaPeriodType = components['schemas']['QuotaPeriodType'];
@@ -7250,9 +7693,12 @@ export type ResponseNotFound = components['responses']['NotFound'];
 export type ResponseTooManyRequests = components['responses']['TooManyRequests'];
 export type ResponseUnauthorized = components['responses']['Unauthorized'];
 export type ResponseValidationError = components['responses']['ValidationError'];
+export type ParameterAccessPurposeHeader = components['parameters']['AccessPurposeHeader'];
+export type ParameterAccessReasonHeader = components['parameters']['AccessReasonHeader'];
 export type ParameterAccountId = components['parameters']['AccountId'];
 export type ParameterAdjustmentId = components['parameters']['AdjustmentId'];
 export type ParameterAuthorizationId = components['parameters']['AuthorizationId'];
+export type ParameterCaseId = components['parameters']['CaseId'];
 export type ParameterCodeSystemId = components['parameters']['CodeSystemId'];
 export type ParameterContractId = components['parameters']['ContractId'];
 export type ParameterContractVersionId = components['parameters']['ContractVersionId'];
@@ -7260,6 +7706,7 @@ export type ParameterCsrfHeader = components['parameters']['CsrfHeader'];
 export type ParameterCursor = components['parameters']['Cursor'];
 export type ParameterDocumentId = components['parameters']['DocumentId'];
 export type ParameterDocumentLinkId = components['parameters']['DocumentLinkId'];
+export type ParameterEncounterId = components['parameters']['EncounterId'];
 export type ParameterEnrollmentId = components['parameters']['EnrollmentId'];
 export type ParameterEvaluationId = components['parameters']['EvaluationId'];
 export type ParameterFulfilmentId = components['parameters']['FulfilmentId'];
@@ -9018,6 +9465,176 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    getEncounter: {
+        parameters: {
+            query?: never;
+            header: {
+                /**
+                 * @description Why the caller is opening clinical data, as a code from the clinical access purpose
+                 *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+                 *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+                 *     read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+                 *     event, because "who read this" without "why" is not an answer a data protection
+                 *     review can use.
+                 */
+                "X-Access-Purpose"?: components["parameters"]["AccessPurposeHeader"];
+                /**
+                 * @description Free text beside the purpose, at most 200 characters once decoded, kept on the access
+                 *     event. It never carries an identifier: the event already names the person and the
+                 *     actor.
+                 *
+                 *     The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+                 *     ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+                 *     the Turkish somebody would actually type. A value with no percent sequences decodes
+                 *     to itself, so a plain ASCII reason may be sent as it is.
+                 */
+                "X-Access-Reason"?: components["parameters"]["AccessReasonHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                encounterId: components["parameters"]["EncounterId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Encounter */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Encounter"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
+            /** @description The encounter belongs to a sensitive case and no purpose was stated */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listEncounterDiagnoses: {
+        parameters: {
+            query?: never;
+            header: {
+                /**
+                 * @description Why the caller is opening clinical data, as a code from the clinical access purpose
+                 *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+                 *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+                 *     read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+                 *     event, because "who read this" without "why" is not an answer a data protection
+                 *     review can use.
+                 */
+                "X-Access-Purpose"?: components["parameters"]["AccessPurposeHeader"];
+                /**
+                 * @description Free text beside the purpose, at most 200 characters once decoded, kept on the access
+                 *     event. It never carries an identifier: the event already names the person and the
+                 *     actor.
+                 *
+                 *     The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+                 *     ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+                 *     the Turkish somebody would actually type. A value with no percent sequences decodes
+                 *     to itself, so a plain ASCII reason may be sent as it is.
+                 */
+                "X-Access-Reason"?: components["parameters"]["AccessReasonHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                encounterId: components["parameters"]["EncounterId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Diagnoses */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisList"];
+                };
+            };
+            /**
+             * @description The caller does not hold the clinical read this endpoint requires. It is never
+             *     an empty list, because an empty list is itself an answer about the patient.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
+            /** @description The encounter belongs to a sensitive case and no purpose was stated */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    putEncounterDiagnoses: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                encounterId: components["parameters"]["EncounterId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PutEncounterDiagnoses"];
+            };
+        };
+        responses: {
+            /** @description The stored diagnosis set */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisList"];
+                };
+            };
+            /** @description The caller does not hold the clinical read writing a diagnosis requires */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
     listEnrollments: {
         parameters: {
             query?: {
@@ -9573,6 +10190,301 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+        };
+    };
+    listHealthAccessLog: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                /** @description The member whose clinical data the log is about. */
+                personId?: string;
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Access log page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HealthAccessLogPage"];
+                };
+            };
+            /** @description Cursor invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    listHealthCases: {
+        parameters: {
+            query?: {
+                caseType?: components["schemas"]["HealthCaseType"];
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                openedFrom?: string;
+                /** @description Exclusive upper bound. */
+                openedTo?: string;
+                /** @description Keep only the cases of one member. */
+                personId?: string;
+                programId?: string;
+                providerOrganizationId?: string;
+                status?: components["schemas"]["HealthCaseStatus"];
+            };
+            header: {
+                /**
+                 * @description Why the caller is opening clinical data, as a code from the clinical access purpose
+                 *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+                 *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+                 *     read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+                 *     event, because "who read this" without "why" is not an answer a data protection
+                 *     review can use.
+                 */
+                "X-Access-Purpose"?: components["parameters"]["AccessPurposeHeader"];
+                /**
+                 * @description Free text beside the purpose, at most 200 characters once decoded, kept on the access
+                 *     event. It never carries an identifier: the event already names the person and the
+                 *     actor.
+                 *
+                 *     The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+                 *     ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+                 *     the Turkish somebody would actually type. A value with no percent sequences decodes
+                 *     to itself, so a plain ASCII reason may be sent as it is.
+                 */
+                "X-Access-Reason"?: components["parameters"]["AccessReasonHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Health case page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HealthCasePage"];
+                };
+            };
+            /** @description Cursor invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    createHealthCase: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateHealthCase"];
+            };
+        };
+        responses: {
+            /** @description Case opened */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HealthCase"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getHealthCase: {
+        parameters: {
+            query?: never;
+            header: {
+                /**
+                 * @description Why the caller is opening clinical data, as a code from the clinical access purpose
+                 *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+                 *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+                 *     read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+                 *     event, because "who read this" without "why" is not an answer a data protection
+                 *     review can use.
+                 */
+                "X-Access-Purpose"?: components["parameters"]["AccessPurposeHeader"];
+                /**
+                 * @description Free text beside the purpose, at most 200 characters once decoded, kept on the access
+                 *     event. It never carries an identifier: the event already names the person and the
+                 *     actor.
+                 *
+                 *     The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+                 *     ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+                 *     the Turkish somebody would actually type. A value with no percent sequences decodes
+                 *     to itself, so a plain ASCII reason may be sent as it is.
+                 */
+                "X-Access-Reason"?: components["parameters"]["AccessReasonHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                caseId: components["parameters"]["CaseId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Health case */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HealthCase"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
+            /**
+             * @description The case is sensitive and the caller stated no access purpose. Send
+             *     X-Access-Purpose with a code from the clinical access purpose reference.
+             */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    closeHealthCase: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                caseId: components["parameters"]["CaseId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CloseHealthCase"];
+            };
+        };
+        responses: {
+            /** @description Case closed */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HealthCase"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description The case changed since the caller read it */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match is missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createEncounter: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                caseId: components["parameters"]["CaseId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateEncounter"];
+            };
+        };
+        responses: {
+            /** @description Encounter recorded */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Encounter"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listMemberImports: {

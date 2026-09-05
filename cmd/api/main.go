@@ -34,6 +34,9 @@ import (
 	documentapp "github.com/celikbros/kapsora/internal/document/application"
 	documentpg "github.com/celikbros/kapsora/internal/document/infrastructure/postgres"
 	documenthttp "github.com/celikbros/kapsora/internal/document/transport/http"
+	healthapp "github.com/celikbros/kapsora/internal/health/application"
+	healthpg "github.com/celikbros/kapsora/internal/health/infrastructure/postgres"
+	healthhttp "github.com/celikbros/kapsora/internal/health/transport/http"
 	"github.com/celikbros/kapsora/internal/identity"
 	"github.com/celikbros/kapsora/internal/identity/application"
 	"github.com/celikbros/kapsora/internal/identity/domain"
@@ -258,6 +261,17 @@ func run() error {
 		return err
 	}
 
+	// The health case. It is the module that decides which half of a clinical record a
+	// caller is shown, and it decides it in one place — so nothing else here is allowed to
+	// hold a health service of its own. Stays is left at its default: WP-I5-03 owns the
+	// inpatient stay and until it lands "no stay is open" is the only honest answer.
+	healthSvc, err := healthapp.New(healthapp.Deps{
+		Pool: pool, Repo: healthpg.New(), Audit: auditpg.New(), Cursors: cursors, Logger: logger,
+	})
+	if err != nil {
+		return err
+	}
+
 	// The eligibility service shares the entitlement movement engine, so a check that
 	// opens an account lazily and a reservation on the same account run the same code.
 	eligibilitySvc, err := benefiteligibility.New(benefiteligibility.Deps{
@@ -288,6 +302,7 @@ func run() error {
 		authorizations: authorizationSvc,
 		workflows:      workflowSvc,
 		documents:      documentSvc,
+		health:         healthSvc,
 		notifications:  notificationSvc,
 		entitlements:   entitlementSvc,
 		eligibility:    eligibilitySvc,
@@ -407,6 +422,7 @@ type routerDeps struct {
 	authorizations *authorizationapp.Service
 	workflows      *workflowapp.Service
 	documents      *documentapp.Service
+	health         *healthapp.Service
 	notifications  *notificationapp.Service
 	entitlements   *benefitledger.Service
 	eligibility    *benefiteligibility.Service
@@ -661,6 +677,26 @@ func newRouter(d routerDeps) http.Handler {
 			tenant.Route("/legal-holds", func(r chi.Router) {
 				documentHandler.LegalHoldRoutes(r, documentMW)
 			})
+
+			// The health case. Every read below is served in one of two projections and the
+			// projection is chosen in the application service, so a screen never has to be
+			// trusted to drop a field: what a sponsor's HR user may not see never leaves
+			// this process. The routes carry X-Access-Purpose and X-Access-Reason, which is
+			// how a sensitive read says why it happened; the access event carries them on.
+			healthHandler := healthhttp.NewHandler(d.health, sessions, d.logger)
+			healthMW := healthhttp.Middlewares{
+				CreateCase:      d.idempotent("health_case.create"),
+				CloseCase:       d.idempotent("health_case.close"),
+				CreateEncounter: d.idempotent("health_encounter.create"),
+				PutDiagnoses:    d.idempotent("health_diagnosis.put"),
+			}
+			tenant.Route("/health-cases", func(r chi.Router) {
+				healthHandler.CaseRoutes(r, healthMW)
+			})
+			tenant.Route("/encounters", func(r chi.Router) {
+				healthHandler.EncounterRoutes(r, healthMW)
+			})
+			tenant.Route("/health-access-log", healthHandler.AccessLogRoutes)
 
 			// Notifications. Templates are configuration, the message log is a record of
 			// what members were actually told, and preferences are what they asked for;

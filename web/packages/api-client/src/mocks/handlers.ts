@@ -11,6 +11,7 @@ import { contractHandlers } from './contract-handlers';
 import { documentHandlers } from './document-handlers';
 import { eligibilityHandlers } from './eligibility-handlers';
 import { entitlementHandlers } from './entitlement-handlers';
+import { healthHandlers } from './health-handlers';
 import { importHandlers } from './import-handlers';
 import { notificationHandlers } from './notification-handlers';
 import { pricingHandlers } from './pricing-handlers';
@@ -1343,6 +1344,8 @@ export function createHandlers(api: MockApi): HttpHandler[] {
     ...workflowHandlers(api),
     ...documentHandlers(api),
     ...notificationHandlers(api),
+    // M5: the health case, and the projection that decides which half of it a caller sees.
+    ...healthHandlers(api),
   ];
 }
 

@@ -339,7 +339,18 @@
     "NOTIFICATION_TEMPLATE_MISSING": "Bu olay, kanal ve dil için yayınlanmış şablon yok.",
     "NOTIFICATION_MESSAGE_NOT_FOUND": "Bildirim kaydı bulunamadı.",
     "NOTIFICATION_MESSAGE_NOT_RESENDABLE": "Bu bildirim yeniden gönderilemez.",
-    "NOTIFICATION_RECIPIENT_OPTED_OUT": "Alıcı bu bildirimi kapatmış."
+    "NOTIFICATION_RECIPIENT_OPTED_OUT": "Alıcı bu bildirimi kapatmış.",
+    "HEALTH_CASE_NOT_FOUND": "Sağlık vakası bulunamadı ya da bu kurumda görünmüyor.",
+    "ENCOUNTER_NOT_FOUND": "Encounter bulunamadı ya da bu kurumda görünmüyor.",
+    "CLINICAL_READ_REQUIRED": "Klinik detayı (tanı, klinik not) görmek için ek yetki gerekiyor.",
+    "ACCESS_PURPOSE_REQUIRED": "Bu kaydı açmak için erişim amacınızı belirtmelisiniz.",
+    "HEALTH_CASE_CLOSED": "Sağlık vakası kapandı; kapalı bir vakaya kayıt eklenemez.",
+    "HEALTH_CASE_ENCOUNTER_OPEN": "Vakada bitmemiş bir encounter var. Vakayı kapatmadan önce hepsini sonlandırın.",
+    "HEALTH_CASE_STAY_OPEN": "Vakada açık bir yatış var. Vakayı kapatmadan önce taburcu işlemini tamamlayın.",
+    "HEALTH_CASE_ENROLLMENT_MISMATCH": "Plan kaydı bu kişiye ya da programa ait değil.",
+    "HEALTH_CASE_REQUEST_NOT_ELIGIBLE": "Bu talepten sağlık vakası açılamaz; vaka yalnızca sağlık alanındaki doğrudan hizmet ya da ön onay talebinden açılır.",
+    "HEALTH_CASE_PROVIDER_SCOPE": "Bu sağlayıcı adına işlem yapamazsınız.",
+    "HEALTH_CASE_PROVIDER_UNKNOWN": "Seçilen kurum bu tenant'ın sağlayıcısı değil."
   },
   "fieldErrors": {
     "RULE_COMPILE_FAILED": "Kural koşulu derlenemedi",
@@ -387,7 +398,9 @@
     "PERIOD": "Bitiş tarihi başlangıçtan sonra olmalı",
     "NOT_FOUND": "Seçilen kayıt bulunamadı",
     "MAX_ITEMS": "Satır sayısı üst sınırı aşıyor",
-    "PRIORITY_DUPLICATE": "Bu sıra numarası başka bir kuralda kullanılıyor"
+    "PRIORITY_DUPLICATE": "Bu sıra numarası başka bir kuralda kullanılıyor",
+    "DUPLICATE_PRIMARY": "Bir encounter'da yalnızca bir ana tanı olabilir",
+    "INACTIVE": "Bu kayıt artık kullanımda değil"
   },
   "people": {
     "title": "Hak Sahipleri",

@@ -57,7 +57,8 @@ func RoleTemplates() []RoleTemplate {
 		{Code: "MEDICAL_REVIEWER", Name: "Tıbbi Değerlendirici", Scope: ScopeTenant,
 			Description: "Sağlık ön onayı, rapor ve klinik claim değerlendirmesi; settlement yetkisi yok.",
 			Permissions: []string{"member.read", "service_request.read", "service_request.review", "authorization.manage",
-				"health.case.read", "health.clinical.read", "health.medical_report.review", "claim.read",
+				"health.case.read", "health.clinical.read", "health.sensitive.read",
+				"health.medical_report.review", "claim.read",
 				"claim.medical.review", "document.read", "document.link", "worklist.read", "worklist.claim"}},
 		{Code: "FINANCIAL_REVIEWER", Name: "Mali Değerlendirici", Scope: ScopeTenant,
 			Description: "Fiyat, fatura, kesinti, icmal, e-Belge eşleştirme ve mutabakat; klinik belge görmez.",
@@ -90,6 +91,15 @@ func RoleTemplates() []RoleTemplate {
 		{Code: "PROVIDER_RESERVATION", Name: "Sağlayıcı Rezervasyon", Scope: ScopeOrganization,
 			Description: "Konaklama kontenjanı, rezervasyon, check-in/out; sağlık verisine erişemez.",
 			Permissions: []string{"accommodation.inventory.manage", "accommodation.booking.manage", "member.read", "eligibility.check"}},
+		// The sponsor's own HR user. It exists so the acceptance criterion of WP-I5-01 has a
+		// subject: this is the role that may see that a member has an open health case, and
+		// may never see what the case is about. health.clinical.read is absent on purpose,
+		// and a test asserts its absence — a permission quietly added here would defeat the
+		// whole package without a single line of it changing.
+		{Code: "SPONSOR_HR", Name: "Sponsor İK", Scope: ScopeTenant,
+			Description: "Sponsor kurumun İK kullanıcısı: üye, talep ve hak durumu görür; klinik detaya asla erişemez.",
+			Permissions: []string{"member.read", "service_request.read", "health.case.read",
+				"entitlement.read", "report.read"}},
 		{Code: "MEMBER", Name: "Hak Sahibi", Scope: ScopeTenant,
 			Description: "Kendi hakları, başvuruları, rezervasyonları ve belgeleri.",
 			Permissions: []string{"eligibility.check", "service_request.read", "service_request.create", "service_request.submit",

@@ -59,6 +59,8 @@ tags:
     description: Belge yükleme, karantina taraması, güvenli indirme ve hukuki saklama
   - name: Notifications
     description: Bildirim şablonları, gönderilen mesajlar, gönderim denemeleri ve tercihler
+  - name: Clinical
+    description: Sağlık vakası, encounter, tanı ve klinik erişim kaydı
 paths:
   /health/live:
     get:
@@ -7594,6 +7596,423 @@ paths:
         '429':
           $ref: '#/components/responses/TooManyRequests'
 
+  /api/v1/health-cases:
+    get:
+      tags: [Clinical]
+      operationId: listHealthCases
+      description: |
+        The tenant's health cases, newest first, with keyset paging.
+
+        Every row on the page is served in one of two projections, decided by what the
+        caller holds and applied before the record is serialised — never by a screen
+        dropping fields. A caller holding health.clinical.read sees the clinical projection:
+        everything, including each encounter's branch code and clinical notes. A caller
+        holding only health.case.read sees the financial projection: identity, type, dates,
+        provider and status, and nothing from which a diagnosis could be inferred — no
+        branch code, no clinical notes, no sensitivity, no diagnosis count. `projection`
+        says which one was served, so a screen can say "you may not see clinical detail"
+        rather than silently show half a record.
+
+        A SENSITIVE case is served in the clinical projection only to a caller who also
+        holds health.sensitive.read and states a purpose in X-Access-Purpose; without either
+        it appears in the financial projection like any other case, because its sensitivity
+        is itself sensitive. A list never answers 428 — a single read does.
+
+        Each row served in the clinical projection writes an audit.access_event with
+        data_classification HEALTH and access_type SEARCH. The financial projection writes
+        none: it carries nothing clinical.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/AccessPurposeHeader'
+        - $ref: '#/components/parameters/AccessReasonHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: personId
+          in: query
+          description: Keep only the cases of one member.
+          schema:
+            type: string
+            format: uuid
+        - name: programId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: providerOrganizationId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/HealthCaseStatus'
+        - name: caseType
+          in: query
+          schema:
+            $ref: '#/components/schemas/HealthCaseType'
+        - name: openedFrom
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: openedTo
+          in: query
+          description: Exclusive upper bound.
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Health case page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCasePage'
+        '400':
+          description: Cursor invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags: [Clinical]
+      operationId: createHealthCase
+      description: |
+        Opens a case for a member, either from a service request of type DIRECT_SERVICE or
+        PREAUTHORIZATION or standalone by a provider. The enrollment has to belong to the
+        person and the program named, which is checked rather than trusted.
+
+        A new case is always STANDARD: sensitivity is derived from the diagnoses recorded
+        against its encounters and is never sent by a caller. A caller that could set it
+        could clear it.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateHealthCase'
+      responses:
+        '201':
+          description: Case opened
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCase'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/health-cases/{caseId}:
+    get:
+      tags: [Clinical]
+      operationId: getHealthCase
+      description: |
+        One case with its encounters, in the projection the caller has earned.
+
+        This is the read that demands a purpose. A SENSITIVE case read by a caller holding
+        health.clinical.read and health.sensitive.read but sending no X-Access-Purpose is
+        answered 428 ACCESS_PURPOSE_REQUIRED and the refusal is recorded as a DENIED access
+        event: "who tried" is as much a part of the record as "who looked". A caller holding
+        clinical read but not the sensitive grant is served the financial projection instead
+        of being refused, because a refusal would itself say the case is sensitive.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/CaseId'
+        - $ref: '#/components/parameters/AccessPurposeHeader'
+        - $ref: '#/components/parameters/AccessReasonHeader'
+      responses:
+        '200':
+          description: Health case
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCase'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: |
+            The case is sensitive and the caller stated no access purpose. Send
+            X-Access-Purpose with a code from the clinical access purpose reference.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/health-cases/{caseId}/close:
+    post:
+      tags: [Clinical]
+      operationId: closeHealthCase
+      description: |
+        Closes a case. Every encounter has to have ended and no inpatient stay may still be
+        open: a case closed over an open encounter is a case nobody can bill and a member
+        nobody can account for.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/CaseId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CloseHealthCase'
+      responses:
+        '200':
+          description: Case closed
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCase'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: The case changed since the caller read it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match is missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/health-cases/{caseId}/encounters:
+    post:
+      tags: [Clinical]
+      operationId: createEncounter
+      description: |
+        Records one contact inside a case: when it started, where, with whom, and the
+        clinical notes if there are any.
+
+        notesClinical is the one free-text clinical field in this module. It is classified
+        HEALTH and is never returned to a caller without health.clinical.read, which is why
+        writing one needs that grant as well: a caller who may not read clinical detail has
+        no business writing it.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/CaseId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEncounter'
+      responses:
+        '201':
+          description: Encounter recorded
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Encounter'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/encounters/{encounterId}:
+    get:
+      tags: [Clinical]
+      operationId: getEncounter
+      description: |
+        One encounter, in the projection the caller has earned. The financial projection
+        carries its dates, location and practitioner and neither its branch code nor its
+        clinical notes.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/EncounterId'
+        - $ref: '#/components/parameters/AccessPurposeHeader'
+        - $ref: '#/components/parameters/AccessReasonHeader'
+      responses:
+        '200':
+          description: Encounter
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Encounter'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: The encounter belongs to a sensitive case and no purpose was stated
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/encounters/{encounterId}/diagnoses:
+    get:
+      tags: [Clinical]
+      operationId: listEncounterDiagnoses
+      description: |
+        The encounter's diagnoses, primary first.
+
+        A caller holding health.case.read but not health.clinical.read is answered 403
+        CLINICAL_READ_REQUIRED rather than an empty list. That is the whole point of the
+        endpoint's shape: an empty list would tell the caller the encounter has no
+        diagnosis, which is a clinical fact it may not have.
+
+        A caller holding clinical read whose case is sensitive and who does not hold
+        health.sensitive.read gets the same 403 for the same reason: a refusal that named
+        sensitivity would say the case carries a psychiatric, genetic or reproductive health
+        category, which is exactly the fact being protected.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/EncounterId'
+        - $ref: '#/components/parameters/AccessPurposeHeader'
+        - $ref: '#/components/parameters/AccessReasonHeader'
+      responses:
+        '200':
+          description: Diagnoses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiagnosisList'
+        '403':
+          description: |
+            The caller does not hold the clinical read this endpoint requires. It is never
+            an empty list, because an empty list is itself an answer about the patient.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: The encounter belongs to a sensitive case and no purpose was stated
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+    put:
+      tags: [Clinical]
+      operationId: putEncounterDiagnoses
+      description: |
+        Replaces the encounter's diagnoses as a whole: the set is the unit, and a diagnosis
+        id is not something anything else hangs off. A second PRIMARY is refused with 422 —
+        every downstream rule asks "what was this for" and expects one answer.
+
+        `sensitive` is not accepted from the caller. It is read from each code value's own
+        category in the catalogue, and the case's sensitivity is recomputed from the
+        diagnoses that were actually stored.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/EncounterId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutEncounterDiagnoses'
+      responses:
+        '200':
+          description: The stored diagnosis set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiagnosisList'
+        '403':
+          description: The caller does not hold the clinical read writing a diagnosis requires
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/health-access-log:
+    get:
+      tags: [Clinical]
+      operationId: listHealthAccessLog
+      description: |
+        Who looked at a person's clinical data, when, and why. This is the member's own
+        right to know, answered from audit.access_event rather than from anything this
+        module keeps for itself.
+
+        It carries only HEALTH-classified reads, and the financial projection is deliberately
+        absent from it: a read that saw no clinical detail is not a clinical access. A
+        refused sensitive read is present, with outcome DENIED.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: personId
+          in: query
+          description: The member whose clinical data the log is about.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Access log page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthAccessLogPage'
+        '400':
+          description: Cursor invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
 components:
   securitySchemes:
     sessionCookie:
@@ -7930,6 +8349,50 @@ components:
       schema:
         type: string
         format: uuid
+    CaseId:
+      name: caseId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    EncounterId:
+      name: encounterId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    AccessPurposeHeader:
+      name: X-Access-Purpose
+      in: header
+      required: false
+      description: |
+        Why the caller is opening clinical data, as a code from the clinical access purpose
+        reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+        MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+        read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+        event, because "who read this" without "why" is not an answer a data protection
+        review can use.
+      schema:
+        type: string
+        enum: [TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT, MEMBER_REQUEST]
+    AccessReasonHeader:
+      name: X-Access-Reason
+      in: header
+      required: false
+      description: |
+        Free text beside the purpose, at most 200 characters once decoded, kept on the access
+        event. It never carries an identifier: the event already names the person and the
+        actor.
+
+        The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+        ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+        the Turkish somebody would actually type. A value with no percent sequences decodes
+        to itself, so a plain ASCII reason may be sent as it is.
+      schema:
+        type: string
+        maxLength: 800
   headers:
     ETag:
       description: Strong optimistic concurrency tag based on row_version.
@@ -14081,3 +14544,326 @@ components:
           minLength: 1
           maxLength: 60
           description: IANA zone name; defaults to Europe/Istanbul.
+    HealthCaseType:
+      type: string
+      enum: [OUTPATIENT, INPATIENT, CHRONIC, MATERNITY, OTHER]
+    HealthCaseStatus:
+      type: string
+      enum: [OPEN, CLOSED]
+    HealthCaseSensitivity:
+      type: string
+      enum: [STANDARD, SENSITIVE]
+      description: |
+        Whether any diagnosis on the case falls in a category v1.2 11.10 protects further
+        (psychiatry, genetics, reproductive health). It is itself clinical and appears only
+        in the clinical projection.
+    HealthProjection:
+      type: string
+      enum: [CLINICAL, FINANCIAL]
+      description: |
+        Which half of the record was served. It reports what the caller holds, which the
+        caller already knows, so it reveals nothing about the patient — and it is what lets
+        a screen say "you may not see clinical detail" instead of showing a record with
+        holes in it.
+    EncounterType:
+      type: string
+      enum: [OUTPATIENT, INPATIENT, EMERGENCY, TELEHEALTH]
+    DiagnosisType:
+      type: string
+      enum: [PRIMARY, SECONDARY, SUSPECTED]
+    HealthCase:
+      type: object
+      additionalProperties: false
+      required:
+        [id, personId, programId, enrollmentId, caseType, openedAt, status, projection,
+         encounters, createdAt, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        personId:
+          type: string
+          format: uuid
+        programId:
+          type: string
+          format: uuid
+        enrollmentId:
+          type: string
+          format: uuid
+        caseType:
+          $ref: '#/components/schemas/HealthCaseType'
+        providerOrganizationId:
+          type: [string, 'null']
+          format: uuid
+        openedAt:
+          type: string
+          format: date-time
+        closedAt:
+          type: [string, 'null']
+          format: date-time
+        status:
+          $ref: '#/components/schemas/HealthCaseStatus'
+        serviceRequestId:
+          type: [string, 'null']
+          format: uuid
+        projection:
+          $ref: '#/components/schemas/HealthProjection'
+        sensitivity:
+          $ref: '#/components/schemas/HealthCaseSensitivity'
+          description: Present only in the clinical projection.
+        encounters:
+          type: array
+          items:
+            $ref: '#/components/schemas/Encounter'
+        createdAt:
+          type: string
+          format: date-time
+        rowVersion:
+          type: integer
+          format: int64
+    HealthCasePage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/HealthCase'
+        nextCursor:
+          type: [string, 'null']
+    Encounter:
+      type: object
+      additionalProperties: false
+      required: [id, caseId, encounterType, startedAt, projection, createdAt, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        caseId:
+          type: string
+          format: uuid
+        encounterType:
+          $ref: '#/components/schemas/EncounterType'
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: [string, 'null']
+          format: date-time
+        locationId:
+          type: [string, 'null']
+          format: uuid
+        practitionerId:
+          type: [string, 'null']
+          format: uuid
+        projection:
+          $ref: '#/components/schemas/HealthProjection'
+        branchCode:
+          type: [string, 'null']
+          maxLength: 64
+          description: |
+            The medical branch, from a code system. Present only in the clinical
+            projection: a branch of "onkoloji" is a diagnosis anybody can read off a roster.
+        notesClinical:
+          type: [string, 'null']
+          maxLength: 4000
+          description: Present only in the clinical projection.
+        createdAt:
+          type: string
+          format: date-time
+        rowVersion:
+          type: integer
+          format: int64
+    Diagnosis:
+      type: object
+      additionalProperties: false
+      required:
+        [id, encounterId, codeSystemId, codeSystemCode, codeValueId, code, display,
+         diagnosisType, sensitive, recordedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        encounterId:
+          type: string
+          format: uuid
+        codeSystemId:
+          type: string
+          format: uuid
+        codeSystemCode:
+          type: string
+          description: The code system the diagnosis was coded in, for example ICD10.
+        codeValueId:
+          type: string
+          format: uuid
+        code:
+          type: string
+        display:
+          type: string
+        diagnosisType:
+          $ref: '#/components/schemas/DiagnosisType'
+        sensitive:
+          type: boolean
+          description: |
+            Read from the code value's own category when the diagnosis was written, never
+            sent by a caller. It appears only here, where the caller already holds the
+            clinical read this endpoint requires.
+        recordedAt:
+          type: string
+          format: date-time
+        recordedBy:
+          type: [string, 'null']
+          format: uuid
+    DiagnosisList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Diagnosis'
+    CreateHealthCase:
+      type: object
+      additionalProperties: false
+      required: [personId, enrollmentId, caseType]
+      properties:
+        personId:
+          type: string
+          format: uuid
+        programId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            Optional: an enrollment belongs to exactly one program, so the server derives it
+            and refuses a caller that names a different one. A provider-scoped actor may
+            read neither programs nor enrollments and could not repeat an id it never saw.
+        enrollmentId:
+          type: string
+          format: uuid
+        caseType:
+          $ref: '#/components/schemas/HealthCaseType'
+        providerOrganizationId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            The provider the case belongs to. A provider-scoped caller may only name an
+            organization it holds, and one holding exactly one does not have to say which.
+        openedAt:
+          type: [string, 'null']
+          format: date-time
+          description: Defaults to now; may not be in the future.
+        serviceRequestId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            The DIRECT_SERVICE or PREAUTHORIZATION request the case was opened for. Null for
+            a case a provider opened standalone.
+    CloseHealthCase:
+      type: object
+      additionalProperties: false
+      properties:
+        reasonText:
+          type: [string, 'null']
+          maxLength: 200
+          description: |
+            Free text kept on the audit row, not on the case. Two hundred characters is the
+            audit detail limit: a longer value would be dropped by the sanitiser without
+            anybody being told, so it is refused here instead.
+    CreateEncounter:
+      type: object
+      additionalProperties: false
+      required: [encounterType, startedAt]
+      properties:
+        encounterType:
+          $ref: '#/components/schemas/EncounterType'
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: [string, 'null']
+          format: date-time
+        locationId:
+          type: [string, 'null']
+          format: uuid
+        practitionerId:
+          type: [string, 'null']
+          format: uuid
+        branchCode:
+          type: [string, 'null']
+          pattern: '^[A-Z][A-Z0-9_.-]{0,63}$'
+        notesClinical:
+          type: [string, 'null']
+          maxLength: 4000
+    DiagnosisInput:
+      type: object
+      additionalProperties: false
+      required: [codeValueId, diagnosisType]
+      properties:
+        codeValueId:
+          type: string
+          format: uuid
+          description: |
+            The catalogue code value. Its code system and its sensitivity are read from the
+            catalogue, so neither is a field a caller can disagree with.
+        diagnosisType:
+          $ref: '#/components/schemas/DiagnosisType'
+    PutEncounterDiagnoses:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/DiagnosisInput'
+          description: The whole set. An empty array clears the encounter's diagnoses.
+    HealthAccessEvent:
+      type: object
+      additionalProperties: false
+      required: [id, occurredAt, actorId, resourceType, accessType, outcome]
+      properties:
+        id:
+          type: string
+          format: uuid
+        occurredAt:
+          type: string
+          format: date-time
+        actorId:
+          type: string
+          format: uuid
+        membershipId:
+          type: [string, 'null']
+          format: uuid
+        personId:
+          type: [string, 'null']
+          format: uuid
+        resourceType:
+          type: string
+        resourceId:
+          type: [string, 'null']
+          format: uuid
+        accessType:
+          type: string
+          enum: [VIEW, SEARCH, DOWNLOAD, EXPORT, PRINT, BREAK_GLASS]
+        purposeCode:
+          type: [string, 'null']
+        reasonText:
+          type: [string, 'null']
+          maxLength: 200
+        outcome:
+          type: string
+          enum: [SUCCESS, DENIED]
+    HealthAccessLogPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/HealthAccessEvent'
+        nextCursor:
+          type: [string, 'null']

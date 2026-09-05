@@ -651,6 +651,66 @@ type DocumentVersion struct {
 	CreatedBy        uuid.NullUUID
 }
 
+type HealthClinicalAccessPurpose struct {
+	PurposeCode string
+	DisplayName string
+	SortOrder   int32
+	CreatedAt   time.Time
+}
+
+type HealthDiagnosis struct {
+	ID            uuid.UUID
+	TenantID      uuid.UUID
+	EncounterID   uuid.UUID
+	CodeSystemID  uuid.UUID
+	CodeValueID   uuid.UUID
+	DiagnosisType string
+	Sensitive     bool
+	RecordedAt    time.Time
+	RecordedBy    uuid.NullUUID
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	RowVersion    int64
+}
+
+type HealthEncounter struct {
+	ID             uuid.UUID
+	TenantID       uuid.UUID
+	CaseID         uuid.UUID
+	EncounterType  string
+	StartedAt      time.Time
+	EndedAt        *time.Time
+	LocationID     uuid.NullUUID
+	PractitionerID uuid.NullUUID
+	BranchCode     *string
+	NotesClinical  *string
+	CreatedAt      time.Time
+	CreatedBy      uuid.NullUUID
+	UpdatedAt      time.Time
+	UpdatedBy      uuid.NullUUID
+	RowVersion     int64
+}
+
+type HealthHealthCase struct {
+	ID                     uuid.UUID
+	TenantID               uuid.UUID
+	PersonID               uuid.UUID
+	ProgramID              uuid.UUID
+	EnrollmentID           uuid.UUID
+	CaseType               string
+	ProviderOrganizationID uuid.NullUUID
+	OpenedAt               time.Time
+	ClosedAt               *time.Time
+	Status                 string
+	Sensitivity            string
+	ServiceRequestID       uuid.NullUUID
+	CreatedAt              time.Time
+	CreatedBy              uuid.NullUUID
+	UpdatedAt              time.Time
+	UpdatedBy              uuid.NullUUID
+	RowVersion             int64
+}
+
 type IamAccessGrant struct {
 	ID                 uuid.UUID
 	TenantID           uuid.UUID
