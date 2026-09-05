@@ -31,64 +31,85 @@ VALUES (sqlc.arg('tenant_id'), sqlc.arg('request_reference'), sqlc.arg('request_
 RETURNING id, request_reference, created_at, row_version;
 
 -- name: GetServiceRequest :one
-SELECT id, request_reference, request_type, person_id, program_id, enrollment_id,
-       provider_tenant_organization_id, service_date, requested_start_at, requested_end_at,
-       channel, status, current_version_no, supersedes_request_id,
-       eligibility_evaluation_id, rule_evaluation_id, required_document_types,
-       return_reason_code, reject_reason_code, review_comment,
-       submitted_at, closed_at, created_at, row_version
-  FROM service.service_request
- WHERE tenant_id = sqlc.arg('tenant_id')
-   AND id = sqlc.arg('id')
+SELECT r.id, r.request_reference, r.request_type, r.person_id, r.program_id, r.enrollment_id,
+       r.provider_tenant_organization_id, r.service_date, r.requested_start_at, r.requested_end_at,
+       r.channel, r.status, r.current_version_no, r.supersedes_request_id,
+       r.eligibility_evaluation_id, r.rule_evaluation_id, r.required_document_types,
+       r.return_reason_code, r.reject_reason_code, r.review_comment,
+       r.submitted_at, r.closed_at, r.created_at, r.row_version,
+       concat_ws(' ', p.first_name, p.middle_name, p.last_name) AS person_display_name,
+       o.display_name AS provider_display_name
+  FROM service.service_request r
+  JOIN party.person p ON p.tenant_id = r.tenant_id AND p.id = r.person_id
+  LEFT JOIN directory.tenant_organization po
+       ON po.tenant_id = r.tenant_id AND po.id = r.provider_tenant_organization_id
+  LEFT JOIN directory.organization o ON o.id = po.organization_id
+ WHERE r.tenant_id = sqlc.arg('tenant_id')
+   AND r.id = sqlc.arg('id')
    AND (sqlc.narg('scope_ids')::uuid[] IS NULL
-        OR provider_tenant_organization_id = ANY(sqlc.narg('scope_ids')::uuid[]));
+        OR r.provider_tenant_organization_id = ANY(sqlc.narg('scope_ids')::uuid[]));
 
 -- name: LockServiceRequest :one
 -- The same read taken FOR UPDATE, so two commands on one request serialise instead of
 -- racing each other into two different decisions.
-SELECT id, request_reference, request_type, person_id, program_id, enrollment_id,
-       provider_tenant_organization_id, service_date, requested_start_at, requested_end_at,
-       channel, status, current_version_no, supersedes_request_id,
-       eligibility_evaluation_id, rule_evaluation_id, required_document_types,
-       return_reason_code, reject_reason_code, review_comment,
-       submitted_at, closed_at, created_at, row_version
-  FROM service.service_request
- WHERE tenant_id = sqlc.arg('tenant_id')
-   AND id = sqlc.arg('id')
+SELECT r.id, r.request_reference, r.request_type, r.person_id, r.program_id, r.enrollment_id,
+       r.provider_tenant_organization_id, r.service_date, r.requested_start_at, r.requested_end_at,
+       r.channel, r.status, r.current_version_no, r.supersedes_request_id,
+       r.eligibility_evaluation_id, r.rule_evaluation_id, r.required_document_types,
+       r.return_reason_code, r.reject_reason_code, r.review_comment,
+       r.submitted_at, r.closed_at, r.created_at, r.row_version,
+       concat_ws(' ', p.first_name, p.middle_name, p.last_name) AS person_display_name,
+       o.display_name AS provider_display_name
+  FROM service.service_request r
+  JOIN party.person p ON p.tenant_id = r.tenant_id AND p.id = r.person_id
+  LEFT JOIN directory.tenant_organization po
+       ON po.tenant_id = r.tenant_id AND po.id = r.provider_tenant_organization_id
+  LEFT JOIN directory.organization o ON o.id = po.organization_id
+ WHERE r.tenant_id = sqlc.arg('tenant_id')
+   AND r.id = sqlc.arg('id')
    AND (sqlc.narg('scope_ids')::uuid[] IS NULL
-        OR provider_tenant_organization_id = ANY(sqlc.narg('scope_ids')::uuid[]))
-   FOR UPDATE;
+        OR r.provider_tenant_organization_id = ANY(sqlc.narg('scope_ids')::uuid[]))
+   -- `OF r` and not a bare FOR UPDATE: two commands on one request must serialise, and
+   -- nothing about that should take a lock on the member's own row or on an organization
+   -- every other request in the tenant also names.
+   FOR UPDATE OF r;
 
 -- name: ListServiceRequests :many
 -- Keyset pagination on (created_at DESC, id DESC); the caller asks for limit+1 rows to
 -- learn whether a next page exists.
-SELECT id, request_reference, request_type, person_id, program_id, enrollment_id,
-       provider_tenant_organization_id, service_date, requested_start_at, requested_end_at,
-       channel, status, current_version_no, supersedes_request_id,
-       eligibility_evaluation_id, rule_evaluation_id, required_document_types,
-       return_reason_code, reject_reason_code, review_comment,
-       submitted_at, closed_at, created_at, row_version
-  FROM service.service_request
- WHERE tenant_id = sqlc.arg('tenant_id')
+SELECT r.id, r.request_reference, r.request_type, r.person_id, r.program_id, r.enrollment_id,
+       r.provider_tenant_organization_id, r.service_date, r.requested_start_at, r.requested_end_at,
+       r.channel, r.status, r.current_version_no, r.supersedes_request_id,
+       r.eligibility_evaluation_id, r.rule_evaluation_id, r.required_document_types,
+       r.return_reason_code, r.reject_reason_code, r.review_comment,
+       r.submitted_at, r.closed_at, r.created_at, r.row_version,
+       concat_ws(' ', p.first_name, p.middle_name, p.last_name) AS person_display_name,
+       o.display_name AS provider_display_name
+  FROM service.service_request r
+  JOIN party.person p ON p.tenant_id = r.tenant_id AND p.id = r.person_id
+  LEFT JOIN directory.tenant_organization po
+       ON po.tenant_id = r.tenant_id AND po.id = r.provider_tenant_organization_id
+  LEFT JOIN directory.organization o ON o.id = po.organization_id
+ WHERE r.tenant_id = sqlc.arg('tenant_id')
    AND (sqlc.narg('scope_ids')::uuid[] IS NULL
-        OR provider_tenant_organization_id = ANY(sqlc.narg('scope_ids')::uuid[]))
-   AND (sqlc.narg('status')::text IS NULL OR status = sqlc.narg('status')::text)
-   AND (sqlc.narg('person_id')::uuid IS NULL OR person_id = sqlc.narg('person_id')::uuid)
-   AND (sqlc.narg('program_id')::uuid IS NULL OR program_id = sqlc.narg('program_id')::uuid)
+        OR r.provider_tenant_organization_id = ANY(sqlc.narg('scope_ids')::uuid[]))
+   AND (sqlc.narg('status')::text IS NULL OR r.status = sqlc.narg('status')::text)
+   AND (sqlc.narg('person_id')::uuid IS NULL OR r.person_id = sqlc.narg('person_id')::uuid)
+   AND (sqlc.narg('program_id')::uuid IS NULL OR r.program_id = sqlc.narg('program_id')::uuid)
    AND (sqlc.narg('provider_id')::uuid IS NULL
-        OR provider_tenant_organization_id = sqlc.narg('provider_id')::uuid)
-   AND (sqlc.narg('channel')::text IS NULL OR channel = sqlc.narg('channel')::text)
+        OR r.provider_tenant_organization_id = sqlc.narg('provider_id')::uuid)
+   AND (sqlc.narg('channel')::text IS NULL OR r.channel = sqlc.narg('channel')::text)
    AND (sqlc.narg('service_date_from')::date IS NULL
-        OR service_date >= sqlc.narg('service_date_from')::date)
+        OR r.service_date >= sqlc.narg('service_date_from')::date)
    AND (sqlc.narg('service_date_to')::date IS NULL
-        OR service_date <= sqlc.narg('service_date_to')::date)
+        OR r.service_date <= sqlc.narg('service_date_to')::date)
    AND (sqlc.narg('created_from')::timestamptz IS NULL
-        OR created_at >= sqlc.narg('created_from')::timestamptz)
+        OR r.created_at >= sqlc.narg('created_from')::timestamptz)
    AND (sqlc.narg('created_to')::timestamptz IS NULL
-        OR created_at <= sqlc.narg('created_to')::timestamptz)
+        OR r.created_at <= sqlc.narg('created_to')::timestamptz)
    AND (sqlc.narg('cursor_created_at')::timestamptz IS NULL
-        OR (created_at, id) < (sqlc.narg('cursor_created_at')::timestamptz, sqlc.narg('cursor_id')::uuid))
- ORDER BY created_at DESC, id DESC
+        OR (r.created_at, r.id) < (sqlc.narg('cursor_created_at')::timestamptz, sqlc.narg('cursor_id')::uuid))
+ ORDER BY r.created_at DESC, r.id DESC
  LIMIT sqlc.arg('page_size');
 
 -- name: UpdateServiceRequestDraftHeader :execrows

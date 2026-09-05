@@ -110,6 +110,30 @@ type NewIdentifier struct {
 	Primary     bool
 }
 
+// StoredContact is a party.person_contact row; the envelope never leaves the repository.
+type StoredContact struct {
+	ID          uuid.UUID
+	PersonID    uuid.UUID
+	Channel     string
+	MaskedValue string
+	VerifiedAt  *time.Time
+	Primary     bool
+	CreatedAt   time.Time
+	RowVersion  int64
+}
+
+// NewContact is the insert payload of party.person_contact.
+type NewContact struct {
+	TenantID    uuid.UUID
+	PersonID    uuid.UUID
+	Channel     string
+	Cipher      []byte
+	MaskedValue string
+	VerifiedAt  *time.Time
+	Primary     bool
+	ActorID     uuid.UUID
+}
+
 // Summary is one list row.
 type Summary struct {
 	ID                      uuid.UUID
@@ -229,6 +253,16 @@ type Repository interface {
 	ListIdentifiers(ctx context.Context, tx pgx.Tx, tenantID, personID uuid.UUID) ([]StoredIdentifier, error)
 	RemoveIdentifiers(ctx context.Context, tx pgx.Tx, tenantID, personID uuid.UUID, typeCode string) (int64, error)
 	FindPersonByIdentifierHash(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, typeCode string, scopeKey *string, hash []byte) (uuid.UUID, bool, error)
+
+	// Contact details (WP-I5-05). ListContacts returns masks only; nothing in this port
+	// hands back a plaintext address.
+	ListContacts(ctx context.Context, tx pgx.Tx, tenantID, personID uuid.UUID) ([]StoredContact, error)
+	DeleteContacts(ctx context.Context, tx pgx.Tx, tenantID, personID uuid.UUID) (int64, error)
+	AddContact(ctx context.Context, tx pgx.Tx, in NewContact) error
+	// TouchPerson bumps the person's row_version without changing a business field, so
+	// replacing the child rows invalidates the ETag the caller holds. A row_version that
+	// does not match the caller's If-Match matches no row and answers ErrVersionMismatch.
+	TouchPerson(ctx context.Context, tx pgx.Tx, tenantID, personID uuid.UUID, actorID uuid.UUID, expected int64) error
 	ActiveSponsorOrganizations(ctx context.Context, tx pgx.Tx, tenantID, personID uuid.UUID) ([]uuid.UUID, error)
 
 	ListRelationships(ctx context.Context, tx pgx.Tx, tenantID, personID uuid.UUID) ([]RelationshipRow, error)

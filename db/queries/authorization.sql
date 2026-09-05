@@ -363,3 +363,18 @@ UPDATE service.voucher
  WHERE tenant_id = sqlc.arg('tenant_id')
    AND id = sqlc.arg('id')
    AND status = 'ISSUED';
+
+-- name: ListExpiringAuthorizations :many
+-- The authorizations whose validity ends on one particular day, with the member behind
+-- them. It is a day and not a window because the reminder is published once per
+-- authorization per expiry day: the job's deduplication key carries the same date, so an
+-- hourly sweep of the same day writes one message and twenty-three no-ops.
+SELECT a.id, a.authorization_reference, a.valid_to, r.person_id
+  FROM service.authorization a
+  JOIN service.service_request r ON r.tenant_id = a.tenant_id AND r.id = a.request_id
+ WHERE a.tenant_id = sqlc.arg('tenant_id')
+   AND a.status IN ('ACTIVE','PARTIALLY_USED')
+   AND a.valid_to >= sqlc.arg('day_start')
+   AND a.valid_to < sqlc.arg('day_end')
+ ORDER BY a.valid_to, a.id
+ LIMIT sqlc.arg('page_size');

@@ -853,6 +853,39 @@ func (e EntitlementDefinitionInputUnitType) Valid() bool {
 	}
 }
 
+// Defines values for EntitlementMappingUnitType.
+const (
+	EntitlementMappingUnitTypeCOUNT     EntitlementMappingUnitType = "COUNT"
+	EntitlementMappingUnitTypeHOUR      EntitlementMappingUnitType = "HOUR"
+	EntitlementMappingUnitTypeKILOMETER EntitlementMappingUnitType = "KILOMETER"
+	EntitlementMappingUnitTypeMONEY     EntitlementMappingUnitType = "MONEY"
+	EntitlementMappingUnitTypeNIGHT     EntitlementMappingUnitType = "NIGHT"
+	EntitlementMappingUnitTypePOINT     EntitlementMappingUnitType = "POINT"
+	EntitlementMappingUnitTypeSESSION   EntitlementMappingUnitType = "SESSION"
+)
+
+// Valid indicates whether the value is a known member of the EntitlementMappingUnitType enum.
+func (e EntitlementMappingUnitType) Valid() bool {
+	switch e {
+	case EntitlementMappingUnitTypeCOUNT:
+		return true
+	case EntitlementMappingUnitTypeHOUR:
+		return true
+	case EntitlementMappingUnitTypeKILOMETER:
+		return true
+	case EntitlementMappingUnitTypeMONEY:
+		return true
+	case EntitlementMappingUnitTypeNIGHT:
+		return true
+	case EntitlementMappingUnitTypePOINT:
+		return true
+	case EntitlementMappingUnitTypeSESSION:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for EntitlementReservationReferenceType.
 const (
 	EntitlementReservationReferenceTypeAUTHORIZATION  EntitlementReservationReferenceType = "AUTHORIZATION"
@@ -1275,22 +1308,22 @@ func (e MemberShareMethod) Valid() bool {
 
 // Defines values for NotificationChannel.
 const (
-	EMAIL NotificationChannel = "EMAIL"
-	INAPP NotificationChannel = "INAPP"
-	PUSH  NotificationChannel = "PUSH"
-	SMS   NotificationChannel = "SMS"
+	NotificationChannelEMAIL NotificationChannel = "EMAIL"
+	NotificationChannelINAPP NotificationChannel = "INAPP"
+	NotificationChannelPUSH  NotificationChannel = "PUSH"
+	NotificationChannelSMS   NotificationChannel = "SMS"
 )
 
 // Valid indicates whether the value is a known member of the NotificationChannel enum.
 func (e NotificationChannel) Valid() bool {
 	switch e {
-	case EMAIL:
+	case NotificationChannelEMAIL:
 		return true
-	case INAPP:
+	case NotificationChannelINAPP:
 		return true
-	case PUSH:
+	case NotificationChannelPUSH:
 		return true
-	case SMS:
+	case NotificationChannelSMS:
 		return true
 	default:
 		return false
@@ -1777,6 +1810,42 @@ func (e PersonStatus) Valid() bool {
 	case PersonStatusINACTIVE:
 		return true
 	case PersonStatusMERGED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PersonContactChannel.
+const (
+	PersonContactChannelEMAIL PersonContactChannel = "EMAIL"
+	PersonContactChannelSMS   PersonContactChannel = "SMS"
+)
+
+// Valid indicates whether the value is a known member of the PersonContactChannel enum.
+func (e PersonContactChannel) Valid() bool {
+	switch e {
+	case PersonContactChannelEMAIL:
+		return true
+	case PersonContactChannelSMS:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PersonContactInputChannel.
+const (
+	PersonContactInputChannelEMAIL PersonContactInputChannel = "EMAIL"
+	PersonContactInputChannelSMS   PersonContactInputChannel = "SMS"
+)
+
+// Valid indicates whether the value is a known member of the PersonContactInputChannel enum.
+func (e PersonContactInputChannel) Valid() bool {
+	switch e {
+	case PersonContactInputChannelEMAIL:
+		return true
+	case PersonContactInputChannelSMS:
 		return true
 	default:
 		return false
@@ -4449,11 +4518,18 @@ type DownloadDocument struct {
 
 // EligibilityCheckRequest defines model for EligibilityCheckRequest.
 type EligibilityCheckRequest struct {
-	Context                *map[string]interface{} `json:"context,omitempty"`
-	PersonId               openapi_types.UUID      `json:"personId"`
-	ProgramId              *openapi_types.UUID     `json:"programId,omitempty"`
-	ProviderOrganizationId *openapi_types.UUID     `json:"providerOrganizationId,omitempty"`
-	ServiceDate            openapi_types.Date      `json:"serviceDate"`
+	Context *map[string]interface{} `json:"context,omitempty"`
+
+	// EnrollmentId Which of the person's enrollments to answer for. It exists for the second ask
+	// after an ENROLLMENT_MULTIPLE answer: the caller picks one of the
+	// `enrollmentCandidates` the first answer named. An id that is not active for
+	// this person on the service date resolves to ENROLLMENT_NONE rather than to
+	// somebody else's plan.
+	EnrollmentId           *openapi_types.UUID `json:"enrollmentId,omitempty"`
+	PersonId               openapi_types.UUID  `json:"personId"`
+	ProgramId              *openapi_types.UUID `json:"programId,omitempty"`
+	ProviderOrganizationId *openapi_types.UUID `json:"providerOrganizationId,omitempty"`
+	ServiceDate            openapi_types.Date  `json:"serviceDate"`
 	ServiceItems           []struct {
 		CurrencyCode        *string            `json:"currencyCode,omitempty"`
 		Quantity            json.Number        `json:"quantity"`
@@ -4469,7 +4545,19 @@ type EligibilityCheckResult struct {
 		EntitlementCode string      `json:"entitlementCode"`
 		Unit            string      `json:"unit"`
 	} `json:"balances,omitempty"`
-	Eligible     bool                `json:"eligible"`
+	Eligible bool `json:"eligible"`
+
+	// EnrollmentCandidates The enrollments this check was torn between. Present only with an
+	// ENROLLMENT_MULTIPLE explanation, and it is the whole of what a caller may
+	// learn about a person's enrollments here: it is the choice the check itself had
+	// to make, not a list. Ask again with one of these ids in `enrollmentId`.
+	EnrollmentCandidates *[]struct {
+		EnrollmentId openapi_types.UUID  `json:"enrollmentId"`
+		PlanCode     string              `json:"planCode"`
+		PlanName     string              `json:"planName"`
+		ValidFrom    openapi_types.Date  `json:"validFrom"`
+		ValidTo      *openapi_types.Date `json:"validTo,omitempty"`
+	} `json:"enrollmentCandidates,omitempty"`
 	EnrollmentId *openapi_types.UUID `json:"enrollmentId,omitempty"`
 	EvaluatedAt  time.Time           `json:"evaluatedAt"`
 
@@ -4712,6 +4800,43 @@ type EntitlementDefinitionInputRolloverPolicy string
 
 // EntitlementDefinitionInputUnitType defines model for EntitlementDefinitionInput.UnitType.
 type EntitlementDefinitionInputUnitType string
+
+// EntitlementMapping defines model for EntitlementMapping.
+type EntitlementMapping struct {
+	EntitlementCode         string             `json:"entitlementCode"`
+	EntitlementDefinitionId openapi_types.UUID `json:"entitlementDefinitionId"`
+	Id                      openapi_types.UUID `json:"id"`
+	PlanVersionId           openapi_types.UUID `json:"planVersionId"`
+	RowVersion              int64              `json:"rowVersion"`
+	ServiceCode             string             `json:"serviceCode"`
+	ServiceDefinitionId     openapi_types.UUID `json:"serviceDefinitionId"`
+	ServiceName             string             `json:"serviceName"`
+
+	// UnitFactor An exact numeric(20,6) money or quantity value as a decimal string. It is a string
+	// and not a JSON number on purpose: a tariff row is what somebody is invoiced, and a
+	// float would round it silently somewhere between the browser and the ledger.
+	UnitFactor DecimalAmount              `json:"unitFactor"`
+	UnitType   EntitlementMappingUnitType `json:"unitType"`
+	ValidFrom  *openapi_types.Date        `json:"validFrom,omitempty"`
+	ValidTo    *openapi_types.Date        `json:"validTo,omitempty"`
+}
+
+// EntitlementMappingUnitType defines model for EntitlementMapping.UnitType.
+type EntitlementMappingUnitType string
+
+// EntitlementMappingInput defines model for EntitlementMappingInput.
+type EntitlementMappingInput struct {
+	// EntitlementCode A code defined on this plan version; anything else is a 422.
+	EntitlementCode     string             `json:"entitlementCode"`
+	ServiceDefinitionId openapi_types.UUID `json:"serviceDefinitionId"`
+
+	// UnitFactor An exact numeric(20,6) money or quantity value as a decimal string. It is a string
+	// and not a JSON number on purpose: a tariff row is what somebody is invoiced, and a
+	// float would round it silently somewhere between the browser and the ledger.
+	UnitFactor *DecimalAmount      `json:"unitFactor,omitempty"`
+	ValidFrom  *openapi_types.Date `json:"validFrom,omitempty"`
+	ValidTo    *openapi_types.Date `json:"validTo,omitempty"`
+}
 
 // EntitlementReservation defines model for EntitlementReservation.
 type EntitlementReservation struct {
@@ -5478,6 +5603,44 @@ type PersonSexAtBirth string
 // PersonStatus defines model for Person.Status.
 type PersonStatus string
 
+// PersonContact defines model for PersonContact.
+type PersonContact struct {
+	Channel   PersonContactChannel `json:"channel"`
+	CreatedAt time.Time            `json:"createdAt"`
+	Id        openapi_types.UUID   `json:"id"`
+
+	// MaskedValue All anybody is shown. The address itself is envelope-encrypted like an
+	// identity number and is returned by no endpoint at all.
+	MaskedValue string             `json:"maskedValue"`
+	PersonId    openapi_types.UUID `json:"personId"`
+	Primary     bool               `json:"primary"`
+	RowVersion  int64              `json:"rowVersion"`
+
+	// VerifiedAt When somebody proved the address is theirs. Null is still an address the
+	// platform will write to; verification buys the right to trust it, not the right
+	// to use it.
+	VerifiedAt *time.Time `json:"verifiedAt,omitempty"`
+}
+
+// PersonContactChannel defines model for PersonContact.Channel.
+type PersonContactChannel string
+
+// PersonContactInput defines model for PersonContactInput.
+type PersonContactInput struct {
+	Channel PersonContactInputChannel `json:"channel"`
+	Primary *bool                     `json:"primary,omitempty"`
+
+	// Value The address itself. It is written once, encrypted, and never comes back: a
+	// later read answers with the mask.
+	Value string `json:"value"`
+
+	// Verified Whether this address has already been proved, for an import that carries the fact.
+	Verified *bool `json:"verified,omitempty"`
+}
+
+// PersonContactInputChannel defines model for PersonContactInput.Channel.
+type PersonContactInputChannel string
+
 // PersonPage defines model for PersonPage.
 type PersonPage struct {
 	Items      []PersonSummary `json:"items"`
@@ -5918,7 +6081,12 @@ type PriceQuoteRequestItem struct {
 // PERCENT_OF_LIST a percent, FORMULA the key of a calculation rule.
 type PricingMethod string
 
-// Problem defines model for Problem.
+// Problem RFC 9457 problem detail. Extension members are permitted and are serialised flat
+// beside the standard members: a problem type may carry the one fact that makes it
+// actionable rather than forcing a second request. Today
+// `WORK_ITEM_ALREADY_CLAIMED` carries `assigneeActorId` (uuid) and, when it is
+// known, `assigneeDisplayName` (string). A client must ignore members it does not
+// recognise.
 type Problem struct {
 	Code   string  `json:"code"`
 	Detail *string `json:"detail,omitempty"`
@@ -5927,11 +6095,12 @@ type Problem struct {
 		Field   string  `json:"field"`
 		Message *string `json:"message,omitempty"`
 	} `json:"errors,omitempty"`
-	Instance *string `json:"instance,omitempty"`
-	Status   int     `json:"status"`
-	Title    string  `json:"title"`
-	TraceId  string  `json:"traceId"`
-	Type     string  `json:"type"`
+	Instance             *string                `json:"instance,omitempty"`
+	Status               int                    `json:"status"`
+	Title                string                 `json:"title"`
+	TraceId              string                 `json:"traceId"`
+	Type                 string                 `json:"type"`
+	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
 // Program defines model for Program.
@@ -6764,10 +6933,18 @@ type ServiceRequest struct {
 	Id                      openapi_types.UUID  `json:"id"`
 
 	// Items The lines of the current version.
-	Items                  []ServiceRequestItem `json:"items"`
-	PersonId               openapi_types.UUID   `json:"personId"`
-	ProgramId              openapi_types.UUID   `json:"programId"`
-	ProviderOrganizationId *openapi_types.UUID  `json:"providerOrganizationId,omitempty"`
+	Items []ServiceRequestItem `json:"items"`
+
+	// PersonDisplayName The member's name, read with the row. It is here so a list of requests names
+	// people without one extra read per line; a caller that may see the request may
+	// see whose it is.
+	PersonDisplayName string             `json:"personDisplayName"`
+	PersonId          openapi_types.UUID `json:"personId"`
+	ProgramId         openapi_types.UUID `json:"programId"`
+
+	// ProviderDisplayName The provider organization's name; null when the request names no provider.
+	ProviderDisplayName    *string             `json:"providerDisplayName,omitempty"`
+	ProviderOrganizationId *openapi_types.UUID `json:"providerOrganizationId,omitempty"`
 
 	// Reference Human-readable number of the request; it survives every return.
 	Reference string `json:"reference"`
@@ -7268,9 +7445,13 @@ type WorkItem struct {
 	AggregateType   string              `json:"aggregateType"`
 	AssignedAt      *time.Time          `json:"assignedAt,omitempty"`
 	AssigneeActorId *openapi_types.UUID `json:"assigneeActorId,omitempty"`
-	CompletedAt     *time.Time          `json:"completedAt,omitempty"`
-	CompletedBy     *openapi_types.UUID `json:"completedBy,omitempty"`
-	CreatedAt       time.Time           `json:"createdAt"`
+
+	// AssigneeDisplayName Who holds the item, read with the row. It is here so a worklist names a
+	// colleague instead of showing their id, without one extra request per line.
+	AssigneeDisplayName *string             `json:"assigneeDisplayName,omitempty"`
+	CompletedAt         *time.Time          `json:"completedAt,omitempty"`
+	CompletedBy         *openapi_types.UUID `json:"completedBy,omitempty"`
+	CreatedAt           time.Time           `json:"createdAt"`
 
 	// DueAt When this item is late, computed once from the queue's SLA as it stood when the
 	// item was raised. Nothing moves it afterwards, escalation included: a late item
@@ -7516,22 +7697,52 @@ type WorkItemId = openapi_types.UUID
 // WorkQueueId defines model for WorkQueueId.
 type WorkQueueId = openapi_types.UUID
 
-// Conflict defines model for Conflict.
+// Conflict RFC 9457 problem detail. Extension members are permitted and are serialised flat
+// beside the standard members: a problem type may carry the one fact that makes it
+// actionable rather than forcing a second request. Today
+// `WORK_ITEM_ALREADY_CLAIMED` carries `assigneeActorId` (uuid) and, when it is
+// known, `assigneeDisplayName` (string). A client must ignore members it does not
+// recognise.
 type Conflict = Problem
 
-// Forbidden defines model for Forbidden.
+// Forbidden RFC 9457 problem detail. Extension members are permitted and are serialised flat
+// beside the standard members: a problem type may carry the one fact that makes it
+// actionable rather than forcing a second request. Today
+// `WORK_ITEM_ALREADY_CLAIMED` carries `assigneeActorId` (uuid) and, when it is
+// known, `assigneeDisplayName` (string). A client must ignore members it does not
+// recognise.
 type Forbidden = Problem
 
-// NotFound defines model for NotFound.
+// NotFound RFC 9457 problem detail. Extension members are permitted and are serialised flat
+// beside the standard members: a problem type may carry the one fact that makes it
+// actionable rather than forcing a second request. Today
+// `WORK_ITEM_ALREADY_CLAIMED` carries `assigneeActorId` (uuid) and, when it is
+// known, `assigneeDisplayName` (string). A client must ignore members it does not
+// recognise.
 type NotFound = Problem
 
-// TooManyRequests defines model for TooManyRequests.
+// TooManyRequests RFC 9457 problem detail. Extension members are permitted and are serialised flat
+// beside the standard members: a problem type may carry the one fact that makes it
+// actionable rather than forcing a second request. Today
+// `WORK_ITEM_ALREADY_CLAIMED` carries `assigneeActorId` (uuid) and, when it is
+// known, `assigneeDisplayName` (string). A client must ignore members it does not
+// recognise.
 type TooManyRequests = Problem
 
-// Unauthorized defines model for Unauthorized.
+// Unauthorized RFC 9457 problem detail. Extension members are permitted and are serialised flat
+// beside the standard members: a problem type may carry the one fact that makes it
+// actionable rather than forcing a second request. Today
+// `WORK_ITEM_ALREADY_CLAIMED` carries `assigneeActorId` (uuid) and, when it is
+// known, `assigneeDisplayName` (string). A client must ignore members it does not
+// recognise.
 type Unauthorized = Problem
 
-// ValidationError defines model for ValidationError.
+// ValidationError RFC 9457 problem detail. Extension members are permitted and are serialised flat
+// beside the standard members: a problem type may carry the one fact that makes it
+// actionable rather than forcing a second request. Today
+// `WORK_ITEM_ALREADY_CLAIMED` carries `assigneeActorId` (uuid) and, when it is
+// known, `assigneeDisplayName` (string). A client must ignore members it does not
+// recognise.
 type ValidationError = Problem
 
 // ListApprovalPoliciesParams defines parameters for ListApprovalPolicies.
@@ -8640,6 +8851,26 @@ type UpdatePersonParams struct {
 	IfMatch IfMatch `json:"If-Match"`
 }
 
+// ListPersonContactsParams defines parameters for ListPersonContacts.
+type ListPersonContactsParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// PutPersonContactsJSONBody defines parameters for PutPersonContacts.
+type PutPersonContactsJSONBody struct {
+	Items []PersonContactInput `json:"items"`
+}
+
+// PutPersonContactsParams defines parameters for PutPersonContacts.
+type PutPersonContactsParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
 // ListPersonEnrollmentsParams defines parameters for ListPersonEnrollments.
 type ListPersonEnrollmentsParams struct {
 	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
@@ -8733,6 +8964,26 @@ type ReplaceEntitlementDefinitionsJSONBody struct {
 
 // ReplaceEntitlementDefinitionsParams defines parameters for ReplaceEntitlementDefinitions.
 type ReplaceEntitlementDefinitionsParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// ListEntitlementMappingsParams defines parameters for ListEntitlementMappings.
+type ListEntitlementMappingsParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// PutEntitlementMappingsJSONBody defines parameters for PutEntitlementMappings.
+type PutEntitlementMappingsJSONBody struct {
+	Items []EntitlementMappingInput `json:"items"`
+}
+
+// PutEntitlementMappingsParams defines parameters for PutEntitlementMappings.
+type PutEntitlementMappingsParams struct {
 	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
 	XTenantID TenantHeader `json:"X-Tenant-ID"`
 
@@ -9914,6 +10165,9 @@ type SearchPeopleByIdentifierJSONRequestBody = IdentifierSearchRequest
 // UpdatePersonApplicationMergePatchPlusJSONRequestBody defines body for UpdatePerson for application/merge-patch+json ContentType.
 type UpdatePersonApplicationMergePatchPlusJSONRequestBody = UpdatePersonRequest
 
+// PutPersonContactsJSONRequestBody defines body for PutPersonContacts for application/json ContentType.
+type PutPersonContactsJSONRequestBody PutPersonContactsJSONBody
+
 // CreateEnrollmentJSONRequestBody defines body for CreateEnrollment for application/json ContentType.
 type CreateEnrollmentJSONRequestBody = CreateEnrollmentRequest
 
@@ -9934,6 +10188,9 @@ type UpdatePlanVersionApplicationMergePatchPlusJSONRequestBody = UpdatePlanVersi
 
 // ReplaceEntitlementDefinitionsJSONRequestBody defines body for ReplaceEntitlementDefinitions for application/json ContentType.
 type ReplaceEntitlementDefinitionsJSONRequestBody ReplaceEntitlementDefinitionsJSONBody
+
+// PutEntitlementMappingsJSONRequestBody defines body for PutEntitlementMappings for application/json ContentType.
+type PutEntitlementMappingsJSONRequestBody PutEntitlementMappingsJSONBody
 
 // PublishPlanVersionJSONRequestBody defines body for PublishPlanVersion for application/json ContentType.
 type PublishPlanVersionJSONRequestBody = ReviewComment
@@ -10105,6 +10362,169 @@ type CreateWorkQueueJSONRequestBody = CreateWorkQueue
 
 // PatchWorkQueueApplicationMergePatchPlusJSONRequestBody defines body for PatchWorkQueue for application/merge-patch+json ContentType.
 type PatchWorkQueueApplicationMergePatchPlusJSONRequestBody = PatchWorkQueue
+
+// Getter for additional properties for Problem. Returns the specified
+// element and whether it was found
+func (a Problem) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for Problem
+func (a *Problem) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for Problem to handle AdditionalProperties
+func (a *Problem) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["code"]; found {
+		err = json.Unmarshal(raw, &a.Code)
+		if err != nil {
+			return fmt.Errorf("error reading 'code': %w", err)
+		}
+		delete(object, "code")
+	}
+
+	if raw, found := object["detail"]; found {
+		err = json.Unmarshal(raw, &a.Detail)
+		if err != nil {
+			return fmt.Errorf("error reading 'detail': %w", err)
+		}
+		delete(object, "detail")
+	}
+
+	if raw, found := object["errors"]; found {
+		err = json.Unmarshal(raw, &a.Errors)
+		if err != nil {
+			return fmt.Errorf("error reading 'errors': %w", err)
+		}
+		delete(object, "errors")
+	}
+
+	if raw, found := object["instance"]; found {
+		err = json.Unmarshal(raw, &a.Instance)
+		if err != nil {
+			return fmt.Errorf("error reading 'instance': %w", err)
+		}
+		delete(object, "instance")
+	}
+
+	if raw, found := object["status"]; found {
+		err = json.Unmarshal(raw, &a.Status)
+		if err != nil {
+			return fmt.Errorf("error reading 'status': %w", err)
+		}
+		delete(object, "status")
+	}
+
+	if raw, found := object["title"]; found {
+		err = json.Unmarshal(raw, &a.Title)
+		if err != nil {
+			return fmt.Errorf("error reading 'title': %w", err)
+		}
+		delete(object, "title")
+	}
+
+	if raw, found := object["traceId"]; found {
+		err = json.Unmarshal(raw, &a.TraceId)
+		if err != nil {
+			return fmt.Errorf("error reading 'traceId': %w", err)
+		}
+		delete(object, "traceId")
+	}
+
+	if raw, found := object["type"]; found {
+		err = json.Unmarshal(raw, &a.Type)
+		if err != nil {
+			return fmt.Errorf("error reading 'type': %w", err)
+		}
+		delete(object, "type")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for Problem to handle AdditionalProperties
+func (a Problem) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["code"], err = json.Marshal(a.Code)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'code': %w", err)
+	}
+
+	if a.Detail != nil {
+		object["detail"], err = json.Marshal(a.Detail)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'detail': %w", err)
+		}
+	}
+
+	if a.Errors != nil {
+		object["errors"], err = json.Marshal(a.Errors)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'errors': %w", err)
+		}
+	}
+
+	if a.Instance != nil {
+		object["instance"], err = json.Marshal(a.Instance)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'instance': %w", err)
+		}
+	}
+
+	object["status"], err = json.Marshal(a.Status)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'status': %w", err)
+	}
+
+	object["title"], err = json.Marshal(a.Title)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'title': %w", err)
+	}
+
+	object["traceId"], err = json.Marshal(a.TraceId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'traceId': %w", err)
+	}
+
+	object["type"], err = json.Marshal(a.Type)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'type': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -10388,6 +10808,12 @@ type ServerInterface interface {
 	// (PATCH /api/v1/people/{personId})
 	UpdatePerson(w http.ResponseWriter, r *http.Request, personId PersonId, params UpdatePersonParams)
 
+	// (GET /api/v1/people/{personId}/contacts)
+	ListPersonContacts(w http.ResponseWriter, r *http.Request, personId PersonId, params ListPersonContactsParams)
+
+	// (PUT /api/v1/people/{personId}/contacts)
+	PutPersonContacts(w http.ResponseWriter, r *http.Request, personId PersonId, params PutPersonContactsParams)
+
 	// (GET /api/v1/people/{personId}/enrollments)
 	ListPersonEnrollments(w http.ResponseWriter, r *http.Request, personId PersonId, params ListPersonEnrollmentsParams)
 
@@ -10423,6 +10849,12 @@ type ServerInterface interface {
 
 	// (PUT /api/v1/plan-versions/{planVersionId}/entitlement-definitions)
 	ReplaceEntitlementDefinitions(w http.ResponseWriter, r *http.Request, planVersionId PlanVersionId, params ReplaceEntitlementDefinitionsParams)
+
+	// (GET /api/v1/plan-versions/{planVersionId}/entitlement-mappings)
+	ListEntitlementMappings(w http.ResponseWriter, r *http.Request, planVersionId PlanVersionId, params ListEntitlementMappingsParams)
+
+	// (PUT /api/v1/plan-versions/{planVersionId}/entitlement-mappings)
+	PutEntitlementMappings(w http.ResponseWriter, r *http.Request, planVersionId PlanVersionId, params PutEntitlementMappingsParams)
 
 	// (POST /api/v1/plan-versions/{planVersionId}/publish)
 	PublishPlanVersion(w http.ResponseWriter, r *http.Request, planVersionId PlanVersionId, params PublishPlanVersionParams)
@@ -11188,6 +11620,16 @@ func (_ Unimplemented) UpdatePerson(w http.ResponseWriter, r *http.Request, pers
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// (GET /api/v1/people/{personId}/contacts)
+func (_ Unimplemented) ListPersonContacts(w http.ResponseWriter, r *http.Request, personId PersonId, params ListPersonContactsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PUT /api/v1/people/{personId}/contacts)
+func (_ Unimplemented) PutPersonContacts(w http.ResponseWriter, r *http.Request, personId PersonId, params PutPersonContactsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // (GET /api/v1/people/{personId}/enrollments)
 func (_ Unimplemented) ListPersonEnrollments(w http.ResponseWriter, r *http.Request, personId PersonId, params ListPersonEnrollmentsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -11245,6 +11687,16 @@ func (_ Unimplemented) UpdatePlanVersion(w http.ResponseWriter, r *http.Request,
 
 // (PUT /api/v1/plan-versions/{planVersionId}/entitlement-definitions)
 func (_ Unimplemented) ReplaceEntitlementDefinitions(w http.ResponseWriter, r *http.Request, planVersionId PlanVersionId, params ReplaceEntitlementDefinitionsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/plan-versions/{planVersionId}/entitlement-mappings)
+func (_ Unimplemented) ListEntitlementMappings(w http.ResponseWriter, r *http.Request, planVersionId PlanVersionId, params ListEntitlementMappingsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PUT /api/v1/plan-versions/{planVersionId}/entitlement-mappings)
+func (_ Unimplemented) PutEntitlementMappings(w http.ResponseWriter, r *http.Request, planVersionId PlanVersionId, params PutEntitlementMappingsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -19355,6 +19807,137 @@ func (siw *ServerInterfaceWrapper) UpdatePerson(w http.ResponseWriter, r *http.R
 	handler.ServeHTTP(w, r)
 }
 
+// ListPersonContacts operation middleware
+func (siw *ServerInterfaceWrapper) ListPersonContacts(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "personId" -------------
+	var personId PersonId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "personId", chi.URLParam(r, "personId"), &personId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "personId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListPersonContactsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListPersonContacts(w, r, personId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutPersonContacts operation middleware
+func (siw *ServerInterfaceWrapper) PutPersonContacts(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "personId" -------------
+	var personId PersonId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "personId", chi.URLParam(r, "personId"), &personId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "personId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PutPersonContactsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutPersonContacts(w, r, personId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListPersonEnrollments operation middleware
 func (siw *ServerInterfaceWrapper) ListPersonEnrollments(w http.ResponseWriter, r *http.Request) {
 
@@ -20186,6 +20769,137 @@ func (siw *ServerInterfaceWrapper) ReplaceEntitlementDefinitions(w http.Response
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ReplaceEntitlementDefinitions(w, r, planVersionId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListEntitlementMappings operation middleware
+func (siw *ServerInterfaceWrapper) ListEntitlementMappings(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "planVersionId" -------------
+	var planVersionId PlanVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "planVersionId", chi.URLParam(r, "planVersionId"), &planVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "planVersionId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListEntitlementMappingsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListEntitlementMappings(w, r, planVersionId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutEntitlementMappings operation middleware
+func (siw *ServerInterfaceWrapper) PutEntitlementMappings(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "planVersionId" -------------
+	var planVersionId PlanVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "planVersionId", chi.URLParam(r, "planVersionId"), &planVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "planVersionId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PutEntitlementMappingsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutEntitlementMappings(w, r, planVersionId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -28159,6 +28873,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Put(options.BaseURL+"/api/v1/plan-versions/{planVersionId}/entitlement-definitions", wrapper.ReplaceEntitlementDefinitions)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/plan-versions/{planVersionId}/entitlement-mappings", wrapper.ListEntitlementMappings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/v1/plan-versions/{planVersionId}/entitlement-mappings", wrapper.PutEntitlementMappings)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/plan-versions/{planVersionId}/submit", wrapper.SubmitPlanVersion)
 	})
 	r.Group(func(r chi.Router) {
@@ -28166,6 +28886,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/plan-versions/{planVersionId}/retire", wrapper.RetirePlanVersion)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/people/{personId}/contacts", wrapper.ListPersonContacts)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/v1/people/{personId}/contacts", wrapper.PutPersonContacts)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/people/{personId}/enrollments", wrapper.ListPersonEnrollments)
@@ -36473,6 +37199,119 @@ func (response UpdatePerson428ApplicationProblemPlusJSONResponse) VisitUpdatePer
 	return err
 }
 
+type ListPersonContactsRequestObject struct {
+	PersonId PersonId `json:"personId"`
+	Params   ListPersonContactsParams
+}
+
+type ListPersonContactsResponseObject interface {
+	VisitListPersonContactsResponse(w http.ResponseWriter) error
+}
+
+type ListPersonContacts200JSONResponse struct {
+	Items []PersonContact `json:"items"`
+}
+
+func (response ListPersonContacts200JSONResponse) VisitListPersonContactsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPersonContacts404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ListPersonContacts404ApplicationProblemPlusJSONResponse) VisitListPersonContactsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutPersonContactsRequestObject struct {
+	PersonId PersonId `json:"personId"`
+	Params   PutPersonContactsParams
+	Body     *PutPersonContactsJSONRequestBody
+}
+
+type PutPersonContactsResponseObject interface {
+	VisitPutPersonContactsResponse(w http.ResponseWriter) error
+}
+
+type PutPersonContacts200JSONResponse struct {
+	Items []PersonContact `json:"items"`
+}
+
+func (response PutPersonContacts200JSONResponse) VisitPutPersonContactsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutPersonContacts404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response PutPersonContacts404ApplicationProblemPlusJSONResponse) VisitPutPersonContactsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutPersonContacts412ApplicationProblemPlusJSONResponse Problem
+
+func (response PutPersonContacts412ApplicationProblemPlusJSONResponse) VisitPutPersonContactsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutPersonContacts422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response PutPersonContacts422ApplicationProblemPlusJSONResponse) VisitPutPersonContactsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListPersonEnrollmentsRequestObject struct {
 	PersonId PersonId `json:"personId"`
 	Params   ListPersonEnrollmentsParams
@@ -37333,6 +38172,135 @@ type ReplaceEntitlementDefinitions422ApplicationProblemPlusJSONResponse struct {
 }
 
 func (response ReplaceEntitlementDefinitions422ApplicationProblemPlusJSONResponse) VisitReplaceEntitlementDefinitionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListEntitlementMappingsRequestObject struct {
+	PlanVersionId PlanVersionId `json:"planVersionId"`
+	Params        ListEntitlementMappingsParams
+}
+
+type ListEntitlementMappingsResponseObject interface {
+	VisitListEntitlementMappingsResponse(w http.ResponseWriter) error
+}
+
+type ListEntitlementMappings200JSONResponse struct {
+	Items []EntitlementMapping `json:"items"`
+}
+
+func (response ListEntitlementMappings200JSONResponse) VisitListEntitlementMappingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListEntitlementMappings404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ListEntitlementMappings404ApplicationProblemPlusJSONResponse) VisitListEntitlementMappingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutEntitlementMappingsRequestObject struct {
+	PlanVersionId PlanVersionId `json:"planVersionId"`
+	Params        PutEntitlementMappingsParams
+	Body          *PutEntitlementMappingsJSONRequestBody
+}
+
+type PutEntitlementMappingsResponseObject interface {
+	VisitPutEntitlementMappingsResponse(w http.ResponseWriter) error
+}
+
+type PutEntitlementMappings200JSONResponse struct {
+	Items []EntitlementMapping `json:"items"`
+}
+
+func (response PutEntitlementMappings200JSONResponse) VisitPutEntitlementMappingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutEntitlementMappings404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response PutEntitlementMappings404ApplicationProblemPlusJSONResponse) VisitPutEntitlementMappingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutEntitlementMappings409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response PutEntitlementMappings409ApplicationProblemPlusJSONResponse) VisitPutEntitlementMappingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutEntitlementMappings412ApplicationProblemPlusJSONResponse Problem
+
+func (response PutEntitlementMappings412ApplicationProblemPlusJSONResponse) VisitPutEntitlementMappingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutEntitlementMappings422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response PutEntitlementMappings422ApplicationProblemPlusJSONResponse) VisitPutEntitlementMappingsResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -46589,6 +47557,12 @@ type StrictServerInterface interface {
 	// (PATCH /api/v1/people/{personId})
 	UpdatePerson(ctx context.Context, request UpdatePersonRequestObject) (UpdatePersonResponseObject, error)
 
+	// (GET /api/v1/people/{personId}/contacts)
+	ListPersonContacts(ctx context.Context, request ListPersonContactsRequestObject) (ListPersonContactsResponseObject, error)
+
+	// (PUT /api/v1/people/{personId}/contacts)
+	PutPersonContacts(ctx context.Context, request PutPersonContactsRequestObject) (PutPersonContactsResponseObject, error)
+
 	// (GET /api/v1/people/{personId}/enrollments)
 	ListPersonEnrollments(ctx context.Context, request ListPersonEnrollmentsRequestObject) (ListPersonEnrollmentsResponseObject, error)
 
@@ -46624,6 +47598,12 @@ type StrictServerInterface interface {
 
 	// (PUT /api/v1/plan-versions/{planVersionId}/entitlement-definitions)
 	ReplaceEntitlementDefinitions(ctx context.Context, request ReplaceEntitlementDefinitionsRequestObject) (ReplaceEntitlementDefinitionsResponseObject, error)
+
+	// (GET /api/v1/plan-versions/{planVersionId}/entitlement-mappings)
+	ListEntitlementMappings(ctx context.Context, request ListEntitlementMappingsRequestObject) (ListEntitlementMappingsResponseObject, error)
+
+	// (PUT /api/v1/plan-versions/{planVersionId}/entitlement-mappings)
+	PutEntitlementMappings(ctx context.Context, request PutEntitlementMappingsRequestObject) (PutEntitlementMappingsResponseObject, error)
 
 	// (POST /api/v1/plan-versions/{planVersionId}/publish)
 	PublishPlanVersion(ctx context.Context, request PublishPlanVersionRequestObject) (PublishPlanVersionResponseObject, error)
@@ -49770,6 +50750,67 @@ func (sh *strictHandler) UpdatePerson(w http.ResponseWriter, r *http.Request, pe
 	}
 }
 
+// ListPersonContacts operation middleware
+func (sh *strictHandler) ListPersonContacts(w http.ResponseWriter, r *http.Request, personId PersonId, params ListPersonContactsParams) {
+	var request ListPersonContactsRequestObject
+
+	request.PersonId = personId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListPersonContacts(ctx, request.(ListPersonContactsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListPersonContacts")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListPersonContactsResponseObject); ok {
+		if err := validResponse.VisitListPersonContactsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutPersonContacts operation middleware
+func (sh *strictHandler) PutPersonContacts(w http.ResponseWriter, r *http.Request, personId PersonId, params PutPersonContactsParams) {
+	var request PutPersonContactsRequestObject
+
+	request.PersonId = personId
+	request.Params = params
+
+	var body PutPersonContactsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutPersonContacts(ctx, request.(PutPersonContactsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutPersonContacts")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutPersonContactsResponseObject); ok {
+		if err := validResponse.VisitPutPersonContactsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListPersonEnrollments operation middleware
 func (sh *strictHandler) ListPersonEnrollments(w http.ResponseWriter, r *http.Request, personId PersonId, params ListPersonEnrollmentsParams) {
 	var request ListPersonEnrollmentsRequestObject
@@ -50138,6 +51179,67 @@ func (sh *strictHandler) ReplaceEntitlementDefinitions(w http.ResponseWriter, r 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ReplaceEntitlementDefinitionsResponseObject); ok {
 		if err := validResponse.VisitReplaceEntitlementDefinitionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListEntitlementMappings operation middleware
+func (sh *strictHandler) ListEntitlementMappings(w http.ResponseWriter, r *http.Request, planVersionId PlanVersionId, params ListEntitlementMappingsParams) {
+	var request ListEntitlementMappingsRequestObject
+
+	request.PlanVersionId = planVersionId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListEntitlementMappings(ctx, request.(ListEntitlementMappingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListEntitlementMappings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListEntitlementMappingsResponseObject); ok {
+		if err := validResponse.VisitListEntitlementMappingsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutEntitlementMappings operation middleware
+func (sh *strictHandler) PutEntitlementMappings(w http.ResponseWriter, r *http.Request, planVersionId PlanVersionId, params PutEntitlementMappingsParams) {
+	var request PutEntitlementMappingsRequestObject
+
+	request.PlanVersionId = planVersionId
+	request.Params = params
+
+	var body PutEntitlementMappingsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutEntitlementMappings(ctx, request.(PutEntitlementMappingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutEntitlementMappings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutEntitlementMappingsResponseObject); ok {
+		if err := validResponse.VisitPutEntitlementMappingsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

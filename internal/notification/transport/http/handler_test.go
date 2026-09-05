@@ -63,7 +63,7 @@ func newServer(t *testing.T) *server {
 		t.Fatal(err)
 	}
 	svc, err := application.New(application.Deps{
-		Pool: h.App, Repo: notificationpg.New(), Audit: auditpg.New(), Cursors: cursors,
+		Pool: h.App, Repo: notificationpg.New(nil), Audit: auditpg.New(), Cursors: cursors,
 		LinkBase: "https://kapsora.example",
 		Now:      func() time.Time { return testNow },
 	})

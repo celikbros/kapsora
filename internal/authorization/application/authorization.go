@@ -208,6 +208,11 @@ func (s *Service) create(ctx context.Context, tx pgx.Tx, rc identity.RequestCont
 		}); err != nil {
 		return AuthorizationView{}, err
 	}
+	// The member is told inside this transaction: an authorization that rolled back has
+	// promised nothing and must have told nobody.
+	if err := s.notifyApproved(ctx, tx, rc, record, request.PersonID); err != nil {
+		return AuthorizationView{}, err
+	}
 	return s.reloadAuthorization(ctx, tx, rc.TenantID, record.ID, scope)
 }
 

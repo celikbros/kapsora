@@ -1289,6 +1289,86 @@ paths:
                 $ref: '#/components/schemas/Problem'
         '422':
           $ref: '#/components/responses/ValidationError'
+  /api/v1/plan-versions/{planVersionId}/entitlement-mappings:
+    get:
+      tags: [Benefit]
+      operationId: listEntitlementMappings
+      description: |
+        Which catalogue service draws from which entitlement of this plan version, and how
+        much of it one unit of the service draws. A service with no mapping here is what
+        makes an eligibility check answer SERVICE_MAPPING_PENDING.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PlanVersionId'
+      responses:
+        '200':
+          description: Mappings of the version, by service code
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EntitlementMapping'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Benefit]
+      operationId: putEntitlementMappings
+      description: |
+        Replaces the whole mapping set of a DRAFT version. The mapping is part of the plan
+        version and follows its publishing: a published version's mappings are immutable
+        (409 PLAN_VERSION_IMMUTABLE). An entitlement code that is not defined on this
+        version, an unknown or inactive service, a service named twice, or a unit factor
+        that is not a positive exact decimal are 422 field errors.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PlanVersionId'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [items]
+              properties:
+                items:
+                  type: array
+                  maxItems: 500
+                  items:
+                    $ref: '#/components/schemas/EntitlementMappingInput'
+      responses:
+        '200':
+          description: The version's new mapping set
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EntitlementMapping'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
   /api/v1/plan-versions/{planVersionId}/submit:
     post:
       tags: [Benefit]
@@ -1404,6 +1484,84 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+  /api/v1/people/{personId}/contacts:
+    get:
+      tags: [People]
+      operationId: listPersonContacts
+      description: |
+        How the person can be reached, masked. The value itself is envelope-encrypted and
+        is never returned by any endpoint: what comes back is the channel, the mask, and
+        whether anybody has proved the address belongs to them. Requires
+        `member.contact.read`.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PersonId'
+      responses:
+        '200':
+          description: Contact details of the person, masked
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PersonContact'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [People]
+      operationId: putPersonContacts
+      description: |
+        Replaces the whole contact set of the person. Requires `member.contact.manage`.
+        At most one primary per channel (422); an address that is not a plausible e-mail
+        address or telephone number is a 422 field error rather than a row nobody can
+        send to.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PersonId'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [items]
+              properties:
+                items:
+                  type: array
+                  maxItems: 20
+                  items:
+                    $ref: '#/components/schemas/PersonContactInput'
+      responses:
+        '200':
+          description: The person's new contact set, masked
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PersonContact'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
   /api/v1/people/{personId}/enrollments:
     get:
       tags: [Benefit]
@@ -8459,7 +8617,14 @@ components:
             type: string
     Problem:
       type: object
-      additionalProperties: false
+      description: |
+        RFC 9457 problem detail. Extension members are permitted and are serialised flat
+        beside the standard members: a problem type may carry the one fact that makes it
+        actionable rather than forcing a second request. Today
+        `WORK_ITEM_ALREADY_CLAIMED` carries `assigneeActorId` (uuid) and, when it is
+        known, `assigneeDisplayName` (string). A client must ignore members it does not
+        recognise.
+      additionalProperties: true
       required: [type, title, status, code, traceId]
       properties:
         type:
@@ -9307,6 +9472,120 @@ components:
         notes:
           type: [string, 'null']
           maxLength: 2000
+    EntitlementMapping:
+      type: object
+      additionalProperties: false
+      required: [id, planVersionId, serviceDefinitionId, serviceCode, serviceName, entitlementDefinitionId, entitlementCode, unitType, unitFactor, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        planVersionId:
+          type: string
+          format: uuid
+        serviceDefinitionId:
+          type: string
+          format: uuid
+        serviceCode:
+          type: string
+        serviceName:
+          type: string
+        entitlementDefinitionId:
+          type: string
+          format: uuid
+        entitlementCode:
+          type: string
+        unitType:
+          type: string
+          enum: [MONEY, COUNT, NIGHT, SESSION, HOUR, KILOMETER, POINT]
+        unitFactor:
+          $ref: '#/components/schemas/DecimalAmount'
+        validFrom:
+          type: [string, 'null']
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+        rowVersion:
+          type: integer
+          format: int64
+    EntitlementMappingInput:
+      type: object
+      additionalProperties: false
+      required: [serviceDefinitionId, entitlementCode]
+      properties:
+        serviceDefinitionId:
+          type: string
+          format: uuid
+        entitlementCode:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]{1,63}$'
+          description: A code defined on this plan version; anything else is a 422.
+        unitFactor:
+          $ref: '#/components/schemas/DecimalAmount'
+        validFrom:
+          type: [string, 'null']
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+    PersonContact:
+      type: object
+      additionalProperties: false
+      required: [id, personId, channel, maskedValue, primary, rowVersion, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        personId:
+          type: string
+          format: uuid
+        channel:
+          type: string
+          enum: [EMAIL, SMS]
+        maskedValue:
+          type: string
+          maxLength: 120
+          description: |
+            All anybody is shown. The address itself is envelope-encrypted like an
+            identity number and is returned by no endpoint at all.
+        verifiedAt:
+          type: [string, 'null']
+          format: date-time
+          description: |
+            When somebody proved the address is theirs. Null is still an address the
+            platform will write to; verification buys the right to trust it, not the right
+            to use it.
+        primary:
+          type: boolean
+        rowVersion:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+    PersonContactInput:
+      type: object
+      additionalProperties: false
+      required: [channel, value]
+      properties:
+        channel:
+          type: string
+          enum: [EMAIL, SMS]
+        value:
+          type: string
+          minLength: 3
+          maxLength: 254
+          description: |
+            The address itself. It is written once, encrypted, and never comes back: a
+            later read answers with the mask.
+        primary:
+          type: boolean
+          default: false
+        verified:
+          type: boolean
+          default: false
+          description: Whether this address has already been proved, for an import that carries the fact.
     EntitlementDefinitionInput:
       type: object
       additionalProperties: false
@@ -9680,6 +9959,15 @@ components:
         programId:
           type: [string, 'null']
           format: uuid
+        enrollmentId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            Which of the person's enrollments to answer for. It exists for the second ask
+            after an ENROLLMENT_MULTIPLE answer: the caller picks one of the
+            `enrollmentCandidates` the first answer named. An id that is not active for
+            this person on the service date resolves to ENROLLMENT_NONE rather than to
+            somebody else's plan.
         providerOrganizationId:
           type: [string, 'null']
           format: uuid
@@ -9724,6 +10012,31 @@ components:
         enrollmentId:
           type: [string, 'null']
           format: uuid
+        enrollmentCandidates:
+          type: array
+          description: |
+            The enrollments this check was torn between. Present only with an
+            ENROLLMENT_MULTIPLE explanation, and it is the whole of what a caller may
+            learn about a person's enrollments here: it is the choice the check itself had
+            to make, not a list. Ask again with one of these ids in `enrollmentId`.
+          items:
+            type: object
+            additionalProperties: false
+            required: [enrollmentId, planCode, planName, validFrom]
+            properties:
+              enrollmentId:
+                type: string
+                format: uuid
+              planCode:
+                type: string
+              planName:
+                type: string
+              validFrom:
+                type: string
+                format: date
+              validTo:
+                type: [string, 'null']
+                format: date
         items:
           type: array
           description: Per requested item, in request order.
@@ -9992,7 +10305,7 @@ components:
     ServiceRequest:
       type: object
       additionalProperties: false
-      required: [id, reference, requestType, personId, programId, enrollmentId, serviceDate, channel, status, currentVersionNo, items, rowVersion, createdAt]
+      required: [id, reference, requestType, personId, personDisplayName, programId, enrollmentId, serviceDate, channel, status, currentVersionNo, items, rowVersion, createdAt]
       properties:
         id:
           type: string
@@ -10005,6 +10318,13 @@ components:
         personId:
           type: string
           format: uuid
+        personDisplayName:
+          type: string
+          maxLength: 200
+          description: |
+            The member's name, read with the row. It is here so a list of requests names
+            people without one extra read per line; a caller that may see the request may
+            see whose it is.
         programId:
           type: string
           format: uuid
@@ -10014,6 +10334,10 @@ components:
         providerOrganizationId:
           type: [string, 'null']
           format: uuid
+        providerDisplayName:
+          type: [string, 'null']
+          maxLength: 200
+          description: The provider organization's name; null when the request names no provider.
         serviceDate:
           type: string
           format: date
@@ -13580,6 +13904,12 @@ components:
         assigneeActorId:
           type: [string, 'null']
           format: uuid
+        assigneeDisplayName:
+          type: [string, 'null']
+          maxLength: 200
+          description: |
+            Who holds the item, read with the row. It is here so a worklist names a
+            colleague instead of showing their id, without one extra request per line.
         assignedAt:
           type: [string, 'null']
           format: date-time

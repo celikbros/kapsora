@@ -76,6 +76,8 @@ func (h *Handler) Routes(r chi.Router, mw Middlewares) {
 	r.Get("/{personId}/relationships", h.ListRelationships)
 	r.With(wrap(mw.CreateRelationship)).Post("/{personId}/relationships", h.CreateRelationship)
 	r.Post("/{personId}/relationships/{relationshipId}/end", h.EndRelationship)
+	r.Get("/{personId}/contacts", h.ListContacts)
+	r.Put("/{personId}/contacts", h.PutContacts)
 	r.Get("/{personId}/memberships", h.ListMemberships)
 	r.With(wrap(mw.CreateMembership)).Post("/{personId}/memberships", h.CreateMembership)
 	r.Patch("/{personId}/memberships/{membershipId}", h.UpdateMembership)

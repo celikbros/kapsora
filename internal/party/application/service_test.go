@@ -32,6 +32,9 @@ var partyTables = []string{
 	"party.person", "party.person_identifier", "party.identifier_type",
 	"party.relationship_type", "party.person_relationship",
 	"party.membership_type", "party.sponsor_membership",
+	// Contact details are held exactly as identifiers are (WP-I5-05), so they are scanned
+	// exactly as identifiers are.
+	"party.person_contact",
 }
 
 type fixture struct {

@@ -88,6 +88,11 @@ func (s *Service) Return(ctx context.Context, rc identity.RequestContext, id uui
 			map[string]any{"from_version_no": current.CurrentVersionNo, "version_no": nextNo}); err != nil {
 			return err
 		}
+		// A return is a decision: somebody looked and answered. The reason itself stays
+		// out of the message; the link takes the requester to where it is written.
+		if err := s.notifyDecided(ctx, tx, rc, current, statusReturned); err != nil {
+			return err
+		}
 		out, err = s.reload(ctx, tx, rc.TenantID, id, scopeOf(rc))
 		return err
 	})
@@ -136,6 +141,9 @@ func (s *Service) Reject(ctx context.Context, rc identity.RequestContext, id uui
 		if err := s.transition(ctx, tx, rc, id, current.Status, domain.StatusRejected,
 			domain.CommandReject, in.ReasonCode, trimmedPtr(in.ReasonText),
 			map[string]any{"version_no": current.CurrentVersionNo}); err != nil {
+			return err
+		}
+		if err := s.notifyDecided(ctx, tx, rc, current, domain.StatusRejected); err != nil {
 			return err
 		}
 		out, err = s.reload(ctx, tx, rc.TenantID, id, scopeOf(rc))
@@ -197,6 +205,9 @@ func (s *Service) decide(ctx context.Context, rc identity.RequestContext, id uui
 		if err := s.transition(ctx, tx, rc, id, current.Status, status, command,
 			in.ReasonCode, trimmedPtr(in.ReasonText),
 			map[string]any{"version_no": current.CurrentVersionNo, "item_count": len(decisions)}); err != nil {
+			return err
+		}
+		if err := s.notifyDecided(ctx, tx, rc, current, status); err != nil {
 			return err
 		}
 		out, err = s.reload(ctx, tx, rc.TenantID, id, scopeOf(rc))

@@ -88,6 +88,8 @@ func (h *Handler) PlanVersionRoutes(r chi.Router) {
 	r.Get("/{planVersionId}", h.GetPlanVersion)
 	r.Patch("/{planVersionId}", h.UpdatePlanVersion)
 	r.Put("/{planVersionId}/entitlement-definitions", h.ReplaceDefinitions)
+	r.Get("/{planVersionId}/entitlement-mappings", h.ListEntitlementMappings)
+	r.Put("/{planVersionId}/entitlement-mappings", h.PutEntitlementMappings)
 	r.Post("/{planVersionId}/submit", h.SubmitPlanVersion)
 	r.Post("/{planVersionId}/publish", h.PublishPlanVersion)
 	r.Post("/{planVersionId}/retire", h.RetirePlanVersion)

@@ -284,6 +284,22 @@ type BenefitProgramType struct {
 	UpdatedAt   time.Time
 }
 
+type BenefitServiceEntitlementMapping struct {
+	ID                      uuid.UUID
+	TenantID                uuid.UUID
+	PlanVersionID           uuid.UUID
+	ServiceDefinitionID     uuid.UUID
+	EntitlementDefinitionID uuid.UUID
+	UnitFactor              pgtype.Numeric
+	ValidFrom               pgtype.Date
+	ValidTo                 pgtype.Date
+	CreatedAt               time.Time
+	CreatedBy               uuid.NullUUID
+	UpdatedAt               time.Time
+	UpdatedBy               uuid.NullUUID
+	RowVersion              int64
+}
+
 type CatalogCodeSystem struct {
 	ID         uuid.UUID
 	TenantID   uuid.UUID
@@ -962,6 +978,22 @@ type PartyPerson struct {
 	RowVersion      int64
 	SourceSystem    *string
 	SourceRecordID  *string
+}
+
+type PartyPersonContact struct {
+	ID          uuid.UUID
+	TenantID    uuid.UUID
+	PersonID    uuid.UUID
+	Channel     string
+	ValueEnc    []byte
+	ValueMasked string
+	VerifiedAt  *time.Time
+	IsPrimary   bool
+	CreatedAt   time.Time
+	CreatedBy   uuid.NullUUID
+	UpdatedAt   time.Time
+	UpdatedBy   uuid.NullUUID
+	RowVersion  int64
 }
 
 type PartyPersonIdentifier struct {

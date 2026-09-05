@@ -18,9 +18,15 @@ const PASSWORD = 'demo parola 2026 kapsora';
 
 beforeAll(() => {
   initI18n('tr');
+  server.events.on('request:start', ({ request }) => {
+    if (/\/api\/v1\/people\/[^/]+$/.test(new URL(request.url).pathname)) personCalls += 1;
+  });
   server.listen({ onUnhandledRequest: 'error' });
 });
-afterEach(() => api.reset());
+afterEach(() => {
+  api.reset();
+  personCalls = 0;
+});
 afterAll(() => server.close());
 
 function mount(path: string) {
@@ -41,6 +47,13 @@ async function login(username: string) {
 function tenantA() {
   return api.world.tenants.find((t) => t.code === 'DEMO_A')!;
 }
+
+/**
+ * How many times the screen asked the server for one person. The point of section 2.6 is
+ * that a list of thirty requests is no longer thirty extra reads, and the only way to
+ * assert that is to count the calls.
+ */
+let personCalls = 0;
 
 function requestIn(status: string) {
   const row = api.world.serviceRequests.find(
@@ -180,6 +193,73 @@ describe('requests', () => {
   });
 });
 
+describe('names on the wire', () => {
+  it('names the member and the provider on the request list without one read per row', async () => {
+    const { history } = mount('/requests');
+    await login('admin.a');
+    personCalls = 0;
+    await history.push('/requests');
+    const table = await screen.findByRole('table');
+
+    // Every rendered row is named by the row it arrived on. If a name were still resolved
+    // per row it would be '…' for at least the first render, and the person endpoint
+    // would have been called once for each of them.
+    const rows = within(table).getAllByRole('row').slice(1);
+    expect(rows.length).toBeGreaterThan(0);
+    let checked = 0;
+    for (const row of rows) {
+      const text = row.textContent ?? '';
+      const request = api.world.serviceRequests.find(
+        (r) => r.tenantId === tenantA().id && text.includes(r.reference),
+      );
+      if (!request) continue;
+      const person = api.world.people.find((p) => p.id === request.personId)!;
+      const expected = [person.firstName, person.middleName, person.lastName]
+        .filter(Boolean)
+        .join(' ');
+      expect(row).toHaveTextContent(expected);
+      // Never the placeholder: the name did not have to arrive, it was already there.
+      expect(text).not.toContain('…');
+      checked += 1;
+    }
+    expect(checked, 'no rendered row could be matched to a world request').toBeGreaterThan(0);
+
+    // And the screen asked for the requests and nothing else about a person: the person
+    // endpoint is not called at all for this list any more.
+    expect(personCalls).toBe(0);
+  });
+
+  it('names the colleague who holds a work item, from the row', async () => {
+    const { history } = mount('/worklist');
+    await login('admin.a');
+    await history.push('/worklist?view=all');
+    const held = api.world.workItems.find(
+      (w) => w.tenantId === tenantA().id && w.assigneeActorId !== null && w.status === 'CLAIMED',
+    );
+    expect(held, 'no fixture work item is held by anybody').toBeDefined();
+    // Wait for the row itself rather than for the table: the table is on screen with the
+    // previous view's rows before the unfiltered page lands.
+    const cell = await screen.findByText(held!.title);
+    const row = cell.closest('tr')!;
+
+    const me = api.world.accounts.find((a) => a.username === 'admin.a')!;
+    const holder = api.world.accounts.find((a) => a.actorId === held!.assigneeActorId)!;
+    expect(holder.actorId, 'the held fixture item is the operator’s own').not.toBe(me.actorId);
+    // The colleague is named, and never by id: the worklist said a uuid until the wire
+    // carried the name (WP-I5-05 section 2.6).
+    expect(row).toHaveTextContent(holder.displayName);
+    expect(row.textContent).not.toContain(held!.assigneeActorId!);
+
+    // And the operator's own rows still say "me" rather than their own name.
+    const mine = api.world.workItems.find(
+      (w) => w.tenantId === tenantA().id && w.assigneeActorId === me.actorId,
+    );
+    expect(mine, 'no fixture work item is held by the operator').toBeDefined();
+    const myRow = (await screen.findByText(mine!.title)).closest('tr')!;
+    expect(myRow.textContent).not.toContain(me.actorId);
+  });
+});
+
 describe('worklist', () => {
   it('tells the loser of a claim race who holds the item', async () => {
     const { history } = mount('/worklist');
@@ -205,7 +285,11 @@ describe('worklist', () => {
     await user.click(claimButtons[0]!);
     const status = await screen.findByRole('status');
     expect(status).toHaveTextContent('üstlendi');
-    expect(status).toHaveTextContent(rival.actorId);
+    // The winner is named, not identified: the refusal's extension members carry the
+    // display name and the screen reads it from there rather than scraping an id out of a
+    // Turkish sentence (WP-I5-05 section 2.6).
+    expect(status).toHaveTextContent(rival.displayName);
+    expect(status).not.toHaveTextContent(rival.actorId);
   });
 
   it('marks a late item by its own clock and shows what is mine', async () => {

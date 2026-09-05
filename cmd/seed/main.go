@@ -23,11 +23,18 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	auditpg "github.com/celikbros/kapsora/internal/audit/postgres"
+	benefitapp "github.com/celikbros/kapsora/internal/benefit/application"
+	benefitpg "github.com/celikbros/kapsora/internal/benefit/infrastructure/postgres"
+	catalogapp "github.com/celikbros/kapsora/internal/catalog/application"
+	catalogpg "github.com/celikbros/kapsora/internal/catalog/infrastructure/postgres"
 	"github.com/celikbros/kapsora/internal/identity/application"
 	"github.com/celikbros/kapsora/internal/identity/domain"
 	identitypg "github.com/celikbros/kapsora/internal/identity/infrastructure/postgres"
+	notificationapp "github.com/celikbros/kapsora/internal/notification/application"
+	notificationpg "github.com/celikbros/kapsora/internal/notification/infrastructure/postgres"
 	"github.com/celikbros/kapsora/internal/platform/config"
 	"github.com/celikbros/kapsora/internal/platform/db"
+	"github.com/celikbros/kapsora/internal/platform/httpx"
 	"github.com/celikbros/kapsora/internal/platform/sqlcgen"
 )
 
@@ -43,6 +50,12 @@ type seeder struct {
 	svc         *application.Service
 	credentials *identitypg.CredentialRepository
 	provisioner *application.Provisioner
+	// The three services the reference data of WP-I5-05 goes through. The seed writes
+	// them the way an operator would rather than with its own INSERTs, so a template that
+	// the publishing gate would refuse is refused here too.
+	catalog       *catalogapp.Service
+	notifications *notificationapp.Service
+	benefits      *benefitapp.Service
 }
 
 func run(args []string) error {
@@ -80,11 +93,40 @@ func run(args []string) error {
 	if err != nil {
 		return err
 	}
+	// The seed answers no paged HTTP request, but the catalogue and notification services
+	// require a cursor codec for the list reads they use to stay idempotent. The key is a
+	// local development constant on purpose: nothing signs a cursor a user ever holds.
+	cursors, err := httpx.NewCursorCodec([]byte("kapsora-seed-cursor-key-0123456789ab"))
+	if err != nil {
+		return err
+	}
+	catalogSvc, err := catalogapp.New(catalogapp.Deps{
+		Pool: pool, Repo: catalogpg.New(), Audit: auditpg.New(), Cursors: cursors,
+	})
+	if err != nil {
+		return err
+	}
+	// No channel adapters: the seed publishes templates and sends nothing.
+	notificationSvc, err := notificationapp.New(notificationapp.Deps{
+		Pool: pool, Repo: notificationpg.New(nil), Audit: auditpg.New(), Cursors: cursors,
+	})
+	if err != nil {
+		return err
+	}
+	benefitSvc, err := benefitapp.New(benefitapp.Deps{
+		Pool: pool, Repo: benefitpg.New(), Audit: auditpg.New(), Cursors: cursors,
+	})
+	if err != nil {
+		return err
+	}
 	s := &seeder{
-		pool:        pool,
-		svc:         svc,
-		credentials: credentials,
-		provisioner: application.NewProvisioner(identitypg.NewProvisioningRepository(pool), sink),
+		pool:          pool,
+		svc:           svc,
+		credentials:   credentials,
+		provisioner:   application.NewProvisioner(identitypg.NewProvisioningRepository(pool), sink),
+		catalog:       catalogSvc,
+		notifications: notificationSvc,
+		benefits:      benefitSvc,
 	}
 
 	switch args[0] {
@@ -206,6 +248,20 @@ func (s *seeder) demo(ctx context.Context) error {
 			state = "granted"
 		}
 		fmt.Printf("grant   %-22s %s in %s\n", g.RoleCode, state, shortTenant(g.TenantID, tenantA))
+	}
+	// Reference data. Each of these is idempotent and each is per tenant: a template
+	// belongs to a tenant, a code system belongs to a tenant, and a mapping belongs to one
+	// of a tenant's plan versions.
+	for _, tenantID := range []uuid.UUID{tenantA, tenantB} {
+		if err := s.ensureTemplates(ctx, tenantID); err != nil {
+			return err
+		}
+		if err := s.ensureICD10(ctx, tenantID); err != nil {
+			return err
+		}
+		if err := s.ensureEntitlementMappings(ctx, tenantID); err != nil {
+			return err
+		}
 	}
 	fmt.Println("demo data ready")
 	return nil

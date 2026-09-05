@@ -110,7 +110,10 @@ export interface StoredPerson {
  * A service request without its lines: the lines belong to a version, exactly as they do
  * in the schema, and `items` on the wire is always the current version's line set.
  */
-export type StoredServiceRequest = Omit<Schemas['ServiceRequest'], 'items'> & {
+export type StoredServiceRequest = Omit<
+  Schemas['ServiceRequest'],
+  'items' | 'personDisplayName' | 'providerDisplayName'
+> & {
   tenantId: string;
 };
 
@@ -139,6 +142,42 @@ export interface StoredServiceRequestVersion {
   items: StoredServiceRequestItem[];
   /** Frozen at submit; null on a version nobody has submitted yet. */
   snapshotItems: StoredServiceRequestItem[] | null;
+}
+
+/**
+ * One row of benefit.service_entitlement_mapping (WP-I5-05 section 2.1): which entitlement
+ * a catalogue service draws from inside one plan version, and how much of it one unit of
+ * the service draws. The two codes the wire carries are derived on the way out, because a
+ * code copied onto the row is a code that stops being true when the catalogue is renamed.
+ */
+export interface StoredEntitlementMapping {
+  id: string;
+  tenantId: string;
+  planVersionId: string;
+  serviceDefinitionId: string;
+  entitlementDefinitionId: string;
+  unitFactor: string;
+  validFrom: string | null;
+  validTo: string | null;
+  rowVersion: number;
+}
+
+/**
+ * One row of party.person_contact. The mock holds the plaintext the way it holds a
+ * practitioner's registration number — it is a test double of a database it cannot
+ * encrypt — and, exactly like the server, never lets it out: every projection masks it and
+ * no endpoint returns it.
+ */
+export interface StoredPersonContact {
+  id: string;
+  tenantId: string;
+  personId: string;
+  channel: 'EMAIL' | 'SMS';
+  value: string;
+  verifiedAt: string | null;
+  primary: boolean;
+  createdAt: string;
+  rowVersion: number;
 }
 
 /** Decimal quantity carried as a string on the wire (never a JS number, see entitlements.ts). */
@@ -798,7 +837,9 @@ export type StoredWorkQueue = Schemas['WorkQueue'] & { tenantId: string };
  * item is raised and never read again: changing the queue's SLA leaves every existing
  * item on the clock it was already given, which is what makes a late item stay late.
  */
-export type StoredWorkItem = Schemas['WorkItem'] & { tenantId: string };
+export type StoredWorkItem = Omit<Schemas['WorkItem'], 'assigneeDisplayName'> & {
+  tenantId: string;
+};
 
 /** Append-only; a comment that could be edited is not a record of why anything happened. */
 export type StoredWorkItemComment = Schemas['WorkItemComment'] & { tenantId: string };
@@ -964,6 +1005,12 @@ const ADMIN_PERMISSIONS = [
   'plan.publish',
   'entitlement.read',
   'entitlement.adjust',
+  // M5 (migration 000035). The mapping is part of a plan's configuration, so whoever may
+  // write the entitlements may say which service draws from them; the contact grants are
+  // SENSITIVE and separate from member.read for the same reason the identifier ones are.
+  'entitlement.mapping.manage',
+  'member.contact.read',
+  'member.contact.manage',
   // Every move through the request lifecycle is its own grant: the person who asks for
   // something is not the person who grants it, so `review` is never implied by `create`.
   'service_request.read',
@@ -1237,6 +1284,8 @@ export interface MockWorld {
   notificationDeliveries: StoredNotificationDelivery[];
   notificationPreferences: StoredNotificationPreference[];
   // M5.
+  entitlementMappings: StoredEntitlementMapping[];
+  personContacts: StoredPersonContact[];
   healthCases: StoredHealthCase[];
   encounters: StoredEncounter[];
   diagnoses: StoredDiagnosis[];
@@ -3713,6 +3762,71 @@ export function buildWorld(
     diagnosis(encounterSensitive, icdSensitive, 'PRIMARY'),
   ];
 
+  // The service to entitlement mappings (WP-I5-05 section 2.1). They are appended here for
+  // the same reason the two M5 accounts are: `buildWorld` runs off one seeded stream, and
+  // an id drawn earlier would change which organizations a small world gets.
+  //
+  // They are attached to the PUBLISHED versions, which is the state the rule produces
+  // rather than a hole in it: mappings are written while a version is a draft and are
+  // frozen when it is published, so a published version carrying them is exactly right.
+  // LAB_PANEL_AMBIGUOUS is deliberately left unmapped, so SERVICE_MAPPING_PENDING is still
+  // reachable and still means what it says.
+  const mappingPlan: { service: string; entitlement: string; unitFactor: string }[] = [
+    { service: 'PHYSIO_SESSION', entitlement: 'PHYSIO_SESSION', unitFactor: '1.000000' },
+    { service: 'GP_VISIT', entitlement: 'HEALTH_MONEY', unitFactor: '1.000000' },
+    { service: 'MRI_SCAN', entitlement: 'HEALTH_MONEY', unitFactor: '1.000000' },
+  ];
+  const entitlementMappings: StoredEntitlementMapping[] = [];
+  for (const version of planVersions) {
+    if (version.status !== 'PUBLISHED') continue;
+    for (const line of mappingPlan) {
+      const service = serviceDefinitions.find(
+        (d) => d.tenantId === version.tenantId && d.code === line.service,
+      );
+      const definition = version.definitions.find((d) => d.code === line.entitlement);
+      if (!service || !definition) continue;
+      entitlementMappings.push({
+        id: nextId(),
+        tenantId: version.tenantId,
+        planVersionId: version.id,
+        serviceDefinitionId: service.id,
+        entitlementDefinitionId: definition.id,
+        unitFactor: line.unitFactor,
+        validFrom: null,
+        validTo: null,
+        rowVersion: 1,
+      });
+    }
+  }
+
+  // Contact details for the demo family's principal (WP-I5-05 section 2.5). Two channels,
+  // one primary each, neither verified — an unverified contact is still an address, which
+  // is what makes the SMS suppression read CHANNEL_NOT_DELIVERABLE rather than NO_ADDRESS.
+  const personContacts: StoredPersonContact[] = [
+    {
+      id: nextId(),
+      tenantId: demoA.id,
+      personId: familyPrincipal.id,
+      channel: 'EMAIL',
+      value: 'kaan.aydemir@example.invalid',
+      verifiedAt: null,
+      primary: true,
+      createdAt: isoDaysAgo(base, 120),
+      rowVersion: 1,
+    },
+    {
+      id: nextId(),
+      tenantId: demoA.id,
+      personId: familyPrincipal.id,
+      channel: 'SMS',
+      value: '+905321234567',
+      verifiedAt: null,
+      primary: true,
+      createdAt: isoDaysAgo(base, 120),
+      rowVersion: 1,
+    },
+  ];
+
   return {
     tenants,
     accounts,
@@ -3764,6 +3878,8 @@ export function buildWorld(
     notificationMessages,
     notificationDeliveries,
     notificationPreferences,
+    entitlementMappings,
+    personContacts,
     healthCases,
     encounters,
     diagnoses,
@@ -4804,12 +4920,40 @@ export function draftVersionOf(
   );
 }
 
+/**
+ * The member's name as the wire carries it (WP-I5-05 section 2.6). It is derived here, on
+ * the way out, exactly as the Go server derives it in SQL: a stored request holds ids, and
+ * a name that had been copied onto the row would be a name that stopped being true the
+ * moment somebody corrected the person.
+ */
+export function personDisplayName(world: MockWorld, personId: string): string {
+  const person = world.people.find((p) => p.id === personId);
+  if (!person) return '';
+  return [person.firstName, person.middleName, person.lastName].filter(Boolean).join(' ');
+}
+
+/** The organization's name, by the tenant-scoped id everything on the wire uses. */
+export function organizationDisplayName(
+  world: MockWorld,
+  tenantOrganizationId: string | null | undefined,
+): string | null {
+  if (!tenantOrganizationId) return null;
+  const rel = world.relationships.find((r) => r.id === tenantOrganizationId);
+  if (!rel) return null;
+  return world.organizations.get(rel.organizationId)?.displayName ?? null;
+}
+
 export function toServiceRequest(
   world: MockWorld,
   request: StoredServiceRequest,
 ): Schemas['ServiceRequest'] {
   const { tenantId: _tenantId, ...rest } = request;
-  return { ...rest, items: currentVersionOf(world, request)?.items ?? [] };
+  return {
+    ...rest,
+    personDisplayName: personDisplayName(world, request.personId),
+    providerDisplayName: organizationDisplayName(world, request.providerOrganizationId),
+    items: currentVersionOf(world, request)?.items ?? [],
+  };
 }
 
 export function toServiceRequestVersionSummary(
@@ -4867,9 +5011,79 @@ export function toWorkQueue(queue: StoredWorkQueue): Schemas['WorkQueue'] {
   return rest;
 }
 
-export function toWorkItem(item: StoredWorkItem): Schemas['WorkItem'] {
+/**
+ * The mapping as the wire carries it: the ids the row holds plus the two codes a person
+ * reads it by, resolved on the way out.
+ */
+export function toEntitlementMapping(
+  world: MockWorld,
+  mapping: StoredEntitlementMapping,
+): Schemas['EntitlementMapping'] {
+  const service = world.serviceDefinitions.find((d) => d.id === mapping.serviceDefinitionId);
+  const version = world.planVersions.find((v) => v.id === mapping.planVersionId);
+  const definition = version?.definitions.find((d) => d.id === mapping.entitlementDefinitionId);
+  return {
+    id: mapping.id,
+    planVersionId: mapping.planVersionId,
+    serviceDefinitionId: mapping.serviceDefinitionId,
+    serviceCode: service?.code ?? '',
+    serviceName: service?.name ?? '',
+    entitlementDefinitionId: mapping.entitlementDefinitionId,
+    entitlementCode: definition?.code ?? '',
+    unitType: definition?.unitType ?? 'COUNT',
+    unitFactor: mapping.unitFactor,
+    validFrom: mapping.validFrom,
+    validTo: mapping.validTo,
+    rowVersion: mapping.rowVersion,
+  };
+}
+
+/**
+ * The mask a contact is read back as. It keeps enough to recognise a value somebody
+ * already knows and never enough to learn one they do not, which is the same rule the
+ * identifier masks follow.
+ */
+export function maskContact(channel: 'EMAIL' | 'SMS', value: string): string {
+  if (channel === 'EMAIL') {
+    const at = value.lastIndexOf('@');
+    if (at <= 0) return '**';
+    const local = value.slice(0, at);
+    const host = value.slice(at);
+    if (local.length <= 1) return `***${host}`;
+    return `${local[0]}${'*'.repeat(local.length - 1)}${host}`;
+  }
+  const plus = value.startsWith('+') ? '+' : '';
+  const digits = plus ? value.slice(1) : value;
+  if (digits.length <= 2) return plus + '*'.repeat(digits.length);
+  return `${plus}${'*'.repeat(digits.length - 2)}${digits.slice(-2)}`;
+}
+
+/** The contact as the wire carries it: the mask, and never the value. */
+export function toPersonContact(contact: StoredPersonContact): Schemas['PersonContact'] {
+  return {
+    id: contact.id,
+    personId: contact.personId,
+    channel: contact.channel,
+    maskedValue: maskContact(contact.channel, contact.value),
+    verifiedAt: contact.verifiedAt,
+    primary: contact.primary,
+    createdAt: contact.createdAt,
+    rowVersion: contact.rowVersion,
+  };
+}
+
+/** Who holds a work item, by name. An id in the worklist names nobody. */
+export function assigneeDisplayName(
+  world: MockWorld,
+  actorId: string | null | undefined,
+): string | null {
+  if (!actorId) return null;
+  return world.accounts.find((a) => a.actorId === actorId)?.displayName ?? null;
+}
+
+export function toWorkItem(world: MockWorld, item: StoredWorkItem): Schemas['WorkItem'] {
   const { tenantId: _tenantId, ...rest } = item;
-  return rest;
+  return { ...rest, assigneeDisplayName: assigneeDisplayName(world, item.assigneeActorId) };
 }
 
 export function toWorkItemComment(comment: StoredWorkItemComment): Schemas['WorkItemComment'] {

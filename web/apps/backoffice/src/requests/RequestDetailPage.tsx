@@ -33,7 +33,6 @@ import { useState, type FormEvent } from 'react';
 
 import { useServiceDefinitionOptions, useServiceName } from '../catalog/names';
 import { DocumentsPanel } from '../documents/DocumentsPanel';
-import { useOrganizationName, usePersonName } from '../people/names';
 import { problemOf } from '../problems';
 import {
   useRequest,
@@ -644,8 +643,6 @@ export function RequestDetailPage() {
   const canReview = usePermission('service_request.review');
   const canCancel = usePermission('service_request.cancel');
   const [dialog, setDialog] = useState<Command | null>(null);
-  const personName = usePersonName(query.data?.data.personId);
-  const providerName = useOrganizationName(query.data?.data.providerOrganizationId);
 
   if (query.isPending) {
     return (
@@ -669,6 +666,9 @@ export function RequestDetailPage() {
 
   const request = query.data.data;
   const etag = query.data.etag;
+  // The names come with the row (WP-I5-05 section 2.6) rather than from two more reads.
+  const personName = request.personDisplayName;
+  const providerName = request.providerDisplayName;
   const allowed = allowedCommands(request.status);
   const returned = isReturned(request);
   const decided =

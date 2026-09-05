@@ -129,13 +129,30 @@ type Membership struct {
 }
 
 // Enrollment is one benefit.enrollment period with the plan and program it belongs to.
+// PlanCode and PlanName are carried for one reason: when the check has to answer
+// ENROLLMENT_MULTIPLE it must name the plans well enough for a desk to choose between
+// them, and an id is not a name.
 type Enrollment struct {
 	ID        uuid.UUID
 	PlanID    uuid.UUID
+	PlanCode  string
+	PlanName  string
 	ProgramID uuid.UUID
 	Status    string
 	ValidFrom time.Time
 	ValidTo   *time.Time
+}
+
+// EnrollmentCandidate is one of the enrollments an ENROLLMENT_MULTIPLE answer was torn
+// between. It is the minimum a desk needs to ask the question again naming one of them:
+// a provider may not list a person's enrollments, and this is not a list — it is the
+// choice the check itself already had to look at.
+type EnrollmentCandidate struct {
+	EnrollmentID uuid.UUID
+	PlanCode     string
+	PlanName     string
+	ValidFrom    time.Time
+	ValidTo      *time.Time
 }
 
 // PlanVersion is the published configuration the check resolved for the service date.
@@ -154,26 +171,46 @@ type Account struct {
 	Shared bool
 }
 
-// Item is one requested service line. EntitlementCode is the hint taken from the
-// request context; it is empty until the service catalogue lands in I3.
+// Item is one requested service line. ServiceDefinitionID is what the mapping of the
+// resolved plan version is looked up by; EntitlementCode is the older hint taken from the
+// request context, which still answers for a service nobody has mapped yet.
 type Item struct {
-	Index           int
+	Index               int
+	ServiceDefinitionID uuid.UUID
+	EntitlementCode     string
+	Quantity            domain.Quantity
+}
+
+// Mapping is one row of benefit.service_entitlement_mapping as the resolution reads it:
+// which entitlement a service draws from, and how much of it one unit of the service
+// draws. The factor is exact, like every other quantity here.
+type Mapping struct {
 	EntitlementCode string
-	Quantity        domain.Quantity
+	UnitFactor      domain.Quantity
 }
 
 // Input is everything Resolve reads. The caller loads it in one transaction.
 type Input struct {
 	ServiceDate time.Time
 	// ProgramID restricts the enrollment search; uuid.Nil means "any program".
-	ProgramID   uuid.UUID
-	Person      Person
-	Memberships []Membership
-	Enrollments []Enrollment
+	ProgramID uuid.UUID
+	// EnrollmentID answers a caller who was told ENROLLMENT_MULTIPLE and has chosen. It
+	// narrows the search to one of the enrollments the check itself found; an id that is
+	// not among them selects nothing, which lands on ENROLLMENT_NONE rather than on
+	// somebody else's plan.
+	EnrollmentID uuid.UUID
+	Person       Person
+	Memberships  []Membership
+	Enrollments  []Enrollment
 	// PlanVersion is nil when no version was published on the service date.
 	PlanVersion *PlanVersion
 	Accounts    []Account
-	Items       []Item
+	// Mappings is the service → entitlement mapping of the resolved plan version, keyed
+	// by service definition. A line whose service is in here is judged against that
+	// entitlement's balance; a line whose service is not is SERVICE_MAPPING_PENDING
+	// unless the caller hinted a code.
+	Mappings map[uuid.UUID]Mapping
+	Items    []Item
 }
 
 // ItemResult is the verdict on one requested line.
@@ -204,6 +241,10 @@ type Result struct {
 	Explanations  []Explanation
 	Items         []ItemResult
 	Balances      []Balance
+	// EnrollmentCandidates is filled only when ENROLLMENT_MULTIPLE was raised. It is
+	// empty otherwise, so the presence of the field is itself the answer to "was there a
+	// choice to make".
+	EnrollmentCandidates []EnrollmentCandidate
 }
 
 // ActiveOn reports whether a half-open [from, to) period contains the day; an absent
@@ -225,16 +266,25 @@ func ActiveOn(from time.Time, to *time.Time, day time.Time) bool {
 // it before Resolve to know which plan's version to resolve; Resolve derives the same
 // selection from the same slice, so the two can never disagree.
 func SelectEnrollments(enrollments []Enrollment, programID uuid.UUID, day time.Time) []Enrollment {
-	return selectEnrollments(enrollments, programID, day, statusActive)
+	return selectEnrollments(enrollments, programID, uuid.Nil, day, statusActive)
 }
 
-func selectEnrollments(enrollments []Enrollment, programID uuid.UUID, day time.Time, status string) []Enrollment {
+// SelectEnrollmentsFor is SelectEnrollments narrowed to the enrollment the caller chose.
+// uuid.Nil means "no choice was made" and behaves exactly as SelectEnrollments does.
+func SelectEnrollmentsFor(enrollments []Enrollment, programID, enrollmentID uuid.UUID, day time.Time) []Enrollment {
+	return selectEnrollments(enrollments, programID, enrollmentID, day, statusActive)
+}
+
+func selectEnrollments(enrollments []Enrollment, programID, enrollmentID uuid.UUID, day time.Time, status string) []Enrollment {
 	out := make([]Enrollment, 0, len(enrollments))
 	for _, e := range enrollments {
 		if e.Status != status || !ActiveOn(e.ValidFrom, e.ValidTo, day) {
 			continue
 		}
 		if programID != uuid.Nil && e.ProgramID != programID {
+			continue
+		}
+		if enrollmentID != uuid.Nil && e.ID != enrollmentID {
 			continue
 		}
 		out = append(out, e)
@@ -275,10 +325,11 @@ func Resolve(in Input) Result {
 		return blocked(res, in.Items, CodeMembershipNone, OutcomeMissingData)
 	}
 
-	// 3. An enrollment covers the service date, restricted to the requested program.
-	active := SelectEnrollments(in.Enrollments, in.ProgramID, day)
+	// 3. An enrollment covers the service date, restricted to the requested program and,
+	// when the caller has already been told there was a choice, to the one they picked.
+	active := SelectEnrollmentsFor(in.Enrollments, in.ProgramID, in.EnrollmentID, day)
 	if len(active) == 0 {
-		if len(selectEnrollments(in.Enrollments, in.ProgramID, day, statusSuspended)) > 0 {
+		if len(selectEnrollments(in.Enrollments, in.ProgramID, in.EnrollmentID, day, statusSuspended)) > 0 {
 			return blocked(res, in.Items, CodeEnrollmentSuspended, OutcomeIneligible)
 		}
 		return blocked(res, in.Items, CodeEnrollmentNone, OutcomeIneligible)
@@ -287,6 +338,10 @@ func Resolve(in Input) Result {
 	review := false
 	if len(active) > 1 {
 		res.Explanations = append(res.Explanations, explain(CodeEnrollmentMultiple))
+		// Naming the choice is the point: a desk told "there is more than one plan" and
+		// nothing else can only guess, and a provider is not allowed to list a person's
+		// enrollments to find out.
+		res.EnrollmentCandidates = candidates(active)
 		review = true
 	}
 
@@ -300,7 +355,7 @@ func Resolve(in Input) Result {
 	accounts := accountsByCode(in.Accounts)
 	eligible, needsReview := 0, 0
 	for _, item := range in.Items {
-		result := resolveItem(item, accounts)
+		result := resolveItem(item, accounts, in.Mappings)
 		switch result.Outcome {
 		case ItemEligible:
 			eligible++
@@ -332,17 +387,30 @@ func outcomeOf(items, eligible, review int, enrollmentReview bool) string {
 	}
 }
 
-// resolveItem compares one requested quantity with the balance of its entitlement code.
-// Without a code - or with a code no account in the plan version carries - the line is
-// not judged at all: it is REVIEW_REQUIRED with SERVICE_MAPPING_PENDING until the
-// service catalogue of I3 can map serviceDefinitionId onto an entitlement.
-func resolveItem(item Item, accounts map[string]Account) ItemResult {
+// resolveItem compares one requested line with the balance of the entitlement behind it.
+//
+// The mapping of the resolved plan version decides first: a service that is mapped is
+// judged against its entitlement's balance, and the requested quantity is multiplied by
+// the mapping's unit factor, because one session of a service may draw two units of the
+// entitlement. The request context's entitlement code is the fallback, for the plans
+// nobody has mapped yet. A line with neither — and a line whose entitlement no account in
+// the plan version carries — is not judged at all: it is REVIEW_REQUIRED with
+// SERVICE_MAPPING_PENDING, which says the configuration is missing rather than pretending
+// the answer is no.
+func resolveItem(item Item, accounts map[string]Account, mappings map[uuid.UUID]Mapping) ItemResult {
+	code, drawn := item.EntitlementCode, item.Quantity
+	if mapping, ok := mappings[item.ServiceDefinitionID]; ok && mapping.EntitlementCode != "" {
+		code = mapping.EntitlementCode
+		if mapping.UnitFactor.IsPositive() {
+			drawn = item.Quantity.Mul(mapping.UnitFactor)
+		}
+	}
 	out := ItemResult{
-		Index: item.Index, EntitlementCode: item.EntitlementCode,
+		Index: item.Index, EntitlementCode: code,
 		RequestedQuantity: item.Quantity, Explanations: []Explanation{},
 	}
-	account, ok := accounts[item.EntitlementCode]
-	if item.EntitlementCode == "" || !ok {
+	account, ok := accounts[code]
+	if code == "" || !ok {
 		out.Outcome = ItemReviewRequired
 		out.Explanations = append(out.Explanations, explain(CodeServiceMappingPending))
 		return out
@@ -350,7 +418,7 @@ func resolveItem(item Item, accounts map[string]Account) ItemResult {
 	available := account.Available
 	out.AvailableQuantity = &available
 	switch {
-	case item.Quantity.Cmp(available) <= 0:
+	case drawn.Cmp(available) <= 0:
 		out.Outcome = ItemEligible
 	case account.AllowOverdraft:
 		out.Outcome = ItemEligible
@@ -358,6 +426,20 @@ func resolveItem(item Item, accounts map[string]Account) ItemResult {
 	default:
 		out.Outcome = ItemIneligible
 		out.Explanations = append(out.Explanations, explain(CodeBalanceInsufficient))
+	}
+	return out
+}
+
+// candidates renders the enrollments an ENROLLMENT_MULTIPLE answer was torn between, in
+// the order SelectEnrollments already put them in, so two identical checks name them the
+// same way round.
+func candidates(active []Enrollment) []EnrollmentCandidate {
+	out := make([]EnrollmentCandidate, 0, len(active))
+	for _, e := range active {
+		out = append(out, EnrollmentCandidate{
+			EnrollmentID: e.ID, PlanCode: e.PlanCode, PlanName: e.PlanName,
+			ValidFrom: domain.DateOnly(e.ValidFrom), ValidTo: e.ValidTo,
+		})
 	}
 	return out
 }

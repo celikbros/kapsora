@@ -168,8 +168,9 @@ func itemView(i application.ItemRecord) kapsorav1.WorkItem {
 	return kapsorav1.WorkItem{
 		Id: i.ID, QueueId: i.QueueID, AggregateType: i.AggregateType,
 		AggregateId: i.AggregateID, Title: i.Title, Priority: i.Priority,
-		AssigneeActorId: i.AssigneeActorID, AssignedAt: utcPtr(i.AssignedAt),
-		DueAt: utcPtr(i.DueAt), SlaMinutesSnapshot: i.SLAMinutesSnapshot,
+		AssigneeActorId: i.AssigneeActorID, AssigneeDisplayName: i.AssigneeDisplayName,
+		AssignedAt: utcPtr(i.AssignedAt),
+		DueAt:      utcPtr(i.DueAt), SlaMinutesSnapshot: i.SLAMinutesSnapshot,
 		Status: kapsorav1.WorkItemStatus(i.Status), OutcomeCode: i.OutcomeCode,
 		CompletedAt: utcPtr(i.CompletedAt), CompletedBy: i.CompletedBy,
 		EscalatedAt: utcPtr(i.EscalatedAt), EscalatedFromQueueId: i.EscalatedFromQueueID,

@@ -45,6 +45,16 @@ function active(from: string, to: string | null, date: string): boolean {
   return from <= date && (to === null || date < to);
 }
 
+/** Multiplies two decimal strings exactly, at the six decimals every quantity carries. */
+function multiplyDecimal(a: string, b: string): string {
+  const micros = (v: string): bigint => {
+    const [i, f = ''] = v.split('.');
+    return BigInt(i ?? '0') * 1_000_000n + BigInt((f + '000000').slice(0, 6));
+  };
+  const product = (micros(a) * micros(b)) / 1_000_000n;
+  return `${product / 1_000_000n}.${(product % 1_000_000n).toString().padStart(6, '0')}`;
+}
+
 /** Compares two decimal strings without floating point. */
 function lessThan(a: string, b: string): boolean {
   const [ai, af = ''] = a.split('.');
@@ -72,6 +82,7 @@ export function resolveEligibility(
   let outcome: Result['outcome'] = 'ELIGIBLE';
   let planVersionId: string | null = null;
   let enrollmentId: string | null = null;
+  let candidates: NonNullable<Result['enrollmentCandidates']> = [];
 
   if (!person) {
     explanations.push(explain('PERSON_NOT_FOUND', 'ERROR'));
@@ -103,7 +114,10 @@ export function resolveEligibility(
           e.tenantId === tenantId &&
           e.personId === person.id &&
           active(e.validFrom, e.validTo, serviceDate) &&
-          (!input.programId || e.programId === input.programId),
+          (!input.programId || e.programId === input.programId) &&
+          // An id that is not one of this person's own enrollments selects nothing, which
+          // lands on ENROLLMENT_NONE rather than on somebody else's plan.
+          (!input.enrollmentId || e.id === input.enrollmentId),
       )
     : [];
   const chosen = enrollments.find((e) => e.status === 'ACTIVE') ?? enrollments[0];
@@ -117,9 +131,20 @@ export function resolveEligibility(
         explanations.push(explain('ENROLLMENT_SUSPENDED', 'ERROR'));
         outcome = 'INELIGIBLE';
       }
-      if (enrollments.filter((e) => e.status === 'ACTIVE').length > 1) {
+      const activeEnrollments = enrollments.filter((e) => e.status === 'ACTIVE');
+      if (activeEnrollments.length > 1) {
         explanations.push(explain('ENROLLMENT_MULTIPLE', 'WARNING'));
         outcome = 'REVIEW_REQUIRED';
+        // Naming the choice is the point: a desk told "there is more than one plan" and
+        // nothing else can only guess, and a provider may not list a person's enrollments
+        // to find out.
+        candidates = activeEnrollments.map((e) => ({
+          enrollmentId: e.id,
+          planCode: e.planCode,
+          planName: world.plans.find((p) => p.id === e.planId)?.name ?? e.planCode,
+          validFrom: e.validFrom,
+          validTo: e.validTo,
+        }));
       }
       const version = world.planVersions.find(
         (v) =>
@@ -156,9 +181,29 @@ export function resolveEligibility(
     ? (context.entitlementCodes as unknown[]).map((c) => (typeof c === 'string' ? c : ''))
     : [];
   const singleCode = typeof context.entitlementCode === 'string' ? context.entitlementCode : '';
+  // The mapping of the resolved plan version, keyed by service definition. It decides
+  // before the context hint does: a service that is mapped is judged against its
+  // entitlement's balance, and only an unmapped one falls back to the hint.
+  const mappings = new Map(
+    world.entitlementMappings
+      .filter((m) => m.tenantId === tenantId && m.planVersionId === planVersionId)
+      .map((m) => {
+        const version = world.planVersions.find((v) => v.id === m.planVersionId);
+        const definition = version?.definitions.find((d) => d.id === m.entitlementDefinitionId);
+        return [
+          m.serviceDefinitionId,
+          { code: definition?.code ?? '', unitFactor: m.unitFactor },
+        ] as const;
+      }),
+  );
+
   const items: ItemResult[] = input.serviceItems.map((item, index) => {
-    const code = codes[index] ?? singleCode;
+    const mapping = mappings.get(item.serviceDefinitionId);
+    const code = mapping?.code || (codes[index] ?? singleCode);
     const quantity = String(item.quantity);
+    // One session of a service may draw two units of the entitlement, so what is compared
+    // with the balance is the requested quantity times the mapping's factor.
+    const drawn = mapping ? multiplyDecimal(quantity, mapping.unitFactor) : quantity;
     if (!code) {
       return {
         index,
@@ -177,7 +222,7 @@ export function resolveEligibility(
         explanations: [explain('SERVICE_MAPPING_PENDING', 'INFO')],
       };
     }
-    const enough = !lessThan(match.account.available, quantity);
+    const enough = !lessThan(match.account.available, drawn);
     const itemExplanations: Explanation[] = [];
     let itemOutcome: ItemResult['outcome'] = 'ELIGIBLE';
     if (!enough) {
@@ -221,6 +266,9 @@ export function resolveEligibility(
     balances,
     planVersionId,
     enrollmentId,
+    // Present only alongside an ENROLLMENT_MULTIPLE explanation, so its presence is itself
+    // the answer to "was there a choice to make".
+    ...(candidates.length > 0 ? { enrollmentCandidates: candidates } : {}),
     ruleSetVersionIds: [],
   };
 }
@@ -229,6 +277,12 @@ export function resolveEligibility(
 export interface EligibilityInput {
   personId: string;
   programId?: string | null;
+  /**
+   * Which of the person's enrollments to answer for (WP-I5-05 section 2.2). It exists for
+   * the second ask after an ENROLLMENT_MULTIPLE answer: the caller picks one of the
+   * candidates the first answer named.
+   */
+  enrollmentId?: string | null;
   serviceDate: string;
   serviceItems: DecimalRequest['serviceItems'];
   context?: DecimalRequest['context'];

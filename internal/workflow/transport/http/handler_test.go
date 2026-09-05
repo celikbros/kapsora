@@ -224,10 +224,19 @@ type problemBody struct {
 		Field string `json:"field"`
 		Code  string `json:"code"`
 	} `json:"errors"`
+	// The RFC 9457 extension members of WORK_ITEM_ALREADY_CLAIMED, serialised flat beside
+	// the standard ones (WP-I5-05 section 2.6).
+	AssigneeActorID     string `json:"assigneeActorId"`
+	AssigneeDisplayName string `json:"assigneeDisplayName"`
 }
 
 // TestClaimAnswersTheLoserWithTheWinnersId is the whole point of the 409: telling somebody
 // the item is taken without saying by whom is what makes two people keep clicking.
+//
+// The answer says it twice on purpose. The `detail` is the sentence a person reads and now
+// names the winner rather than their uuid; `assigneeActorId` and `assigneeDisplayName` are
+// extension members a screen reads without parsing Turkish. Both are asserted, because a
+// screen that fell back to scraping the sentence would break the day the sentence changed.
 func TestClaimAnswersTheLoserWithTheWinnersId(t *testing.T) {
 	s := newServer(t)
 	item := s.raise(t, s.queue, "İki kişinin uzandığı iş")
@@ -249,8 +258,14 @@ func TestClaimAnswersTheLoserWithTheWinnersId(t *testing.T) {
 	if p.Code != "WORK_ITEM_ALREADY_CLAIMED" {
 		t.Fatalf("code = %s, want WORK_ITEM_ALREADY_CLAIMED", p.Code)
 	}
-	if !strings.Contains(p.Detail, s.actor.String()) {
-		t.Fatalf("detail %q does not name the winner %s", p.Detail, s.actor)
+	if !strings.Contains(p.Detail, "Workflow Clerk") {
+		t.Fatalf("detail %q does not name the winner", p.Detail)
+	}
+	if p.AssigneeActorID != s.actor.String() {
+		t.Fatalf("assigneeActorId = %q, want %s", p.AssigneeActorID, s.actor)
+	}
+	if p.AssigneeDisplayName != "Workflow Clerk" {
+		t.Fatalf("assigneeDisplayName = %q, want Workflow Clerk", p.AssigneeDisplayName)
 	}
 }
 

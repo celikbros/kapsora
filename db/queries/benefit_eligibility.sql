@@ -27,7 +27,12 @@ SELECT id, status,
 -- name: ListEnrollmentsForEligibility :many
 -- Every enrollment of the person with the plan and program behind it. The program is
 -- joined in because a check may be restricted to one program.
-SELECT e.id, e.plan_id, p.program_id, e.status,
+--
+-- The plan's code and name come with it because of ENROLLMENT_MULTIPLE: when the check
+-- has to say "this person has two plans on this date", it has to name them well enough
+-- for a desk to choose, and an id is not a name. They are configuration, not personal
+-- data, so carrying them costs nothing.
+SELECT e.id, e.plan_id, p.program_id, e.status, p.code AS plan_code, p.name AS plan_name,
        lower(e.valid_period)::date AS valid_from,
        upper(e.valid_period)::date AS valid_to
   FROM benefit.enrollment e

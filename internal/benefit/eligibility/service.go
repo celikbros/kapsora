@@ -63,8 +63,13 @@ type RequestItem struct {
 
 // CheckInput is one eligibility question.
 type CheckInput struct {
-	PersonID               uuid.UUID
-	ProgramID              *uuid.UUID
+	PersonID  uuid.UUID
+	ProgramID *uuid.UUID
+	// EnrollmentID answers the second ask after an ENROLLMENT_MULTIPLE: the caller picks
+	// one of the candidates the first answer named. It is honoured, never trusted — an id
+	// that is not one of this person's active enrollments on the day selects nothing and
+	// lands on ENROLLMENT_NONE.
+	EnrollmentID           *uuid.UUID
 	ProviderOrganizationID *uuid.UUID
 	ServiceDate            time.Time
 	Items                  []RequestItem
@@ -247,6 +252,9 @@ func (s *Service) evaluate(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
 	if in.ProgramID != nil {
 		resolverInput.ProgramID = *in.ProgramID
 	}
+	if in.EnrollmentID != nil {
+		resolverInput.EnrollmentID = *in.EnrollmentID
+	}
 
 	person, err := q.GetPersonForEligibility(ctx, sqlcgen.GetPersonForEligibilityParams{
 		TenantID: tenantID, ID: in.PersonID,
@@ -280,14 +288,16 @@ func (s *Service) evaluate(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
 	}
 	for _, e := range enrollments {
 		resolverInput.Enrollments = append(resolverInput.Enrollments, Enrollment{
-			ID: e.ID, PlanID: e.PlanID, ProgramID: e.ProgramID, Status: e.Status,
+			ID: e.ID, PlanID: e.PlanID, PlanCode: e.PlanCode, PlanName: e.PlanName,
+			ProgramID: e.ProgramID, Status: e.Status,
 			ValidFrom: dateValue(e.ValidFrom), ValidTo: datePtr(e.ValidTo),
 		})
 	}
 
 	// The enrollment the resolver will choose decides which plan version and which
 	// accounts to load; Resolve derives the same choice from the same slice.
-	active := SelectEnrollments(resolverInput.Enrollments, resolverInput.ProgramID, day)
+	active := SelectEnrollmentsFor(resolverInput.Enrollments,
+		resolverInput.ProgramID, resolverInput.EnrollmentID, day)
 	if len(active) == 0 {
 		return Resolve(resolverInput), nil
 	}
@@ -302,6 +312,26 @@ func (s *Service) evaluate(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
 		return Result{}, err
 	}
 	resolverInput.PlanVersion = &PlanVersion{ID: ensured.PlanVersionID}
+
+	// The mapping of the resolved version is what turns "İnceleme gerekli" into an
+	// answer: without it every line is SERVICE_MAPPING_PENDING however healthy the
+	// balances are.
+	mappings, err := q.ListEligibilityMappings(ctx, sqlcgen.ListEligibilityMappingsParams{
+		TenantID: tenantID, PlanVersionID: ensured.PlanVersionID, ServiceDate: dateOf(day),
+	})
+	if err != nil {
+		return Result{}, fmt.Errorf("benefit: list entitlement mappings: %w", err)
+	}
+	resolverInput.Mappings = make(map[uuid.UUID]Mapping, len(mappings))
+	for _, m := range mappings {
+		factor, err := domain.ParseQuantity(m.UnitFactor)
+		if err != nil {
+			return Result{}, fmt.Errorf("benefit: entitlement mapping factor: %w", err)
+		}
+		resolverInput.Mappings[m.ServiceDefinitionID] = Mapping{
+			EntitlementCode: m.EntitlementCode, UnitFactor: factor,
+		}
+	}
 
 	accounts, err := s.ledger.ResolveAccounts(ctx, tx, tenantID, in.PersonID, day)
 	if err != nil {
@@ -371,7 +401,10 @@ func (s *Service) recordAccess(ctx context.Context, tx pgx.Tx, rc identity.Reque
 func requestItems(items []RequestItem, hints contextHints) []Item {
 	out := make([]Item, 0, len(items))
 	for i, item := range items {
-		out = append(out, Item{Index: i, EntitlementCode: hints.codeFor(i), Quantity: item.Quantity})
+		out = append(out, Item{
+			Index: i, ServiceDefinitionID: item.ServiceDefinitionID,
+			EntitlementCode: hints.codeFor(i), Quantity: item.Quantity,
+		})
 	}
 	return out
 }

@@ -445,8 +445,10 @@ const getWorkItem = `-- name: GetWorkItem :one
 SELECT i.id, i.queue_id, i.aggregate_type, i.aggregate_id, i.title, i.priority,
        i.assignee_actor_id, i.assigned_at, i.due_at, i.sla_minutes_snapshot, i.status,
        i.outcome_code, i.completed_at, i.completed_by, i.escalated_at,
-       i.escalated_from_queue_id, i.created_at, i.row_version
+       i.escalated_from_queue_id, i.created_at, i.row_version,
+       a.display_name AS assignee_display_name
   FROM workflow.work_item i
+  LEFT JOIN iam.actor a ON a.id = i.assignee_actor_id
  WHERE i.tenant_id = $1
    AND i.id = $2
    AND ($3::uuid[] IS NULL OR i.queue_id = ANY($3::uuid[]))
@@ -477,6 +479,7 @@ type GetWorkItemRow struct {
 	EscalatedFromQueueID uuid.NullUUID
 	CreatedAt            time.Time
 	RowVersion           int64
+	AssigneeDisplayName  *string
 }
 
 func (q *Queries) GetWorkItem(ctx context.Context, arg GetWorkItemParams) (GetWorkItemRow, error) {
@@ -501,6 +504,7 @@ func (q *Queries) GetWorkItem(ctx context.Context, arg GetWorkItemParams) (GetWo
 		&i.EscalatedFromQueueID,
 		&i.CreatedAt,
 		&i.RowVersion,
+		&i.AssigneeDisplayName,
 	)
 	return i, err
 }
@@ -750,8 +754,10 @@ const listWorkItems = `-- name: ListWorkItems :many
 SELECT i.id, i.queue_id, i.aggregate_type, i.aggregate_id, i.title, i.priority,
        i.assignee_actor_id, i.assigned_at, i.due_at, i.sla_minutes_snapshot, i.status,
        i.outcome_code, i.completed_at, i.completed_by, i.escalated_at,
-       i.escalated_from_queue_id, i.created_at, i.row_version
+       i.escalated_from_queue_id, i.created_at, i.row_version,
+       a.display_name AS assignee_display_name
   FROM workflow.work_item i
+  LEFT JOIN iam.actor a ON a.id = i.assignee_actor_id
  WHERE i.tenant_id = $1
    AND ($2::uuid[] IS NULL OR i.queue_id = ANY($2::uuid[]))
    AND ($3::uuid IS NULL OR i.queue_id = $3::uuid)
@@ -806,6 +812,7 @@ type ListWorkItemsRow struct {
 	EscalatedFromQueueID uuid.NullUUID
 	CreatedAt            time.Time
 	RowVersion           int64
+	AssigneeDisplayName  *string
 }
 
 // `assigned_to_me` and `overdue` are the two questions the morning list is: what is mine,
@@ -852,6 +859,7 @@ func (q *Queries) ListWorkItems(ctx context.Context, arg ListWorkItemsParams) ([
 			&i.EscalatedFromQueueID,
 			&i.CreatedAt,
 			&i.RowVersion,
+			&i.AssigneeDisplayName,
 		); err != nil {
 			return nil, err
 		}

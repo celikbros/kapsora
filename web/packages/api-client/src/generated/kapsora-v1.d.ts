@@ -1696,6 +1696,34 @@ export interface paths {
         patch: operations["updatePerson"];
         trace?: never;
     };
+    "/api/v1/people/{personId}/contacts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description How the person can be reached, masked. The value itself is envelope-encrypted and
+         *     is never returned by any endpoint: what comes back is the channel, the mask, and
+         *     whether anybody has proved the address belongs to them. Requires
+         *     `member.contact.read`.
+         */
+        get: operations["listPersonContacts"];
+        /**
+         * @description Replaces the whole contact set of the person. Requires `member.contact.manage`.
+         *     At most one primary per channel (422); an address that is not a plausible e-mail
+         *     address or telephone number is a 422 field error rather than a row nobody can
+         *     send to.
+         */
+        put: operations["putPersonContacts"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/people/{personId}/enrollments": {
         parameters: {
             query?: never;
@@ -1872,6 +1900,34 @@ export interface paths {
          *     surface as 422 field errors.
          */
         put: operations["replaceEntitlementDefinitions"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plan-versions/{planVersionId}/entitlement-mappings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Which catalogue service draws from which entitlement of this plan version, and how
+         *     much of it one unit of the service draws. A service with no mapping here is what
+         *     makes an eligibility check answer SERVICE_MAPPING_PENDING.
+         */
+        get: operations["listEntitlementMappings"];
+        /**
+         * @description Replaces the whole mapping set of a DRAFT version. The mapping is part of the plan
+         *     version and follows its publishing: a published version's mappings are immutable
+         *     (409 PLAN_VERSION_IMMUTABLE). An entitlement code that is not defined on this
+         *     version, an unknown or inactive service, a service named twice, or a unit factor
+         *     that is not a positive exact decimal are 422 field errors.
+         */
+        put: operations["putEntitlementMappings"];
         post?: never;
         delete?: never;
         options?: never;
@@ -4588,6 +4644,15 @@ export interface components {
             context?: {
                 [key: string]: unknown;
             };
+            /**
+             * Format: uuid
+             * @description Which of the person's enrollments to answer for. It exists for the second ask
+             *     after an ENROLLMENT_MULTIPLE answer: the caller picks one of the
+             *     `enrollmentCandidates` the first answer named. An id that is not active for
+             *     this person on the service date resolves to ENROLLMENT_NONE rather than to
+             *     somebody else's plan.
+             */
+            enrollmentId?: string | null;
             /** Format: uuid */
             personId: string;
             /** Format: uuid */
@@ -4611,6 +4676,22 @@ export interface components {
                 unit: string;
             }[];
             eligible: boolean;
+            /**
+             * @description The enrollments this check was torn between. Present only with an
+             *     ENROLLMENT_MULTIPLE explanation, and it is the whole of what a caller may
+             *     learn about a person's enrollments here: it is the choice the check itself had
+             *     to make, not a list. Ask again with one of these ids in `enrollmentId`.
+             */
+            enrollmentCandidates?: {
+                /** Format: uuid */
+                enrollmentId: string;
+                planCode: string;
+                planName: string;
+                /** Format: date */
+                validFrom: string;
+                /** Format: date */
+                validTo?: string | null;
+            }[];
             /** Format: uuid */
             enrollmentId?: string | null;
             /** Format: date-time */
@@ -4822,6 +4903,39 @@ export interface components {
             rolloverPolicy?: "NONE" | "FULL" | "CAPPED";
             /** @enum {string} */
             unitType: "MONEY" | "COUNT" | "NIGHT" | "SESSION" | "HOUR" | "KILOMETER" | "POINT";
+        };
+        EntitlementMapping: {
+            entitlementCode: string;
+            /** Format: uuid */
+            entitlementDefinitionId: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            planVersionId: string;
+            /** Format: int64 */
+            rowVersion: number;
+            serviceCode: string;
+            /** Format: uuid */
+            serviceDefinitionId: string;
+            serviceName: string;
+            unitFactor: components["schemas"]["DecimalAmount"];
+            /** @enum {string} */
+            unitType: "MONEY" | "COUNT" | "NIGHT" | "SESSION" | "HOUR" | "KILOMETER" | "POINT";
+            /** Format: date */
+            validFrom?: string | null;
+            /** Format: date */
+            validTo?: string | null;
+        };
+        EntitlementMappingInput: {
+            /** @description A code defined on this plan version; anything else is a 422. */
+            entitlementCode: string;
+            /** Format: uuid */
+            serviceDefinitionId: string;
+            unitFactor?: components["schemas"]["DecimalAmount"];
+            /** Format: date */
+            validFrom?: string | null;
+            /** Format: date */
+            validTo?: string | null;
         };
         EntitlementReservation: {
             consumedQuantity: number;
@@ -5498,6 +5612,47 @@ export interface components {
             /** @enum {string|null} */
             sexAtBirth?: "FEMALE" | "MALE" | "INTERSEX" | "UNKNOWN" | null;
         };
+        PersonContact: {
+            /** @enum {string} */
+            channel: "EMAIL" | "SMS";
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: uuid */
+            id: string;
+            /**
+             * @description All anybody is shown. The address itself is envelope-encrypted like an
+             *     identity number and is returned by no endpoint at all.
+             */
+            maskedValue: string;
+            /** Format: uuid */
+            personId: string;
+            primary: boolean;
+            /** Format: int64 */
+            rowVersion: number;
+            /**
+             * Format: date-time
+             * @description When somebody proved the address is theirs. Null is still an address the
+             *     platform will write to; verification buys the right to trust it, not the right
+             *     to use it.
+             */
+            verifiedAt?: string | null;
+        };
+        PersonContactInput: {
+            /** @enum {string} */
+            channel: "EMAIL" | "SMS";
+            /** @default false */
+            primary?: boolean;
+            /**
+             * @description The address itself. It is written once, encrypted, and never comes back: a
+             *     later read answers with the mask.
+             */
+            value: string;
+            /**
+             * @description Whether this address has already been proved, for an import that carries the fact.
+             * @default false
+             */
+            verified?: boolean;
+        };
         PersonPage: {
             items: components["schemas"]["PersonSummary"][];
             nextCursor?: string | null;
@@ -5904,6 +6059,14 @@ export interface components {
          * @enum {string}
          */
         PricingMethod: "FIXED" | "UNIT" | "PERCENT_OF_LIST" | "FORMULA";
+        /**
+         * @description RFC 9457 problem detail. Extension members are permitted and are serialised flat
+         *     beside the standard members: a problem type may carry the one fact that makes it
+         *     actionable rather than forcing a second request. Today
+         *     `WORK_ITEM_ALREADY_CLAIMED` carries `assigneeActorId` (uuid) and, when it is
+         *     known, `assigneeDisplayName` (string). A client must ignore members it does not
+         *     recognise.
+         */
         Problem: {
             code: string;
             detail?: string;
@@ -5919,6 +6082,8 @@ export interface components {
             traceId: string;
             /** Format: uri-reference */
             type: string;
+        } & {
+            [key: string]: unknown;
         };
         Program: {
             code: string;
@@ -6662,10 +6827,18 @@ export interface components {
             id: string;
             /** @description The lines of the current version. */
             items: components["schemas"]["ServiceRequestItem"][];
+            /**
+             * @description The member's name, read with the row. It is here so a list of requests names
+             *     people without one extra read per line; a caller that may see the request may
+             *     see whose it is.
+             */
+            personDisplayName: string;
             /** Format: uuid */
             personId: string;
             /** Format: uuid */
             programId: string;
+            /** @description The provider organization's name; null when the request names no provider. */
+            providerDisplayName?: string | null;
             /** Format: uuid */
             providerOrganizationId?: string | null;
             /** @description Human-readable number of the request; it survives every return. */
@@ -7141,6 +7314,11 @@ export interface components {
             assignedAt?: string | null;
             /** Format: uuid */
             assigneeActorId?: string | null;
+            /**
+             * @description Who holds the item, read with the row. It is here so a worklist names a
+             *     colleague instead of showing their id, without one extra request per line.
+             */
+            assigneeDisplayName?: string | null;
             /** Format: date-time */
             completedAt?: string | null;
             /** Format: uuid */
@@ -7473,6 +7651,8 @@ export type SchemaEntitlementAccount = components['schemas']['EntitlementAccount
 export type SchemaEntitlementAdjustment = components['schemas']['EntitlementAdjustment'];
 export type SchemaEntitlementDefinition = components['schemas']['EntitlementDefinition'];
 export type SchemaEntitlementDefinitionInput = components['schemas']['EntitlementDefinitionInput'];
+export type SchemaEntitlementMapping = components['schemas']['EntitlementMapping'];
+export type SchemaEntitlementMappingInput = components['schemas']['EntitlementMappingInput'];
 export type SchemaEntitlementReservation = components['schemas']['EntitlementReservation'];
 export type SchemaExtendAuthorization = components['schemas']['ExtendAuthorization'];
 export type SchemaFulfillmentMode = components['schemas']['FulfillmentMode'];
@@ -7532,6 +7712,8 @@ export type SchemaPartyCatalogs = components['schemas']['PartyCatalogs'];
 export type SchemaPatchWorkQueue = components['schemas']['PatchWorkQueue'];
 export type SchemaPaymentTerm = components['schemas']['PaymentTerm'];
 export type SchemaPerson = components['schemas']['Person'];
+export type SchemaPersonContact = components['schemas']['PersonContact'];
+export type SchemaPersonContactInput = components['schemas']['PersonContactInput'];
 export type SchemaPersonPage = components['schemas']['PersonPage'];
 export type SchemaPersonRelationship = components['schemas']['PersonRelationship'];
 export type SchemaPersonSummary = components['schemas']['PersonSummary'];
@@ -11555,6 +11737,80 @@ export interface operations {
             };
         };
     };
+    listPersonContacts: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                personId: components["parameters"]["PersonId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Contact details of the person, masked */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["PersonContact"][];
+                    };
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    putPersonContacts: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                personId: components["parameters"]["PersonId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    items: components["schemas"]["PersonContactInput"][];
+                };
+            };
+        };
+        responses: {
+            /** @description The person's new contact set, masked */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["PersonContact"][];
+                    };
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+        };
+    };
     listPersonEnrollments: {
         parameters: {
             query?: never;
@@ -12024,6 +12280,81 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlanVersion"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    listEntitlementMappings: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                planVersionId: components["parameters"]["PlanVersionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Mappings of the version, by service code */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["EntitlementMapping"][];
+                    };
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    putEntitlementMappings: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                planVersionId: components["parameters"]["PlanVersionId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    items: components["schemas"]["EntitlementMappingInput"][];
+                };
+            };
+        };
+        responses: {
+            /** @description The version's new mapping set */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["EntitlementMapping"][];
+                    };
                 };
             };
             404: components["responses"]["NotFound"];

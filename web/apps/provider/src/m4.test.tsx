@@ -16,11 +16,23 @@ const { api, server } = createMockServer({ organizationsPerTenant: 6 });
 const BASE = 'http://mock.test';
 const PASSWORD = 'demo parola 2026 kapsora';
 
+/**
+ * How many times a screen asked the server for one person. Section 2.6 exists so a list is
+ * not one extra read per row, and the only way to assert that is to count the calls.
+ */
+let personCalls = 0;
+
 beforeAll(() => {
   initI18n('tr');
+  server.events.on('request:start', ({ request }) => {
+    if (/\/api\/v1\/people\/[^/]+$/.test(new URL(request.url).pathname)) personCalls += 1;
+  });
   server.listen({ onUnhandledRequest: 'error' });
 });
-afterEach(() => api.reset());
+afterEach(() => {
+  api.reset();
+  personCalls = 0;
+});
 afterAll(() => server.close());
 
 function mount(path: string) {
@@ -73,11 +85,18 @@ describe('provider portal', () => {
       .getAllByRole('row')
       .find((tr) => tr.textContent?.includes(waiting!.reference))!;
     expect(row).toHaveTextContent('Sizden belge bekliyor');
-    // Names resolve through the provider's own grants (member.read, catalog.read); a row
-    // of dashes would mean the screen shows the desk ids in disguise.
+    // The member's name comes with the row (WP-I5-05 section 2.6): it is asserted without
+    // waiting, because there is nothing left to wait for, and the person endpoint is not
+    // called at all for this list. A row of dashes would mean the screen shows ids in
+    // disguise; a '…' would mean it is still resolving one name per line.
     const person = api.world.people.find((p) => p.id === waiting!.personId)!;
-    await waitFor(() => expect(row).toHaveTextContent(person.lastName), { timeout: 5_000 });
+    const displayName = [person.firstName, person.middleName, person.lastName]
+      .filter(Boolean)
+      .join(' ');
+    expect(row).toHaveTextContent(displayName);
+    expect(row.textContent).not.toContain('…');
     expect(row.textContent).not.toMatch(/—.*—/);
+    expect(personCalls, 'the list read a person per row').toBe(0);
   });
 
   it(

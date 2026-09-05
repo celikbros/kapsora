@@ -60,6 +60,7 @@ type item struct {
 	EscalatedFromQueueID uuid.NullUUID
 	CreatedAt            time.Time
 	RowVersion           int64
+	AssigneeDisplayName  *string
 }
 
 func itemRow(r sqlcgen.GetWorkItemRow) item         { return item(r) }
@@ -75,6 +76,7 @@ func itemOf(r item) application.ItemRecord {
 		CompletedBy: uuidPtr(r.CompletedBy), EscalatedAt: r.EscalatedAt,
 		EscalatedFromQueueID: uuidPtr(r.EscalatedFromQueueID),
 		CreatedAt:            r.CreatedAt, RowVersion: r.RowVersion,
+		AssigneeDisplayName: r.AssigneeDisplayName,
 	}
 }
 

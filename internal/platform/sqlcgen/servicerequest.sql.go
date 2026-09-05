@@ -244,17 +244,23 @@ func (q *Queries) FreezeServiceRequestVersion(ctx context.Context, arg FreezeSer
 }
 
 const getServiceRequest = `-- name: GetServiceRequest :one
-SELECT id, request_reference, request_type, person_id, program_id, enrollment_id,
-       provider_tenant_organization_id, service_date, requested_start_at, requested_end_at,
-       channel, status, current_version_no, supersedes_request_id,
-       eligibility_evaluation_id, rule_evaluation_id, required_document_types,
-       return_reason_code, reject_reason_code, review_comment,
-       submitted_at, closed_at, created_at, row_version
-  FROM service.service_request
- WHERE tenant_id = $1
-   AND id = $2
+SELECT r.id, r.request_reference, r.request_type, r.person_id, r.program_id, r.enrollment_id,
+       r.provider_tenant_organization_id, r.service_date, r.requested_start_at, r.requested_end_at,
+       r.channel, r.status, r.current_version_no, r.supersedes_request_id,
+       r.eligibility_evaluation_id, r.rule_evaluation_id, r.required_document_types,
+       r.return_reason_code, r.reject_reason_code, r.review_comment,
+       r.submitted_at, r.closed_at, r.created_at, r.row_version,
+       concat_ws(' ', p.first_name, p.middle_name, p.last_name) AS person_display_name,
+       o.display_name AS provider_display_name
+  FROM service.service_request r
+  JOIN party.person p ON p.tenant_id = r.tenant_id AND p.id = r.person_id
+  LEFT JOIN directory.tenant_organization po
+       ON po.tenant_id = r.tenant_id AND po.id = r.provider_tenant_organization_id
+  LEFT JOIN directory.organization o ON o.id = po.organization_id
+ WHERE r.tenant_id = $1
+   AND r.id = $2
    AND ($3::uuid[] IS NULL
-        OR provider_tenant_organization_id = ANY($3::uuid[]))
+        OR r.provider_tenant_organization_id = ANY($3::uuid[]))
 `
 
 type GetServiceRequestParams struct {
@@ -288,6 +294,8 @@ type GetServiceRequestRow struct {
 	ClosedAt                     *time.Time
 	CreatedAt                    time.Time
 	RowVersion                   int64
+	PersonDisplayName            string
+	ProviderDisplayName          *string
 }
 
 func (q *Queries) GetServiceRequest(ctx context.Context, arg GetServiceRequestParams) (GetServiceRequestRow, error) {
@@ -318,6 +326,8 @@ func (q *Queries) GetServiceRequest(ctx context.Context, arg GetServiceRequestPa
 		&i.ClosedAt,
 		&i.CreatedAt,
 		&i.RowVersion,
+		&i.PersonDisplayName,
+		&i.ProviderDisplayName,
 	)
 	return i, err
 }
@@ -784,33 +794,39 @@ func (q *Queries) ListServiceRequestVersions(ctx context.Context, arg ListServic
 }
 
 const listServiceRequests = `-- name: ListServiceRequests :many
-SELECT id, request_reference, request_type, person_id, program_id, enrollment_id,
-       provider_tenant_organization_id, service_date, requested_start_at, requested_end_at,
-       channel, status, current_version_no, supersedes_request_id,
-       eligibility_evaluation_id, rule_evaluation_id, required_document_types,
-       return_reason_code, reject_reason_code, review_comment,
-       submitted_at, closed_at, created_at, row_version
-  FROM service.service_request
- WHERE tenant_id = $1
+SELECT r.id, r.request_reference, r.request_type, r.person_id, r.program_id, r.enrollment_id,
+       r.provider_tenant_organization_id, r.service_date, r.requested_start_at, r.requested_end_at,
+       r.channel, r.status, r.current_version_no, r.supersedes_request_id,
+       r.eligibility_evaluation_id, r.rule_evaluation_id, r.required_document_types,
+       r.return_reason_code, r.reject_reason_code, r.review_comment,
+       r.submitted_at, r.closed_at, r.created_at, r.row_version,
+       concat_ws(' ', p.first_name, p.middle_name, p.last_name) AS person_display_name,
+       o.display_name AS provider_display_name
+  FROM service.service_request r
+  JOIN party.person p ON p.tenant_id = r.tenant_id AND p.id = r.person_id
+  LEFT JOIN directory.tenant_organization po
+       ON po.tenant_id = r.tenant_id AND po.id = r.provider_tenant_organization_id
+  LEFT JOIN directory.organization o ON o.id = po.organization_id
+ WHERE r.tenant_id = $1
    AND ($2::uuid[] IS NULL
-        OR provider_tenant_organization_id = ANY($2::uuid[]))
-   AND ($3::text IS NULL OR status = $3::text)
-   AND ($4::uuid IS NULL OR person_id = $4::uuid)
-   AND ($5::uuid IS NULL OR program_id = $5::uuid)
+        OR r.provider_tenant_organization_id = ANY($2::uuid[]))
+   AND ($3::text IS NULL OR r.status = $3::text)
+   AND ($4::uuid IS NULL OR r.person_id = $4::uuid)
+   AND ($5::uuid IS NULL OR r.program_id = $5::uuid)
    AND ($6::uuid IS NULL
-        OR provider_tenant_organization_id = $6::uuid)
-   AND ($7::text IS NULL OR channel = $7::text)
+        OR r.provider_tenant_organization_id = $6::uuid)
+   AND ($7::text IS NULL OR r.channel = $7::text)
    AND ($8::date IS NULL
-        OR service_date >= $8::date)
+        OR r.service_date >= $8::date)
    AND ($9::date IS NULL
-        OR service_date <= $9::date)
+        OR r.service_date <= $9::date)
    AND ($10::timestamptz IS NULL
-        OR created_at >= $10::timestamptz)
+        OR r.created_at >= $10::timestamptz)
    AND ($11::timestamptz IS NULL
-        OR created_at <= $11::timestamptz)
+        OR r.created_at <= $11::timestamptz)
    AND ($12::timestamptz IS NULL
-        OR (created_at, id) < ($12::timestamptz, $13::uuid))
- ORDER BY created_at DESC, id DESC
+        OR (r.created_at, r.id) < ($12::timestamptz, $13::uuid))
+ ORDER BY r.created_at DESC, r.id DESC
  LIMIT $14
 `
 
@@ -856,6 +872,8 @@ type ListServiceRequestsRow struct {
 	ClosedAt                     *time.Time
 	CreatedAt                    time.Time
 	RowVersion                   int64
+	PersonDisplayName            string
+	ProviderDisplayName          *string
 }
 
 // Keyset pagination on (created_at DESC, id DESC); the caller asks for limit+1 rows to
@@ -909,6 +927,8 @@ func (q *Queries) ListServiceRequests(ctx context.Context, arg ListServiceReques
 			&i.ClosedAt,
 			&i.CreatedAt,
 			&i.RowVersion,
+			&i.PersonDisplayName,
+			&i.ProviderDisplayName,
 		); err != nil {
 			return nil, err
 		}
@@ -921,18 +941,27 @@ func (q *Queries) ListServiceRequests(ctx context.Context, arg ListServiceReques
 }
 
 const lockServiceRequest = `-- name: LockServiceRequest :one
-SELECT id, request_reference, request_type, person_id, program_id, enrollment_id,
-       provider_tenant_organization_id, service_date, requested_start_at, requested_end_at,
-       channel, status, current_version_no, supersedes_request_id,
-       eligibility_evaluation_id, rule_evaluation_id, required_document_types,
-       return_reason_code, reject_reason_code, review_comment,
-       submitted_at, closed_at, created_at, row_version
-  FROM service.service_request
- WHERE tenant_id = $1
-   AND id = $2
+SELECT r.id, r.request_reference, r.request_type, r.person_id, r.program_id, r.enrollment_id,
+       r.provider_tenant_organization_id, r.service_date, r.requested_start_at, r.requested_end_at,
+       r.channel, r.status, r.current_version_no, r.supersedes_request_id,
+       r.eligibility_evaluation_id, r.rule_evaluation_id, r.required_document_types,
+       r.return_reason_code, r.reject_reason_code, r.review_comment,
+       r.submitted_at, r.closed_at, r.created_at, r.row_version,
+       concat_ws(' ', p.first_name, p.middle_name, p.last_name) AS person_display_name,
+       o.display_name AS provider_display_name
+  FROM service.service_request r
+  JOIN party.person p ON p.tenant_id = r.tenant_id AND p.id = r.person_id
+  LEFT JOIN directory.tenant_organization po
+       ON po.tenant_id = r.tenant_id AND po.id = r.provider_tenant_organization_id
+  LEFT JOIN directory.organization o ON o.id = po.organization_id
+ WHERE r.tenant_id = $1
+   AND r.id = $2
    AND ($3::uuid[] IS NULL
-        OR provider_tenant_organization_id = ANY($3::uuid[]))
-   FOR UPDATE
+        OR r.provider_tenant_organization_id = ANY($3::uuid[]))
+   -- ` + "`" + `OF r` + "`" + ` and not a bare FOR UPDATE: two commands on one request must serialise, and
+   -- nothing about that should take a lock on the member's own row or on an organization
+   -- every other request in the tenant also names.
+   FOR UPDATE OF r
 `
 
 type LockServiceRequestParams struct {
@@ -966,6 +995,8 @@ type LockServiceRequestRow struct {
 	ClosedAt                     *time.Time
 	CreatedAt                    time.Time
 	RowVersion                   int64
+	PersonDisplayName            string
+	ProviderDisplayName          *string
 }
 
 // The same read taken FOR UPDATE, so two commands on one request serialise instead of
@@ -998,6 +1029,8 @@ func (q *Queries) LockServiceRequest(ctx context.Context, arg LockServiceRequest
 		&i.ClosedAt,
 		&i.CreatedAt,
 		&i.RowVersion,
+		&i.PersonDisplayName,
+		&i.ProviderDisplayName,
 	)
 	return i, err
 }

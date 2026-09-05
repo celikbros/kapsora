@@ -941,6 +941,66 @@ func (q *Queries) ListExpirableAuthorizations(ctx context.Context, arg ListExpir
 	return items, nil
 }
 
+const listExpiringAuthorizations = `-- name: ListExpiringAuthorizations :many
+SELECT a.id, a.authorization_reference, a.valid_to, r.person_id
+  FROM service.authorization a
+  JOIN service.service_request r ON r.tenant_id = a.tenant_id AND r.id = a.request_id
+ WHERE a.tenant_id = $1
+   AND a.status IN ('ACTIVE','PARTIALLY_USED')
+   AND a.valid_to >= $2
+   AND a.valid_to < $3
+ ORDER BY a.valid_to, a.id
+ LIMIT $4
+`
+
+type ListExpiringAuthorizationsParams struct {
+	TenantID uuid.UUID
+	DayStart time.Time
+	DayEnd   time.Time
+	PageSize int32
+}
+
+type ListExpiringAuthorizationsRow struct {
+	ID                     uuid.UUID
+	AuthorizationReference string
+	ValidTo                time.Time
+	PersonID               uuid.UUID
+}
+
+// The authorizations whose validity ends on one particular day, with the member behind
+// them. It is a day and not a window because the reminder is published once per
+// authorization per expiry day: the job's deduplication key carries the same date, so an
+// hourly sweep of the same day writes one message and twenty-three no-ops.
+func (q *Queries) ListExpiringAuthorizations(ctx context.Context, arg ListExpiringAuthorizationsParams) ([]ListExpiringAuthorizationsRow, error) {
+	rows, err := q.db.Query(ctx, listExpiringAuthorizations,
+		arg.TenantID,
+		arg.DayStart,
+		arg.DayEnd,
+		arg.PageSize,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListExpiringAuthorizationsRow
+	for rows.Next() {
+		var i ListExpiringAuthorizationsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.AuthorizationReference,
+			&i.ValidTo,
+			&i.PersonID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listFulfilmentItems = `-- name: ListFulfilmentItems :many
 SELECT id, fulfilment_id, authorization_item_id, service_definition_id,
        actual_quantity::text AS actual_quantity,

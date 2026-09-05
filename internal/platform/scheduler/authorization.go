@@ -21,3 +21,18 @@ func AuthorizationExpire(svc *authorizationapp.Service) Job {
 		},
 	}
 }
+
+// AuthorizationExpiring tells a member three days before an authorization runs out
+// (WP-I5-05 section 2.4). It publishes outbox rows and sends nothing itself; the
+// deduplication key carries the authorization and the day it expires, so an hourly sweep
+// of the same day writes one message and twenty-three no-ops.
+func AuthorizationExpiring(svc *authorizationapp.Service) Job {
+	return Job{
+		Code:  "authorization.expiring",
+		Every: time.Hour,
+		Run: func(ctx context.Context) (Metrics, error) {
+			published, err := svc.NotifyExpiringAuthorizations(ctx, time.Now().UTC())
+			return Metrics{"published": published}, err
+		},
+	}
+}

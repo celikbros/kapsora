@@ -291,6 +291,14 @@ type RequestRecord struct {
 	CurrentVersionNo int
 }
 
+// ExpiringAuthorizationRow is one authorization about to run out, with the member to tell.
+type ExpiringAuthorizationRow struct {
+	ID        uuid.UUID
+	Reference string
+	ValidTo   time.Time
+	PersonID  uuid.UUID
+}
+
 // RequestItemRecord is one decided line of a request's current version.
 type RequestItemRecord struct {
 	ID                  uuid.UUID
@@ -355,6 +363,11 @@ type Repository interface {
 	MarkVoucherRedeemed(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID, redeemedAt time.Time, actorID *uuid.UUID) (bool, error)
 
 	GetRequest(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID, scope Scope) (RequestRecord, error)
+
+	// ListExpiringAuthorizations lists the authorizations whose validity ends inside one
+	// day, with the member behind each of them, for the reminder sweep (WP-I5-05).
+	ListExpiringAuthorizations(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
+		dayStart, dayEnd time.Time, limit int) ([]ExpiringAuthorizationRow, error)
 	// ListDecidedItems returns the lines of the request's current version with the
 	// decisions a reviewer recorded on them.
 	ListDecidedItems(ctx context.Context, tx pgx.Tx, tenantID, requestID uuid.UUID, versionNo int) ([]RequestItemRecord, error)

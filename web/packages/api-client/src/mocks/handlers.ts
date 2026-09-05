@@ -29,6 +29,7 @@ import {
   toOrganization,
   toOrganizationSummary,
   toPerson,
+  toPersonContact,
   toPersonRelationship,
   toPersonSummary,
   toSponsorMembership,
@@ -36,6 +37,7 @@ import {
   type MockWorld,
   type StoredMembership,
   type StoredOrganization,
+  type StoredPersonContact,
   type StoredPersonRelationship,
   type StoredRelationship,
 } from './data';
@@ -156,9 +158,20 @@ export function problem(
   status: number,
   code: string,
   title: string,
-  extra: { detail?: string; errors?: FieldError[]; instance?: string } = {},
+  extra: {
+    detail?: string;
+    errors?: FieldError[];
+    instance?: string;
+    /**
+     * RFC 9457 extension members, serialised flat beside the standard ones exactly as the
+     * Go server serialises them (WP-I5-05 section 2.6). A problem type may carry the one
+     * fact that makes it actionable — who holds the work item you tried to claim — rather
+     * than forcing a second request.
+     */
+    extensions?: Record<string, unknown>;
+  } = {},
 ): Response {
-  const body: Problem = {
+  const body: Problem & Record<string, unknown> = {
     type: `${PROBLEM_BASE}${code.toLowerCase().replace(/_/g, '-')}`,
     title,
     status,
@@ -167,11 +180,46 @@ export function problem(
     ...(extra.detail ? { detail: extra.detail } : {}),
     ...(extra.errors ? { errors: extra.errors } : {}),
     ...(extra.instance ? { instance: extra.instance } : {}),
+    ...(extra.extensions ?? {}),
   };
   return HttpResponse.json(body, {
     status,
     headers: { 'Content-Type': 'application/problem+json' },
   });
+}
+
+/**
+ * Puts a contact value into the one form the platform stores it in, so the same address
+ * written two ways is the same address: an e-mail is trimmed and lower-cased, a telephone
+ * number keeps a leading + and loses the typography.
+ */
+export function normalizeContact(channel: string, raw: string): string {
+  const value = (raw ?? '').trim();
+  if (channel === 'EMAIL') return value.toLowerCase();
+  if (channel !== 'SMS') return value;
+  const plus = value.startsWith('+') ? '+' : '';
+  return plus + value.replace(/[^0-9]/g, '');
+}
+
+/**
+ * Refuses the value nobody could ever send to, and nothing more. An address is proved by
+ * sending to it, which is M10's onboarding; refusing more here would refuse real ones.
+ */
+export function validContact(channel: string, value: string): boolean {
+  if (channel === 'EMAIL') {
+    const at = value.lastIndexOf('@');
+    if (at <= 0 || value.length > 254) return false;
+    const host = value.slice(at + 1);
+    return (
+      !/[\s,;"<>()[\]\\]/.test(value) &&
+      host.includes('.') &&
+      !host.startsWith('.') &&
+      !host.endsWith('.')
+    );
+  }
+  if (channel !== 'SMS') return false;
+  const digits = value.startsWith('+') ? value.slice(1) : value;
+  return /^[0-9]{7,15}$/.test(digits);
 }
 
 export function unauthenticated(api: MockApi) {
@@ -875,6 +923,18 @@ export function createHandlers(api: MockApi): HttpHandler[] {
     }),
   ];
 
+  /** One person's contact details, masked, in the order a screen shows them. */
+  const contactsOf = (tenantId: string, personId: string): Schemas['PersonContact'][] =>
+    world()
+      .personContacts.filter((c) => c.tenantId === tenantId && c.personId === personId)
+      .sort(
+        (a, b) =>
+          a.channel.localeCompare(b.channel) ||
+          Number(b.primary) - Number(a.primary) ||
+          a.createdAt.localeCompare(b.createdAt),
+      )
+      .map(toPersonContact);
+
   const peopleHandlers: HttpHandler[] = [
     http.get(`${ANY}/api/v1/people`, async ({ request }) => {
       await wait(api);
@@ -1068,6 +1128,77 @@ export function createHandlers(api: MockApi): HttpHandler[] {
         relationshipTypes: RELATIONSHIP_TYPE_CATALOG,
       };
       return HttpResponse.json(body);
+    }),
+
+    // Contact details (WP-I5-05 section 2.5). The value goes in once and comes back only
+    // as a mask: there is no endpoint here, or anywhere, that returns an address.
+    http.get(`${ANY}/api/v1/people/:personId/contacts`, async ({ request, params }) => {
+      await wait(api);
+      const g = guardTenant(api, request, 'member.contact.read', false);
+      if ('error' in g) return g.error;
+      const personId = pathParam(params, 'personId');
+      const person = world().people.find((p) => p.id === personId && p.tenantId === g.tenantId);
+      if (!person) return problem(api, 404, 'RESOURCE_NOT_FOUND', 'Kaynak bulunamadı');
+      return HttpResponse.json({ items: contactsOf(g.tenantId, personId) });
+    }),
+
+    http.put(`${ANY}/api/v1/people/:personId/contacts`, async ({ request, params }) => {
+      await wait(api);
+      const g = guardTenant(api, request, 'member.contact.manage', true);
+      if ('error' in g) return g.error;
+      const expected = requireIfMatch(api, request);
+      if (typeof expected !== 'number') return expected;
+      const personId = pathParam(params, 'personId');
+      const person = world().people.find((p) => p.id === personId && p.tenantId === g.tenantId);
+      if (!person) return problem(api, 404, 'RESOURCE_NOT_FOUND', 'Kaynak bulunamadı');
+      if (person.rowVersion !== expected)
+        return problem(api, 412, 'ETAG_MISMATCH', 'Kayıt bu arada değişti');
+      const body = await readJson<{ items: Schemas['PersonContactInput'][] }>(request);
+      if (!body?.items) return problem(api, 400, 'INVALID_REQUEST_BODY', 'İstek gövdesi geçersiz');
+
+      const errors: FieldError[] = [];
+      const primaries = new Set<string>();
+      const normalized = body.items.map((c, i) => {
+        const field = `items[${i}]`;
+        const value = normalizeContact(c.channel, c.value);
+        if (c.channel !== 'EMAIL' && c.channel !== 'SMS') {
+          errors.push({ field: `${field}.channel`, code: 'CONTACT_CHANNEL_UNKNOWN' });
+        } else if (!validContact(c.channel, value)) {
+          // The refusal names the shape and never echoes the value: a 422 carrying an
+          // address is an address in every log that ever records the response.
+          errors.push({ field: `${field}.value`, code: 'CONTACT_INVALID' });
+        }
+        if (c.primary) {
+          if (primaries.has(c.channel))
+            errors.push({ field: `${field}.primary`, code: 'CONTACT_PRIMARY_TWICE' });
+          primaries.add(c.channel);
+        }
+        return { ...c, value };
+      });
+      if (errors.length > 0) {
+        return problem(api, 422, 'VALIDATION_FAILED', 'Doğrulama hatası', { errors });
+      }
+
+      // A replace and not a merge: a merge leaves behind the number somebody asked to
+      // have removed, and a notification to it is what this table exists to avoid.
+      const kept = world().personContacts.filter(
+        (c) => !(c.tenantId === g.tenantId && c.personId === personId),
+      );
+      const written: StoredPersonContact[] = normalized.map((c) => ({
+        id: world().nextId(),
+        tenantId: g.tenantId,
+        personId,
+        channel: c.channel,
+        value: c.value,
+        verifiedAt: c.verified ? new Date().toISOString() : null,
+        primary: c.primary ?? false,
+        createdAt: new Date().toISOString(),
+        rowVersion: 1,
+      }));
+      world().personContacts = [...kept, ...written];
+      // The contacts are child rows of the person; writing them moves the person's ETag.
+      person.rowVersion += 1;
+      return HttpResponse.json({ items: contactsOf(g.tenantId, personId) });
     }),
 
     http.get(`${ANY}/api/v1/people/:personId/relationships`, async ({ request, params }) => {

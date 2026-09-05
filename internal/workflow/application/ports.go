@@ -75,7 +75,10 @@ type AlreadyClaimedError struct {
 	// AssigneeActorID is nil only in the race a claim cannot actually lose to: the item
 	// left OPEN by a release between the failed update and the re-read.
 	AssigneeActorID *uuid.UUID
-	Status          string
+	// AssigneeDisplayName is who that is. It travels with the id so the refusal can be
+	// read by a person rather than resolved by a second request the loser has to make.
+	AssigneeDisplayName *string
+	Status              string
 }
 
 func (e *AlreadyClaimedError) Error() string {
@@ -187,6 +190,9 @@ type ItemRecord struct {
 	EscalatedFromQueueID *uuid.UUID
 	CreatedAt            time.Time
 	RowVersion           int64
+	// AssigneeDisplayName is the name of whoever holds the item, read with the row. The
+	// worklist named a colleague by uuid until it existed.
+	AssigneeDisplayName *string
 }
 
 // Overdue reports whether the item is past the clock it was given, at the moment asked

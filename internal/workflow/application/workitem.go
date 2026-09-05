@@ -195,7 +195,8 @@ func notClaimable(id uuid.UUID, latest ItemRecord) error {
 		return ErrVersionMismatch
 	case domain.StatusClaimed:
 		return &AlreadyClaimedError{
-			WorkItemID: id, AssigneeActorID: latest.AssigneeActorID, Status: latest.Status,
+			WorkItemID: id, AssigneeActorID: latest.AssigneeActorID,
+			AssigneeDisplayName: latest.AssigneeDisplayName, Status: latest.Status,
 		}
 	default:
 		return ErrTransitionInvalid

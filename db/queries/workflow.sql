@@ -90,8 +90,10 @@ RETURNING id, queue_id, status, priority, sla_minutes_snapshot, due_at, created_
 SELECT i.id, i.queue_id, i.aggregate_type, i.aggregate_id, i.title, i.priority,
        i.assignee_actor_id, i.assigned_at, i.due_at, i.sla_minutes_snapshot, i.status,
        i.outcome_code, i.completed_at, i.completed_by, i.escalated_at,
-       i.escalated_from_queue_id, i.created_at, i.row_version
+       i.escalated_from_queue_id, i.created_at, i.row_version,
+       a.display_name AS assignee_display_name
   FROM workflow.work_item i
+  LEFT JOIN iam.actor a ON a.id = i.assignee_actor_id
  WHERE i.tenant_id = sqlc.arg('tenant_id')
    AND i.id = sqlc.arg('id')
    AND (sqlc.narg('scope_ids')::uuid[] IS NULL OR i.queue_id = ANY(sqlc.narg('scope_ids')::uuid[]));
@@ -103,8 +105,10 @@ SELECT i.id, i.queue_id, i.aggregate_type, i.aggregate_id, i.title, i.priority,
 SELECT i.id, i.queue_id, i.aggregate_type, i.aggregate_id, i.title, i.priority,
        i.assignee_actor_id, i.assigned_at, i.due_at, i.sla_minutes_snapshot, i.status,
        i.outcome_code, i.completed_at, i.completed_by, i.escalated_at,
-       i.escalated_from_queue_id, i.created_at, i.row_version
+       i.escalated_from_queue_id, i.created_at, i.row_version,
+       a.display_name AS assignee_display_name
   FROM workflow.work_item i
+  LEFT JOIN iam.actor a ON a.id = i.assignee_actor_id
  WHERE i.tenant_id = sqlc.arg('tenant_id')
    AND (sqlc.narg('scope_ids')::uuid[] IS NULL OR i.queue_id = ANY(sqlc.narg('scope_ids')::uuid[]))
    AND (sqlc.narg('queue_id')::uuid IS NULL OR i.queue_id = sqlc.narg('queue_id')::uuid)

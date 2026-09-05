@@ -100,6 +100,7 @@ func run() error {
 	registry.Register(scheduler.EntitlementReservationExpire(entitlements))
 	registry.Register(scheduler.EntitlementReconcile(entitlements))
 	registry.Register(scheduler.AuthorizationExpire(authorizations))
+	registry.Register(scheduler.AuthorizationExpiring(authorizations))
 	registry.Register(scheduler.WorkflowEscalate(workflows))
 	// Document retention runs only when an object store and a retention period are both
 	// configured. Purging real documents after a number nobody chose would be worse than

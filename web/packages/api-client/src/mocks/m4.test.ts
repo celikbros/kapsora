@@ -635,8 +635,16 @@ describe('worklist', () => {
     );
     expect(conflict.status).toBe(409);
     expect(conflict.code).toBe('WORK_ITEM_ALREADY_CLAIMED');
-    // The screen has to be able to say who won, so the holder is named in the detail.
-    expect(conflict.detail).toContain(held.assigneeActorId!);
+    // The screen has to be able to say who won. The detail is the sentence a person reads
+    // and now names the holder rather than their uuid; the RFC 9457 extension members
+    // carry the same fact in a form the screen reads without parsing Turkish (WP-I5-05
+    // section 2.6). Both are asserted, because a screen that scraped the sentence would
+    // break the day the sentence changed.
+    const holder = api.world.accounts.find((a) => a.actorId === held.assigneeActorId);
+    expect(conflict.detail).toContain(holder!.displayName);
+    const extended = conflict as unknown as Record<string, unknown>;
+    expect(extended.assigneeActorId).toBe(held.assigneeActorId);
+    expect(extended.assigneeDisplayName).toBe(holder!.displayName);
   });
 
   it('claims an open item, and refuses a release from somebody who does not hold it', async () => {

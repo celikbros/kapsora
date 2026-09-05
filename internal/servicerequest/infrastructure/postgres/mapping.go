@@ -40,6 +40,8 @@ type requestRow struct {
 	ClosedAt                     *time.Time
 	CreatedAt                    time.Time
 	RowVersion                   int64
+	PersonDisplayName            string
+	ProviderDisplayName          *string
 }
 
 func getRow(r sqlcgen.GetServiceRequestRow) requestRow {
@@ -69,6 +71,7 @@ func requestOf(r requestRow) application.RequestRecord {
 		ReturnReasonCode:        r.ReturnReasonCode, RejectReasonCode: r.RejectReasonCode,
 		ReviewComment: r.ReviewComment, SubmittedAt: r.SubmittedAt, ClosedAt: r.ClosedAt,
 		CreatedAt: r.CreatedAt, RowVersion: r.RowVersion,
+		PersonDisplayName: r.PersonDisplayName, ProviderDisplayName: r.ProviderDisplayName,
 	}
 }
 

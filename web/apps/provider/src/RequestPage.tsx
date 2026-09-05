@@ -3,7 +3,7 @@ import { Badge, Breadcrumb, Button, Card, PageHeader, ProblemAlert, Spinner } fr
 import { Link, useParams } from '@tanstack/react-router';
 
 import { DocumentsPanel } from './documents';
-import { usePersonName, useRequest, useServiceName } from './queries';
+import { useRequest, useServiceName } from './queries';
 import { problemOf } from './problems';
 
 /**
@@ -15,7 +15,8 @@ export function RequestPage() {
   const { t } = useTranslation();
   const { requestId } = useParams({ from: '/app/requests/$requestId' });
   const query = useRequest(requestId);
-  const personName = usePersonName(query.data?.data.personId);
+  // The name is on the row (WP-I5-05 section 2.6); the request is read once either way.
+  const personName = query.data?.data.personDisplayName;
   const serviceName = useServiceName(query.data?.data.items[0]?.serviceDefinitionId);
 
   if (query.isPending) {

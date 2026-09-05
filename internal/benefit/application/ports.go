@@ -249,6 +249,14 @@ type EnrollmentUpdateRow struct {
 	Expected int64
 }
 
+// DefinitionCode is one entitlement definition of a version, reduced to what a mapping
+// needs: the id it points at and the code it is named by.
+type DefinitionCode struct {
+	ID       uuid.UUID
+	Code     string
+	UnitType string
+}
+
 // EnrollmentListQuery is the repository-level enrollment filter.
 type EnrollmentListQuery struct {
 	PlanID   uuid.UUID
@@ -288,6 +296,16 @@ type Repository interface {
 	ListDefinitions(ctx context.Context, tx pgx.Tx, tenantID, versionID uuid.UUID) ([]DefinitionRow, error)
 	DeleteDefinitions(ctx context.Context, tx pgx.Tx, tenantID, versionID uuid.UUID) (int64, error)
 	CreateDefinition(ctx context.Context, tx pgx.Tx, in NewDefinitionRow) (uuid.UUID, error)
+
+	// The service → entitlement mapping of a plan version (WP-I5-05). ListMappings and
+	// DeleteMappings are the two halves of a set replacement; ListMappableDefinitions is
+	// what an entitlement code is resolved against, so a code from another version is a
+	// field error rather than a foreign key violation.
+	ListMappings(ctx context.Context, tx pgx.Tx, tenantID, versionID uuid.UUID) ([]MappingRow, error)
+	DeleteMappings(ctx context.Context, tx pgx.Tx, tenantID, versionID uuid.UUID) (int64, error)
+	CreateMapping(ctx context.Context, tx pgx.Tx, in NewMappingRow) (uuid.UUID, error)
+	ListMappableDefinitions(ctx context.Context, tx pgx.Tx, tenantID, versionID uuid.UUID) ([]DefinitionCode, error)
+	ListServiceDefinitionsByID(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, ids []uuid.UUID) ([]ServiceDefinitionRow, error)
 
 	// PersonExists answers the 404 of the person-scoped enrollment routes without
 	// reading any personal column.

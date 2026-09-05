@@ -1,4 +1,10 @@
-import { etagOf, ApiError, type WorkItem, type WorkItemListQuery } from '@kapsora/api-client';
+import {
+  etagOf,
+  ApiError,
+  type Problem,
+  type WorkItem,
+  type WorkItemListQuery,
+} from '@kapsora/api-client';
 import { usePermission } from '@kapsora/auth';
 import { formatDateTime, useTranslation } from '@kapsora/i18n';
 import {
@@ -37,7 +43,18 @@ export interface WorklistSearch {
 
 const PAGE_SIZE = 50;
 const VIEWS: WorklistView[] = ['mine', 'unassigned', 'overdue', 'all'];
-const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+/**
+ * Who won the claim, read from the refusal's RFC 9457 extension members (WP-I5-05 section
+ * 2.6). It used to be scraped out of the Turkish detail sentence with a uuid pattern,
+ * which named the winner by id and broke the day the sentence changed.
+ */
+function claimWinner(problem: Problem): { actorId: string | null; displayName: string | null } {
+  const extended = problem as unknown as Record<string, unknown>;
+  const actorId = typeof extended.assigneeActorId === 'string' ? extended.assigneeActorId : null;
+  const displayName =
+    typeof extended.assigneeDisplayName === 'string' ? extended.assigneeDisplayName : null;
+  return { actorId, displayName };
+}
 
 function itemTone(status: WorkItem['status']): BadgeTone {
   switch (status) {
@@ -144,8 +161,8 @@ export function WorklistPage() {
       const problem = problemOf(err);
       if (err instanceof ApiError && problem.code === 'WORK_ITEM_ALREADY_CLAIMED') {
         // The server names the holder in the refusal; the screen owes the operator that.
-        const id = UUID.exec(problem.detail ?? '')?.[0] ?? null;
-        setLost({ id: item.id, assignee: label(id) });
+        const winner = claimWinner(problem);
+        setLost({ id: item.id, assignee: label(winner.actorId, winner.displayName) });
       }
     }
   }
@@ -302,7 +319,8 @@ export function WorklistPage() {
                         ) : null}
                         {canClaim &&
                         item.status === 'CLAIMED' &&
-                        label(item.assigneeActorId) === t('worklist.me') ? (
+                        label(item.assigneeActorId, item.assigneeDisplayName) ===
+                          t('worklist.me') ? (
                           <>
                             <Button
                               size="sm"
@@ -349,7 +367,7 @@ export function WorklistPage() {
                     </TD>
                     <TD>
                       {item.assigneeActorId ? (
-                        <code className="font-mono text-xs">{label(item.assigneeActorId)}</code>
+                        <span>{label(item.assigneeActorId, item.assigneeDisplayName)}</span>
                       ) : (
                         <span className="text-fg-muted">{t('worklist.unassigned')}</span>
                       )}

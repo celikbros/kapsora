@@ -157,10 +157,15 @@ func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) 
 	case errors.As(err, &ve):
 		writeValidation(w, r, ve.Fields)
 	case errors.As(err, &claimed):
-		// The detail names the actor who won. Telling somebody the item is taken without
-		// saying by whom is what makes two people keep clicking.
-		problem(w, r, http.StatusConflict, "work-items/already-claimed", "WORK_ITEM_ALREADY_CLAIMED",
-			"İş kalemi başkası tarafından üstlenilmiş", claimedDetail(claimed))
+		// The detail names the actor who won, and the extension members carry the same
+		// fact in a form a screen can use without parsing a sentence. Telling somebody the
+		// item is taken without saying by whom is what makes two people keep clicking.
+		httpx.WriteProblem(w, r, httpx.Problem{
+			Type:   httpx.ProblemTypeBase + "work-items/already-claimed",
+			Title:  "İş kalemi başkası tarafından üstlenilmiş",
+			Status: http.StatusConflict, Code: "WORK_ITEM_ALREADY_CLAIMED",
+			Detail: claimedDetail(claimed), Extensions: claimedExtensions(claimed),
+		})
 	case errors.Is(err, application.ErrQueueNotFound):
 		problem(w, r, http.StatusNotFound, "work-queues/not-found", "WORK_QUEUE_NOT_FOUND",
 			"İş kuyruğu bulunamadı", "")
@@ -208,10 +213,28 @@ func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) 
 // them: a display name would put a person's name in a problem body that is logged wherever
 // the caller logs its errors.
 func claimedDetail(err *application.AlreadyClaimedError) string {
-	if err.AssigneeActorID == nil {
+	switch {
+	case err.AssigneeActorID == nil:
 		return "İş kalemi artık üstlenilebilir durumda değil."
+	case err.AssigneeDisplayName != nil && *err.AssigneeDisplayName != "":
+		return fmt.Sprintf("İş kalemi %s kullanıcısında.", *err.AssigneeDisplayName)
+	default:
+		return fmt.Sprintf("İş kalemi %s kimlikli kullanıcıda.", err.AssigneeActorID)
 	}
-	return fmt.Sprintf("İş kalemi %s kimlikli kullanıcıda.", err.AssigneeActorID)
+}
+
+// claimedExtensions is the machine-readable half of the same answer (WP-I5-05 section
+// 2.6). The members are absent rather than null when there is nobody to name: an item
+// that went back to OPEN between the failed update and the re-read was taken by no one.
+func claimedExtensions(err *application.AlreadyClaimedError) map[string]any {
+	if err.AssigneeActorID == nil {
+		return nil
+	}
+	out := map[string]any{"assigneeActorId": err.AssigneeActorID.String()}
+	if err.AssigneeDisplayName != nil && *err.AssigneeDisplayName != "" {
+		out["assigneeDisplayName"] = *err.AssigneeDisplayName
+	}
+	return out
 }
 
 // pathUUID reads an id from the path; a malformed id is indistinguishable from an unknown

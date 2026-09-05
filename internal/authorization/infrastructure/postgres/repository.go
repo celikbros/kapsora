@@ -715,3 +715,23 @@ func pageSize(n int) int32 {
 	}
 	return int32(n) //nolint:gosec // clamped by httpx.ClampLimit before it reaches here
 }
+
+// ListExpiringAuthorizations implements application.Repository.
+func (Repository) ListExpiringAuthorizations(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
+	dayStart, dayEnd time.Time, limit int,
+) ([]application.ExpiringAuthorizationRow, error) {
+	rows, err := sqlcgen.New(tx).ListExpiringAuthorizations(ctx, sqlcgen.ListExpiringAuthorizationsParams{
+		TenantID: tenantID, DayStart: dayStart, DayEnd: dayEnd,
+		PageSize: int32(limit), //nolint:gosec // a fixed batch size, not a caller's number
+	})
+	if err != nil {
+		return nil, fmt.Errorf("authorization: list expiring authorizations: %w", err)
+	}
+	out := make([]application.ExpiringAuthorizationRow, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, application.ExpiringAuthorizationRow{
+			ID: r.ID, Reference: r.AuthorizationReference, ValidTo: r.ValidTo, PersonID: r.PersonID,
+		})
+	}
+	return out, nil
+}

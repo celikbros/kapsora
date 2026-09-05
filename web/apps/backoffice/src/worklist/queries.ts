@@ -101,12 +101,20 @@ export function useWorkItemCommands() {
  * is shown by id, truthfully, rather than by a name the screen would have to invent.
  * A display name on the work item is the contract change that fixes this (ROADMAP.md).
  */
-export function useActorLabel(): (actorId: string | null | undefined) => string {
+/**
+ * How an assignee is named on the worklist. The wire carries the name with the row now
+ * (WP-I5-05 section 2.6), so the id is the last resort rather than the usual answer: it
+ * appears only for an actor the server did not name, which the demo world has none of.
+ */
+export function useActorLabel(): (
+  actorId: string | null | undefined,
+  displayName?: string | null,
+) => string {
   const { t } = useTranslation();
   const me = useSession((s) => s.me);
-  return (actorId) => {
+  return (actorId, displayName) => {
     if (!actorId) return t('worklist.unassigned');
     if (me && actorId === me.actorId) return t('worklist.me');
-    return actorId;
+    return displayName ?? actorId;
   };
 }

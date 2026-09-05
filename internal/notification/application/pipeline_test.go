@@ -24,6 +24,7 @@ import (
 	"github.com/celikbros/kapsora/internal/notification/domain"
 	"github.com/celikbros/kapsora/internal/notification/infrastructure/channel"
 	notificationpg "github.com/celikbros/kapsora/internal/notification/infrastructure/postgres"
+	"github.com/celikbros/kapsora/internal/platform/crypto/localkey"
 	"github.com/celikbros/kapsora/internal/platform/db"
 	"github.com/celikbros/kapsora/internal/platform/dbtest"
 	"github.com/celikbros/kapsora/internal/platform/httpx"
@@ -120,6 +121,7 @@ type fixture struct {
 	pool       *pgxpool.Pool
 	svc        *application.Service
 	cursors    *httpx.CursorCodec
+	keys       *localkey.Provider
 	sender     *fakeSender
 	dispatcher *outbox.Dispatcher
 
@@ -152,6 +154,12 @@ func newFixture(t *testing.T) *fixture {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// The repository decrypts a member's contact envelope at send time, so the fixture
+	// holds the same key provider the party service writes contacts with.
+	keys, err := localkey.New([]byte("0123456789abcdef0123456789abcdef"))
+	if err != nil {
+		t.Fatal(err)
+	}
 	f := &fixture{
 		h: h, pool: pool, sender: newFakeSender(),
 		// A Tuesday lunchtime in Istanbul: outside every quiet hours window a test sets,
@@ -159,6 +167,7 @@ func newFixture(t *testing.T) *fixture {
 		now: time.Date(2026, 9, 8, 9, 0, 0, 0, time.UTC),
 	}
 	f.cursors = cursors
+	f.keys = keys
 	f.useSenders(t, map[string]application.ChannelSender{
 		domain.ChannelEmail: f.sender,
 		domain.ChannelSMS:   f.sender,
@@ -184,7 +193,7 @@ func newFixture(t *testing.T) *fixture {
 func (f *fixture) useSenders(t *testing.T, senders map[string]application.ChannelSender) {
 	t.Helper()
 	svc, err := application.New(application.Deps{
-		Pool: f.pool, Repo: notificationpg.New(), Audit: auditpg.New(), Cursors: f.cursors,
+		Pool: f.pool, Repo: notificationpg.New(f.keys), Audit: auditpg.New(), Cursors: f.cursors,
 		LinkBase: testLinkBase, Senders: senders,
 		Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 		Now:    func() time.Time { return f.now },

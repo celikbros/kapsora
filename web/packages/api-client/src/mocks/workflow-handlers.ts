@@ -15,6 +15,7 @@ import {
   compareDecimal,
   isDecimalText,
   toApprovalPolicy,
+  assigneeDisplayName,
   toWorkItem,
   toWorkItemComment,
   toWorkQueue,
@@ -158,7 +159,7 @@ export function workflowHandlers(api: MockApi): HttpHandler[] {
   };
 
   const answerItem = (item: StoredWorkItem): Response =>
-    HttpResponse.json(toWorkItem(item), { headers: { ETag: etagOf(item.rowVersion) } });
+    HttpResponse.json(toWorkItem(world(), item), { headers: { ETag: etagOf(item.rowVersion) } });
 
   /** The plumbing release, reassign and complete share; claim is deliberately not here. */
   const itemCommand =
@@ -406,7 +407,7 @@ export function workflowHandlers(api: MockApi): HttpHandler[] {
         })
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id));
       const page: Schemas['WorkItemPage'] = {
-        items: rows.slice(offset, offset + limit).map(toWorkItem),
+        items: rows.slice(offset, offset + limit).map((i) => toWorkItem(world(), i)),
         nextCursor: offset + limit < rows.length ? encodeCursor(offset + limit) : null,
       };
       return HttpResponse.json(page);
@@ -437,15 +438,29 @@ export function workflowHandlers(api: MockApi): HttpHandler[] {
       // moved on. Naming the holder is the whole point: a screen can say who won.
       if (item.status !== 'OPEN' || item.rowVersion !== expected) {
         if (item.status === 'CLAIMED') {
+          // The detail is the sentence a person reads; the extension members are the
+          // same fact in a form a screen can use without parsing Turkish (WP-I5-05
+          // section 2.6).
+          const winner = assigneeDisplayName(world(), item.assigneeActorId);
           return problem(
             api,
             409,
             'WORK_ITEM_ALREADY_CLAIMED',
             'İş kalemi başkası tarafından üstlenilmiş',
             {
-              detail: item.assigneeActorId
-                ? `İş kalemi ${item.assigneeActorId} kimlikli kullanıcıda.`
-                : 'İş kalemi artık üstlenilebilir durumda değil.',
+              detail: winner
+                ? `İş kalemi ${winner} kullanıcısında.`
+                : item.assigneeActorId
+                  ? `İş kalemi ${item.assigneeActorId} kimlikli kullanıcıda.`
+                  : 'İş kalemi artık üstlenilebilir durumda değil.',
+              ...(item.assigneeActorId
+                ? {
+                    extensions: {
+                      assigneeActorId: item.assigneeActorId,
+                      ...(winner ? { assigneeDisplayName: winner } : {}),
+                    },
+                  }
+                : {}),
             },
           );
         }

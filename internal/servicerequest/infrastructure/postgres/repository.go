@@ -567,7 +567,8 @@ func (r Repository) LoadEligibility(ctx context.Context, tx pgx.Tx, tenantID, pe
 	}
 	for _, e := range enrollments {
 		out.Enrollments = append(out.Enrollments, eligibility.Enrollment{
-			ID: e.ID, PlanID: e.PlanID, ProgramID: e.ProgramID, Status: e.Status,
+			ID: e.ID, PlanID: e.PlanID, PlanCode: e.PlanCode, PlanName: e.PlanName,
+			ProgramID: e.ProgramID, Status: e.Status,
 			ValidFrom: dateValue(e.ValidFrom), ValidTo: datePtr(e.ValidTo),
 		})
 	}
@@ -590,6 +591,26 @@ func (r Repository) LoadEligibility(ctx context.Context, tx pgx.Tx, tenantID, pe
 		return application.EligibilityInput{}, err
 	}
 	out.PlanVersion = &eligibility.PlanVersion{ID: version.ID}
+
+	// The submit gate reads the same mapping the check reads, out of the same table: the
+	// two answers must not be able to differ, because the gate is what turns the check's
+	// answer into a decision the member lives with.
+	mappings, err := q.ListEligibilityMappings(ctx, sqlcgen.ListEligibilityMappingsParams{
+		TenantID: tenantID, PlanVersionID: version.ID, ServiceDate: dateOf(day),
+	})
+	if err != nil {
+		return application.EligibilityInput{}, fmt.Errorf("servicerequest: list entitlement mappings: %w", err)
+	}
+	out.Mappings = make(map[uuid.UUID]eligibility.Mapping, len(mappings))
+	for _, m := range mappings {
+		factor, err := benefitdomain.ParseQuantity(m.UnitFactor)
+		if err != nil {
+			return application.EligibilityInput{}, fmt.Errorf("servicerequest: entitlement mapping factor: %w", err)
+		}
+		out.Mappings[m.ServiceDefinitionID] = eligibility.Mapping{
+			EntitlementCode: m.EntitlementCode, UnitFactor: factor,
+		}
+	}
 
 	accounts, err := r.ledger.ResolveAccounts(ctx, tx, tenantID, personID, day)
 	if err != nil {

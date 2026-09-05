@@ -37,6 +37,17 @@ type ItemView struct {
 	Explanations      []ExplanationView `json:"explanations"`
 }
 
+// EnrollmentCandidateView is one of the enrollments an ENROLLMENT_MULTIPLE answer was
+// torn between. It carries a plan's code and name, which are configuration rather than
+// personal data, and no membership, sponsor or person field at all.
+type EnrollmentCandidateView struct {
+	EnrollmentID uuid.UUID `json:"enrollmentId"`
+	PlanCode     string    `json:"planCode"`
+	PlanName     string    `json:"planName"`
+	ValidFrom    string    `json:"validFrom"`
+	ValidTo      *string   `json:"validTo,omitempty"`
+}
+
 // BalanceView is one entitlement balance reported with the outcome.
 type BalanceView struct {
 	EntitlementCode string      `json:"entitlementCode"`
@@ -56,6 +67,8 @@ type ResultView struct {
 	RuleSetVersionIDs []uuid.UUID       `json:"ruleSetVersionIds"`
 	Explanations      []ExplanationView `json:"explanations"`
 	Balances          []BalanceView     `json:"balances"`
+	// EnrollmentCandidates is present only alongside an ENROLLMENT_MULTIPLE explanation.
+	EnrollmentCandidates []EnrollmentCandidateView `json:"enrollmentCandidates,omitempty"`
 }
 
 // RequestItemView is one requested line as it was understood.
@@ -72,6 +85,7 @@ type RequestItemView struct {
 type RequestView struct {
 	PersonID               uuid.UUID         `json:"personId"`
 	ProgramID              *uuid.UUID        `json:"programId,omitempty"`
+	EnrollmentID           *uuid.UUID        `json:"enrollmentId,omitempty"`
 	ProviderOrganizationID *uuid.UUID        `json:"providerOrganizationId,omitempty"`
 	ServiceDate            string            `json:"serviceDate"`
 	ServiceItems           []RequestItemView `json:"serviceItems"`
@@ -131,6 +145,17 @@ func newResultView(id uuid.UUID, evaluatedAt time.Time, r Result) ResultView {
 			EntitlementCode: b.EntitlementCode, Available: json.Number(b.Available.String()), Unit: b.Unit,
 		})
 	}
+	for _, c := range r.EnrollmentCandidates {
+		view := EnrollmentCandidateView{
+			EnrollmentID: c.EnrollmentID, PlanCode: c.PlanCode, PlanName: c.PlanName,
+			ValidFrom: c.ValidFrom.Format(time.DateOnly),
+		}
+		if c.ValidTo != nil {
+			to := c.ValidTo.Format(time.DateOnly)
+			view.ValidTo = &to
+		}
+		out.EnrollmentCandidates = append(out.EnrollmentCandidates, view)
+	}
 	return out
 }
 
@@ -147,7 +172,7 @@ func explanationViews(in []Explanation) []ExplanationView {
 // the recognised hints.
 func newRequestView(in CheckInput, hints contextHints) RequestView {
 	out := RequestView{
-		PersonID: in.PersonID, ProgramID: in.ProgramID,
+		PersonID: in.PersonID, ProgramID: in.ProgramID, EnrollmentID: in.EnrollmentID,
 		ProviderOrganizationID: in.ProviderOrganizationID,
 		ServiceDate:            domain.DateOnly(in.ServiceDate).Format(time.DateOnly),
 		ServiceItems:           make([]RequestItemView, 0, len(in.Items)),
@@ -177,7 +202,10 @@ func newRequestView(in CheckInput, hints contextHints) RequestView {
 // values are null. Two readings of the same request therefore hash identically, which is
 // what lets an Idempotency-Key replay tell "the same question again" from "a different
 // question under a reused key".
-const canonicalRequestVersion = 1
+// Version 2 added enrollmentId: a question that names one of a person's two plans is a
+// different question from the one that named neither, and a hash that could not tell them
+// apart would replay the wrong answer under a reused Idempotency-Key.
+const canonicalRequestVersion = 2
 
 func canonicalRequest(in CheckInput, hints contextHints) ([]byte, error) {
 	items := make([]any, 0, len(in.Items))
@@ -200,6 +228,7 @@ func canonicalRequest(in CheckInput, hints contextHints) ([]byte, error) {
 		"schema":                 canonicalRequestVersion,
 		"personId":               in.PersonID.String(),
 		"programId":              nullableUUID(in.ProgramID),
+		"enrollmentId":           nullableUUID(in.EnrollmentID),
 		"providerOrganizationId": nullableUUID(in.ProviderOrganizationID),
 		"serviceDate":            domain.DateOnly(in.ServiceDate).Format(time.DateOnly),
 		"serviceItems":           items,

@@ -9,12 +9,14 @@ import { HttpResponse, http, type HttpHandler } from 'msw';
 
 import {
   pseudoHash,
+  toEntitlementMapping,
   toEnrollment,
   toPlan,
   toPlanVersion,
   toPlanVersionSummary,
   toProgram,
   type MockWorld,
+  type StoredEntitlementMapping,
   type StoredPlan,
   type StoredPlanVersion,
   type StoredProgram,
@@ -67,6 +69,21 @@ function periodsOverlap(
   return (aTo === null || bFrom < aTo) && (bTo === null || aFrom < bTo);
 }
 
+/** A unit factor is an exact decimal greater than zero; anything else is a field error. */
+function isPositiveDecimal(value: string): boolean {
+  return /^[0-9]{1,14}(\.[0-9]{1,6})?$/.test(value) && Number(value) > 0;
+}
+
+/** The stored form of a factor: six decimals, like every other quantity in the mock. */
+function normalizeFactor(value: string | undefined): string {
+  return (value ?? '1').includes('.') ? padFactor(value ?? '1') : `${value ?? '1'}.000000`;
+}
+
+function padFactor(value: string): string {
+  const [i, f = ''] = value.split('.');
+  return `${i}.${(f + '000000').slice(0, 6)}`;
+}
+
 export function benefitHandlers(api: MockApi): HttpHandler[] {
   const world = (): MockWorld => api.world;
 
@@ -76,6 +93,13 @@ export function benefitHandlers(api: MockApi): HttpHandler[] {
     world().plans.find((p) => p.id === id && p.tenantId === tenantId);
   const findVersion = (tenantId: string, id: string): StoredPlanVersion | undefined =>
     world().planVersions.find((v) => v.id === id && v.tenantId === tenantId);
+
+  /** The mapping set of one version, by the service code a screen orders it by. */
+  const mappingsOf = (planVersionId: string): Schemas['EntitlementMapping'][] =>
+    world()
+      .entitlementMappings.filter((m) => m.planVersionId === planVersionId)
+      .map((m) => toEntitlementMapping(world(), m))
+      .sort((a, b) => a.serviceCode.localeCompare(b.serviceCode) || a.id.localeCompare(b.id));
 
   /** Rejects a body that is not a merge-patch document. */
   const requireMergePatch = (request: Request): Response | null => {
@@ -458,6 +482,92 @@ export function benefitHandlers(api: MockApi): HttpHandler[] {
         return HttpResponse.json(toPlanVersion(version), {
           headers: { ETag: etagOf(version.rowVersion) },
         });
+      },
+    ),
+
+    // The service to entitlement mapping of a version (WP-I5-05 section 2.1). A mapping is
+    // part of the plan version and follows its publishing: writable on a draft, frozen
+    // once published, exactly like the entitlement definitions above.
+    http.get(
+      `${ANY}/api/v1/plan-versions/:planVersionId/entitlement-mappings`,
+      async ({ request, params }) => {
+        await wait(api);
+        const g = guardTenant(api, request, 'program.read', false);
+        if ('error' in g) return g.error;
+        const version = findVersion(g.tenantId, pathParam(params, 'planVersionId'));
+        if (!version) return problem(api, 404, 'RESOURCE_NOT_FOUND', 'Kaynak bulunamadı');
+        return HttpResponse.json({ items: mappingsOf(version.id) });
+      },
+    ),
+
+    http.put(
+      `${ANY}/api/v1/plan-versions/:planVersionId/entitlement-mappings`,
+      async ({ request, params }) => {
+        await wait(api);
+        const g = guardTenant(api, request, 'entitlement.mapping.manage', true);
+        if ('error' in g) return g.error;
+        const expected = parseIfMatch(request.headers.get('If-Match'));
+        if (expected === null)
+          return problem(api, 428, 'IF_MATCH_REQUIRED', 'If-Match başlığı gerekli');
+        const version = findVersion(g.tenantId, pathParam(params, 'planVersionId'));
+        if (!version) return problem(api, 404, 'RESOURCE_NOT_FOUND', 'Kaynak bulunamadı');
+        if (version.status !== 'DRAFT') {
+          return problem(
+            api,
+            409,
+            'PLAN_VERSION_IMMUTABLE',
+            'Yalnız taslak sürümün hizmet eşleşmeleri değiştirilebilir',
+          );
+        }
+        if (version.rowVersion !== expected)
+          return problem(api, 412, 'ETAG_MISMATCH', 'Kayıt bu arada değişti');
+        const body = await readJson<{ items: Schemas['EntitlementMappingInput'][] }>(request);
+        if (!body?.items)
+          return problem(api, 400, 'INVALID_REQUEST_BODY', 'İstek gövdesi geçersiz');
+
+        const errors: { field: string; code: string }[] = [];
+        const seen = new Set<string>();
+        body.items.forEach((m, i) => {
+          const field = `items[${i}]`;
+          if (!version.definitions.some((d) => d.code === m.entitlementCode)) {
+            errors.push({ field: `${field}.entitlementCode`, code: 'UNKNOWN' });
+          }
+          const service = world().serviceDefinitions.find(
+            (d) => d.tenantId === g.tenantId && d.id === m.serviceDefinitionId,
+          );
+          if (!service) errors.push({ field: `${field}.serviceDefinitionId`, code: 'UNKNOWN' });
+          else if (!service.active)
+            errors.push({ field: `${field}.serviceDefinitionId`, code: 'INACTIVE' });
+          if (seen.has(m.serviceDefinitionId))
+            errors.push({ field: `${field}.serviceDefinitionId`, code: 'DUPLICATE' });
+          seen.add(m.serviceDefinitionId);
+          if (m.unitFactor !== undefined && !isPositiveDecimal(m.unitFactor)) {
+            errors.push({ field: `${field}.unitFactor`, code: 'RANGE' });
+          }
+        });
+        if (errors.length > 0) {
+          return problem(api, 422, 'VALIDATION_FAILED', 'Doğrulama hatası', { errors });
+        }
+
+        const kept = world().entitlementMappings.filter(
+          (m) => !(m.tenantId === g.tenantId && m.planVersionId === version.id),
+        );
+        const written: StoredEntitlementMapping[] = body.items.map((m) => ({
+          id: world().nextId(),
+          tenantId: g.tenantId,
+          planVersionId: version.id,
+          serviceDefinitionId: m.serviceDefinitionId,
+          entitlementDefinitionId:
+            version.definitions.find((d) => d.code === m.entitlementCode)?.id ?? '',
+          unitFactor: normalizeFactor(m.unitFactor),
+          validFrom: m.validFrom ?? null,
+          validTo: m.validTo ?? null,
+          rowVersion: 1,
+        }));
+        world().entitlementMappings = [...kept, ...written];
+        // The mappings are child rows; touching the version moves its ETag too.
+        version.rowVersion += 1;
+        return HttpResponse.json({ items: mappingsOf(version.id) });
       },
     ),
 

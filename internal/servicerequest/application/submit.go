@@ -140,6 +140,19 @@ func (s *Service) Submit(ctx context.Context, rc identity.RequestContext, id uui
 			domain.CommandGate, decision.ReasonCode, nil, decision.metadata(version.VersionNo)); err != nil {
 			return err
 		}
+		// The gate decided, so somebody has to be told what it decided. A request the
+		// gate approved outright is a decision like any other; one waiting for a document
+		// is the provider being asked for something.
+		switch decision.Status {
+		case domain.StatusPendingDocument:
+			if err := s.notifyPendingDocument(ctx, tx, rc, current); err != nil {
+				return err
+			}
+		case domain.StatusApproved:
+			if err := s.notifyDecided(ctx, tx, rc, current, decision.Status); err != nil {
+				return err
+			}
+		}
 		out, err = s.reload(ctx, tx, rc.TenantID, id, scopeOf(rc))
 		return err
 	})
@@ -267,7 +280,8 @@ func (s *Service) resolveEligibility(ctx context.Context, tx pgx.Tx, rc identity
 		ServiceDate: day, ProgramID: program, Person: loaded.Person,
 		Memberships: loaded.Memberships, Enrollments: loaded.Enrollments,
 		PlanVersion: loaded.PlanVersion, Accounts: loaded.Accounts,
-		Items: make([]eligibility.Item, 0, len(items)),
+		Mappings: loaded.Mappings,
+		Items:    make([]eligibility.Item, 0, len(items)),
 	}
 	for i, item := range items {
 		quantity, err := benefitdomain.ParseQuantity(item.RequestedQuantity)
@@ -276,7 +290,8 @@ func (s *Service) resolveEligibility(ctx context.Context, tx pgx.Tx, rc identity
 				"servicerequest: line %d quantity: %w", item.LineNo, err)
 		}
 		input.Items = append(input.Items, eligibility.Item{
-			Index: i, EntitlementCode: entitlementCodeOf(item, definitions), Quantity: quantity,
+			Index: i, ServiceDefinitionID: item.ServiceDefinitionID,
+			EntitlementCode: entitlementCodeOf(item, definitions), Quantity: quantity,
 		})
 	}
 	result := eligibility.Resolve(input)
@@ -536,8 +551,9 @@ func (s *Service) definitionsOf(ctx context.Context, tx pgx.Tx, tenantID uuid.UU
 	return out, nil
 }
 
-// entitlementCodeOf is the hint the eligibility resolver maps a line onto a balance with.
-// There is no catalogue-to-entitlement mapping table yet, so the convention is that the
+// entitlementCodeOf is the fallback the eligibility resolver maps a line onto a balance
+// with when the plan version has no mapping for the service (WP-I5-05 added the table;
+// this is what answers for the versions nobody has mapped yet). The convention is that the
 // service definition's own code names the entitlement: a line whose code matches an open
 // account is judged against that balance, and a line whose code matches nothing is left
 // REVIEW_REQUIRED with SERVICE_MAPPING_PENDING, which is exactly what the resolver was

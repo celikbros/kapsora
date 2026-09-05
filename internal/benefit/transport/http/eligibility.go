@@ -65,6 +65,7 @@ type eligibilityCheckItem struct {
 type eligibilityCheckRequest struct {
 	PersonId               uuid.UUID              `json:"personId"`
 	ProgramId              *uuid.UUID             `json:"programId,omitempty"`
+	EnrollmentId           *uuid.UUID             `json:"enrollmentId,omitempty"`
 	ProviderOrganizationId *uuid.UUID             `json:"providerOrganizationId,omitempty"`
 	ServiceDate            string                 `json:"serviceDate"`
 	ServiceItems           []eligibilityCheckItem `json:"serviceItems"`
@@ -118,7 +119,7 @@ func (h *EligibilityHandler) GetEvaluation(w http.ResponseWriter, r *http.Reques
 func checkInput(w http.ResponseWriter, r *http.Request, body eligibilityCheckRequest) (eligibility.CheckInput, bool) {
 	ve := &domain.ValidationError{}
 	in := eligibility.CheckInput{
-		PersonID: body.PersonId, ProgramID: body.ProgramId,
+		PersonID: body.PersonId, ProgramID: body.ProgramId, EnrollmentID: body.EnrollmentId,
 		ProviderOrganizationID: body.ProviderOrganizationId, Context: body.Context,
 		Items: make([]eligibility.RequestItem, 0, len(body.ServiceItems)),
 	}

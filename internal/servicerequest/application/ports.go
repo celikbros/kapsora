@@ -106,6 +106,12 @@ type RequestRecord struct {
 	ClosedAt              *time.Time
 	CreatedAt             time.Time
 	RowVersion            int64
+	// PersonDisplayName and ProviderDisplayName are read with the row rather than looked
+	// up per row by the screen that shows it (WP-I5-05 section 2.6). A list of thirty
+	// requests used to be thirty extra reads, one per member, and a worklist that named
+	// nobody until they all came back.
+	PersonDisplayName   string
+	ProviderDisplayName *string
 }
 
 // NewRequestRow is the insert payload of a request header.
@@ -315,6 +321,10 @@ type EligibilityInput struct {
 	Enrollments []eligibility.Enrollment
 	PlanVersion *eligibility.PlanVersion
 	Accounts    []eligibility.Account
+	// Mappings is the resolved plan version's service → entitlement mapping, keyed by
+	// service definition (WP-I5-05). It is what lets the gate judge a line against a
+	// balance instead of leaving it SERVICE_MAPPING_PENDING.
+	Mappings map[uuid.UUID]eligibility.Mapping
 }
 
 // NewEligibilityEvaluationRow is the append-only evaluation the submit gate stores, so the

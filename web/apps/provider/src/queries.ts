@@ -41,20 +41,6 @@ export function useIdentifierSearch() {
   });
 }
 
-export function usePersonName(personId: string | null | undefined): string | null | undefined {
-  const ops = useOps();
-  const tenantId = useTenantId();
-  const q = useQuery({
-    queryKey: ['provider', tenantId, 'person-name', personId ?? ''],
-    queryFn: () => ops.people.get(tenantId, personId!),
-    enabled: Boolean(personId),
-    staleTime: 5 * 60_000,
-    retry: false,
-  });
-  if (q.isPending && q.fetchStatus !== 'idle') return undefined;
-  return q.data?.data.displayName ?? null;
-}
-
 export function usePersonEnrollments(personId: string) {
   const ops = useOps();
   const tenantId = useTenantId();

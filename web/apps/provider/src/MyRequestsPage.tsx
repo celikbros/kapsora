@@ -17,7 +17,7 @@ import {
 } from '@kapsora/ui';
 import { Link } from '@tanstack/react-router';
 
-import { useMyRequests, usePersonName, useServiceName } from './queries';
+import { useMyRequests, useServiceName } from './queries';
 import { problemOf } from './problems';
 
 /** Tone follows what the row asks of the desk: waiting on us is the one that matters. */
@@ -38,9 +38,14 @@ function tone(status: ServiceRequestStatus): BadgeTone {
   }
 }
 
-function PersonCell({ personId }: { personId: string }) {
-  const name = usePersonName(personId);
-  return <>{name === undefined ? '…' : (name ?? '—')}</>;
+/**
+ * The member's name comes with the row now (WP-I5-05 section 2.6) rather than from one
+ * extra read per line. The cell semantics are unchanged — '…' while a name is on its way,
+ * '—' for one this caller may not see — and are still worth keeping for the service cell
+ * below, which the wire does not carry a name for.
+ */
+function PersonCell({ displayName }: { displayName: string | null | undefined }) {
+  return <>{displayName === undefined ? '…' : (displayName ?? '—')}</>;
 }
 function ServiceCell({ request }: { request: ServiceRequest }) {
   const name = useServiceName(request.items[0]?.serviceDefinitionId);
@@ -107,7 +112,7 @@ export function MyRequestsPage() {
                   </Badge>
                 </TD>
                 <TD>
-                  <PersonCell personId={r.personId} />
+                  <PersonCell displayName={r.personDisplayName} />
                 </TD>
                 <TD>
                   <ServiceCell request={r} />

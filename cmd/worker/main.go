@@ -26,6 +26,7 @@ import (
 	"github.com/celikbros/kapsora/internal/party/memberimport"
 	"github.com/celikbros/kapsora/internal/platform/antivirus"
 	"github.com/celikbros/kapsora/internal/platform/config"
+	"github.com/celikbros/kapsora/internal/platform/crypto"
 	"github.com/celikbros/kapsora/internal/platform/crypto/localkey"
 	"github.com/celikbros/kapsora/internal/platform/db"
 	"github.com/celikbros/kapsora/internal/platform/httpx"
@@ -99,7 +100,7 @@ func run() error {
 	// Notifications. This is the only process that talks to a mail server, and it holds an
 	// adapter for all four channels: a worker asked to send on a channel it has no adapter
 	// for answers an error rather than recording a delivery that did not happen.
-	notifications, err := newNotifications(cfg, pool, logger)
+	notifications, err := newNotifications(cfg, pool, keys, logger)
 	if err != nil {
 		return err
 	}
@@ -173,7 +174,13 @@ func newDocuments(cfg config.Config, pool *pgxpool.Pool, logger *slog.Logger) (*
 // SMTP client does not connect here: a relay that is down at start-up must not stop the
 // worker, because the messages it cannot send stay queued and are retried, which is
 // exactly what should happen.
-func newNotifications(cfg config.Config, pool *pgxpool.Pool, logger *slog.Logger) (*notificationapp.Service, error) {
+// newNotifications builds the notification service. It is handed the key provider because
+// this is the process that resolves a member's address: a PERSON recipient's e-mail or
+// telephone number lives encrypted in party.person_contact, and the repository decrypts it
+// at send time rather than the pipeline ever holding it.
+func newNotifications(cfg config.Config, pool *pgxpool.Pool, keys crypto.FieldCipher,
+	logger *slog.Logger,
+) (*notificationapp.Service, error) {
 	smtp, err := mail.NewSMTP(mail.SMTPOptions{
 		Address: cfg.Notifications.SMTPAddr, From: cfg.Notifications.SMTPFrom,
 		Username: cfg.Notifications.SMTPUsername, Password: cfg.Notifications.SMTPPassword,
@@ -187,7 +194,7 @@ func newNotifications(cfg config.Config, pool *pgxpool.Pool, logger *slog.Logger
 		return nil, err
 	}
 	return notificationapp.New(notificationapp.Deps{
-		Pool: pool, Repo: notificationpg.New(), Audit: auditpg.New(),
+		Pool: pool, Repo: notificationpg.New(keys), Audit: auditpg.New(),
 		LinkBase: cfg.Notifications.LinkBase, Logger: logger,
 		Senders: map[string]notificationapp.ChannelSender{
 			domain.ChannelEmail: email,

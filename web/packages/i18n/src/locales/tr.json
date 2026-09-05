@@ -400,7 +400,12 @@
     "MAX_ITEMS": "Satır sayısı üst sınırı aşıyor",
     "PRIORITY_DUPLICATE": "Bu sıra numarası başka bir kuralda kullanılıyor",
     "DUPLICATE_PRIMARY": "Bir encounter'da yalnızca bir ana tanı olabilir",
-    "INACTIVE": "Bu kayıt artık kullanımda değil"
+    "INACTIVE": "Bu kayıt artık kullanımda değil",
+    "RANGE": "Değer izin verilen aralığın dışında",
+    "UNKNOWN": "Bu değer tanımlı değil",
+    "CONTACT_CHANNEL_UNKNOWN": "Geçerli bir iletişim kanalı seçin (e-posta ya da SMS)",
+    "CONTACT_INVALID": "Geçerli bir e-posta adresi ya da telefon numarası girin",
+    "CONTACT_PRIMARY_TWICE": "Her kanal için yalnızca bir birincil kayıt olabilir"
   },
   "people": {
     "title": "Hak Sahipleri",

@@ -329,6 +329,40 @@ func TestCreateReadAndListAServiceRequest(t *testing.T) {
 	}
 }
 
+// TestARequestCarriesTheNamesItsScreenNeeds is WP-I5-05 section 2.6 at the wire: a list of
+// requests names the member and the provider, so a screen showing thirty of them makes one
+// request rather than sixty-one. Both the single read and the list carry them, because a
+// list that named people and a detail that did not would send an operator looking for a
+// bug in the screen.
+func TestARequestCarriesTheNamesItsScreenNeeds(t *testing.T) {
+	s := newServer(t)
+	requestID, _ := s.createDraft(t)
+
+	got := s.do(t, http.MethodGet, "/api/v1/service-requests/"+requestID, readOnly, "", nil)
+	if got.code != http.StatusOK {
+		t.Fatalf("get: %d %v", got.code, got.body)
+	}
+	if name, _ := got.body["personDisplayName"].(string); name != "Deniz Aksoy" {
+		t.Fatalf("personDisplayName = %q, want the member's name", name)
+	}
+	if name, _ := got.body["providerDisplayName"].(string); name != "HTTP Provider" {
+		t.Fatalf("providerDisplayName = %q, want the provider's name", name)
+	}
+
+	page := s.do(t, http.MethodGet, "/api/v1/service-requests?status=DRAFT", readOnly, "", nil)
+	items, _ := page.body["items"].([]any)
+	if len(items) != 1 {
+		t.Fatalf("list returned %d items, want 1", len(items))
+	}
+	row, _ := items[0].(map[string]any)
+	if name, _ := row["personDisplayName"].(string); name != "Deniz Aksoy" {
+		t.Fatalf("list personDisplayName = %q", name)
+	}
+	if name, _ := row["providerDisplayName"].(string); name != "HTTP Provider" {
+		t.Fatalf("list providerDisplayName = %q", name)
+	}
+}
+
 // TestPatchRefusesAStatusField is the property the whole package is built around: there is
 // no endpoint that writes status, and a body that tries is told so rather than ignored.
 func TestPatchRefusesAStatusField(t *testing.T) {

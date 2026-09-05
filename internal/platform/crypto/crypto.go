@@ -27,6 +27,11 @@ const (
 	// identifier so the same digits registered as a TCKN and as a registration number
 	// never produce the same blind index.
 	PurposePractitionerRegistration Purpose = "provider.practitioner_registration"
+	// PurposePersonContact namespaces a member's e-mail address or telephone number
+	// (WP-I5-05). It is separate from a person identifier so a number recorded as a
+	// member number and the same digits recorded as a telephone number are encrypted
+	// under different keys and can never be compared.
+	PurposePersonContact Purpose = "party.person_contact"
 )
 
 // BlindIndexSize is the byte length of every blind index (HMAC-SHA256).

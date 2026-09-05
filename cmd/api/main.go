@@ -246,7 +246,7 @@ func run() error {
 	// only thing that talks to a mail server. An adapter wired in here would be one the API
 	// never calls, and an HTTP request must never be able to wait on a relay.
 	notificationSvc, err := notificationapp.New(notificationapp.Deps{
-		Pool: pool, Repo: notificationpg.New(), Audit: auditpg.New(), Cursors: cursors,
+		Pool: pool, Repo: notificationpg.New(nil), Audit: auditpg.New(), Cursors: cursors,
 		LinkBase: cfg.Notifications.LinkBase, Logger: logger,
 	})
 	if err != nil {

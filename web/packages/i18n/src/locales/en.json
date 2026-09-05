@@ -336,7 +336,12 @@
     "MAX_ITEMS": "Too many rows in one call",
     "PRIORITY_DUPLICATE": "Another rule already uses this position",
     "DUPLICATE_PRIMARY": "An encounter may have only one primary diagnosis",
-    "INACTIVE": "This record is no longer in use"
+    "INACTIVE": "This record is no longer in use",
+    "RANGE": "The value is outside the allowed range",
+    "UNKNOWN": "This value is not defined",
+    "CONTACT_CHANNEL_UNKNOWN": "Choose a valid contact channel (e-mail or SMS)",
+    "CONTACT_INVALID": "Enter a valid e-mail address or telephone number",
+    "CONTACT_PRIMARY_TWICE": "Only one primary entry is allowed per channel"
   },
   "people": {
     "title": "Members",

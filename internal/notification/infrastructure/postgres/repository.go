@@ -26,6 +26,7 @@ import (
 
 	"github.com/celikbros/kapsora/internal/notification/application"
 	"github.com/celikbros/kapsora/internal/notification/domain"
+	"github.com/celikbros/kapsora/internal/platform/crypto"
 	"github.com/celikbros/kapsora/internal/platform/sqlcgen"
 )
 
@@ -38,10 +39,20 @@ const (
 )
 
 // Repository implements application.Repository.
-type Repository struct{}
+//
+// It holds a field cipher for exactly one method: RecipientAddress, which has to decrypt a
+// member's contact envelope because it is the one caller in the product that must send to
+// an address rather than show it. Nothing else here reads `value_enc`, and no other method
+// is given a way to.
+type Repository struct {
+	cipher crypto.FieldCipher
+}
 
-// New returns the repository.
-func New() *Repository { return &Repository{} }
+// New returns the repository. A nil cipher is allowed and means "this process cannot
+// resolve a person's address": the API is such a process — it sends nothing — and a
+// PERSON recipient there resolves to no address rather than to a decryption this process
+// has no business performing.
+func New(cipher crypto.FieldCipher) *Repository { return &Repository{cipher: cipher} }
 
 var _ application.Repository = (*Repository)(nil)
 
@@ -378,26 +389,68 @@ func (Repository) ResolvePreference(ctx context.Context, tx pgx.Tx, tenantID uui
 
 // RecipientAddress implements application.Repository.
 //
-// Only an ACTOR on the EMAIL channel has an address today: iam.actor.email is the one
-// contact column in the schema. A PERSON has no contact row of their own and an
-// ORGANIZATION has none either, so both answer the empty string and the send writes a
-// SUPPRESSED message saying NO_ADDRESS. That is the honest answer — a member who cannot be
-// e-mailed is shown as not told, with the reason, rather than silently skipped — and the
-// day a contact table lands this method grows a branch rather than the pipeline changing.
-func (Repository) RecipientAddress(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
-	r application.Recipient, channel string,
+// Two kinds of recipient have an address. An ACTOR has iam.actor.email, which is a login
+// rather than a contact detail and is therefore EMAIL only. A PERSON has whatever
+// party.person_contact holds for them (WP-I5-05): an e-mail address or a telephone
+// number, envelope-encrypted, decrypted here and handed straight to an adapter. An
+// unverified contact is still an address — verification buys the right to trust it, not
+// the right to use it.
+//
+// An ORGANIZATION still has none, and a person with no row for the channel still answers
+// the empty string, which makes the send write a SUPPRESSED message saying NO_ADDRESS.
+// That is the honest answer: a member who cannot be reached is shown as not told, with
+// the reason, rather than silently skipped.
+func (r Repository) RecipientAddress(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
+	recipient application.Recipient, channel string,
 ) (string, error) {
-	if r.Type != domain.RecipientActor || channel != domain.ChannelEmail {
+	switch recipient.Type {
+	case domain.RecipientActor:
+		if channel != domain.ChannelEmail {
+			return "", nil
+		}
+		address, err := sqlcgen.New(tx).NotificationActorEmail(ctx, sqlcgen.NotificationActorEmailParams{
+			ActorID: recipient.ID, TenantID: tenantID,
+		})
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", nil
+		}
+		if err != nil {
+			return "", fmt.Errorf("notification: read recipient address: %w", err)
+		}
+		return address, nil
+	case domain.RecipientPerson:
+		return r.personAddress(ctx, tx, tenantID, recipient.ID, channel)
+	default:
 		return "", nil
 	}
-	address, err := sqlcgen.New(tx).NotificationActorEmail(ctx, sqlcgen.NotificationActorEmailParams{
-		ActorID: r.ID, TenantID: tenantID,
+}
+
+// personAddress decrypts one member's contact envelope. The plaintext exists inside this
+// function and in the adapter it is handed to; it is never returned to the application
+// layer as anything a message row, an audit row or a log could carry.
+func (r Repository) personAddress(ctx context.Context, tx pgx.Tx, tenantID, personID uuid.UUID,
+	channel string,
+) (string, error) {
+	if channel != domain.ChannelEmail && channel != domain.ChannelSMS {
+		return "", nil
+	}
+	if r.cipher == nil {
+		// A process built without a cipher cannot read a contact and must not pretend it
+		// looked. The API is such a process; the worker is not.
+		return "", nil
+	}
+	envelope, err := sqlcgen.New(tx).FindPersonContactEnvelope(ctx, sqlcgen.FindPersonContactEnvelopeParams{
+		TenantID: tenantID, PersonID: personID, Channel: channel,
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", nil
 	}
 	if err != nil {
-		return "", fmt.Errorf("notification: read recipient address: %w", err)
+		return "", fmt.Errorf("notification: read person contact: %w", err)
 	}
-	return address, nil
+	plaintext, err := r.cipher.Decrypt(ctx, tenantID, crypto.PurposePersonContact, envelope)
+	if err != nil {
+		return "", fmt.Errorf("notification: decrypt person contact: %w", err)
+	}
+	return string(plaintext), nil
 }

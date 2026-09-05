@@ -23,7 +23,6 @@ import {
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { useState } from 'react';
 
-import { useOrganizationName, usePersonName } from '../people/names';
 import { problemOf } from '../problems';
 import { useRequests } from './queries';
 import { requestTone } from './status';
@@ -56,16 +55,29 @@ export const REQUEST_CHANNELS: ServiceRequestChannel[] = [
   'CALL_CENTER',
 ];
 
-function NameCell({ personId }: { personId: string }) {
-  const name = usePersonName(personId);
-  return <>{name === undefined ? '…' : (name ?? '—')}</>;
+/**
+ * The two name cells. Both read the name the wire now carries (WP-I5-05 section 2.6)
+ * rather than resolving it per row: fifty rows used to be fifty extra reads, and a list
+ * that named nobody until they all came back.
+ *
+ * The cell semantics are unchanged, and are still worth keeping: a name that has not
+ * arrived is '…' and one the caller may not see is '—'. On this screen the first no longer
+ * happens, because the name arrives with the row.
+ */
+function NameCell({ displayName }: { displayName: string | null | undefined }) {
+  return <>{displayName === undefined ? '…' : (displayName ?? '—')}</>;
 }
 
-function ProviderCell({ organizationId }: { organizationId: string | null | undefined }) {
+function ProviderCell({
+  organizationId,
+  displayName,
+}: {
+  organizationId: string | null | undefined;
+  displayName: string | null | undefined;
+}) {
   const { t } = useTranslation();
-  const name = useOrganizationName(organizationId);
   if (!organizationId) return <span className="text-fg-muted">{t('common.none')}</span>;
-  return <>{name === undefined ? '…' : (name ?? '—')}</>;
+  return <>{displayName === undefined ? '…' : (displayName ?? '—')}</>;
 }
 
 /** Requests, as a list an operator filters down to what needs them today. */
@@ -222,10 +234,13 @@ export function RequestListPage() {
                     </Badge>
                   </TD>
                   <TD>
-                    <NameCell personId={request.personId} />
+                    <NameCell displayName={request.personDisplayName} />
                   </TD>
                   <TD>
-                    <ProviderCell organizationId={request.providerOrganizationId} />
+                    <ProviderCell
+                      organizationId={request.providerOrganizationId}
+                      displayName={request.providerDisplayName}
+                    />
                   </TD>
                   <TD>{t(`requests.type.${request.requestType}`)}</TD>
                   <TD>{t(`requests.channel.${request.channel}`)}</TD>
