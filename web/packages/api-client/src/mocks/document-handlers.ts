@@ -124,6 +124,14 @@ export function documentHandlers(api: MockApi): HttpHandler[] {
   };
 
   return [
+    // The presigned PUT. In production this is MinIO, not the API: the browser sends
+    // the bytes straight to the quarantine bucket and the API never sees them. The
+    // mock accepts anything the signed URL names so a screen can upload end to end;
+    // the scan that follows is driven by `world.advanceScan`, never by this route.
+    http.put('https://quarantine.kapsora.local/*', async () => {
+      await wait(api);
+      return new HttpResponse(null, { status: 200, headers: { ETag: '"mock-upload"' } });
+    }),
     http.get(`${ANY}/api/v1/documents`, async ({ request }) => {
       await wait(api);
       const g = guardTenant(api, request, 'document.read', false);

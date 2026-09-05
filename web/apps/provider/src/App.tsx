@@ -12,7 +12,6 @@ import {
   Badge,
   Button,
   Card,
-  EmptyState,
   FormField,
   Input,
   ProblemAlert,
@@ -32,9 +31,13 @@ import {
   type RouterHistory,
 } from '@tanstack/react-router';
 import { useMemo, useState, type FormEvent } from 'react';
-import type { AppServices } from './services';
+import { EligibilityPage } from './EligibilityPage';
+import { MyRequestsPage } from './MyRequestsPage';
+import { NewRequestPage } from './NewRequestPage';
+import { RequestPage } from './RequestPage';
+import { ServicesProvider, type AppServices } from './services';
 
-/** Provider portal shell: routing, session bootstrap, tenant header, placeholder home. */
+/** Provider portal shell: routing, session bootstrap, tenant header, the desk's rail. */
 
 interface RouterContext {
   services: AppServices;
@@ -153,9 +156,10 @@ function Shell() {
   const active = useSession((s) => s.activeTenant);
   const color = active ? tenantColor(active.tenant.code) : null;
   const header = (
-    <div className="flex h-14 items-center gap-3 px-4">
-      <Link to="/" className="font-semibold">
-        {t('app.name')} · {t('nav.providers')}
+    <div className="flex h-14 min-w-0 items-center gap-2 px-3 sm:gap-3 sm:px-4">
+      <Link to="/" className="shrink-0 font-semibold">
+        {t('app.name')}
+        <span className="hidden sm:inline"> · {t('nav.providers')}</span>
       </Link>
       {active && color ? (
         <Badge
@@ -164,11 +168,14 @@ function Shell() {
             color: color.foreground,
             borderColor: color.accent,
           }}
+          className="max-w-[7rem] shrink-0 truncate sm:max-w-64"
         >
           {active.tenant.displayName}
         </Badge>
       ) : null}
-      <span className="text-fg-muted ml-auto text-sm">{me?.displayName}</span>
+      <span className="text-fg-muted ml-auto hidden truncate text-sm sm:inline">
+        {me?.displayName}
+      </span>
       <Button
         size="sm"
         variant="secondary"
@@ -180,10 +187,20 @@ function Shell() {
       </Button>
     </div>
   );
+  // The rail names the desk's three tasks and nothing else; the fourth, uploading a
+  // document, lives on the request that is waiting for it.
+  const item =
+    'aria-[current=page]:bg-primary-soft aria-[current=page]:text-primary block rounded px-3 py-2';
   const nav = (
-    <nav className="p-3 text-sm">
-      <Link to="/" className="block rounded px-3 py-2">
-        {t('nav.home')}
+    <nav className="p-3 text-sm" aria-label={t('provider.title')}>
+      <Link to="/" className={item} activeOptions={{ exact: true }}>
+        {t('provider.nav.newRequest')}
+      </Link>
+      <Link to="/requests" className={item}>
+        {t('provider.nav.myRequests')}
+      </Link>
+      <Link to="/eligibility" className={item}>
+        {t('provider.nav.eligibility')}
       </Link>
     </nav>
   );
@@ -192,21 +209,11 @@ function Shell() {
       header={header}
       nav={nav}
       skipLinkLabel={t('app.skipToContent')}
+      menuLabel={t('app.menu')}
       {...(color ? { accent: color.accent } : {})}
     >
       <Outlet />
     </AppShell>
-  );
-}
-
-function HomePage() {
-  const { t } = useTranslation();
-  const active = useSession((s) => s.activeTenant);
-  return (
-    <EmptyState
-      title={`${t('nav.providers')} · ${active?.tenant.displayName ?? ''}`}
-      description={t('app.soonBody')}
-    />
   );
 }
 
@@ -236,11 +243,30 @@ const appRoute = createRoute({
     }),
   component: Shell,
 });
-const homeRoute = createRoute({ getParentRoute: () => appRoute, path: '/', component: HomePage });
+const homeRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/',
+  component: NewRequestPage,
+});
+const myRequestsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/requests',
+  component: MyRequestsPage,
+});
+const requestRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/requests/$requestId',
+  component: RequestPage,
+});
+const eligibilityRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/eligibility',
+  component: EligibilityPage,
+});
 const routeTree = rootRoute.addChildren([
   loginRoute,
   tenantRoute,
-  appRoute.addChildren([homeRoute]),
+  appRoute.addChildren([homeRoute, myRequestsRoute, requestRoute, eligibilityRoute]),
 ]);
 
 export function createAppRouter(services: AppServices, history?: RouterHistory) {
@@ -256,12 +282,14 @@ declare module '@tanstack/react-router' {
 export function App({ services, history }: { services: AppServices; history?: RouterHistory }) {
   const router = useMemo(() => createAppRouter(services, history), [services, history]);
   return (
-    <QueryClientProvider client={services.queryClient}>
-      <SessionProvider store={services.store}>
-        <ToastProvider>
-          <RouterProvider router={router} />
-        </ToastProvider>
-      </SessionProvider>
-    </QueryClientProvider>
+    <ServicesProvider services={services}>
+      <QueryClientProvider client={services.queryClient}>
+        <SessionProvider store={services.store}>
+          <ToastProvider>
+            <RouterProvider router={router} />
+          </ToastProvider>
+        </SessionProvider>
+      </QueryClientProvider>
+    </ServicesProvider>
   );
 }

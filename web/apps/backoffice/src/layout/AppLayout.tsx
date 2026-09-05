@@ -7,6 +7,33 @@ import { NAV_ENTRIES } from '../nav';
 import { currentTheme, toggleTheme } from '../theme';
 
 /** Header + sidebar shell for every signed-in screen. */
+/** Drawn icons for the theme toggle: one stroke weight, no glyph standing in for them. */
+function SunIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <circle cx="10" cy="10" r="3.5" stroke="currentColor" strokeWidth="1.75" />
+      <path
+        d="M10 2v2M10 16v2M2 10h2M16 10h2M4.3 4.3l1.4 1.4M14.3 14.3l1.4 1.4M4.3 15.7l1.4-1.4M14.3 5.7l1.4-1.4"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+function MoonIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path
+        d="M15.5 12.5A6.5 6.5 0 0 1 7.5 4.5a6.5 6.5 0 1 0 8 8Z"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function AppLayout() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -28,8 +55,8 @@ export function AppLayout() {
   }
 
   const header = (
-    <div className="flex h-14 items-center gap-4 px-4 md:px-6">
-      <Link to="/" className="text-lg font-semibold tracking-tight">
+    <div className="flex h-14 items-center gap-2 px-3 sm:gap-4 sm:px-4 md:px-6">
+      <Link to="/" className="shrink-0 text-base font-semibold tracking-tight sm:text-lg">
         {t('app.name')}
       </Link>
       {active && color ? (
@@ -43,29 +70,33 @@ export function AppLayout() {
             name: active.tenant.displayName,
             code: active.tenant.code,
           })}
-          className="max-w-64 truncate"
+          className="max-w-[9.5rem] shrink-0 truncate sm:max-w-64"
         >
           <span
             aria-hidden="true"
             className="mr-1.5 inline-block size-2 rounded-full"
             style={{ background: color.accent }}
           />
-          {active.tenant.displayName} · {active.tenant.code}
+          {active.tenant.displayName}
+          {/* The code is dropped below sm on purpose, not clipped. */}
+          <span className="hidden sm:inline"> · {active.tenant.code}</span>
         </Badge>
       ) : null}
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex min-w-0 shrink-0 items-center gap-2">
         <Button
           variant="ghost"
           size="sm"
+          className="hidden sm:inline-flex"
           onClick={() => setTheme(toggleTheme())}
           aria-label={`${t('header.theme')}: ${theme === 'dark' ? t('header.themeDark') : t('header.themeLight')}`}
         >
-          {theme === 'dark' ? '☾' : '☀'}
+          {theme === 'dark' ? <MoonIcon /> : <SunIcon />}
         </Button>
         <DropdownMenu
           trigger={
             <Button variant="secondary" size="sm" aria-label={t('header.userMenu')}>
-              {me?.displayName ?? '…'}
+              <span className="hidden sm:inline">{me?.displayName ?? '…'}</span>
+              <span className="sm:hidden">{t('header.account')}</span>
             </Button>
           }
           heading={me?.email ?? me?.displayName}
@@ -127,6 +158,7 @@ export function AppLayout() {
       header={header}
       nav={nav}
       skipLinkLabel={t('app.skipToContent')}
+      menuLabel={t('app.menu')}
       {...(color ? { accent: color.accent } : {})}
     >
       {/* Signing out clears the tenant a frame before the route changes. Every screen in

@@ -1,0 +1,86 @@
+import { mkdirSync } from 'node:fs';
+import { expect, test, type Page } from '@playwright/test';
+
+/**
+ * Captures the screens the Impeccable finish review reads, at the two web viewports it
+ * requires, into `.impeccable/review/`. It is not a test of behaviour and it runs only
+ * when asked (REVIEW_CAPTURE=1), so CI never spends a browser on it.
+ */
+const PASSWORD = 'demo parola 2026 kapsora';
+const OUT = '.impeccable/review';
+
+test.skip(!process.env['REVIEW_CAPTURE'], 'set REVIEW_CAPTURE=1 to capture review screenshots');
+
+async function login(page: Page, username: string) {
+  await page.getByLabel(/Kullanıcı adı/).fill(username);
+  await page.getByLabel(/^Parola/).fill(PASSWORD);
+  await page.getByRole('button', { name: 'Giriş yap' }).click();
+}
+
+async function settled(page: Page) {
+  // Per-row lookups start after the first paint, so network idle comes too early; wait
+  // until nothing on the page says it is still loading.
+  await page.waitForLoadState('networkidle');
+  await expect(page.locator('[aria-busy="true"]')).toHaveCount(0, { timeout: 15_000 });
+  await expect(page.getByText('Yükleniyor…')).toHaveCount(0, { timeout: 15_000 });
+  // Per-row name lookups render '…' until they land.
+  await expect(page.locator('td', { hasText: /^…$/ })).toHaveCount(0, { timeout: 20_000 });
+}
+
+async function capture(page: Page, name: string) {
+  mkdirSync(OUT, { recursive: true });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await settled(page);
+  await page.screenshot({ path: `${OUT}/${name}-desktop.png`, fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await settled(page);
+  // A page that is wider than its viewport is a defect the reviewer must see at 390, not
+  // a wider capture that hides it.
+  const width = await page.evaluate(() => document.documentElement.scrollWidth);
+  if (width > 390) {
+    // Name the culprits: the elements whose right edge passes the viewport.
+    const offenders = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('body *'))
+        .filter((el) => el.getBoundingClientRect().right > 392)
+        .slice(0, 8)
+        .map(
+          (el) =>
+            `${el.tagName.toLowerCase()}.${String(el.className).split(' ').slice(0, 4).join('.')}@${Math.round(el.getBoundingClientRect().right)}`,
+        ),
+    );
+    throw new Error(
+      `${name}: the page overflows the 390 viewport (${width}px): ${offenders.join(' | ')}`,
+    );
+  }
+  await page.screenshot({ path: `${OUT}/${name}-mobile.png`, fullPage: true });
+  await page.setViewportSize({ width: 1440, height: 900 });
+}
+
+test('provider portal: the form-first home and a request waiting on a document', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await login(page, 'provider.a');
+  await expect(page.getByRole('heading', { name: 'Yeni talep' })).toBeVisible();
+  await page.getByLabel('Ada göre ara').fill('Sevgi');
+  await page.getByTestId('member-candidates').getByRole('button').first().click();
+  await page.getByRole('combobox', { name: /^Hizmet/ }).selectOption({ index: 1 });
+  await expect(page.getByTestId('eligibility-pane')).not.toContainText('Hesaplanıyor');
+  await expect(page.getByTestId('eligibility-pane')).not.toContainText('cevap burada görünür');
+  await capture(page, 'provider-home');
+
+  await page
+    .getByRole('navigation', { name: 'Sağlayıcı portalı' })
+    .getByRole('link', { name: 'Taleplerim' })
+    .click();
+  await expect(page.getByTestId('my-requests-table')).toBeVisible();
+  await capture(page, 'provider-requests');
+  await page
+    .getByTestId('my-requests-table')
+    .locator('tr[data-status="PENDING_DOCUMENT"]')
+    .first()
+    .getByRole('link')
+    .click();
+  await expect(page.getByTestId('document-upload-form')).toBeVisible();
+  await capture(page, 'provider-request');
+});

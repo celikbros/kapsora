@@ -27,7 +27,8 @@
     "organizations": "Organizations",
     "mainMenu": "Main menu",
     "adjustments": "Entitlement adjustments",
-    "imports": "Member import"
+    "imports": "Member import",
+    "notifications": "Notifications"
   },
   "auth": {
     "loginTitle": "Sign in",
@@ -58,7 +59,8 @@
     "tenantBadge": "Active tenant: {{name}} ({{code}})",
     "theme": "Theme",
     "themeLight": "Light",
-    "themeDark": "Dark"
+    "themeDark": "Dark",
+    "account": "Account"
   },
   "profile": {
     "title": "My profile and permissions",

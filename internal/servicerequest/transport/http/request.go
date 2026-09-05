@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/google/uuid"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 
 	kapsorav1 "github.com/celikbros/kapsora/api/generated/kapsorav1"
@@ -64,7 +65,7 @@ func (h *Handler) CreateServiceRequest(w http.ResponseWriter, r *http.Request) {
 	}
 	in := application.NewRequestInput{
 		RequestType: string(body.RequestType), PersonID: body.PersonId,
-		ProgramID: body.ProgramId, EnrollmentID: body.EnrollmentId,
+		ProgramID: uuidOrNil(body.ProgramId), EnrollmentID: body.EnrollmentId,
 		ProviderOrganizationID: body.ProviderOrganizationId,
 		ServiceDate:            body.ServiceDate.Time,
 		RequestedStartAt:       body.RequestedStartAt, RequestedEndAt: body.RequestedEndAt,
@@ -273,4 +274,13 @@ func itemViews(items []application.ItemRecord) []kapsorav1.ServiceRequestItem {
 		})
 	}
 	return out
+}
+
+// uuidOrNil reads an optional wire id. Nil means "not named", which for the program of a
+// request means "the enrollment's" — the application resolves it, never the transport.
+func uuidOrNil(p *openapi_types.UUID) uuid.UUID {
+	if p == nil {
+		return uuid.Nil
+	}
+	return *p
 }

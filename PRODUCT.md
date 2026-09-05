@@ -4,7 +4,9 @@
 
 ## Platform
 
-web (three apps: backoffice, provider portal, member PWA; one Go API behind them)
+web
+
+Three apps — backoffice, provider portal, member PWA — behind one Go API.
 
 ## Users
 

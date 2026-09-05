@@ -172,7 +172,7 @@ export function IdentityTab({ person, etag }: IdentityTabProps) {
             </div>
           </form>
         ) : (
-          <dl className="mt-3 grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2 text-sm">
+          <dl className="mt-3 grid grid-cols-[max-content_minmax(0,1fr)] [&>dd]:min-w-0 [&>dd]:break-words gap-x-6 gap-y-2 text-sm">
             {row(t('people.fields.firstName'), person.firstName)}
             {row(t('people.fields.middleName'), person.middleName ?? '')}
             {row(t('people.fields.lastName'), person.lastName)}

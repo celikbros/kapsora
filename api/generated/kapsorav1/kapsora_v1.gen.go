@@ -3835,12 +3835,18 @@ type CreateServiceDefinitionRequest struct {
 // CreateServiceRequest defines model for CreateServiceRequest.
 type CreateServiceRequest struct {
 	// Channel Where the request came from; a phone call is not the same as a portal.
-	Channel                ServiceRequestChannel     `json:"channel"`
-	EnrollmentId           openapi_types.UUID        `json:"enrollmentId"`
-	Items                  []ServiceRequestItemInput `json:"items"`
-	PersonId               openapi_types.UUID        `json:"personId"`
-	ProgramId              openapi_types.UUID        `json:"programId"`
-	ProviderOrganizationId *openapi_types.UUID       `json:"providerOrganizationId,omitempty"`
+	Channel      ServiceRequestChannel     `json:"channel"`
+	EnrollmentId openapi_types.UUID        `json:"enrollmentId"`
+	Items        []ServiceRequestItemInput `json:"items"`
+	PersonId     openapi_types.UUID        `json:"personId"`
+
+	// ProgramId The program the enrollment belongs to. Optional: an enrollment belongs to exactly
+	// one program, so the server derives it when absent and refuses a value that does
+	// not match (ENROLLMENT_MISMATCH). A provider-scoped caller holds no permission to
+	// read programs or enrollments; it takes the enrollment id from its eligibility
+	// check's answer and sends no program at all.
+	ProgramId              *openapi_types.UUID `json:"programId,omitempty"`
+	ProviderOrganizationId *openapi_types.UUID `json:"providerOrganizationId,omitempty"`
 
 	// RequestType What kind of request this is. The type decides whether a provider has to be named
 	// and which downstream aggregate the decision feeds.

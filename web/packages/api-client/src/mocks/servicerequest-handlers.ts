@@ -810,7 +810,7 @@ export function serviceRequestHandlers(api: MockApi): HttpHandler[] {
       }
       if (!CHANNELS.has(body?.channel as string)) errors.push({ field: 'channel', code: 'ENUM' });
       if (!body?.serviceDate) errors.push({ field: 'serviceDate', code: 'REQUIRED' });
-      if (!body?.personId || !body.programId || !body.enrollmentId) {
+      if (!body?.personId || !body.enrollmentId) {
         errors.push({
           field: 'enrollmentId',
           code: 'REQUIRED',
@@ -864,10 +864,12 @@ export function serviceRequestHandlers(api: MockApi): HttpHandler[] {
       const enrollment = world().enrollments.find(
         (e) => e.id === body!.enrollmentId && e.tenantId === g.tenantId,
       );
+      // The program is the enrollment's. A caller may repeat it, in which case it has to
+      // be the right one; a provider, who may read neither, sends none.
       if (
         !enrollment ||
         enrollment.personId !== body!.personId ||
-        enrollment.programId !== body!.programId
+        (body!.programId !== undefined && enrollment.programId !== body!.programId)
       ) {
         return problem(
           api,
@@ -910,7 +912,7 @@ export function serviceRequestHandlers(api: MockApi): HttpHandler[] {
         id: world().nextId(),
         reference,
         personId: body!.personId,
-        programId: body!.programId,
+        programId: enrollment.programId,
         enrollmentId: body!.enrollmentId,
         providerOrganizationId: body!.providerOrganizationId ?? null,
         requestType: body!.requestType,

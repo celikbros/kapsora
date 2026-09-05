@@ -9,7 +9,7 @@ import { cn } from './cn';
 /** Table primitives; data wiring (TanStack Table) stays in the app. */
 export function Table({ className, ...rest }: TableHTMLAttributes<HTMLTableElement>) {
   return (
-    <div className="border-line overflow-x-auto rounded-md border">
+    <div className="border-line relative max-w-full overflow-x-auto rounded-md border">
       <table className={cn('k-table', className)} {...rest} />
     </div>
   );

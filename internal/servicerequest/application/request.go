@@ -114,9 +114,9 @@ func (s *Service) Create(ctx context.Context, rc identity.RequestContext, in New
 	}); err != nil {
 		return RequestView{}, err
 	}
-	if in.PersonID == uuid.Nil || in.ProgramID == uuid.Nil || in.EnrollmentID == uuid.Nil {
+	if in.PersonID == uuid.Nil || in.EnrollmentID == uuid.Nil {
 		return RequestView{}, fieldError("enrollmentId", "REQUIRED",
-			"hak sahibi, program ve plan kaydı zorunlu")
+			"hak sahibi ve plan kaydı zorunlu")
 	}
 
 	var out RequestView
@@ -124,9 +124,14 @@ func (s *Service) Create(ctx context.Context, rc identity.RequestContext, in New
 		if err := s.checkProviderScope(rc, in.ProviderOrganizationID); err != nil {
 			return err
 		}
-		if err := s.checkTargets(ctx, tx, rc.TenantID, in, day); err != nil {
+		programID, err := s.checkTargets(ctx, tx, rc.TenantID, in, day)
+		if err != nil {
 			return err
 		}
+		// The program is the enrollment's. A caller that named one has just been checked
+		// against it; a caller that named none — a provider may read neither programs nor
+		// enrollments — gets it from here.
+		in.ProgramID = programID
 		items, err := s.itemRows(ctx, tx, rc.TenantID, in.RequestType, in.ProviderOrganizationID, in.Items)
 		if err != nil {
 			return err
@@ -188,45 +193,50 @@ func (s *Service) createWithReference(ctx context.Context, tx pgx.Tx, rc identit
 }
 
 // checkTargets refuses a request naming something this tenant does not have, or naming
-// three things that do not belong together, before anything is written.
+// things that do not belong together, before anything is written. It answers the program
+// the enrollment belongs to: the one fact a request needs that its caller may be unable
+// to read.
 func (s *Service) checkTargets(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
 	in NewRequestInput, day time.Time,
-) error {
+) (uuid.UUID, error) {
 	enrollment, err := s.repo.GetEnrollment(ctx, tx, tenantID, in.EnrollmentID)
 	if err != nil {
-		return err
+		return uuid.Nil, err
 	}
-	if enrollment.PersonID != in.PersonID || enrollment.ProgramID != in.ProgramID {
-		return ErrEnrollmentMismatch
+	if enrollment.PersonID != in.PersonID {
+		return uuid.Nil, ErrEnrollmentMismatch
+	}
+	if in.ProgramID != uuid.Nil && enrollment.ProgramID != in.ProgramID {
+		return uuid.Nil, ErrEnrollmentMismatch
 	}
 	if !benefitdomain.CoversDate(&enrollment.ValidFrom, enrollment.ValidTo, day) {
-		return fieldError("serviceDate", "RANGE", "hizmet tarihi plan kaydının geçerlilik aralığı dışında")
+		return uuid.Nil, fieldError("serviceDate", "RANGE", "hizmet tarihi plan kaydının geçerlilik aralığı dışında")
 	}
 	if in.ProviderOrganizationID != nil {
 		ok, err := s.repo.ProviderOrganizationExists(ctx, tx, tenantID, *in.ProviderOrganizationID)
 		if err != nil {
-			return err
+			return uuid.Nil, err
 		}
 		if !ok {
-			return fieldError("providerOrganizationId", "NOT_FOUND", "sağlayıcı kurumu bulunamadı")
+			return uuid.Nil, fieldError("providerOrganizationId", "NOT_FOUND", "sağlayıcı kurumu bulunamadı")
 		}
 	}
 	if in.SupersedesRequestID != nil {
 		previous, err := s.repo.GetRequest(ctx, tx, tenantID, *in.SupersedesRequestID, Scope{})
 		if err != nil {
 			if errors.Is(err, ErrRequestNotFound) {
-				return fieldError("supersedesRequestId", "NOT_FOUND", "önceki talep bulunamadı")
+				return uuid.Nil, fieldError("supersedesRequestId", "NOT_FOUND", "önceki talep bulunamadı")
 			}
-			return err
+			return uuid.Nil, err
 		}
 		// Only a refusal is superseded. Naming a live request here would let a second
 		// request quietly claim to replace one that is still being worked on.
 		if previous.Status != domain.StatusRejected {
-			return fieldError("supersedesRequestId", "CONFLICT",
+			return uuid.Nil, fieldError("supersedesRequestId", "CONFLICT",
 				"yalnız reddedilmiş bir talebin yerine yenisi açılabilir")
 		}
 	}
-	return nil
+	return enrollment.ProgramID, nil
 }
 
 // itemRows validates the lines against the catalog and numbers them in the order they were

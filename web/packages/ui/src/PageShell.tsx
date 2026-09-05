@@ -1,25 +1,70 @@
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { cn } from './cn';
 
 export interface AppShellProps {
   /** Top bar: brand, tenant badge, user menu. */
   header: ReactNode;
-  /** Side navigation (desktop) or a drawer (mobile); optional for the member PWA. */
+  /** Side navigation: a sidebar from `md` up, a drawer below it; optional for the member PWA. */
   nav?: ReactNode;
   children: ReactNode;
   skipLinkLabel?: string;
+  /** Accessible name of the drawer toggle shown below `md`. */
+  menuLabel?: string;
   /** Accent stripe colour (tenant colour) shown under the header. */
   accent?: string;
 }
 
-/** Application frame: skip link, header, optional sidebar, main landmark. */
+/** A drawn icon: three strokes, one weight, no glyph standing in for it. */
+function MenuIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path
+        d="M3 5h14M3 10h14M3 15h14"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path
+        d="M5 5l10 10M15 5L5 15"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+/**
+ * Application frame: skip link, header, navigation, main landmark. From `md` up the
+ * navigation is a sidebar; below it the same navigation is a drawer opened from the
+ * header, so no viewport is left without a way to move. Escape and the backdrop close it.
+ */
 export function AppShell({
   header,
   nav,
   children,
   skipLinkLabel = 'İçeriğe geç',
+  menuLabel = 'Menü',
   accent,
 }: AppShellProps) {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open]);
+
   return (
     <div className="bg-surface text-fg flex min-h-dvh flex-col">
       <a
@@ -32,13 +77,47 @@ export function AppShell({
         className="bg-surface-raised border-line sticky top-0 z-30 border-b"
         style={accent ? { boxShadow: `inset 0 -3px 0 ${accent}` } : undefined}
       >
-        {header}
+        <div className="flex items-center">
+          {nav ? (
+            <button
+              type="button"
+              className="text-fg hover:bg-surface-sunken ml-2 inline-flex h-10 w-10 items-center justify-center rounded-md md:hidden"
+              aria-label={menuLabel}
+              aria-expanded={open}
+              aria-controls="app-drawer"
+              onClick={() => setOpen((v) => !v)}
+            >
+              {open ? <CloseIcon /> : <MenuIcon />}
+            </button>
+          ) : null}
+          <div className="min-w-0 flex-1">{header}</div>
+        </div>
       </header>
       <div className="flex flex-1">
         {nav ? (
           <aside className="border-line bg-surface-sunken hidden w-64 shrink-0 border-r md:block">
             {nav}
           </aside>
+        ) : null}
+        {nav && open ? (
+          <div className="fixed inset-0 z-40 md:hidden" role="presentation">
+            <button
+              type="button"
+              className="absolute inset-0 bg-black/40"
+              aria-label={menuLabel}
+              onClick={() => setOpen(false)}
+            />
+            <aside
+              id="app-drawer"
+              className="bg-surface-sunken border-line absolute inset-y-0 left-0 w-64 overflow-y-auto border-r shadow-lg"
+              onClick={(e) => {
+                // A choice made in the drawer closes it; the link itself still navigates.
+                if ((e.target as HTMLElement).closest('a')) setOpen(false);
+              }}
+            >
+              {nav}
+            </aside>
+          </div>
         ) : null}
         <main id="main" tabIndex={-1} className="min-w-0 flex-1 p-4 md:p-6">
           {children}
@@ -112,7 +191,7 @@ export function Card({ children, className }: { children: ReactNode; className?:
   return (
     <section
       className={cn(
-        'bg-surface-raised border-line shadow-card rounded-lg border p-4 md:p-6',
+        'bg-surface-raised border-line shadow-card rounded-lg border p-4 md:p-6 min-w-0',
         className,
       )}
     >

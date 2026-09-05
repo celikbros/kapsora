@@ -9690,7 +9690,7 @@ components:
     CreateServiceRequest:
       type: object
       additionalProperties: false
-      required: [requestType, personId, programId, enrollmentId, serviceDate, channel, items]
+      required: [requestType, personId, enrollmentId, serviceDate, channel, items]
       properties:
         requestType:
           $ref: '#/components/schemas/ServiceRequestType'
@@ -9699,6 +9699,12 @@ components:
           format: uuid
         programId:
           type: string
+          description: |
+            The program the enrollment belongs to. Optional: an enrollment belongs to exactly
+            one program, so the server derives it when absent and refuses a value that does
+            not match (ENROLLMENT_MISMATCH). A provider-scoped caller holds no permission to
+            read programs or enrollments; it takes the enrollment id from its eligibility
+            check's answer and sends no program at all.
           format: uuid
         enrollmentId:
           type: string

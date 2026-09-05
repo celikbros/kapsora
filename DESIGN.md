@@ -225,9 +225,13 @@ headers, tracked 0.02em). Monospace is for identifiers, codes and trace ids only
 ## Layout
 
 Backoffice: 56px header, 256px sidebar on ≥768px, content padding 24px, max content
-width unconstrained (tables need it). Cards separate concerns, never nest. Tables are
-the primary reading surface: 12px uppercase headers on `surface-2`, 8px/12px cell
-padding, hover fill `primary-soft` at 40%, no zebra stripes.
+width unconstrained (tables need it). Below 768px the same navigation is a drawer opened
+from a drawn menu icon at the header's left; Escape, the backdrop and a chosen link close
+it. Cards separate concerns, never nest, and may shrink (`min-w-0`), because a grid child
+that cannot shrink makes its widest line the page's width. Tables are the primary reading
+surface: 12px uppercase headers on `surface-2`, 8px/12px cell padding, hover fill
+`primary-soft` at 40%, no zebra stripes. A table scrolls inside its own container, and
+that container is positioned, so an sr-only header label cannot widen the document.
 
 Forms: two columns on ≥768px, label above control, hint below, error below hint in
 `danger`, required marked with `*` and an sr-only word. Client validation gives instant
@@ -320,6 +324,22 @@ resolving fact is already in the refusal.
 **A list read for hours is dense and boring on purpose.** The worklist is a table with the
 columns an operator sorts by — no cards, no avatars, no progress rings. Decoration costs
 rows, and rows are what the work is.
+
+**A name being fetched is "…"; a name nobody has is "—".** Lists resolve people, providers
+and services by id one cached read at a time, so a cell is empty for a moment after the
+rows land. That moment reads as "unknown" if it shows the same dash unknown shows. It does
+not: the fetch shows an ellipsis and only a lookup that came back empty shows the dash.
+
+**On a narrow screen the verdict sits next to the reference, and the deadline under the
+title.** A wide table scrolls inside its own box; what the scroller hides is detail, never
+the answer. Status is the second column of every list, the actions of a worklist row come
+right after its title, and below `md` a work item's due time and "Gecikti" repeat under the
+title so the clock is in the first viewport whatever is scrolled away.
+
+**The header keeps the tenant whole.** Below `sm` the wordmark stays as the way home, the
+theme toggle steps aside, the user menu says "Hesap", and the tenant badge drops its
+" · CODE" suffix rather than clipping a glyph. An operator can always see which tenant they
+are in, in every viewport, and a truncated tenant is not "seeing".
 
 ## Motion
 

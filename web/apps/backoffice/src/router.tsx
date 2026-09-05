@@ -19,6 +19,11 @@ import { ContractDetailPage } from './contracts/ContractDetailPage';
 import { ContractListPage, type ContractListSearch } from './contracts/ContractListPage';
 import { ContractVersionPage } from './contracts/ContractVersionPage';
 import { QuotePage } from './pricing/QuotePage';
+import { RequestCreatePage } from './requests/RequestCreatePage';
+import { RequestDetailPage } from './requests/RequestDetailPage';
+import { RequestListPage, type RequestListSearch } from './requests/RequestListPage';
+import { WorklistPage, type WorklistSearch } from './worklist/WorklistPage';
+import { NotificationsPage } from './notifications/NotificationsPage';
 import { ProviderCreatePage } from './providers/ProviderCreatePage';
 import { RuleSetDetailPage } from './rules/RuleSetDetailPage';
 import { RuleSetListPage } from './rules/RuleSetListPage';
@@ -116,6 +121,53 @@ const appRoute = createRoute({
 });
 
 const homeRoute = createRoute({ getParentRoute: () => appRoute, path: '/', component: HomePage });
+
+function requestListSearch(raw: Record<string, unknown>): RequestListSearch {
+  const out: RequestListSearch = {};
+  if (typeof raw['status'] === 'string' && raw['status'] !== '')
+    out.status = raw['status'] as NonNullable<RequestListSearch['status']>;
+  if (typeof raw['channel'] === 'string' && raw['channel'] !== '')
+    out.channel = raw['channel'] as NonNullable<RequestListSearch['channel']>;
+  if (typeof raw['cursor'] === 'string' && raw['cursor'] !== '') out.cursor = raw['cursor'];
+  return out;
+}
+const requestsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/requests',
+  validateSearch: requestListSearch,
+  component: RequestListPage,
+});
+const requestCreateRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/requests/new',
+  component: RequestCreatePage,
+});
+const requestDetailRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/requests/$requestId',
+  component: RequestDetailPage,
+});
+
+function worklistSearch(raw: Record<string, unknown>): WorklistSearch {
+  const out: WorklistSearch = {};
+  const view = raw['view'];
+  if (view === 'mine' || view === 'unassigned' || view === 'overdue' || view === 'all')
+    out.view = view;
+  if (typeof raw['queueId'] === 'string' && raw['queueId'] !== '') out.queueId = raw['queueId'];
+  if (typeof raw['cursor'] === 'string' && raw['cursor'] !== '') out.cursor = raw['cursor'];
+  return out;
+}
+const worklistRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/worklist',
+  validateSearch: worklistSearch,
+  component: WorklistPage,
+});
+const notificationsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/notifications',
+  component: NotificationsPage,
+});
 const profileRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/profile',
@@ -425,6 +477,11 @@ const routeTree = rootRoute.addChildren([
     definitionDetailRoute,
     codeSystemListRoute,
     codeSystemDetailRoute,
+    requestsRoute,
+    requestCreateRoute,
+    requestDetailRoute,
+    worklistRoute,
+    notificationsRoute,
     ...soonRoutes,
   ]),
 ]);

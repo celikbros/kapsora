@@ -321,7 +321,7 @@ function QuoteResult({ quote }: { quote: PriceQuote }) {
 
       <Card>
         <h2 className="text-base font-semibold">{t('pricing.sourcesTitle')}</h2>
-        <dl className="mt-3 grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2 text-sm">
+        <dl className="mt-3 grid grid-cols-[max-content_minmax(0,1fr)] [&>dd]:min-w-0 [&>dd]:break-words gap-x-6 gap-y-2 text-sm">
           <dt className="text-fg-muted">{t('pricing.sources.contractVersion')}</dt>
           <dd>
             {quote.contractVersionId ? (

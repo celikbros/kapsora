@@ -130,7 +130,7 @@ export function ProgramDetailPage() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <h2 className="text-base font-semibold">{t('programs.detailTitle')}</h2>
-          <dl className="mt-3 grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2 text-sm">
+          <dl className="mt-3 grid grid-cols-[max-content_minmax(0,1fr)] [&>dd]:min-w-0 [&>dd]:break-words gap-x-6 gap-y-2 text-sm">
             <dt className="text-fg-muted">{t('programs.fields.programType')}</dt>
             <dd>{t(`programs.types.${row.programType}`, { defaultValue: row.programType })}</dd>
             <dt className="text-fg-muted">{t('programs.fields.sponsorOrganization')}</dt>

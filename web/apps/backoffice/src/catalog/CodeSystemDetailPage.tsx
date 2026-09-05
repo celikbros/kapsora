@@ -237,7 +237,7 @@ function CodeSystemCard({ system }: { system: CodeSystem }) {
   const { t } = useTranslation();
   return (
     <Card>
-      <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2 text-sm">
+      <dl className="grid grid-cols-[max-content_minmax(0,1fr)] [&>dd]:min-w-0 [&>dd]:break-words gap-x-6 gap-y-2 text-sm">
         <dt className="text-fg-muted">{t('codeSystems.fields.code')}</dt>
         <dd className="font-mono">
           {system.code} {system.version}

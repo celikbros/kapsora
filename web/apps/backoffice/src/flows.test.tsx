@@ -67,7 +67,10 @@ describe('login and guards', () => {
     const rowB = screen.getAllByRole('listitem').find((li) => li.textContent?.includes('DEMO_B'))!;
     await user.click(within(rowB).getByRole('button', { name: 'Seç' }));
     await screen.findByRole('heading', { name: 'Ana Sayfa' });
-    expect(screen.getByText('Demo Sigorta A.Ş. · DEMO_B')).toBeInTheDocument();
+    // The code lives in its own span so a narrow header can drop it; the badge still says both.
+    expect(within(screen.getByRole('banner')).getByText(/Demo Sigorta A\.Ş\./)).toHaveTextContent(
+      'Demo Sigorta A.Ş. · DEMO_B',
+    );
   });
 });
 

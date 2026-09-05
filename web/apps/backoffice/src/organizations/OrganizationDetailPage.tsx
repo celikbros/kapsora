@@ -86,7 +86,7 @@ export function OrganizationDetailPage() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <h2 className="text-base font-semibold">{t('organizations.detailTitle')}</h2>
-          <dl className="mt-3 grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2 text-sm">
+          <dl className="mt-3 grid grid-cols-[max-content_minmax(0,1fr)] [&>dd]:min-w-0 [&>dd]:break-words gap-x-6 gap-y-2 text-sm">
             {row(
               t('organizations.fields.organizationKind'),
               t(`organizations.kinds.${org.organizationKind}`),

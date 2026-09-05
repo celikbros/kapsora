@@ -38,3 +38,8 @@ Thumbs.db
 
 # Native local tool binaries (Keycloak, MinIO, ClamAV, Mailpit) live outside git
 /tools/
+
+# Impeccable working files: the decision page, review captures and build state are
+# per-session; only config.json (the team default) is committed.
+.impeccable/*
+!.impeccable/config.json

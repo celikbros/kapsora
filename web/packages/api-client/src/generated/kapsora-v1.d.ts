@@ -4087,8 +4087,15 @@ export interface components {
             items: components["schemas"]["ServiceRequestItemInput"][];
             /** Format: uuid */
             personId: string;
-            /** Format: uuid */
-            programId: string;
+            /**
+             * Format: uuid
+             * @description The program the enrollment belongs to. Optional: an enrollment belongs to exactly
+             *     one program, so the server derives it when absent and refuses a value that does
+             *     not match (ENROLLMENT_MISMATCH). A provider-scoped caller holds no permission to
+             *     read programs or enrollments; it takes the enrollment id from its eligibility
+             *     check's answer and sends no program at all.
+             */
+            programId?: string;
             /** Format: uuid */
             providerOrganizationId?: string;
             /** Format: date-time */

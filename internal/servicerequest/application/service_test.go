@@ -935,3 +935,28 @@ func TestAGrantNamingNoOrganizationSeesNothing(t *testing.T) {
 		t.Fatalf("an actor whose grant names no organization saw %d requests", len(page.Items))
 	}
 }
+
+// TestTheProgramIsTheEnrollmentsWhenTheCallerNamesNone is the gap the provider portal
+// found: a provider may read neither programs nor enrollments, so it cannot repeat a
+// program id it never saw. The enrollment belongs to exactly one program; the server
+// resolves it, and still refuses a caller that names a different one.
+func TestTheProgramIsTheEnrollmentsWhenTheCallerNamesNone(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+
+	unnamed := f.input()
+	unnamed.ProgramID = uuid.Nil
+	view, err := f.svc.Create(ctx, f.rc(), unnamed)
+	if err != nil {
+		t.Fatalf("create without a program: %v", err)
+	}
+	if view.Request.ProgramID != f.program {
+		t.Fatalf("program = %s, want the enrollment's %s", view.Request.ProgramID, f.program)
+	}
+
+	wrong := f.input()
+	wrong.ProgramID = uuid.New()
+	if _, err := f.svc.Create(ctx, f.rc(), wrong); !errors.Is(err, application.ErrEnrollmentMismatch) {
+		t.Fatalf("error = %v, want ErrEnrollmentMismatch for a program the enrollment does not belong to", err)
+	}
+}

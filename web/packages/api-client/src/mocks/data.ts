@@ -973,15 +973,27 @@ const REVIEWER_PERMISSIONS = [
  * anybody else's. The boundary is applied where the repository applies it, in the list
  * and the read, so it can never disagree with the server by being a filter of its own.
  */
+// PROVIDER_STAFF as internal/identity/application/roles.go grants it. The mock used to
+// leave out member.read and eligibility.check, which let a provider screen pass here and
+// be refused by the server — or, as it happened, the other way round.
 const PROVIDER_PERMISSIONS = [
-  'organization.read',
+  'member.read',
+  'eligibility.check',
   'service_request.read',
   'service_request.create',
   'service_request.submit',
   'service_request.cancel',
-  'document.read',
+  'fulfilment.record',
+  'voucher.redeem',
+  'health.case.read',
+  'health.case.manage',
+  'health.clinical.read',
+  'health.medical_report.manage',
   'document.upload',
+  'document.read',
   'document.link',
+  'pricing.quote',
+  'organization.read',
   'catalog.read',
   'provider.read',
 ];

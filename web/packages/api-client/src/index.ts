@@ -313,5 +313,5 @@ export type {
   NotificationTemplateStatus,
   PutNotificationPreferences,
 } from './notification';
-export { versioned } from './versioned';
+export { etagOf, versioned } from './versioned';
 export type { components, paths } from './generated/kapsora-v1';

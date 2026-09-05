@@ -4,7 +4,8 @@
     "loading": "Yükleniyor…",
     "skipToContent": "İçeriğe geç",
     "soonTitle": "Yakında",
-    "soonBody": "Bu ekran ilerleyen artımlarda gelecek. Menüdeki başlık planlanan yapıyı gösterir."
+    "soonBody": "Bu ekran ilerleyen artımlarda gelecek. Menüdeki başlık planlanan yapıyı gösterir.",
+    "menu": "Menü"
   },
   "nav": {
     "home": "Ana Sayfa",
@@ -63,7 +64,8 @@
     "tenantBadge": "Aktif kurum: {{name}} ({{code}})",
     "theme": "Tema",
     "themeLight": "Açık",
-    "themeDark": "Koyu"
+    "themeDark": "Koyu",
+    "account": "Hesap"
   },
   "profile": {
     "title": "Profilim ve Yetkilerim",
@@ -1809,11 +1811,13 @@
     "eligibility": {
       "title": "Kapsam değerlendirmesi",
       "none": "Bu talep henüz değerlendirilmedi.",
-      "link": "Değerlendirmeyi aç"
+      "link": "Değerlendirmeyi aç",
+      "unavailable": "Değerlendirme kaydına ulaşılamadı."
     },
     "rules": {
       "title": "Çalışan kurallar",
-      "none": "Bu talepte hiçbir kural çalışmadı."
+      "none": "Bu talepte hiçbir kural çalışmadı.",
+      "unavailable": "Kural değerlendirmesine ulaşılamadı."
     },
     "requiredDocuments": {
       "title": "Bekleyen belgeler",
@@ -1827,6 +1831,23 @@
       "createdAt": "Oluşturma",
       "returnedAt": "İade",
       "frozen": "Bu sürüm karara bağlandı ve değiştirilemez."
+    },
+    "versionStatus": {
+      "DRAFT": "Taslak",
+      "SUBMITTED": "Gönderildi",
+      "SUPERSEDED": "Yerine yenisi açıldı"
+    },
+    "decision": {
+      "title": "Karar",
+      "APPROVED": "Talep istendiği gibi onaylandı.",
+      "PARTIALLY_APPROVED": "Talep kısmen onaylandı; satır kararları yukarıda.",
+      "REJECTED": "Talep reddedildi.",
+      "CANCELLED": "Talep iptal edildi.",
+      "ELIGIBILITY_FAILED": "Sistem talebi kapsam dışı buldu; kişi karar vermedi.",
+      "EXPIRED": "Talebin süresi doldu.",
+      "CLOSED": "Talep kapandı.",
+      "none": "Henüz karar verilmedi.",
+      "closedAt": "Kapanış"
     }
   },
   "worklist": {
@@ -1873,7 +1894,8 @@
       "PROVIDER": "Sağlayıcı da görür",
       "MEMBER": "Hak sahibi de görür",
       "warning": "Sağlayıcının veya hak sahibinin göreceği bir nota klinik ayrıntı yazılamaz."
-    }
+    },
+    "me": "siz"
   },
   "documents": {
     "title": "Belgeler",
@@ -1917,7 +1939,9 @@
     "missing": {
       "title": "Eksik belgeler",
       "body": "Şu türler bekleniyor:"
-    }
+    },
+    "noFile": "Dosya seçilmedi",
+    "readOnly": "Bu talep kapandı; belge eklenemez."
   },
   "notifications": {
     "title": "Bildirimler",
@@ -1983,6 +2007,82 @@
       "quietHours": "Sessiz saatler",
       "timezone": "Saat dilimi",
       "save": "Tercihleri kaydet"
+    },
+    "recipientTypes": {
+      "PERSON": "Hak sahibi",
+      "ACTOR": "Kullanıcı",
+      "ORGANIZATION": "Kurum"
     }
+  },
+  "provider": {
+    "title": "Sağlayıcı portalı",
+    "nav": {
+      "newRequest": "Yeni talep",
+      "myRequests": "Taleplerim",
+      "eligibility": "Uygunluk sorgusu"
+    },
+    "newRequest": {
+      "title": "Yeni talep",
+      "intro": "Hak sahibini ve hizmeti yazın; uygunluk siz yazarken hesaplanır.",
+      "member": "Hak sahibi",
+      "memberSearch": "Ada göre ara",
+      "memberSearchHint": "En az iki harf. Kimlik numarasıyla aramak için parola gerekir.",
+      "byIdentifier": "Kimlik numarasıyla bul",
+      "identifier": "Kimlik numarası",
+      "identifierHint": "Numara yalnızca bu aramada kullanılır, ekranda maskeli gösterilir ve hiçbir yerde saklanmaz.",
+      "found": "Bulunan: {{name}}",
+      "notFound": "Bu numarayla eşleşen hak sahibi yok.",
+      "enrollment": "Plan kaydı",
+      "service": "Hizmet",
+      "serviceDate": "Hizmet tarihi",
+      "quantity": "Miktar",
+      "amount": "Tutar",
+      "submit": "Gönder",
+      "created": "Talep {{reference}} gönderildi.",
+      "resultTitle": "Uygunluk",
+      "resultEmpty": "Hak sahibi ve hizmet seçildiğinde cevap burada görünür.",
+      "resultChecking": "Hesaplanıyor…",
+      "eligible": "Uygun",
+      "notEligible": "Uygun değil",
+      "resultNote": "Bu bir ön bilgidir; karar, talep gönderildiğinde verilir.",
+      "reviewRequired": "İnceleme gerekli"
+    },
+    "myRequests": {
+      "title": "Taleplerim",
+      "intro": "Kurumunuzun talepleri ve her birinin ne beklediği.",
+      "empty": "Henüz talep yok.",
+      "waitingFor": "Beklenen",
+      "waiting": {
+        "DRAFT": "Gönderilmeyi bekliyor",
+        "PENDING_DOCUMENT": "Sizden belge bekliyor",
+        "PENDING_REVIEW": "Ödeyicinin kararını bekliyor",
+        "ELIGIBILITY_FAILED": "Kapsam dışı; yeni talep gerekir",
+        "APPROVED": "Onaylandı",
+        "PARTIALLY_APPROVED": "Kısmen onaylandı",
+        "REJECTED": "Reddedildi",
+        "CANCELLED": "İptal edildi",
+        "EXPIRED": "Süresi doldu",
+        "CLOSED": "Kapandı",
+        "SUBMITTED": "Gönderildi"
+      }
+    },
+    "upload": {
+      "title": "Belge yükle",
+      "intro": "Talebin beklediği belgeyi buradan ekleyin. Dosya önce taranır; temiz çıkınca talep incelemeye geçer."
+    },
+    "eligibility": {
+      "title": "Uygunluk sorgusu",
+      "intro": "Talep açmadan, bu kişi bu hizmeti bu tarihte alabilir mi?",
+      "check": "Sorgula"
+    }
+  },
+  "units": {
+    "MONEY": "tutar",
+    "COUNT": "adet",
+    "NIGHT": "gece",
+    "SESSION": "seans",
+    "HOUR": "saat",
+    "KILOMETER": "km",
+    "POINT": "puan"
   }
 }
