@@ -237,14 +237,21 @@ func TestScreenVariablesRefusesTheSameThingsWithoutATemplate(t *testing.T) {
 	if err := domain.ScreenVariables(goodVariables()); err != nil {
 		t.Fatalf("ScreenVariables refused a safe set: %v", err)
 	}
-	// A nine million lira amount is refused by the digit run rule, which is a deliberate
-	// ceiling rather than an accident: a figure that large does not belong in a one line
-	// message to a member, and widening it costs a migration and a decision.
-	if err := domain.ScreenVariables(map[string]string{domain.VarAmount: "9999999.99"}); err != nil {
-		t.Fatalf("a seven digit amount was refused: %v", err)
+	// The digit run rule applies to amounts too, but its threshold is the length of the
+	// shortest identity number rather than a view about how much money belongs in a
+	// message. At eight it also refused SR-YYYYMMDD-XXXXXXXX, the format a service request
+	// reference is actually minted in, so the rule meant to keep identity numbers out was
+	// keeping the one value a notification exists to carry out as well (migration 000030).
+	for _, amount := range []string{"9999999.99", "10000000.00", "999999999.99"} {
+		if err := domain.ScreenVariables(map[string]string{domain.VarAmount: amount}); err != nil {
+			t.Errorf("a legitimate amount %s was refused: %v", amount, err)
+		}
 	}
-	if err := domain.ScreenVariables(map[string]string{domain.VarAmount: "10000000.00"}); err == nil {
-		t.Fatal("an eight digit amount was accepted; the digit run rule is not applied to amounts")
+	// Ten digits in a row is a VKN and eleven is a TCKN; both are still refused.
+	for _, amount := range []string{"1234567890.00", "12345678901.00"} {
+		if err := domain.ScreenVariables(map[string]string{domain.VarAmount: amount}); err == nil {
+			t.Errorf("%s ran to ten digits and was accepted; that is the shape of an identity number", amount)
+		}
 	}
 }
 
@@ -465,5 +472,36 @@ func TestStripRecordIDsLeavesADeepLinkAlone(t *testing.T) {
 	}
 	if err := domain.ScreenVariables(map[string]string{domain.VarDeepLink: link}); err != nil {
 		t.Fatalf("a deep link carrying an all-digit record id was refused: %v", err)
+	}
+}
+
+// TestARealServiceRequestReferenceIsCarryable is the bug the digit-run rule had at eight:
+// a reference is minted as SR-YYYYMMDD-XXXXXXXX, the date in the middle is eight digits,
+// and the rule meant to stop identity numbers refused the one value a notification exists
+// to carry. Ten is the shortest identity number (a VKN; a TCKN has eleven), so both are
+// still caught and a date is not.
+func TestARealServiceRequestReferenceIsCarryable(t *testing.T) {
+	for _, reference := range []string{
+		"SR-20260904-K3XQ7ZM2", // the real format, minted by internal/servicerequest
+		"AUT-20260904-P7RTVA41",
+		"KPS-2026-0042",
+	} {
+		if err := domain.ScreenVariables(map[string]string{
+			domain.VarReferenceNo: reference,
+		}); err != nil {
+			t.Errorf("a member could not be told their own reference %q: %v", reference, err)
+		}
+	}
+
+	// And the numbers the rule is actually for are still refused, in every slot.
+	for name, value := range map[string]string{
+		"tckn": "12345678901",
+		"vkn":  "1234567890",
+	} {
+		if err := domain.ScreenVariables(map[string]string{
+			domain.VarReferenceNo: value,
+		}); err == nil {
+			t.Errorf("a %s passed the screen as a reference number", name)
+		}
 	}
 }

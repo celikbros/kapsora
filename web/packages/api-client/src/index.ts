@@ -247,5 +247,71 @@ export type {
   PriceQuoteOutcome,
   PriceQuoteRequestItem,
 } from './pricing';
+export { serviceRequestOperations } from './servicerequest';
+export type {
+  CreateServiceRequest,
+  ServiceRequest,
+  ServiceRequestChannel,
+  ServiceRequestDecision,
+  ServiceRequestItem,
+  ServiceRequestItems,
+  ServiceRequestListQuery,
+  ServiceRequestPage,
+  ServiceRequestStatus,
+  ServiceRequestType,
+  ServiceRequestVersion,
+  ServiceRequestVersionSummary,
+  UpdateServiceRequest,
+} from './servicerequest';
+export { workflowOperations } from './workflow';
+export type {
+  AddWorkItemComment,
+  ApprovalPolicy,
+  CommentVisibility,
+  CompleteWorkItem,
+  CreateWorkQueue,
+  PatchWorkQueue,
+  ReassignWorkItem,
+  ReleaseWorkItem,
+  WorkItem,
+  WorkItemComment,
+  WorkItemListQuery,
+  WorkItemPage,
+  WorkItemStatus,
+  WorkQueue,
+} from './workflow';
+export { documentOperations } from './document';
+export type {
+  CompleteUpload,
+  CreateUpload,
+  Document,
+  DocumentClassification,
+  DocumentDownload,
+  DocumentLink,
+  DocumentListQuery,
+  DocumentPage,
+  DocumentScanStatus,
+  DocumentUpload,
+  LegalHold,
+} from './document';
+export { notificationOperations } from './notification';
+export type {
+  CreateNotificationTemplate,
+  NotificationChannel,
+  NotificationDelivery,
+  NotificationMessage,
+  NotificationMessageDetail,
+  NotificationMessageListQuery,
+  NotificationMessagePage,
+  NotificationMessageStatus,
+  NotificationPreference,
+  NotificationPreferenceInput,
+  NotificationRecipientType,
+  NotificationTemplate,
+  NotificationTemplateListQuery,
+  NotificationTemplatePage,
+  NotificationTemplateStatus,
+  PutNotificationPreferences,
+} from './notification';
 export { versioned } from './versioned';
 export type { components, paths } from './generated/kapsora-v1';

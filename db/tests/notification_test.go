@@ -2,12 +2,17 @@ package dbtests
 
 import (
 	"context"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
 	identityapp "github.com/celikbros/kapsora/internal/identity/application"
+	"github.com/celikbros/kapsora/internal/notification/domain"
 	"github.com/celikbros/kapsora/internal/platform/dbtest"
 )
 
@@ -499,4 +504,75 @@ func TestNotificationRowsAreTenantIsolated(t *testing.T) {
 	})
 	dbtest.ExpectSQLState(t, err, dbtest.SQLStateInsufficientPrivilege,
 		"writing a preference into another tenant")
+}
+
+// TestSuppressionReasonsAgreeAcrossTheThreePlacesTheyAreWritten catches the drift that
+// already happened once: CHANNEL_NOT_DELIVERABLE was added to the column's CHECK and to
+// the Go domain but not to the OpenAPI enum, so the server could answer with a value its
+// own contract did not declare — invisible to every existing test, because nothing
+// compared the lists. The database is the source of truth here; the other two must match
+// it exactly, in both directions.
+func TestSuppressionReasonsAgreeAcrossTheThreePlacesTheyAreWritten(t *testing.T) {
+	h := dbtest.New(t)
+	ctx, cancel := h.Ctx()
+	defer cancel()
+
+	// What the column actually accepts, read out of the CHECK constraint itself.
+	var clause string
+	if err := h.Admin.QueryRow(ctx, `
+		SELECT pg_get_constraintdef(con.oid)
+		  FROM pg_constraint con
+		  JOIN pg_class rel ON rel.oid = con.conrelid
+		  JOIN pg_namespace ns ON ns.oid = rel.relnamespace
+		 WHERE ns.nspname = 'notification' AND rel.relname = 'message'
+		   AND con.contype = 'c'
+		   AND pg_get_constraintdef(con.oid) LIKE '%suppressed_reason%ANY%'`).Scan(&clause); err != nil {
+		t.Fatalf("read the suppressed_reason CHECK: %v", err)
+	}
+	inDatabase := map[string]bool{}
+	for _, m := range regexp.MustCompile(`'([A-Z_]+)'`).FindAllStringSubmatch(clause, -1) {
+		inDatabase[m[1]] = true
+	}
+	if len(inDatabase) == 0 {
+		t.Fatal("no reasons parsed out of the CHECK; the comparison would prove nothing")
+	}
+
+	inDomain := map[string]bool{}
+	for _, r := range domain.SuppressionReasons {
+		inDomain[r] = true
+	}
+
+	spec, err := os.ReadFile(filepath.Join("..", "..", "api", "openapi", "kapsora-v1.yaml"))
+	if err != nil {
+		t.Fatalf("read the contract: %v", err)
+	}
+	enum := regexp.MustCompile(`NotificationSuppressionReason:\s*\n\s*type: string\s*\n\s*enum: \[([^\]]+)\]`).
+		FindSubmatch(spec)
+	if enum == nil {
+		t.Fatal("NotificationSuppressionReason enum not found in the contract")
+	}
+	inContract := map[string]bool{}
+	for _, v := range strings.Split(string(enum[1]), ",") {
+		inContract[strings.TrimSpace(v)] = true
+	}
+
+	for reason := range inDatabase {
+		if !inDomain[reason] {
+			t.Errorf("%s is accepted by the database but missing from domain.SuppressionReasons", reason)
+		}
+		if !inContract[reason] {
+			t.Errorf("%s is accepted by the database but missing from the OpenAPI enum; "+
+				"the server could answer with a value its own contract does not declare", reason)
+		}
+	}
+	for reason := range inContract {
+		if !inDatabase[reason] {
+			t.Errorf("%s is declared in the OpenAPI enum but the database would refuse it", reason)
+		}
+	}
+	for reason := range inDomain {
+		if !inDatabase[reason] {
+			t.Errorf("%s is in domain.SuppressionReasons but the database would refuse it", reason)
+		}
+	}
 }

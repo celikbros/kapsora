@@ -227,10 +227,13 @@ const (
 	MaxDedupeKey = 200
 	// MaxProviderDetail bounds what a provider's answer may leave in the delivery row.
 	MaxProviderDetail = 500
-	// DigitRunLimit is the length of a digit run that is refused everywhere: a TCKN has
-	// eleven digits and a VKN has ten, and nothing a notification legitimately carries
-	// has eight of them in a row. Migration 000029 repeats the same number as a CHECK.
-	DigitRunLimit = 8
+	// DigitRunLimit is the length of a digit run that is refused everywhere. It is the
+	// length of the shortest identity number this rule exists to catch — a VKN has ten
+	// digits and a TCKN eleven — and not one digit shorter, because a service request
+	// reference is minted as SR-YYYYMMDD-XXXXXXXX and the date in the middle is eight.
+	// At eight this rule refused the one value a notification exists to carry. Migration
+	// 000030 repeats the same number as a CHECK.
+	DigitRunLimit = 10
 )
 
 var (

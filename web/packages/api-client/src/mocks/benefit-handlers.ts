@@ -154,6 +154,9 @@ export function benefitHandlers(api: MockApi): HttpHandler[] {
         code: body.code,
         name: body.name,
         programType: body.programType,
+        // The submit gate's last question. A program nobody has answered it for is
+        // reviewed by a person, which is what the server reads out of a missing setting.
+        reviewRequired: true,
         sponsorOrganizationId: body.sponsorOrganizationId,
         payerOrganizationId: body.payerOrganizationId,
         status: 'DRAFT',

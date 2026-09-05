@@ -1239,15 +1239,18 @@ func (e NotificationSafeVariable) Valid() bool {
 
 // Defines values for NotificationSuppressionReason.
 const (
-	NOADDRESS          NotificationSuppressionReason = "NO_ADDRESS"
-	NOTEMPLATE         NotificationSuppressionReason = "NO_TEMPLATE"
-	PREFERENCEDISABLED NotificationSuppressionReason = "PREFERENCE_DISABLED"
-	QUIETHOURS         NotificationSuppressionReason = "QUIET_HOURS"
+	CHANNELNOTDELIVERABLE NotificationSuppressionReason = "CHANNEL_NOT_DELIVERABLE"
+	NOADDRESS             NotificationSuppressionReason = "NO_ADDRESS"
+	NOTEMPLATE            NotificationSuppressionReason = "NO_TEMPLATE"
+	PREFERENCEDISABLED    NotificationSuppressionReason = "PREFERENCE_DISABLED"
+	QUIETHOURS            NotificationSuppressionReason = "QUIET_HOURS"
 )
 
 // Valid indicates whether the value is a known member of the NotificationSuppressionReason enum.
 func (e NotificationSuppressionReason) Valid() bool {
 	switch e {
+	case CHANNELNOTDELIVERABLE:
+		return true
 	case NOADDRESS:
 		return true
 	case NOTEMPLATE:
@@ -4686,7 +4689,11 @@ type NotificationSafeVariable string
 // NotificationSuppressionReason Why nobody was told. PREFERENCE_DISABLED is somebody who asked not to hear about
 // this; QUIET_HOURS is the middle of their night in their own time zone; NO_TEMPLATE
 // is an event nobody has written a message for yet; NO_ADDRESS is a recipient the
-// platform holds no address for on that channel.
+// platform holds no address for on that channel; CHANNEL_NOT_DELIVERABLE is a channel
+// whose adapter recorded the attempt and handed the message to nobody, because no
+// provider is wired in behind it yet. That last one is decided at send time rather
+// than before it, so it is the only reason that appears on a message which already
+// has a delivery attempt against it.
 type NotificationSuppressionReason string
 
 // NotificationTemplate defines model for NotificationTemplate.

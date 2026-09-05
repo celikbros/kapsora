@@ -294,6 +294,33 @@ trained user, and a half-built builder is worse than a good text field.
 under a thick border fights the line it sits on, which is what the detector flagged the
 first time this component was written.
 
+**A record read to understand a decision is laid out as the sequence that produced it.**
+The request detail is not a form of its fields; it is what was asked for, what the system
+said, what a person decided, and what is still missing, in that order down the page. Anyone
+opening it is reconstructing how the thing got to where it is, and a field grid makes them
+do that reconstruction themselves.
+
+**Two refusals that ask for different things must not look the same.** A returned request
+is an invitation to correct something and its panel says what to fix and offers the way to
+fix it. A rejected one is finished: it says why, and offers nothing but a new request.
+Giving both the same red banner is how a correctable mistake gets read as a final refusal —
+and the person who reads it that way stops, which is the whole cost.
+
+**A state is shown as it is, never as what it is about to be.** A file being scanned says
+"taranıyor" with a spinner; it does not say "yüklendi" because the upload finished. The
+download appears only where the server says `downloadable`, and where it is absent the
+screen says which state is in the way. An optimistic label on an unfinished process is a
+lie the operator only discovers by clicking.
+
+**A lost race names the winner.** When two operators reach for one work item, the loser is
+told who holds it, by name. "Somebody else took it" leaves two people clicking the same
+button; naming the owner ends the question. The same applies to any conflict where the
+resolving fact is already in the refusal.
+
+**A list read for hours is dense and boring on purpose.** The worklist is a table with the
+columns an operator sorts by — no cards, no avatars, no progress rings. Decoration costs
+rows, and rows are what the work is.
+
 ## Motion
 
 Toasts slide up 160ms ease-out; nothing else animates. `prefers-reduced-motion`

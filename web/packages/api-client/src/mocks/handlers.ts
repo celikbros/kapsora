@@ -8,12 +8,16 @@ import { HttpResponse, http, type HttpHandler, type PathParams } from 'msw';
 import { benefitHandlers } from './benefit-handlers';
 import { catalogHandlers } from './catalog-handlers';
 import { contractHandlers } from './contract-handlers';
+import { documentHandlers } from './document-handlers';
 import { eligibilityHandlers } from './eligibility-handlers';
 import { entitlementHandlers } from './entitlement-handlers';
 import { importHandlers } from './import-handlers';
+import { notificationHandlers } from './notification-handlers';
 import { pricingHandlers } from './pricing-handlers';
 import { providerHandlers } from './provider-handlers';
 import { rulesHandlers } from './rules-handlers';
+import { serviceRequestHandlers } from './servicerequest-handlers';
+import { workflowHandlers } from './workflow-handlers';
 import type { components } from '../generated/kapsora-v1';
 import { isValidTCKN, isValidVKN, normalizeDigits } from '../identifiers';
 import {
@@ -114,7 +118,10 @@ export class MockApi {
       .map((m) => ({
         tenant: this.tenantByCode(m.tenantCode)!,
         permissions: m.permissions,
-        scopes: [],
+        // The access grants that narrow the permissions above. A provider-side role is an
+        // ORGANIZATION grant, and it is what every provider boundary in the API is read
+        // from — there is no second, client-side rule that could disagree with it.
+        scopes: (m.scopes ?? []).map((g) => ({ type: g.type, id: g.id })),
       }))
       .sort((a, b) => a.tenant.displayName.localeCompare(b.tenant.displayName, 'tr'));
   }
@@ -340,6 +347,70 @@ export function stepUpRequired(api: MockApi): Response {
     'STEP_UP_REQUIRED',
     'Bu işlem için parola ile yeniden doğrulama gerekli',
   );
+}
+
+/**
+ * The Idempotency-Key check of every route the server wraps in `d.idempotent(...)`. The
+ * length bound is the middleware's, not a guess: a key too short to be unique is refused
+ * rather than accepted and quietly useless.
+ */
+export function requireIdempotencyKey(api: MockApi, request: Request): Response | null {
+  const key = request.headers.get('Idempotency-Key');
+  if (!key) {
+    return problem(api, 400, 'IDEMPOTENCY_KEY_REQUIRED', 'Idempotency-Key başlığı zorunludur');
+  }
+  if (key.length < 16 || key.length > 128) {
+    return problem(
+      api,
+      400,
+      'IDEMPOTENCY_KEY_INVALID',
+      'Idempotency-Key 16-128 karakter olmalıdır',
+    );
+  }
+  return null;
+}
+
+/**
+ * The If-Match of a route that has one: 428 when it is absent, and the number it names
+ * otherwise. `W/"3"` and `"3"` are both accepted, exactly as the server accepts them.
+ */
+export function requireIfMatch(api: MockApi, request: Request): number | Response {
+  const expected = parseIfMatch(request.headers.get('If-Match'));
+  if (expected === null || expected < 1) {
+    return problem(api, 428, 'IF_MATCH_REQUIRED', 'If-Match başlığı gerekli', {
+      detail: 'GET yanıtındaki ETag değerini If-Match olarak gönderin.',
+    });
+  }
+  return expected;
+}
+
+/**
+ * The caller's provider boundary, read from its ORGANIZATION access grants. `null` means
+ * unrestricted, exactly as a nil slice does on the server; an empty array is a grant that
+ * names nothing and therefore matches nothing, which is the safe reading of it.
+ */
+export function organizationScope(
+  api: MockApi,
+  session: MockSession,
+  tenantId: string,
+): string[] | null {
+  const tenant = api.world.tenants.find((t) => t.id === tenantId);
+  if (!tenant) return [];
+  const membership = session.account.memberships.find((m) => m.tenantCode === tenant.code);
+  const grants = (membership?.scopes ?? []).filter((g) => g.type === 'ORGANIZATION');
+  if (grants.length === 0) return null;
+  return grants.filter((g) => g.id !== null).map((g) => g.id!);
+}
+
+/** True when a row naming `organizationId` is inside the caller's provider boundary. */
+export function withinScope(scope: string[] | null, organizationId: string | null): boolean {
+  if (scope === null) return true;
+  return organizationId !== null && scope.includes(organizationId);
+}
+
+/** The 422 every module answers with a list of field errors. */
+export function validationFailed(api: MockApi, errors: FieldError[]): Response {
+  return problem(api, 422, 'VALIDATION_FAILED', 'Doğrulama hatası', { errors });
 }
 
 /** Hex SHA-256 of a File/Blob's content, used to dedupe member import uploads. */
@@ -1252,167 +1323,11 @@ export function createHandlers(api: MockApi): HttpHandler[] {
     ),
   ];
 
-  const findRequest = (id: string | readonly string[] | undefined, tenantId: string) =>
-    world().serviceRequests.find((r) => r.id === id && r.tenantId === tenantId);
-
-  const serviceRequestHandlers: HttpHandler[] = [
-    http.get(`${ANY}/api/v1/service-requests`, async ({ request }) => {
-      await wait(api);
-      const g = guardTenant(api, request, 'service_request.read', false);
-      if ('error' in g) return g.error;
-      const url = new URL(request.url);
-      const limit = parseLimit(url);
-      if (limit === 'invalid')
-        return problem(api, 422, 'VALIDATION_FAILED', 'Doğrulama hatası', {
-          errors: [{ field: 'limit', code: 'FORMAT' }],
-        });
-      const offset = decodeCursor(url.searchParams.get('cursor'));
-      if (offset === null) return problem(api, 400, 'CURSOR_INVALID', 'Sayfa imleci geçersiz');
-      const status = url.searchParams.get('status');
-      const personId = url.searchParams.get('personId');
-      const rows = world().serviceRequests.filter(
-        (r) =>
-          r.tenantId === g.tenantId &&
-          (!status || r.status === status) &&
-          (!personId || r.personId === personId),
-      );
-      const body: Schemas['ServiceRequestPage'] = {
-        items: rows.slice(offset, offset + limit).map(({ tenantId: _t, ...r }) => r),
-        nextCursor: offset + limit < rows.length ? encodeCursor(offset + limit) : null,
-      };
-      return HttpResponse.json(body);
-    }),
-    http.post(`${ANY}/api/v1/service-requests`, async ({ request }) => {
-      await wait(api);
-      const g = guardTenant(api, request, 'service_request.manage', true);
-      if ('error' in g) return g.error;
-      if (!request.headers.get('Idempotency-Key'))
-        return problem(api, 400, 'IDEMPOTENCY_KEY_REQUIRED', 'Idempotency-Key başlığı gerekli');
-      const body = await readJson<Schemas['CreateServiceRequest']>(request);
-      if (!body?.personId || !body.items?.length)
-        return problem(api, 422, 'VALIDATION_FAILED', 'Doğrulama hatası', {
-          errors: [{ field: 'items', code: 'LENGTH' }],
-        });
-      const now = new Date().toISOString();
-      const sr = {
-        tenantId: g.tenantId,
-        id: world().nextId(),
-        reference: `SR-2026-${2000 + world().serviceRequests.length}`,
-        personId: body.personId,
-        programId: body.programId,
-        enrollmentId: body.enrollmentId,
-        providerOrganizationId: body.providerOrganizationId ?? null,
-        requestType: body.requestType,
-        channel: body.channel,
-        status: 'DRAFT' as const,
-        serviceDate: body.serviceDate,
-        requestedStartAt: body.requestedStartAt ?? null,
-        requestedEndAt: body.requestedEndAt ?? null,
-        submittedAt: null,
-        createdAt: now,
-        currentVersionNo: 1,
-        rowVersion: 1,
-        items: body.items.map((it, i) => ({
-          id: world().nextId(),
-          lineNo: i + 1,
-          serviceDefinitionId: it.serviceDefinitionId,
-          unitType: it.unitType,
-          requestedQuantity: it.requestedQuantity,
-          requestedAmount: it.requestedAmount ?? null,
-          currencyCode: it.currencyCode ?? null,
-          status: 'REQUESTED' as const,
-          approvedQuantity: null,
-          approvedAmount: null,
-          decisionReasonCode: null,
-        })),
-      };
-      world().serviceRequests.push(sr);
-      const { tenantId: _t, ...out } = sr;
-      return HttpResponse.json(out, { status: 201, headers: { ETag: etagOf(1) } });
-    }),
-    http.get(`${ANY}/api/v1/service-requests/:requestId`, async ({ request, params }) => {
-      await wait(api);
-      const g = guardTenant(api, request, 'service_request.read', false);
-      if ('error' in g) return g.error;
-      const sr = findRequest(params['requestId'], g.tenantId);
-      if (!sr) return problem(api, 404, 'RESOURCE_NOT_FOUND', 'Kaynak bulunamadı');
-      const { tenantId: _t, ...out } = sr;
-      return HttpResponse.json(out, { headers: { ETag: etagOf(sr.rowVersion) } });
-    }),
-    http.patch(`${ANY}/api/v1/service-requests/:requestId`, async ({ request, params }) => {
-      await wait(api);
-      const g = guardTenant(api, request, 'service_request.manage', true);
-      if ('error' in g) return g.error;
-      const expected = parseIfMatch(request.headers.get('If-Match'));
-      if (expected === null)
-        return problem(api, 428, 'IF_MATCH_REQUIRED', 'If-Match başlığı gerekli');
-      const sr = findRequest(params['requestId'], g.tenantId);
-      if (!sr) return problem(api, 404, 'RESOURCE_NOT_FOUND', 'Kaynak bulunamadı');
-      if (sr.rowVersion !== expected)
-        return problem(api, 412, 'ETAG_MISMATCH', 'Kayıt bu arada değişti');
-      if (sr.status !== 'DRAFT')
-        return problem(api, 409, 'SERVICE_REQUEST_NOT_DRAFT', 'Yalnız taslaklar düzenlenebilir');
-      const patch = (await readJson<Schemas['UpdateServiceRequest']>(request)) ?? {};
-      if (patch.serviceDate) sr.serviceDate = patch.serviceDate;
-      if ('providerOrganizationId' in patch)
-        sr.providerOrganizationId = patch.providerOrganizationId ?? null;
-      sr.rowVersion += 1;
-      const { tenantId: _t, ...out } = sr;
-      return HttpResponse.json(out, { headers: { ETag: etagOf(sr.rowVersion) } });
-    }),
-    ...(['submit', 'cancel'] as const).map((action) =>
-      http.post(
-        `${ANY}/api/v1/service-requests/:requestId/${action}`,
-        async ({ request, params }) => {
-          await wait(api);
-          const g = guardTenant(api, request, 'service_request.manage', true);
-          if ('error' in g) return g.error;
-          if (!request.headers.get('Idempotency-Key'))
-            return problem(api, 400, 'IDEMPOTENCY_KEY_REQUIRED', 'Idempotency-Key başlığı gerekli');
-          const expected = parseIfMatch(request.headers.get('If-Match'));
-          if (expected === null)
-            return problem(api, 428, 'IF_MATCH_REQUIRED', 'If-Match başlığı gerekli');
-          const sr = findRequest(params['requestId'], g.tenantId);
-          if (!sr) return problem(api, 404, 'RESOURCE_NOT_FOUND', 'Kaynak bulunamadı');
-          if (sr.rowVersion !== expected)
-            return problem(api, 412, 'ETAG_MISMATCH', 'Kayıt bu arada değişti');
-          if (action === 'submit') {
-            if (sr.status !== 'DRAFT')
-              return problem(
-                api,
-                409,
-                'SERVICE_REQUEST_NOT_DRAFT',
-                'Yalnız taslaklar gönderilebilir',
-              );
-            // The server runs eligibility and the rules inside the submit and lands on
-            // PENDING_REVIEW, PENDING_DOCUMENT or ELIGIBILITY_FAILED; it never leaves a
-            // request resting at SUBMITTED. The mock does not evaluate anything yet, so it
-            // takes the ordinary outcome. WP-I4-06 gives it the other two branches with the
-            // fixtures the screens need to show them.
-            sr.status = 'PENDING_REVIEW';
-            sr.submittedAt = new Date().toISOString();
-          } else {
-            const body = await readJson<Schemas['ReasonCommand']>(request);
-            if (!body?.reasonCode)
-              return problem(api, 422, 'VALIDATION_FAILED', 'Doğrulama hatası', {
-                errors: [{ field: 'reasonCode', code: 'REQUIRED' }],
-              });
-            sr.status = 'CANCELLED';
-          }
-          sr.rowVersion += 1;
-          const { tenantId: _t, ...out } = sr;
-          return HttpResponse.json(out, { headers: { ETag: etagOf(sr.rowVersion) } });
-        },
-      ),
-    ),
-  ];
-
   return [
     ...sessionHandlers,
     ...organizationHandlers,
     ...peopleHandlers,
     ...eligibilityHandlers(api),
-    ...serviceRequestHandlers,
     // Programs, plans, plan versions and enrollments live in their own module.
     ...benefitHandlers(api),
     ...entitlementHandlers(api),
@@ -1423,6 +1338,11 @@ export function createHandlers(api: MockApi): HttpHandler[] {
     ...contractHandlers(api),
     ...rulesHandlers(api),
     ...pricingHandlers(api),
+    // M4: the request lifecycle, the worklist, the document pipeline and notifications.
+    ...serviceRequestHandlers(api),
+    ...workflowHandlers(api),
+    ...documentHandlers(api),
+    ...notificationHandlers(api),
   ];
 }
 

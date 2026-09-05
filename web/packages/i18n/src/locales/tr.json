@@ -31,7 +31,8 @@
     "contracts": "Sözleşmeler",
     "rules": "Kurallar",
     "pricing": "Fiyat Sorgusu",
-    "codeSystems": "Kod Sistemleri"
+    "codeSystems": "Kod Sistemleri",
+    "notifications": "Bildirimler"
   },
   "auth": {
     "loginTitle": "Oturum aç",
@@ -1697,6 +1698,291 @@
       "ROUNDED_TO_CURRENCY": "Tutar para biriminin kuruşuna yuvarlandı.",
       "PRICE_FORMULA_UNKNOWN": "Fiyat formülü çözülemedi; tutar hesaplanamaz.",
       "REVIEW_REQUESTED_BY_RULE": "Bir kural bu satır için inceleme istedi."
+    }
+  },
+  "requests": {
+    "title": "Talepler",
+    "intro": "Ne istendi, sistem ne dedi, kim ne karar verdi, hâlâ ne eksik.",
+    "new": "Yeni talep",
+    "empty": "Bu filtrelerle talep bulunamadı.",
+    "detail": "Talep ayrıntısı",
+    "columns": {
+      "reference": "Talep no",
+      "person": "Hak sahibi",
+      "provider": "Sağlayıcı",
+      "program": "Program",
+      "type": "Tür",
+      "channel": "Kanal",
+      "serviceDate": "Hizmet tarihi",
+      "status": "Durum",
+      "submittedAt": "Gönderim"
+    },
+    "filters": {
+      "status": "Durum",
+      "person": "Hak sahibi",
+      "provider": "Sağlayıcı",
+      "program": "Program",
+      "channel": "Kanal",
+      "all": "Tümü"
+    },
+    "status": {
+      "DRAFT": "Taslak",
+      "SUBMITTED": "Gönderildi",
+      "ELIGIBILITY_FAILED": "Kapsam dışı",
+      "PENDING_DOCUMENT": "Belge bekliyor",
+      "PENDING_REVIEW": "İncelemede",
+      "APPROVED": "Onaylandı",
+      "PARTIALLY_APPROVED": "Kısmen onaylandı",
+      "REJECTED": "Reddedildi",
+      "CANCELLED": "İptal edildi",
+      "EXPIRED": "Süresi doldu",
+      "CLOSED": "Kapandı"
+    },
+    "type": {
+      "DIRECT_SERVICE": "Doğrudan hizmet",
+      "PREAUTHORIZATION": "Ön onay",
+      "RESERVATION": "Rezervasyon",
+      "REIMBURSEMENT": "Geri ödeme"
+    },
+    "channel": {
+      "BACKOFFICE": "Back office",
+      "PROVIDER_PORTAL": "Sağlayıcı portalı",
+      "MEMBER_PORTAL": "Üye portalı",
+      "API": "API",
+      "BATCH_IMPORT": "Toplu aktarım",
+      "CALL_CENTER": "Çağrı merkezi"
+    },
+    "sections": {
+      "asked": "Ne istendi",
+      "said": "Sistem ne dedi",
+      "decided": "Kim ne karar verdi",
+      "missing": "Hâlâ ne eksik",
+      "history": "Sürüm geçmişi",
+      "documents": "Belgeler"
+    },
+    "items": {
+      "line": "Satır",
+      "service": "Hizmet",
+      "unit": "Birim",
+      "requestedQuantity": "İstenen miktar",
+      "requestedAmount": "İstenen tutar",
+      "approvedQuantity": "Onaylanan miktar",
+      "approvedAmount": "Onaylanan tutar",
+      "status": "Satır durumu",
+      "reason": "Gerekçe",
+      "add": "Satır ekle",
+      "remove": "Kaldır",
+      "save": "Satırları kaydet"
+    },
+    "itemStatus": {
+      "REQUESTED": "İstendi",
+      "APPROVED": "Onaylandı",
+      "PARTIALLY_APPROVED": "Kısmen onaylandı",
+      "REJECTED": "Reddedildi"
+    },
+    "commands": {
+      "submit": "Gönder",
+      "return": "İade et",
+      "reject": "Reddet",
+      "approve": "Onayla",
+      "partiallyApprove": "Kısmen onayla",
+      "cancel": "İptal et"
+    },
+    "confirm": {
+      "submit": "Talep gönderilsin mi? Gönderildikten sonra bu sürüm değiştirilemez; düzeltme için talebin iade edilmesi gerekir.",
+      "return": "Talep düzeltilmek üzere iade edilecek. Neyin düzeltilmesi gerektiğini yazın: hak sahibi yalnızca bunu görecek.",
+      "reject": "Talep reddedilecek ve kapanacak. Reddetme gerekçesi kalıcı olarak kayda geçer.",
+      "approve": "Talebin tamamı istendiği gibi onaylanacak.",
+      "partiallyApprove": "Hangi satırın ne kadarının onaylandığını satır satır belirtin. Her satır için bir karar gerekir.",
+      "cancel": "Talep iptal edilecek. İptal geri alınamaz."
+    },
+    "reasonCode": "Gerekçe kodu",
+    "reasonText": "Açıklama",
+    "returned": {
+      "title": "Bu talep düzeltilmek üzere iade edildi",
+      "body": "Aşağıdaki gerekçeyle geri gönderildi. Düzeltip yeniden gönderdiğinizde yeni bir sürüm açılır; iade edilen sürüm olduğu gibi kalır."
+    },
+    "rejected": {
+      "title": "Bu talep reddedildi",
+      "body": "Karar kesindir ve talep kapanmıştır. Yeni bir durum varsa yeni bir talep açılması gerekir."
+    },
+    "eligibility": {
+      "title": "Kapsam değerlendirmesi",
+      "none": "Bu talep henüz değerlendirilmedi.",
+      "link": "Değerlendirmeyi aç"
+    },
+    "rules": {
+      "title": "Çalışan kurallar",
+      "none": "Bu talepte hiçbir kural çalışmadı."
+    },
+    "requiredDocuments": {
+      "title": "Bekleyen belgeler",
+      "body": "Bu talep aşağıdaki belgeler yüklenene kadar incelemeye geçmez.",
+      "none": "Bu talep için belge istenmedi."
+    },
+    "versions": {
+      "title": "Sürümler",
+      "current": "Güncel sürüm",
+      "no": "Sürüm",
+      "createdAt": "Oluşturma",
+      "returnedAt": "İade",
+      "frozen": "Bu sürüm karara bağlandı ve değiştirilemez."
+    }
+  },
+  "worklist": {
+    "title": "İş listem",
+    "intro": "Bekleyen ne var, hangisi bende, hangisi gecikti.",
+    "empty": "Bu filtrelerle iş kalemi yok.",
+    "tabs": {
+      "mine": "Bende",
+      "unassigned": "Sahipsiz",
+      "overdue": "Geciken",
+      "all": "Tümü"
+    },
+    "columns": {
+      "title": "İş",
+      "queue": "Kuyruk",
+      "priority": "Öncelik",
+      "assignee": "Sahibi",
+      "dueAt": "Termin",
+      "status": "Durum",
+      "createdAt": "Açılış"
+    },
+    "status": {
+      "OPEN": "Açık",
+      "CLAIMED": "Üstlenildi",
+      "COMPLETED": "Tamamlandı",
+      "CANCELLED": "İptal",
+      "ESCALATED": "Yükseltildi"
+    },
+    "claim": "Üstlen",
+    "release": "Bırak",
+    "complete": "Tamamla",
+    "reassign": "Başkasına ata",
+    "unassigned": "Sahipsiz",
+    "overdue": "Gecikti",
+    "lostClaim": "Bu işi {{assignee}} üstlendi.",
+    "escalatedFrom": "{{queue}} kuyruğundan yükseltildi",
+    "slaSnapshot": "Bu kalem, açıldığı gün verilen {{minutes}} dakikalık süreye göre değerlendirilir; kuyruğun bugünkü süresi bunu değiştirmez.",
+    "comments": {
+      "title": "Notlar",
+      "add": "Not ekle",
+      "empty": "Henüz not yok.",
+      "visibility": "Kimler görebilir",
+      "INTERNAL": "Yalnız iç ekip",
+      "PROVIDER": "Sağlayıcı da görür",
+      "MEMBER": "Hak sahibi de görür",
+      "warning": "Sağlayıcının veya hak sahibinin göreceği bir nota klinik ayrıntı yazılamaz."
+    }
+  },
+  "documents": {
+    "title": "Belgeler",
+    "upload": "Belge yükle",
+    "uploading": "Yükleniyor…",
+    "empty": "Bu kayda bağlı belge yok.",
+    "choose": "Dosya seç",
+    "type": "Belge türü",
+    "classification": "Gizlilik",
+    "filename": "Dosya",
+    "size": "Boyut",
+    "uploadedAt": "Yükleme",
+    "download": "İndir",
+    "unlink": "Bağı kaldır",
+    "scan": {
+      "PENDING": "Yüklendi, sıraya alındı",
+      "SCANNING": "Taranıyor",
+      "CLEAN": "Temiz",
+      "INFECTED": "Zararlı yazılım bulundu",
+      "FAILED": "Taranamadı"
+    },
+    "scanHelp": {
+      "SCANNING": "Tarama bitene kadar dosya indirilemez.",
+      "INFECTED": "Bu dosyada zararlı yazılım bulundu ve içeriği silindi. Kayıt, olay kaydı olarak durur.",
+      "FAILED": "Dosya taranamadı, bu yüzden indirilemez. Tarama yeniden denendiğinde temiz çıkarsa kullanılabilir olur."
+    },
+    "classifications": {
+      "INTERNAL": "İç kullanım",
+      "CONFIDENTIAL": "Gizli",
+      "PERSONAL": "Kişisel veri",
+      "HEALTH": "Sağlık verisi"
+    },
+    "healthWarning": "Sağlık verisi içeren bir belgeyi indirmeniz ayrıca kayda geçer.",
+    "legalHold": {
+      "title": "Hukuki saklama",
+      "place": "Saklamaya al",
+      "release": "Saklamadan çıkar",
+      "active": "Bu belge hukuki saklama altında; saklama süresi dolsa da silinmez.",
+      "reason": "Saklama gerekçesi"
+    },
+    "missing": {
+      "title": "Eksik belgeler",
+      "body": "Şu türler bekleniyor:"
+    }
+  },
+  "notifications": {
+    "title": "Bildirimler",
+    "templates": {
+      "title": "Şablonlar",
+      "new": "Yeni şablon",
+      "empty": "Henüz şablon yok.",
+      "event": "Olay",
+      "channel": "Kanal",
+      "locale": "Dil",
+      "version": "Sürüm",
+      "subject": "Konu",
+      "body": "Metin",
+      "declared": "Tanımlı değişkenler",
+      "publish": "Yayımla",
+      "immutable": "Yayımlanmış şablon değiştirilemez. Değişiklik yeni bir sürümdür.",
+      "replaces": "Yayımlamak, bu olay ve kanal için yürürlükteki şablonu geçmişe alır.",
+      "variablesHelp": "Bir bildirim yalnızca burada sayılan değişkenleri taşıyabilir. Tanı, kimlik numarası, belge içeriği veya serbest metin bir yorum hiçbir şekilde bildirime giremez."
+    },
+    "status": {
+      "DRAFT": "Taslak",
+      "PUBLISHED": "Yayımda",
+      "RETIRED": "Geçmişe alındı"
+    },
+    "channels": {
+      "EMAIL": "E-posta",
+      "SMS": "SMS",
+      "PUSH": "Anlık bildirim",
+      "INAPP": "Uygulama içi"
+    },
+    "messages": {
+      "title": "Gönderi kaydı",
+      "empty": "Kayıtlı gönderi yok.",
+      "recipient": "Alıcı",
+      "sentAt": "Gönderim",
+      "attempts": "Denemeler",
+      "resend": "Yeniden gönder",
+      "body": "Gönderilen metin"
+    },
+    "messageStatus": {
+      "QUEUED": "Sırada",
+      "SENDING": "Gönderiliyor",
+      "SENT": "Gönderildi",
+      "FAILED": "Başarısız",
+      "SUPPRESSED": "Gönderilmedi"
+    },
+    "suppressed": {
+      "PREFERENCE_DISABLED": "Alıcı bu bildirimi almak istemiyor",
+      "QUIET_HOURS": "Alıcının sessiz saatleri",
+      "NO_TEMPLATE": "Bu olay için yayımlanmış şablon yok",
+      "NO_ADDRESS": "Alıcı için bu kanalda adres yok",
+      "CHANNEL_NOT_DELIVERABLE": "Bu kanalın arkasında henüz sağlayıcı yok"
+    },
+    "deliveryOutcome": {
+      "ACCEPTED": "Kabul edildi",
+      "REJECTED": "Reddedildi",
+      "BOUNCED": "Geri döndü",
+      "ERROR": "Hata"
+    },
+    "preferences": {
+      "title": "Bildirim tercihleri",
+      "enabled": "Açık",
+      "quietHours": "Sessiz saatler",
+      "timezone": "Saat dilimi",
+      "save": "Tercihleri kaydet"
     }
   }
 }

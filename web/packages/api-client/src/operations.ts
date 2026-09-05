@@ -7,6 +7,10 @@ import { entitlementOperations } from './entitlements';
 import { memberImportOperations } from './imports';
 import { peopleOperations } from './people';
 import { pricingOperations } from './pricing';
+import { serviceRequestOperations } from './servicerequest';
+import { workflowOperations } from './workflow';
+import { documentOperations } from './document';
+import { notificationOperations } from './notification';
 import { providerOperations } from './provider';
 import { ruleOperations } from './rules';
 import { randomId } from './client';
@@ -140,6 +144,10 @@ export function createOperations(client: KapsoraClient) {
     contracts: contractOperations(client),
     rules: ruleOperations(client),
     pricing: pricingOperations(client),
+    requests: serviceRequestOperations(client),
+    worklist: workflowOperations(client),
+    documents: documentOperations(client),
+    notifications: notificationOperations(client),
   };
 }
 

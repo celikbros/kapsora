@@ -4892,10 +4892,14 @@ export interface components {
          * @description Why nobody was told. PREFERENCE_DISABLED is somebody who asked not to hear about
          *     this; QUIET_HOURS is the middle of their night in their own time zone; NO_TEMPLATE
          *     is an event nobody has written a message for yet; NO_ADDRESS is a recipient the
-         *     platform holds no address for on that channel.
+         *     platform holds no address for on that channel; CHANNEL_NOT_DELIVERABLE is a channel
+         *     whose adapter recorded the attempt and handed the message to nobody, because no
+         *     provider is wired in behind it yet. That last one is decided at send time rather
+         *     than before it, so it is the only reason that appears on a message which already
+         *     has a delivery attempt against it.
          * @enum {string}
          */
-        NotificationSuppressionReason: "PREFERENCE_DISABLED" | "QUIET_HOURS" | "NO_TEMPLATE" | "NO_ADDRESS";
+        NotificationSuppressionReason: "PREFERENCE_DISABLED" | "QUIET_HOURS" | "NO_TEMPLATE" | "NO_ADDRESS" | "CHANNEL_NOT_DELIVERABLE";
         NotificationTemplate: {
             body: string;
             channel: components["schemas"]["NotificationChannel"];

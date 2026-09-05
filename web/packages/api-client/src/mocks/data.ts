@@ -48,8 +48,18 @@ export interface MockAccount {
   username: string;
   displayName: string;
   email: string;
-  /** Tenant codes the account is a member of, with permissions per tenant. */
-  memberships: { tenantCode: string; permissions: string[] }[];
+  /**
+   * Tenant codes the account is a member of, with permissions per tenant and the access
+   * grants that narrow them. A grant of type ORGANIZATION is the provider boundary the
+   * service request and document repositories apply; WORK_QUEUE is the worklist's. A
+   * membership with no scope of a type is unrestricted for that type, exactly as a nil
+   * slice is on the server.
+   */
+  memberships: {
+    tenantCode: string;
+    permissions: string[];
+    scopes?: { type: string; id: string | null }[];
+  }[];
 }
 
 export interface StoredOrganization {
@@ -96,7 +106,40 @@ export interface StoredPerson {
   createdAt: string;
 }
 
-export type StoredServiceRequest = Schemas['ServiceRequest'] & { tenantId: string };
+/**
+ * A service request without its lines: the lines belong to a version, exactly as they do
+ * in the schema, and `items` on the wire is always the current version's line set.
+ */
+export type StoredServiceRequest = Omit<Schemas['ServiceRequest'], 'items'> & {
+  tenantId: string;
+};
+
+/** One line of one version. */
+export type StoredServiceRequestItem = Schemas['ServiceRequestItem'];
+
+/**
+ * One version of a request's content. A SUBMITTED version is frozen and answers from
+ * `snapshotItems`, which is what was sent, whatever the live rows say afterwards; a
+ * SUPERSEDED one was replaced by a later version after a return.
+ */
+export interface StoredServiceRequestVersion {
+  id: string;
+  tenantId: string;
+  serviceRequestId: string;
+  versionNo: number;
+  status: Schemas['ServiceRequestVersionStatus'];
+  submittedAt: string | null;
+  submittedBy: string | null;
+  returnedAt: string | null;
+  returnedBy: string | null;
+  returnReasonCode: string | null;
+  returnReasonText: string | null;
+  createdAt: string;
+  /** The live rows of this version; decisions are recorded on them. */
+  items: StoredServiceRequestItem[];
+  /** Frozen at submit; null on a version nobody has submitted yet. */
+  snapshotItems: StoredServiceRequestItem[] | null;
+}
 
 /** Decimal quantity carried as a string on the wire (never a JS number, see entitlements.ts). */
 export type Decimal = string;
@@ -215,6 +258,12 @@ export interface StoredProgram {
   status: 'DRAFT' | 'ACTIVE' | 'SUSPENDED' | 'CLOSED';
   validFrom: string | null;
   validTo: string | null;
+  /**
+   * The tenant setting the submit gate consults last: when nothing objected, does a
+   * person still look at this? The server reads it out of platform.tenant_setting and
+   * treats a missing answer as true, so the mock defaults it to true too.
+   */
+  reviewRequired: boolean;
   rowVersion: number;
 }
 
@@ -739,6 +788,52 @@ export type StoredRuleEvaluation = Schemas['RuleEvaluation'] & { tenantId: strin
 /** A stored quote. It reserves nothing: no account and no ledger row is ever touched. */
 export type StoredPriceQuote = Schemas['PriceQuote'] & { tenantId: string };
 
+// --- M4: worklist, documents and notifications -----------------------------------------
+
+/** A place work waits, with the clock it hands out. */
+export type StoredWorkQueue = Schemas['WorkQueue'] & { tenantId: string };
+
+/**
+ * One piece of work. `slaMinutesSnapshot` and `dueAt` are copied from the queue when the
+ * item is raised and never read again: changing the queue's SLA leaves every existing
+ * item on the clock it was already given, which is what makes a late item stay late.
+ */
+export type StoredWorkItem = Schemas['WorkItem'] & { tenantId: string };
+
+/** Append-only; a comment that could be edited is not a record of why anything happened. */
+export type StoredWorkItemComment = Schemas['WorkItemComment'] & { tenantId: string };
+
+/** One band of one action. Both amounts are exact decimal strings, never JSON numbers. */
+export type StoredApprovalPolicy = Schemas['ApprovalPolicy'] & { tenantId: string };
+
+/**
+ * One document.object row. `links` and `downloadable` are computed on the way out — the
+ * second in exactly one place, so "can this be fetched" has one answer — and `objectKey`
+ * never leaves the mock, as it never leaves the server.
+ */
+export type StoredDocument = Omit<Schemas['Document'], 'links' | 'downloadable'> & {
+  tenantId: string;
+  objectKey: string;
+};
+
+export type StoredDocumentLink = Schemas['DocumentLink'] & { tenantId: string };
+
+export type StoredLegalHold = Schemas['LegalHold'] & { tenantId: string };
+
+export type StoredNotificationTemplate = Schemas['NotificationTemplate'] & { tenantId: string };
+
+/** A message log row. A SUPPRESSED one always names its reason (migration 000029). */
+export type StoredNotificationMessage = Schemas['NotificationMessage'] & { tenantId: string };
+
+export type StoredNotificationDelivery = Schemas['NotificationDelivery'] & { tenantId: string };
+
+export type StoredNotificationPreference = Schemas['NotificationPreference'] & {
+  tenantId: string;
+};
+
+/** The verdict a scan may come back with; PENDING and SCANNING are states, not verdicts. */
+export type ScanVerdict = 'CLEAN' | 'INFECTED' | 'FAILED';
+
 /** Reference catalogs; tenant-independent so every tenant sees the same options. */
 export const IDENTIFIER_TYPE_CATALOG: Schemas['PartyCatalogEntry'][] = [
   {
@@ -813,8 +908,13 @@ const ADMIN_PERMISSIONS = [
   'plan.publish',
   'entitlement.read',
   'entitlement.adjust',
+  // Every move through the request lifecycle is its own grant: the person who asks for
+  // something is not the person who grants it, so `review` is never implied by `create`.
   'service_request.read',
-  'service_request.manage',
+  'service_request.create',
+  'service_request.submit',
+  'service_request.review',
+  'service_request.cancel',
   'catalog.read',
   'catalog.manage',
   'provider.read',
@@ -828,6 +928,18 @@ const ADMIN_PERMISSIONS = [
   'rule.publish',
   'pricing.quote',
   'import.execute',
+  // M4 (migrations 000027-000029).
+  'worklist.read',
+  'worklist.claim',
+  'worklist.reassign',
+  'workflow.queue.manage',
+  'workflow.policy.manage',
+  'document.read',
+  'document.upload',
+  'document.link',
+  'document.legal_hold.manage',
+  'notification.read',
+  'notification.manage',
   'identity.user.read',
   'identity.user.manage',
   'identity.role.manage',
@@ -847,6 +959,31 @@ const REVIEWER_PERMISSIONS = [
   'provider.read',
   'contract.read',
   'rule.read',
+  // A reviewer works a worklist and reads the documents attached to what it reviews. It
+  // may not reassign somebody else's work and it holds no clinical grant.
+  'worklist.read',
+  'worklist.claim',
+  'document.read',
+  'notification.read',
+];
+
+/**
+ * A provider-side actor: it may raise and submit requests for its own organization and
+ * read its own documents, and the ORGANIZATION grant below is what stops it seeing
+ * anybody else's. The boundary is applied where the repository applies it, in the list
+ * and the read, so it can never disagree with the server by being a filter of its own.
+ */
+const PROVIDER_PERMISSIONS = [
+  'organization.read',
+  'service_request.read',
+  'service_request.create',
+  'service_request.submit',
+  'service_request.cancel',
+  'document.read',
+  'document.upload',
+  'document.link',
+  'catalog.read',
+  'provider.read',
 ];
 
 const ORG_PREFIXES = [
@@ -990,6 +1127,26 @@ export interface MockWorld {
   ruleSetVersions: StoredRuleSetVersion[];
   ruleEvaluations: StoredRuleEvaluation[];
   priceQuotes: StoredPriceQuote[];
+  // M4.
+  serviceRequestVersions: StoredServiceRequestVersion[];
+  workQueues: StoredWorkQueue[];
+  workItems: StoredWorkItem[];
+  workItemComments: StoredWorkItemComment[];
+  approvalPolicies: StoredApprovalPolicy[];
+  documents: StoredDocument[];
+  documentLinks: StoredDocumentLink[];
+  legalHolds: StoredLegalHold[];
+  notificationTemplates: StoredNotificationTemplate[];
+  notificationMessages: StoredNotificationMessage[];
+  notificationDeliveries: StoredNotificationDelivery[];
+  notificationPreferences: StoredNotificationPreference[];
+  /**
+   * Moves a document on from SCANNING the way the scan worker does. It is the mock's
+   * stand-in for the worker, so a screen can show "taranıyor" and then a verdict without
+   * the fixture having to guess which one it will be. Only the worker ever writes CLEAN,
+   * INFECTED or FAILED — no endpoint does, on the server or here.
+   */
+  advanceScan: (documentId: string, verdict: ScanVerdict) => StoredDocument | null;
   nextId: (offsetMs?: number) => string;
   random: () => number;
 }
@@ -1042,6 +1199,14 @@ export function buildWorld(
       displayName: 'Bora Yönetici',
       email: 'admin.b@example.invalid',
       memberships: [{ tenantCode: 'DEMO_B', permissions: ADMIN_PERMISSIONS }],
+    },
+    {
+      actorId: nextId(),
+      username: 'provider.a',
+      displayName: 'Pelin Sağlayıcı',
+      email: 'provider.a@example.invalid',
+      // The ORGANIZATION grant is filled in below, once the provider relationship exists.
+      memberships: [{ tenantCode: 'DEMO_A', permissions: PROVIDER_PERMISSIONS, scopes: [] }],
     },
     {
       actorId: nextId(),
@@ -1141,79 +1306,6 @@ export function buildWorld(
         identifiers: [{ type: 'TCKN', value: randomTCKN(random), primary: true }],
         rowVersion: 1,
         createdAt: isoDaysAgo(base, daysAgo),
-      });
-    }
-  }
-
-  const serviceRequests: StoredServiceRequest[] = [];
-  // SUBMITTED is not in this list on purpose. The server passes through it inside the
-  // submit transaction and lands on one of the four below, so no stored row is ever
-  // observably SUBMITTED — seeding one would show the screens a state the product never
-  // shows them.
-  const statuses: Schemas['ServiceRequest']['status'][] = [
-    'DRAFT',
-    'PENDING_DOCUMENT',
-    'PENDING_REVIEW',
-    'APPROVED',
-    'REJECTED',
-    'CLOSED',
-  ];
-  for (const tenant of tenants) {
-    const tenantPeople = people.filter((p) => p.tenantId === tenant.id);
-    const providers = relationships.filter(
-      (r) => r.tenantId === tenant.id && r.relationshipRole === 'PROVIDER',
-    );
-    for (let i = 0; i < 25; i++) {
-      const daysAgo = 60 - i * 2;
-      const status = pick(random, statuses);
-      const id = nextId(daysAgo * -86_400_000);
-      serviceRequests.push({
-        tenantId: tenant.id,
-        id,
-        reference: `SR-2026-${String(1000 + i)}`,
-        personId: pick(random, tenantPeople).id,
-        programId: nextId(),
-        enrollmentId: nextId(),
-        providerOrganizationId: pick(random, providers)?.id ?? null,
-        requestType: pick(random, [
-          'DIRECT_SERVICE',
-          'PREAUTHORIZATION',
-          'RESERVATION',
-          'REIMBURSEMENT',
-        ] as const),
-        channel: pick(random, ['BACKOFFICE', 'PROVIDER_PORTAL', 'MEMBER_PORTAL'] as const),
-        status,
-        serviceDate: isoDaysAgo(base, daysAgo - 5).slice(0, 10),
-        requestedStartAt: null,
-        requestedEndAt: null,
-        submittedAt: status === 'DRAFT' ? null : isoDaysAgo(base, daysAgo),
-        createdAt: isoDaysAgo(base, daysAgo),
-        currentVersionNo: 1,
-        // The same invariants migration 000025 checks: a rejected request names why it was
-        // rejected, and one waiting on documents names which ones. A fixture that breaks a
-        // constraint the database enforces is a screen written against a row that cannot
-        // exist.
-        rejectReasonCode: status === 'REJECTED' ? 'NOT_COVERED_BY_PLAN' : null,
-        requiredDocumentTypes: status === 'PENDING_DOCUMENT' ? ['MEDICAL_REPORT', 'INVOICE'] : null,
-        rowVersion: 1,
-        items: [
-          {
-            id: nextId(),
-            lineNo: 1,
-            serviceDefinitionId: nextId(),
-            unitType: 'SESSION',
-            // Quantity and amount are exact decimal strings, as they are on the wire. Both
-            // are built from integers (kuruş for the amount) so no fixture value ever
-            // passes through a float on its way to becoming a string.
-            requestedQuantity: toDecimal(1 + Math.floor(random() * 5)),
-            requestedAmount: fromMicros(BigInt(50_000 + Math.floor(random() * 450_000)) * 10_000n),
-            currencyCode: 'TRY',
-            status: 'REQUESTED',
-            approvedQuantity: null,
-            approvedAmount: null,
-            decisionReasonCode: null,
-          },
-        ],
       });
     }
   }
@@ -1409,6 +1501,8 @@ export function buildWorld(
     status: 'ACTIVE',
     validFrom: isoDaysAgo(base, 250).slice(0, 10),
     validTo: null,
+    // Nothing objected means approved here, so the gate has an APPROVED branch to take.
+    reviewRequired: false,
     rowVersion: 1,
   };
   const programPhysio: StoredProgram = {
@@ -1422,6 +1516,8 @@ export function buildWorld(
     status: 'ACTIVE',
     validFrom: isoDaysAgo(base, 250).slice(0, 10),
     validTo: null,
+    // A program that always wants a pair of eyes, so PROGRAM_REVIEW_REQUIRED is reachable.
+    reviewRequired: true,
     rowVersion: 1,
   };
   const programs: StoredProgram[] = [programHealth, programPhysio];
@@ -1570,7 +1666,29 @@ export function buildWorld(
     sourceSystem: null,
     rowVersion: 1,
   };
-  const enrollments: StoredEnrollment[] = [familyEnrollment, individualEnrollment];
+  // The spouse holds exactly one enrollment, which is what makes a clean gate run
+  // possible: two active enrollments in the same program is itself a REVIEW_REQUIRED
+  // answer, and a fixture with only that shape would hide the APPROVED branch.
+  const spouseEnrollment: StoredEnrollment = {
+    id: nextId(),
+    tenantId: demoA.id,
+    personId: familySpouse.id,
+    planId: planIndividualHealth.id,
+    planCode: planIndividualHealth.code,
+    programId: programHealth.id,
+    sponsorMembershipId: memberships.find((m) => m.personId === familySpouse.id)!.id,
+    status: 'ACTIVE',
+    validFrom: isoDaysAgo(base, 180).slice(0, 10),
+    validTo: null,
+    enrollmentReason: null,
+    sourceSystem: null,
+    rowVersion: 1,
+  };
+  const enrollments: StoredEnrollment[] = [
+    familyEnrollment,
+    individualEnrollment,
+    spouseEnrollment,
+  ];
 
   const familyHealthDefs = planVersions.find(
     (v) => v.planId === planFamilyHealth.id && v.status === 'PUBLISHED',
@@ -1640,10 +1758,27 @@ export function buildWorld(
     status: 'FROZEN',
     rowVersion: 1,
   };
+  const spouseSessionAccount: StoredEntitlementAccount = {
+    id: nextId(),
+    tenantId: demoA.id,
+    enrollmentId: spouseEnrollment.id,
+    personId: familySpouse.id,
+    definition: toAccountDefinition(sessionDef),
+    benefitPeriodFrom: isoDaysAgo(base, 180).slice(0, 10),
+    benefitPeriodTo: null,
+    totalGranted: '12.000000',
+    available: '12.000000',
+    consumed: '0.000000',
+    reserved: '0.000000',
+    expired: '0.000000',
+    status: 'OPEN',
+    rowVersion: 1,
+  };
   const entitlementAccounts: StoredEntitlementAccount[] = [
     familyMoneyAccount,
     familySessionAccount,
     frozenAccount,
+    spouseSessionAccount,
   ];
 
   // --- ~30 ledger movements on the family MONEY account, newest first.
@@ -1855,6 +1990,14 @@ export function buildWorld(
     rowVersion: 1,
   };
   relationships.push(providerRel);
+  // The provider-side actor is granted exactly this organization. Everything it may see is
+  // decided by this one row: there is no second, client-side filter that could disagree.
+  accounts
+    .find((a) => a.username === 'provider.a')!
+    .memberships[0]!.scopes!.push({
+      type: 'ORGANIZATION',
+      id: providerRel.id,
+    });
 
   const providerHealth: StoredProvider = {
     id: nextId(),
@@ -2275,7 +2418,83 @@ export function buildWorld(
     ],
     rowVersion: 4,
   };
-  const ruleSetVersions: StoredRuleSetVersion[] = [publishedRuleVersion];
+  /**
+   * The gate's own rule set. It is separate from HLT_DOCUMENTS on purpose: these rules are
+   * written against the variables the submit gate supplies — the whole request rather than
+   * one line — and those are written against the ones an author supplies by hand in a
+   * simulation. Neither set can match the other's input, so keeping them apart is what
+   * stops a simulation of one showing the other's rules.
+   */
+  const ruleSetGate: StoredRuleSet = {
+    id: nextId(),
+    tenantId: demoA.id,
+    code: 'SR_SUBMIT_GATE',
+    name: 'Talep Gönderim Kapısı',
+    domainCode: 'HEALTH',
+    purpose: 'PREAUTH',
+    status: 'ACTIVE',
+    rowVersion: 1,
+  };
+  ruleSets.push(ruleSetGate);
+
+  const publishedGateVersion: StoredRuleSetVersion = {
+    id: nextId(),
+    tenantId: demoA.id,
+    ruleSetId: ruleSetGate.id,
+    versionNo: 1,
+    status: 'PUBLISHED',
+    validFrom: '2026-01-01',
+    validTo: null,
+    inputSchema: {
+      requestType: 'string',
+      totalAmount: 'double',
+      totalQuantity: 'double',
+      eligibilityOutcome: 'string',
+    },
+    notes: null,
+    contentHash: pseudoHash(`${ruleSetGate.code}:1`),
+    submittedAt: isoDaysAgo(base, 200),
+    submittedBy: accounts[0]!.actorId,
+    publishedAt: isoDaysAgo(base, 199),
+    publishedBy: accounts[3]!.actorId,
+    reviewComment: null,
+    retireReasonCode: null,
+    rules: [
+      {
+        id: nextId(),
+        code: 'GATE_PREAUTH_REPORT',
+        name: 'Ön onay için rapor ve fatura',
+        priority: 30,
+        condition: 'requestType == "PREAUTHORIZATION"',
+        actions: [
+          {
+            type: 'REQUIRE_DOCUMENT',
+            payload: { documentTypeCodes: ['MEDICAL_REPORT', 'INVOICE'] },
+          },
+        ],
+        explanationCode: 'DOCUMENT_REQUIRED',
+        explanationParams: null,
+        stopOnMatch: false,
+        active: true,
+      },
+      {
+        id: nextId(),
+        code: 'GATE_HIGH_TOTAL_REVIEW',
+        name: 'Yüksek toplam tutar mali inceleme',
+        priority: 40,
+        condition: 'totalAmount > 20000',
+        actions: [{ type: 'REQUIRE_FINANCIAL_REVIEW' }],
+        explanationCode: 'AMOUNT_ABOVE_THRESHOLD',
+        explanationParams: null,
+        stopOnMatch: false,
+        active: true,
+      },
+    ],
+    testCases: [],
+    rowVersion: 2,
+  };
+
+  const ruleSetVersions: StoredRuleSetVersion[] = [publishedRuleVersion, publishedGateVersion];
 
   // One decision that really was recorded, so the append-only read has a fixture. The
   // snapshot carries ids, dates and quantities only: no identity number, no name.
@@ -2324,6 +2543,924 @@ export function buildWorld(
     },
   ];
 
+  // === M4 =============================================================================
+  // Service requests with their versions, the worklist, the document pipeline and the
+  // notification log. Everything below honours the CHECK constraints of migrations
+  // 000025 and 000027-000029: a REJECTED request names a reject reason, a
+  // PENDING_DOCUMENT one names the document types it is waiting for, a CLAIMED work item
+  // names an assignee, a document is only in the secure bucket once its scan came back
+  // CLEAN, and a SUPPRESSED message names why nobody was told.
+
+  const reviewerActorId = accounts.find((a) => a.username === 'reviewer.a')!.actorId;
+  const adminActorId = accounts[0]!.actorId;
+  const providerActorId = accounts.find((a) => a.username === 'provider.a')!.actorId;
+  // A second provider, so "only my own" is a statement with something to exclude.
+  const otherProviderRel = relationships.find(
+    (r) => r.tenantId === demoA.id && r.relationshipRole === 'PROVIDER' && r.id !== providerRel.id,
+  )!;
+
+  const REFERENCE_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  /** The server's reference shape: the day it was raised plus eight random base32 chars. */
+  function requestReference(createdAt: string): string {
+    let tail = '';
+    for (let i = 0; i < 8; i += 1) {
+      tail += REFERENCE_ALPHABET[Math.floor(random() * REFERENCE_ALPHABET.length)]!;
+    }
+    return `SR-${createdAt.slice(0, 10).replace(/-/g, '')}-${tail}`;
+  }
+
+  /** Money as an exact decimal string, built from kuruş so no float is ever involved. */
+  const lira = (kurus: number): Decimal => fromMicros(BigInt(kurus) * 10_000n);
+
+  const serviceRequests: StoredServiceRequest[] = [];
+  const serviceRequestVersions: StoredServiceRequestVersion[] = [];
+
+  interface SeedLine {
+    serviceDefinitionId: string;
+    unitType: Schemas['ServiceUnitType'];
+    requestedQuantity: Decimal;
+    requestedAmount: Decimal | null;
+    currencyCode: string | null;
+    status: Schemas['ServiceRequestItemStatus'];
+    approvedQuantity: Decimal | null;
+    approvedAmount: Decimal | null;
+    decisionReasonCode: string | null;
+  }
+
+  const line = (
+    definitionId: string,
+    unitType: Schemas['ServiceUnitType'],
+    quantity: number,
+    kurus: number | null,
+    decided: Partial<SeedLine> = {},
+  ): SeedLine => ({
+    serviceDefinitionId: definitionId,
+    unitType,
+    requestedQuantity: toDecimal(quantity),
+    requestedAmount: kurus === null ? null : lira(kurus),
+    currencyCode: kurus === null ? null : 'TRY',
+    status: 'REQUESTED',
+    approvedQuantity: null,
+    approvedAmount: null,
+    decisionReasonCode: null,
+    ...decided,
+  });
+
+  interface SeedRequest {
+    tenantId: string;
+    daysAgo: number;
+    personId: string;
+    programId: string;
+    enrollmentId: string;
+    providerOrganizationId: string | null;
+    requestType: Schemas['ServiceRequestType'];
+    channel: Schemas['ServiceRequestChannel'];
+    status: Schemas['ServiceRequestStatus'];
+    lines: SeedLine[];
+    requiredDocumentTypes?: string[] | null;
+    rejectReasonCode?: string | null;
+    reviewComment?: string | null;
+    /** When set, version 1 was sent back and version 2 is the draft being corrected. */
+    returned?: { reasonCode: string; reasonText: string };
+    supersedesRequestId?: string | null;
+  }
+
+  function seedRequest(seed: SeedRequest): StoredServiceRequest {
+    const createdAt = isoDaysAgo(base, seed.daysAgo);
+    const id = nextId(seed.daysAgo * -86_400_000);
+    const decided =
+      seed.status === 'APPROVED' ||
+      seed.status === 'PARTIALLY_APPROVED' ||
+      seed.status === 'REJECTED' ||
+      seed.status === 'CANCELLED' ||
+      seed.status === 'EXPIRED' ||
+      seed.status === 'CLOSED';
+    const submitted =
+      decided ||
+      seed.status === 'PENDING_REVIEW' ||
+      seed.status === 'PENDING_DOCUMENT' ||
+      seed.status === 'ELIGIBILITY_FAILED';
+    const submittedAt = submitted ? isoDaysAgo(base, seed.daysAgo - 1) : null;
+    const items: StoredServiceRequestItem[] = seed.lines.map((l, i) => ({
+      id: nextId(),
+      lineNo: i + 1,
+      serviceDefinitionId: l.serviceDefinitionId,
+      unitType: l.unitType,
+      requestedQuantity: l.requestedQuantity,
+      requestedAmount: l.requestedAmount,
+      currencyCode: l.currencyCode,
+      status: l.status,
+      approvedQuantity: l.approvedQuantity,
+      approvedAmount: l.approvedAmount,
+      decisionReasonCode: l.decisionReasonCode,
+    }));
+    const request: StoredServiceRequest = {
+      tenantId: seed.tenantId,
+      id,
+      reference: requestReference(createdAt),
+      personId: seed.personId,
+      programId: seed.programId,
+      enrollmentId: seed.enrollmentId,
+      providerOrganizationId: seed.providerOrganizationId,
+      requestType: seed.requestType,
+      channel: seed.channel,
+      status: seed.status,
+      serviceDate: isoDaysAgo(base, seed.daysAgo + 2).slice(0, 10),
+      requestedStartAt: null,
+      requestedEndAt: null,
+      submittedAt,
+      closedAt: decided ? isoDaysAgo(base, seed.daysAgo - 2) : null,
+      createdAt,
+      currentVersionNo: seed.returned ? 2 : 1,
+      supersedesRequestId: seed.supersedesRequestId ?? null,
+      eligibilityEvaluationId: submitted ? nextId() : null,
+      ruleEvaluationId: submitted && seed.status !== 'ELIGIBILITY_FAILED' ? nextId() : null,
+      // Tri-state, exactly as the server keeps it: null is "the rules were never asked",
+      // [] is "asked and nothing needed", and a list is what a rule named.
+      requiredDocumentTypes:
+        seed.requiredDocumentTypes !== undefined
+          ? seed.requiredDocumentTypes
+          : seed.status === 'PENDING_DOCUMENT'
+            ? ['INVOICE', 'MEDICAL_REPORT']
+            : submitted && seed.status !== 'ELIGIBILITY_FAILED'
+              ? []
+              : null,
+      returnReasonCode: seed.returned?.reasonCode ?? null,
+      rejectReasonCode:
+        seed.rejectReasonCode ?? (seed.status === 'REJECTED' ? 'NOT_COVERED_BY_PLAN' : null),
+      reviewComment: seed.reviewComment ?? null,
+      rowVersion: seed.returned ? 3 : submitted ? 2 : 1,
+    };
+    serviceRequests.push(request);
+
+    const first: StoredServiceRequestVersion = {
+      id: nextId(),
+      tenantId: seed.tenantId,
+      serviceRequestId: id,
+      versionNo: 1,
+      status: seed.returned ? 'SUPERSEDED' : submitted ? 'SUBMITTED' : 'DRAFT',
+      submittedAt: seed.returned ? isoDaysAgo(base, seed.daysAgo - 1) : submittedAt,
+      submittedBy: seed.returned || submitted ? providerActorId : null,
+      returnedAt: seed.returned ? isoDaysAgo(base, seed.daysAgo - 2) : null,
+      returnedBy: seed.returned ? reviewerActorId : null,
+      returnReasonCode: seed.returned?.reasonCode ?? null,
+      returnReasonText: seed.returned?.reasonText ?? null,
+      createdAt,
+      items,
+      // A submitted version answers from what was frozen at submit, so it never drifts.
+      snapshotItems: seed.returned || submitted ? items.map((i) => ({ ...i })) : null,
+    };
+    serviceRequestVersions.push(first);
+
+    if (seed.returned) {
+      // The correction is a new version carrying fresh REQUESTED lines: the decisions on
+      // the version that was sent back were about that version.
+      serviceRequestVersions.push({
+        id: nextId(),
+        tenantId: seed.tenantId,
+        serviceRequestId: id,
+        versionNo: 2,
+        status: 'DRAFT',
+        submittedAt: null,
+        submittedBy: null,
+        returnedAt: isoDaysAgo(base, seed.daysAgo - 2),
+        returnedBy: reviewerActorId,
+        returnReasonCode: seed.returned.reasonCode,
+        returnReasonText: seed.returned.reasonText,
+        createdAt: isoDaysAgo(base, seed.daysAgo - 2),
+        items: items.map((i, n): StoredServiceRequestItem => ({
+          id: nextId(),
+          lineNo: n + 1,
+          serviceDefinitionId: i.serviceDefinitionId,
+          unitType: i.unitType,
+          requestedQuantity: i.requestedQuantity,
+          requestedAmount: i.requestedAmount ?? null,
+          currencyCode: i.currencyCode ?? null,
+          status: 'REQUESTED',
+          approvedQuantity: null,
+          approvedAmount: null,
+          decisionReasonCode: null,
+        })),
+        snapshotItems: null,
+      });
+    }
+    return request;
+  }
+
+  const physioLine = (quantity: number, kurus: number, decided?: Partial<SeedLine>) =>
+    line(defPhysio.id, 'SESSION', quantity, kurus, decided);
+  const gpLine = (decided?: Partial<SeedLine>) => line(defGpVisit.id, 'COUNT', 1, 90_000, decided);
+
+  const commonSeed = {
+    tenantId: demoA.id,
+    personId: familyPrincipal.id,
+    programId: programHealth.id,
+    enrollmentId: familyEnrollment.id,
+    providerOrganizationId: providerRel.id,
+    requestType: 'DIRECT_SERVICE' as const,
+    channel: 'PROVIDER_PORTAL' as const,
+  };
+
+  // One request in every status a stored row may hold. SUBMITTED is deliberately absent:
+  // the server passes through it inside the submit transaction and lands on one of the
+  // gate's four outcomes, so no row is ever observably SUBMITTED, and seeding one would
+  // show a screen a state the product never shows it.
+  seedRequest({ ...commonSeed, daysAgo: 30, status: 'DRAFT', lines: [physioLine(2, 120_000)] });
+  seedRequest({
+    ...commonSeed,
+    daysAgo: 28,
+    status: 'PENDING_REVIEW',
+    lines: [physioLine(4, 480_000)],
+    reviewComment: 'Tutar eşiği aşıldı.',
+  });
+  seedRequest({
+    ...commonSeed,
+    daysAgo: 26,
+    requestType: 'PREAUTHORIZATION',
+    status: 'PENDING_DOCUMENT',
+    lines: [physioLine(8, 960_000)],
+  });
+  seedRequest({
+    ...commonSeed,
+    daysAgo: 24,
+    status: 'ELIGIBILITY_FAILED',
+    lines: [physioLine(40, 4_800_000)],
+  });
+  seedRequest({
+    ...commonSeed,
+    daysAgo: 22,
+    status: 'APPROVED',
+    lines: [
+      physioLine(2, 240_000, {
+        status: 'APPROVED',
+        approvedQuantity: toDecimal(2),
+        approvedAmount: lira(240_000),
+        decisionReasonCode: 'WITHIN_PLAN',
+      }),
+    ],
+  });
+  seedRequest({
+    ...commonSeed,
+    daysAgo: 20,
+    status: 'PARTIALLY_APPROVED',
+    lines: [
+      physioLine(6, 720_000, {
+        status: 'PARTIALLY_APPROVED',
+        approvedQuantity: toDecimal(4),
+        approvedAmount: lira(480_000),
+        decisionReasonCode: 'SESSION_CAP',
+      }),
+      gpLine({
+        status: 'REJECTED',
+        approvedQuantity: toDecimal(0),
+        decisionReasonCode: 'NOT_COVERED_BY_PLAN',
+      }),
+    ],
+  });
+  const rejectedRequest = seedRequest({
+    ...commonSeed,
+    daysAgo: 18,
+    status: 'REJECTED',
+    rejectReasonCode: 'NOT_COVERED_BY_PLAN',
+    lines: [
+      gpLine({
+        status: 'REJECTED',
+        approvedQuantity: toDecimal(0),
+        decisionReasonCode: 'NOT_COVERED_BY_PLAN',
+      }),
+    ],
+  });
+  // "We asked again, differently" is a new request naming the refused one, never the old
+  // row changing its mind.
+  seedRequest({
+    ...commonSeed,
+    daysAgo: 17,
+    status: 'PENDING_REVIEW',
+    supersedesRequestId: rejectedRequest.id,
+    lines: [gpLine()],
+  });
+  seedRequest({
+    ...commonSeed,
+    daysAgo: 16,
+    status: 'CANCELLED',
+    lines: [physioLine(2, 240_000, { status: 'CANCELLED', decisionReasonCode: 'MEMBER_WITHDREW' })],
+  });
+  seedRequest({
+    ...commonSeed,
+    daysAgo: 14,
+    requestType: 'RESERVATION',
+    status: 'EXPIRED',
+    lines: [physioLine(1, 120_000)],
+  });
+  seedRequest({
+    ...commonSeed,
+    daysAgo: 12,
+    status: 'CLOSED',
+    lines: [
+      physioLine(3, 360_000, {
+        status: 'APPROVED',
+        approvedQuantity: toDecimal(3),
+        approvedAmount: lira(360_000),
+        decisionReasonCode: 'WITHIN_PLAN',
+      }),
+    ],
+  });
+  // A returned request: version 1 stays readable exactly as it was submitted, version 2 is
+  // the draft being corrected, and the reference survives both.
+  seedRequest({
+    ...commonSeed,
+    daysAgo: 10,
+    status: 'DRAFT',
+    lines: [physioLine(5, 600_000)],
+    returned: { reasonCode: 'MISSING_INVOICE', reasonText: 'Fatura okunaksız, yeniden yükleyin.' },
+  });
+  // The other provider's request. It is on nobody's page but its own provider's.
+  seedRequest({
+    ...commonSeed,
+    daysAgo: 9,
+    providerOrganizationId: otherProviderRel.id,
+    status: 'PENDING_REVIEW',
+    lines: [gpLine()],
+  });
+  // A tenant-side request naming no provider at all: invisible to any provider-scoped
+  // actor, because a grant that names organizations matches no row that names none.
+  seedRequest({
+    ...commonSeed,
+    daysAgo: 8,
+    providerOrganizationId: null,
+    channel: 'BACKOFFICE',
+    status: 'PENDING_REVIEW',
+    lines: [gpLine()],
+  });
+
+  // Volume, so the list pages against something.
+  for (let i = 0; i < 20; i += 1) {
+    seedRequest({
+      ...commonSeed,
+      daysAgo: 60 - i,
+      status: i % 3 === 0 ? 'APPROVED' : i % 3 === 1 ? 'PENDING_REVIEW' : 'CLOSED',
+      providerOrganizationId: i % 4 === 0 ? otherProviderRel.id : providerRel.id,
+      lines: [
+        physioLine(
+          1 + (i % 4),
+          120_000 * (1 + (i % 4)),
+          i % 3 === 1
+            ? {}
+            : {
+                status: 'APPROVED',
+                approvedQuantity: toDecimal(1 + (i % 4)),
+                approvedAmount: lira(120_000 * (1 + (i % 4))),
+                decisionReasonCode: 'WITHIN_PLAN',
+              },
+        ),
+      ],
+    });
+  }
+  // The second tenant has its own, so a cross-tenant read has something to fail to find.
+  const demoBPeople = people.filter((p) => p.tenantId === tenants[1]!.id);
+  for (let i = 0; i < 6; i += 1) {
+    seedRequest({
+      tenantId: tenants[1]!.id,
+      daysAgo: 40 - i * 2,
+      personId: demoBPeople[i % demoBPeople.length]!.id,
+      programId: nextId(),
+      enrollmentId: nextId(),
+      providerOrganizationId: null,
+      requestType: 'DIRECT_SERVICE',
+      channel: 'BACKOFFICE',
+      status: i % 2 === 0 ? 'PENDING_REVIEW' : 'APPROVED',
+      lines: [
+        line(
+          nextId(),
+          'COUNT',
+          1,
+          150_000,
+          i % 2 === 0
+            ? {}
+            : {
+                status: 'APPROVED',
+                approvedQuantity: toDecimal(1),
+                approvedAmount: lira(150_000),
+                decisionReasonCode: 'WITHIN_PLAN',
+              },
+        ),
+      ],
+    });
+  }
+
+  // --- The worklist ---------------------------------------------------------------------
+  const escalationQueue: StoredWorkQueue = {
+    id: nextId(),
+    tenantId: demoA.id,
+    code: 'HEALTH_ESCALATION',
+    name: 'Sağlık Eskalasyon',
+    domainCode: 'HEALTH',
+    assignmentPolicy: 'MANUAL',
+    slaMinutes: null,
+    escalationQueueId: null,
+    active: true,
+    rowVersion: 1,
+    createdAt: isoDaysAgo(base, 120),
+  };
+  const reviewQueue: StoredWorkQueue = {
+    id: nextId(),
+    tenantId: demoA.id,
+    code: 'HEALTH_REVIEW',
+    name: 'Sağlık İncelemesi',
+    domainCode: 'HEALTH',
+    assignmentPolicy: 'MANUAL',
+    slaMinutes: 240,
+    escalationQueueId: escalationQueue.id,
+    active: true,
+    rowVersion: 2,
+    createdAt: isoDaysAgo(base, 119),
+  };
+  const retiredQueue: StoredWorkQueue = {
+    id: nextId(),
+    tenantId: demoA.id,
+    code: 'DOC_CHECK',
+    name: 'Belge Kontrolü (kapalı)',
+    domainCode: 'GENERIC',
+    assignmentPolicy: 'ROUND_ROBIN',
+    slaMinutes: 60,
+    escalationQueueId: null,
+    active: false,
+    rowVersion: 3,
+    createdAt: isoDaysAgo(base, 118),
+  };
+  const workQueues: StoredWorkQueue[] = [escalationQueue, reviewQueue, retiredQueue];
+
+  const pendingReviewRequests = serviceRequests.filter(
+    (r) => r.tenantId === demoA.id && r.status === 'PENDING_REVIEW',
+  );
+  const aggregateAt = (i: number): string =>
+    pendingReviewRequests[i % pendingReviewRequests.length]!.id;
+  const minutesAgo = (n: number): string => new Date(base - n * 60_000).toISOString();
+  const inMinutes = (n: number): string => new Date(base + n * 60_000).toISOString();
+
+  const workItemOf = (
+    queue: StoredWorkQueue,
+    aggregateId: string,
+    title: string,
+    over: Partial<StoredWorkItem>,
+  ): StoredWorkItem => ({
+    tenantId: demoA.id,
+    id: nextId(),
+    queueId: queue.id,
+    aggregateType: 'SERVICE_REQUEST',
+    aggregateId,
+    title,
+    priority: 100,
+    assigneeActorId: null,
+    assignedAt: null,
+    dueAt: null,
+    // The clock the queue handed out when the item was raised; nothing moves it after.
+    slaMinutesSnapshot: queue.slaMinutes ?? null,
+    status: 'OPEN',
+    outcomeCode: null,
+    completedAt: null,
+    completedBy: null,
+    escalatedAt: null,
+    escalatedFromQueueId: null,
+    rowVersion: 1,
+    createdAt: minutesAgo(120),
+    ...over,
+  });
+
+  const overdueItem = workItemOf(reviewQueue, aggregateAt(0), 'Geciken inceleme', {
+    createdAt: minutesAgo(600),
+    dueAt: minutesAgo(360),
+    priority: 200,
+  });
+  const openItem = workItemOf(reviewQueue, aggregateAt(1), 'Bekleyen inceleme', {
+    createdAt: minutesAgo(60),
+    dueAt: inMinutes(180),
+  });
+  // Claimed by somebody else: claiming it answers 409 naming who holds it, which is the
+  // only way a screen can say "Refik aldı" rather than "bir hata oluştu".
+  const claimedByOther = workItemOf(reviewQueue, aggregateAt(2), 'Başkasının üstlendiği inceleme', {
+    createdAt: minutesAgo(90),
+    dueAt: inMinutes(150),
+    status: 'CLAIMED',
+    assigneeActorId: reviewerActorId,
+    assignedAt: minutesAgo(45),
+    rowVersion: 2,
+  });
+  const claimedByAdmin = workItemOf(reviewQueue, aggregateAt(3), 'Üstlendiğim inceleme', {
+    createdAt: minutesAgo(80),
+    dueAt: inMinutes(160),
+    status: 'CLAIMED',
+    assigneeActorId: adminActorId,
+    assignedAt: minutesAgo(30),
+    rowVersion: 2,
+  });
+  const completedItem = workItemOf(reviewQueue, aggregateAt(4), 'Kapanmış inceleme', {
+    createdAt: minutesAgo(2000),
+    dueAt: minutesAgo(1760),
+    status: 'COMPLETED',
+    assigneeActorId: reviewerActorId,
+    assignedAt: minutesAgo(1900),
+    outcomeCode: 'APPROVED',
+    completedAt: minutesAgo(1800),
+    completedBy: reviewerActorId,
+    rowVersion: 4,
+  });
+  // Escalation moved the queue and left the clock alone: a late item stays late.
+  const escalatedItem = workItemOf(escalationQueue, aggregateAt(5), 'Eskale edilmiş inceleme', {
+    createdAt: minutesAgo(1500),
+    dueAt: minutesAgo(1260),
+    slaMinutesSnapshot: reviewQueue.slaMinutes ?? null,
+    status: 'ESCALATED',
+    escalatedAt: minutesAgo(1200),
+    escalatedFromQueueId: reviewQueue.id,
+    rowVersion: 3,
+  });
+  const workItems: StoredWorkItem[] = [
+    overdueItem,
+    openItem,
+    claimedByOther,
+    claimedByAdmin,
+    completedItem,
+    escalatedItem,
+  ];
+
+  const workItemComments: StoredWorkItemComment[] = [
+    {
+      tenantId: demoA.id,
+      id: nextId(),
+      workItemId: claimedByOther.id,
+      aggregateType: claimedByOther.aggregateType,
+      aggregateId: claimedByOther.aggregateId,
+      visibility: 'INTERNAL',
+      body: 'Seans sayısı plan üst sınırının üzerinde; mali incelemeye alındı.',
+      authorActorId: reviewerActorId,
+      createdAt: minutesAgo(40),
+    },
+    {
+      tenantId: demoA.id,
+      id: nextId(),
+      workItemId: claimedByOther.id,
+      aggregateType: claimedByOther.aggregateType,
+      aggregateId: claimedByOther.aggregateId,
+      visibility: 'PROVIDER',
+      body: 'Fatura tarihi ile hizmet tarihi uyuşmuyor, lütfen kontrol edin.',
+      authorActorId: reviewerActorId,
+      createdAt: minutesAgo(35),
+    },
+  ];
+
+  const approvalPolicies: StoredApprovalPolicy[] = [
+    {
+      tenantId: demoA.id,
+      id: nextId(),
+      actionCode: 'service_request.approve',
+      scopeCode: 'STANDARD',
+      versionNo: 1,
+      minAmount: null,
+      maxAmount: lira(1_000_000),
+      requiredRoleCodes: ['REVIEWER'],
+      requiredApproverCount: 1,
+      validFrom: '2026-01-01',
+      validTo: null,
+      rowVersion: 1,
+      createdAt: isoDaysAgo(base, 100),
+    },
+    {
+      tenantId: demoA.id,
+      id: nextId(),
+      actionCode: 'service_request.approve',
+      scopeCode: 'HIGH_VALUE',
+      versionNo: 1,
+      minAmount: lira(1_000_000),
+      maxAmount: null,
+      requiredRoleCodes: ['REVIEWER', 'FINANCE'],
+      requiredApproverCount: 2,
+      validFrom: '2026-01-01',
+      validTo: null,
+      rowVersion: 1,
+      createdAt: isoDaysAgo(base, 100),
+    },
+  ];
+
+  // --- Documents ------------------------------------------------------------------------
+  const documents: StoredDocument[] = [];
+  const documentLinks: StoredDocumentLink[] = [];
+  const documentOf = (
+    filename: string,
+    classification: Schemas['DocumentClassification'],
+    scanStatus: Schemas['DocumentScanStatus'],
+    over: Partial<StoredDocument> = {},
+  ): StoredDocument => {
+    const id = nextId();
+    const day = new Date(base - 7 * 86_400_000);
+    const clean = scanStatus === 'CLEAN';
+    const scanned = clean || scanStatus === 'INFECTED';
+    const row: StoredDocument = {
+      tenantId: demoA.id,
+      id,
+      // The schema makes "in secure but never scanned" unrepresentable, and so does this.
+      bucket: clean ? 'secure' : 'quarantine',
+      classification,
+      originalFilename: filename,
+      contentType: 'application/pdf',
+      // Null until the upload is completed; afterwards it is what the worker counted, not
+      // what the client claimed.
+      byteSize: scanned ? 128_000 : null,
+      sha256: scanned ? pseudoHash(`${filename}:${id}`) : null,
+      scanStatus,
+      ownerOrganizationId: providerRel.id,
+      duplicateOfDocumentId: null,
+      uploadedBy: providerActorId,
+      uploadedAt: isoDaysAgo(base, 7),
+      purgedAt: null,
+      objectKey: `${demoA.id}/${day.getUTCFullYear()}/${String(day.getUTCMonth() + 1).padStart(2, '0')}/${id}`,
+      createdAt: isoDaysAgo(base, 7),
+      rowVersion: scanned ? 3 : scanStatus === 'PENDING' ? 1 : 2,
+      ...over,
+    };
+    documents.push(row);
+    return row;
+  };
+  const linkDocument = (
+    doc: StoredDocument,
+    aggregateId: string,
+    documentTypeCode: string,
+    requiredPermission: string | null = null,
+  ): StoredDocumentLink => {
+    const row: StoredDocumentLink = {
+      tenantId: demoA.id,
+      id: nextId(),
+      documentId: doc.id,
+      aggregateType: 'SERVICE_REQUEST',
+      aggregateId,
+      documentTypeCode,
+      purpose: null,
+      requiredPermission,
+      createdBy: providerActorId,
+      createdAt: doc.createdAt,
+    };
+    documentLinks.push(row);
+    return row;
+  };
+
+  const pendingDocumentRequest = serviceRequests.find(
+    (r) => r.tenantId === demoA.id && r.status === 'PENDING_DOCUMENT',
+  )!;
+  const cleanInvoice = documentOf('fatura-2026-03.pdf', 'PERSONAL', 'CLEAN');
+  linkDocument(cleanInvoice, pendingDocumentRequest.id, 'INVOICE');
+  // Clinical material stays clinical wherever it is reached from: the link names the
+  // permission, and a caller who may read documents in general is still refused.
+  const clinicalReport = documentOf('rapor.pdf', 'HEALTH', 'CLEAN');
+  linkDocument(clinicalReport, pendingDocumentRequest.id, 'MEDICAL_REPORT', 'health.clinical.read');
+  documentOf('yeni-fatura.pdf', 'PERSONAL', 'SCANNING');
+  documentOf('taslak.pdf', 'INTERNAL', 'PENDING');
+  documentOf('makbuz.pdf', 'PERSONAL', 'INFECTED');
+  documentOf('bozuk.pdf', 'INTERNAL', 'FAILED');
+  // The bytes are gone and the row outlives them, so "this existed and was removed on this
+  // day" stays answerable.
+  const purgedDocument = documentOf('eski-rapor.pdf', 'PERSONAL', 'CLEAN', {
+    purgedAt: isoDaysAgo(base, 1),
+  });
+  documentOf('sozlesme.pdf', 'CONFIDENTIAL', 'CLEAN', {
+    ownerOrganizationId: null,
+    uploadedBy: adminActorId,
+  });
+  documentOf('baska-saglayici-fatura.pdf', 'PERSONAL', 'CLEAN', {
+    ownerOrganizationId: otherProviderRel.id,
+  });
+
+  const legalHolds: StoredLegalHold[] = [
+    {
+      tenantId: demoA.id,
+      id: nextId(),
+      documentId: purgedDocument.id,
+      personId: null,
+      aggregateType: null,
+      aggregateId: null,
+      reason: 'Devam eden itiraz incelemesi.',
+      placedBy: adminActorId,
+      placedAt: isoDaysAgo(base, 5),
+      releasedAt: null,
+      releasedBy: null,
+      rowVersion: 1,
+    },
+    {
+      tenantId: demoA.id,
+      id: nextId(),
+      documentId: null,
+      personId: null,
+      aggregateType: 'SERVICE_REQUEST',
+      aggregateId: rejectedRequest.id,
+      reason: 'Kapanan dava; saklama kaldırıldı.',
+      placedBy: adminActorId,
+      placedAt: isoDaysAgo(base, 40),
+      releasedAt: isoDaysAgo(base, 3),
+      releasedBy: adminActorId,
+      rowVersion: 2,
+    },
+  ];
+
+  // --- Notifications --------------------------------------------------------------------
+  const publishedTemplate: StoredNotificationTemplate = {
+    tenantId: demoA.id,
+    id: nextId(),
+    eventCode: 'service_request.decided',
+    channel: 'EMAIL',
+    locale: 'tr-TR',
+    versionNo: 2,
+    status: 'PUBLISHED',
+    subject: 'Talebiniz hakkında',
+    body: 'Sayın {{given_name}}, {{reference_no}} numaralı talebiniz {{status_code}} durumuna geçti. Ayrıntı: {{deep_link}}',
+    declaredVariables: ['given_name', 'reference_no', 'status_code', 'deep_link'],
+    publishedAt: isoDaysAgo(base, 30),
+    publishedBy: adminActorId,
+    createdAt: isoDaysAgo(base, 31),
+    rowVersion: 2,
+  };
+  // Publishing retires rather than refuses, so the version it replaced is still readable
+  // next to the messages it produced.
+  const retiredTemplate: StoredNotificationTemplate = {
+    tenantId: demoA.id,
+    id: nextId(),
+    eventCode: 'service_request.decided',
+    channel: 'EMAIL',
+    locale: 'tr-TR',
+    versionNo: 1,
+    status: 'RETIRED',
+    subject: 'Talep durumu',
+    body: 'Sayın {{given_name}}, talebiniz {{status_code}} oldu.',
+    declaredVariables: ['given_name', 'status_code'],
+    publishedAt: isoDaysAgo(base, 90),
+    publishedBy: adminActorId,
+    createdAt: isoDaysAgo(base, 91),
+    rowVersion: 3,
+  };
+  const draftTemplate: StoredNotificationTemplate = {
+    tenantId: demoA.id,
+    id: nextId(),
+    eventCode: 'service_request.decided',
+    channel: 'SMS',
+    locale: 'tr-TR',
+    versionNo: 1,
+    status: 'DRAFT',
+    subject: null,
+    body: '{{reference_no}} numaralı talebiniz {{status_code}}.',
+    declaredVariables: ['reference_no', 'status_code'],
+    publishedAt: null,
+    publishedBy: null,
+    createdAt: isoDaysAgo(base, 4),
+    rowVersion: 1,
+  };
+  const notificationTemplates: StoredNotificationTemplate[] = [
+    publishedTemplate,
+    retiredTemplate,
+    draftTemplate,
+  ];
+
+  // The safe variables of a message. There is no slot here for a diagnosis, an identity
+  // number or anything an operator typed, and no value carries a run of eight digits —
+  // the same rule migration 000029 repeats as a CHECK.
+  const messageReference = 'KPS-2026-0042';
+  const notificationDeliveries: StoredNotificationDelivery[] = [];
+  const notificationMessages: StoredNotificationMessage[] = [];
+  const messageOf = (
+    daysAgo: number,
+    status: Schemas['NotificationMessageStatus'],
+    over: Partial<StoredNotificationMessage> = {},
+  ): StoredNotificationMessage => {
+    const deepLink = `/service-requests/${serviceRequests[0]!.id}`;
+    const row: StoredNotificationMessage = {
+      tenantId: demoA.id,
+      id: nextId(daysAgo * -86_400_000),
+      eventCode: 'service_request.decided',
+      recipientType: 'ACTOR',
+      recipientId: adminActorId,
+      channel: 'EMAIL',
+      locale: 'tr-TR',
+      templateId: publishedTemplate.id,
+      templateVersionNo: publishedTemplate.versionNo,
+      subjectRendered: 'Talebiniz hakkında',
+      bodyRendered: `Sayın Ayşe, ${messageReference} numaralı talebiniz APPROVED durumuna geçti. Ayrıntı: https://kapsora.local${deepLink}`,
+      safeVariables: {
+        given_name: 'Ayşe',
+        reference_no: messageReference,
+        status_code: 'APPROVED',
+        deep_link: deepLink,
+      },
+      status,
+      // Suppression names its reason and only a suppressed message has one: that is the
+      // whole difference between "not told" and "nothing happened".
+      suppressedReason: null,
+      resentFromMessageId: null,
+      sentAt: status === 'SENT' ? isoDaysAgo(base, daysAgo) : null,
+      createdAt: isoDaysAgo(base, daysAgo),
+      rowVersion: 1,
+      ...over,
+    };
+    notificationMessages.push(row);
+    return row;
+  };
+
+  const sentMessage = messageOf(6, 'SENT');
+  const failedMessage = messageOf(5, 'FAILED');
+  messageOf(4, 'QUEUED');
+  messageOf(3, 'SUPPRESSED', {
+    suppressedReason: 'PREFERENCE_DISABLED',
+    recipientType: 'PERSON',
+    recipientId: familyPrincipal.id,
+  });
+  messageOf(2, 'SUPPRESSED', {
+    suppressedReason: 'QUIET_HOURS',
+    recipientType: 'PERSON',
+    recipientId: familyPrincipal.id,
+  });
+  // Suppressed before anything was rendered: nobody has written a template for the event,
+  // so there is no text and nothing to resend.
+  messageOf(1, 'SUPPRESSED', {
+    suppressedReason: 'NO_TEMPLATE',
+    eventCode: 'authorization.expiring',
+    templateId: null,
+    templateVersionNo: null,
+    subjectRendered: null,
+    bodyRendered: null,
+  });
+
+  const deliveryOf = (
+    m: StoredNotificationMessage,
+    attemptNo: number,
+    outcome: Schemas['NotificationDeliveryOutcome'],
+    detail: string | null,
+  ): void => {
+    notificationDeliveries.push({
+      tenantId: demoA.id,
+      id: nextId(),
+      messageId: m.id,
+      attemptNo,
+      providerCode: 'SMTP',
+      providerMessageId: outcome === 'ACCEPTED' ? `smtp-${attemptNo}-${m.id.slice(0, 8)}` : null,
+      outcome,
+      detail,
+      attemptedAt: m.createdAt,
+    });
+  };
+  // A message that says SENT after a failure and one that went first time are the same
+  // status and different stories, which is why the attempts travel with the message.
+  deliveryOf(sentMessage, 1, 'ERROR', 'geçici bağlantı hatası');
+  deliveryOf(sentMessage, 2, 'ACCEPTED', null);
+  deliveryOf(failedMessage, 1, 'BOUNCED', 'alıcı adresi bulunamadı');
+
+  const notificationPreferences: StoredNotificationPreference[] = [
+    {
+      tenantId: demoA.id,
+      id: nextId(),
+      recipientType: 'PERSON',
+      recipientId: familyPrincipal.id,
+      eventCode: null,
+      channel: 'EMAIL',
+      enabled: true,
+      // Read in the recipient's own zone, and the window wraps midnight.
+      quietHoursStart: '22:00',
+      quietHoursEnd: '08:00',
+      timezone: 'Europe/Istanbul',
+      createdAt: isoDaysAgo(base, 60),
+      rowVersion: 1,
+    },
+    {
+      tenantId: demoA.id,
+      id: nextId(),
+      recipientType: 'PERSON',
+      recipientId: familyPrincipal.id,
+      eventCode: null,
+      channel: 'SMS',
+      enabled: false,
+      quietHoursStart: null,
+      quietHoursEnd: null,
+      timezone: 'Europe/Istanbul',
+      createdAt: isoDaysAgo(base, 60),
+      rowVersion: 1,
+    },
+  ];
+
+  /**
+   * Stands in for the scan worker. No endpoint writes a verdict — not here and not on the
+   * server — so this is the only way a document leaves SCANNING, which is what lets a
+   * screen show "taranıyor" and then whichever answer the fixture chooses.
+   */
+  function advanceScan(documentId: string, verdict: ScanVerdict): StoredDocument | null {
+    const doc = documents.find((d) => d.id === documentId);
+    if (!doc || doc.scanStatus !== 'SCANNING') return null;
+    doc.scanStatus = verdict;
+    doc.rowVersion += 1;
+    if (verdict !== 'FAILED') {
+      doc.byteSize = doc.byteSize ?? 128_000;
+      doc.sha256 = doc.sha256 ?? pseudoHash(`${doc.originalFilename}:${doc.id}`);
+    }
+    // Only a clean verdict promotes the bytes out of quarantine; an infected file's bytes
+    // are deleted and the row survives to say the incident happened.
+    if (verdict === 'CLEAN') doc.bucket = 'secure';
+    return doc;
+  }
+
   return {
     tenants,
     accounts,
@@ -2363,6 +3500,19 @@ export function buildWorld(
     ruleSetVersions,
     ruleEvaluations,
     priceQuotes: [],
+    serviceRequestVersions,
+    workQueues,
+    workItems,
+    workItemComments,
+    approvalPolicies,
+    documents,
+    documentLinks,
+    legalHolds,
+    notificationTemplates,
+    notificationMessages,
+    notificationDeliveries,
+    notificationPreferences,
+    advanceScan,
     nextId,
     random,
   };
@@ -3372,4 +4522,165 @@ export function toRuleSetVersion(v: StoredRuleSetVersion): Schemas['RuleSetVersi
     rules: [...v.rules].sort((a, b) => a.priority - b.priority).map((r) => toRule(v.id, r)),
     testCases: v.testCases.map((c) => toRuleTestCase(v.id, c)),
   };
+}
+
+// --- M4 projections ---------------------------------------------------------------------
+// Every one of these drops `tenantId` and whatever else is the mock's own bookkeeping, so
+// no handler can answer with a field the contract does not declare.
+
+/** The version a request currently reads from, whether or not it has been submitted. */
+export function currentVersionOf(
+  world: MockWorld,
+  request: StoredServiceRequest,
+): StoredServiceRequestVersion | undefined {
+  return world.serviceRequestVersions.find(
+    (v) => v.serviceRequestId === request.id && v.versionNo === request.currentVersionNo,
+  );
+}
+
+/** The one DRAFT version a request may have; there is never more than one. */
+export function draftVersionOf(
+  world: MockWorld,
+  request: StoredServiceRequest,
+): StoredServiceRequestVersion | undefined {
+  return world.serviceRequestVersions.find(
+    (v) => v.serviceRequestId === request.id && v.status === 'DRAFT',
+  );
+}
+
+export function toServiceRequest(
+  world: MockWorld,
+  request: StoredServiceRequest,
+): Schemas['ServiceRequest'] {
+  const { tenantId: _tenantId, ...rest } = request;
+  return { ...rest, items: currentVersionOf(world, request)?.items ?? [] };
+}
+
+export function toServiceRequestVersionSummary(
+  version: StoredServiceRequestVersion,
+): Schemas['ServiceRequestVersionSummary'] {
+  return {
+    id: version.id,
+    versionNo: version.versionNo,
+    status: version.status,
+    submittedAt: version.submittedAt,
+    submittedBy: version.submittedBy,
+    returnedAt: version.returnedAt,
+    returnedBy: version.returnedBy,
+    returnReasonCode: version.returnReasonCode,
+    returnReasonText: version.returnReasonText,
+    createdAt: version.createdAt,
+  };
+}
+
+/**
+ * One version with the lines it carried. A submitted version answers from the snapshot
+ * frozen at submit — so a reader sees what the reviewer decided against — with the
+ * decisions recorded afterwards overlaid by line number, because the snapshot was written
+ * before they existed.
+ */
+export function toServiceRequestVersion(
+  version: StoredServiceRequestVersion,
+): Schemas['ServiceRequestVersion'] {
+  const live = new Map(version.items.map((i) => [i.lineNo, i]));
+  const items =
+    version.status === 'DRAFT' || version.snapshotItems === null
+      ? version.items
+      : version.snapshotItems.map((frozen): StoredServiceRequestItem => {
+          const current = live.get(frozen.lineNo);
+          if (!current) return frozen;
+          return {
+            ...frozen,
+            id: current.id,
+            serviceDefinitionId: current.serviceDefinitionId,
+            status: current.status,
+            approvedQuantity: current.approvedQuantity ?? null,
+            approvedAmount: current.approvedAmount ?? null,
+            decisionReasonCode: current.decisionReasonCode ?? null,
+          };
+        });
+  return {
+    ...toServiceRequestVersionSummary(version),
+    serviceRequestId: version.serviceRequestId,
+    items,
+  };
+}
+
+export function toWorkQueue(queue: StoredWorkQueue): Schemas['WorkQueue'] {
+  const { tenantId: _tenantId, ...rest } = queue;
+  return rest;
+}
+
+export function toWorkItem(item: StoredWorkItem): Schemas['WorkItem'] {
+  const { tenantId: _tenantId, ...rest } = item;
+  return rest;
+}
+
+export function toWorkItemComment(comment: StoredWorkItemComment): Schemas['WorkItemComment'] {
+  const { tenantId: _tenantId, ...rest } = comment;
+  return rest;
+}
+
+export function toApprovalPolicy(policy: StoredApprovalPolicy): Schemas['ApprovalPolicy'] {
+  const { tenantId: _tenantId, ...rest } = policy;
+  return rest;
+}
+
+/**
+ * Whether downloadDocument would answer a URL right now, computed in one place: clean, in
+ * the secure bucket, and not purged. A second copy of this rule somewhere else is how a
+ * screen ends up offering a button the server refuses.
+ */
+export function documentDownloadable(doc: StoredDocument): boolean {
+  return doc.scanStatus === 'CLEAN' && doc.bucket === 'secure' && doc.purgedAt === null;
+}
+
+export function toDocumentLink(link: StoredDocumentLink): Schemas['DocumentLink'] {
+  const { tenantId: _tenantId, ...rest } = link;
+  return rest;
+}
+
+export function toDocument(world: MockWorld, doc: StoredDocument): Schemas['Document'] {
+  const { tenantId: _tenantId, objectKey: _objectKey, ...rest } = doc;
+  return {
+    ...rest,
+    downloadable: documentDownloadable(doc),
+    links: world.documentLinks
+      .filter((l) => l.documentId === doc.id)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))
+      .map(toDocumentLink),
+  };
+}
+
+export function toLegalHold(hold: StoredLegalHold): Schemas['LegalHold'] {
+  const { tenantId: _tenantId, ...rest } = hold;
+  return rest;
+}
+
+export function toNotificationTemplate(
+  template: StoredNotificationTemplate,
+): Schemas['NotificationTemplate'] {
+  const { tenantId: _tenantId, ...rest } = template;
+  return rest;
+}
+
+export function toNotificationMessage(
+  message: StoredNotificationMessage,
+): Schemas['NotificationMessage'] {
+  const { tenantId: _tenantId, ...rest } = message;
+  return rest;
+}
+
+export function toNotificationDelivery(
+  delivery: StoredNotificationDelivery,
+): Schemas['NotificationDelivery'] {
+  const { tenantId: _tenantId, ...rest } = delivery;
+  return rest;
+}
+
+export function toNotificationPreference(
+  preference: StoredNotificationPreference,
+): Schemas['NotificationPreference'] {
+  const { tenantId: _tenantId, ...rest } = preference;
+  return rest;
 }
