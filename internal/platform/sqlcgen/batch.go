@@ -18,6 +18,74 @@ var (
 	ErrBatchAlreadyClosed = errors.New("batch already closed")
 )
 
+const createMedicalReportService = `-- name: CreateMedicalReportService :batchexec
+INSERT INTO health.medical_report_service (
+    tenant_id, report_id, service_definition_id, covered_quantity, covered_amount,
+    currency_code, notes, created_by, updated_by)
+VALUES ($1, $2, $3,
+        $4::text::numeric,
+        $5::text::numeric,
+        $6, $7, $8,
+        $8)
+`
+
+type CreateMedicalReportServiceBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type CreateMedicalReportServiceParams struct {
+	TenantID            uuid.UUID
+	ReportID            uuid.UUID
+	ServiceDefinitionID uuid.UUID
+	CoveredQuantity     *string
+	CoveredAmount       *string
+	CurrencyCode        *string
+	Notes               *string
+	ActorID             uuid.NullUUID
+}
+
+func (q *Queries) CreateMedicalReportService(ctx context.Context, arg []CreateMedicalReportServiceParams) *CreateMedicalReportServiceBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.TenantID,
+			a.ReportID,
+			a.ServiceDefinitionID,
+			a.CoveredQuantity,
+			a.CoveredAmount,
+			a.CurrencyCode,
+			a.Notes,
+			a.ActorID,
+		}
+		batch.Queue(createMedicalReportService, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &CreateMedicalReportServiceBatchResults{br, len(arg), false}
+}
+
+func (b *CreateMedicalReportServiceBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *CreateMedicalReportServiceBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
 const createPackageLine = `-- name: CreatePackageLine :batchexec
 INSERT INTO contract.package_line (tenant_id, package_definition_id, service_definition_id,
                                    included_quantity)

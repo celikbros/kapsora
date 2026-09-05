@@ -727,6 +727,63 @@ type HealthHealthCase struct {
 	RowVersion             int64
 }
 
+type HealthMedicalReport struct {
+	ID                            uuid.UUID
+	TenantID                      uuid.UUID
+	PersonID                      uuid.UUID
+	CaseID                        uuid.NullUUID
+	Reference                     string
+	VersionNo                     int32
+	RootReportID                  uuid.UUID
+	SupersedesReportID            uuid.NullUUID
+	ReportType                    string
+	ReportSubtype                 *string
+	IssuingPractitionerID         uuid.NullUUID
+	IssuingProviderOrganizationID uuid.NullUUID
+	IssuedAt                      pgtype.Date
+	ValidFrom                     pgtype.Date
+	ValidTo                       pgtype.Date
+	Status                        string
+	ClinicalSummary               *string
+	ReviewComment                 *string
+	RejectReasonCode              *string
+	ReviewedBy                    uuid.NullUUID
+	ReviewedAt                    *time.Time
+	SubmittedAt                   *time.Time
+	SubmittedBy                   uuid.NullUUID
+	CreatedAt                     time.Time
+	CreatedBy                     uuid.NullUUID
+	UpdatedAt                     time.Time
+	UpdatedBy                     uuid.NullUUID
+	RowVersion                    int64
+}
+
+type HealthMedicalReportService struct {
+	ID                  uuid.UUID
+	TenantID            uuid.UUID
+	ReportID            uuid.UUID
+	ServiceDefinitionID uuid.UUID
+	CoveredQuantity     pgtype.Numeric
+	CoveredAmount       pgtype.Numeric
+	CurrencyCode        *string
+	Notes               *string
+	CreatedAt           time.Time
+	CreatedBy           uuid.NullUUID
+	UpdatedAt           time.Time
+	UpdatedBy           uuid.NullUUID
+	RowVersion          int64
+}
+
+type HealthMedicalReportUsage struct {
+	ID         uuid.UUID
+	TenantID   uuid.UUID
+	ReportID   uuid.UUID
+	UsedByType string
+	UsedByID   uuid.UUID
+	UsedAt     time.Time
+	CreatedBy  uuid.NullUUID
+}
+
 type IamAccessGrant struct {
 	ID                 uuid.UUID
 	TenantID           uuid.UUID

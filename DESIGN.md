@@ -341,6 +341,10 @@ theme toggle steps aside, the user menu says "Hesap", and the tenant badge drops
 " · CODE" suffix rather than clipping a glyph. An operator can always see which tenant they
 are in, in every viewport, and a truncated tenant is not "seeing".
 
+**A control never changes what it is while somebody is using it.** The document panel's type field used to be a list of the types still missing, and what is missing is only known once the linked documents arrive. On a request whose named types were already attached the field was a dropdown for one frame and a text box the next, under the cursor. A control's kind is decided by data that is already there when the screen renders — the request's own required types — and a later query may change the options, the wording or the state, never the control. The rule generalises: anything a second query decides may narrow a field, never replace it.
+
+**A name being fetched is only a name.** Since the request and work-item lists carry `personDisplayName`, `providerDisplayName` and `assigneeDisplayName` on the wire, the "…" of a pending row is rare rather than usual, and the ellipsis stays for the cells no list carries yet. A screen asks for a name row by row only when the list does not have one.
+
 ## Motion
 
 Toasts slide up 160ms ease-out; nothing else animates. `prefers-reduced-motion`

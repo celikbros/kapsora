@@ -216,4 +216,47 @@ describe('provider portal', () => {
       expect(within(row).getByRole('button', { name: 'İndir' })).toBeInTheDocument();
     },
   );
+
+  // The defect this guards was found by a smoke run, not by a reviewer: the type field
+  // used to be a select of the *missing* types, and the missing list is only known once the
+  // linked documents arrive. On a request whose named types are already attached the field
+  // was a select for one frame and a text box the next — a control that changes what it is
+  // while somebody is using it. It now follows the request, which is loaded before the
+  // panel renders at all, so it is the same control before and after the documents land.
+  it(
+    'keeps the document type field the same control while the linked documents arrive',
+    { timeout: 20_000 },
+    async () => {
+      const own = providerOrganizationId();
+      // A request whose named types are all attached already: the old rule made this one
+      // flip, because `missing` starts full and empties.
+      const settled = api.world.serviceRequests.find((r) => {
+        if (r.providerOrganizationId !== own) return false;
+        const named = r.requiredDocumentTypes ?? [];
+        if (named.length === 0) return false;
+        const attached = new Set(
+          api.world.documentLinks
+            .filter((l) => l.aggregateId === r.id)
+            .map((l) => l.documentTypeCode),
+        );
+        return named.every((code) => attached.has(code));
+      });
+      expect(settled, 'no own request with every named document already attached').toBeDefined();
+
+      const { history } = mount('/requests');
+      await login('provider.a');
+      await screen.findByTestId('my-requests-table');
+      await history.push(`/requests/${settled!.id}`);
+      const form = await screen.findByTestId('document-upload-form');
+
+      const first = within(form).getByLabelText(/Belge türü/).tagName;
+      // Wait for the documents themselves — the query whose settling used to change it.
+      const table = await screen.findByTestId('documents-table');
+      await waitFor(() => expect(within(table).getAllByRole('row').length).toBeGreaterThan(1));
+      const after = within(form).getByLabelText(/Belge türü/).tagName;
+
+      expect(after).toBe(first);
+      expect(after).toBe('SELECT');
+    },
+  );
 });

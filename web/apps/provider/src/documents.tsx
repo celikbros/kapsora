@@ -154,6 +154,12 @@ export function DocumentsPanel({
     ),
   );
   const missing = (requiredTypes ?? []).filter((code) => !linkedTypes.has(code));
+  // What the type field offers follows the request, not the documents query. `missing`
+  // shrinks as the linked documents arrive, and a field that turned from a list into a
+  // text box under the cursor would be the screen changing its mind mid-gesture. The
+  // callout above says what is still outstanding; this offers every type the request
+  // deals with, an attached one included, because a corrected invoice is a second invoice.
+  const offeredTypes = requiredTypes ?? [];
 
   async function submitUpload(event: FormEvent) {
     event.preventDefault();
@@ -298,13 +304,13 @@ export function DocumentsPanel({
             </label>
           </FormField>
           <FormField label={t('documents.type')} required requiredLabel={t('common.requiredMark')}>
-            {missing.length > 0 ? (
+            {offeredTypes.length > 0 ? (
               <Select
                 name="documentTypeCode"
                 value={typeCode}
                 onChange={(e) => setTypeCode(e.target.value)}
                 placeholder={t('common.none')}
-                options={missing.map((code) => ({ value: code, label: code }))}
+                options={offeredTypes.map((code) => ({ value: code, label: code }))}
               />
             ) : (
               <Input

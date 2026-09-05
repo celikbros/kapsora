@@ -152,3 +152,78 @@ type AccessLogPage struct {
 	Items      []AccessEventRecord
 	NextCursor string
 }
+
+// projectReport returns the report as the caller may see it. It is `projectCase` for a
+// treatment report, and it clears the field rather than leaving it set and trusting a
+// mapper: a record that no longer carries the answer cannot leak it, however it is later
+// serialised.
+//
+// What the financial projection keeps is what a financial reviewer needs to reconcile a
+// claim against a report: the reference, the version, the dates, the provider, the status
+// and the covered services with their limits. What it drops is everything that says what
+// was wrong with the person — the summary, the reviewer's comment, the type and the
+// subtype, and, in projectReportServices below, the line notes.
+func projectReport(rec ReportRecord, p Projection) ReportRecord {
+	// The case's sensitivity is what decided this projection, and it is itself clinical. It
+	// is cleared in both projections because it is not a field of the report at all: no
+	// mapper below has anything to render it into.
+	rec.CaseSensitivity = ""
+	if p == ProjectionClinical {
+		return rec
+	}
+	rec.ReportType = ""
+	rec.ReportSubtype = nil
+	rec.ClinicalSummary = nil
+	rec.ReviewComment = nil
+	return rec
+}
+
+// projectReportServices applies the projection over the report's lines, returning a new
+// slice so the caller's rows are never mutated in place. The covered quantity and amount
+// survive both projections — they are the limits a claim is reconciled against — and the
+// note does not.
+func projectReportServices(rows []ReportServiceRecord, p Projection) []ReportServiceRecord {
+	out := make([]ReportServiceRecord, 0, len(rows))
+	for _, row := range rows {
+		if p != ProjectionClinical {
+			row.Notes = nil
+		}
+		out = append(out, row)
+	}
+	return out
+}
+
+// projectReportDocuments answers the attachments only in the clinical projection. An empty
+// slice rather than a shortened one: a count of documents is a fact about the patient too,
+// and "this report has four attachments" beside a name is worth more to a curious HR user
+// than any one of them.
+func projectReportDocuments(rows []ReportDocumentRecord, p Projection) []ReportDocumentRecord {
+	if p != ProjectionClinical {
+		return []ReportDocumentRecord{}
+	}
+	out := make([]ReportDocumentRecord, len(rows))
+	copy(out, rows)
+	return out
+}
+
+// ReportView is one report with its lines and attachments, already projected. There is no
+// way to build one except through the service, and nothing downstream re-reads the
+// unprojected row.
+type ReportView struct {
+	Projection Projection
+	Report     ReportRecord
+	Services   []ReportServiceRecord
+	Documents  []ReportDocumentRecord
+}
+
+// ReportPage is one page of reports, each already projected.
+type ReportPage struct {
+	Items      []ReportView
+	NextCursor string
+}
+
+// UsagePage is one page of a report's usage trace.
+type UsagePage struct {
+	Items      []ReportUsageRecord
+	NextCursor string
+}

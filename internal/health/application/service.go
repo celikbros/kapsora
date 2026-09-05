@@ -20,21 +20,32 @@ import (
 
 // Service implements the health case use cases.
 type Service struct {
-	pool    *pgxpool.Pool
-	repo    Repository
-	stays   StayPort
-	audit   audit.Recorder
-	cursors *httpx.CursorCodec
-	logger  *slog.Logger
-	now     func() time.Time
+	pool      *pgxpool.Pool
+	repo      Repository
+	reports   ReportRepository
+	workItems WorkItemPort
+	stays     StayPort
+	audit     audit.Recorder
+	cursors   *httpx.CursorCodec
+	logger    *slog.Logger
+	now       func() time.Time
 }
 
 // Deps are the collaborators of the service.
 type Deps struct {
-	Pool    *pgxpool.Pool
-	Repo    Repository
-	Audit   audit.Recorder
-	Cursors *httpx.CursorCodec
+	Pool *pgxpool.Pool
+	Repo Repository
+	// Reports is the treatment report's own repository (WP-I5-02). It is a second port
+	// rather than more methods on the first because a report is a different aggregate with
+	// a different lifecycle, and one interface holding both would be an interface no test
+	// double could implement half of.
+	Reports ReportRepository
+	// WorkItems raises the work a submitted report is, inside the command's transaction.
+	// nil means "raise nothing", which is the honest behaviour of a deployment with no
+	// medical review queue configured.
+	WorkItems WorkItemPort
+	Audit     audit.Recorder
+	Cursors   *httpx.CursorCodec
 	// Stays answers whether a case still has an inpatient stay running. WP-I5-03 replaces
 	// the default; nil means "none open", which is the truth until it lands.
 	Stays  StayPort
@@ -54,6 +65,9 @@ func New(d Deps) (*Service, error) {
 	if d.Stays == nil {
 		d.Stays = NoOpenStays{}
 	}
+	if d.WorkItems == nil {
+		d.WorkItems = NoWorkItems{}
+	}
 	if d.Logger == nil {
 		d.Logger = slog.Default()
 	}
@@ -61,8 +75,8 @@ func New(d Deps) (*Service, error) {
 		d.Now = time.Now
 	}
 	return &Service{
-		pool: d.Pool, repo: d.Repo, stays: d.Stays, audit: d.Audit,
-		cursors: d.Cursors, logger: d.Logger, now: d.Now,
+		pool: d.Pool, repo: d.Repo, reports: d.Reports, workItems: d.WorkItems,
+		stays: d.Stays, audit: d.Audit, cursors: d.Cursors, logger: d.Logger, now: d.Now,
 	}, nil
 }
 
