@@ -555,46 +555,6 @@ func (q *Queries) GetWorkQueue(ctx context.Context, arg GetWorkQueueParams) (Get
 	return i, err
 }
 
-const getWorkQueueByCode = `-- name: GetWorkQueueByCode :one
-SELECT q.id, q.code, q.name, q.domain_code, q.sla_minutes, q.active
-  FROM workflow.work_queue q
- WHERE q.tenant_id = $1
-   AND q.code = $2
-`
-
-type GetWorkQueueByCodeParams struct {
-	TenantID uuid.UUID
-	Code     string
-}
-
-type GetWorkQueueByCodeRow struct {
-	ID         uuid.UUID
-	Code       string
-	Name       string
-	DomainCode string
-	SlaMinutes *int32
-	Active     bool
-}
-
-// The queue a producing module raises work into. A module that raised work by id would
-// have to be told the id of a queue an operator created; the code is the name the queue
-// is configured under, and it is unique per tenant. No scope filter: the raiser is a
-// module rather than a person, and the boundary a person is bound to is applied when the
-// work is read.
-func (q *Queries) GetWorkQueueByCode(ctx context.Context, arg GetWorkQueueByCodeParams) (GetWorkQueueByCodeRow, error) {
-	row := q.db.QueryRow(ctx, getWorkQueueByCode, arg.TenantID, arg.Code)
-	var i GetWorkQueueByCodeRow
-	err := row.Scan(
-		&i.ID,
-		&i.Code,
-		&i.Name,
-		&i.DomainCode,
-		&i.SlaMinutes,
-		&i.Active,
-	)
-	return i, err
-}
-
 const listApprovalPolicies = `-- name: ListApprovalPolicies :many
 SELECT p.id, p.action_code, p.scope_code, p.version_no,
        -- An open band edge is NULL in the column and the empty string on the way out, so

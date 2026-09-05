@@ -38,17 +38,6 @@ SELECT q.id, q.code, q.name, q.domain_code, q.assignment_policy, q.sla_minutes,
    AND q.id = sqlc.arg('id')
    AND (sqlc.narg('scope_ids')::uuid[] IS NULL OR q.id = ANY(sqlc.narg('scope_ids')::uuid[]));
 
--- name: GetWorkQueueByCode :one
--- The queue a producing module raises work into. A module that raised work by id would
--- have to be told the id of a queue an operator created; the code is the name the queue
--- is configured under, and it is unique per tenant. No scope filter: the raiser is a
--- module rather than a person, and the boundary a person is bound to is applied when the
--- work is read.
-SELECT q.id, q.code, q.name, q.domain_code, q.sla_minutes, q.active
-  FROM workflow.work_queue q
- WHERE q.tenant_id = sqlc.arg('tenant_id')
-   AND q.code = sqlc.arg('code');
-
 -- name: ListWorkQueues :many
 -- Keyset pagination on (created_at DESC, id DESC); the caller asks for limit+1 rows to
 -- learn whether a next page exists.
