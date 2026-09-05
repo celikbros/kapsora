@@ -1367,6 +1367,266 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/medical-reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The tenant's treatment reports, newest first, with keyset paging.
+         *
+         *     Every row is served in one of the two projections of WP-I5-01, decided by what the
+         *     caller holds and applied before the record is serialised. The clinical projection is
+         *     everything: the report type and subtype, the clinical summary, the reviewer's comment,
+         *     the line notes and the attachments. The financial projection is what a financial
+         *     reviewer needs to reconcile a claim against a report — the reference, the version, the
+         *     dates, the provider, the status and the covered services with their limits — and
+         *     nothing that says what was wrong with the person.
+         *
+         *     A report attached to a SENSITIVE case follows the same rule its case does: without
+         *     health.sensitive.read it appears in the financial projection like any other, because
+         *     its sensitivity is itself sensitive. A list never answers 428 — a single read does.
+         *
+         *     `rootReportId` pages the versions of one chain: every version of a report shares its
+         *     root, and this is how a screen shows "version 2 of 2" beside a decision.
+         */
+        get: operations["listMedicalReports"];
+        put?: never;
+        /**
+         * @description Writes a draft report, either the first version of a new chain or a correction of a
+         *     decided one.
+         *
+         *     With `supersedesReportId` it is a correction: the new report is version n+1 of the
+         *     same chain, it inherits the reference — so a member quoting "MR-2026…" is still
+         *     quoting the same report — and the service lines of the version it corrects are copied
+         *     into it. Every header field it does not send is inherited too. The version being
+         *     corrected is not touched: it keeps its decision, its lines and its usage rows exactly
+         *     as they were, and it stays readable.
+         *
+         *     Only a decided version (APPROVED, REJECTED or one a later version already replaced)
+         *     may be corrected, and only the newest version of its chain. A draft is corrected by
+         *     editing it.
+         */
+        post: operations["createMedicalReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/medical-reports/{reportId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One report with its service lines and, in the clinical projection, its attachments.
+         *
+         *     This is the read that demands a purpose. A report on a SENSITIVE case read by a caller
+         *     holding health.clinical.read and health.sensitive.read but sending no X-Access-Purpose
+         *     is answered 428 ACCESS_PURPOSE_REQUIRED, and the refusal is recorded as a DENIED
+         *     access event with resource type MEDICAL_REPORT.
+         */
+        get: operations["getMedicalReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Rewrites a draft's header. Every field is sent every time: a merge would make
+         *     "clear the subtype" unexpressible.
+         *
+         *     A report that has left DRAFT answers 409 MEDICAL_REPORT_IMMUTABLE. That is the whole
+         *     point of the package: an approved report is what the reviewer saw and a claim is
+         *     leaning on it, and a rejected one is what the provider was told about. A correction is
+         *     `createMedicalReport` with `supersedesReportId`.
+         */
+        patch: operations["patchMedicalReportDraft"];
+        trace?: never;
+    };
+    "/api/v1/medical-reports/{reportId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description The decision claims and authorizations lean on.
+         *
+         *     If the report is a correction, the version it corrects leaves APPROVED in the same
+         *     transaction, so the chain has exactly one approved version at every moment a reader
+         *     could observe. Nothing else about the older version moves: the reviewer, the moment,
+         *     the comment, the summary, the lines and the usage rows stay exactly as they were
+         *     decided.
+         *
+         *     The decision publishes medical_report.decided to the member and the issuing provider.
+         *     The message carries a reference, a status word, a day and a link — never the comment,
+         *     the report type or anything else clinical.
+         */
+        post: operations["approveMedicalReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/medical-reports/{reportId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Takes back a report nobody has started reading. Once a reviewer has picked it up it is
+         *     theirs to decide, and a withdrawal at that point would be the provider deciding
+         *     instead: an UNDER_REVIEW report answers 409.
+         */
+        post: operations["cancelMedicalReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/medical-reports/{reportId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description The other half of the same decision, and it says why in a code: a rejection nobody can
+         *     count is a rejection nobody can improve on. The comment is optional, is clinical text
+         *     and is served only in the clinical projection.
+         *
+         *     A rejected report is frozen like an approved one. A corrected version is
+         *     `createMedicalReport` with `supersedesReportId`.
+         */
+        post: operations["rejectMedicalReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/medical-reports/{reportId}/services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * @description Replaces the report's service set as a whole: the set is the unit, and a line id is
+         *     not something anything else hangs off. An empty array clears the set.
+         *
+         *     A report that has left DRAFT answers 409 MEDICAL_REPORT_IMMUTABLE here for the same
+         *     reason the header patch does — the lines are what the report says, and rewriting them
+         *     would rewrite an approved report without touching its header.
+         *
+         *     Replacing the lines moves the report's ETag: a caller still holding the old one is
+         *     holding a report that no longer says what it said.
+         */
+        put: operations["putMedicalReportServices"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/medical-reports/{reportId}/start-review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description A reviewer has picked the report up. The worklist raises the same transition when the
+         *     report's work item is claimed, so a reviewer who works from the queue never has to
+         *     give this command at all.
+         */
+        post: operations["startMedicalReview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/medical-reports/{reportId}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Hands the draft to the medical reviewers and raises a work item in the MEDICAL_REVIEW
+         *     queue, in the same transaction, with the report's reference as the title and no
+         *     clinical word in it.
+         *
+         *     Two things refuse it. A report with no service line is 422
+         *     MEDICAL_REPORT_SERVICE_REQUIRED: a reviewer asked to approve nothing in particular.
+         *     A report with no linked document of its own type that the scanner has cleared is 422
+         *     MEDICAL_REPORT_DOCUMENT_REQUIRED: a link to an object still in quarantine is not a
+         *     document a reviewer can open. Attach the file through the document link endpoint with
+         *     aggregateType MEDICAL_REPORT.
+         */
+        post: operations["submitMedicalReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/medical-reports/{reportId}/usages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Which service request, authorization or claim leaned on this version of the report,
+         *     and when. It is the trace v1.2 10.5 step 6 asks for: the answer to "prove the claim
+         *     you settled was covered by a report a doctor signed".
+         *
+         *     It names the version rather than the chain. A claim settled against version 1 was
+         *     settled against version 1, whatever version 3 later says, and the usage rows of a
+         *     superseded version are deliberately left where they are.
+         *
+         *     A usage row is three ids and a moment and carries nothing clinical, so it is served
+         *     whole to anybody who may read the report.
+         */
+        get: operations["listMedicalReportUsages"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/notification-messages": {
         parameters: {
             query?: never;
@@ -4161,6 +4421,47 @@ export interface components {
             personId?: string | null;
             reason: string;
         };
+        CreateMedicalReport: {
+            /**
+             * Format: uuid
+             * @description The episode of care the report belongs to. Null for a report written outside one
+             *     the platform holds — a report a member brings from a hospital the tenant has no
+             *     case with is still a report. The case has to be the same person's.
+             */
+            caseId?: string | null;
+            /**
+             * @description HEALTH-classified free text. It is served only in the clinical projection and
+             *     never reaches a notification, an audit detail, a work item title or a log line.
+             */
+            clinicalSummary?: string | null;
+            /**
+             * Format: date
+             * @description The day the doctor wrote it. May not be in the future.
+             */
+            issuedAt?: string | null;
+            /** Format: uuid */
+            issuingPractitionerId?: string | null;
+            /** Format: uuid */
+            issuingProviderOrganizationId?: string | null;
+            /** Format: uuid */
+            personId: string;
+            reportSubtype?: string | null;
+            /**
+             * @description A code system value, governed by the code system WP-I5-05 seeds. Required unless
+             *     the report is a correction, which inherits it.
+             */
+            reportType?: string;
+            /**
+             * Format: uuid
+             * @description The decided version this one corrects. With it, everything below is optional: the
+             *     new version inherits the header and the service lines of the version it corrects.
+             */
+            supersedesReportId?: string | null;
+            /** Format: date */
+            validFrom?: string | null;
+            /** Format: date */
+            validTo?: string | null;
+        };
         CreateMembershipRequest: {
             externalMemberNo?: string;
             membershipType: string;
@@ -4455,6 +4756,13 @@ export interface components {
             escalationQueueId?: string | null;
             name: string;
             slaMinutes?: number | null;
+        };
+        DecideMedicalReport: {
+            /**
+             * @description The reviewer's note. Clinical text: it is stored on the report, served only in the
+             *     clinical projection, and never carried by the decision notification.
+             */
+            reviewComment?: string | null;
         };
         /**
          * @description An exact numeric(20,6) money or quantity value as a decimal string. It is a string
@@ -5199,6 +5507,157 @@ export interface components {
             /** @description Tenant tarafından tanımlanan identifier type kodu (örn. TCKN, PASSPORT, MEMBER_NO, CUSTOMER_NO). */
             type: string;
         };
+        MedicalReport: {
+            /** Format: uuid */
+            caseId?: string | null;
+            /** @description Present only in the clinical projection. */
+            clinicalSummary?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /**
+             * @description The report's attachments. Empty in the financial projection — a document list
+             *     naming "PSIKIYATRI_RAPORU" is a diagnosis on a filename, and a count of them is a
+             *     fact about the patient too.
+             */
+            documents: components["schemas"]["MedicalReportDocument"][];
+            /** Format: uuid */
+            id: string;
+            /** Format: date */
+            issuedAt: string;
+            /** Format: uuid */
+            issuingPractitionerId?: string | null;
+            /** Format: uuid */
+            issuingProviderOrganizationId?: string | null;
+            /** Format: uuid */
+            personId: string;
+            projection: components["schemas"]["HealthProjection"];
+            /**
+             * @description Names the chain rather than the version: every version of one report shares it,
+             *     and (reference, versionNo) is what identifies a version.
+             */
+            reference: string;
+            rejectReasonCode?: string | null;
+            /** @description Present only in the clinical projection. */
+            reportSubtype?: string | null;
+            /**
+             * @description Present only in the clinical projection. A report type is a diagnosis anybody can
+             *     read off a list.
+             */
+            reportType?: string;
+            /**
+             * @description The reviewer's note. Clinical text, present only in the clinical projection, and
+             *     never carried by a notification, an audit detail or a work item title.
+             */
+            reviewComment?: string | null;
+            /** Format: date-time */
+            reviewedAt?: string | null;
+            /** Format: uuid */
+            reviewedBy?: string | null;
+            /**
+             * Format: uuid
+             * @description The first version of the chain. Version 1 is its own root.
+             */
+            rootReportId: string;
+            /** Format: int64 */
+            rowVersion: number;
+            services: components["schemas"]["MedicalReportService"][];
+            status: components["schemas"]["MedicalReportStatus"];
+            /** Format: date-time */
+            submittedAt?: string | null;
+            /** Format: uuid */
+            submittedBy?: string | null;
+            /** Format: uuid */
+            supersedesReportId?: string | null;
+            /** Format: date */
+            validFrom: string;
+            /**
+             * Format: date
+             * @description Inclusive. The expiry job moves an approved report past it to EXPIRED.
+             */
+            validTo: string;
+            versionNo: number;
+        };
+        MedicalReportDocument: {
+            /** @enum {string} */
+            classification: "INTERNAL" | "CONFIDENTIAL" | "PERSONAL" | "HEALTH";
+            contentType: string;
+            /** Format: date-time */
+            createdAt: string;
+            documentTypeCode: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            objectId: string;
+            originalFilename: string;
+            purpose?: string | null;
+            /**
+             * @description The link's own answer to who may download through it. A report attachment names
+             *     health.clinical.read, and the download refuses a caller who may read documents in
+             *     general but not that one.
+             */
+            requiredPermission?: string | null;
+            /** @enum {string} */
+            scanStatus: "PENDING" | "SCANNING" | "CLEAN" | "INFECTED" | "FAILED";
+        };
+        MedicalReportPage: {
+            items: components["schemas"]["MedicalReport"][];
+            nextCursor?: string | null;
+        };
+        MedicalReportService: {
+            coveredAmount?: string | null;
+            /** @description Exact decimal as a string; never a JSON number. */
+            coveredQuantity?: string | null;
+            currencyCode?: string | null;
+            /** Format: uuid */
+            id: string;
+            /**
+             * @description Present only in the clinical projection. The line a doctor writes about this
+             *     service for this person is clinical, whatever the service is.
+             */
+            notes?: string | null;
+            serviceCode: string;
+            /** Format: uuid */
+            serviceDefinitionId: string;
+            serviceName: string;
+        };
+        MedicalReportServiceInput: {
+            coveredAmount?: string | null;
+            /**
+             * @description Exact decimal as a string, never a JSON number: a limit that depended on binary
+             *     rounding would be a limit two systems disagree about.
+             */
+            coveredQuantity?: string | null;
+            /** @description Required when an amount is given: an amount without a currency is a number. */
+            currencyCode?: string | null;
+            notes?: string | null;
+            /** Format: uuid */
+            serviceDefinitionId: string;
+        };
+        /**
+         * @description SUPERSEDED is what a version becomes when a later version of its chain is approved. It
+         *     is not a decision anybody gives: the chain may hold at most one approved version, so
+         *     approving a correction has to move the earlier one out of APPROVED, and nothing else
+         *     about that row changes.
+         * @enum {string}
+         */
+        MedicalReportStatus: "DRAFT" | "SUBMITTED" | "UNDER_REVIEW" | "APPROVED" | "REJECTED" | "CANCELLED" | "EXPIRED" | "SUPERSEDED";
+        MedicalReportUsage: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            reportId: string;
+            /** Format: date-time */
+            usedAt: string;
+            /** Format: uuid */
+            usedById: string;
+            usedByType: components["schemas"]["MedicalReportUsedByType"];
+        };
+        MedicalReportUsagePage: {
+            items: components["schemas"]["MedicalReportUsage"][];
+            nextCursor?: string | null;
+        };
+        /** @enum {string} */
+        MedicalReportUsedByType: "SERVICE_REQUEST" | "AUTHORIZATION" | "CLAIM";
         MemberImportBatch: {
             /** Format: date-time */
             appliedAt?: string | null;
@@ -5566,6 +6025,23 @@ export interface components {
             identifierTypes: components["schemas"]["PartyCatalogEntry"][];
             membershipTypes: components["schemas"]["PartyCatalogEntry"][];
             relationshipTypes: components["schemas"]["PartyCatalogEntry"][];
+        };
+        PatchMedicalReportDraft: {
+            /** Format: uuid */
+            caseId?: string | null;
+            clinicalSummary?: string | null;
+            /** Format: date */
+            issuedAt: string;
+            /** Format: uuid */
+            issuingPractitionerId?: string | null;
+            /** Format: uuid */
+            issuingProviderOrganizationId?: string | null;
+            reportSubtype?: string | null;
+            reportType: string;
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo: string;
         };
         /**
          * @description Merge patch: a field that is absent is left alone, and an explicit null clears the
@@ -6291,6 +6767,10 @@ export interface components {
             /** @description The whole set. An empty array clears the encounter's diagnoses. */
             items: components["schemas"]["DiagnosisInput"][];
         };
+        PutMedicalReportServices: {
+            /** @description The whole set. An empty array clears the report's service lines. */
+            items: components["schemas"]["MedicalReportServiceInput"][];
+        };
         PutNotificationPreferences: {
             preferences: components["schemas"]["NotificationPreferenceInput"][];
             /** Format: uuid */
@@ -6340,6 +6820,11 @@ export interface components {
          * @enum {string}
          */
         RegistrationAuthority: "TTB" | "SB" | "TDB" | "TEB" | "OTHER";
+        RejectMedicalReport: {
+            /** @description Why, as a code. A rejection nobody can count is a rejection nobody can improve on. */
+            rejectReasonCode: string;
+            reviewComment?: string | null;
+        };
         /**
          * @description A reason is optional here: putting work down may be nothing more than the end of a
          *     shift. A code that is given has to be one a report can group by.
@@ -7542,6 +8027,7 @@ export interface components {
         ProviderId: string;
         ProviderLocationId: string;
         RelationshipId: string;
+        ReportId: string;
         RequestId: string;
         RuleEvaluationId: string;
         RuleSetId: string;
@@ -7605,6 +8091,7 @@ export type SchemaCreateEnrollmentRequest = components['schemas']['CreateEnrollm
 export type SchemaCreateFulfilment = components['schemas']['CreateFulfilment'];
 export type SchemaCreateHealthCase = components['schemas']['CreateHealthCase'];
 export type SchemaCreateLegalHold = components['schemas']['CreateLegalHold'];
+export type SchemaCreateMedicalReport = components['schemas']['CreateMedicalReport'];
 export type SchemaCreateMembershipRequest = components['schemas']['CreateMembershipRequest'];
 export type SchemaCreateNotificationTemplate = components['schemas']['CreateNotificationTemplate'];
 export type SchemaCreateOrganizationRequest = components['schemas']['CreateOrganizationRequest'];
@@ -7624,6 +8111,7 @@ export type SchemaCreateServiceDefinitionRequest = components['schemas']['Create
 export type SchemaCreateServiceRequest = components['schemas']['CreateServiceRequest'];
 export type SchemaCreateUpload = components['schemas']['CreateUpload'];
 export type SchemaCreateWorkQueue = components['schemas']['CreateWorkQueue'];
+export type SchemaDecideMedicalReport = components['schemas']['DecideMedicalReport'];
 export type SchemaDecimalAmount = components['schemas']['DecimalAmount'];
 export type SchemaDecimalPercent = components['schemas']['DecimalPercent'];
 export type SchemaDecimalRate = components['schemas']['DecimalRate'];
@@ -7678,6 +8166,15 @@ export type SchemaLedgerEntry = components['schemas']['LedgerEntry'];
 export type SchemaLedgerPage = components['schemas']['LedgerPage'];
 export type SchemaLegalHold = components['schemas']['LegalHold'];
 export type SchemaMaskedIdentifier = components['schemas']['MaskedIdentifier'];
+export type SchemaMedicalReport = components['schemas']['MedicalReport'];
+export type SchemaMedicalReportDocument = components['schemas']['MedicalReportDocument'];
+export type SchemaMedicalReportPage = components['schemas']['MedicalReportPage'];
+export type SchemaMedicalReportService = components['schemas']['MedicalReportService'];
+export type SchemaMedicalReportServiceInput = components['schemas']['MedicalReportServiceInput'];
+export type SchemaMedicalReportStatus = components['schemas']['MedicalReportStatus'];
+export type SchemaMedicalReportUsage = components['schemas']['MedicalReportUsage'];
+export type SchemaMedicalReportUsagePage = components['schemas']['MedicalReportUsagePage'];
+export type SchemaMedicalReportUsedByType = components['schemas']['MedicalReportUsedByType'];
 export type SchemaMemberImportBatch = components['schemas']['MemberImportBatch'];
 export type SchemaMemberImportRow = components['schemas']['MemberImportRow'];
 export type SchemaMemberShareMethod = components['schemas']['MemberShareMethod'];
@@ -7709,6 +8206,7 @@ export type SchemaPackageLine = components['schemas']['PackageLine'];
 export type SchemaPackageLineInput = components['schemas']['PackageLineInput'];
 export type SchemaPartyCatalogEntry = components['schemas']['PartyCatalogEntry'];
 export type SchemaPartyCatalogs = components['schemas']['PartyCatalogs'];
+export type SchemaPatchMedicalReportDraft = components['schemas']['PatchMedicalReportDraft'];
 export type SchemaPatchWorkQueue = components['schemas']['PatchWorkQueue'];
 export type SchemaPaymentTerm = components['schemas']['PaymentTerm'];
 export type SchemaPerson = components['schemas']['Person'];
@@ -7762,6 +8260,7 @@ export type SchemaProviderStatus = components['schemas']['ProviderStatus'];
 export type SchemaProviderType = components['schemas']['ProviderType'];
 export type SchemaPutApprovalPolicies = components['schemas']['PutApprovalPolicies'];
 export type SchemaPutEncounterDiagnoses = components['schemas']['PutEncounterDiagnoses'];
+export type SchemaPutMedicalReportServices = components['schemas']['PutMedicalReportServices'];
 export type SchemaPutNotificationPreferences = components['schemas']['PutNotificationPreferences'];
 export type SchemaPutPaymentTermRequest = components['schemas']['PutPaymentTermRequest'];
 export type SchemaQuotaPeriodType = components['schemas']['QuotaPeriodType'];
@@ -7769,6 +8268,7 @@ export type SchemaReasonCommand = components['schemas']['ReasonCommand'];
 export type SchemaReassignWorkItem = components['schemas']['ReassignWorkItem'];
 export type SchemaRedeemVoucher = components['schemas']['RedeemVoucher'];
 export type SchemaRegistrationAuthority = components['schemas']['RegistrationAuthority'];
+export type SchemaRejectMedicalReport = components['schemas']['RejectMedicalReport'];
 export type SchemaReleaseWorkItem = components['schemas']['ReleaseWorkItem'];
 export type SchemaReplacePackageDefinitionsRequest = components['schemas']['ReplacePackageDefinitionsRequest'];
 export type SchemaReplacePractitionerLocationsRequest = components['schemas']['ReplacePractitionerLocationsRequest'];
@@ -7913,6 +8413,7 @@ export type ParameterProgramId = components['parameters']['ProgramId'];
 export type ParameterProviderId = components['parameters']['ProviderId'];
 export type ParameterProviderLocationId = components['parameters']['ProviderLocationId'];
 export type ParameterRelationshipId = components['parameters']['RelationshipId'];
+export type ParameterReportId = components['parameters']['ReportId'];
 export type ParameterRequestId = components['parameters']['RequestId'];
 export type ParameterRuleEvaluationId = components['parameters']['RuleEvaluationId'];
 export type ParameterRuleSetId = components['parameters']['RuleSetId'];
@@ -11066,6 +11567,612 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    listMedicalReports: {
+        parameters: {
+            query?: {
+                caseId?: string;
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                /** @description Keep only the reports of one member. */
+                personId?: string;
+                providerOrganizationId?: string;
+                /**
+                 * @description The report type code. It is a clinical value, so filtering by it is possible for
+                 *     a caller that already holds the clinical read and returns nothing new to one that
+                 *     does not: the rows it selects are still served in the financial projection.
+                 */
+                reportType?: string;
+                /** @description Every version of one report chain. */
+                rootReportId?: string;
+                status?: components["schemas"]["MedicalReportStatus"];
+                /** @description Keep only the reports whose validity covers this day, both bounds inclusive. */
+                validOn?: string;
+            };
+            header: {
+                /**
+                 * @description Why the caller is opening clinical data, as a code from the clinical access purpose
+                 *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+                 *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+                 *     read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+                 *     event, because "who read this" without "why" is not an answer a data protection
+                 *     review can use.
+                 */
+                "X-Access-Purpose"?: components["parameters"]["AccessPurposeHeader"];
+                /**
+                 * @description Free text beside the purpose, at most 200 characters once decoded, kept on the access
+                 *     event. It never carries an identifier: the event already names the person and the
+                 *     actor.
+                 *
+                 *     The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+                 *     ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+                 *     the Turkish somebody would actually type. A value with no percent sequences decodes
+                 *     to itself, so a plain ASCII reason may be sent as it is.
+                 */
+                "X-Access-Reason"?: components["parameters"]["AccessReasonHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Medical report page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MedicalReportPage"];
+                };
+            };
+            /** @description Cursor invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    createMedicalReport: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateMedicalReport"];
+            };
+        };
+        responses: {
+            /** @description Draft report created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MedicalReport"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getMedicalReport: {
+        parameters: {
+            query?: never;
+            header: {
+                /**
+                 * @description Why the caller is opening clinical data, as a code from the clinical access purpose
+                 *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+                 *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+                 *     read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+                 *     event, because "who read this" without "why" is not an answer a data protection
+                 *     review can use.
+                 */
+                "X-Access-Purpose"?: components["parameters"]["AccessPurposeHeader"];
+                /**
+                 * @description Free text beside the purpose, at most 200 characters once decoded, kept on the access
+                 *     event. It never carries an identifier: the event already names the person and the
+                 *     actor.
+                 *
+                 *     The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+                 *     ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+                 *     the Turkish somebody would actually type. A value with no percent sequences decodes
+                 *     to itself, so a plain ASCII reason may be sent as it is.
+                 */
+                "X-Access-Reason"?: components["parameters"]["AccessReasonHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                reportId: components["parameters"]["ReportId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Medical report */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MedicalReport"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
+            /** @description The report belongs to a sensitive case and the caller stated no access purpose. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    patchMedicalReportDraft: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                reportId: components["parameters"]["ReportId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PatchMedicalReportDraft"];
+            };
+        };
+        responses: {
+            /** @description Draft updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MedicalReport"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The report has left DRAFT and is frozen. MEDICAL_REPORT_IMMUTABLE. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The report changed since the caller read it */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match is missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    approveMedicalReport: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                reportId: components["parameters"]["ReportId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DecideMedicalReport"];
+            };
+        };
+        responses: {
+            /** @description Report approved */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MedicalReport"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description The report changed since the caller read it */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match is missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    cancelMedicalReport: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                reportId: components["parameters"]["ReportId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Report cancelled */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MedicalReport"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description The report changed since the caller read it */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match is missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    rejectMedicalReport: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                reportId: components["parameters"]["ReportId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RejectMedicalReport"];
+            };
+        };
+        responses: {
+            /** @description Report rejected */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MedicalReport"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description The report changed since the caller read it */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match is missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    putMedicalReportServices: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                reportId: components["parameters"]["ReportId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PutMedicalReportServices"];
+            };
+        };
+        responses: {
+            /** @description The stored service set */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MedicalReport"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The report has left DRAFT and is frozen. MEDICAL_REPORT_IMMUTABLE. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The report changed since the caller read it */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match is missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    startMedicalReview: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                reportId: components["parameters"]["ReportId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Review started */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MedicalReport"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description The report changed since the caller read it */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match is missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    submitMedicalReport: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                reportId: components["parameters"]["ReportId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Report submitted */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MedicalReport"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description The report changed since the caller read it */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match is missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listMedicalReportUsages: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                reportId: components["parameters"]["ReportId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Usage page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MedicalReportUsagePage"];
+                };
+            };
+            /** @description Cursor invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
         };
     };
     listNotificationMessages: {

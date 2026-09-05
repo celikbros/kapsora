@@ -164,9 +164,18 @@ func (s *Service) ClaimItem(ctx context.Context, rc identity.RequestContext,
 			nil, nil, map[string]any{"assignee_actor_id": rc.Principal.ActorID.String()}); err != nil {
 			return err
 		}
-		return s.record(ctx, tx, rc, "work_item.claim", "WORK_ITEM", id, map[string]any{
+		if err := s.record(ctx, tx, rc, "work_item.claim", "WORK_ITEM", id, map[string]any{
 			"queue_id": claimed.QueueID, "assignee_actor_id": rc.Principal.ActorID,
-		})
+		}); err != nil {
+			return err
+		}
+		if s.claimHook == nil {
+			return nil
+		}
+		// The module that raised the work gets to react to it being taken, in this same
+		// transaction: a medical report whose item was claimed is a report under review,
+		// and the two facts are one fact.
+		return s.claimHook.WorkItemClaimed(ctx, tx, rc, claimed.AggregateType, claimed.AggregateID)
 	})
 	if err != nil {
 		return ItemRecord{}, err

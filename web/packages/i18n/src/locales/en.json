@@ -306,7 +306,16 @@
     "HEALTH_CASE_ENROLLMENT_MISMATCH": "The enrollment does not belong to this person or programme.",
     "HEALTH_CASE_REQUEST_NOT_ELIGIBLE": "This request cannot open a health case; only a direct service or pre-authorization on a health service can.",
     "HEALTH_CASE_PROVIDER_SCOPE": "You cannot act on behalf of this provider.",
-    "HEALTH_CASE_PROVIDER_UNKNOWN": "The selected organization is not a provider of this tenant."
+    "HEALTH_CASE_PROVIDER_UNKNOWN": "The selected organization is not a provider of this tenant.",
+    "MEDICAL_REPORT_NOT_FOUND": "The treatment report was not found, or is not visible in this organization.",
+    "MEDICAL_REPORT_IMMUTABLE": "A decided report cannot be changed. Create a new version of it to correct it.",
+    "MEDICAL_REPORT_TRANSITION_INVALID": "That action is not possible while the report is in this state.",
+    "MEDICAL_REPORT_CHAIN_APPROVED": "This report already has an approved version.",
+    "MEDICAL_REPORT_SERVICE_REQUIRED": "A report cannot be submitted without at least one service line.",
+    "MEDICAL_REPORT_DOCUMENT_REQUIRED": "A report cannot be submitted before its file is uploaded and scanned.",
+    "MEDICAL_REPORT_SUPERSEDES_INVALID": "This report cannot be corrected; only the newest decided version of a chain can be.",
+    "MEDICAL_REPORT_SERVICE_UNKNOWN": "The service definition was not found in the catalogue.",
+    "MEDICAL_REPORT_CASE_MISMATCH": "The selected case belongs to another member."
   },
   "fieldErrors": {
     "RULE_COMPILE_FAILED": "The rule condition did not compile",

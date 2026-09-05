@@ -13,6 +13,7 @@ import { eligibilityHandlers } from './eligibility-handlers';
 import { entitlementHandlers } from './entitlement-handlers';
 import { healthHandlers } from './health-handlers';
 import { importHandlers } from './import-handlers';
+import { medicalReportHandlers } from './medical-report-handlers';
 import { notificationHandlers } from './notification-handlers';
 import { pricingHandlers } from './pricing-handlers';
 import { providerHandlers } from './provider-handlers';
@@ -1477,6 +1478,9 @@ export function createHandlers(api: MockApi): HttpHandler[] {
     ...notificationHandlers(api),
     // M5: the health case, and the projection that decides which half of it a caller sees.
     ...healthHandlers(api),
+    // The treatment report reuses that same projection, so a screen built against one is
+    // built against both.
+    ...medicalReportHandlers(api),
   ];
 }
 

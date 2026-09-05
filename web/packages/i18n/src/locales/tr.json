@@ -350,7 +350,16 @@
     "HEALTH_CASE_ENROLLMENT_MISMATCH": "Plan kaydı bu kişiye ya da programa ait değil.",
     "HEALTH_CASE_REQUEST_NOT_ELIGIBLE": "Bu talepten sağlık vakası açılamaz; vaka yalnızca sağlık alanındaki doğrudan hizmet ya da ön onay talebinden açılır.",
     "HEALTH_CASE_PROVIDER_SCOPE": "Bu sağlayıcı adına işlem yapamazsınız.",
-    "HEALTH_CASE_PROVIDER_UNKNOWN": "Seçilen kurum bu tenant'ın sağlayıcısı değil."
+    "HEALTH_CASE_PROVIDER_UNKNOWN": "Seçilen kurum bu tenant'ın sağlayıcısı değil.",
+    "MEDICAL_REPORT_NOT_FOUND": "Tedavi raporu bulunamadı ya da bu kurumda görünmüyor.",
+    "MEDICAL_REPORT_IMMUTABLE": "Karara bağlanmış rapor değiştirilemez. Düzeltme için raporun yeni bir sürümünü oluşturun.",
+    "MEDICAL_REPORT_TRANSITION_INVALID": "Rapor bu durumdayken bu işlem yapılamaz.",
+    "MEDICAL_REPORT_CHAIN_APPROVED": "Bu raporun onaylı bir sürümü zaten var.",
+    "MEDICAL_REPORT_SERVICE_REQUIRED": "Raporda en az bir hizmet satırı olmadan gönderim yapılamaz.",
+    "MEDICAL_REPORT_DOCUMENT_REQUIRED": "Rapor dosyası yüklenip taraması tamamlanmadan gönderim yapılamaz.",
+    "MEDICAL_REPORT_SUPERSEDES_INVALID": "Bu rapor düzeltilemez; yalnızca zincirin en son karara bağlanmış sürümü düzeltilebilir.",
+    "MEDICAL_REPORT_SERVICE_UNKNOWN": "Hizmet tanımı katalogda bulunamadı.",
+    "MEDICAL_REPORT_CASE_MISMATCH": "Seçilen vaka başka bir hak sahibine ait."
   },
   "fieldErrors": {
     "RULE_COMPILE_FAILED": "Kural koşulu derlenemedi",

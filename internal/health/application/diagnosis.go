@@ -58,7 +58,7 @@ func (s *Service) ListDiagnoses(ctx context.Context, rc identity.RequestContext,
 	})
 	switch {
 	case errors.Is(err, ErrAccessPurposeRequired), errors.Is(err, ErrClinicalReadRequired):
-		s.recordDenial(ctx, rc, person, domain.AggregateEncounter, encounterID, audit.AccessView, req)
+		s.recordDenial(ctx, rc, person, domain.AggregateEncounter, encounterID, req)
 		return nil, err
 	case err != nil:
 		return nil, err

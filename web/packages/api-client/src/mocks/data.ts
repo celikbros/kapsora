@@ -929,6 +929,62 @@ export interface StoredDiagnosis {
 
 export type StoredHealthAccessEvent = Schemas['HealthAccessEvent'] & { tenantId: string };
 
+/**
+ * One health.medical_report row, with every column the database has — the report type, the
+ * clinical summary and the reviewer's comment included. The projection is applied when the
+ * handlers answer, in one place, exactly as the Go repository leaves it to the service.
+ *
+ * A report has no sensitivity of its own: it is as sensitive as the case it hangs off, and a
+ * report with no case is STANDARD. That is why there is no `sensitivity` column here.
+ */
+export interface StoredMedicalReport {
+  id: string;
+  tenantId: string;
+  personId: string;
+  caseId: string | null;
+  /** Names the chain: every version of one report shares it. */
+  reference: string;
+  versionNo: number;
+  rootReportId: string;
+  supersedesReportId: string | null;
+  /** Clinical: served only in the clinical projection. */
+  reportType: string;
+  /** Clinical. */
+  reportSubtype: string | null;
+  issuingPractitionerId: string | null;
+  issuingProviderOrganizationId: string | null;
+  issuedAt: string;
+  validFrom: string;
+  validTo: string;
+  status: Schemas['MedicalReportStatus'];
+  /** Clinical: the free text a doctor wrote. */
+  clinicalSummary: string | null;
+  /** Clinical: the free text a reviewer wrote. */
+  reviewComment: string | null;
+  rejectReasonCode: string | null;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  submittedAt: string | null;
+  submittedBy: string | null;
+  createdAt: string;
+  rowVersion: number;
+}
+
+/** One covered service of a report. The amounts are exact decimals as strings. */
+export interface StoredMedicalReportService {
+  id: string;
+  tenantId: string;
+  reportId: string;
+  serviceDefinitionId: string;
+  coveredQuantity: string | null;
+  coveredAmount: string | null;
+  currencyCode: string | null;
+  /** Clinical: the line a doctor wrote about this service for this person. */
+  notes: string | null;
+}
+
+export type StoredMedicalReportUsage = Schemas['MedicalReportUsage'] & { tenantId: string };
+
 export type ScanVerdict = 'CLEAN' | 'INFECTED' | 'FAILED';
 
 /** Reference catalogs; tenant-independent so every tenant sees the same options. */
@@ -1115,7 +1171,12 @@ const SPONSOR_HR_PERMISSIONS = [
   'report.read',
 ];
 
-/** MEDICAL_REVIEWER's health half: clinical detail plus the sensitive-category grant. */
+/**
+ * MEDICAL_REVIEWER's health half: clinical detail, the sensitive-category grant and the
+ * treatment report review. It deliberately does not hold health.medical_report.manage —
+ * writing a report is the provider's job and deciding about one is the payer's, and a role
+ * holding both would be a provider approving its own reports.
+ */
 const MEDICAL_REVIEWER_PERMISSIONS = [
   'member.read',
   'service_request.read',
@@ -1123,6 +1184,7 @@ const MEDICAL_REVIEWER_PERMISSIONS = [
   'health.case.read',
   'health.clinical.read',
   'health.sensitive.read',
+  'health.medical_report.review',
   'document.read',
   'worklist.read',
   'worklist.claim',
@@ -1295,6 +1357,13 @@ export interface MockWorld {
    * screen that shows it has something to show.
    */
   healthAccessEvents: StoredHealthAccessEvent[];
+  medicalReports: StoredMedicalReport[];
+  medicalReportServices: StoredMedicalReportService[];
+  /**
+   * The trace v1.2 10.5 step 6 asks for: which request, authorization or claim leaned on
+   * which version of a report. Append-only in the schema and treated as append-only here.
+   */
+  medicalReportUsages: StoredMedicalReportUsage[];
   /**
    * Moves a document on from SCANNING the way the scan worker does. It is the mock's
    * stand-in for the worker, so a screen can show "taranıyor" and then a verdict without
@@ -3827,6 +3896,138 @@ export function buildWorld(
     },
   ];
 
+  // M5: the treatment report (WP-I5-02). Four reports, appended here at the very end for
+  // the same reason the two M5 accounts are: `buildWorld` runs off one seeded random stream,
+  // and an id drawn earlier would change which organizations a small world gets.
+  //
+  // The four are the four states a screen has to be able to draw: a draft nobody has sent, an
+  // approved report with two covered services that a claim can lean on, a rejected one, and
+  // the correction of that rejection waiting to be sent. The last two share a reference and a
+  // chain root, which is what makes "version 2 of 2" drawable.
+  const doctorActorId = accounts.find((a) => a.username === 'doctor.a')!.actorId;
+  // The queue a submitted report waits in. It is pushed here rather than declared with the
+  // other three so that adding it shifts none of the seeded random draws above.
+  workQueues.push({
+    id: nextId(),
+    tenantId: demoA.id,
+    code: 'MEDICAL_REVIEW',
+    name: 'Tıbbi Değerlendirme',
+    domainCode: 'HEALTH',
+    assignmentPolicy: 'MANUAL',
+    slaMinutes: 480,
+    escalationQueueId: escalationQueue.id,
+    active: true,
+    rowVersion: 1,
+    createdAt: isoDaysAgo(base, 118),
+  });
+  const medicalReports: StoredMedicalReport[] = [];
+  const medicalReportServices: StoredMedicalReportService[] = [];
+  const medicalReportUsages: StoredMedicalReportUsage[] = [];
+  const reportOf = (
+    over: Partial<StoredMedicalReport> & {
+      daysAgo: number;
+      status: Schemas['MedicalReportStatus'];
+    },
+  ): StoredMedicalReport => {
+    const { daysAgo, status, ...rest } = over;
+    const id = nextId(daysAgo * -86_400_000);
+    const decided = status === 'APPROVED' || status === 'REJECTED';
+    const row: StoredMedicalReport = {
+      id,
+      tenantId: demoA.id,
+      personId: familyPrincipal.id,
+      caseId: null,
+      reference: `MR-20260${String(daysAgo).padStart(3, '0')}-AAAAAAAA`,
+      versionNo: 1,
+      rootReportId: id,
+      supersedesReportId: null,
+      reportType: 'FIZIK_TEDAVI',
+      reportSubtype: 'AMBULATUVAR',
+      issuingPractitionerId: practitioners[0]!.id,
+      issuingProviderOrganizationId: providerRel.id,
+      issuedAt: isoDaysAgo(base, daysAgo).slice(0, 10),
+      validFrom: isoDaysAgo(base, daysAgo).slice(0, 10),
+      validTo: isoDaysAgo(base, daysAgo - 180).slice(0, 10),
+      status,
+      clinicalSummary: 'Sol dizde artroskopi sonrası altı hafta fizik tedavi gereklidir.',
+      reviewComment: decided ? 'Rapordaki bulgular ile istenen hizmet değerlendirildi.' : null,
+      rejectReasonCode: status === 'REJECTED' ? 'MISSING_EVIDENCE' : null,
+      reviewedBy: decided ? doctorActorId : null,
+      reviewedAt: decided ? isoDaysAgo(base, daysAgo - 1) : null,
+      submittedAt: status === 'DRAFT' ? null : isoDaysAgo(base, daysAgo),
+      submittedBy: status === 'DRAFT' ? null : providerActorId,
+      createdAt: isoDaysAgo(base, daysAgo),
+      rowVersion: status === 'DRAFT' ? 1 : 3,
+      ...rest,
+    };
+    medicalReports.push(row);
+    return row;
+  };
+  const reportLine = (
+    report: StoredMedicalReport,
+    service: StoredServiceDefinition,
+    coveredQuantity: string | null,
+    coveredAmount: string | null,
+    notes: string | null,
+  ): StoredMedicalReportService => {
+    const row: StoredMedicalReportService = {
+      id: nextId(),
+      tenantId: demoA.id,
+      reportId: report.id,
+      serviceDefinitionId: service.id,
+      coveredQuantity,
+      coveredAmount,
+      currencyCode: coveredAmount === null ? null : 'TRY',
+      notes,
+    };
+    medicalReportServices.push(row);
+    return row;
+  };
+
+  const reportDraft = reportOf({ daysAgo: 9, status: 'DRAFT' });
+  reportLine(reportDraft, defPhysio, '10.000000', null, 'Haftada iki seans, sol diz.');
+
+  const reportApproved = reportOf({ daysAgo: 30, status: 'APPROVED' });
+  reportLine(reportApproved, defPhysio, '20.000000', '12000.000000', 'Haftada iki seans, sol diz.');
+  reportLine(reportApproved, defGpVisit, '4.000000', null, 'Kontrol muayeneleri.');
+
+  const reportRejected = reportOf({
+    daysAgo: 45,
+    status: 'REJECTED',
+    reportSubtype: 'YATAN',
+  });
+  reportLine(reportRejected, defPhysio, '30.000000', null, 'Yatarak tedavi talebi.');
+  // The correction: version 2 of the same chain, a draft again, with the line copied. The
+  // rejected version keeps its decision and its own line exactly as they were.
+  const reportCorrection = reportOf({
+    daysAgo: 44,
+    status: 'DRAFT',
+    reference: reportRejected.reference,
+    versionNo: 2,
+    rootReportId: reportRejected.rootReportId,
+    supersedesReportId: reportRejected.id,
+    reportSubtype: 'AMBULATUVAR',
+    reviewComment: null,
+  });
+  reportLine(reportCorrection, defPhysio, '20.000000', null, 'Ayaktan tedaviye çevrildi.');
+
+  // The report file each of them hangs off, and the usage the approved one already has: a
+  // claim that leaned on version 1 of a chain, which is what a screen showing "bu rapora
+  // dayanan hasarlar" draws.
+  for (const report of [reportDraft, reportApproved, reportRejected, reportCorrection]) {
+    const file = documentOf('tedavi-raporu.pdf', 'HEALTH', 'CLEAN');
+    const link = linkDocument(file, report.id, 'MEDICAL_REPORT', 'health.clinical.read');
+    link.aggregateType = 'MEDICAL_REPORT';
+  }
+  medicalReportUsages.push({
+    id: nextId(),
+    tenantId: demoA.id,
+    reportId: reportApproved.id,
+    usedByType: 'CLAIM',
+    usedById: nextId(),
+    usedAt: isoDaysAgo(base, 10),
+  });
+
   return {
     tenants,
     accounts,
@@ -3884,6 +4085,9 @@ export function buildWorld(
     encounters,
     diagnoses,
     healthAccessEvents: [],
+    medicalReports,
+    medicalReportServices,
+    medicalReportUsages,
     advanceScan,
     nextId,
     random,

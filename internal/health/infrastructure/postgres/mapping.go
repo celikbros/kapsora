@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/celikbros/kapsora/internal/health/application"
 	"github.com/celikbros/kapsora/internal/platform/sqlcgen"
@@ -124,4 +125,59 @@ func pageSize(n int) int32 {
 		return 500
 	}
 	return int32(n)
+}
+
+// The four reads of health.medical_report select the same columns and sqlc gives each of
+// them its own row type. They are narrowed to one shape here and mapped once, for the same
+// reason the case rows above are: a column carried in one read and dropped in another would
+// be a clinical field that silently stopped arriving in half the endpoints.
+
+type medicalReport struct {
+	ID                            uuid.UUID
+	PersonID                      uuid.UUID
+	CaseID                        uuid.NullUUID
+	Reference                     string
+	VersionNo                     int32
+	RootReportID                  uuid.UUID
+	SupersedesReportID            uuid.NullUUID
+	ReportType                    string
+	ReportSubtype                 *string
+	IssuingPractitionerID         uuid.NullUUID
+	IssuingProviderOrganizationID uuid.NullUUID
+	IssuedAt                      pgtype.Date
+	ValidFrom                     pgtype.Date
+	ValidTo                       pgtype.Date
+	Status                        string
+	ClinicalSummary               *string
+	ReviewComment                 *string
+	RejectReasonCode              *string
+	ReviewedBy                    uuid.NullUUID
+	ReviewedAt                    *time.Time
+	SubmittedAt                   *time.Time
+	SubmittedBy                   uuid.NullUUID
+	CreatedAt                     time.Time
+	RowVersion                    int64
+	CaseSensitivity               string
+}
+
+func fetchedReportRow(r sqlcgen.GetMedicalReportRow) medicalReport     { return medicalReport(r) }
+func lockedReportRow(r sqlcgen.LockMedicalReportRow) medicalReport     { return medicalReport(r) }
+func listedReportRow(r sqlcgen.ListMedicalReportsRow) medicalReport    { return medicalReport(r) }
+func chainReportRow(r sqlcgen.ListMedicalReportChainRow) medicalReport { return medicalReport(r) }
+
+func reportOf(r medicalReport) application.ReportRecord {
+	return application.ReportRecord{
+		ID: r.ID, PersonID: r.PersonID, CaseID: uuidPtr(r.CaseID), Reference: r.Reference,
+		VersionNo: int(r.VersionNo), RootReportID: r.RootReportID,
+		SupersedesReportID: uuidPtr(r.SupersedesReportID), ReportType: r.ReportType,
+		ReportSubtype:                 r.ReportSubtype,
+		IssuingPractitionerID:         uuidPtr(r.IssuingPractitionerID),
+		IssuingProviderOrganizationID: uuidPtr(r.IssuingProviderOrganizationID),
+		IssuedAt:                      dateValue(r.IssuedAt), ValidFrom: dateValue(r.ValidFrom),
+		ValidTo: dateValue(r.ValidTo), Status: r.Status, ClinicalSummary: r.ClinicalSummary,
+		ReviewComment: r.ReviewComment, RejectReasonCode: r.RejectReasonCode,
+		ReviewedBy: uuidPtr(r.ReviewedBy), ReviewedAt: r.ReviewedAt,
+		SubmittedAt: r.SubmittedAt, SubmittedBy: uuidPtr(r.SubmittedBy),
+		CreatedAt: r.CreatedAt, RowVersion: r.RowVersion, CaseSensitivity: r.CaseSensitivity,
+	}
 }

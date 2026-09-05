@@ -26,6 +26,8 @@ import (
 	identityhttp "github.com/celikbros/kapsora/internal/identity/transport/http"
 	"github.com/celikbros/kapsora/internal/platform/dbtest"
 	"github.com/celikbros/kapsora/internal/platform/httpx"
+	workflowapp "github.com/celikbros/kapsora/internal/workflow/application"
+	workflowpg "github.com/celikbros/kapsora/internal/workflow/infrastructure/postgres"
 )
 
 // permsHeader lets each request choose what the caller holds, which is the whole subject of
@@ -75,6 +77,17 @@ type server struct {
 	program    uuid.UUID
 	enrollment uuid.UUID
 	codeSystem uuid.UUID
+	// definition is a HEALTH-domain service a report may name a line for, and reviewQueue
+	// is the queue a submitted report raises its work item into.
+	definition uuid.UUID
+	// otherDefinition is a service no report names, so "this report does not cover that"
+	// is a question the coverage test can actually ask.
+	otherDefinition uuid.UUID
+	reviewQueue     uuid.UUID
+	svc             *application.Service
+	// workflows is the worklist, wired to the health service by the claim hook, so the
+	// test can prove that claiming a report's work item starts its review.
+	workflows  *workflowapp.Service
 	codePlain  uuid.UUID
 	codeStrict uuid.UUID
 	request    uuid.UUID
@@ -90,9 +103,11 @@ func newServer(t *testing.T) *server { //nolint:funlen // one linear fixture rea
 	if err != nil {
 		t.Fatal(err)
 	}
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	svc, err := application.New(application.Deps{
-		Pool: h.App, Repo: healthpg.New(), Audit: auditpg.New(), Cursors: cursors,
-		Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Pool: h.App, Repo: healthpg.New(), Reports: healthpg.NewReports(),
+		WorkItems: healthpg.NewWorkItems(logger), Audit: auditpg.New(), Cursors: cursors,
+		Logger: logger,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -104,7 +119,18 @@ func newServer(t *testing.T) *server { //nolint:funlen // one linear fixture rea
 	s.membership = h.CreateMembership(s.tenant, s.actor)
 	s.seedWorld(t)
 
-	handler := healthhttp.NewHandler(svc, &denyRecorder{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	s.svc = svc
+	// The worklist, wired to the health service exactly as cmd/api wires it. Neither
+	// package imports the other; this is the seam, and it is the only place a test can
+	// prove that claiming a report's item starts its review.
+	s.workflows, err = workflowapp.New(workflowapp.Deps{
+		Pool: h.App, Repo: workflowpg.New(), Audit: auditpg.New(), Cursors: cursors,
+		ClaimHook: svc, Logger: logger,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	handler := healthhttp.NewHandler(svc, &denyRecorder{}, logger)
 
 	// Stand-in for RequireTenantContext: the permissions and the grants come from the test.
 	fakeContext := func(next http.Handler) http.Handler {
@@ -132,6 +158,9 @@ func newServer(t *testing.T) *server { //nolint:funlen // one linear fixture rea
 		handler.EncounterRoutes(r, healthhttp.Middlewares{})
 	})
 	router.Route("/api/v1/health-access-log", handler.AccessLogRoutes)
+	router.Route("/api/v1/medical-reports", func(r chi.Router) {
+		handler.ReportRoutes(r, healthhttp.ReportMiddlewares{})
+	})
 	s.handler = router
 	return s
 }
@@ -181,14 +210,19 @@ func (s *server) seedWorld(t *testing.T) { //nolint:funlen // one linear fixture
 		VALUES ($1, $2, $3, 'ACTIVE', daterange('2026-01-01', NULL, '[)')) RETURNING id`,
 		s.tenant, membership, planID)
 
-	var category, definition uuid.UUID
+	var category uuid.UUID
 	scan(&category, "service category", `
 		INSERT INTO catalog.service_category (tenant_id, code, name, domain_code)
 		VALUES ($1, 'HEALTH_ROOT', 'Sağlık', 'HEALTH') RETURNING id`, s.tenant)
-	scan(&definition, "service definition", `
+	scan(&s.definition, "service definition", `
 		INSERT INTO catalog.service_definition (tenant_id, category_id, code, name,
 		                                        fulfillment_mode, default_unit_type)
 		VALUES ($1, $2, 'PHYSIO', 'Fizyoterapi', 'SESSION', 'SESSION') RETURNING id`,
+		s.tenant, category)
+	scan(&s.otherDefinition, "other service definition", `
+		INSERT INTO catalog.service_definition (tenant_id, category_id, code, name,
+		                                        fulfillment_mode, default_unit_type)
+		VALUES ($1, $2, 'MRI_SCAN', 'MR çekimi', 'DIRECT', 'COUNT') RETURNING id`,
 		s.tenant, category)
 	scan(&s.request, "service request", `
 		INSERT INTO service.service_request (tenant_id, request_reference, request_type, person_id,
@@ -203,7 +237,7 @@ func (s *server) seedWorld(t *testing.T) { //nolint:funlen // one linear fixture
 	h.AdminExec(`
 		INSERT INTO service.service_request_item (tenant_id, service_request_version_id, line_no,
 		                                          service_definition_id, requested_quantity, unit_type)
-		VALUES ($1, $2, 1, $3, 2, 'SESSION')`, s.tenant, version, definition)
+		VALUES ($1, $2, 1, $3, 2, 'SESSION')`, s.tenant, version, s.definition)
 
 	// WP-I5-05 seeds the real ICD-10. What this package needs is only that a code value can
 	// say, in its own attributes, that its category is one v1.2 11.10 protects.
@@ -219,6 +253,14 @@ func (s *server) seedWorld(t *testing.T) { //nolint:funlen // one linear fixture
 		VALUES ($1, $2, $3, 'Orta düzeyde depresif atak', '2026-01-01',
 		        '{"chapter":"V","sensitive":true}'::jsonb) RETURNING id`,
 		s.tenant, s.codeSystem, sensitiveCode)
+
+	// The queue a submitted report waits in. It is seeded here rather than created through
+	// the worklist API because what this package's tests are about is the report: the queue
+	// is somebody else's configuration, and the only thing asserted about it is that an item
+	// lands in it carrying a title with no clinical word.
+	scan(&s.reviewQueue, "medical review queue", `
+		INSERT INTO workflow.work_queue (tenant_id, code, name, domain_code)
+		VALUES ($1, 'MEDICAL_REVIEW', 'Tıbbi değerlendirme', 'HEALTH') RETURNING id`, s.tenant)
 }
 
 func (s *server) do(t *testing.T, method, path, permissions string, body any, headers ...string) *httptest.ResponseRecorder {

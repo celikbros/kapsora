@@ -19,12 +19,28 @@ import (
 
 // Service implements the work queue, work item, comment and approval policy use cases.
 type Service struct {
-	pool    *pgxpool.Pool
-	repo    Repository
-	audit   audit.Recorder
-	cursors *httpx.CursorCodec
-	logger  *slog.Logger
-	now     func() time.Time
+	pool      *pgxpool.Pool
+	repo      Repository
+	audit     audit.Recorder
+	cursors   *httpx.CursorCodec
+	claimHook ClaimHook
+	logger    *slog.Logger
+	now       func() time.Time
+}
+
+// ClaimHook lets the module that raised a piece of work react to somebody taking it, inside
+// the claim's own transaction. It exists for one case the product actually has: a medical
+// reviewer who claims a report's work item has started the review, and making them give a
+// second command to say so would be a screen asking a question it already knows the answer
+// to (WP-I5-02 section 2.2).
+//
+// It is an interface here and implemented over there, so this package depends on nothing of
+// the health module and the health module depends on nothing of this one; the wiring is done
+// in cmd/api, where both already exist. A hook that fails fails the claim: it runs in the
+// same transaction, and a claim that half-happened is worse than one that did not.
+type ClaimHook interface {
+	WorkItemClaimed(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
+		aggregateType string, aggregateID uuid.UUID) error
 }
 
 // Deps are the collaborators of the service.
@@ -34,7 +50,10 @@ type Deps struct {
 	Audit audit.Recorder
 	// Cursors may be nil in a process that only runs the escalation job: it never pages.
 	Cursors *httpx.CursorCodec
-	Logger  *slog.Logger
+	// ClaimHook is told when a work item is claimed. nil means nothing is told, which is
+	// what a process with no producing module wired into it should do.
+	ClaimHook ClaimHook
+	Logger    *slog.Logger
 	// Now defaults to time.Now; tests pin it so a clock is deterministic.
 	Now func() time.Time
 }
@@ -54,8 +73,8 @@ func New(d Deps) (*Service, error) {
 		d.Now = func() time.Time { return time.Now().UTC() }
 	}
 	return &Service{
-		pool: d.Pool, repo: d.Repo, audit: d.Audit,
-		cursors: d.Cursors, logger: d.Logger, now: d.Now,
+		pool: d.Pool, repo: d.Repo, audit: d.Audit, cursors: d.Cursors,
+		claimHook: d.ClaimHook, logger: d.Logger, now: d.Now,
 	}, nil
 }
 

@@ -19,6 +19,8 @@ import (
 	"github.com/celikbros/kapsora/internal/benefit/ledger"
 	documentapp "github.com/celikbros/kapsora/internal/document/application"
 	documentpg "github.com/celikbros/kapsora/internal/document/infrastructure/postgres"
+	healthapp "github.com/celikbros/kapsora/internal/health/application"
+	healthpg "github.com/celikbros/kapsora/internal/health/infrastructure/postgres"
 	"github.com/celikbros/kapsora/internal/platform/config"
 	"github.com/celikbros/kapsora/internal/platform/db"
 	"github.com/celikbros/kapsora/internal/platform/idempotency"
@@ -92,6 +94,18 @@ func run() error {
 		return err
 	}
 
+	// The treatment report expiry job. A report is valid to the end of its last day, and
+	// after that a claim may not lean on it; the sweep is what makes that true without every
+	// reader having to compare dates for itself. No cursor codec, and no work item port:
+	// this process answers no list and submits nothing.
+	reports, err := healthapp.New(healthapp.Deps{
+		Pool: pool, Repo: healthpg.New(), Reports: healthpg.NewReports(),
+		Audit: auditpg.New(), Logger: logger,
+	})
+	if err != nil {
+		return err
+	}
+
 	registry := scheduler.NewRegistry()
 	registry.Register(scheduler.AuditEnsurePartitions(pool))
 	registry.Register(scheduler.OutboxRecoverStale(outbox.New(pool, outbox.Options{Logger: logger})))
@@ -102,6 +116,7 @@ func run() error {
 	registry.Register(scheduler.AuthorizationExpire(authorizations))
 	registry.Register(scheduler.AuthorizationExpiring(authorizations))
 	registry.Register(scheduler.WorkflowEscalate(workflows))
+	registry.Register(scheduler.MedicalReportExpire(reports))
 	// Document retention runs only when an object store and a retention period are both
 	// configured. Purging real documents after a number nobody chose would be worse than
 	// keeping them, so keeping them is the default; when the sweep does run, every

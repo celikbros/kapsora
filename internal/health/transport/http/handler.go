@@ -197,6 +197,41 @@ func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) 
 	case errors.Is(err, application.ErrProviderUnknown):
 		problem(w, r, http.StatusUnprocessableEntity, "health-cases/provider-unknown",
 			"HEALTH_CASE_PROVIDER_UNKNOWN", "Bu kurum tenant'ın sağlayıcısı değil", "")
+	case errors.Is(err, application.ErrReportNotFound):
+		problem(w, r, http.StatusNotFound, "medical-reports/not-found", "MEDICAL_REPORT_NOT_FOUND",
+			"Tedavi raporu bulunamadı", "")
+	case errors.Is(err, application.ErrReportImmutable):
+		// The freeze the whole package exists for. 409 rather than 403: the caller is
+		// allowed to write reports, and this one has simply stopped being writable.
+		problem(w, r, http.StatusConflict, "medical-reports/immutable", "MEDICAL_REPORT_IMMUTABLE",
+			"Karara bağlanmış rapor değiştirilemez",
+			"Düzeltme için raporun yeni bir sürümünü oluşturun.")
+	case errors.Is(err, application.ErrReportTransitionInvalid):
+		problem(w, r, http.StatusConflict, "medical-reports/transition-invalid",
+			"MEDICAL_REPORT_TRANSITION_INVALID", "Rapor bu durumda bu işleme uygun değil", "")
+	case errors.Is(err, application.ErrReportChainApproved):
+		problem(w, r, http.StatusConflict, "medical-reports/chain-approved",
+			"MEDICAL_REPORT_CHAIN_APPROVED", "Bu raporun onaylı bir sürümü zaten var", "")
+	case errors.Is(err, application.ErrReportServiceRequired):
+		problem(w, r, http.StatusUnprocessableEntity, "medical-reports/service-required",
+			"MEDICAL_REPORT_SERVICE_REQUIRED", "Raporda en az bir hizmet satırı olmalı", "")
+	case errors.Is(err, application.ErrReportDocumentRequired):
+		problem(w, r, http.StatusUnprocessableEntity, "medical-reports/document-required",
+			"MEDICAL_REPORT_DOCUMENT_REQUIRED", "Rapor belgesi yüklenmeli",
+			"Gönderimden önce rapor dosyasını yükleyin ve taramanın tamamlanmasını bekleyin.")
+	case errors.Is(err, application.ErrReportSupersedesInvalid):
+		problem(w, r, http.StatusUnprocessableEntity, "medical-reports/supersedes-invalid",
+			"MEDICAL_REPORT_SUPERSEDES_INVALID", "Bu rapor düzeltilemez",
+			"Yalnızca bir zincirin en son karara bağlanmış sürümü düzeltilebilir.")
+	case errors.Is(err, application.ErrReportServiceUnknown):
+		problem(w, r, http.StatusUnprocessableEntity, "medical-reports/service-unknown",
+			"MEDICAL_REPORT_SERVICE_UNKNOWN", "Hizmet tanımı katalogda bulunamadı", "")
+	case errors.Is(err, application.ErrReportCaseMismatch):
+		problem(w, r, http.StatusUnprocessableEntity, "medical-reports/case-mismatch",
+			"MEDICAL_REPORT_CASE_MISMATCH", "Vaka başka bir hak sahibine ait", "")
+	case errors.Is(err, application.ErrReportCaseNotFound):
+		problem(w, r, http.StatusNotFound, "health-cases/not-found", "HEALTH_CASE_NOT_FOUND",
+			"Sağlık vakası bulunamadı", "")
 	case errors.Is(err, application.ErrVersionMismatch):
 		problem(w, r, http.StatusPreconditionFailed, "generic/etag-mismatch", "ETAG_MISMATCH",
 			"Kayıt bu arada değişti", "Güncel sürümü alıp değişikliğinizi yeniden uygulayın.")

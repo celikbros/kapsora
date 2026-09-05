@@ -66,7 +66,7 @@ const CASE_STATUSES = new Set<string>(['OPEN', 'CLOSED']);
 const ENCOUNTER_TYPES = new Set<string>(['OUTPATIENT', 'INPATIENT', 'EMERGENCY', 'TELEHEALTH']);
 const DIAGNOSIS_TYPES = new Set<string>(['PRIMARY', 'SECONDARY', 'SUSPECTED']);
 /** health.clinical_access_purpose, as migration 000031 seeds it. */
-const ACCESS_PURPOSES = new Set<string>([
+export const ACCESS_PURPOSES = new Set<string>([
   'TREATMENT',
   'PRE_AUTHORIZATION',
   'CLAIM_REVIEW',
@@ -76,17 +76,17 @@ const ACCESS_PURPOSES = new Set<string>([
 ]);
 const MAX_DIAGNOSES = 50;
 const MAX_NOTES = 4000;
-const MAX_ACCESS_REASON = 200;
+export const MAX_ACCESS_REASON = 200;
 const MAX_CLOSE_REASON = 200;
 const BRANCH_CODE = /^[A-Z][A-Z0-9_.-]{0,63}$/;
 
 /** A clinical body is not something an intermediary should keep a copy of. */
-const NO_STORE = { 'Cache-Control': 'no-store' } as const;
+export const NO_STORE = { 'Cache-Control': 'no-store' } as const;
 
-type Projection = Schemas['HealthProjection'];
+export type Projection = Schemas['HealthProjection'];
 
 /** Why the caller is opening clinical data, as the two headers state it. */
-interface AccessRequest {
+export interface AccessRequest {
   purposeCode: string;
   reasonText: string;
 }
@@ -106,14 +106,14 @@ function decodeReason(raw: string): string {
   }
 }
 
-function accessRequest(request: Request): AccessRequest {
+export function accessRequest(request: Request): AccessRequest {
   return {
     purposeCode: (request.headers.get('X-Access-Purpose') ?? '').trim(),
     reasonText: decodeReason(request.headers.get('X-Access-Reason') ?? ''),
   };
 }
 
-interface Decision {
+export interface Decision {
   projection: Projection;
   /** The clinical half was withheld from a caller that holds the clinical grant. */
   refusedSensitive: boolean;
@@ -129,46 +129,83 @@ function encounterNotFound(api: MockApi): Response {
   return problem(api, 404, 'ENCOUNTER_NOT_FOUND', 'Encounter bulunamadı');
 }
 
-function clinicalReadRequired(api: MockApi): Response {
+export function clinicalReadRequired(api: MockApi): Response {
   return problem(api, 403, 'CLINICAL_READ_REQUIRED', 'Klinik detay için ek yetki gerekiyor', {
     detail: 'Tanı bilgisini görmek için klinik okuma yetkisi gerekir.',
   });
 }
 
-function accessPurposeRequired(api: MockApi): Response {
+export function accessPurposeRequired(api: MockApi): Response {
   return problem(api, 428, 'ACCESS_PURPOSE_REQUIRED', 'Erişim amacı belirtilmeli', {
     detail: 'Bu kaydı görüntülemek için X-Access-Purpose başlığıyla erişim amacınızı bildirin.',
   });
 }
 
+/**
+ * The one place the visibility rules live, transcribed from `decide` in
+ * internal/health/application/projection.go. Every handler of this module and of
+ * medical-report-handlers.ts asks this and nothing else, so the mock has one rule to keep in
+ * step with the server rather than nineteen — and a treatment report is exactly as sensitive
+ * as the episode of care it belongs to, decided by the same function.
+ *
+ * It takes the sensitivity rather than the row so a report, which has no sensitivity of its
+ * own, can hand it the sensitivity of its case.
+ */
+/**
+ * The two access headers, checked against the reference migration 000031 seeds and the
+ * length the audit sanitiser will accept. Shared with the report handlers, so a purpose the
+ * server rejects is rejected in both places by one list.
+ */
+export function accessHeaderErrors(req: AccessRequest): FieldError[] {
+  const errors: FieldError[] = [];
+  if (req.purposeCode !== '' && !ACCESS_PURPOSES.has(req.purposeCode)) {
+    errors.push({
+      field: 'X-Access-Purpose',
+      code: 'ENUM',
+      message: 'tanımlı bir erişim amacı olmalı',
+    });
+  }
+  if ([...req.reasonText].length > MAX_ACCESS_REASON) {
+    errors.push({
+      field: 'X-Access-Reason',
+      code: 'LENGTH',
+      message: 'en fazla 200 karakter',
+    });
+  }
+  return errors;
+}
+
+export function decideProjection(
+  api: MockApi,
+  session: MockSession,
+  tenantId: string,
+  sensitivity: Schemas['HealthCaseSensitivity'],
+  req: AccessRequest,
+): Decision {
+  if (!hasPermission(api, session, tenantId, PERMISSION_CLINICAL_READ)) {
+    return { projection: 'FINANCIAL', refusedSensitive: false, purposeMissing: false };
+  }
+  if (sensitivity !== 'SENSITIVE') {
+    return { projection: 'CLINICAL', refusedSensitive: false, purposeMissing: false };
+  }
+  if (!hasPermission(api, session, tenantId, PERMISSION_SENSITIVE_READ)) {
+    return { projection: 'FINANCIAL', refusedSensitive: true, purposeMissing: false };
+  }
+  if (req.purposeCode === '') {
+    return { projection: 'FINANCIAL', refusedSensitive: true, purposeMissing: true };
+  }
+  return { projection: 'CLINICAL', refusedSensitive: false, purposeMissing: false };
+}
+
 export function healthHandlers(api: MockApi): HttpHandler[] {
   const world = (): MockWorld => api.world;
 
-  /**
-   * The one place the visibility rules live, transcribed from `decide` in
-   * internal/health/application/projection.go. Every handler below asks this and nothing
-   * else, so the mock has one rule to keep in step with the server rather than nine.
-   */
   const decide = (
     session: MockSession,
     tenantId: string,
     row: StoredHealthCase,
     req: AccessRequest,
-  ): Decision => {
-    if (!hasPermission(api, session, tenantId, PERMISSION_CLINICAL_READ)) {
-      return { projection: 'FINANCIAL', refusedSensitive: false, purposeMissing: false };
-    }
-    if (row.sensitivity !== 'SENSITIVE') {
-      return { projection: 'CLINICAL', refusedSensitive: false, purposeMissing: false };
-    }
-    if (!hasPermission(api, session, tenantId, PERMISSION_SENSITIVE_READ)) {
-      return { projection: 'FINANCIAL', refusedSensitive: true, purposeMissing: false };
-    }
-    if (req.purposeCode === '') {
-      return { projection: 'FINANCIAL', refusedSensitive: true, purposeMissing: true };
-    }
-    return { projection: 'CLINICAL', refusedSensitive: false, purposeMissing: false };
-  };
+  ): Decision => decideProjection(api, session, tenantId, row.sensitivity, req);
 
   /**
    * The projection, applied to the row before it becomes a body. The financial projection
@@ -288,24 +325,7 @@ export function healthHandlers(api: MockApi): HttpHandler[] {
       .sort((a, b) => a.startedAt.localeCompare(b.startedAt));
 
   /** The purpose header, checked against the reference the migration seeds. */
-  const badPurpose = (req: AccessRequest): FieldError[] => {
-    const errors: FieldError[] = [];
-    if (req.purposeCode !== '' && !ACCESS_PURPOSES.has(req.purposeCode)) {
-      errors.push({
-        field: 'X-Access-Purpose',
-        code: 'ENUM',
-        message: 'tanımlı bir erişim amacı olmalı',
-      });
-    }
-    if ([...req.reasonText].length > MAX_ACCESS_REASON) {
-      errors.push({
-        field: 'X-Access-Reason',
-        code: 'LENGTH',
-        message: 'en fazla 200 karakter',
-      });
-    }
-    return errors;
-  };
+  const badPurpose = (req: AccessRequest): FieldError[] => accessHeaderErrors(req);
 
   /** Recomputes a case's sensitivity from the diagnoses that are actually stored. */
   const refreshSensitivity = (row: StoredHealthCase): void => {

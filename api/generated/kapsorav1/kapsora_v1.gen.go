@@ -1177,6 +1177,114 @@ func (e LedgerEntryMovementType) Valid() bool {
 	}
 }
 
+// Defines values for MedicalReportDocumentClassification.
+const (
+	MedicalReportDocumentClassificationCONFIDENTIAL MedicalReportDocumentClassification = "CONFIDENTIAL"
+	MedicalReportDocumentClassificationHEALTH       MedicalReportDocumentClassification = "HEALTH"
+	MedicalReportDocumentClassificationINTERNAL     MedicalReportDocumentClassification = "INTERNAL"
+	MedicalReportDocumentClassificationPERSONAL     MedicalReportDocumentClassification = "PERSONAL"
+)
+
+// Valid indicates whether the value is a known member of the MedicalReportDocumentClassification enum.
+func (e MedicalReportDocumentClassification) Valid() bool {
+	switch e {
+	case MedicalReportDocumentClassificationCONFIDENTIAL:
+		return true
+	case MedicalReportDocumentClassificationHEALTH:
+		return true
+	case MedicalReportDocumentClassificationINTERNAL:
+		return true
+	case MedicalReportDocumentClassificationPERSONAL:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MedicalReportDocumentScanStatus.
+const (
+	MedicalReportDocumentScanStatusCLEAN    MedicalReportDocumentScanStatus = "CLEAN"
+	MedicalReportDocumentScanStatusFAILED   MedicalReportDocumentScanStatus = "FAILED"
+	MedicalReportDocumentScanStatusINFECTED MedicalReportDocumentScanStatus = "INFECTED"
+	MedicalReportDocumentScanStatusPENDING  MedicalReportDocumentScanStatus = "PENDING"
+	MedicalReportDocumentScanStatusSCANNING MedicalReportDocumentScanStatus = "SCANNING"
+)
+
+// Valid indicates whether the value is a known member of the MedicalReportDocumentScanStatus enum.
+func (e MedicalReportDocumentScanStatus) Valid() bool {
+	switch e {
+	case MedicalReportDocumentScanStatusCLEAN:
+		return true
+	case MedicalReportDocumentScanStatusFAILED:
+		return true
+	case MedicalReportDocumentScanStatusINFECTED:
+		return true
+	case MedicalReportDocumentScanStatusPENDING:
+		return true
+	case MedicalReportDocumentScanStatusSCANNING:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MedicalReportStatus.
+const (
+	MedicalReportStatusAPPROVED    MedicalReportStatus = "APPROVED"
+	MedicalReportStatusCANCELLED   MedicalReportStatus = "CANCELLED"
+	MedicalReportStatusDRAFT       MedicalReportStatus = "DRAFT"
+	MedicalReportStatusEXPIRED     MedicalReportStatus = "EXPIRED"
+	MedicalReportStatusREJECTED    MedicalReportStatus = "REJECTED"
+	MedicalReportStatusSUBMITTED   MedicalReportStatus = "SUBMITTED"
+	MedicalReportStatusSUPERSEDED  MedicalReportStatus = "SUPERSEDED"
+	MedicalReportStatusUNDERREVIEW MedicalReportStatus = "UNDER_REVIEW"
+)
+
+// Valid indicates whether the value is a known member of the MedicalReportStatus enum.
+func (e MedicalReportStatus) Valid() bool {
+	switch e {
+	case MedicalReportStatusAPPROVED:
+		return true
+	case MedicalReportStatusCANCELLED:
+		return true
+	case MedicalReportStatusDRAFT:
+		return true
+	case MedicalReportStatusEXPIRED:
+		return true
+	case MedicalReportStatusREJECTED:
+		return true
+	case MedicalReportStatusSUBMITTED:
+		return true
+	case MedicalReportStatusSUPERSEDED:
+		return true
+	case MedicalReportStatusUNDERREVIEW:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MedicalReportUsedByType.
+const (
+	MedicalReportUsedByTypeAUTHORIZATION  MedicalReportUsedByType = "AUTHORIZATION"
+	MedicalReportUsedByTypeCLAIM          MedicalReportUsedByType = "CLAIM"
+	MedicalReportUsedByTypeSERVICEREQUEST MedicalReportUsedByType = "SERVICE_REQUEST"
+)
+
+// Valid indicates whether the value is a known member of the MedicalReportUsedByType enum.
+func (e MedicalReportUsedByType) Valid() bool {
+	switch e {
+	case MedicalReportUsedByTypeAUTHORIZATION:
+		return true
+	case MedicalReportUsedByTypeCLAIM:
+		return true
+	case MedicalReportUsedByTypeSERVICEREQUEST:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for MemberImportBatchFormat.
 const (
 	CSVV1 MemberImportBatchFormat = "CSV_V1"
@@ -3460,6 +3568,66 @@ func (e ReviewMemberImportRowJSONBodyDecision) Valid() bool {
 	}
 }
 
+// Defines values for ListMedicalReportsParamsXAccessPurpose.
+const (
+	ListMedicalReportsParamsXAccessPurposeAUDIT            ListMedicalReportsParamsXAccessPurpose = "AUDIT"
+	ListMedicalReportsParamsXAccessPurposeCLAIMREVIEW      ListMedicalReportsParamsXAccessPurpose = "CLAIM_REVIEW"
+	ListMedicalReportsParamsXAccessPurposeMEDICALREVIEW    ListMedicalReportsParamsXAccessPurpose = "MEDICAL_REVIEW"
+	ListMedicalReportsParamsXAccessPurposeMEMBERREQUEST    ListMedicalReportsParamsXAccessPurpose = "MEMBER_REQUEST"
+	ListMedicalReportsParamsXAccessPurposePREAUTHORIZATION ListMedicalReportsParamsXAccessPurpose = "PRE_AUTHORIZATION"
+	ListMedicalReportsParamsXAccessPurposeTREATMENT        ListMedicalReportsParamsXAccessPurpose = "TREATMENT"
+)
+
+// Valid indicates whether the value is a known member of the ListMedicalReportsParamsXAccessPurpose enum.
+func (e ListMedicalReportsParamsXAccessPurpose) Valid() bool {
+	switch e {
+	case ListMedicalReportsParamsXAccessPurposeAUDIT:
+		return true
+	case ListMedicalReportsParamsXAccessPurposeCLAIMREVIEW:
+		return true
+	case ListMedicalReportsParamsXAccessPurposeMEDICALREVIEW:
+		return true
+	case ListMedicalReportsParamsXAccessPurposeMEMBERREQUEST:
+		return true
+	case ListMedicalReportsParamsXAccessPurposePREAUTHORIZATION:
+		return true
+	case ListMedicalReportsParamsXAccessPurposeTREATMENT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetMedicalReportParamsXAccessPurpose.
+const (
+	GetMedicalReportParamsXAccessPurposeAUDIT            GetMedicalReportParamsXAccessPurpose = "AUDIT"
+	GetMedicalReportParamsXAccessPurposeCLAIMREVIEW      GetMedicalReportParamsXAccessPurpose = "CLAIM_REVIEW"
+	GetMedicalReportParamsXAccessPurposeMEDICALREVIEW    GetMedicalReportParamsXAccessPurpose = "MEDICAL_REVIEW"
+	GetMedicalReportParamsXAccessPurposeMEMBERREQUEST    GetMedicalReportParamsXAccessPurpose = "MEMBER_REQUEST"
+	GetMedicalReportParamsXAccessPurposePREAUTHORIZATION GetMedicalReportParamsXAccessPurpose = "PRE_AUTHORIZATION"
+	GetMedicalReportParamsXAccessPurposeTREATMENT        GetMedicalReportParamsXAccessPurpose = "TREATMENT"
+)
+
+// Valid indicates whether the value is a known member of the GetMedicalReportParamsXAccessPurpose enum.
+func (e GetMedicalReportParamsXAccessPurpose) Valid() bool {
+	switch e {
+	case GetMedicalReportParamsXAccessPurposeAUDIT:
+		return true
+	case GetMedicalReportParamsXAccessPurposeCLAIMREVIEW:
+		return true
+	case GetMedicalReportParamsXAccessPurposeMEDICALREVIEW:
+		return true
+	case GetMedicalReportParamsXAccessPurposeMEMBERREQUEST:
+		return true
+	case GetMedicalReportParamsXAccessPurposePREAUTHORIZATION:
+		return true
+	case GetMedicalReportParamsXAccessPurposeTREATMENT:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListOrganizationsParamsRole.
 const (
 	ListOrganizationsParamsRolePARTNER  ListOrganizationsParamsRole = "PARTNER"
@@ -4028,6 +4196,35 @@ type CreateLegalHold struct {
 	Reason        string              `json:"reason"`
 }
 
+// CreateMedicalReport defines model for CreateMedicalReport.
+type CreateMedicalReport struct {
+	// CaseId The episode of care the report belongs to. Null for a report written outside one
+	// the platform holds — a report a member brings from a hospital the tenant has no
+	// case with is still a report. The case has to be the same person's.
+	CaseId *openapi_types.UUID `json:"caseId,omitempty"`
+
+	// ClinicalSummary HEALTH-classified free text. It is served only in the clinical projection and
+	// never reaches a notification, an audit detail, a work item title or a log line.
+	ClinicalSummary *string `json:"clinicalSummary,omitempty"`
+
+	// IssuedAt The day the doctor wrote it. May not be in the future.
+	IssuedAt                      *openapi_types.Date `json:"issuedAt,omitempty"`
+	IssuingPractitionerId         *openapi_types.UUID `json:"issuingPractitionerId,omitempty"`
+	IssuingProviderOrganizationId *openapi_types.UUID `json:"issuingProviderOrganizationId,omitempty"`
+	PersonId                      openapi_types.UUID  `json:"personId"`
+	ReportSubtype                 *string             `json:"reportSubtype,omitempty"`
+
+	// ReportType A code system value, governed by the code system WP-I5-05 seeds. Required unless
+	// the report is a correction, which inherits it.
+	ReportType *string `json:"reportType,omitempty"`
+
+	// SupersedesReportId The decided version this one corrects. With it, everything below is optional: the
+	// new version inherits the header and the service lines of the version it corrects.
+	SupersedesReportId *openapi_types.UUID `json:"supersedesReportId,omitempty"`
+	ValidFrom          *openapi_types.Date `json:"validFrom,omitempty"`
+	ValidTo            *openapi_types.Date `json:"validTo,omitempty"`
+}
+
 // CreateMembershipRequest defines model for CreateMembershipRequest.
 type CreateMembershipRequest struct {
 	ExternalMemberNo      *string                        `json:"externalMemberNo,omitempty"`
@@ -4332,6 +4529,13 @@ type CreateWorkQueue struct {
 	EscalationQueueId *openapi_types.UUID `json:"escalationQueueId,omitempty"`
 	Name              string              `json:"name"`
 	SlaMinutes        *int                `json:"slaMinutes,omitempty"`
+}
+
+// DecideMedicalReport defines model for DecideMedicalReport.
+type DecideMedicalReport struct {
+	// ReviewComment The reviewer's note. Clinical text: it is stored on the report, served only in the
+	// clinical projection, and never carried by the decision notification.
+	ReviewComment *string `json:"reviewComment,omitempty"`
 }
 
 // DecimalAmount An exact numeric(20,6) money or quantity value as a decimal string. It is a string
@@ -5102,6 +5306,153 @@ type MaskedIdentifier struct {
 	Type string `json:"type"`
 }
 
+// MedicalReport defines model for MedicalReport.
+type MedicalReport struct {
+	CaseId *openapi_types.UUID `json:"caseId,omitempty"`
+
+	// ClinicalSummary Present only in the clinical projection.
+	ClinicalSummary *string   `json:"clinicalSummary,omitempty"`
+	CreatedAt       time.Time `json:"createdAt"`
+
+	// Documents The report's attachments. Empty in the financial projection — a document list
+	// naming "PSIKIYATRI_RAPORU" is a diagnosis on a filename, and a count of them is a
+	// fact about the patient too.
+	Documents                     []MedicalReportDocument `json:"documents"`
+	Id                            openapi_types.UUID      `json:"id"`
+	IssuedAt                      openapi_types.Date      `json:"issuedAt"`
+	IssuingPractitionerId         *openapi_types.UUID     `json:"issuingPractitionerId,omitempty"`
+	IssuingProviderOrganizationId *openapi_types.UUID     `json:"issuingProviderOrganizationId,omitempty"`
+	PersonId                      openapi_types.UUID      `json:"personId"`
+
+	// Projection Which half of the record was served. It reports what the caller holds, which the
+	// caller already knows, so it reveals nothing about the patient — and it is what lets
+	// a screen say "you may not see clinical detail" instead of showing a record with
+	// holes in it.
+	Projection HealthProjection `json:"projection"`
+
+	// Reference Names the chain rather than the version: every version of one report shares it,
+	// and (reference, versionNo) is what identifies a version.
+	Reference        string  `json:"reference"`
+	RejectReasonCode *string `json:"rejectReasonCode,omitempty"`
+
+	// ReportSubtype Present only in the clinical projection.
+	ReportSubtype *string `json:"reportSubtype,omitempty"`
+
+	// ReportType Present only in the clinical projection. A report type is a diagnosis anybody can
+	// read off a list.
+	ReportType *string `json:"reportType,omitempty"`
+
+	// ReviewComment The reviewer's note. Clinical text, present only in the clinical projection, and
+	// never carried by a notification, an audit detail or a work item title.
+	ReviewComment *string             `json:"reviewComment,omitempty"`
+	ReviewedAt    *time.Time          `json:"reviewedAt,omitempty"`
+	ReviewedBy    *openapi_types.UUID `json:"reviewedBy,omitempty"`
+
+	// RootReportId The first version of the chain. Version 1 is its own root.
+	RootReportId openapi_types.UUID     `json:"rootReportId"`
+	RowVersion   int64                  `json:"rowVersion"`
+	Services     []MedicalReportService `json:"services"`
+
+	// Status SUPERSEDED is what a version becomes when a later version of its chain is approved. It
+	// is not a decision anybody gives: the chain may hold at most one approved version, so
+	// approving a correction has to move the earlier one out of APPROVED, and nothing else
+	// about that row changes.
+	Status             MedicalReportStatus `json:"status"`
+	SubmittedAt        *time.Time          `json:"submittedAt,omitempty"`
+	SubmittedBy        *openapi_types.UUID `json:"submittedBy,omitempty"`
+	SupersedesReportId *openapi_types.UUID `json:"supersedesReportId,omitempty"`
+	ValidFrom          openapi_types.Date  `json:"validFrom"`
+
+	// ValidTo Inclusive. The expiry job moves an approved report past it to EXPIRED.
+	ValidTo   openapi_types.Date `json:"validTo"`
+	VersionNo int                `json:"versionNo"`
+}
+
+// MedicalReportDocument defines model for MedicalReportDocument.
+type MedicalReportDocument struct {
+	Classification   MedicalReportDocumentClassification `json:"classification"`
+	ContentType      string                              `json:"contentType"`
+	CreatedAt        time.Time                           `json:"createdAt"`
+	DocumentTypeCode string                              `json:"documentTypeCode"`
+	Id               openapi_types.UUID                  `json:"id"`
+	ObjectId         openapi_types.UUID                  `json:"objectId"`
+	OriginalFilename string                              `json:"originalFilename"`
+	Purpose          *string                             `json:"purpose,omitempty"`
+
+	// RequiredPermission The link's own answer to who may download through it. A report attachment names
+	// health.clinical.read, and the download refuses a caller who may read documents in
+	// general but not that one.
+	RequiredPermission *string                         `json:"requiredPermission,omitempty"`
+	ScanStatus         MedicalReportDocumentScanStatus `json:"scanStatus"`
+}
+
+// MedicalReportDocumentClassification defines model for MedicalReportDocument.Classification.
+type MedicalReportDocumentClassification string
+
+// MedicalReportDocumentScanStatus defines model for MedicalReportDocument.ScanStatus.
+type MedicalReportDocumentScanStatus string
+
+// MedicalReportPage defines model for MedicalReportPage.
+type MedicalReportPage struct {
+	Items      []MedicalReport `json:"items"`
+	NextCursor *string         `json:"nextCursor,omitempty"`
+}
+
+// MedicalReportService defines model for MedicalReportService.
+type MedicalReportService struct {
+	CoveredAmount *string `json:"coveredAmount,omitempty"`
+
+	// CoveredQuantity Exact decimal as a string; never a JSON number.
+	CoveredQuantity *string            `json:"coveredQuantity,omitempty"`
+	CurrencyCode    *string            `json:"currencyCode,omitempty"`
+	Id              openapi_types.UUID `json:"id"`
+
+	// Notes Present only in the clinical projection. The line a doctor writes about this
+	// service for this person is clinical, whatever the service is.
+	Notes               *string            `json:"notes,omitempty"`
+	ServiceCode         string             `json:"serviceCode"`
+	ServiceDefinitionId openapi_types.UUID `json:"serviceDefinitionId"`
+	ServiceName         string             `json:"serviceName"`
+}
+
+// MedicalReportServiceInput defines model for MedicalReportServiceInput.
+type MedicalReportServiceInput struct {
+	CoveredAmount *string `json:"coveredAmount,omitempty"`
+
+	// CoveredQuantity Exact decimal as a string, never a JSON number: a limit that depended on binary
+	// rounding would be a limit two systems disagree about.
+	CoveredQuantity *string `json:"coveredQuantity,omitempty"`
+
+	// CurrencyCode Required when an amount is given: an amount without a currency is a number.
+	CurrencyCode        *string            `json:"currencyCode,omitempty"`
+	Notes               *string            `json:"notes,omitempty"`
+	ServiceDefinitionId openapi_types.UUID `json:"serviceDefinitionId"`
+}
+
+// MedicalReportStatus SUPERSEDED is what a version becomes when a later version of its chain is approved. It
+// is not a decision anybody gives: the chain may hold at most one approved version, so
+// approving a correction has to move the earlier one out of APPROVED, and nothing else
+// about that row changes.
+type MedicalReportStatus string
+
+// MedicalReportUsage defines model for MedicalReportUsage.
+type MedicalReportUsage struct {
+	Id         openapi_types.UUID      `json:"id"`
+	ReportId   openapi_types.UUID      `json:"reportId"`
+	UsedAt     time.Time               `json:"usedAt"`
+	UsedById   openapi_types.UUID      `json:"usedById"`
+	UsedByType MedicalReportUsedByType `json:"usedByType"`
+}
+
+// MedicalReportUsagePage defines model for MedicalReportUsagePage.
+type MedicalReportUsagePage struct {
+	Items      []MedicalReportUsage `json:"items"`
+	NextCursor *string              `json:"nextCursor,omitempty"`
+}
+
+// MedicalReportUsedByType defines model for MedicalReportUsedByType.
+type MedicalReportUsedByType string
+
 // MemberImportBatch defines model for MemberImportBatch.
 type MemberImportBatch struct {
 	AppliedAt *time.Time `json:"appliedAt,omitempty"`
@@ -5538,6 +5889,19 @@ type PartyCatalogs struct {
 	IdentifierTypes   []PartyCatalogEntry `json:"identifierTypes"`
 	MembershipTypes   []PartyCatalogEntry `json:"membershipTypes"`
 	RelationshipTypes []PartyCatalogEntry `json:"relationshipTypes"`
+}
+
+// PatchMedicalReportDraft defines model for PatchMedicalReportDraft.
+type PatchMedicalReportDraft struct {
+	CaseId                        *openapi_types.UUID `json:"caseId,omitempty"`
+	ClinicalSummary               *string             `json:"clinicalSummary,omitempty"`
+	IssuedAt                      openapi_types.Date  `json:"issuedAt"`
+	IssuingPractitionerId         *openapi_types.UUID `json:"issuingPractitionerId,omitempty"`
+	IssuingProviderOrganizationId *openapi_types.UUID `json:"issuingProviderOrganizationId,omitempty"`
+	ReportSubtype                 *string             `json:"reportSubtype,omitempty"`
+	ReportType                    string              `json:"reportType"`
+	ValidFrom                     openapi_types.Date  `json:"validFrom"`
+	ValidTo                       openapi_types.Date  `json:"validTo"`
 }
 
 // PatchWorkQueue Merge patch: a field that is absent is left alone, and an explicit null clears the
@@ -6313,6 +6677,12 @@ type PutEncounterDiagnoses struct {
 	Items []DiagnosisInput `json:"items"`
 }
 
+// PutMedicalReportServices defines model for PutMedicalReportServices.
+type PutMedicalReportServices struct {
+	// Items The whole set. An empty array clears the report's service lines.
+	Items []MedicalReportServiceInput `json:"items"`
+}
+
 // PutNotificationPreferences defines model for PutNotificationPreferences.
 type PutNotificationPreferences struct {
 	Preferences   []NotificationPreferenceInput `json:"preferences"`
@@ -6368,6 +6738,13 @@ type RedeemVoucher struct {
 
 // RegistrationAuthority The body that issued the practitioner's registration number.
 type RegistrationAuthority string
+
+// RejectMedicalReport defines model for RejectMedicalReport.
+type RejectMedicalReport struct {
+	// RejectReasonCode Why, as a code. A rejection nobody can count is a rejection nobody can improve on.
+	RejectReasonCode string  `json:"rejectReasonCode"`
+	ReviewComment    *string `json:"reviewComment,omitempty"`
+}
 
 // ReleaseWorkItem A reason is optional here: putting work down may be nothing more than the end of a
 // shift. A code that is given has to be one a report can group by.
@@ -7667,6 +8044,9 @@ type ProviderLocationId = openapi_types.UUID
 // RelationshipId defines model for RelationshipId.
 type RelationshipId = openapi_types.UUID
 
+// ReportId defines model for ReportId.
+type ReportId = openapi_types.UUID
+
 // RequestId defines model for RequestId.
 type RequestId = openapi_types.UUID
 
@@ -8640,6 +9020,184 @@ type ReleaseLegalHoldParams struct {
 
 	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ListMedicalReportsParams defines parameters for ListMedicalReports.
+type ListMedicalReportsParams struct {
+	// Cursor Opaque cursor from the previous response.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// PersonId Keep only the reports of one member.
+	PersonId *openapi_types.UUID `form:"personId,omitempty" json:"personId,omitempty"`
+	CaseId   *openapi_types.UUID `form:"caseId,omitempty" json:"caseId,omitempty"`
+
+	// RootReportId Every version of one report chain.
+	RootReportId           *openapi_types.UUID  `form:"rootReportId,omitempty" json:"rootReportId,omitempty"`
+	ProviderOrganizationId *openapi_types.UUID  `form:"providerOrganizationId,omitempty" json:"providerOrganizationId,omitempty"`
+	Status                 *MedicalReportStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// ReportType The report type code. It is a clinical value, so filtering by it is possible for
+	// a caller that already holds the clinical read and returns nothing new to one that
+	// does not: the rows it selects are still served in the financial projection.
+	ReportType *string `form:"reportType,omitempty" json:"reportType,omitempty"`
+
+	// ValidOn Keep only the reports whose validity covers this day, both bounds inclusive.
+	ValidOn *openapi_types.Date `form:"validOn,omitempty" json:"validOn,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// XAccessPurpose Why the caller is opening clinical data, as a code from the clinical access purpose
+	// reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+	// MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+	// read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+	// event, because "who read this" without "why" is not an answer a data protection
+	// review can use.
+	XAccessPurpose *ListMedicalReportsParamsXAccessPurpose `json:"X-Access-Purpose,omitempty"`
+
+	// XAccessReason Free text beside the purpose, at most 200 characters once decoded, kept on the access
+	// event. It never carries an identifier: the event already names the person and the
+	// actor.
+	//
+	// The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+	// ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+	// the Turkish somebody would actually type. A value with no percent sequences decodes
+	// to itself, so a plain ASCII reason may be sent as it is.
+	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+}
+
+// ListMedicalReportsParamsXAccessPurpose defines parameters for ListMedicalReports.
+type ListMedicalReportsParamsXAccessPurpose string
+
+// CreateMedicalReportParams defines parameters for CreateMedicalReport.
+type CreateMedicalReportParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// GetMedicalReportParams defines parameters for GetMedicalReport.
+type GetMedicalReportParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// XAccessPurpose Why the caller is opening clinical data, as a code from the clinical access purpose
+	// reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+	// MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+	// read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+	// event, because "who read this" without "why" is not an answer a data protection
+	// review can use.
+	XAccessPurpose *GetMedicalReportParamsXAccessPurpose `json:"X-Access-Purpose,omitempty"`
+
+	// XAccessReason Free text beside the purpose, at most 200 characters once decoded, kept on the access
+	// event. It never carries an identifier: the event already names the person and the
+	// actor.
+	//
+	// The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+	// ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+	// the Turkish somebody would actually type. A value with no percent sequences decodes
+	// to itself, so a plain ASCII reason may be sent as it is.
+	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+}
+
+// GetMedicalReportParamsXAccessPurpose defines parameters for GetMedicalReport.
+type GetMedicalReportParamsXAccessPurpose string
+
+// PatchMedicalReportDraftParams defines parameters for PatchMedicalReportDraft.
+type PatchMedicalReportDraftParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ApproveMedicalReportParams defines parameters for ApproveMedicalReport.
+type ApproveMedicalReportParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// CancelMedicalReportParams defines parameters for CancelMedicalReport.
+type CancelMedicalReportParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// RejectMedicalReportParams defines parameters for RejectMedicalReport.
+type RejectMedicalReportParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// PutMedicalReportServicesParams defines parameters for PutMedicalReportServices.
+type PutMedicalReportServicesParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// StartMedicalReviewParams defines parameters for StartMedicalReview.
+type StartMedicalReviewParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// SubmitMedicalReportParams defines parameters for SubmitMedicalReport.
+type SubmitMedicalReportParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ListMedicalReportUsagesParams defines parameters for ListMedicalReportUsages.
+type ListMedicalReportUsagesParams struct {
+	// Cursor Opaque cursor from the previous response.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
 }
 
 // ListNotificationMessagesParams defines parameters for ListNotificationMessages.
@@ -10144,6 +10702,21 @@ type ReviewMemberImportRowJSONRequestBody ReviewMemberImportRowJSONBody
 // PutLegalHoldJSONRequestBody defines body for PutLegalHold for application/json ContentType.
 type PutLegalHoldJSONRequestBody = CreateLegalHold
 
+// CreateMedicalReportJSONRequestBody defines body for CreateMedicalReport for application/json ContentType.
+type CreateMedicalReportJSONRequestBody = CreateMedicalReport
+
+// PatchMedicalReportDraftJSONRequestBody defines body for PatchMedicalReportDraft for application/json ContentType.
+type PatchMedicalReportDraftJSONRequestBody = PatchMedicalReportDraft
+
+// ApproveMedicalReportJSONRequestBody defines body for ApproveMedicalReport for application/json ContentType.
+type ApproveMedicalReportJSONRequestBody = DecideMedicalReport
+
+// RejectMedicalReportJSONRequestBody defines body for RejectMedicalReport for application/json ContentType.
+type RejectMedicalReportJSONRequestBody = RejectMedicalReport
+
+// PutMedicalReportServicesJSONRequestBody defines body for PutMedicalReportServices for application/json ContentType.
+type PutMedicalReportServicesJSONRequestBody = PutMedicalReportServices
+
 // PutNotificationPreferencesJSONRequestBody defines body for PutNotificationPreferences for application/json ContentType.
 type PutNotificationPreferencesJSONRequestBody = PutNotificationPreferences
 
@@ -10750,6 +11323,39 @@ type ServerInterface interface {
 
 	// (GET /api/v1/me)
 	GetCurrentUserContext(w http.ResponseWriter, r *http.Request)
+
+	// (GET /api/v1/medical-reports)
+	ListMedicalReports(w http.ResponseWriter, r *http.Request, params ListMedicalReportsParams)
+
+	// (POST /api/v1/medical-reports)
+	CreateMedicalReport(w http.ResponseWriter, r *http.Request, params CreateMedicalReportParams)
+
+	// (GET /api/v1/medical-reports/{reportId})
+	GetMedicalReport(w http.ResponseWriter, r *http.Request, reportId ReportId, params GetMedicalReportParams)
+
+	// (PATCH /api/v1/medical-reports/{reportId})
+	PatchMedicalReportDraft(w http.ResponseWriter, r *http.Request, reportId ReportId, params PatchMedicalReportDraftParams)
+
+	// (POST /api/v1/medical-reports/{reportId}/approve)
+	ApproveMedicalReport(w http.ResponseWriter, r *http.Request, reportId ReportId, params ApproveMedicalReportParams)
+
+	// (POST /api/v1/medical-reports/{reportId}/cancel)
+	CancelMedicalReport(w http.ResponseWriter, r *http.Request, reportId ReportId, params CancelMedicalReportParams)
+
+	// (POST /api/v1/medical-reports/{reportId}/reject)
+	RejectMedicalReport(w http.ResponseWriter, r *http.Request, reportId ReportId, params RejectMedicalReportParams)
+
+	// (PUT /api/v1/medical-reports/{reportId}/services)
+	PutMedicalReportServices(w http.ResponseWriter, r *http.Request, reportId ReportId, params PutMedicalReportServicesParams)
+
+	// (POST /api/v1/medical-reports/{reportId}/start-review)
+	StartMedicalReview(w http.ResponseWriter, r *http.Request, reportId ReportId, params StartMedicalReviewParams)
+
+	// (POST /api/v1/medical-reports/{reportId}/submit)
+	SubmitMedicalReport(w http.ResponseWriter, r *http.Request, reportId ReportId, params SubmitMedicalReportParams)
+
+	// (GET /api/v1/medical-reports/{reportId}/usages)
+	ListMedicalReportUsages(w http.ResponseWriter, r *http.Request, reportId ReportId, params ListMedicalReportUsagesParams)
 
 	// (GET /api/v1/notification-messages)
 	ListNotificationMessages(w http.ResponseWriter, r *http.Request, params ListNotificationMessagesParams)
@@ -11522,6 +12128,61 @@ func (_ Unimplemented) ReleaseLegalHold(w http.ResponseWriter, r *http.Request, 
 
 // (GET /api/v1/me)
 func (_ Unimplemented) GetCurrentUserContext(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/medical-reports)
+func (_ Unimplemented) ListMedicalReports(w http.ResponseWriter, r *http.Request, params ListMedicalReportsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/medical-reports)
+func (_ Unimplemented) CreateMedicalReport(w http.ResponseWriter, r *http.Request, params CreateMedicalReportParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/medical-reports/{reportId})
+func (_ Unimplemented) GetMedicalReport(w http.ResponseWriter, r *http.Request, reportId ReportId, params GetMedicalReportParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PATCH /api/v1/medical-reports/{reportId})
+func (_ Unimplemented) PatchMedicalReportDraft(w http.ResponseWriter, r *http.Request, reportId ReportId, params PatchMedicalReportDraftParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/medical-reports/{reportId}/approve)
+func (_ Unimplemented) ApproveMedicalReport(w http.ResponseWriter, r *http.Request, reportId ReportId, params ApproveMedicalReportParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/medical-reports/{reportId}/cancel)
+func (_ Unimplemented) CancelMedicalReport(w http.ResponseWriter, r *http.Request, reportId ReportId, params CancelMedicalReportParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/medical-reports/{reportId}/reject)
+func (_ Unimplemented) RejectMedicalReport(w http.ResponseWriter, r *http.Request, reportId ReportId, params RejectMedicalReportParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PUT /api/v1/medical-reports/{reportId}/services)
+func (_ Unimplemented) PutMedicalReportServices(w http.ResponseWriter, r *http.Request, reportId ReportId, params PutMedicalReportServicesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/medical-reports/{reportId}/start-review)
+func (_ Unimplemented) StartMedicalReview(w http.ResponseWriter, r *http.Request, reportId ReportId, params StartMedicalReviewParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/medical-reports/{reportId}/submit)
+func (_ Unimplemented) SubmitMedicalReport(w http.ResponseWriter, r *http.Request, reportId ReportId, params SubmitMedicalReportParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/medical-reports/{reportId}/usages)
+func (_ Unimplemented) ListMedicalReportUsages(w http.ResponseWriter, r *http.Request, reportId ReportId, params ListMedicalReportUsagesParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -18333,6 +18994,1146 @@ func (siw *ServerInterfaceWrapper) GetCurrentUserContext(w http.ResponseWriter, 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetCurrentUserContext(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListMedicalReports operation middleware
+func (siw *ServerInterfaceWrapper) ListMedicalReports(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListMedicalReportsParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "personId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "personId", r.URL.Query(), &params.PersonId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "personId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "personId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "caseId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "caseId", r.URL.Query(), &params.CaseId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "caseId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "caseId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "rootReportId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "rootReportId", r.URL.Query(), &params.RootReportId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "rootReportId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "rootReportId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "providerOrganizationId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "providerOrganizationId", r.URL.Query(), &params.ProviderOrganizationId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "providerOrganizationId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "providerOrganizationId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "reportType" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "reportType", r.URL.Query(), &params.ReportType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "reportType"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "reportType", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "validOn" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "validOn", r.URL.Query(), &params.ValidOn, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "validOn"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "validOn", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-Access-Purpose" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Purpose")]; found {
+		var XAccessPurpose ListMedicalReportsParamsXAccessPurpose
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Purpose", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Purpose", valueList[0], &XAccessPurpose, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Purpose", Err: err})
+			return
+		}
+
+		params.XAccessPurpose = &XAccessPurpose
+
+	}
+
+	// ------------- Optional header parameter "X-Access-Reason" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Reason")]; found {
+		var XAccessReason AccessReasonHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Reason", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Reason", valueList[0], &XAccessReason, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Reason", Err: err})
+			return
+		}
+
+		params.XAccessReason = &XAccessReason
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListMedicalReports(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateMedicalReport operation middleware
+func (siw *ServerInterfaceWrapper) CreateMedicalReport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateMedicalReportParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateMedicalReport(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMedicalReport operation middleware
+func (siw *ServerInterfaceWrapper) GetMedicalReport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "reportId" -------------
+	var reportId ReportId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "reportId", chi.URLParam(r, "reportId"), &reportId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "reportId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetMedicalReportParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-Access-Purpose" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Purpose")]; found {
+		var XAccessPurpose GetMedicalReportParamsXAccessPurpose
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Purpose", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Purpose", valueList[0], &XAccessPurpose, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Purpose", Err: err})
+			return
+		}
+
+		params.XAccessPurpose = &XAccessPurpose
+
+	}
+
+	// ------------- Optional header parameter "X-Access-Reason" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Reason")]; found {
+		var XAccessReason AccessReasonHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Reason", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Reason", valueList[0], &XAccessReason, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Reason", Err: err})
+			return
+		}
+
+		params.XAccessReason = &XAccessReason
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMedicalReport(w, r, reportId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PatchMedicalReportDraft operation middleware
+func (siw *ServerInterfaceWrapper) PatchMedicalReportDraft(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "reportId" -------------
+	var reportId ReportId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "reportId", chi.URLParam(r, "reportId"), &reportId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "reportId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PatchMedicalReportDraftParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PatchMedicalReportDraft(w, r, reportId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ApproveMedicalReport operation middleware
+func (siw *ServerInterfaceWrapper) ApproveMedicalReport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "reportId" -------------
+	var reportId ReportId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "reportId", chi.URLParam(r, "reportId"), &reportId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "reportId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ApproveMedicalReportParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ApproveMedicalReport(w, r, reportId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CancelMedicalReport operation middleware
+func (siw *ServerInterfaceWrapper) CancelMedicalReport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "reportId" -------------
+	var reportId ReportId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "reportId", chi.URLParam(r, "reportId"), &reportId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "reportId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CancelMedicalReportParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CancelMedicalReport(w, r, reportId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RejectMedicalReport operation middleware
+func (siw *ServerInterfaceWrapper) RejectMedicalReport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "reportId" -------------
+	var reportId ReportId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "reportId", chi.URLParam(r, "reportId"), &reportId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "reportId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RejectMedicalReportParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RejectMedicalReport(w, r, reportId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutMedicalReportServices operation middleware
+func (siw *ServerInterfaceWrapper) PutMedicalReportServices(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "reportId" -------------
+	var reportId ReportId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "reportId", chi.URLParam(r, "reportId"), &reportId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "reportId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PutMedicalReportServicesParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutMedicalReportServices(w, r, reportId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// StartMedicalReview operation middleware
+func (siw *ServerInterfaceWrapper) StartMedicalReview(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "reportId" -------------
+	var reportId ReportId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "reportId", chi.URLParam(r, "reportId"), &reportId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "reportId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params StartMedicalReviewParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.StartMedicalReview(w, r, reportId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SubmitMedicalReport operation middleware
+func (siw *ServerInterfaceWrapper) SubmitMedicalReport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "reportId" -------------
+	var reportId ReportId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "reportId", chi.URLParam(r, "reportId"), &reportId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "reportId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SubmitMedicalReportParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SubmitMedicalReport(w, r, reportId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListMedicalReportUsages operation middleware
+func (siw *ServerInterfaceWrapper) ListMedicalReportUsages(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "reportId" -------------
+	var reportId ReportId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "reportId", chi.URLParam(r, "reportId"), &reportId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "reportId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListMedicalReportUsagesParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListMedicalReportUsages(w, r, reportId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -29376,6 +31177,39 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/health-access-log", wrapper.ListHealthAccessLog)
 	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/medical-reports", wrapper.ListMedicalReports)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/medical-reports", wrapper.CreateMedicalReport)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/medical-reports/{reportId}", wrapper.GetMedicalReport)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/api/v1/medical-reports/{reportId}", wrapper.PatchMedicalReportDraft)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/v1/medical-reports/{reportId}/services", wrapper.PutMedicalReportServices)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/medical-reports/{reportId}/submit", wrapper.SubmitMedicalReport)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/medical-reports/{reportId}/start-review", wrapper.StartMedicalReview)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/medical-reports/{reportId}/approve", wrapper.ApproveMedicalReport)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/medical-reports/{reportId}/reject", wrapper.RejectMedicalReport)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/medical-reports/{reportId}/cancel", wrapper.CancelMedicalReport)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/medical-reports/{reportId}/usages", wrapper.ListMedicalReportUsages)
+	})
 
 	return r
 }
@@ -35748,6 +37582,1302 @@ func (response GetCurrentUserContext401ApplicationProblemPlusJSONResponse) Visit
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMedicalReportsRequestObject struct {
+	Params ListMedicalReportsParams
+}
+
+type ListMedicalReportsResponseObject interface {
+	VisitListMedicalReportsResponse(w http.ResponseWriter) error
+}
+
+type ListMedicalReports200JSONResponse MedicalReportPage
+
+func (response ListMedicalReports200JSONResponse) VisitListMedicalReportsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMedicalReports400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListMedicalReports400ApplicationProblemPlusJSONResponse) VisitListMedicalReportsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMedicalReports403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListMedicalReports403ApplicationProblemPlusJSONResponse) VisitListMedicalReportsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMedicalReports422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListMedicalReports422ApplicationProblemPlusJSONResponse) VisitListMedicalReportsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateMedicalReportRequestObject struct {
+	Params CreateMedicalReportParams
+	Body   *CreateMedicalReportJSONRequestBody
+}
+
+type CreateMedicalReportResponseObject interface {
+	VisitCreateMedicalReportResponse(w http.ResponseWriter) error
+}
+
+type CreateMedicalReport201ResponseHeaders struct {
+	ETag *string
+}
+
+type CreateMedicalReport201JSONResponse struct {
+	Body    MedicalReport
+	Headers CreateMedicalReport201ResponseHeaders
+}
+
+func (response CreateMedicalReport201JSONResponse) VisitCreateMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateMedicalReport403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CreateMedicalReport403ApplicationProblemPlusJSONResponse) VisitCreateMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateMedicalReport404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CreateMedicalReport404ApplicationProblemPlusJSONResponse) VisitCreateMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateMedicalReport409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response CreateMedicalReport409ApplicationProblemPlusJSONResponse) VisitCreateMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateMedicalReport422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CreateMedicalReport422ApplicationProblemPlusJSONResponse) VisitCreateMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateMedicalReport429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response CreateMedicalReport429ApplicationProblemPlusJSONResponse) VisitCreateMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMedicalReportRequestObject struct {
+	ReportId ReportId `json:"reportId"`
+	Params   GetMedicalReportParams
+}
+
+type GetMedicalReportResponseObject interface {
+	VisitGetMedicalReportResponse(w http.ResponseWriter) error
+}
+
+type GetMedicalReport200ResponseHeaders struct {
+	ETag *string
+}
+
+type GetMedicalReport200JSONResponse struct {
+	Body    MedicalReport
+	Headers GetMedicalReport200ResponseHeaders
+}
+
+func (response GetMedicalReport200JSONResponse) VisitGetMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMedicalReport403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetMedicalReport403ApplicationProblemPlusJSONResponse) VisitGetMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMedicalReport404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetMedicalReport404ApplicationProblemPlusJSONResponse) VisitGetMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMedicalReport422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response GetMedicalReport422ApplicationProblemPlusJSONResponse) VisitGetMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMedicalReport428ApplicationProblemPlusJSONResponse Problem
+
+func (response GetMedicalReport428ApplicationProblemPlusJSONResponse) VisitGetMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchMedicalReportDraftRequestObject struct {
+	ReportId ReportId `json:"reportId"`
+	Params   PatchMedicalReportDraftParams
+	Body     *PatchMedicalReportDraftJSONRequestBody
+}
+
+type PatchMedicalReportDraftResponseObject interface {
+	VisitPatchMedicalReportDraftResponse(w http.ResponseWriter) error
+}
+
+type PatchMedicalReportDraft200ResponseHeaders struct {
+	ETag *string
+}
+
+type PatchMedicalReportDraft200JSONResponse struct {
+	Body    MedicalReport
+	Headers PatchMedicalReportDraft200ResponseHeaders
+}
+
+func (response PatchMedicalReportDraft200JSONResponse) VisitPatchMedicalReportDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchMedicalReportDraft403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response PatchMedicalReportDraft403ApplicationProblemPlusJSONResponse) VisitPatchMedicalReportDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchMedicalReportDraft404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response PatchMedicalReportDraft404ApplicationProblemPlusJSONResponse) VisitPatchMedicalReportDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchMedicalReportDraft409ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchMedicalReportDraft409ApplicationProblemPlusJSONResponse) VisitPatchMedicalReportDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchMedicalReportDraft412ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchMedicalReportDraft412ApplicationProblemPlusJSONResponse) VisitPatchMedicalReportDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchMedicalReportDraft422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response PatchMedicalReportDraft422ApplicationProblemPlusJSONResponse) VisitPatchMedicalReportDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchMedicalReportDraft428ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchMedicalReportDraft428ApplicationProblemPlusJSONResponse) VisitPatchMedicalReportDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveMedicalReportRequestObject struct {
+	ReportId ReportId `json:"reportId"`
+	Params   ApproveMedicalReportParams
+	Body     *ApproveMedicalReportJSONRequestBody
+}
+
+type ApproveMedicalReportResponseObject interface {
+	VisitApproveMedicalReportResponse(w http.ResponseWriter) error
+}
+
+type ApproveMedicalReport200ResponseHeaders struct {
+	ETag *string
+}
+
+type ApproveMedicalReport200JSONResponse struct {
+	Body    MedicalReport
+	Headers ApproveMedicalReport200ResponseHeaders
+}
+
+func (response ApproveMedicalReport200JSONResponse) VisitApproveMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveMedicalReport403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ApproveMedicalReport403ApplicationProblemPlusJSONResponse) VisitApproveMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveMedicalReport404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ApproveMedicalReport404ApplicationProblemPlusJSONResponse) VisitApproveMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveMedicalReport409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response ApproveMedicalReport409ApplicationProblemPlusJSONResponse) VisitApproveMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveMedicalReport412ApplicationProblemPlusJSONResponse Problem
+
+func (response ApproveMedicalReport412ApplicationProblemPlusJSONResponse) VisitApproveMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveMedicalReport422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ApproveMedicalReport422ApplicationProblemPlusJSONResponse) VisitApproveMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveMedicalReport428ApplicationProblemPlusJSONResponse Problem
+
+func (response ApproveMedicalReport428ApplicationProblemPlusJSONResponse) VisitApproveMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveMedicalReport429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response ApproveMedicalReport429ApplicationProblemPlusJSONResponse) VisitApproveMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelMedicalReportRequestObject struct {
+	ReportId ReportId `json:"reportId"`
+	Params   CancelMedicalReportParams
+}
+
+type CancelMedicalReportResponseObject interface {
+	VisitCancelMedicalReportResponse(w http.ResponseWriter) error
+}
+
+type CancelMedicalReport200ResponseHeaders struct {
+	ETag *string
+}
+
+type CancelMedicalReport200JSONResponse struct {
+	Body    MedicalReport
+	Headers CancelMedicalReport200ResponseHeaders
+}
+
+func (response CancelMedicalReport200JSONResponse) VisitCancelMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelMedicalReport403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CancelMedicalReport403ApplicationProblemPlusJSONResponse) VisitCancelMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelMedicalReport404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CancelMedicalReport404ApplicationProblemPlusJSONResponse) VisitCancelMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelMedicalReport409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response CancelMedicalReport409ApplicationProblemPlusJSONResponse) VisitCancelMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelMedicalReport412ApplicationProblemPlusJSONResponse Problem
+
+func (response CancelMedicalReport412ApplicationProblemPlusJSONResponse) VisitCancelMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelMedicalReport422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CancelMedicalReport422ApplicationProblemPlusJSONResponse) VisitCancelMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelMedicalReport428ApplicationProblemPlusJSONResponse Problem
+
+func (response CancelMedicalReport428ApplicationProblemPlusJSONResponse) VisitCancelMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectMedicalReportRequestObject struct {
+	ReportId ReportId `json:"reportId"`
+	Params   RejectMedicalReportParams
+	Body     *RejectMedicalReportJSONRequestBody
+}
+
+type RejectMedicalReportResponseObject interface {
+	VisitRejectMedicalReportResponse(w http.ResponseWriter) error
+}
+
+type RejectMedicalReport200ResponseHeaders struct {
+	ETag *string
+}
+
+type RejectMedicalReport200JSONResponse struct {
+	Body    MedicalReport
+	Headers RejectMedicalReport200ResponseHeaders
+}
+
+func (response RejectMedicalReport200JSONResponse) VisitRejectMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectMedicalReport403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RejectMedicalReport403ApplicationProblemPlusJSONResponse) VisitRejectMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectMedicalReport404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response RejectMedicalReport404ApplicationProblemPlusJSONResponse) VisitRejectMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectMedicalReport409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response RejectMedicalReport409ApplicationProblemPlusJSONResponse) VisitRejectMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectMedicalReport412ApplicationProblemPlusJSONResponse Problem
+
+func (response RejectMedicalReport412ApplicationProblemPlusJSONResponse) VisitRejectMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectMedicalReport422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response RejectMedicalReport422ApplicationProblemPlusJSONResponse) VisitRejectMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectMedicalReport428ApplicationProblemPlusJSONResponse Problem
+
+func (response RejectMedicalReport428ApplicationProblemPlusJSONResponse) VisitRejectMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectMedicalReport429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response RejectMedicalReport429ApplicationProblemPlusJSONResponse) VisitRejectMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutMedicalReportServicesRequestObject struct {
+	ReportId ReportId `json:"reportId"`
+	Params   PutMedicalReportServicesParams
+	Body     *PutMedicalReportServicesJSONRequestBody
+}
+
+type PutMedicalReportServicesResponseObject interface {
+	VisitPutMedicalReportServicesResponse(w http.ResponseWriter) error
+}
+
+type PutMedicalReportServices200ResponseHeaders struct {
+	ETag *string
+}
+
+type PutMedicalReportServices200JSONResponse struct {
+	Body    MedicalReport
+	Headers PutMedicalReportServices200ResponseHeaders
+}
+
+func (response PutMedicalReportServices200JSONResponse) VisitPutMedicalReportServicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutMedicalReportServices403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response PutMedicalReportServices403ApplicationProblemPlusJSONResponse) VisitPutMedicalReportServicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutMedicalReportServices404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response PutMedicalReportServices404ApplicationProblemPlusJSONResponse) VisitPutMedicalReportServicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutMedicalReportServices409ApplicationProblemPlusJSONResponse Problem
+
+func (response PutMedicalReportServices409ApplicationProblemPlusJSONResponse) VisitPutMedicalReportServicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutMedicalReportServices412ApplicationProblemPlusJSONResponse Problem
+
+func (response PutMedicalReportServices412ApplicationProblemPlusJSONResponse) VisitPutMedicalReportServicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutMedicalReportServices422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response PutMedicalReportServices422ApplicationProblemPlusJSONResponse) VisitPutMedicalReportServicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutMedicalReportServices428ApplicationProblemPlusJSONResponse Problem
+
+func (response PutMedicalReportServices428ApplicationProblemPlusJSONResponse) VisitPutMedicalReportServicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartMedicalReviewRequestObject struct {
+	ReportId ReportId `json:"reportId"`
+	Params   StartMedicalReviewParams
+}
+
+type StartMedicalReviewResponseObject interface {
+	VisitStartMedicalReviewResponse(w http.ResponseWriter) error
+}
+
+type StartMedicalReview200ResponseHeaders struct {
+	ETag *string
+}
+
+type StartMedicalReview200JSONResponse struct {
+	Body    MedicalReport
+	Headers StartMedicalReview200ResponseHeaders
+}
+
+func (response StartMedicalReview200JSONResponse) VisitStartMedicalReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartMedicalReview403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response StartMedicalReview403ApplicationProblemPlusJSONResponse) VisitStartMedicalReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartMedicalReview404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response StartMedicalReview404ApplicationProblemPlusJSONResponse) VisitStartMedicalReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartMedicalReview409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response StartMedicalReview409ApplicationProblemPlusJSONResponse) VisitStartMedicalReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartMedicalReview412ApplicationProblemPlusJSONResponse Problem
+
+func (response StartMedicalReview412ApplicationProblemPlusJSONResponse) VisitStartMedicalReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartMedicalReview422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response StartMedicalReview422ApplicationProblemPlusJSONResponse) VisitStartMedicalReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartMedicalReview428ApplicationProblemPlusJSONResponse Problem
+
+func (response StartMedicalReview428ApplicationProblemPlusJSONResponse) VisitStartMedicalReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitMedicalReportRequestObject struct {
+	ReportId ReportId `json:"reportId"`
+	Params   SubmitMedicalReportParams
+}
+
+type SubmitMedicalReportResponseObject interface {
+	VisitSubmitMedicalReportResponse(w http.ResponseWriter) error
+}
+
+type SubmitMedicalReport200ResponseHeaders struct {
+	ETag *string
+}
+
+type SubmitMedicalReport200JSONResponse struct {
+	Body    MedicalReport
+	Headers SubmitMedicalReport200ResponseHeaders
+}
+
+func (response SubmitMedicalReport200JSONResponse) VisitSubmitMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitMedicalReport403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response SubmitMedicalReport403ApplicationProblemPlusJSONResponse) VisitSubmitMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitMedicalReport404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response SubmitMedicalReport404ApplicationProblemPlusJSONResponse) VisitSubmitMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitMedicalReport409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response SubmitMedicalReport409ApplicationProblemPlusJSONResponse) VisitSubmitMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitMedicalReport412ApplicationProblemPlusJSONResponse Problem
+
+func (response SubmitMedicalReport412ApplicationProblemPlusJSONResponse) VisitSubmitMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitMedicalReport422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response SubmitMedicalReport422ApplicationProblemPlusJSONResponse) VisitSubmitMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitMedicalReport428ApplicationProblemPlusJSONResponse Problem
+
+func (response SubmitMedicalReport428ApplicationProblemPlusJSONResponse) VisitSubmitMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitMedicalReport429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response SubmitMedicalReport429ApplicationProblemPlusJSONResponse) VisitSubmitMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMedicalReportUsagesRequestObject struct {
+	ReportId ReportId `json:"reportId"`
+	Params   ListMedicalReportUsagesParams
+}
+
+type ListMedicalReportUsagesResponseObject interface {
+	VisitListMedicalReportUsagesResponse(w http.ResponseWriter) error
+}
+
+type ListMedicalReportUsages200JSONResponse MedicalReportUsagePage
+
+func (response ListMedicalReportUsages200JSONResponse) VisitListMedicalReportUsagesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMedicalReportUsages400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListMedicalReportUsages400ApplicationProblemPlusJSONResponse) VisitListMedicalReportUsagesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMedicalReportUsages403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListMedicalReportUsages403ApplicationProblemPlusJSONResponse) VisitListMedicalReportUsagesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMedicalReportUsages404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ListMedicalReportUsages404ApplicationProblemPlusJSONResponse) VisitListMedicalReportUsagesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMedicalReportUsages422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListMedicalReportUsages422ApplicationProblemPlusJSONResponse) VisitListMedicalReportUsagesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -47500,6 +50630,39 @@ type StrictServerInterface interface {
 	// (GET /api/v1/me)
 	GetCurrentUserContext(ctx context.Context, request GetCurrentUserContextRequestObject) (GetCurrentUserContextResponseObject, error)
 
+	// (GET /api/v1/medical-reports)
+	ListMedicalReports(ctx context.Context, request ListMedicalReportsRequestObject) (ListMedicalReportsResponseObject, error)
+
+	// (POST /api/v1/medical-reports)
+	CreateMedicalReport(ctx context.Context, request CreateMedicalReportRequestObject) (CreateMedicalReportResponseObject, error)
+
+	// (GET /api/v1/medical-reports/{reportId})
+	GetMedicalReport(ctx context.Context, request GetMedicalReportRequestObject) (GetMedicalReportResponseObject, error)
+
+	// (PATCH /api/v1/medical-reports/{reportId})
+	PatchMedicalReportDraft(ctx context.Context, request PatchMedicalReportDraftRequestObject) (PatchMedicalReportDraftResponseObject, error)
+
+	// (POST /api/v1/medical-reports/{reportId}/approve)
+	ApproveMedicalReport(ctx context.Context, request ApproveMedicalReportRequestObject) (ApproveMedicalReportResponseObject, error)
+
+	// (POST /api/v1/medical-reports/{reportId}/cancel)
+	CancelMedicalReport(ctx context.Context, request CancelMedicalReportRequestObject) (CancelMedicalReportResponseObject, error)
+
+	// (POST /api/v1/medical-reports/{reportId}/reject)
+	RejectMedicalReport(ctx context.Context, request RejectMedicalReportRequestObject) (RejectMedicalReportResponseObject, error)
+
+	// (PUT /api/v1/medical-reports/{reportId}/services)
+	PutMedicalReportServices(ctx context.Context, request PutMedicalReportServicesRequestObject) (PutMedicalReportServicesResponseObject, error)
+
+	// (POST /api/v1/medical-reports/{reportId}/start-review)
+	StartMedicalReview(ctx context.Context, request StartMedicalReviewRequestObject) (StartMedicalReviewResponseObject, error)
+
+	// (POST /api/v1/medical-reports/{reportId}/submit)
+	SubmitMedicalReport(ctx context.Context, request SubmitMedicalReportRequestObject) (SubmitMedicalReportResponseObject, error)
+
+	// (GET /api/v1/medical-reports/{reportId}/usages)
+	ListMedicalReportUsages(ctx context.Context, request ListMedicalReportUsagesRequestObject) (ListMedicalReportUsagesResponseObject, error)
+
 	// (GET /api/v1/notification-messages)
 	ListNotificationMessages(ctx context.Context, request ListNotificationMessagesRequestObject) (ListNotificationMessagesResponseObject, error)
 
@@ -50192,6 +53355,339 @@ func (sh *strictHandler) GetCurrentUserContext(w http.ResponseWriter, r *http.Re
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetCurrentUserContextResponseObject); ok {
 		if err := validResponse.VisitGetCurrentUserContextResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListMedicalReports operation middleware
+func (sh *strictHandler) ListMedicalReports(w http.ResponseWriter, r *http.Request, params ListMedicalReportsParams) {
+	var request ListMedicalReportsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListMedicalReports(ctx, request.(ListMedicalReportsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListMedicalReports")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListMedicalReportsResponseObject); ok {
+		if err := validResponse.VisitListMedicalReportsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateMedicalReport operation middleware
+func (sh *strictHandler) CreateMedicalReport(w http.ResponseWriter, r *http.Request, params CreateMedicalReportParams) {
+	var request CreateMedicalReportRequestObject
+
+	request.Params = params
+
+	var body CreateMedicalReportJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateMedicalReport(ctx, request.(CreateMedicalReportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateMedicalReport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateMedicalReportResponseObject); ok {
+		if err := validResponse.VisitCreateMedicalReportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetMedicalReport operation middleware
+func (sh *strictHandler) GetMedicalReport(w http.ResponseWriter, r *http.Request, reportId ReportId, params GetMedicalReportParams) {
+	var request GetMedicalReportRequestObject
+
+	request.ReportId = reportId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMedicalReport(ctx, request.(GetMedicalReportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMedicalReport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMedicalReportResponseObject); ok {
+		if err := validResponse.VisitGetMedicalReportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PatchMedicalReportDraft operation middleware
+func (sh *strictHandler) PatchMedicalReportDraft(w http.ResponseWriter, r *http.Request, reportId ReportId, params PatchMedicalReportDraftParams) {
+	var request PatchMedicalReportDraftRequestObject
+
+	request.ReportId = reportId
+	request.Params = params
+
+	var body PatchMedicalReportDraftJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PatchMedicalReportDraft(ctx, request.(PatchMedicalReportDraftRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PatchMedicalReportDraft")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PatchMedicalReportDraftResponseObject); ok {
+		if err := validResponse.VisitPatchMedicalReportDraftResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ApproveMedicalReport operation middleware
+func (sh *strictHandler) ApproveMedicalReport(w http.ResponseWriter, r *http.Request, reportId ReportId, params ApproveMedicalReportParams) {
+	var request ApproveMedicalReportRequestObject
+
+	request.ReportId = reportId
+	request.Params = params
+
+	var body ApproveMedicalReportJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ApproveMedicalReport(ctx, request.(ApproveMedicalReportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ApproveMedicalReport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ApproveMedicalReportResponseObject); ok {
+		if err := validResponse.VisitApproveMedicalReportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CancelMedicalReport operation middleware
+func (sh *strictHandler) CancelMedicalReport(w http.ResponseWriter, r *http.Request, reportId ReportId, params CancelMedicalReportParams) {
+	var request CancelMedicalReportRequestObject
+
+	request.ReportId = reportId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CancelMedicalReport(ctx, request.(CancelMedicalReportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CancelMedicalReport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CancelMedicalReportResponseObject); ok {
+		if err := validResponse.VisitCancelMedicalReportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RejectMedicalReport operation middleware
+func (sh *strictHandler) RejectMedicalReport(w http.ResponseWriter, r *http.Request, reportId ReportId, params RejectMedicalReportParams) {
+	var request RejectMedicalReportRequestObject
+
+	request.ReportId = reportId
+	request.Params = params
+
+	var body RejectMedicalReportJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RejectMedicalReport(ctx, request.(RejectMedicalReportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RejectMedicalReport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RejectMedicalReportResponseObject); ok {
+		if err := validResponse.VisitRejectMedicalReportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutMedicalReportServices operation middleware
+func (sh *strictHandler) PutMedicalReportServices(w http.ResponseWriter, r *http.Request, reportId ReportId, params PutMedicalReportServicesParams) {
+	var request PutMedicalReportServicesRequestObject
+
+	request.ReportId = reportId
+	request.Params = params
+
+	var body PutMedicalReportServicesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutMedicalReportServices(ctx, request.(PutMedicalReportServicesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutMedicalReportServices")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutMedicalReportServicesResponseObject); ok {
+		if err := validResponse.VisitPutMedicalReportServicesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// StartMedicalReview operation middleware
+func (sh *strictHandler) StartMedicalReview(w http.ResponseWriter, r *http.Request, reportId ReportId, params StartMedicalReviewParams) {
+	var request StartMedicalReviewRequestObject
+
+	request.ReportId = reportId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.StartMedicalReview(ctx, request.(StartMedicalReviewRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "StartMedicalReview")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(StartMedicalReviewResponseObject); ok {
+		if err := validResponse.VisitStartMedicalReviewResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SubmitMedicalReport operation middleware
+func (sh *strictHandler) SubmitMedicalReport(w http.ResponseWriter, r *http.Request, reportId ReportId, params SubmitMedicalReportParams) {
+	var request SubmitMedicalReportRequestObject
+
+	request.ReportId = reportId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SubmitMedicalReport(ctx, request.(SubmitMedicalReportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SubmitMedicalReport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SubmitMedicalReportResponseObject); ok {
+		if err := validResponse.VisitSubmitMedicalReportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListMedicalReportUsages operation middleware
+func (sh *strictHandler) ListMedicalReportUsages(w http.ResponseWriter, r *http.Request, reportId ReportId, params ListMedicalReportUsagesParams) {
+	var request ListMedicalReportUsagesRequestObject
+
+	request.ReportId = reportId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListMedicalReportUsages(ctx, request.(ListMedicalReportUsagesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListMedicalReportUsages")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListMedicalReportUsagesResponseObject); ok {
+		if err := validResponse.VisitListMedicalReportUsagesResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

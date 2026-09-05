@@ -225,11 +225,30 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	// The health case and the treatment report. It is the module that decides which half of
+	// a clinical record a caller is shown, and it decides it in one place — so nothing else
+	// here is allowed to hold a health service of its own. Stays is left at its default:
+	// WP-I5-03 owns the inpatient stay and until it lands "no stay is open" is the only
+	// honest answer.
+	//
+	// It is built before the worklist because the two are wired to each other: a submitted
+	// report raises a work item through healthpg.WorkItems, which writes it in the report
+	// command's own transaction, and a reviewer claiming that item starts the review through
+	// the claim hook below. Neither package imports the other; this is where they meet.
+	healthSvc, err := healthapp.New(healthapp.Deps{
+		Pool: pool, Repo: healthpg.New(), Reports: healthpg.NewReports(),
+		WorkItems: healthpg.NewWorkItems(logger), Audit: auditpg.New(),
+		Cursors: cursors, Logger: logger,
+	})
+	if err != nil {
+		return err
+	}
 	// The worklist is where work that needs a person waits. It writes no business state
 	// of any other module: it holds the queues, the items raised into them and the clock
 	// each item was given, and every other package reaches it by raising an item.
 	workflowSvc, err := workflowapp.New(workflowapp.Deps{
-		Pool: pool, Repo: workflowpg.New(), Audit: auditpg.New(), Cursors: cursors, Logger: logger,
+		Pool: pool, Repo: workflowpg.New(), Audit: auditpg.New(), Cursors: cursors,
+		ClaimHook: healthSvc, Logger: logger,
 	})
 	if err != nil {
 		return err
@@ -257,17 +276,6 @@ func run() error {
 	// process needs the object store to sign them, and no scanner at all — scanning is the
 	// worker's job, and a scanner wired in here would be one this process never calls.
 	documentSvc, err := newDocuments(cfg, pool, cursors, logger)
-	if err != nil {
-		return err
-	}
-
-	// The health case. It is the module that decides which half of a clinical record a
-	// caller is shown, and it decides it in one place — so nothing else here is allowed to
-	// hold a health service of its own. Stays is left at its default: WP-I5-03 owns the
-	// inpatient stay and until it lands "no stay is open" is the only honest answer.
-	healthSvc, err := healthapp.New(healthapp.Deps{
-		Pool: pool, Repo: healthpg.New(), Audit: auditpg.New(), Cursors: cursors, Logger: logger,
-	})
 	if err != nil {
 		return err
 	}
@@ -697,6 +705,22 @@ func newRouter(d routerDeps) http.Handler {
 				healthHandler.EncounterRoutes(r, healthMW)
 			})
 			tenant.Route("/health-access-log", healthHandler.AccessLogRoutes)
+
+			// The treatment report. Everything that moves one takes If-Match, and every
+			// command that changes state is idempotency-keyed: a submission replayed by a
+			// flaky network raises one work item, not two.
+			reportMW := healthhttp.ReportMiddlewares{
+				CreateReport: d.idempotent("medical_report.create"),
+				PatchReport:  d.idempotent("medical_report.update"),
+				PutServices:  d.idempotent("medical_report.services.put"),
+				SubmitReport: d.idempotent("medical_report.submit"),
+				StartReview:  d.idempotent("medical_report.start_review"),
+				Decide:       d.idempotent("medical_report.decide"),
+				CancelReport: d.idempotent("medical_report.cancel"),
+			}
+			tenant.Route("/medical-reports", func(r chi.Router) {
+				healthHandler.ReportRoutes(r, reportMW)
+			})
 
 			// Notifications. Templates are configuration, the message log is a record of
 			// what members were actually told, and preferences are what they asked for;

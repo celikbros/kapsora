@@ -111,7 +111,7 @@ func (s *Service) GetEncounter(ctx context.Context, rc identity.RequestContext, 
 		return err
 	})
 	if errors.Is(err, ErrAccessPurposeRequired) {
-		s.recordDenial(ctx, rc, person, domain.AggregateEncounter, id, audit.AccessView, req)
+		s.recordDenial(ctx, rc, person, domain.AggregateEncounter, id, req)
 		return EncounterView{}, err
 	}
 	if err != nil {

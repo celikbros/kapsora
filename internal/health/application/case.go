@@ -119,7 +119,7 @@ func (s *Service) GetCase(ctx context.Context, rc identity.RequestContext, id uu
 		return err
 	})
 	if errors.Is(err, ErrAccessPurposeRequired) {
-		s.recordDenial(ctx, rc, person, domain.AggregateCase, id, audit.AccessView, req)
+		s.recordDenial(ctx, rc, person, domain.AggregateCase, id, req)
 		return CaseView{}, err
 	}
 	if err != nil {

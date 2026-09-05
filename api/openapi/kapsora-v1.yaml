@@ -8171,6 +8171,583 @@ paths:
         '422':
           $ref: '#/components/responses/ValidationError'
 
+  /api/v1/medical-reports:
+    get:
+      tags: [Clinical]
+      operationId: listMedicalReports
+      description: |
+        The tenant's treatment reports, newest first, with keyset paging.
+
+        Every row is served in one of the two projections of WP-I5-01, decided by what the
+        caller holds and applied before the record is serialised. The clinical projection is
+        everything: the report type and subtype, the clinical summary, the reviewer's comment,
+        the line notes and the attachments. The financial projection is what a financial
+        reviewer needs to reconcile a claim against a report — the reference, the version, the
+        dates, the provider, the status and the covered services with their limits — and
+        nothing that says what was wrong with the person.
+
+        A report attached to a SENSITIVE case follows the same rule its case does: without
+        health.sensitive.read it appears in the financial projection like any other, because
+        its sensitivity is itself sensitive. A list never answers 428 — a single read does.
+
+        `rootReportId` pages the versions of one chain: every version of a report shares its
+        root, and this is how a screen shows "version 2 of 2" beside a decision.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/AccessPurposeHeader'
+        - $ref: '#/components/parameters/AccessReasonHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: personId
+          in: query
+          description: Keep only the reports of one member.
+          schema:
+            type: string
+            format: uuid
+        - name: caseId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: rootReportId
+          in: query
+          description: Every version of one report chain.
+          schema:
+            type: string
+            format: uuid
+        - name: providerOrganizationId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/MedicalReportStatus'
+        - name: reportType
+          in: query
+          description: |
+            The report type code. It is a clinical value, so filtering by it is possible for
+            a caller that already holds the clinical read and returns nothing new to one that
+            does not: the rows it selects are still served in the financial projection.
+          schema:
+            type: string
+            pattern: '^[A-Z][A-Z0-9_.-]{0,63}$'
+        - name: validOn
+          in: query
+          description: Keep only the reports whose validity covers this day, both bounds inclusive.
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Medical report page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalReportPage'
+        '400':
+          description: Cursor invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags: [Clinical]
+      operationId: createMedicalReport
+      description: |
+        Writes a draft report, either the first version of a new chain or a correction of a
+        decided one.
+
+        With `supersedesReportId` it is a correction: the new report is version n+1 of the
+        same chain, it inherits the reference — so a member quoting "MR-2026…" is still
+        quoting the same report — and the service lines of the version it corrects are copied
+        into it. Every header field it does not send is inherited too. The version being
+        corrected is not touched: it keeps its decision, its lines and its usage rows exactly
+        as they were, and it stays readable.
+
+        Only a decided version (APPROVED, REJECTED or one a later version already replaced)
+        may be corrected, and only the newest version of its chain. A draft is corrected by
+        editing it.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMedicalReport'
+      responses:
+        '201':
+          description: Draft report created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalReport'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/medical-reports/{reportId}:
+    get:
+      tags: [Clinical]
+      operationId: getMedicalReport
+      description: |
+        One report with its service lines and, in the clinical projection, its attachments.
+
+        This is the read that demands a purpose. A report on a SENSITIVE case read by a caller
+        holding health.clinical.read and health.sensitive.read but sending no X-Access-Purpose
+        is answered 428 ACCESS_PURPOSE_REQUIRED, and the refusal is recorded as a DENIED
+        access event with resource type MEDICAL_REPORT.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ReportId'
+        - $ref: '#/components/parameters/AccessPurposeHeader'
+        - $ref: '#/components/parameters/AccessReasonHeader'
+      responses:
+        '200':
+          description: Medical report
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalReport'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: |
+            The report belongs to a sensitive case and the caller stated no access purpose.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+    patch:
+      tags: [Clinical]
+      operationId: patchMedicalReportDraft
+      description: |
+        Rewrites a draft's header. Every field is sent every time: a merge would make
+        "clear the subtype" unexpressible.
+
+        A report that has left DRAFT answers 409 MEDICAL_REPORT_IMMUTABLE. That is the whole
+        point of the package: an approved report is what the reviewer saw and a claim is
+        leaning on it, and a rejected one is what the provider was told about. A correction is
+        `createMedicalReport` with `supersedesReportId`.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ReportId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchMedicalReportDraft'
+      responses:
+        '200':
+          description: Draft updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalReport'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            The report has left DRAFT and is frozen. MEDICAL_REPORT_IMMUTABLE.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: The report changed since the caller read it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match is missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/medical-reports/{reportId}/services:
+    put:
+      tags: [Clinical]
+      operationId: putMedicalReportServices
+      description: |
+        Replaces the report's service set as a whole: the set is the unit, and a line id is
+        not something anything else hangs off. An empty array clears the set.
+
+        A report that has left DRAFT answers 409 MEDICAL_REPORT_IMMUTABLE here for the same
+        reason the header patch does — the lines are what the report says, and rewriting them
+        would rewrite an approved report without touching its header.
+
+        Replacing the lines moves the report's ETag: a caller still holding the old one is
+        holding a report that no longer says what it said.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ReportId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutMedicalReportServices'
+      responses:
+        '200':
+          description: The stored service set
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalReport'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: The report has left DRAFT and is frozen. MEDICAL_REPORT_IMMUTABLE.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: The report changed since the caller read it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match is missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/medical-reports/{reportId}/submit:
+    post:
+      tags: [Clinical]
+      operationId: submitMedicalReport
+      description: |
+        Hands the draft to the medical reviewers and raises a work item in the MEDICAL_REVIEW
+        queue, in the same transaction, with the report's reference as the title and no
+        clinical word in it.
+
+        Two things refuse it. A report with no service line is 422
+        MEDICAL_REPORT_SERVICE_REQUIRED: a reviewer asked to approve nothing in particular.
+        A report with no linked document of its own type that the scanner has cleared is 422
+        MEDICAL_REPORT_DOCUMENT_REQUIRED: a link to an object still in quarantine is not a
+        document a reviewer can open. Attach the file through the document link endpoint with
+        aggregateType MEDICAL_REPORT.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ReportId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Report submitted
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalReport'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: The report changed since the caller read it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match is missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/medical-reports/{reportId}/start-review:
+    post:
+      tags: [Clinical]
+      operationId: startMedicalReview
+      description: |
+        A reviewer has picked the report up. The worklist raises the same transition when the
+        report's work item is claimed, so a reviewer who works from the queue never has to
+        give this command at all.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ReportId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Review started
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalReport'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: The report changed since the caller read it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match is missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/medical-reports/{reportId}/approve:
+    post:
+      tags: [Clinical]
+      operationId: approveMedicalReport
+      description: |
+        The decision claims and authorizations lean on.
+
+        If the report is a correction, the version it corrects leaves APPROVED in the same
+        transaction, so the chain has exactly one approved version at every moment a reader
+        could observe. Nothing else about the older version moves: the reviewer, the moment,
+        the comment, the summary, the lines and the usage rows stay exactly as they were
+        decided.
+
+        The decision publishes medical_report.decided to the member and the issuing provider.
+        The message carries a reference, a status word, a day and a link — never the comment,
+        the report type or anything else clinical.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ReportId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecideMedicalReport'
+      responses:
+        '200':
+          description: Report approved
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalReport'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: The report changed since the caller read it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match is missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/medical-reports/{reportId}/reject:
+    post:
+      tags: [Clinical]
+      operationId: rejectMedicalReport
+      description: |
+        The other half of the same decision, and it says why in a code: a rejection nobody can
+        count is a rejection nobody can improve on. The comment is optional, is clinical text
+        and is served only in the clinical projection.
+
+        A rejected report is frozen like an approved one. A corrected version is
+        `createMedicalReport` with `supersedesReportId`.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ReportId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RejectMedicalReport'
+      responses:
+        '200':
+          description: Report rejected
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalReport'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: The report changed since the caller read it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match is missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/medical-reports/{reportId}/cancel:
+    post:
+      tags: [Clinical]
+      operationId: cancelMedicalReport
+      description: |
+        Takes back a report nobody has started reading. Once a reviewer has picked it up it is
+        theirs to decide, and a withdrawal at that point would be the provider deciding
+        instead: an UNDER_REVIEW report answers 409.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ReportId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Report cancelled
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalReport'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: The report changed since the caller read it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match is missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/medical-reports/{reportId}/usages:
+    get:
+      tags: [Clinical]
+      operationId: listMedicalReportUsages
+      description: |
+        Which service request, authorization or claim leaned on this version of the report,
+        and when. It is the trace v1.2 10.5 step 6 asks for: the answer to "prove the claim
+        you settled was covered by a report a doctor signed".
+
+        It names the version rather than the chain. A claim settled against version 1 was
+        settled against version 1, whatever version 3 later says, and the usage rows of a
+        superseded version are deliberately left where they are.
+
+        A usage row is three ids and a moment and carries nothing clinical, so it is served
+        whole to anybody who may read the report.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ReportId'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Usage page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalReportUsagePage'
+        '400':
+          description: Cursor invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
 components:
   securitySchemes:
     sessionCookie:
@@ -8516,6 +9093,13 @@ components:
         format: uuid
     EncounterId:
       name: encounterId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ReportId:
+      name: reportId
       in: path
       required: true
       schema:
@@ -15197,3 +15781,364 @@ components:
             $ref: '#/components/schemas/HealthAccessEvent'
         nextCursor:
           type: [string, 'null']
+    MedicalReportStatus:
+      type: string
+      enum: [DRAFT, SUBMITTED, UNDER_REVIEW, APPROVED, REJECTED, CANCELLED, EXPIRED, SUPERSEDED]
+      description: |
+        SUPERSEDED is what a version becomes when a later version of its chain is approved. It
+        is not a decision anybody gives: the chain may hold at most one approved version, so
+        approving a correction has to move the earlier one out of APPROVED, and nothing else
+        about that row changes.
+    MedicalReportUsedByType:
+      type: string
+      enum: [SERVICE_REQUEST, AUTHORIZATION, CLAIM]
+    MedicalReport:
+      type: object
+      additionalProperties: false
+      required:
+        [id, personId, reference, versionNo, rootReportId, issuedAt, validFrom, validTo,
+         status, projection, services, documents, createdAt, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        personId:
+          type: string
+          format: uuid
+        caseId:
+          type: [string, 'null']
+          format: uuid
+        reference:
+          type: string
+          description: |
+            Names the chain rather than the version: every version of one report shares it,
+            and (reference, versionNo) is what identifies a version.
+        versionNo:
+          type: integer
+          minimum: 1
+        rootReportId:
+          type: string
+          format: uuid
+          description: The first version of the chain. Version 1 is its own root.
+        supersedesReportId:
+          type: [string, 'null']
+          format: uuid
+        reportType:
+          type: string
+          description: |
+            Present only in the clinical projection. A report type is a diagnosis anybody can
+            read off a list.
+        reportSubtype:
+          type: [string, 'null']
+          description: Present only in the clinical projection.
+        issuingPractitionerId:
+          type: [string, 'null']
+          format: uuid
+        issuingProviderOrganizationId:
+          type: [string, 'null']
+          format: uuid
+        issuedAt:
+          type: string
+          format: date
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: string
+          format: date
+          description: Inclusive. The expiry job moves an approved report past it to EXPIRED.
+        status:
+          $ref: '#/components/schemas/MedicalReportStatus'
+        projection:
+          $ref: '#/components/schemas/HealthProjection'
+        clinicalSummary:
+          type: [string, 'null']
+          maxLength: 4000
+          description: Present only in the clinical projection.
+        reviewComment:
+          type: [string, 'null']
+          maxLength: 4000
+          description: |
+            The reviewer's note. Clinical text, present only in the clinical projection, and
+            never carried by a notification, an audit detail or a work item title.
+        rejectReasonCode:
+          type: [string, 'null']
+        reviewedBy:
+          type: [string, 'null']
+          format: uuid
+        reviewedAt:
+          type: [string, 'null']
+          format: date-time
+        submittedAt:
+          type: [string, 'null']
+          format: date-time
+        submittedBy:
+          type: [string, 'null']
+          format: uuid
+        services:
+          type: array
+          items:
+            $ref: '#/components/schemas/MedicalReportService'
+        documents:
+          type: array
+          description: |
+            The report's attachments. Empty in the financial projection — a document list
+            naming "PSIKIYATRI_RAPORU" is a diagnosis on a filename, and a count of them is a
+            fact about the patient too.
+          items:
+            $ref: '#/components/schemas/MedicalReportDocument'
+        createdAt:
+          type: string
+          format: date-time
+        rowVersion:
+          type: integer
+          format: int64
+    MedicalReportPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MedicalReport'
+        nextCursor:
+          type: [string, 'null']
+    MedicalReportService:
+      type: object
+      additionalProperties: false
+      required: [id, serviceDefinitionId, serviceCode, serviceName]
+      properties:
+        id:
+          type: string
+          format: uuid
+        serviceDefinitionId:
+          type: string
+          format: uuid
+        serviceCode:
+          type: string
+        serviceName:
+          type: string
+        coveredQuantity:
+          type: [string, 'null']
+          pattern: '^[0-9]{1,14}(\.[0-9]{1,6})?$'
+          description: Exact decimal as a string; never a JSON number.
+        coveredAmount:
+          type: [string, 'null']
+          pattern: '^[0-9]{1,14}(\.[0-9]{1,6})?$'
+        currencyCode:
+          type: [string, 'null']
+          pattern: '^[A-Z]{3}$'
+        notes:
+          type: [string, 'null']
+          maxLength: 1000
+          description: |
+            Present only in the clinical projection. The line a doctor writes about this
+            service for this person is clinical, whatever the service is.
+    MedicalReportDocument:
+      type: object
+      additionalProperties: false
+      required: [id, objectId, documentTypeCode, originalFilename, contentType, scanStatus, classification, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        objectId:
+          type: string
+          format: uuid
+        documentTypeCode:
+          type: string
+        purpose:
+          type: [string, 'null']
+        requiredPermission:
+          type: [string, 'null']
+          description: |
+            The link's own answer to who may download through it. A report attachment names
+            health.clinical.read, and the download refuses a caller who may read documents in
+            general but not that one.
+        originalFilename:
+          type: string
+        contentType:
+          type: string
+        scanStatus:
+          type: string
+          enum: [PENDING, SCANNING, CLEAN, INFECTED, FAILED]
+        classification:
+          type: string
+          enum: [INTERNAL, CONFIDENTIAL, PERSONAL, HEALTH]
+        createdAt:
+          type: string
+          format: date-time
+    MedicalReportUsage:
+      type: object
+      additionalProperties: false
+      required: [id, reportId, usedByType, usedById, usedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        reportId:
+          type: string
+          format: uuid
+        usedByType:
+          $ref: '#/components/schemas/MedicalReportUsedByType'
+        usedById:
+          type: string
+          format: uuid
+        usedAt:
+          type: string
+          format: date-time
+    MedicalReportUsagePage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MedicalReportUsage'
+        nextCursor:
+          type: [string, 'null']
+    CreateMedicalReport:
+      type: object
+      additionalProperties: false
+      required: [personId]
+      properties:
+        personId:
+          type: string
+          format: uuid
+        caseId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            The episode of care the report belongs to. Null for a report written outside one
+            the platform holds — a report a member brings from a hospital the tenant has no
+            case with is still a report. The case has to be the same person's.
+        supersedesReportId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            The decided version this one corrects. With it, everything below is optional: the
+            new version inherits the header and the service lines of the version it corrects.
+        reportType:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_.-]{0,63}$'
+          description: |
+            A code system value, governed by the code system WP-I5-05 seeds. Required unless
+            the report is a correction, which inherits it.
+        reportSubtype:
+          type: [string, 'null']
+          pattern: '^[A-Z][A-Z0-9_.-]{0,63}$'
+        issuingPractitionerId:
+          type: [string, 'null']
+          format: uuid
+        issuingProviderOrganizationId:
+          type: [string, 'null']
+          format: uuid
+        issuedAt:
+          type: [string, 'null']
+          format: date
+          description: The day the doctor wrote it. May not be in the future.
+        validFrom:
+          type: [string, 'null']
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+        clinicalSummary:
+          type: [string, 'null']
+          maxLength: 4000
+          description: |
+            HEALTH-classified free text. It is served only in the clinical projection and
+            never reaches a notification, an audit detail, a work item title or a log line.
+    PatchMedicalReportDraft:
+      type: object
+      additionalProperties: false
+      required: [reportType, issuedAt, validFrom, validTo]
+      properties:
+        caseId:
+          type: [string, 'null']
+          format: uuid
+        reportType:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_.-]{0,63}$'
+        reportSubtype:
+          type: [string, 'null']
+          pattern: '^[A-Z][A-Z0-9_.-]{0,63}$'
+        issuingPractitionerId:
+          type: [string, 'null']
+          format: uuid
+        issuingProviderOrganizationId:
+          type: [string, 'null']
+          format: uuid
+        issuedAt:
+          type: string
+          format: date
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: string
+          format: date
+        clinicalSummary:
+          type: [string, 'null']
+          maxLength: 4000
+    MedicalReportServiceInput:
+      type: object
+      additionalProperties: false
+      required: [serviceDefinitionId]
+      properties:
+        serviceDefinitionId:
+          type: string
+          format: uuid
+        coveredQuantity:
+          type: [string, 'null']
+          pattern: '^[0-9]{1,14}(\.[0-9]{1,6})?$'
+          description: |
+            Exact decimal as a string, never a JSON number: a limit that depended on binary
+            rounding would be a limit two systems disagree about.
+        coveredAmount:
+          type: [string, 'null']
+          pattern: '^[0-9]{1,14}(\.[0-9]{1,6})?$'
+        currencyCode:
+          type: [string, 'null']
+          pattern: '^[A-Z]{3}$'
+          description: |
+            Required when an amount is given: an amount without a currency is a number.
+        notes:
+          type: [string, 'null']
+          maxLength: 1000
+    PutMedicalReportServices:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/MedicalReportServiceInput'
+          description: The whole set. An empty array clears the report's service lines.
+    DecideMedicalReport:
+      type: object
+      additionalProperties: false
+      properties:
+        reviewComment:
+          type: [string, 'null']
+          maxLength: 4000
+          description: |
+            The reviewer's note. Clinical text: it is stored on the report, served only in the
+            clinical projection, and never carried by the decision notification.
+    RejectMedicalReport:
+      type: object
+      additionalProperties: false
+      required: [rejectReasonCode]
+      properties:
+        rejectReasonCode:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]{1,63}$'
+          description: |
+            Why, as a code. A rejection nobody can count is a rejection nobody can improve on.
+        reviewComment:
+          type: [string, 'null']
+          maxLength: 4000
