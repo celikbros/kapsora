@@ -63,11 +63,21 @@ type SessionStore interface {
 	DeleteExpired(ctx context.Context, before time.Time) (int64, error)
 }
 
-// Scope narrows a role grant (v1.2 6.3): ORGANIZATION, PROGRAM, PROVIDER_LOCATION, WORK_QUEUE.
+// Scope narrows a role grant (v1.2 6.3): ORGANIZATION, PROGRAM, PROVIDER_LOCATION,
+// WORK_QUEUE, PERSON.
 type Scope struct {
 	Type string
 	ID   uuid.NullUUID
 }
+
+// ScopePerson is the scope a member account is bound to its own person by (migration
+// 000039). It is spelled here, in the package every module reads its caller from, because
+// the string is compared in three places -- the grant writer, the context resolver and the
+// helper below -- and three spellings would be three different scopes.
+//
+// A PERSON grant is created by onboarding and by the seed, never by a member: the whole
+// value of the binding is that the account cannot choose whose it is.
+const ScopePerson = "PERSON"
 
 // ClientType distinguishes browser sessions from machine clients.
 type ClientType string
@@ -86,17 +96,51 @@ type RequestContext struct {
 	ClientType   ClientType
 	TenantID     uuid.UUID
 	MembershipID uuid.UUID
-	Permissions  map[string]struct{}
-	Scopes       []Scope
-	Locale       string
-	TimeZone     string
-	StepUpValid  bool
+	// PersonID is the person this caller acts for, from its PERSON scope. It is set for a
+	// member account and unset for every other actor: a reviewer, a provider clerk and an
+	// administrator act for the tenant or for an organization, never for a person.
+	PersonID    uuid.NullUUID
+	Permissions map[string]struct{}
+	Scopes      []Scope
+	Locale      string
+	TimeZone    string
+	StepUpValid bool
 }
 
 // Has reports whether the permission code is granted.
 func (rc RequestContext) Has(permission string) bool {
 	_, ok := rc.Permissions[permission]
 	return ok
+}
+
+// PersonScope returns the person this caller acts for. It reads the resolved PersonID
+// rather than walking Scopes again, so a caller cannot be bound by a scope the tenant
+// context resolver did not accept.
+func (rc RequestContext) PersonScope() (uuid.UUID, bool) {
+	if !rc.PersonID.Valid || rc.PersonID.UUID == uuid.Nil {
+		return uuid.Nil, false
+	}
+	return rc.PersonID.UUID, true
+}
+
+// PersonFromScopes finds the person of a grant set. It is the one place the PERSON scope
+// is turned into an id, and it refuses an ambiguous answer rather than picking one: two
+// PERSON grants on one membership would be an account acting for two people, which is
+// exactly the confusion the scope exists to prevent. The database refuses that pair too
+// (uq_access_grant_membership_person), so this is the second of two locks rather than the
+// only one.
+func PersonFromScopes(scopes []Scope) uuid.NullUUID {
+	var found uuid.NullUUID
+	for _, s := range scopes {
+		if s.Type != ScopePerson || !s.ID.Valid || s.ID.UUID == uuid.Nil {
+			continue
+		}
+		if found.Valid && found.UUID != s.ID.UUID {
+			return uuid.NullUUID{}
+		}
+		found = uuid.NullUUID{UUID: s.ID.UUID, Valid: true}
+	}
+	return found
 }
 
 // Errors returned by Require and FromContext; transports map them to problem+json
@@ -106,6 +150,16 @@ var (
 	ErrPermissionDenied = errors.New("identity: permission denied")
 	ErrStepUpRequired   = errors.New("identity: step-up authentication required")
 	ErrSessionNotFound  = errors.New("identity: session not found")
+	// ErrPersonBindingMissing is a caller with no PERSON scope asking for a member
+	// command. It is its own error rather than a plain permission denial because the fix
+	// is different: nobody has to grant this account anything, somebody has to finish
+	// binding it to a person, and a member told "you do not have permission" would go
+	// looking for the wrong help.
+	ErrPersonBindingMissing = errors.New("identity: this account is not bound to a person")
+	// ErrPersonScope is a member naming somebody else. It is the refusal that makes the
+	// binding worth having: a member cannot hold a room for their neighbour by editing a
+	// request body.
+	ErrPersonScope = errors.New("identity: this caller may act only for its own person")
 )
 
 type ctxKey struct{}
@@ -162,3 +216,40 @@ func RequireStepUp(ctx context.Context, permission string) (RequestContext, erro
 // (ADR-022). identity_subject holds the normalised user name, so the existing
 // UNIQUE (identity_issuer, identity_subject) enforces user-name uniqueness.
 const LocalIssuer = "kapsora"
+
+// RequirePerson resolves the person a member-side command acts for, and refuses any other.
+//
+// It is the single helper every member command in WP-I6-01..03 calls -- searchAvailability
+// for oneself, createHold, confirmBooking, cancelBooking, joinWaitlist, listBookings --
+// because "whose booking is this" must be answered the same way everywhere. The answer is
+// the server's: it comes from the caller's PERSON grant and never from the request.
+//
+// `requested` is what the body named, or uuid.Nil when the body named nobody. A body that
+// names the caller's own person is accepted, because a client that echoes back what it
+// read from getMyPerson is doing nothing wrong; a body that names anybody else is refused
+// with ErrPersonScope. That is the whole rule, and it is stated once.
+func RequirePerson(ctx context.Context, requested uuid.UUID) (RequestContext, uuid.UUID, error) {
+	rc, ok := FromContext(ctx)
+	if !ok {
+		return RequestContext{}, uuid.Nil, ErrUnauthenticated
+	}
+	personID, bound := rc.PersonScope()
+	if !bound {
+		return rc, uuid.Nil, ErrPersonBindingMissing
+	}
+	if requested != uuid.Nil && requested != personID {
+		return rc, uuid.Nil, ErrPersonScope
+	}
+	return rc, personID, nil
+}
+
+// RequirePersonWith is RequirePerson plus a permission, for the member commands that also
+// take one (accommodation.booking.create, service_request.create). The permission is
+// checked first so an actor with neither is told the thing it can act on -- a member whose
+// role was removed is a different problem from a member who was never bound.
+func RequirePersonWith(ctx context.Context, permission string, requested uuid.UUID) (RequestContext, uuid.UUID, error) {
+	if _, err := Require(ctx, permission); err != nil {
+		return RequestContext{}, uuid.Nil, err
+	}
+	return RequirePerson(ctx, requested)
+}

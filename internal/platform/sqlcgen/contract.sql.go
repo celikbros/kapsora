@@ -417,6 +417,64 @@ func (q *Queries) GetContractVersionForUpdate(ctx context.Context, arg GetContra
 	return i, err
 }
 
+const getLodgingTerms = `-- name: GetLodgingTerms :one
+SELECT l.id, l.contract_version_id, l.free_cancellation_hours_before, l.penalty_kind,
+       l.penalty_nights, coalesce(l.penalty_percent::text, '')::text AS penalty_percent,
+       l.no_show_percent::text AS no_show_percent,
+       l.hold_minutes, l.min_nights, l.max_nights, l.child_free_under_age,
+       l.created_at, l.updated_at, l.row_version
+  FROM contract.lodging_terms l
+ WHERE l.tenant_id = $1 AND l.contract_version_id = $2
+`
+
+type GetLodgingTermsParams struct {
+	TenantID          uuid.UUID
+	ContractVersionID uuid.UUID
+}
+
+type GetLodgingTermsRow struct {
+	ID                          uuid.UUID
+	ContractVersionID           uuid.UUID
+	FreeCancellationHoursBefore int32
+	PenaltyKind                 string
+	PenaltyNights               *int32
+	PenaltyPercent              string
+	NoShowPercent               string
+	HoldMinutes                 *int32
+	MinNights                   int32
+	MaxNights                   *int32
+	ChildFreeUnderAge           *int32
+	CreatedAt                   time.Time
+	UpdatedAt                   time.Time
+	RowVersion                  int64
+}
+
+// The single contract.lodging_terms row of a version (WP-I6-04). Every percentage comes
+// back as text for the same reason every money value in this file does: a numeric parsed
+// into a float on the way out is a number that no longer says exactly what the contract
+// said.
+func (q *Queries) GetLodgingTerms(ctx context.Context, arg GetLodgingTermsParams) (GetLodgingTermsRow, error) {
+	row := q.db.QueryRow(ctx, getLodgingTerms, arg.TenantID, arg.ContractVersionID)
+	var i GetLodgingTermsRow
+	err := row.Scan(
+		&i.ID,
+		&i.ContractVersionID,
+		&i.FreeCancellationHoursBefore,
+		&i.PenaltyKind,
+		&i.PenaltyNights,
+		&i.PenaltyPercent,
+		&i.NoShowPercent,
+		&i.HoldMinutes,
+		&i.MinNights,
+		&i.MaxNights,
+		&i.ChildFreeUnderAge,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.RowVersion,
+	)
+	return i, err
+}
+
 const getPaymentTerm = `-- name: GetPaymentTerm :one
 SELECT t.id, t.contract_version_id, t.due_days, t.settlement_method, t.tax_behaviour,
        coalesce(t.vat_rate::text, '')::text AS vat_rate,
@@ -1439,6 +1497,67 @@ func (q *Queries) UpdateContractVersionDraft(ctx context.Context, arg UpdateCont
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const upsertLodgingTerms = `-- name: UpsertLodgingTerms :one
+INSERT INTO contract.lodging_terms (tenant_id, contract_version_id,
+                                    free_cancellation_hours_before, penalty_kind,
+                                    penalty_nights, penalty_percent, no_show_percent,
+                                    hold_minutes, min_nights, max_nights,
+                                    child_free_under_age)
+VALUES ($1, $2,
+        $3, $4,
+        $5, $6::text::numeric,
+        $7::text::numeric,
+        $8, $9, $10,
+        $11)
+ON CONFLICT (tenant_id, contract_version_id) DO UPDATE
+   SET free_cancellation_hours_before = excluded.free_cancellation_hours_before,
+       penalty_kind         = excluded.penalty_kind,
+       penalty_nights       = excluded.penalty_nights,
+       penalty_percent      = excluded.penalty_percent,
+       no_show_percent      = excluded.no_show_percent,
+       hold_minutes         = excluded.hold_minutes,
+       min_nights           = excluded.min_nights,
+       max_nights           = excluded.max_nights,
+       child_free_under_age = excluded.child_free_under_age
+RETURNING id
+`
+
+type UpsertLodgingTermsParams struct {
+	TenantID                    uuid.UUID
+	ContractVersionID           uuid.UUID
+	FreeCancellationHoursBefore int32
+	PenaltyKind                 string
+	PenaltyNights               *int32
+	PenaltyPercent              *string
+	NoShowPercent               string
+	HoldMinutes                 *int32
+	MinNights                   int32
+	MaxNights                   *int32
+	ChildFreeUnderAge           *int32
+}
+
+// Replaces the version's terms in place, keeping the row's id so an audit trail that
+// named it still points at the same thing. The DRAFT-only rule is the trigger's; nothing
+// here restates it, because a rule stated twice is a rule that can disagree with itself.
+func (q *Queries) UpsertLodgingTerms(ctx context.Context, arg UpsertLodgingTermsParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, upsertLodgingTerms,
+		arg.TenantID,
+		arg.ContractVersionID,
+		arg.FreeCancellationHoursBefore,
+		arg.PenaltyKind,
+		arg.PenaltyNights,
+		arg.PenaltyPercent,
+		arg.NoShowPercent,
+		arg.HoldMinutes,
+		arg.MinNights,
+		arg.MaxNights,
+		arg.ChildFreeUnderAge,
+	)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
 }
 
 const upsertPackageDefinition = `-- name: UpsertPackageDefinition :one

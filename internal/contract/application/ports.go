@@ -29,10 +29,14 @@ const (
 
 // Errors mapped by the transport layer to problem codes.
 var (
-	ErrContractNotFound     = errors.New("contract: contract not found")
-	ErrVersionNotFound      = errors.New("contract: contract version not found")
-	ErrPriceListNotFound    = errors.New("contract: price list not found")
-	ErrPaymentTermNotFound  = errors.New("contract: payment term not found")
+	ErrContractNotFound    = errors.New("contract: contract not found")
+	ErrVersionNotFound     = errors.New("contract: contract version not found")
+	ErrPriceListNotFound   = errors.New("contract: price list not found")
+	ErrPaymentTermNotFound = errors.New("contract: payment term not found")
+	// ErrLodgingTermsNotFound is a version that has not said what a cancellation or a
+	// no-show costs. It is the refusal WP-I6-02 turns into 409 LODGING_TERMS_MISSING
+	// rather than confirming a booking under a default nobody agreed to.
+	ErrLodgingTermsNotFound = errors.New("contract: lodging terms not found")
 	ErrContractCodeTaken    = errors.New("contract: contract code already used in this tenant")
 	ErrPriceListCodeTaken   = errors.New("contract: price list code already used in this version")
 	ErrPackageCodeTaken     = errors.New("contract: package code already used in this version")
@@ -291,6 +295,40 @@ type QuotaRow struct {
 	AllowOverdraft      bool
 }
 
+// LodgingTermsRecord is the single contract.lodging_terms row of a version, as the
+// database holds it. The two percentages are exact decimal strings all the way out: the
+// column is numeric(7,4), the query casts it to text, and nothing between here and the
+// wire parses it into a number.
+type LodgingTermsRecord struct {
+	ID                          uuid.UUID
+	ContractVersionID           uuid.UUID
+	FreeCancellationHoursBefore int
+	PenaltyKind                 string
+	PenaltyNights               *int
+	PenaltyPercent              string
+	NoShowPercent               string
+	HoldMinutes                 *int
+	MinNights                   int
+	MaxNights                   *int
+	ChildFreeUnderAge           *int
+	CreatedAt                   time.Time
+	UpdatedAt                   time.Time
+	RowVersion                  int64
+}
+
+// LodgingTermsRow is the write payload of a version's lodging terms.
+type LodgingTermsRow struct {
+	FreeCancellationHoursBefore int
+	PenaltyKind                 string
+	PenaltyNights               *int
+	PenaltyPercent              *string
+	NoShowPercent               string
+	HoldMinutes                 *int
+	MinNights                   int
+	MaxNights                   *int
+	ChildFreeUnderAge           *int
+}
+
 // PaymentTermRecord is the single contract.payment_term row of a version.
 type PaymentTermRecord struct {
 	ID                uuid.UUID
@@ -394,6 +432,13 @@ type Repository interface {
 
 	GetPaymentTerm(ctx context.Context, tx pgx.Tx, tenantID, versionID uuid.UUID) (PaymentTermRecord, error)
 	UpsertPaymentTerm(ctx context.Context, tx pgx.Tx, tenantID, versionID uuid.UUID, in PaymentTermRow) error
+
+	// GetLodgingTerms answers ErrLodgingTermsNotFound for a version that has none, which
+	// is an ordinary state of a draft rather than an error in the read.
+	GetLodgingTerms(ctx context.Context, tx pgx.Tx, tenantID, versionID uuid.UUID) (LodgingTermsRecord, error)
+	// UpsertLodgingTerms replaces the version's terms in place. The DRAFT-only rule is the
+	// trigger's; this method does not restate it.
+	UpsertLodgingTerms(ctx context.Context, tx pgx.Tx, tenantID, versionID uuid.UUID, in LodgingTermsRow) error
 
 	// CategoryPath returns the definition's own catalog category first and then each
 	// ancestor up to the root; an empty result means the definition does not exist.

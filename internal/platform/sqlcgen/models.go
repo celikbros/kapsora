@@ -515,6 +515,26 @@ type ContractContractVersion struct {
 	RowVersion        int64
 }
 
+type ContractLodgingTerm struct {
+	ID                          uuid.UUID
+	TenantID                    uuid.UUID
+	ContractVersionID           uuid.UUID
+	FreeCancellationHoursBefore int32
+	PenaltyKind                 string
+	PenaltyNights               *int32
+	PenaltyPercent              pgtype.Numeric
+	NoShowPercent               pgtype.Numeric
+	HoldMinutes                 *int32
+	MinNights                   int32
+	MaxNights                   *int32
+	ChildFreeUnderAge           *int32
+	CreatedAt                   time.Time
+	CreatedBy                   uuid.NullUUID
+	UpdatedAt                   time.Time
+	UpdatedBy                   uuid.NullUUID
+	RowVersion                  int64
+}
+
 type ContractPackageDefinition struct {
 	ID                uuid.UUID
 	TenantID          uuid.UUID
@@ -959,6 +979,7 @@ type IamAccessGrant struct {
 	GrantedBy          uuid.NullUUID
 	GrantReason        *string
 	CreatedAt          time.Time
+	PersonScopeID      uuid.NullUUID
 }
 
 type IamActor struct {

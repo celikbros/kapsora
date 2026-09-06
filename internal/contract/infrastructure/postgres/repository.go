@@ -34,6 +34,10 @@ const (
 	uniqueViolation     = "23505"
 	exclusionViolation  = "23P01"
 	foreignKeyViolation = "23503"
+	// integrityConstraint is what the DRAFT-only guard triggers raise (migration 000039).
+	// It is not a constraint the schema declares but a rule a trigger states, and the
+	// SQLSTATE is the only thing that tells the two apart from here.
+	integrityConstraint = "23000"
 )
 
 // CreateContract implements application.Repository.
@@ -606,6 +610,59 @@ func (Repository) UpsertPaymentTerm(ctx context.Context, tx pgx.Tx, tenantID, ve
 	})
 	if err != nil {
 		return fmt.Errorf("contract: upsert payment term: %w", err)
+	}
+	return nil
+}
+
+// GetLodgingTerms implements application.Repository.
+func (Repository) GetLodgingTerms(ctx context.Context, tx pgx.Tx, tenantID, versionID uuid.UUID) (application.LodgingTermsRecord, error) {
+	r, err := sqlcgen.New(tx).GetLodgingTerms(ctx, sqlcgen.GetLodgingTermsParams{
+		TenantID: tenantID, ContractVersionID: versionID,
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return application.LodgingTermsRecord{}, application.ErrLodgingTermsNotFound
+	}
+	if err != nil {
+		return application.LodgingTermsRecord{}, fmt.Errorf("contract: get lodging terms: %w", err)
+	}
+	return application.LodgingTermsRecord{
+		ID: r.ID, ContractVersionID: r.ContractVersionID,
+		FreeCancellationHoursBefore: int(r.FreeCancellationHoursBefore),
+		PenaltyKind:                 r.PenaltyKind,
+		PenaltyNights:               intPtr(r.PenaltyNights),
+		PenaltyPercent:              decimal(r.PenaltyPercent),
+		NoShowPercent:               decimal(r.NoShowPercent),
+		HoldMinutes:                 intPtr(r.HoldMinutes),
+		MinNights:                   int(r.MinNights),
+		MaxNights:                   intPtr(r.MaxNights),
+		ChildFreeUnderAge:           intPtr(r.ChildFreeUnderAge),
+		CreatedAt:                   r.CreatedAt, UpdatedAt: r.UpdatedAt, RowVersion: r.RowVersion,
+	}, nil
+}
+
+// UpsertLodgingTerms implements application.Repository. The DRAFT-only rule is enforced by
+// the trigger of migration 000039, which raises integrity_constraint_violation; the
+// service checks the status first so the ordinary caller reads a status word rather than a
+// database message, and this method surfaces the trigger for the caller that did not.
+func (Repository) UpsertLodgingTerms(ctx context.Context, tx pgx.Tx, tenantID, versionID uuid.UUID, in application.LodgingTermsRow) error {
+	_, err := sqlcgen.New(tx).UpsertLodgingTerms(ctx, sqlcgen.UpsertLodgingTermsParams{
+		TenantID: tenantID, ContractVersionID: versionID,
+		FreeCancellationHoursBefore: int32(in.FreeCancellationHoursBefore), //nolint:gosec // 0..8760, checked by the domain and the column CHECK
+		PenaltyKind:                 in.PenaltyKind,
+		PenaltyNights:               int32Ptr(in.PenaltyNights),
+		PenaltyPercent:              in.PenaltyPercent,
+		NoShowPercent:               in.NoShowPercent,
+		HoldMinutes:                 int32Ptr(in.HoldMinutes),
+		MinNights:                   int32(in.MinNights), //nolint:gosec // 1..365, checked by the domain and the column CHECK
+		MaxNights:                   int32Ptr(in.MaxNights),
+		ChildFreeUnderAge:           int32Ptr(in.ChildFreeUnderAge),
+	})
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == integrityConstraint {
+			return application.ErrVersionImmutable
+		}
+		return fmt.Errorf("contract: upsert lodging terms: %w", err)
 	}
 	return nil
 }

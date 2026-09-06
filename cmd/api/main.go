@@ -534,7 +534,9 @@ func newRouter(d routerDeps) http.Handler {
 				orgHandler.Routes(r, d.idempotent("organization.create"))
 			})
 
-			partyHandler := partyhttp.NewHandler(d.party, sessions, d.logger)
+			// The party handler answers getMyPerson, which needs the member's enrollments
+			// beside their name; the benefit service is the reader it asks.
+			partyHandler := partyhttp.NewHandler(d.party, sessions, d.logger).WithEnrollments(d.benefit)
 			benefitHandler := benefithttp.NewHandler(d.benefit, sessions, d.logger)
 			entitlementHandler := benefithttp.NewEntitlementHandler(d.entitlements, sessions, d.logger)
 			entitlementMW := benefithttp.EntitlementMiddlewares{
@@ -560,6 +562,12 @@ func newRouter(d routerDeps) http.Handler {
 				entitlementHandler.PersonRoutes(r)
 			})
 			tenant.Route("/party", partyHandler.CatalogRoutes)
+			// /me/person is tenant-scoped even though /me is not: which person an account
+			// acts for is a fact about one tenant's grants, and the same actor may be a
+			// member in one tenant and a reviewer in another. It is registered as a flat
+			// pattern rather than a chi.Route("/me", ...) subtree, which would shadow the
+			// pre-tenant GET /me above it.
+			partyHandler.MyPersonRoutes(tenant)
 
 			tenant.Route("/programs", func(r chi.Router) { benefitHandler.ProgramRoutes(r, benefitMW) })
 			tenant.Route("/plans", func(r chi.Router) { benefitHandler.PlanRoutes(r, benefitMW) })

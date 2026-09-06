@@ -37,6 +37,7 @@ func safeValues() map[string]string {
 		domain.VarCurrency:     "TRY",
 		domain.VarProviderName: "Demo Hastane",
 		domain.VarProgramName:  "Kurumsal Sağlık",
+		domain.VarPropertyName: "Demo Sahil Otel",
 		domain.VarDeepLink:     "/requests/0199bd4e-6a1e-7a9c-8f31-2b7c0d5e4a11",
 	}
 }

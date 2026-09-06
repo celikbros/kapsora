@@ -134,3 +134,39 @@ func NotFoundHandler() http.HandlerFunc { return problemNotFound }
 
 // MethodNotAllowedHandler is the router fallback for known paths, wrong method.
 func MethodNotAllowedHandler() http.HandlerFunc { return problemMethodNotAllowed }
+
+// The two refusals a member-side command has that no other caller does (WP-I6-04). They
+// live here rather than in each transport because WP-I6-01..03 raise them from three more
+// modules, and a member who reads "you are not bound to a person" from one screen and
+// "permission denied" from the next would have no way to tell that both mean the same
+// thing.
+//
+// Both are 403 rather than 404: the caller is authenticated and the resource exists; what
+// is missing is the caller's standing to act for the person named.
+
+// WritePersonScopeProblem answers a member naming somebody other than themselves. The
+// detail says what happened without naming the person that was asked for, because echoing
+// a person id back would let a caller test whether one exists.
+func WritePersonScopeProblem(w http.ResponseWriter, r *http.Request) {
+	WriteProblem(w, r, Problem{
+		Type:   ProblemTypeBase + "identity/person-scope",
+		Title:  "Yalnızca kendi adınıza işlem yapabilirsiniz",
+		Status: http.StatusForbidden,
+		Code:   "PERSON_SCOPE",
+		Detail: "Bu hesap tek bir hak sahibi adına işlem yapar; istek başka bir kişiyi gösteriyor.",
+	})
+}
+
+// WritePersonBindingMissingProblem answers an account that has not been bound to a person
+// at all. It is deliberately a different code from PERSON_SCOPE: nobody has to grant this
+// account anything, somebody has to finish binding it, and a member told "permission
+// denied" would go looking for the wrong help.
+func WritePersonBindingMissingProblem(w http.ResponseWriter, r *http.Request) {
+	WriteProblem(w, r, Problem{
+		Type:   ProblemTypeBase + "identity/person-binding-missing",
+		Title:  "Hesabınız bir hak sahibiyle eşleştirilmemiş",
+		Status: http.StatusForbidden,
+		Code:   "PERSON_BINDING_MISSING",
+		Detail: "Üye hesabınızın kayıt işlemi tamamlanmadığı için kendi bilgilerinizi göremiyoruz; kurumunuzun yetkilisine başvurun.",
+	})
+}

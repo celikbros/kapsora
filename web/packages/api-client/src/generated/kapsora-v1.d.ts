@@ -625,6 +625,62 @@ export interface paths {
         patch: operations["patchContractVersion"];
         trace?: never;
     };
+    "/api/v1/contract-versions/{contractVersionId}/lodging-policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The version's lodging terms as a snapshot: the same policy, stamped with the moment
+         *     the copy was taken and the time zone its hours are counted in. This is the shape a
+         *     booking freezes at confirmation and the shape a cancellation or a no-show is judged
+         *     by months later, so it carries the zone explicitly -- a free-cancellation window
+         *     that moved with the reader's clock would be the one thing a fee may not do.
+         *     Changes no state.
+         */
+        get: operations["getContractVersionLodgingPolicy"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/contract-versions/{contractVersionId}/lodging-terms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description What this contract version promises about a stay: how long before check-in a
+         *     cancellation is still free, what a late cancellation costs, what a no-show costs,
+         *     how long a hold may stand at this provider, and the stay lengths and child age the
+         *     agreement allows. A version that has none answers 404, so a screen can tell "not
+         *     agreed yet" apart from "agreed as free" -- and so a booking can be refused rather
+         *     than confirmed under a default nobody signed.
+         */
+        get: operations["getContractVersionLodgingTerms"];
+        /**
+         * @description Writes the single lodging terms row of a DRAFT version, creating it or replacing it
+         *     in place. The penalty is a number of nights or a percentage of the member amount and
+         *     never both: the kind names one of them and the other must be absent. Percentages are
+         *     exact decimal strings with at most four decimals, which is the scale of the column.
+         *     Any write to a version that is not DRAFT answers 409 CONTRACT_VERSION_IMMUTABLE --
+         *     from the service, and from a database trigger when the service is bypassed.
+         */
+        put: operations["putContractVersionLodgingTerms"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/contract-versions/{contractVersionId}/package-definitions": {
         parameters: {
             query?: never;
@@ -1918,6 +1974,37 @@ export interface paths {
          *     tenant picker and to hide controls; the backend re-validates every call.
          */
         get: operations["getCurrentUserContext"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/person": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The person the signed-in member acts for, in the tenant of X-Tenant-ID.
+         *
+         *     A member account is bound to exactly one person by a PERSON-scoped access grant
+         *     (migration 000039), and this is the only way to read that binding from the client:
+         *     every member-side screen resolves "me" here rather than carrying a person id it
+         *     could edit. The identifier comes back masked and never in full, the contacts come
+         *     back masked, and neither the request nor the response has anywhere to name another
+         *     person.
+         *
+         *     A caller whose grants carry no PERSON scope is answered 403 PERSON_BINDING_MISSING
+         *     rather than an empty body: an account that is not yet bound has not finished
+         *     onboarding, and telling it "you have no person" would be indistinguishable from
+         *     telling it "you have no bookings".
+         */
+        get: operations["getMyPerson"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6479,6 +6566,87 @@ export interface components {
             /** Format: int64 */
             rowVersion: number;
         };
+        /**
+         * @description What a late cancellation is charged in: a number of nights of the stay, or a
+         *     percentage of the member's own share. Never both -- "3" meaning three nights and
+         *     "3" meaning three percent are two different numbers, and a policy that could mean
+         *     either is a fee nobody can explain to the person paying it.
+         * @enum {string}
+         */
+        LodgingPenaltyKind: "NIGHTS" | "PERCENT";
+        /**
+         * @description A percentage between 0 and 100 as an exact decimal string with at most four
+         *     decimals, which is the scale of the numeric(7,4) column behind it. A string and not
+         *     a JSON number because it decides what somebody is charged, and a float would round
+         *     it silently.
+         */
+        LodgingPercent: string;
+        /**
+         * @description The policy as a booking freezes it: the terms, the version they came from, the
+         *     moment the copy was taken and the zone its hours are counted in. WP-I6-02 writes
+         *     one at confirmation and WP-I6-03 judges every cancellation and no-show by it, so
+         *     nothing in it may be looked up again later -- a later edit of the contract must not
+         *     change what a member already agreed to.
+         */
+        LodgingPolicySnapshot: components["schemas"]["LodgingTermsPolicy"] & {
+            /** Format: uuid */
+            contractVersionId: string;
+            /** Format: date-time */
+            snapshotAt: string;
+            /**
+             * @description The IANA zone the hour counts are read in, normally the property's. It is
+             *     carried explicitly because a free-cancellation window that moved with the
+             *     reader's clock would be a fee that depends on who is looking.
+             */
+            timezone: string;
+        };
+        /** @description The version's lodging terms as the contract desk edits them. */
+        LodgingTerms: components["schemas"]["LodgingTermsPolicy"] & {
+            /** Format: uuid */
+            contractVersionId: string;
+            /** Format: uuid */
+            id: string;
+            /**
+             * @description The ETag of the contract *version*, not of this row. The terms are part of
+             *     the version, so writing them moves the version's row_version: a screen
+             *     holding a stale version ETag has not seen the last change to any part of
+             *     the sheet.
+             */
+            rowVersion: number;
+        };
+        /**
+         * @description The policy itself: everything a contract version says about a stay that is cut
+         *     short or never begun. It is a schema of its own because two things carry it -- the
+         *     editable terms of the version and the frozen snapshot on a booking -- and one
+         *     definition is what keeps a booking's fee judged by the same fields the contract
+         *     desk typed.
+         */
+        LodgingTermsPolicy: {
+            /**
+             * @description A child below this age stays free. Null is not zero: it is an agreement that
+             *     says nothing about children, and a booking under it charges for all of them.
+             */
+            childFreeUnderAge?: number | null;
+            /**
+             * @description How many hours before check-in a cancellation is still free. Zero is a policy
+             *     too: the free window closes at check-in.
+             */
+            freeCancellationHoursBefore: number;
+            /**
+             * @description How long a hold stands at this provider. Null means the tenant's own
+             *     accommodation.hold_minutes applies, which is the answer for almost every
+             *     provider; this field exists for the one that negotiated its own.
+             */
+            holdMinutes?: number | null;
+            maxNights?: number | null;
+            minNights: number;
+            noShowPercent: components["schemas"]["LodgingPercent"];
+            penaltyKind: components["schemas"]["LodgingPenaltyKind"];
+            /** @description Present exactly when penaltyKind is NIGHTS. */
+            penaltyNights?: number | null;
+            /** @description Present exactly when penaltyKind is PERCENT. */
+            penaltyPercent?: components["schemas"]["LodgingPercent"] | null;
+        };
         MaskedIdentifier: {
             maskedValue: string;
             primary: boolean;
@@ -6703,6 +6871,18 @@ export interface components {
          * @enum {string}
          */
         MemberShareMethod: "NONE" | "FIXED" | "PERCENT";
+        /**
+         * @description The person the signed-in member acts for, with the two things a member screen needs
+         *     beside the name: what they are enrolled in and how the product may reach them. The
+         *     identifier is masked and the contacts are masked, exactly as they are for a
+         *     back-office reader -- being the subject of a record is not a reason to hand the
+         *     plaintext back over the wire, where it would be one more copy nobody can recall.
+         */
+        MyPerson: {
+            contacts: components["schemas"]["PersonContact"][];
+            enrollments: components["schemas"]["Enrollment"][];
+            person: components["schemas"]["PersonSummary"];
+        };
         NewClaimLine: {
             currencyCode?: string | null;
             description?: string | null;
@@ -6861,7 +7041,7 @@ export interface components {
          *     see. A voucher's plaintext is never one of these values.
          * @enum {string}
          */
-        NotificationSafeVariable: "given_name" | "reference_no" | "status_code" | "event_date" | "expires_at" | "amount" | "currency" | "provider_name" | "program_name" | "deep_link";
+        NotificationSafeVariable: "given_name" | "reference_no" | "status_code" | "event_date" | "expires_at" | "amount" | "currency" | "provider_name" | "program_name" | "property_name" | "deep_link";
         /**
          * @description Why nobody was told. PREFERENCE_DISABLED is somebody who asked not to hear about
          *     this; QUIET_HOURS is the middle of their night in their own time zone; NO_TEMPLATE
@@ -7782,6 +7962,7 @@ export interface components {
             /** @description The whole set. An empty array clears the encounter's diagnoses. */
             items: components["schemas"]["DiagnosisInput"][];
         };
+        PutLodgingTermsRequest: components["schemas"]["LodgingTermsPolicy"] & Record<string, never>;
         PutMedicalReportServices: {
             /** @description The whole set. An empty array clears the report's service lines. */
             items: components["schemas"]["MedicalReportServiceInput"][];
@@ -8659,6 +8840,16 @@ export interface components {
         TaxBehaviour: "EXCLUSIVE" | "INCLUSIVE" | "EXEMPT";
         TenantContext: {
             permissions: string[];
+            /**
+             * Format: uuid
+             * @description The person this account acts for in this tenant, from its PERSON-scoped access
+             *     grant (migration 000039). It is null for every actor that is not a member: a
+             *     reviewer, a provider clerk and an administrator act for the tenant or for an
+             *     organization, not for a person. A member client reads it to know it is bound;
+             *     the server never trusts it back, and resolves the person from the grant on
+             *     every call.
+             */
+            personId?: string | null;
             scopes?: {
                 /** Format: uuid */
                 id?: string | null;
@@ -9307,6 +9498,11 @@ export type SchemaIssueVoucher = components['schemas']['IssueVoucher'];
 export type SchemaLedgerEntry = components['schemas']['LedgerEntry'];
 export type SchemaLedgerPage = components['schemas']['LedgerPage'];
 export type SchemaLegalHold = components['schemas']['LegalHold'];
+export type SchemaLodgingPenaltyKind = components['schemas']['LodgingPenaltyKind'];
+export type SchemaLodgingPercent = components['schemas']['LodgingPercent'];
+export type SchemaLodgingPolicySnapshot = components['schemas']['LodgingPolicySnapshot'];
+export type SchemaLodgingTerms = components['schemas']['LodgingTerms'];
+export type SchemaLodgingTermsPolicy = components['schemas']['LodgingTermsPolicy'];
 export type SchemaMaskedIdentifier = components['schemas']['MaskedIdentifier'];
 export type SchemaMedicalReport = components['schemas']['MedicalReport'];
 export type SchemaMedicalReportDocument = components['schemas']['MedicalReportDocument'];
@@ -9320,6 +9516,7 @@ export type SchemaMedicalReportUsedByType = components['schemas']['MedicalReport
 export type SchemaMemberImportBatch = components['schemas']['MemberImportBatch'];
 export type SchemaMemberImportRow = components['schemas']['MemberImportRow'];
 export type SchemaMemberShareMethod = components['schemas']['MemberShareMethod'];
+export type SchemaMyPerson = components['schemas']['MyPerson'];
 export type SchemaNewClaimLine = components['schemas']['NewClaimLine'];
 export type SchemaNotificationChannel = components['schemas']['NotificationChannel'];
 export type SchemaNotificationDelivery = components['schemas']['NotificationDelivery'];
@@ -9405,6 +9602,7 @@ export type SchemaProviderType = components['schemas']['ProviderType'];
 export type SchemaPutApprovalPolicies = components['schemas']['PutApprovalPolicies'];
 export type SchemaPutClaimLines = components['schemas']['PutClaimLines'];
 export type SchemaPutEncounterDiagnoses = components['schemas']['PutEncounterDiagnoses'];
+export type SchemaPutLodgingTermsRequest = components['schemas']['PutLodgingTermsRequest'];
 export type SchemaPutMedicalReportServices = components['schemas']['PutMedicalReportServices'];
 export type SchemaPutNotificationPreferences = components['schemas']['PutNotificationPreferences'];
 export type SchemaPutPaymentTermRequest = components['schemas']['PutPaymentTermRequest'];
@@ -11202,6 +11400,117 @@ export interface operations {
             };
             /** @description Body is not application/merge-patch+json */
             415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getContractVersionLodgingPolicy: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                contractVersionId: components["parameters"]["ContractVersionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The version's lodging policy, stamped */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LodgingPolicySnapshot"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getContractVersionLodgingTerms: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                contractVersionId: components["parameters"]["ContractVersionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lodging terms of the version */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LodgingTerms"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    putContractVersionLodgingTerms: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Required when the request is authenticated with the BFF session cookie. */
+                "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                contractVersionId: components["parameters"]["ContractVersionId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PutLodgingTermsRequest"];
+            };
+        };
+        responses: {
+            /** @description Lodging terms written */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LodgingTerms"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description ETag mismatch */
+            412: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -14434,6 +14743,32 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    getMyPerson: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The caller's own person record */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyPerson"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     listMedicalReports: {

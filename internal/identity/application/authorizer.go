@@ -39,6 +39,22 @@ type TenantContext struct {
 	Membership  Membership
 	Permissions []string
 	Scopes      []identity.Scope
+	// PersonID is the person this account acts for in this tenant, resolved from its
+	// PERSON scope (migration 000039). It is null for every actor that is not a member.
+	// The frontend reads it to know a member client is bound; the server never trusts it
+	// back and resolves the person from the grant on every call.
+	PersonID uuid.NullUUID
+}
+
+// tenantContext builds the view, resolving the person once so /me, switch-tenant and the
+// request context cannot disagree about who the caller acts for.
+func tenantContext(m Membership, g Grants) TenantContext {
+	return TenantContext{
+		Membership:  m,
+		Permissions: g.Permissions,
+		Scopes:      g.Scopes,
+		PersonID:    identity.PersonFromScopes(g.Scopes),
+	}
 }
 
 // AuthorizationRepository reads memberships and grants. Membership lookups run in an
@@ -106,6 +122,7 @@ func (a *Authorizer) requestContext(session identity.Session, m Membership, g Gr
 		ClientType:   identity.ClientBrowser,
 		TenantID:     m.Tenant.ID,
 		MembershipID: m.ID,
+		PersonID:     identity.PersonFromScopes(g.Scopes),
 		Permissions:  perms,
 		Scopes:       g.Scopes,
 		Locale:       m.Tenant.DefaultLocale,
@@ -126,7 +143,7 @@ func (a *Authorizer) TenantContexts(ctx context.Context, actorID uuid.UUID) ([]T
 		if err != nil {
 			return nil, fmt.Errorf("identity: resolve grants in %s: %w", m.Tenant.Code, err)
 		}
-		out = append(out, TenantContext{Membership: m, Permissions: grants.Permissions, Scopes: grants.Scopes})
+		out = append(out, tenantContext(m, grants))
 	}
 	return out, nil
 }
@@ -177,7 +194,7 @@ func (a *Authorizer) SwitchTenant(ctx context.Context, session identity.Session,
 		ActionCode:   "session.tenant_switch",
 		Outcome:      audit.OutcomeSuccess,
 	})
-	return TenantContext{Membership: membership, Permissions: grants.Permissions, Scopes: grants.Scopes}, nil
+	return tenantContext(membership, grants), nil
 }
 
 // RecordDenied audits a failed identity.Require or RequireStepUp on a route (SECURITY,

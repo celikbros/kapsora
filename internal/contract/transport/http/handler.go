@@ -33,6 +33,10 @@ const (
 	PermissionRead    = application.PermissionRead
 	PermissionManage  = application.PermissionManage
 	PermissionPublish = application.PermissionPublish
+	// PermissionLodgingManage guards the lodging terms of a version (migration 000039).
+	// It is a separate code so an access review can see who may write the accommodation
+	// clause of an agreement; every role that may write a version holds it.
+	PermissionLodgingManage = application.PermissionLodgingManage
 )
 
 const (
@@ -93,6 +97,9 @@ func (h *Handler) VersionRoutes(r chi.Router) {
 	r.Put("/{contractVersionId}/provider-quotas", h.PutProviderQuotas)
 	r.Get("/{contractVersionId}/payment-term", h.GetPaymentTerm)
 	r.Put("/{contractVersionId}/payment-term", h.PutPaymentTerm)
+	r.Get("/{contractVersionId}/lodging-terms", h.GetLodgingTerms)
+	r.Put("/{contractVersionId}/lodging-terms", h.PutLodgingTerms)
+	r.Get("/{contractVersionId}/lodging-policy", h.GetLodgingPolicy)
 }
 
 // PriceListRoutes mounts everything below /price-lists.
@@ -157,6 +164,10 @@ func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) 
 	case errors.Is(err, application.ErrPaymentTermNotFound):
 		problem(w, r, http.StatusNotFound, "contract/payment-term-not-found", "PAYMENT_TERM_NOT_FOUND",
 			"Bu sürüm için ödeme koşulu tanımlanmamış", "")
+	case errors.Is(err, application.ErrLodgingTermsNotFound):
+		problem(w, r, http.StatusNotFound, "contract/lodging-terms-not-found", "LODGING_TERMS_NOT_FOUND",
+			"Bu sürüm için konaklama koşulu tanımlanmamış",
+			"İptal ve gelmeme bedelleri yazılmadan bu sözleşme sürümünden rezervasyon onaylanamaz.")
 	case errors.Is(err, application.ErrPartyNotFound):
 		problem(w, r, http.StatusNotFound, "contract/party-not-found", "CONTRACT_PARTY_NOT_FOUND",
 			"Sözleşme tarafı bulunamadı", "Ödeyen kurum, sponsor veya sağlayıcı bu kurumda bulunamadı.")

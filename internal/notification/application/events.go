@@ -34,6 +34,69 @@ const (
 	EventClaimDecided         = "claim.decided"
 )
 
+// The accommodation events (WP-I6-04 section 2.5). They are named here, with the other
+// six, because an event code is written once: WP-I6-02 and WP-I6-03 publish them, the seed
+// registers a template for them, a member expresses a preference about them, and three
+// spellings would be three different events.
+//
+// Who each one is told to is stated in BookingRecipients below rather than left to each
+// publisher, because "does the hotel hear about this" is a privacy decision and not a
+// detail of whichever command happens to raise it.
+const (
+	// EventBookingHeld is a room set aside with a countdown running. The member is told,
+	// so the countdown is not a secret only the browser tab that opened it knows about.
+	EventBookingHeld = "booking.held"
+	// EventBookingConfirmed is the stay agreed. Both sides are told: the member, and the
+	// property that has to expect them. The message carries the reference, the dates, the
+	// property, the member's own share and a link - and never the voucher token, which has
+	// no slot in the catalogue it could be supplied under.
+	EventBookingConfirmed = "booking.confirmed"
+	// EventBookingPendingApproval is a booking waiting on a step-up or a second pair of
+	// eyes. Only the member is told: the property has not been promised anything yet.
+	EventBookingPendingApproval = "booking.pending_approval"
+	// EventBookingCancelled is a stay called off, with what it cost. Both sides are told,
+	// because the property loses a room and the member owes a fee, and neither should
+	// first learn it from an invoice.
+	EventBookingCancelled = "booking.cancelled"
+	// EventBookingReminder is the day before check-in, raised by the scheduler in the
+	// property's own zone. Only the member is told, and only once: the dedupe key is
+	// derived from the booking and the day rather than from a clock, so a job that runs
+	// twice sends once.
+	EventBookingReminder = "booking.reminder"
+	// EventBookingNoShowReported is a member who did not arrive, with what the contract
+	// says that costs. Only the member is told; the property is the one who reported it.
+	EventBookingNoShowReported = "booking.no_show_reported"
+	// EventBookingOffered is a waitlisted member reaching the front of the queue, with the
+	// day the offer runs out.
+	EventBookingOffered = "booking.offered"
+)
+
+// RecipientKind names a side of a booking without naming a row: who is told, decided once
+// per event rather than at each publisher.
+type RecipientKind string
+
+const (
+	// RecipientMember is the person the booking is for.
+	RecipientMember RecipientKind = "MEMBER"
+	// RecipientProperty is the provider organization that runs the property.
+	RecipientProperty RecipientKind = "PROPERTY"
+)
+
+// BookingRecipients is who hears about each accommodation event. It is a table rather than
+// a rule restated in each command, because the answer is a privacy decision: the property
+// learns that a member is coming and that they cancelled, and learns nothing about an
+// approval still pending, a reminder, a no-show it reported itself, or an offer made to
+// somebody on a waiting list.
+var BookingRecipients = map[string][]RecipientKind{
+	EventBookingHeld:            {RecipientMember},
+	EventBookingConfirmed:       {RecipientMember, RecipientProperty},
+	EventBookingPendingApproval: {RecipientMember},
+	EventBookingCancelled:       {RecipientMember, RecipientProperty},
+	EventBookingReminder:        {RecipientMember},
+	EventBookingNoShowReported:  {RecipientMember},
+	EventBookingOffered:         {RecipientMember},
+}
+
 // WiredEvents is every event this milestone publishes a template for, in a stable order.
 // The seed walks it; a test walks it to prove each one refuses a diagnosis.
 var WiredEvents = []string{
@@ -43,6 +106,25 @@ var WiredEvents = []string{
 	EventAuthorizationExpiring,
 	EventMedicalReportDecided,
 	EventClaimDecided,
+	EventBookingHeld,
+	EventBookingConfirmed,
+	EventBookingPendingApproval,
+	EventBookingCancelled,
+	EventBookingReminder,
+	EventBookingNoShowReported,
+	EventBookingOffered,
+}
+
+// BookingEvents is the accommodation subset, in the same order. WP-I6-02 and WP-I6-03 walk
+// it; a test walks it to prove every one has a recipient and a pair of templates.
+var BookingEvents = []string{
+	EventBookingHeld,
+	EventBookingConfirmed,
+	EventBookingPendingApproval,
+	EventBookingCancelled,
+	EventBookingReminder,
+	EventBookingNoShowReported,
+	EventBookingOffered,
 }
 
 // DefaultLocale is the one locale the seed publishes. A tenant serving another language
@@ -222,6 +304,90 @@ func SeedTemplates() []SeedTemplate {
 			"Ayrıntılar için: {{deep_link}}",
 		domain.VarReferenceNo, domain.VarStatusCode, domain.VarEventDate,
 		domain.VarAmount, domain.VarCurrency, domain.VarDeepLink,
+	)...)
+	out = append(out, bookingSeedTemplates()...)
+	return out
+}
+
+// bookingSeedTemplates is the accommodation half of the catalogue (WP-I6-04 section 2.5).
+//
+// Two things are worth stating about what is deliberately not in them. There is no voucher
+// token and no room number, because the catalogue has no slot either could be supplied
+// under: a booking's proof of entitlement is fetched from behind a sign-in through the deep
+// link, and a message that carried it would be a message that opens a door.
+//
+// And the two time-bounded messages - the hold's countdown and the waitlist offer's expiry
+// - name a day rather than a minute. `expires_at` is a date in this catalogue, and the rule
+// that refuses anything else is what stops a free-text time being smuggled in as one. The
+// exact minute is on the screen the link leads to, which is where a countdown belongs
+// anyway: one printed into an e-mail is already wrong by the time it is read.
+func bookingSeedTemplates() []SeedTemplate {
+	var out []SeedTemplate
+	out = append(out, seedTemplatePair(
+		EventBookingHeld,
+		"Rezervasyon seçiminiz ayrıldı: {{reference_no}}",
+		"{{property_name}} için {{reference_no}} numaralı seçiminiz sizin adınıza ayrıldı.\n"+
+			"Onay için son gün: {{expires_at}}\n\n"+
+			"Kalan süreyi görmek ve onaylamak için: {{deep_link}}",
+		domain.VarReferenceNo, domain.VarPropertyName, domain.VarExpiresAt, domain.VarDeepLink,
+	)...)
+	out = append(out, seedTemplatePair(
+		EventBookingConfirmed,
+		"Rezervasyonunuz onaylandı: {{reference_no}}",
+		"{{property_name}} rezervasyonunuz onaylandı.\n"+
+			"Referans: {{reference_no}}\n"+
+			"Giriş: {{event_date}}  Çıkış: {{expires_at}}\n"+
+			"Ödeyeceğiniz tutar: {{amount}} {{currency}}\n\n"+
+			"Rezervasyon belgeniz ve ayrıntılar için: {{deep_link}}",
+		domain.VarReferenceNo, domain.VarPropertyName, domain.VarEventDate, domain.VarExpiresAt,
+		domain.VarAmount, domain.VarCurrency, domain.VarDeepLink,
+	)...)
+	out = append(out, seedTemplatePair(
+		EventBookingPendingApproval,
+		"Rezervasyonunuz onay bekliyor: {{reference_no}}",
+		"{{property_name}} için {{reference_no}} numaralı rezervasyonunuz onay bekliyor.\n"+
+			"Giriş: {{event_date}}\n"+
+			"Durum: {{status_code}}\n\n"+
+			"Durumu izlemek için: {{deep_link}}",
+		domain.VarReferenceNo, domain.VarPropertyName, domain.VarEventDate,
+		domain.VarStatusCode, domain.VarDeepLink,
+	)...)
+	out = append(out, seedTemplatePair(
+		EventBookingCancelled,
+		"Rezervasyonunuz iptal edildi: {{reference_no}}",
+		"{{property_name}} için {{reference_no}} numaralı rezervasyon iptal edildi.\n"+
+			"Giriş tarihi: {{event_date}}\n"+
+			"Durum: {{status_code}}\n"+
+			"İptal bedeli: {{amount}} {{currency}}\n\n"+
+			"İptal koşulları ve ayrıntılar için: {{deep_link}}",
+		domain.VarReferenceNo, domain.VarPropertyName, domain.VarEventDate,
+		domain.VarStatusCode, domain.VarAmount, domain.VarCurrency, domain.VarDeepLink,
+	)...)
+	out = append(out, seedTemplatePair(
+		EventBookingReminder,
+		"Yarın girişiniz var: {{reference_no}}",
+		"{{property_name}} rezervasyonunuzun girişi {{event_date}} tarihinde.\n"+
+			"Referans: {{reference_no}}\n\n"+
+			"Giriş bilgileri için: {{deep_link}}",
+		domain.VarReferenceNo, domain.VarPropertyName, domain.VarEventDate, domain.VarDeepLink,
+	)...)
+	out = append(out, seedTemplatePair(
+		EventBookingNoShowReported,
+		"Girişiniz yapılmadı: {{reference_no}}",
+		"{{property_name}} için {{reference_no}} numaralı rezervasyonda {{event_date}} tarihinde giriş yapılmadı olarak bildirildi.\n"+
+			"Sözleşme gereği tahakkuk eden tutar: {{amount}} {{currency}}\n\n"+
+			"İtiraz etmek ya da ayrıntıları görmek için: {{deep_link}}",
+		domain.VarReferenceNo, domain.VarPropertyName, domain.VarEventDate,
+		domain.VarAmount, domain.VarCurrency, domain.VarDeepLink,
+	)...)
+	out = append(out, seedTemplatePair(
+		EventBookingOffered,
+		"Bekleme listenizde yer açıldı: {{reference_no}}",
+		"{{property_name}} için beklediğiniz tarihlerde yer açıldı.\n"+
+			"Referans: {{reference_no}}\n"+
+			"Teklifin son günü: {{expires_at}}\n\n"+
+			"Teklifi görmek ve kullanmak için: {{deep_link}}",
+		domain.VarReferenceNo, domain.VarPropertyName, domain.VarExpiresAt, domain.VarDeepLink,
 	)...)
 	return out
 }

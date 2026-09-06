@@ -32,7 +32,10 @@ import (
 	identitypg "github.com/celikbros/kapsora/internal/identity/infrastructure/postgres"
 	notificationapp "github.com/celikbros/kapsora/internal/notification/application"
 	notificationpg "github.com/celikbros/kapsora/internal/notification/infrastructure/postgres"
+	partyapp "github.com/celikbros/kapsora/internal/party/application"
+	partypg "github.com/celikbros/kapsora/internal/party/infrastructure/postgres"
 	"github.com/celikbros/kapsora/internal/platform/config"
+	"github.com/celikbros/kapsora/internal/platform/crypto/localkey"
 	"github.com/celikbros/kapsora/internal/platform/db"
 	"github.com/celikbros/kapsora/internal/platform/httpx"
 	"github.com/celikbros/kapsora/internal/platform/sqlcgen"
@@ -56,6 +59,10 @@ type seeder struct {
 	catalog       *catalogapp.Service
 	notifications *notificationapp.Service
 	benefits      *benefitapp.Service
+	// party creates the demo principal a member account is bound to (WP-I6-04). It needs
+	// the field cipher and the blind indexer, because a person without an identifier is
+	// not a person anybody could be found as.
+	party *partyapp.Service
 }
 
 func run(args []string) error {
@@ -119,6 +126,21 @@ func run(args []string) error {
 	if err != nil {
 		return err
 	}
+	// The same local key provider cmd/api uses (ADR-020). The seed writes an identifier
+	// through the ordinary encryption path rather than an INSERT of its own, so a demo
+	// database holds a TCKN exactly the way a real one does: in person_identifier.value_enc
+	// and nowhere else.
+	keys, err := localkey.NewFromEnv()
+	if err != nil {
+		return err
+	}
+	partySvc, err := partyapp.New(partyapp.Deps{
+		Pool: pool, Repo: partypg.New(), Cipher: keys, Index: keys,
+		Audit: auditpg.New(), Cursors: cursors,
+	})
+	if err != nil {
+		return err
+	}
 	s := &seeder{
 		pool:          pool,
 		svc:           svc,
@@ -127,6 +149,7 @@ func run(args []string) error {
 		catalog:       catalogSvc,
 		notifications: notificationSvc,
 		benefits:      benefitSvc,
+		party:         partySvc,
 	}
 
 	switch args[0] {
@@ -262,6 +285,15 @@ func (s *seeder) demo(ctx context.Context) error {
 		if err := s.ensureEntitlementMappings(ctx, tenantID); err != nil {
 			return err
 		}
+		if err := s.ensureAccommodationSettings(ctx, tenantID); err != nil {
+			return err
+		}
+	}
+	// The member binding is DEMO_A's only: a member account acts for one person in one
+	// tenant, and a second binding in DEMO_B would make the mock world ambiguous about
+	// which one member.a is.
+	if err := s.ensureDemoMember(ctx, tenantA, demoPassword); err != nil {
+		return err
 	}
 	fmt.Println("demo data ready")
 	return nil

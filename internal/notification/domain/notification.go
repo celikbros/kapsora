@@ -174,7 +174,7 @@ var (
 	}
 )
 
-// The safe variable catalogue. These ten names are everything a notification may carry.
+// The safe variable catalogue. These eleven names are everything a notification may carry.
 // Adding one costs a migration as well as an edit here, which is the right price for
 // widening what may leave the system in an e-mail nobody can recall.
 const (
@@ -187,13 +187,20 @@ const (
 	VarCurrency     = "currency"
 	VarProviderName = "provider_name"
 	VarProgramName  = "program_name"
+	// VarPropertyName is the hotel or guest house a booking is at (WP-I6-04, migration
+	// 000039). It joined the catalogue rather than being folded into provider_name
+	// because they are different things in the accommodation vertical: the provider is
+	// the organization holding the contract and the property is the building the member
+	// sleeps in, and one operator may run several. Its shape is provider_name's exactly --
+	// a label, not a sentence.
+	VarPropertyName = "property_name"
 	VarDeepLink     = "deep_link"
 )
 
 // SafeVariableNames is the catalogue in a stable order, for the API and for tests.
 var SafeVariableNames = []string{
 	VarGivenName, VarReferenceNo, VarStatusCode, VarEventDate, VarExpiresAt,
-	VarAmount, VarCurrency, VarProviderName, VarProgramName, VarDeepLink,
+	VarAmount, VarCurrency, VarProviderName, VarProgramName, VarPropertyName, VarDeepLink,
 }
 
 // Limits mirroring the column CHECKs and the OpenAPI schema.
@@ -205,8 +212,8 @@ const (
 	// MaxRenderedBody bounds what a render may produce.
 	MaxRenderedBody = 10000
 	// MaxDeclaredVariables is the size of the catalogue: a template may declare each of
-	// them at most once and nothing else.
-	MaxDeclaredVariables = 10
+	// them at most once and nothing else. Migration 000039 repeats it as a CHECK.
+	MaxDeclaredVariables = 11
 	// MaxVariableValue is the longest value any slot accepts. A diagnosis sentence, a
 	// document body and an operator's comment are all longer than this; a name, a
 	// reference and a status word are all shorter.
@@ -374,6 +381,10 @@ var variableRules = map[string]variableRule{
 	},
 	VarProgramName: {
 		code:  "program adı kısa bir ad olmalı; cümle ya da liste taşıyamaz",
+		valid: validDisplayName,
+	},
+	VarPropertyName: {
+		code:  "tesis adı kısa bir ad olmalı; cümle ya da liste taşıyamaz",
 		valid: validDisplayName,
 	},
 	VarDeepLink: {

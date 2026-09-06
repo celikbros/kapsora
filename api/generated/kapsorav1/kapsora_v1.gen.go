@@ -1345,6 +1345,24 @@ func (e LedgerEntryMovementType) Valid() bool {
 	}
 }
 
+// Defines values for LodgingPenaltyKind.
+const (
+	LodgingPenaltyKindNIGHTS  LodgingPenaltyKind = "NIGHTS"
+	LodgingPenaltyKindPERCENT LodgingPenaltyKind = "PERCENT"
+)
+
+// Valid indicates whether the value is a known member of the LodgingPenaltyKind enum.
+func (e LodgingPenaltyKind) Valid() bool {
+	switch e {
+	case LodgingPenaltyKindNIGHTS:
+		return true
+	case LodgingPenaltyKindPERCENT:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for MedicalReportDocumentClassification.
 const (
 	MedicalReportDocumentClassificationCONFIDENTIAL MedicalReportDocumentClassification = "CONFIDENTIAL"
@@ -1687,6 +1705,7 @@ const (
 	ExpiresAt    NotificationSafeVariable = "expires_at"
 	GivenName    NotificationSafeVariable = "given_name"
 	ProgramName  NotificationSafeVariable = "program_name"
+	PropertyName NotificationSafeVariable = "property_name"
 	ProviderName NotificationSafeVariable = "provider_name"
 	ReferenceNo  NotificationSafeVariable = "reference_no"
 	StatusCode   NotificationSafeVariable = "status_code"
@@ -1708,6 +1727,8 @@ func (e NotificationSafeVariable) Valid() bool {
 	case GivenName:
 		return true
 	case ProgramName:
+		return true
+	case PropertyName:
 		return true
 	case ProviderName:
 		return true
@@ -6661,6 +6682,149 @@ type LegalHold struct {
 	RowVersion    int64               `json:"rowVersion"`
 }
 
+// LodgingPenaltyKind What a late cancellation is charged in: a number of nights of the stay, or a
+// percentage of the member's own share. Never both -- "3" meaning three nights and
+// "3" meaning three percent are two different numbers, and a policy that could mean
+// either is a fee nobody can explain to the person paying it.
+type LodgingPenaltyKind string
+
+// LodgingPercent A percentage between 0 and 100 as an exact decimal string with at most four
+// decimals, which is the scale of the numeric(7,4) column behind it. A string and not
+// a JSON number because it decides what somebody is charged, and a float would round
+// it silently.
+type LodgingPercent = string
+
+// LodgingPolicySnapshot The policy as a booking freezes it: the terms, the version they came from, the
+// moment the copy was taken and the zone its hours are counted in. WP-I6-02 writes
+// one at confirmation and WP-I6-03 judges every cancellation and no-show by it, so
+// nothing in it may be looked up again later -- a later edit of the contract must not
+// change what a member already agreed to.
+type LodgingPolicySnapshot struct {
+	// ChildFreeUnderAge A child below this age stays free. Null is not zero: it is an agreement that
+	// says nothing about children, and a booking under it charges for all of them.
+	ChildFreeUnderAge *int               `json:"childFreeUnderAge,omitempty"`
+	ContractVersionId openapi_types.UUID `json:"contractVersionId"`
+
+	// FreeCancellationHoursBefore How many hours before check-in a cancellation is still free. Zero is a policy
+	// too: the free window closes at check-in.
+	FreeCancellationHoursBefore int `json:"freeCancellationHoursBefore"`
+
+	// HoldMinutes How long a hold stands at this provider. Null means the tenant's own
+	// accommodation.hold_minutes applies, which is the answer for almost every
+	// provider; this field exists for the one that negotiated its own.
+	HoldMinutes *int `json:"holdMinutes,omitempty"`
+	MaxNights   *int `json:"maxNights,omitempty"`
+	MinNights   int  `json:"minNights"`
+
+	// NoShowPercent A percentage between 0 and 100 as an exact decimal string with at most four
+	// decimals, which is the scale of the numeric(7,4) column behind it. A string and not
+	// a JSON number because it decides what somebody is charged, and a float would round
+	// it silently.
+	NoShowPercent LodgingPercent `json:"noShowPercent"`
+
+	// PenaltyKind What a late cancellation is charged in: a number of nights of the stay, or a
+	// percentage of the member's own share. Never both -- "3" meaning three nights and
+	// "3" meaning three percent are two different numbers, and a policy that could mean
+	// either is a fee nobody can explain to the person paying it.
+	PenaltyKind LodgingPenaltyKind `json:"penaltyKind"`
+
+	// PenaltyNights Present exactly when penaltyKind is NIGHTS.
+	PenaltyNights *int `json:"penaltyNights,omitempty"`
+
+	// PenaltyPercent Present exactly when penaltyKind is PERCENT.
+	PenaltyPercent *LodgingPercent `json:"penaltyPercent,omitempty"`
+	SnapshotAt     time.Time       `json:"snapshotAt"`
+
+	// Timezone The IANA zone the hour counts are read in, normally the property's. It is
+	// carried explicitly because a free-cancellation window that moved with the
+	// reader's clock would be a fee that depends on who is looking.
+	Timezone string `json:"timezone"`
+}
+
+// LodgingTerms The version's lodging terms as the contract desk edits them.
+type LodgingTerms struct {
+	// ChildFreeUnderAge A child below this age stays free. Null is not zero: it is an agreement that
+	// says nothing about children, and a booking under it charges for all of them.
+	ChildFreeUnderAge *int               `json:"childFreeUnderAge,omitempty"`
+	ContractVersionId openapi_types.UUID `json:"contractVersionId"`
+
+	// FreeCancellationHoursBefore How many hours before check-in a cancellation is still free. Zero is a policy
+	// too: the free window closes at check-in.
+	FreeCancellationHoursBefore int `json:"freeCancellationHoursBefore"`
+
+	// HoldMinutes How long a hold stands at this provider. Null means the tenant's own
+	// accommodation.hold_minutes applies, which is the answer for almost every
+	// provider; this field exists for the one that negotiated its own.
+	HoldMinutes *int               `json:"holdMinutes,omitempty"`
+	Id          openapi_types.UUID `json:"id"`
+	MaxNights   *int               `json:"maxNights,omitempty"`
+	MinNights   int                `json:"minNights"`
+
+	// NoShowPercent A percentage between 0 and 100 as an exact decimal string with at most four
+	// decimals, which is the scale of the numeric(7,4) column behind it. A string and not
+	// a JSON number because it decides what somebody is charged, and a float would round
+	// it silently.
+	NoShowPercent LodgingPercent `json:"noShowPercent"`
+
+	// PenaltyKind What a late cancellation is charged in: a number of nights of the stay, or a
+	// percentage of the member's own share. Never both -- "3" meaning three nights and
+	// "3" meaning three percent are two different numbers, and a policy that could mean
+	// either is a fee nobody can explain to the person paying it.
+	PenaltyKind LodgingPenaltyKind `json:"penaltyKind"`
+
+	// PenaltyNights Present exactly when penaltyKind is NIGHTS.
+	PenaltyNights *int `json:"penaltyNights,omitempty"`
+
+	// PenaltyPercent Present exactly when penaltyKind is PERCENT.
+	PenaltyPercent *LodgingPercent `json:"penaltyPercent,omitempty"`
+
+	// RowVersion The ETag of the contract *version*, not of this row. The terms are part of
+	// the version, so writing them moves the version's row_version: a screen
+	// holding a stale version ETag has not seen the last change to any part of
+	// the sheet.
+	RowVersion int `json:"rowVersion"`
+}
+
+// LodgingTermsPolicy The policy itself: everything a contract version says about a stay that is cut
+// short or never begun. It is a schema of its own because two things carry it -- the
+// editable terms of the version and the frozen snapshot on a booking -- and one
+// definition is what keeps a booking's fee judged by the same fields the contract
+// desk typed.
+type LodgingTermsPolicy struct {
+	// ChildFreeUnderAge A child below this age stays free. Null is not zero: it is an agreement that
+	// says nothing about children, and a booking under it charges for all of them.
+	ChildFreeUnderAge *int `json:"childFreeUnderAge,omitempty"`
+
+	// FreeCancellationHoursBefore How many hours before check-in a cancellation is still free. Zero is a policy
+	// too: the free window closes at check-in.
+	FreeCancellationHoursBefore int `json:"freeCancellationHoursBefore"`
+
+	// HoldMinutes How long a hold stands at this provider. Null means the tenant's own
+	// accommodation.hold_minutes applies, which is the answer for almost every
+	// provider; this field exists for the one that negotiated its own.
+	HoldMinutes *int `json:"holdMinutes,omitempty"`
+	MaxNights   *int `json:"maxNights,omitempty"`
+	MinNights   int  `json:"minNights"`
+
+	// NoShowPercent A percentage between 0 and 100 as an exact decimal string with at most four
+	// decimals, which is the scale of the numeric(7,4) column behind it. A string and not
+	// a JSON number because it decides what somebody is charged, and a float would round
+	// it silently.
+	NoShowPercent LodgingPercent `json:"noShowPercent"`
+
+	// PenaltyKind What a late cancellation is charged in: a number of nights of the stay, or a
+	// percentage of the member's own share. Never both -- "3" meaning three nights and
+	// "3" meaning three percent are two different numbers, and a policy that could mean
+	// either is a fee nobody can explain to the person paying it.
+	PenaltyKind LodgingPenaltyKind `json:"penaltyKind"`
+
+	// PenaltyNights Present exactly when penaltyKind is NIGHTS.
+	PenaltyNights *int `json:"penaltyNights,omitempty"`
+
+	// PenaltyPercent Present exactly when penaltyKind is PERCENT.
+	PenaltyPercent *LodgingPercent `json:"penaltyPercent,omitempty"`
+}
+
 // MaskedIdentifier defines model for MaskedIdentifier.
 type MaskedIdentifier struct {
 	MaskedValue string `json:"maskedValue"`
@@ -6886,6 +7050,17 @@ type MemberImportRowStatus string
 
 // MemberShareMethod How much of the price the member carries; NONE means the payer carries all of it.
 type MemberShareMethod string
+
+// MyPerson The person the signed-in member acts for, with the two things a member screen needs
+// beside the name: what they are enrolled in and how the product may reach them. The
+// identifier is masked and the contacts are masked, exactly as they are for a
+// back-office reader -- being the subject of a record is not a reason to hand the
+// plaintext back over the wire, where it would be one more copy nobody can recall.
+type MyPerson struct {
+	Contacts    []PersonContact `json:"contacts"`
+	Enrollments []Enrollment    `json:"enrollments"`
+	Person      PersonSummary   `json:"person"`
+}
 
 // NewClaimLine defines model for NewClaimLine.
 type NewClaimLine struct {
@@ -8072,6 +8247,42 @@ type PutEncounterDiagnoses struct {
 	Items []DiagnosisInput `json:"items"`
 }
 
+// PutLodgingTermsRequest defines model for PutLodgingTermsRequest.
+type PutLodgingTermsRequest struct {
+	// ChildFreeUnderAge A child below this age stays free. Null is not zero: it is an agreement that
+	// says nothing about children, and a booking under it charges for all of them.
+	ChildFreeUnderAge *int `json:"childFreeUnderAge,omitempty"`
+
+	// FreeCancellationHoursBefore How many hours before check-in a cancellation is still free. Zero is a policy
+	// too: the free window closes at check-in.
+	FreeCancellationHoursBefore int `json:"freeCancellationHoursBefore"`
+
+	// HoldMinutes How long a hold stands at this provider. Null means the tenant's own
+	// accommodation.hold_minutes applies, which is the answer for almost every
+	// provider; this field exists for the one that negotiated its own.
+	HoldMinutes *int `json:"holdMinutes,omitempty"`
+	MaxNights   *int `json:"maxNights,omitempty"`
+	MinNights   int  `json:"minNights"`
+
+	// NoShowPercent A percentage between 0 and 100 as an exact decimal string with at most four
+	// decimals, which is the scale of the numeric(7,4) column behind it. A string and not
+	// a JSON number because it decides what somebody is charged, and a float would round
+	// it silently.
+	NoShowPercent LodgingPercent `json:"noShowPercent"`
+
+	// PenaltyKind What a late cancellation is charged in: a number of nights of the stay, or a
+	// percentage of the member's own share. Never both -- "3" meaning three nights and
+	// "3" meaning three percent are two different numbers, and a policy that could mean
+	// either is a fee nobody can explain to the person paying it.
+	PenaltyKind LodgingPenaltyKind `json:"penaltyKind"`
+
+	// PenaltyNights Present exactly when penaltyKind is NIGHTS.
+	PenaltyNights *int `json:"penaltyNights,omitempty"`
+
+	// PenaltyPercent Present exactly when penaltyKind is PERCENT.
+	PenaltyPercent *LodgingPercent `json:"penaltyPercent,omitempty"`
+}
+
 // PutMedicalReportServices defines model for PutMedicalReportServices.
 type PutMedicalReportServices struct {
 	// Items The whole set. An empty array clears the report's service lines.
@@ -9036,7 +9247,15 @@ type TaxBehaviour string
 // TenantContext defines model for TenantContext.
 type TenantContext struct {
 	Permissions []string `json:"permissions"`
-	Scopes      *[]struct {
+
+	// PersonId The person this account acts for in this tenant, from its PERSON-scoped access
+	// grant (migration 000039). It is null for every actor that is not a member: a
+	// reviewer, a provider clerk and an administrator act for the tenant or for an
+	// organization, not for a person. A member client reads it to know it is bound;
+	// the server never trusts it back, and resolves the person from the grant on
+	// every call.
+	PersonId *openapi_types.UUID `json:"personId,omitempty"`
+	Scopes   *[]struct {
 		Id   *openapi_types.UUID `json:"id,omitempty"`
 		Type string              `json:"type"`
 	} `json:"scopes,omitempty"`
@@ -10119,6 +10338,30 @@ type PatchContractVersionParams struct {
 	XCSRFToken *CsrfHeader `json:"X-CSRF-Token,omitempty"`
 }
 
+// GetContractVersionLodgingPolicyParams defines parameters for GetContractVersionLodgingPolicy.
+type GetContractVersionLodgingPolicyParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// GetContractVersionLodgingTermsParams defines parameters for GetContractVersionLodgingTerms.
+type GetContractVersionLodgingTermsParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// PutContractVersionLodgingTermsParams defines parameters for PutContractVersionLodgingTerms.
+type PutContractVersionLodgingTermsParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// XCSRFToken Required when the request is authenticated with the BFF session cookie.
+	XCSRFToken *CsrfHeader `json:"X-CSRF-Token,omitempty"`
+}
+
 // ListPackageDefinitionsParams defines parameters for ListPackageDefinitions.
 type ListPackageDefinitionsParams struct {
 	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
@@ -11177,6 +11420,12 @@ type ReleaseLegalHoldParams struct {
 
 	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// GetMyPersonParams defines parameters for GetMyPerson.
+type GetMyPersonParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
 }
 
 // ListMedicalReportsParams defines parameters for ListMedicalReports.
@@ -12812,6 +13061,9 @@ type ImportCodeValuesJSONRequestBody = ImportCodeValuesRequest
 // PatchContractVersionApplicationMergePatchPlusJSONRequestBody defines body for PatchContractVersion for application/merge-patch+json ContentType.
 type PatchContractVersionApplicationMergePatchPlusJSONRequestBody = UpdateContractVersionRequest
 
+// PutContractVersionLodgingTermsJSONRequestBody defines body for PutContractVersionLodgingTerms for application/json ContentType.
+type PutContractVersionLodgingTermsJSONRequestBody = PutLodgingTermsRequest
+
 // PutPackageDefinitionsJSONRequestBody defines body for PutPackageDefinitions for application/json ContentType.
 type PutPackageDefinitionsJSONRequestBody = ReplacePackageDefinitionsRequest
 
@@ -13404,6 +13656,15 @@ type ServerInterface interface {
 	// (PATCH /api/v1/contract-versions/{contractVersionId})
 	PatchContractVersion(w http.ResponseWriter, r *http.Request, contractVersionId ContractVersionId, params PatchContractVersionParams)
 
+	// (GET /api/v1/contract-versions/{contractVersionId}/lodging-policy)
+	GetContractVersionLodgingPolicy(w http.ResponseWriter, r *http.Request, contractVersionId ContractVersionId, params GetContractVersionLodgingPolicyParams)
+
+	// (GET /api/v1/contract-versions/{contractVersionId}/lodging-terms)
+	GetContractVersionLodgingTerms(w http.ResponseWriter, r *http.Request, contractVersionId ContractVersionId, params GetContractVersionLodgingTermsParams)
+
+	// (PUT /api/v1/contract-versions/{contractVersionId}/lodging-terms)
+	PutContractVersionLodgingTerms(w http.ResponseWriter, r *http.Request, contractVersionId ContractVersionId, params PutContractVersionLodgingTermsParams)
+
 	// (GET /api/v1/contract-versions/{contractVersionId}/package-definitions)
 	ListPackageDefinitions(w http.ResponseWriter, r *http.Request, contractVersionId ContractVersionId, params ListPackageDefinitionsParams)
 
@@ -13601,6 +13862,9 @@ type ServerInterface interface {
 
 	// (GET /api/v1/me)
 	GetCurrentUserContext(w http.ResponseWriter, r *http.Request)
+
+	// (GET /api/v1/me/person)
+	GetMyPerson(w http.ResponseWriter, r *http.Request, params GetMyPersonParams)
 
 	// (GET /api/v1/medical-reports)
 	ListMedicalReports(w http.ResponseWriter, r *http.Request, params ListMedicalReportsParams)
@@ -14189,6 +14453,21 @@ func (_ Unimplemented) PatchContractVersion(w http.ResponseWriter, r *http.Reque
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// (GET /api/v1/contract-versions/{contractVersionId}/lodging-policy)
+func (_ Unimplemented) GetContractVersionLodgingPolicy(w http.ResponseWriter, r *http.Request, contractVersionId ContractVersionId, params GetContractVersionLodgingPolicyParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/contract-versions/{contractVersionId}/lodging-terms)
+func (_ Unimplemented) GetContractVersionLodgingTerms(w http.ResponseWriter, r *http.Request, contractVersionId ContractVersionId, params GetContractVersionLodgingTermsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PUT /api/v1/contract-versions/{contractVersionId}/lodging-terms)
+func (_ Unimplemented) PutContractVersionLodgingTerms(w http.ResponseWriter, r *http.Request, contractVersionId ContractVersionId, params PutContractVersionLodgingTermsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // (GET /api/v1/contract-versions/{contractVersionId}/package-definitions)
 func (_ Unimplemented) ListPackageDefinitions(w http.ResponseWriter, r *http.Request, contractVersionId ContractVersionId, params ListPackageDefinitionsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -14516,6 +14795,11 @@ func (_ Unimplemented) ReleaseLegalHold(w http.ResponseWriter, r *http.Request, 
 
 // (GET /api/v1/me)
 func (_ Unimplemented) GetCurrentUserContext(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/me/person)
+func (_ Unimplemented) GetMyPerson(w http.ResponseWriter, r *http.Request, params GetMyPersonParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -18142,6 +18426,210 @@ func (siw *ServerInterfaceWrapper) PatchContractVersion(w http.ResponseWriter, r
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PatchContractVersion(w, r, contractVersionId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetContractVersionLodgingPolicy operation middleware
+func (siw *ServerInterfaceWrapper) GetContractVersionLodgingPolicy(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "contractVersionId" -------------
+	var contractVersionId ContractVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "contractVersionId", chi.URLParam(r, "contractVersionId"), &contractVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "contractVersionId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetContractVersionLodgingPolicyParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetContractVersionLodgingPolicy(w, r, contractVersionId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetContractVersionLodgingTerms operation middleware
+func (siw *ServerInterfaceWrapper) GetContractVersionLodgingTerms(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "contractVersionId" -------------
+	var contractVersionId ContractVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "contractVersionId", chi.URLParam(r, "contractVersionId"), &contractVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "contractVersionId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetContractVersionLodgingTermsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetContractVersionLodgingTerms(w, r, contractVersionId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutContractVersionLodgingTerms operation middleware
+func (siw *ServerInterfaceWrapper) PutContractVersionLodgingTerms(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "contractVersionId" -------------
+	var contractVersionId ContractVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "contractVersionId", chi.URLParam(r, "contractVersionId"), &contractVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "contractVersionId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PutContractVersionLodgingTermsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CsrfHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = &XCSRFToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutContractVersionLodgingTerms(w, r, contractVersionId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -24223,6 +24711,51 @@ func (siw *ServerInterfaceWrapper) GetCurrentUserContext(w http.ResponseWriter, 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetCurrentUserContext(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMyPerson operation middleware
+func (siw *ServerInterfaceWrapper) GetMyPerson(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetMyPersonParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMyPerson(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -35833,6 +36366,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/v1/me", wrapper.GetCurrentUserContext)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/me/person", wrapper.GetMyPerson)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/tenants", wrapper.ListAccessibleTenants)
 	})
 	r.Group(func(r chi.Router) {
@@ -36230,6 +36766,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/api/v1/contract-versions/{contractVersionId}/payment-term", wrapper.PutPaymentTerm)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/contract-versions/{contractVersionId}/lodging-terms", wrapper.GetContractVersionLodgingTerms)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/v1/contract-versions/{contractVersionId}/lodging-terms", wrapper.PutContractVersionLodgingTerms)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/contract-versions/{contractVersionId}/lodging-policy", wrapper.GetContractVersionLodgingPolicy)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/prices:resolve", wrapper.ResolvePrice)
@@ -39733,6 +40278,252 @@ func (response PatchContractVersion422ApplicationProblemPlusJSONResponse) VisitP
 type PatchContractVersion428ApplicationProblemPlusJSONResponse Problem
 
 func (response PatchContractVersion428ApplicationProblemPlusJSONResponse) VisitPatchContractVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetContractVersionLodgingPolicyRequestObject struct {
+	ContractVersionId ContractVersionId `json:"contractVersionId"`
+	Params            GetContractVersionLodgingPolicyParams
+}
+
+type GetContractVersionLodgingPolicyResponseObject interface {
+	VisitGetContractVersionLodgingPolicyResponse(w http.ResponseWriter) error
+}
+
+type GetContractVersionLodgingPolicy200JSONResponse LodgingPolicySnapshot
+
+func (response GetContractVersionLodgingPolicy200JSONResponse) VisitGetContractVersionLodgingPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetContractVersionLodgingPolicy403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetContractVersionLodgingPolicy403ApplicationProblemPlusJSONResponse) VisitGetContractVersionLodgingPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetContractVersionLodgingPolicy404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetContractVersionLodgingPolicy404ApplicationProblemPlusJSONResponse) VisitGetContractVersionLodgingPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetContractVersionLodgingTermsRequestObject struct {
+	ContractVersionId ContractVersionId `json:"contractVersionId"`
+	Params            GetContractVersionLodgingTermsParams
+}
+
+type GetContractVersionLodgingTermsResponseObject interface {
+	VisitGetContractVersionLodgingTermsResponse(w http.ResponseWriter) error
+}
+
+type GetContractVersionLodgingTerms200ResponseHeaders struct {
+	ETag *string
+}
+
+type GetContractVersionLodgingTerms200JSONResponse struct {
+	Body    LodgingTerms
+	Headers GetContractVersionLodgingTerms200ResponseHeaders
+}
+
+func (response GetContractVersionLodgingTerms200JSONResponse) VisitGetContractVersionLodgingTermsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetContractVersionLodgingTerms403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetContractVersionLodgingTerms403ApplicationProblemPlusJSONResponse) VisitGetContractVersionLodgingTermsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetContractVersionLodgingTerms404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetContractVersionLodgingTerms404ApplicationProblemPlusJSONResponse) VisitGetContractVersionLodgingTermsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutContractVersionLodgingTermsRequestObject struct {
+	ContractVersionId ContractVersionId `json:"contractVersionId"`
+	Params            PutContractVersionLodgingTermsParams
+	Body              *PutContractVersionLodgingTermsJSONRequestBody
+}
+
+type PutContractVersionLodgingTermsResponseObject interface {
+	VisitPutContractVersionLodgingTermsResponse(w http.ResponseWriter) error
+}
+
+type PutContractVersionLodgingTerms200ResponseHeaders struct {
+	ETag *string
+}
+
+type PutContractVersionLodgingTerms200JSONResponse struct {
+	Body    LodgingTerms
+	Headers PutContractVersionLodgingTerms200ResponseHeaders
+}
+
+func (response PutContractVersionLodgingTerms200JSONResponse) VisitPutContractVersionLodgingTermsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutContractVersionLodgingTerms403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response PutContractVersionLodgingTerms403ApplicationProblemPlusJSONResponse) VisitPutContractVersionLodgingTermsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutContractVersionLodgingTerms404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response PutContractVersionLodgingTerms404ApplicationProblemPlusJSONResponse) VisitPutContractVersionLodgingTermsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutContractVersionLodgingTerms409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response PutContractVersionLodgingTerms409ApplicationProblemPlusJSONResponse) VisitPutContractVersionLodgingTermsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutContractVersionLodgingTerms412ApplicationProblemPlusJSONResponse Problem
+
+func (response PutContractVersionLodgingTerms412ApplicationProblemPlusJSONResponse) VisitPutContractVersionLodgingTermsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutContractVersionLodgingTerms422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response PutContractVersionLodgingTerms422ApplicationProblemPlusJSONResponse) VisitPutContractVersionLodgingTermsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutContractVersionLodgingTerms428ApplicationProblemPlusJSONResponse Problem
+
+func (response PutContractVersionLodgingTerms428ApplicationProblemPlusJSONResponse) VisitPutContractVersionLodgingTermsResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -45597,6 +46388,76 @@ func (response GetCurrentUserContext401ApplicationProblemPlusJSONResponse) Visit
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMyPersonRequestObject struct {
+	Params GetMyPersonParams
+}
+
+type GetMyPersonResponseObject interface {
+	VisitGetMyPersonResponse(w http.ResponseWriter) error
+}
+
+type GetMyPerson200JSONResponse MyPerson
+
+func (response GetMyPerson200JSONResponse) VisitGetMyPersonResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMyPerson401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GetMyPerson401ApplicationProblemPlusJSONResponse) VisitGetMyPersonResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMyPerson403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetMyPerson403ApplicationProblemPlusJSONResponse) VisitGetMyPersonResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMyPerson404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetMyPerson404ApplicationProblemPlusJSONResponse) VisitGetMyPersonResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -58527,6 +59388,15 @@ type StrictServerInterface interface {
 	// (PATCH /api/v1/contract-versions/{contractVersionId})
 	PatchContractVersion(ctx context.Context, request PatchContractVersionRequestObject) (PatchContractVersionResponseObject, error)
 
+	// (GET /api/v1/contract-versions/{contractVersionId}/lodging-policy)
+	GetContractVersionLodgingPolicy(ctx context.Context, request GetContractVersionLodgingPolicyRequestObject) (GetContractVersionLodgingPolicyResponseObject, error)
+
+	// (GET /api/v1/contract-versions/{contractVersionId}/lodging-terms)
+	GetContractVersionLodgingTerms(ctx context.Context, request GetContractVersionLodgingTermsRequestObject) (GetContractVersionLodgingTermsResponseObject, error)
+
+	// (PUT /api/v1/contract-versions/{contractVersionId}/lodging-terms)
+	PutContractVersionLodgingTerms(ctx context.Context, request PutContractVersionLodgingTermsRequestObject) (PutContractVersionLodgingTermsResponseObject, error)
+
 	// (GET /api/v1/contract-versions/{contractVersionId}/package-definitions)
 	ListPackageDefinitions(ctx context.Context, request ListPackageDefinitionsRequestObject) (ListPackageDefinitionsResponseObject, error)
 
@@ -58724,6 +59594,9 @@ type StrictServerInterface interface {
 
 	// (GET /api/v1/me)
 	GetCurrentUserContext(ctx context.Context, request GetCurrentUserContextRequestObject) (GetCurrentUserContextResponseObject, error)
+
+	// (GET /api/v1/me/person)
+	GetMyPerson(ctx context.Context, request GetMyPersonRequestObject) (GetMyPersonResponseObject, error)
 
 	// (GET /api/v1/medical-reports)
 	ListMedicalReports(ctx context.Context, request ListMedicalReportsRequestObject) (ListMedicalReportsResponseObject, error)
@@ -60115,6 +60988,94 @@ func (sh *strictHandler) PatchContractVersion(w http.ResponseWriter, r *http.Req
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PatchContractVersionResponseObject); ok {
 		if err := validResponse.VisitPatchContractVersionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetContractVersionLodgingPolicy operation middleware
+func (sh *strictHandler) GetContractVersionLodgingPolicy(w http.ResponseWriter, r *http.Request, contractVersionId ContractVersionId, params GetContractVersionLodgingPolicyParams) {
+	var request GetContractVersionLodgingPolicyRequestObject
+
+	request.ContractVersionId = contractVersionId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetContractVersionLodgingPolicy(ctx, request.(GetContractVersionLodgingPolicyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetContractVersionLodgingPolicy")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetContractVersionLodgingPolicyResponseObject); ok {
+		if err := validResponse.VisitGetContractVersionLodgingPolicyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetContractVersionLodgingTerms operation middleware
+func (sh *strictHandler) GetContractVersionLodgingTerms(w http.ResponseWriter, r *http.Request, contractVersionId ContractVersionId, params GetContractVersionLodgingTermsParams) {
+	var request GetContractVersionLodgingTermsRequestObject
+
+	request.ContractVersionId = contractVersionId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetContractVersionLodgingTerms(ctx, request.(GetContractVersionLodgingTermsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetContractVersionLodgingTerms")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetContractVersionLodgingTermsResponseObject); ok {
+		if err := validResponse.VisitGetContractVersionLodgingTermsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutContractVersionLodgingTerms operation middleware
+func (sh *strictHandler) PutContractVersionLodgingTerms(w http.ResponseWriter, r *http.Request, contractVersionId ContractVersionId, params PutContractVersionLodgingTermsParams) {
+	var request PutContractVersionLodgingTermsRequestObject
+
+	request.ContractVersionId = contractVersionId
+	request.Params = params
+
+	var body PutContractVersionLodgingTermsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutContractVersionLodgingTerms(ctx, request.(PutContractVersionLodgingTermsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutContractVersionLodgingTerms")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutContractVersionLodgingTermsResponseObject); ok {
+		if err := validResponse.VisitPutContractVersionLodgingTermsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -62135,6 +63096,32 @@ func (sh *strictHandler) GetCurrentUserContext(w http.ResponseWriter, r *http.Re
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetCurrentUserContextResponseObject); ok {
 		if err := validResponse.VisitGetCurrentUserContextResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetMyPerson operation middleware
+func (sh *strictHandler) GetMyPerson(w http.ResponseWriter, r *http.Request, params GetMyPersonParams) {
+	var request GetMyPersonRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMyPerson(ctx, request.(GetMyPersonRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMyPerson")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMyPersonResponseObject); ok {
+		if err := validResponse.VisitGetMyPersonResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -1,5 +1,7 @@
 package application
 
+import "github.com/celikbros/kapsora/internal/identity"
+
 // RoleTemplate is a system role copied into every tenant at provisioning (v1.2 section 6.2).
 // This table is the single source; a test checks every code against iam.permission.
 type RoleTemplate struct {
@@ -19,6 +21,10 @@ const (
 	ScopeProgram          = "PROGRAM"
 	ScopeProviderLocation = "PROVIDER_LOCATION"
 	ScopeWorkQueue        = "WORK_QUEUE"
+	// ScopePerson binds a member account to the one person it acts for (migration
+	// 000039). It is the identity package's constant under the name this file uses for
+	// the others, so the grant writer and the context resolver compare the same string.
+	ScopePerson = identity.ScopePerson
 )
 
 // RoleTemplates returns the templates in a stable order.
@@ -47,7 +53,7 @@ func RoleTemplates() []RoleTemplate {
 		{Code: "CONTRACT_MANAGER", Name: "Sözleşme Yöneticisi", Scope: ScopeTenant,
 			Description: "Sağlayıcı, lokasyon, uygulayıcı ve sözleşme taslağı yönetimi.",
 			Permissions: []string{"organization.read", "provider.read", "provider.manage", "provider.practitioner.manage",
-				"contract.read", "contract.manage", "catalog.read", "pricing.quote"}},
+				"contract.read", "contract.manage", "contract.lodging_terms.manage", "catalog.read", "pricing.quote"}},
 		{Code: "CONTRACT_PUBLISHER", Name: "Sözleşme Onaylayıcı", Scope: ScopeTenant,
 			Description: "Sözleşme sürümü yayınlar (checker).",
 			Permissions: []string{"contract.read", "contract.publish"}},

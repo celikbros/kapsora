@@ -56,6 +56,10 @@ type Handler struct {
 	svc    *application.Service
 	deny   Denier
 	logger *slog.Logger
+	// enrollments answers getMyPerson's "what am I enrolled in". It is optional: a
+	// deployment that wires no benefit service still serves a member their own name and
+	// contacts rather than failing the whole read.
+	enrollments application.EnrollmentReader
 }
 
 // NewHandler wires the handler.
@@ -64,6 +68,14 @@ func NewHandler(svc *application.Service, deny Denier, logger *slog.Logger) *Han
 		logger = slog.Default()
 	}
 	return &Handler{svc: svc, deny: deny, logger: logger}
+}
+
+// WithEnrollments supplies the reader getMyPerson uses. It is a builder rather than a
+// constructor argument so the existing call sites, and every test that has one, keep
+// working unchanged.
+func (h *Handler) WithEnrollments(r application.EnrollmentReader) *Handler {
+	h.enrollments = r
+	return h
 }
 
 // Routes mounts everything below /people.
@@ -120,6 +132,12 @@ func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error, 
 			"Tanımlayıcı başka bir kişiye kayıtlı", detail)
 	case errors.Is(err, application.ErrPersonNotFound):
 		problem(w, r, http.StatusNotFound, "party/person-not-found", "PERSON_NOT_FOUND", "Kişi bulunamadı", "")
+	case errors.Is(err, identity.ErrPersonBindingMissing):
+		httpx.WritePersonBindingMissingProblem(w, r)
+	case errors.Is(err, identity.ErrPersonScope):
+		httpx.WritePersonScopeProblem(w, r)
+	case errors.Is(err, identity.ErrUnauthenticated):
+		problem(w, r, http.StatusUnauthorized, "identity/unauthenticated", "UNAUTHENTICATED", "Oturum bulunamadı", "")
 	case errors.Is(err, application.ErrNotFound):
 		problem(w, r, http.StatusNotFound, "generic/not-found", "RESOURCE_NOT_FOUND", "Kaynak bulunamadı", "")
 	case errors.Is(err, application.ErrRelationshipOverlap):

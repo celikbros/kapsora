@@ -89,10 +89,14 @@ func DefaultBaselineCatalogs() BaselineCatalogs {
 // GrantRoleInput binds a system role to an actor in a tenant, creating the membership when
 // missing. Idempotent: an identical open-ended grant is not duplicated.
 type GrantRoleInput struct {
-	TenantID  uuid.UUID
-	ActorID   uuid.UUID
-	RoleCode  string
-	ScopeType string        // ScopeTenant or ScopeOrganization
+	TenantID uuid.UUID
+	ActorID  uuid.UUID
+	RoleCode string
+	// ScopeType is ScopeTenant, ScopeOrganization or ScopePerson. A PERSON grant is what
+	// binds a member account to the one person it acts for; the scope id is the person and
+	// the database refuses one that does not exist in this tenant, is already bound to
+	// another account, or would be the membership's second person.
+	ScopeType string
 	ScopeID   uuid.NullUUID // required for non-TENANT scopes
 	GrantedBy uuid.NullUUID
 	Reason    string

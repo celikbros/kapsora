@@ -99,6 +99,70 @@ func (q *Queries) GetTenantByID(ctx context.Context, id uuid.UUID) (GetTenantByI
 	return i, err
 }
 
+const getTenantSettingText = `-- name: GetTenantSettingText :one
+SELECT (value_json #>> '{}')::text AS value
+  FROM platform.tenant_setting
+ WHERE tenant_id = $1
+   AND setting_key = $2
+`
+
+type GetTenantSettingTextParams struct {
+	TenantID   uuid.UUID
+	SettingKey string
+}
+
+// One tenant setting as text (WP-I6-04). `#>> '{}'` is the jsonb-to-text extraction the
+// inpatient window query already uses: a scalar comes back as itself rather than quoted,
+// and a missing row is no rows rather than an error, because a tenant that has never
+// configured a key is the ordinary case and the caller falls back to its documented
+// default.
+func (q *Queries) GetTenantSettingText(ctx context.Context, arg GetTenantSettingTextParams) (string, error) {
+	row := q.db.QueryRow(ctx, getTenantSettingText, arg.TenantID, arg.SettingKey)
+	var value string
+	err := row.Scan(&value)
+	return value, err
+}
+
+const listTenantSettings = `-- name: ListTenantSettings :many
+SELECT setting_key, (value_json #>> '{}')::text AS value
+  FROM platform.tenant_setting
+ WHERE tenant_id = $1
+   AND setting_key = ANY($2::text[])
+`
+
+type ListTenantSettingsParams struct {
+	TenantID    uuid.UUID
+	SettingKeys []string
+}
+
+type ListTenantSettingsRow struct {
+	SettingKey string
+	Value      string
+}
+
+// Several tenant settings in one round trip (WP-I6-04). A key the tenant has never set is
+// simply absent from the result; the caller fills it in from its documented default rather
+// than the query inventing a row.
+func (q *Queries) ListTenantSettings(ctx context.Context, arg ListTenantSettingsParams) ([]ListTenantSettingsRow, error) {
+	rows, err := q.db.Query(ctx, listTenantSettings, arg.TenantID, arg.SettingKeys)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListTenantSettingsRow
+	for rows.Next() {
+		var i ListTenantSettingsRow
+		if err := rows.Scan(&i.SettingKey, &i.Value); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listTenantsForActor = `-- name: ListTenantsForActor :many
 SELECT t.id, t.code, t.legal_name, t.display_name, t.status, t.default_locale,
        t.default_time_zone, t.default_currency, t.data_region, t.created_at, t.updated_at,
@@ -192,4 +256,24 @@ func (q *Queries) NextReferenceNumber(ctx context.Context, arg NextReferenceNumb
 	var i NextReferenceNumberRow
 	err := row.Scan(&i.Prefix, &i.ReservedValue, &i.PaddingWidth)
 	return i, err
+}
+
+const upsertTenantSetting = `-- name: UpsertTenantSetting :exec
+INSERT INTO platform.tenant_setting (tenant_id, setting_key, value_json)
+VALUES ($1, $2, $3)
+ON CONFLICT (tenant_id, setting_key) DO UPDATE
+   SET value_json = excluded.value_json
+`
+
+type UpsertTenantSettingParams struct {
+	TenantID   uuid.UUID
+	SettingKey string
+	ValueJson  []byte
+}
+
+// Writes one tenant setting. Used by the seed to give the demo tenants the accommodation
+// values an operator would otherwise have to type; nothing in the request path calls it.
+func (q *Queries) UpsertTenantSetting(ctx context.Context, arg UpsertTenantSettingParams) error {
+	_, err := q.db.Exec(ctx, upsertTenantSetting, arg.TenantID, arg.SettingKey, arg.ValueJson)
+	return err
 }

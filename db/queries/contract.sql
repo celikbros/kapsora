@@ -448,3 +448,43 @@ SELECT DISTINCT pl.package_definition_id AS id
 -- Probed before a price item or a package line names a definition, so a wrong id is a
 -- field error on the request rather than a raw foreign key violation.
 SELECT EXISTS (SELECT 1 FROM catalog.service_definition WHERE tenant_id = $1 AND id = $2) AS present;
+
+-- name: GetLodgingTerms :one
+-- The single contract.lodging_terms row of a version (WP-I6-04). Every percentage comes
+-- back as text for the same reason every money value in this file does: a numeric parsed
+-- into a float on the way out is a number that no longer says exactly what the contract
+-- said.
+SELECT l.id, l.contract_version_id, l.free_cancellation_hours_before, l.penalty_kind,
+       l.penalty_nights, coalesce(l.penalty_percent::text, '')::text AS penalty_percent,
+       l.no_show_percent::text AS no_show_percent,
+       l.hold_minutes, l.min_nights, l.max_nights, l.child_free_under_age,
+       l.created_at, l.updated_at, l.row_version
+  FROM contract.lodging_terms l
+ WHERE l.tenant_id = $1 AND l.contract_version_id = $2;
+
+-- name: UpsertLodgingTerms :one
+-- Replaces the version's terms in place, keeping the row's id so an audit trail that
+-- named it still points at the same thing. The DRAFT-only rule is the trigger's; nothing
+-- here restates it, because a rule stated twice is a rule that can disagree with itself.
+INSERT INTO contract.lodging_terms (tenant_id, contract_version_id,
+                                    free_cancellation_hours_before, penalty_kind,
+                                    penalty_nights, penalty_percent, no_show_percent,
+                                    hold_minutes, min_nights, max_nights,
+                                    child_free_under_age)
+VALUES (sqlc.arg('tenant_id'), sqlc.arg('contract_version_id'),
+        sqlc.arg('free_cancellation_hours_before'), sqlc.arg('penalty_kind'),
+        sqlc.narg('penalty_nights'), sqlc.narg('penalty_percent')::text::numeric,
+        sqlc.arg('no_show_percent')::text::numeric,
+        sqlc.narg('hold_minutes'), sqlc.arg('min_nights'), sqlc.narg('max_nights'),
+        sqlc.narg('child_free_under_age'))
+ON CONFLICT (tenant_id, contract_version_id) DO UPDATE
+   SET free_cancellation_hours_before = excluded.free_cancellation_hours_before,
+       penalty_kind         = excluded.penalty_kind,
+       penalty_nights       = excluded.penalty_nights,
+       penalty_percent      = excluded.penalty_percent,
+       no_show_percent      = excluded.no_show_percent,
+       hold_minutes         = excluded.hold_minutes,
+       min_nights           = excluded.min_nights,
+       max_nights           = excluded.max_nights,
+       child_free_under_age = excluded.child_free_under_age
+RETURNING id;

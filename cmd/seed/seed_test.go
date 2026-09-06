@@ -1,8 +1,13 @@
 package main
 
 import (
+	"context"
 	"strings"
 	"testing"
+
+	"github.com/jackc/pgx/v5"
+
+	"github.com/celikbros/kapsora/internal/accommodation/settings"
 
 	auditpg "github.com/celikbros/kapsora/internal/audit/postgres"
 	benefitapp "github.com/celikbros/kapsora/internal/benefit/application"
@@ -12,6 +17,7 @@ import (
 	notificationapp "github.com/celikbros/kapsora/internal/notification/application"
 	notificationdomain "github.com/celikbros/kapsora/internal/notification/domain"
 	notificationpg "github.com/celikbros/kapsora/internal/notification/infrastructure/postgres"
+	"github.com/celikbros/kapsora/internal/platform/db"
 	"github.com/celikbros/kapsora/internal/platform/dbtest"
 	"github.com/celikbros/kapsora/internal/platform/httpx"
 )
@@ -209,5 +215,59 @@ func TestSeedTemplateBodiesAreTurkishAndCarryNoSecret(t *testing.T) {
 	// locale would render for nobody.
 	if notificationapp.DefaultLocale != "tr-TR" {
 		t.Fatalf("the seed publishes %s templates", notificationapp.DefaultLocale)
+	}
+}
+
+// TestSeedAccommodationSettingsAreIdempotentAndReadBack runs the settings step twice and
+// then reads the result back through the loader the accommodation vertical actually uses.
+// Writing a setting the loader cannot interpret would be worse than writing none: the
+// tenant would silently fall back to a default while a row said otherwise.
+func TestSeedAccommodationSettingsAreIdempotentAndReadBack(t *testing.T) {
+	h := dbtest.New(t)
+	ctx, cancel := h.Ctx()
+	defer cancel()
+	s := newTestSeeder(t, h)
+	tenant := h.CreateTenant("SEED_ACC")
+
+	for pass := 1; pass <= 2; pass++ {
+		if err := s.ensureAccommodationSettings(ctx, tenant); err != nil {
+			t.Fatalf("pass %d accommodation settings: %v", pass, err)
+		}
+	}
+
+	var rows int
+	if err := h.Admin.QueryRow(ctx, `
+		SELECT count(*) FROM platform.tenant_setting
+		 WHERE tenant_id = $1 AND setting_key LIKE 'accommodation.%'`, tenant).Scan(&rows); err != nil {
+		t.Fatalf("count settings: %v", err)
+	}
+	if rows != len(settings.Keys) {
+		t.Fatalf("%d accommodation settings after two passes, want %d", rows, len(settings.Keys))
+	}
+
+	var loaded settings.Values
+	if err := db.WithTenantTx(ctx, h.App, db.TenantContext{TenantID: tenant},
+		func(ctx context.Context, tx pgx.Tx) error {
+			var err error
+			loaded, err = settings.Load(ctx, tx, tenant)
+			return err
+		}); err != nil {
+		t.Fatalf("load the seeded settings: %v", err)
+	}
+	// The seed writes the documented defaults, so what comes back must be exactly them --
+	// including the threshold, which is stored as a JSON string rather than a number
+	// because it is money and money never rounds.
+	if loaded != settings.Defaults() {
+		t.Fatalf("loaded %+v, want the defaults %+v", loaded, settings.Defaults())
+	}
+	var thresholdType string
+	if err := h.Admin.QueryRow(ctx, `
+		SELECT jsonb_typeof(value_json) FROM platform.tenant_setting
+		 WHERE tenant_id = $1 AND setting_key = $2`,
+		tenant, settings.KeyStepUpMemberAmount).Scan(&thresholdType); err != nil {
+		t.Fatalf("read the threshold type: %v", err)
+	}
+	if thresholdType != "string" {
+		t.Fatalf("the step-up threshold is stored as a JSON %s; an amount must never be a number", thresholdType)
 	}
 }

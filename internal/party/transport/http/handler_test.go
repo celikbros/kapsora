@@ -32,6 +32,10 @@ import (
 const (
 	permsHeader  = "X-Test-Permissions"
 	stepUpHeader = "X-Test-StepUp"
+	// personHeader stands in for the PERSON scope RequireTenantContext resolves from a
+	// member's access grant (migration 000039). Absent means an account with no binding,
+	// which is what every back-office caller is.
+	personHeader = "X-Test-Person"
 
 	allPermissions = "member.read,member.manage,member.relationship.manage,membership.manage"
 	patchType      = "application/merge-patch+json"
@@ -92,6 +96,16 @@ func newServer(t *testing.T) *server {
 					rc.Permissions[p] = struct{}{}
 				}
 			}
+			if raw := r.Header.Get(personHeader); raw != "" {
+				personID, err := uuid.Parse(raw)
+				if err != nil {
+					t.Fatalf("bad %s header %q: %v", personHeader, raw, err)
+				}
+				rc.PersonID = uuid.NullUUID{UUID: personID, Valid: true}
+				rc.Scopes = append(rc.Scopes, identity.Scope{
+					Type: identity.ScopePerson, ID: rc.PersonID,
+				})
+			}
 			next.ServeHTTP(w, r.WithContext(identity.WithRequestContext(r.Context(), rc)))
 		})
 	}
@@ -104,6 +118,16 @@ func newServer(t *testing.T) *server {
 	r.Route("/api/v1/party", func(rr chi.Router) {
 		rr.Use(fakeContext)
 		handler.CatalogRoutes(rr)
+	})
+	// Registered exactly as cmd/api registers it, beside a stand-in for the pre-tenant
+	// GET /api/v1/me: a subrouter mounted at /me would shadow that route, and the test
+	// below is what says so.
+	r.Route("/api/v1", func(rr chi.Router) {
+		rr.Get("/me", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusTeapot) })
+		rr.Group(func(gr chi.Router) {
+			gr.Use(fakeContext)
+			handler.MyPersonRoutes(gr)
+		})
 	})
 	return &server{h: h, handler: r, denied: denied, logs: logs, tenant: tenant, rand: rand.New(rand.NewPCG(21, 22))}
 }
@@ -127,6 +151,8 @@ func seedCatalogs(h *dbtest.Harness, tenant uuid.UUID) {
 type call struct {
 	method, path, body, contentType, ifMatch, perms string
 	stepUp                                          bool
+	// person is the caller's PERSON binding; empty means an account bound to nobody.
+	person string
 }
 
 func (s *server) do(c call) *httptest.ResponseRecorder {
@@ -146,6 +172,9 @@ func (s *server) do(c call) *httptest.ResponseRecorder {
 		c.perms = allPermissions
 	}
 	req.Header.Set(permsHeader, c.perms)
+	if c.person != "" {
+		req.Header.Set(personHeader, c.person)
+	}
 	if c.stepUp {
 		req.Header.Set(stepUpHeader, "1")
 	}
