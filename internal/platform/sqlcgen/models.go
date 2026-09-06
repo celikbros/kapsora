@@ -375,6 +375,109 @@ type CatalogServiceDefinition struct {
 	RowVersion       int64
 }
 
+type ClaimAdjustment struct {
+	ID             uuid.UUID
+	TenantID       uuid.UUID
+	ClaimID        uuid.UUID
+	VersionNo      int32
+	AdjustmentType string
+	Amount         pgtype.Numeric
+	CurrencyCode   string
+	ReasonCode     string
+	ReasonText     *string
+	CreatedAt      time.Time
+	CreatedBy      uuid.NullUUID
+}
+
+type ClaimClaim struct {
+	ID                     uuid.UUID
+	TenantID               uuid.UUID
+	Reference              string
+	PersonID               uuid.UUID
+	ProgramID              uuid.UUID
+	EnrollmentID           uuid.UUID
+	ProviderOrganizationID uuid.UUID
+	DomainCode             string
+	CaseID                 uuid.NullUUID
+	FulfilmentID           uuid.NullUUID
+	AuthorizationID        uuid.NullUUID
+	CurrentVersionNo       int32
+	Status                 string
+	ServiceDateFrom        pgtype.Date
+	ServiceDateTo          pgtype.Date
+	Channel                string
+	RejectReasonCode       *string
+	ReturnReasonCode       *string
+	ReviewCommentMedical   *string
+	ReviewCommentFinancial *string
+	ClosedAt               *time.Time
+	CreatedAt              time.Time
+	CreatedBy              uuid.NullUUID
+	UpdatedAt              time.Time
+	UpdatedBy              uuid.NullUUID
+	RowVersion             int64
+}
+
+type ClaimClaimLine struct {
+	ID                  uuid.UUID
+	TenantID            uuid.UUID
+	VersionID           uuid.UUID
+	LineNo              int32
+	ServiceDefinitionID uuid.UUID
+	UnitType            string
+	Quantity            pgtype.Numeric
+	UnitAmount          pgtype.Numeric
+	LineAmount          pgtype.Numeric
+	CurrencyCode        string
+	DiagnosisID         uuid.NullUUID
+	MedicalReportID     uuid.NullUUID
+	PractitionerID      uuid.NullUUID
+	Description         *string
+	CreatedAt           time.Time
+	CreatedBy           uuid.NullUUID
+	UpdatedAt           time.Time
+	UpdatedBy           uuid.NullUUID
+	RowVersion          int64
+}
+
+type ClaimClaimVersion struct {
+	ID               uuid.UUID
+	TenantID         uuid.UUID
+	ClaimID          uuid.UUID
+	VersionNo        int32
+	Status           string
+	SubmittedAt      *time.Time
+	SubmittedBy      uuid.NullUUID
+	ReturnedAt       *time.Time
+	ReturnedBy       uuid.NullUUID
+	ReturnReasonCode *string
+	ReturnReasonText *string
+	Snapshot         []byte
+	CreatedAt        time.Time
+	CreatedBy        uuid.NullUUID
+	UpdatedAt        time.Time
+	UpdatedBy        uuid.NullUUID
+	RowVersion       int64
+}
+
+type ClaimLineDecision struct {
+	ID                 uuid.UUID
+	TenantID           uuid.UUID
+	LineID             uuid.UUID
+	DecidedInVersionNo int32
+	Decision           string
+	ApprovedQuantity   pgtype.Numeric
+	ApprovedAmount     pgtype.Numeric
+	ContractAmount     pgtype.Numeric
+	PayerAmount        pgtype.Numeric
+	MemberAmount       pgtype.Numeric
+	ReasonCode         string
+	ReasonText         *string
+	DecidedBy          uuid.NullUUID
+	DecidedAt          time.Time
+	Stage              string
+}
+
 type ContractContract struct {
 	ID                    uuid.UUID
 	TenantID              uuid.UUID

@@ -7,6 +7,7 @@ import { HttpResponse, http, type HttpHandler, type PathParams } from 'msw';
 
 import { benefitHandlers } from './benefit-handlers';
 import { catalogHandlers } from './catalog-handlers';
+import { claimHandlers } from './claim-handlers';
 import { contractHandlers } from './contract-handlers';
 import { documentHandlers } from './document-handlers';
 import { eligibilityHandlers } from './eligibility-handlers';
@@ -1483,6 +1484,7 @@ export function createHandlers(api: MockApi): HttpHandler[] {
     // built against both.
     ...medicalReportHandlers(api),
     ...inpatientHandlers(api),
+    ...claimHandlers(api),
   ];
 }
 

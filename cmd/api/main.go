@@ -28,6 +28,10 @@ import (
 	catalogapp "github.com/celikbros/kapsora/internal/catalog/application"
 	catalogpg "github.com/celikbros/kapsora/internal/catalog/infrastructure/postgres"
 	cataloghttp "github.com/celikbros/kapsora/internal/catalog/transport/http"
+	claimapp "github.com/celikbros/kapsora/internal/claim/application"
+	claimgw "github.com/celikbros/kapsora/internal/claim/infrastructure/gateway"
+	claimpg "github.com/celikbros/kapsora/internal/claim/infrastructure/postgres"
+	claimhttp "github.com/celikbros/kapsora/internal/claim/transport/http"
 	contractapp "github.com/celikbros/kapsora/internal/contract/application"
 	contractpg "github.com/celikbros/kapsora/internal/contract/infrastructure/postgres"
 	contracthttp "github.com/celikbros/kapsora/internal/contract/transport/http"
@@ -264,6 +268,30 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	// The claim. It is the only place in the process where the pricing ladder, the rule
+	// engine, the authorization hold, the approval policy and the report coverage port meet,
+	// and it meets each of them through a narrow port: it may price without storing a quote,
+	// evaluate the published ADJUDICATION rules, draw a line's quantity out of a hold and
+	// give back what a refused claim was holding, ask which roles may approve an amount, and
+	// ask whether a report covers a service. There is no method on any of them that would let
+	// a claim decide something the module it belongs to owns.
+	//
+	// The report coverage port is the health service itself: WP-I5-02's `ReportCoverage` runs
+	// inside the caller's transaction and writes the usage row that says a claim leaned on a
+	// report, so a claim that rolls back has used nothing.
+	claimSvc, err := claimapp.New(claimapp.Deps{
+		Pool: pool, Repo: claimpg.New(),
+		Pricing:        claimgw.NewPricing(pricingSvc),
+		Rules:          claimgw.NewRules(logger),
+		Authorizations: claimgw.NewAuthorizations(authorizationSvc),
+		Reports:        healthSvc,
+		Policies:       claimgw.NewPolicies(workflowSvc),
+		WorkItems:      claimgw.NewWorkItems(logger),
+		Audit:          auditpg.New(), Cursors: cursors, Logger: logger,
+	})
+	if err != nil {
+		return err
+	}
 	memberImports, err := memberimport.New(memberimport.Deps{
 		Pool: pool, Cipher: keys, Index: keys, Audit: auditpg.New(), Cursors: cursors, Logger: logger,
 	})
@@ -322,6 +350,7 @@ func run() error {
 		workflows:      workflowSvc,
 		documents:      documentSvc,
 		health:         healthSvc,
+		claims:         claimSvc,
 		notifications:  notificationSvc,
 		entitlements:   entitlementSvc,
 		eligibility:    eligibilitySvc,
@@ -442,6 +471,7 @@ type routerDeps struct {
 	workflows      *workflowapp.Service
 	documents      *documentapp.Service
 	health         *healthapp.Service
+	claims         *claimapp.Service
 	notifications  *notificationapp.Service
 	entitlements   *benefitledger.Service
 	eligibility    *benefiteligibility.Service
@@ -747,6 +777,28 @@ func newRouter(d routerDeps) http.Handler {
 			}
 			tenant.Route("/medical-reports", func(r chi.Router) {
 				healthHandler.ReportRoutes(r, reportMW)
+			})
+
+			// The claim. Every command takes If-Match and an idempotency key: a submit
+			// replayed by a flaky network consumes a hold once and raises one work item, and
+			// a decision replayed writes one decision rather than two rows a reviewer would
+			// have to explain. Every read is served in the projection the caller has earned,
+			// chosen in the application service — so a sponsor's HR user reading a claim
+			// never receives a line description, whatever the screen asks for.
+			claimHandler := claimhttp.NewHandler(d.claims, sessions, d.logger)
+			claimMW := claimhttp.Middlewares{
+				CreateClaim:  d.idempotent("claim.create"),
+				PatchClaim:   d.idempotent("claim.update"),
+				PutLines:     d.idempotent("claim.lines.put"),
+				SubmitClaim:  d.idempotent("claim.submit"),
+				DecideLines:  d.idempotent("claim.lines.decide"),
+				ApproveClaim: d.idempotent("claim.approve"),
+				RejectClaim:  d.idempotent("claim.reject"),
+				ReturnClaim:  d.idempotent("claim.return"),
+				CancelClaim:  d.idempotent("claim.cancel"),
+			}
+			tenant.Route("/claims", func(r chi.Router) {
+				claimHandler.Routes(r, claimMW)
 			})
 
 			// Notifications. Templates are configuration, the message log is a record of

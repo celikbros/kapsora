@@ -303,3 +303,30 @@ type StayReconciliation struct {
 	// nothing left to release.
 	OverAuthorization bool
 }
+
+// ClinicalDecision is what the visibility rules answered, for the modules outside this
+// package that hold clinically-classified records of their own. WP-I5-04's claim carries a
+// line description, a diagnosis reference and a medical reviewer's comment, and every one of
+// them is exactly as protected as an encounter's clinical note.
+type ClinicalDecision struct {
+	// Projection is which half the caller has earned.
+	Projection Projection
+	// RefusedSensitive is true when the caller holds the clinical grant and was still
+	// served the financial projection because the case is sensitive. It is what makes the
+	// refusal a row rather than a silence.
+	RefusedSensitive bool
+}
+
+// DecideProjection is `decide` under an exported name, and it exists so that there is one
+// rule about clinical visibility rather than one per module. A second copy of the ladder in
+// the claim package would be a second place for it to disagree — and the disagreement would
+// be a diagnosis on somebody's screen, discovered by the person it belongs to.
+//
+// The sensitivity is the case's, read from `health.health_case`; a record hanging off no case
+// is STANDARD, which is the only honest answer for a record with no episode of care behind
+// it. The error is ErrAccessPurposeRequired and nothing else, and the caller owes the same
+// DENIED access event this package writes for its own reads.
+func DecideProjection(rc identity.RequestContext, sensitivity string, req AccessRequest) (ClinicalDecision, error) {
+	d, err := decide(rc, sensitivity, req)
+	return ClinicalDecision{Projection: d.projection, RefusedSensitive: d.refusedSensitive}, err
+}

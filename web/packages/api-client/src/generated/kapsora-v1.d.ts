@@ -162,6 +162,344 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/claims": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Claims, newest first. Each row is served in the projection the caller has earned: a
+         *     caller without `health.clinical.read`, or one reading a claim on a sensitive case
+         *     without `health.sensitive.read`, gets the financial half — every figure, every
+         *     decision, every reason code, and no line description, no `diagnosisId`, no
+         *     `medicalReportId` and no `reviewCommentMedical`.
+         *
+         *     A list never answers 428. Refusing the whole page over one sensitive row would make it
+         *     useless, and refusing that one row would say which row is sensitive.
+         */
+        get: operations["listClaims"];
+        put?: never;
+        /**
+         * @description Opens a claim as a draft, with version 1 and the lines it was given. Nothing is priced
+         *     and nothing is decided here: a draft is the provider's statement in progress, and the
+         *     pipeline runs at `submitClaim`.
+         *
+         *     The provider is required and it is the caller's own when the caller is scoped to one
+         *     organization. `caseId`, `fulfilmentId` and `authorizationId` are optional and each of
+         *     them changes what submit will check — a claim naming an authorization consumes it line
+         *     by line, and a claim naming no authorization consumes nothing.
+         */
+        post: operations["createClaim"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/claims/{claimId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One claim with the lines of its current version and the decision each of them carries.
+         *
+         *     This is the read that demands a purpose. A claim on a SENSITIVE case read by a caller
+         *     holding `health.clinical.read` and `health.sensitive.read` but sending no
+         *     `X-Access-Purpose` is answered 428 ACCESS_PURPOSE_REQUIRED, and the refusal is
+         *     recorded as a DENIED access event with resource type `claim`.
+         */
+        get: operations["getClaim"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Edits the header of a claim whose current version is still a DRAFT: the service dates,
+         *     the channel, the case, the fulfilment and the authorization it hangs off.
+         *
+         *     A claim whose current version has been submitted answers 409 CLAIM_VERSION_FROZEN. That
+         *     is the rule the whole package exists for — a submitted version is never edited, and a
+         *     correction is `returnClaim` followed by a new draft version.
+         */
+        patch: operations["patchClaimDraft"];
+        trace?: never;
+    };
+    "/api/v1/claims/{claimId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Finishes the claim. Every line of the current version must carry a decision; the status
+         *     it lands in is what those decisions say — APPROVED when every line was approved,
+         *     PARTIALLY_APPROVED when some were cut or rejected and something is still payable,
+         *     REJECTED when nothing is.
+         *
+         *     The approval policy for `claim.approve` decides who may do this: the band the approved
+         *     total falls in names the roles, and a caller whose review stage is not one of them is
+         *     answered 403 CLAIM_APPROVAL_NOT_PERMITTED. A policy that names no role lets either
+         *     reviewer finish.
+         *
+         *     Whatever it lands on is published as `claim.decided` inside this transaction, with the
+         *     reference, the status word, the day, the approved total and the currency — and nothing
+         *     else. There is no slot in the template for a diagnosis, a line description or a
+         *     reviewer's comment.
+         */
+        post: operations["approveClaim"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/claims/{claimId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Withdraws a claim the provider should not have raised. It needs `claim.cancel`, and it
+         *     is refused on anything already decided: a cancelled claim is a fact, and cancelling a
+         *     settled one would be an accounting entry rather than a withdrawal.
+         */
+        post: operations["cancelClaim"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/claims/{claimId}/invoice-readiness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description What M7's invoice will need, answered now: the approved total, the payer total and the
+         *     member total — exact decimals, summed on the server once — and whether anything still
+         *     blocks an invoice.
+         *
+         *     The blockers are named rather than counted: `PROVIDER_TAX_IDENTITY_MISSING` when the
+         *     provider organization carries no tax identity to invoice against,
+         *     `CURRENCY_NOT_SINGLE` when the lines are not all in one currency, and
+         *     `LINE_NOT_DECIDED` when a line of the current version still has no decision.
+         *
+         *     Only an APPROVED or PARTIALLY_APPROVED claim has an answer; anything else is 409
+         *     CLAIM_NOT_DECIDED, because "is this invoiceable" is not a question about a draft.
+         */
+        get: operations["getClaimInvoiceReadiness"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/claims/{claimId}/line-decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Records a decision on each named line of the current version, at the stage the claim is
+         *     waiting in.
+         *
+         *     The stage is not the caller's choice. A claim in PENDING_MEDICAL is decided by a holder
+         *     of `claim.medical.review` and the decisions are written `MEDICAL`; a claim in
+         *     PENDING_FINANCIAL is decided by a holder of `claim.financial.review` and they are
+         *     written `FINANCIAL`. A financial reviewer reaching a claim that is still in medical
+         *     review is answered 409 CLAIM_STAGE_MISMATCH — medical review precedes financial when
+         *     both are needed, and that ordering is the point of the two stages.
+         *
+         *     Decisions are append-only. A line decided twice has two rows and the latest is the
+         *     decision, so a reviewer who cut a line and a reviewer who later restored it are both on
+         *     the record.
+         *
+         *     `payerAmount + memberAmount` must equal `approvedAmount` on every line, exactly. It is
+         *     a database CHECK as well as a validation, because a settlement that could not be
+         *     reconciled by a kuruş is a settlement nobody can sign off.
+         */
+        post: operations["decideClaimLines"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/claims/{claimId}/lines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * @description Replaces the whole line set of the claim's DRAFT version. The set is the unit: a claim
+         *     is what its lines say together, and a per-line PATCH would let two clerks leave a claim
+         *     nobody meant to send.
+         *
+         *     A submitted version answers 409 CLAIM_VERSION_FROZEN here for the same reason
+         *     `patchClaimDraft` does.
+         */
+        put: operations["putClaimLines"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/claims/{claimId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Refuses the claim outright, with a reason. Every line of the current version is
+         *     recorded REJECTED at the caller's stage, whatever it carried before, and anything the
+         *     claim was holding on its authorization is released — a refused claim must not keep a
+         *     member's entitlement reserved.
+         *
+         *     It publishes `claim.decided` exactly as `approveClaim` does.
+         */
+        post: operations["rejectClaim"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/claims/{claimId}/return": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Sends the claim back to the provider to be corrected, with a reason.
+         *
+         *     It never edits the decided version. The submitted version becomes SUPERSEDED with the
+         *     return reason on it and keeps every line decision it was given, and version n+1 is
+         *     opened as a DRAFT with the lines copied. That is the whole correction model: the old
+         *     answer stays readable and the new statement is a new version.
+         */
+        post: operations["returnClaim"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/claims/{claimId}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Freezes the draft version and runs the whole pipeline in one transaction: price, then
+         *     rules, then the cross-checks that are not rules, then the route.
+         *
+         *     1. **Price.** Every line goes through the pricing ladder for this provider, this
+         *        service date and this enrollment — contract price, plan share, member share. A line
+         *        the ladder cannot price is not guessed at: it is `REVIEW_REQUIRED` with the pricing
+         *        explanation attached, and it sends the claim to financial review.
+         *     2. **Rules.** The tenant's published ADJUDICATION rule set is evaluated once per line.
+         *        `REQUIRE_MEDICAL_REVIEW` and `REQUIRE_FINANCIAL_REVIEW` route; `REJECT` and
+         *        `PARTIAL_APPROVE` decide the line then and there, with `stage = AUTO`.
+         *     3. **Cross-checks.** A line against the claim's authorization consumes it, and an
+         *        over-consumption is an exception line rather than a silent consume; a line naming a
+         *        medical report asks the report coverage port, and a report that does not cover it
+         *        goes to medical review; a stay that ran over what anybody approved goes to medical
+         *        review; a line matching another live claim for the same person, service and day goes
+         *        to financial review as `DUPLICATE_SUSPECTED`, naming the other claim's reference.
+         *     4. **Route.** Medical review precedes financial when both are needed. With neither
+         *        needed and the approval policy allowing the amount, the claim is AUTO_ADJUDICATED
+         *        and then APPROVED, PARTIALLY_APPROVED or REJECTED by what the AUTO decisions say.
+         *
+         *     Every step that decided something writes a `ClaimLineDecision` with `stage = AUTO`.
+         */
+        post: operations["submitClaim"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/claims/{claimId}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Every version of the claim, newest first, with what each one was submitted and returned
+         *     for. It is how a screen draws "sürüm 2 / 2" and how anybody finds the decision that was
+         *     made about a version somebody has since corrected.
+         */
+        get: operations["listClaimVersions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/claims/{claimId}/versions/{versionNo}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One version with the lines it carried and the decision each line was given, in the
+         *     projection the caller has earned. A superseded version answers exactly what it answered
+         *     the day it was decided.
+         */
+        get: operations["getClaimVersion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/code-systems": {
         parameters: {
             query?: never;
@@ -4281,6 +4619,266 @@ export interface components {
             reasonCode: string;
             reasonText?: string | null;
         };
+        Claim: {
+            /** Format: uuid */
+            authorizationId?: string | null;
+            /** Format: uuid */
+            caseId?: string | null;
+            channel: components["schemas"]["ServiceRequestChannel"];
+            /** Format: date-time */
+            closedAt?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            currentVersionNo: number;
+            domainCode: string;
+            /** Format: uuid */
+            enrollmentId: string;
+            /**
+             * @description What the submit pipeline found that a person has to look at, read back from the
+             *     frozen snapshot of the current version. Empty on a draft and on a claim nothing
+             *     objected to.
+             */
+            exceptions: components["schemas"]["ClaimException"][];
+            /** Format: uuid */
+            fulfilmentId?: string | null;
+            /** Format: uuid */
+            id: string;
+            /** @description The lines of the current version, with the decision each carries. */
+            lines: components["schemas"]["ClaimLine"][];
+            /** Format: uuid */
+            personId: string;
+            /** Format: uuid */
+            programId: string;
+            projection: components["schemas"]["HealthProjection"];
+            /** Format: uuid */
+            providerOrganizationId: string;
+            reference: string;
+            rejectReasonCode?: string | null;
+            returnReasonCode?: string | null;
+            reviewCommentFinancial?: string | null;
+            /**
+             * @description The medical reviewer's comment. Present only in the clinical projection: it is a
+             *     doctor's sentence about a patient.
+             */
+            reviewCommentMedical?: string | null;
+            /** Format: int64 */
+            rowVersion: number;
+            /** Format: date */
+            serviceDateFrom: string;
+            /** Format: date */
+            serviceDateTo: string;
+            status: components["schemas"]["ClaimStatus"];
+        };
+        /**
+         * @description What was decided about one line. CUT is a reduction the payer applied to an otherwise
+         *     valid line; PARTIALLY_APPROVED is a smaller quantity than was claimed. They are two
+         *     words because a provider reads them differently and disputes them differently.
+         * @enum {string}
+         */
+        ClaimDecisionKind: "APPROVED" | "PARTIALLY_APPROVED" | "REJECTED" | "CUT";
+        ClaimDecisionReason: {
+            reasonCode: string;
+            reasonText?: string | null;
+            reviewComment?: string | null;
+        };
+        /**
+         * @description Who decided. AUTO means the rules did and nobody looked, which is why an AUTO decision
+         *     never carries a `decidedBy`.
+         * @enum {string}
+         */
+        ClaimDecisionStage: "AUTO" | "MEDICAL" | "FINANCIAL";
+        /**
+         * @description One thing the submit pipeline found that a person has to look at. It is not a decision
+         *     — the line is still undecided — it is the answer to "why is this claim in front of me",
+         *     line by line, which is the first thing either reviewer's screen has to say.
+         *
+         *     `detail` carries the fact the reviewer needs and nothing else: the reference of the
+         *     other claim a duplicate suspicion found, the quantity a hold still had, the code of the
+         *     rule that asked for a review. Never a diagnosis, never a line description.
+         *
+         *     The three report codes — `REPORT_NOT_APPROVED`, `REPORT_OUT_OF_WINDOW`,
+         *     `SERVICE_NOT_IN_REPORT` — are served only in the clinical projection, for the same
+         *     reason `medicalReportId` is: an exception naming a treatment report says the line leans
+         *     on one.
+         */
+        ClaimException: {
+            code: string;
+            detail?: string | null;
+            /** @description Null for an exception about the claim as a whole. */
+            lineNo?: number | null;
+            stage: components["schemas"]["ClaimDecisionStage"];
+        };
+        /**
+         * @description Named rather than counted, so a screen can say what to fix rather than "not ready".
+         * @enum {string}
+         */
+        ClaimInvoiceBlocker: "PROVIDER_TAX_IDENTITY_MISSING" | "CURRENCY_NOT_SINGLE" | "LINE_NOT_DECIDED";
+        ClaimInvoiceReadiness: {
+            /**
+             * @description The sum of every line's approved amount, summed on the server once. Exact decimal
+             *     as a string, never a JSON number and never a total a frontend added up.
+             */
+            approvedTotal: string;
+            blockers: components["schemas"]["ClaimInvoiceBlocker"][];
+            /** Format: uuid */
+            claimId: string;
+            currencyCode: string;
+            decidedLineCount: number;
+            lineCount: number;
+            /** @description payerTotal plus memberTotal is exactly approvedTotal. */
+            memberTotal: string;
+            payerTotal: string;
+            ready: boolean;
+            status: components["schemas"]["ClaimStatus"];
+        };
+        ClaimLine: {
+            /** Format: date-time */
+            createdAt: string;
+            currencyCode: string;
+            /**
+             * @description The latest decision for this line, or null while nobody has decided it. The history
+             *     is append-only in the database; this is its head.
+             */
+            decision?: components["schemas"]["ClaimLineDecision"] | null;
+            /**
+             * @description The provider's own words about the line. Present only in the clinical projection —
+             *     "sol diz artroskopi sonrası kontrol" is a diagnosis in a sentence, and a provider
+             *     typing a line description is not thinking about who will read it.
+             */
+            description?: string | null;
+            /**
+             * Format: uuid
+             * @description Present only in the clinical projection. An id beside a name is an invitation to
+             *     go and look it up.
+             */
+            diagnosisId?: string | null;
+            /** Format: uuid */
+            id: string;
+            lineAmount: string;
+            lineNo: number;
+            /**
+             * Format: uuid
+             * @description Present only in the clinical projection: that a line leans on a treatment report
+             *     at all is a fact about the patient.
+             */
+            medicalReportId?: string | null;
+            /** Format: uuid */
+            practitionerId?: string | null;
+            /** @description Exact decimal as a string, never a JSON number. */
+            quantity: string;
+            /** Format: int64 */
+            rowVersion: number;
+            /** @description The catalogue code of the service, resolved on the way out. */
+            serviceCode?: string | null;
+            /** Format: uuid */
+            serviceDefinitionId: string;
+            unitAmount?: string | null;
+            unitType: string;
+        };
+        ClaimLineDecision: {
+            approvedAmount: string;
+            approvedQuantity: string;
+            /**
+             * @description What the contract said the line costs, before anything was cut from it. Null when
+             *     the pricing ladder found no contracted price, which is itself a reason for review.
+             */
+            contractAmount?: string | null;
+            /** Format: date-time */
+            decidedAt: string;
+            /**
+             * Format: uuid
+             * @description Null when the rules decided it.
+             */
+            decidedBy?: string | null;
+            decidedInVersionNo: number;
+            decision: components["schemas"]["ClaimDecisionKind"];
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            lineId: string;
+            /**
+             * @description payerAmount plus memberAmount is exactly approvedAmount. It is a database CHECK as
+             *     well as a validation.
+             */
+            memberAmount: string;
+            payerAmount: string;
+            reasonCode: string;
+            /**
+             * @description The reviewer's own words. A MEDICAL decision's reason text is clinical and is
+             *     present only in the clinical projection.
+             */
+            reasonText?: string | null;
+            stage: components["schemas"]["ClaimDecisionStage"];
+        };
+        ClaimLineDecisionInput: {
+            approvedAmount: string;
+            approvedQuantity: string;
+            decision: components["schemas"]["ClaimDecisionKind"];
+            lineNo: number;
+            memberAmount: string;
+            payerAmount: string;
+            reasonCode: string;
+            /**
+             * @description Free text the reviewer typed. On a MEDICAL decision it is clinical and is served
+             *     only in the clinical projection.
+             */
+            reasonText?: string | null;
+        };
+        ClaimPage: {
+            items: components["schemas"]["Claim"][];
+            nextCursor: string | null;
+        };
+        ClaimReason: {
+            reasonCode: string;
+            reasonText?: string | null;
+        };
+        ClaimReturnReason: {
+            reasonCode: string;
+            /**
+             * @description What the provider has to correct, in the reviewer's words. It is stored on the
+             *     version that was sent back, because the reason belongs to that version rather than
+             *     to the claim as a whole.
+             */
+            reasonText?: string | null;
+        };
+        /**
+         * @description The claim lifecycle of v1.2 12.5. INVOICED, BATCHED and SETTLED are declared because
+         *     the lifecycle is one list; the commands that reach them belong to M7 and nothing in
+         *     this contract puts a claim into one of them.
+         * @enum {string}
+         */
+        ClaimStatus: "DRAFT" | "SUBMITTED" | "AUTO_ADJUDICATED" | "PENDING_MEDICAL" | "PENDING_FINANCIAL" | "RETURNED" | "PARTIALLY_APPROVED" | "APPROVED" | "REJECTED" | "INVOICED" | "BATCHED" | "SETTLED" | "CANCELLED";
+        ClaimVersion: {
+            exceptions: components["schemas"]["ClaimException"][];
+            lines: components["schemas"]["ClaimLine"][];
+            projection: components["schemas"]["HealthProjection"];
+            version: components["schemas"]["ClaimVersionSummary"];
+        };
+        ClaimVersionList: {
+            items: components["schemas"]["ClaimVersionSummary"][];
+        };
+        /** @enum {string} */
+        ClaimVersionStatus: "DRAFT" | "SUBMITTED" | "SUPERSEDED";
+        ClaimVersionSummary: {
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            returnedAt?: string | null;
+            /** Format: uuid */
+            returnedBy?: string | null;
+            returnReasonCode?: string | null;
+            returnReasonText?: string | null;
+            /** Format: int64 */
+            rowVersion: number;
+            status: components["schemas"]["ClaimVersionStatus"];
+            /** Format: date-time */
+            submittedAt?: string | null;
+            /** Format: uuid */
+            submittedBy?: string | null;
+            versionNo: number;
+        };
         CloseHealthCase: {
             /**
              * @description Free text kept on the audit row, not on the case. Two hundred characters is the
@@ -4514,6 +5112,28 @@ export interface components {
              * @description When the promise stops holding and the reservations are released.
              */
             validTo: string;
+        };
+        CreateClaim: {
+            /** Format: uuid */
+            authorizationId?: string | null;
+            /** Format: uuid */
+            caseId?: string | null;
+            channel?: components["schemas"]["ServiceRequestChannel"] | null;
+            /** Format: uuid */
+            enrollmentId: string;
+            /** Format: uuid */
+            fulfilmentId?: string | null;
+            lines: components["schemas"]["NewClaimLine"][];
+            /** Format: uuid */
+            personId: string;
+            /** Format: uuid */
+            programId: string;
+            /** Format: uuid */
+            providerOrganizationId: string;
+            /** Format: date */
+            serviceDateFrom: string;
+            /** Format: date */
+            serviceDateTo: string;
         };
         CreateCodeSystemRequest: {
             authority: components["schemas"]["CodeSystemAuthority"];
@@ -5008,6 +5628,15 @@ export interface components {
             escalationQueueId?: string | null;
             name: string;
             slaMinutes?: number | null;
+        };
+        DecideClaimLines: {
+            decisions: components["schemas"]["ClaimLineDecisionInput"][];
+            /**
+             * @description The reviewer's comment on the claim as a whole. It is stored on the medical or the
+             *     financial comment column according to the stage, which is why the two are separate
+             *     columns rather than one with a flag.
+             */
+            reviewComment?: string | null;
         };
         DecideMedicalReport: {
             /**
@@ -6074,6 +6703,23 @@ export interface components {
          * @enum {string}
          */
         MemberShareMethod: "NONE" | "FIXED" | "PERCENT";
+        NewClaimLine: {
+            currencyCode?: string | null;
+            description?: string | null;
+            /** Format: uuid */
+            diagnosisId?: string | null;
+            lineAmount: string;
+            lineNo: number;
+            /** Format: uuid */
+            medicalReportId?: string | null;
+            /** Format: uuid */
+            practitionerId?: string | null;
+            quantity: string;
+            /** Format: uuid */
+            serviceDefinitionId: string;
+            unitAmount?: string | null;
+            unitType: string;
+        };
         /**
          * @description How a message reaches somebody. EMAIL goes through SMTP; SMS is recorded until a
          *     provider is chosen; PUSH is recorded and not delivered in this milestone; INAPP is
@@ -6374,6 +7020,23 @@ export interface components {
             identifierTypes: components["schemas"]["PartyCatalogEntry"][];
             membershipTypes: components["schemas"]["PartyCatalogEntry"][];
             relationshipTypes: components["schemas"]["PartyCatalogEntry"][];
+        };
+        /**
+         * @description Every field is sent every time: a merge would make "clear the authorization"
+         *     unexpressible.
+         */
+        PatchClaimDraft: {
+            /** Format: uuid */
+            authorizationId?: string | null;
+            /** Format: uuid */
+            caseId?: string | null;
+            channel?: components["schemas"]["ServiceRequestChannel"] | null;
+            /** Format: uuid */
+            fulfilmentId?: string | null;
+            /** Format: date */
+            serviceDateFrom: string;
+            /** Format: date */
+            serviceDateTo: string;
         };
         PatchMedicalReportDraft: {
             /** Format: uuid */
@@ -7111,6 +7774,9 @@ export interface components {
              *     this action needs no policy at all, and it removes whatever was there.
              */
             policies: components["schemas"]["ApprovalPolicyInput"][];
+        };
+        PutClaimLines: {
+            lines: components["schemas"]["NewClaimLine"][];
         };
         PutEncounterDiagnoses: {
             /** @description The whole set. An empty array clears the encounter's diagnoses. */
@@ -8429,6 +9095,7 @@ export interface components {
         AdjustmentId: string;
         AuthorizationId: string;
         CaseId: string;
+        ClaimId: string;
         CodeSystemId: string;
         ContractId: string;
         ContractVersionId: string;
@@ -8481,6 +9148,8 @@ export interface components {
         StayId: string;
         /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
         TenantHeader: string;
+        /** @description The version number, counting from one. */
+        VersionNo: number;
         WorkItemId: string;
         WorkQueueId: string;
     };
@@ -8502,6 +9171,24 @@ export type SchemaAuthorizationItemInput = components['schemas']['AuthorizationI
 export type SchemaAuthorizationPage = components['schemas']['AuthorizationPage'];
 export type SchemaAuthorizationStatus = components['schemas']['AuthorizationStatus'];
 export type SchemaCancelInpatientStay = components['schemas']['CancelInpatientStay'];
+export type SchemaClaim = components['schemas']['Claim'];
+export type SchemaClaimDecisionKind = components['schemas']['ClaimDecisionKind'];
+export type SchemaClaimDecisionReason = components['schemas']['ClaimDecisionReason'];
+export type SchemaClaimDecisionStage = components['schemas']['ClaimDecisionStage'];
+export type SchemaClaimException = components['schemas']['ClaimException'];
+export type SchemaClaimInvoiceBlocker = components['schemas']['ClaimInvoiceBlocker'];
+export type SchemaClaimInvoiceReadiness = components['schemas']['ClaimInvoiceReadiness'];
+export type SchemaClaimLine = components['schemas']['ClaimLine'];
+export type SchemaClaimLineDecision = components['schemas']['ClaimLineDecision'];
+export type SchemaClaimLineDecisionInput = components['schemas']['ClaimLineDecisionInput'];
+export type SchemaClaimPage = components['schemas']['ClaimPage'];
+export type SchemaClaimReason = components['schemas']['ClaimReason'];
+export type SchemaClaimReturnReason = components['schemas']['ClaimReturnReason'];
+export type SchemaClaimStatus = components['schemas']['ClaimStatus'];
+export type SchemaClaimVersion = components['schemas']['ClaimVersion'];
+export type SchemaClaimVersionList = components['schemas']['ClaimVersionList'];
+export type SchemaClaimVersionStatus = components['schemas']['ClaimVersionStatus'];
+export type SchemaClaimVersionSummary = components['schemas']['ClaimVersionSummary'];
 export type SchemaCloseHealthCase = components['schemas']['CloseHealthCase'];
 export type SchemaCodeSystem = components['schemas']['CodeSystem'];
 export type SchemaCodeSystemAuthority = components['schemas']['CodeSystemAuthority'];
@@ -8523,6 +9210,7 @@ export type SchemaContractVersionStatus = components['schemas']['ContractVersion
 export type SchemaContractVersionSummary = components['schemas']['ContractVersionSummary'];
 export type SchemaCreateAdjustmentRequest = components['schemas']['CreateAdjustmentRequest'];
 export type SchemaCreateAuthorization = components['schemas']['CreateAuthorization'];
+export type SchemaCreateClaim = components['schemas']['CreateClaim'];
 export type SchemaCreateCodeSystemRequest = components['schemas']['CreateCodeSystemRequest'];
 export type SchemaCreateContractRequest = components['schemas']['CreateContractRequest'];
 export type SchemaCreateContractVersionRequest = components['schemas']['CreateContractVersionRequest'];
@@ -8553,6 +9241,7 @@ export type SchemaCreateServiceDefinitionRequest = components['schemas']['Create
 export type SchemaCreateServiceRequest = components['schemas']['CreateServiceRequest'];
 export type SchemaCreateUpload = components['schemas']['CreateUpload'];
 export type SchemaCreateWorkQueue = components['schemas']['CreateWorkQueue'];
+export type SchemaDecideClaimLines = components['schemas']['DecideClaimLines'];
 export type SchemaDecideMedicalReport = components['schemas']['DecideMedicalReport'];
 export type SchemaDecimalAmount = components['schemas']['DecimalAmount'];
 export type SchemaDecimalPercent = components['schemas']['DecimalPercent'];
@@ -8625,6 +9314,7 @@ export type SchemaMedicalReportUsedByType = components['schemas']['MedicalReport
 export type SchemaMemberImportBatch = components['schemas']['MemberImportBatch'];
 export type SchemaMemberImportRow = components['schemas']['MemberImportRow'];
 export type SchemaMemberShareMethod = components['schemas']['MemberShareMethod'];
+export type SchemaNewClaimLine = components['schemas']['NewClaimLine'];
 export type SchemaNotificationChannel = components['schemas']['NotificationChannel'];
 export type SchemaNotificationDelivery = components['schemas']['NotificationDelivery'];
 export type SchemaNotificationDeliveryOutcome = components['schemas']['NotificationDeliveryOutcome'];
@@ -8653,6 +9343,7 @@ export type SchemaPackageLine = components['schemas']['PackageLine'];
 export type SchemaPackageLineInput = components['schemas']['PackageLineInput'];
 export type SchemaPartyCatalogEntry = components['schemas']['PartyCatalogEntry'];
 export type SchemaPartyCatalogs = components['schemas']['PartyCatalogs'];
+export type SchemaPatchClaimDraft = components['schemas']['PatchClaimDraft'];
 export type SchemaPatchMedicalReportDraft = components['schemas']['PatchMedicalReportDraft'];
 export type SchemaPatchWorkQueue = components['schemas']['PatchWorkQueue'];
 export type SchemaPaymentTerm = components['schemas']['PaymentTerm'];
@@ -8706,6 +9397,7 @@ export type SchemaProviderSearchResult = components['schemas']['ProviderSearchRe
 export type SchemaProviderStatus = components['schemas']['ProviderStatus'];
 export type SchemaProviderType = components['schemas']['ProviderType'];
 export type SchemaPutApprovalPolicies = components['schemas']['PutApprovalPolicies'];
+export type SchemaPutClaimLines = components['schemas']['PutClaimLines'];
 export type SchemaPutEncounterDiagnoses = components['schemas']['PutEncounterDiagnoses'];
 export type SchemaPutMedicalReportServices = components['schemas']['PutMedicalReportServices'];
 export type SchemaPutNotificationPreferences = components['schemas']['PutNotificationPreferences'];
@@ -8835,6 +9527,7 @@ export type ParameterAccountId = components['parameters']['AccountId'];
 export type ParameterAdjustmentId = components['parameters']['AdjustmentId'];
 export type ParameterAuthorizationId = components['parameters']['AuthorizationId'];
 export type ParameterCaseId = components['parameters']['CaseId'];
+export type ParameterClaimId = components['parameters']['ClaimId'];
 export type ParameterCodeSystemId = components['parameters']['CodeSystemId'];
 export type ParameterContractId = components['parameters']['ContractId'];
 export type ParameterContractVersionId = components['parameters']['ContractVersionId'];
@@ -8877,6 +9570,7 @@ export type ParameterServiceDefinitionId = components['parameters']['ServiceDefi
 export type ParameterServiceRequestVersionNo = components['parameters']['ServiceRequestVersionNo'];
 export type ParameterStayId = components['parameters']['StayId'];
 export type ParameterTenantHeader = components['parameters']['TenantHeader'];
+export type ParameterVersionNo = components['parameters']['VersionNo'];
 export type ParameterWorkItemId = components['parameters']['WorkItemId'];
 export type ParameterWorkQueueId = components['parameters']['WorkQueueId'];
 export type HeaderETag = components['headers']['ETag'];
@@ -9202,6 +9896,889 @@ export interface operations {
             409: components["responses"]["Conflict"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listClaims: {
+        parameters: {
+            query?: {
+                caseId?: string;
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                personId?: string;
+                providerOrganizationId?: string;
+                serviceDateFrom?: string;
+                serviceDateTo?: string;
+                status?: components["schemas"]["ClaimStatus"];
+            };
+            header: {
+                /**
+                 * @description Why the caller is opening clinical data, as a code from the clinical access purpose
+                 *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+                 *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+                 *     read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+                 *     event, because "who read this" without "why" is not an answer a data protection
+                 *     review can use.
+                 */
+                "X-Access-Purpose"?: components["parameters"]["AccessPurposeHeader"];
+                /**
+                 * @description Free text beside the purpose, at most 200 characters once decoded, kept on the access
+                 *     event. It never carries an identifier: the event already names the person and the
+                 *     actor.
+                 *
+                 *     The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+                 *     ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+                 *     the Turkish somebody would actually type. A value with no percent sequences decodes
+                 *     to itself, so a plain ASCII reason may be sent as it is.
+                 */
+                "X-Access-Reason"?: components["parameters"]["AccessReasonHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Claim page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimPage"];
+                };
+            };
+            /** @description Cursor invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    createClaim: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /**
+                 * @description Why the caller is opening clinical data, as a code from the clinical access purpose
+                 *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+                 *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+                 *     read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+                 *     event, because "who read this" without "why" is not an answer a data protection
+                 *     review can use.
+                 */
+                "X-Access-Purpose"?: components["parameters"]["AccessPurposeHeader"];
+                /**
+                 * @description Free text beside the purpose, at most 200 characters once decoded, kept on the access
+                 *     event. It never carries an identifier: the event already names the person and the
+                 *     actor.
+                 *
+                 *     The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+                 *     ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+                 *     the Turkish somebody would actually type. A value with no percent sequences decodes
+                 *     to itself, so a plain ASCII reason may be sent as it is.
+                 */
+                "X-Access-Reason"?: components["parameters"]["AccessReasonHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateClaim"];
+            };
+        };
+        responses: {
+            /** @description Claim created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Claim"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getClaim: {
+        parameters: {
+            query?: never;
+            header: {
+                /**
+                 * @description Why the caller is opening clinical data, as a code from the clinical access purpose
+                 *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+                 *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+                 *     read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+                 *     event, because "who read this" without "why" is not an answer a data protection
+                 *     review can use.
+                 */
+                "X-Access-Purpose"?: components["parameters"]["AccessPurposeHeader"];
+                /**
+                 * @description Free text beside the purpose, at most 200 characters once decoded, kept on the access
+                 *     event. It never carries an identifier: the event already names the person and the
+                 *     actor.
+                 *
+                 *     The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+                 *     ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+                 *     the Turkish somebody would actually type. A value with no percent sequences decodes
+                 *     to itself, so a plain ASCII reason may be sent as it is.
+                 */
+                "X-Access-Reason"?: components["parameters"]["AccessReasonHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                claimId: components["parameters"]["ClaimId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Claim */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Claim"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
+            /** @description The claim belongs to a sensitive case and the caller stated no access purpose. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    patchClaimDraft: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                claimId: components["parameters"]["ClaimId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PatchClaimDraft"];
+            };
+        };
+        responses: {
+            /** @description Claim updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Claim"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The current version has been submitted and is frozen. CLAIM_VERSION_FROZEN. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The claim changed since the caller read it */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match is missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    approveClaim: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                claimId: components["parameters"]["ClaimId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimDecisionReason"];
+            };
+        };
+        responses: {
+            /** @description Claim decided */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Claim"];
+                };
+            };
+            /**
+             * @description The approval policy does not admit this caller's stage.
+             *     CLAIM_APPROVAL_NOT_PERMITTED.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /**
+             * @description The claim cannot be approved from this status, or a line is still undecided.
+             *     CLAIM_TRANSITION_INVALID, CLAIM_LINE_UNDECIDED.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The claim changed since the caller read it */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match is missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    cancelClaim: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                claimId: components["parameters"]["ClaimId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimReason"];
+            };
+        };
+        responses: {
+            /** @description Claim cancelled */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Claim"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The claim cannot be cancelled from this status. CLAIM_TRANSITION_INVALID. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The claim changed since the caller read it */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match is missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getClaimInvoiceReadiness: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                claimId: components["parameters"]["ClaimId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Invoice readiness */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimInvoiceReadiness"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The claim has not been decided. CLAIM_NOT_DECIDED. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    decideClaimLines: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /**
+                 * @description Why the caller is opening clinical data, as a code from the clinical access purpose
+                 *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+                 *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+                 *     read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+                 *     event, because "who read this" without "why" is not an answer a data protection
+                 *     review can use.
+                 */
+                "X-Access-Purpose"?: components["parameters"]["AccessPurposeHeader"];
+                /**
+                 * @description Free text beside the purpose, at most 200 characters once decoded, kept on the access
+                 *     event. It never carries an identifier: the event already names the person and the
+                 *     actor.
+                 *
+                 *     The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+                 *     ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+                 *     the Turkish somebody would actually type. A value with no percent sequences decodes
+                 *     to itself, so a plain ASCII reason may be sent as it is.
+                 */
+                "X-Access-Reason"?: components["parameters"]["AccessReasonHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                claimId: components["parameters"]["ClaimId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecideClaimLines"];
+            };
+        };
+        responses: {
+            /** @description Lines decided */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Claim"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /**
+             * @description The claim is not waiting for this stage. CLAIM_STAGE_MISMATCH,
+             *     CLAIM_TRANSITION_INVALID.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The claim changed since the caller read it */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match is missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    putClaimLines: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                claimId: components["parameters"]["ClaimId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PutClaimLines"];
+            };
+        };
+        responses: {
+            /** @description Lines replaced */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Claim"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The current version has been submitted and is frozen. CLAIM_VERSION_FROZEN. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The claim changed since the caller read it */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match is missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    rejectClaim: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                claimId: components["parameters"]["ClaimId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimDecisionReason"];
+            };
+        };
+        responses: {
+            /** @description Claim rejected */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Claim"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The claim cannot be rejected from this status. CLAIM_TRANSITION_INVALID. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The claim changed since the caller read it */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match is missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    returnClaim: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                claimId: components["parameters"]["ClaimId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimReturnReason"];
+            };
+        };
+        responses: {
+            /** @description Claim returned; a new draft version is open */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Claim"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The claim cannot be returned from this status. CLAIM_TRANSITION_INVALID. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The claim changed since the caller read it */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match is missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    submitClaim: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /**
+                 * @description Why the caller is opening clinical data, as a code from the clinical access purpose
+                 *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+                 *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+                 *     read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+                 *     event, because "who read this" without "why" is not an answer a data protection
+                 *     review can use.
+                 */
+                "X-Access-Purpose"?: components["parameters"]["AccessPurposeHeader"];
+                /**
+                 * @description Free text beside the purpose, at most 200 characters once decoded, kept on the access
+                 *     event. It never carries an identifier: the event already names the person and the
+                 *     actor.
+                 *
+                 *     The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+                 *     ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+                 *     the Turkish somebody would actually type. A value with no percent sequences decodes
+                 *     to itself, so a plain ASCII reason may be sent as it is.
+                 */
+                "X-Access-Reason"?: components["parameters"]["AccessReasonHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                claimId: components["parameters"]["ClaimId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Claim submitted and routed */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Claim"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The claim is not in a state that can be submitted. CLAIM_TRANSITION_INVALID. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The claim changed since the caller read it */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /**
+             * @description The draft carries no line, or a line names something this tenant does not have.
+             *     CLAIM_LINE_REQUIRED, VALIDATION_FAILED.
+             */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description If-Match is missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listClaimVersions: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                claimId: components["parameters"]["ClaimId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Claim versions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimVersionList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getClaimVersion: {
+        parameters: {
+            query?: never;
+            header: {
+                /**
+                 * @description Why the caller is opening clinical data, as a code from the clinical access purpose
+                 *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+                 *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+                 *     read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+                 *     event, because "who read this" without "why" is not an answer a data protection
+                 *     review can use.
+                 */
+                "X-Access-Purpose"?: components["parameters"]["AccessPurposeHeader"];
+                /**
+                 * @description Free text beside the purpose, at most 200 characters once decoded, kept on the access
+                 *     event. It never carries an identifier: the event already names the person and the
+                 *     actor.
+                 *
+                 *     The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+                 *     ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+                 *     the Turkish somebody would actually type. A value with no percent sequences decodes
+                 *     to itself, so a plain ASCII reason may be sent as it is.
+                 */
+                "X-Access-Reason"?: components["parameters"]["AccessReasonHeader"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                claimId: components["parameters"]["ClaimId"];
+                /** @description The version number, counting from one. */
+                versionNo: components["parameters"]["VersionNo"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Claim version */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimVersion"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
+            /** @description The claim belongs to a sensitive case and the caller stated no access purpose. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
         };
     };
     listCodeSystems: {

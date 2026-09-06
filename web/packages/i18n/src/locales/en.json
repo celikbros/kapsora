@@ -325,7 +325,22 @@
     "STAY_SEGMENT_OVERLAP": "Two segments cannot claim the same hours. Only a companion may overlap the patient's own segment.",
     "INPATIENT_ADMISSION_SERVICE_UNKNOWN": "The inpatient admission service was not found in the catalogue; an active INPATIENT_DAY definition is required.",
     "INPATIENT_STAY_DIAGNOSIS_MISMATCH": "The admission diagnosis does not belong to this case.",
-    "INPATIENT_STAY_NOT_DISCHARGED": "The stay has not been discharged; a reconciliation exists only after discharge."
+    "INPATIENT_STAY_NOT_DISCHARGED": "The stay has not been discharged; a reconciliation exists only after discharge.",
+    "CLAIM_NOT_FOUND": "The claim was not found, or is not visible in this organization.",
+    "CLAIM_VERSION_NOT_FOUND": "That version of the claim was not found.",
+    "CLAIM_VERSION_FROZEN": "A submitted version cannot be edited. Return the claim to correct it; version n+1 opens as a draft.",
+    "CLAIM_TRANSITION_INVALID": "That action is not possible while the claim is in this state.",
+    "CLAIM_STAGE_MISMATCH": "The claim is not waiting for this review stage. Medical review is finished before financial review begins.",
+    "CLAIM_LINE_UNDECIDED": "A line still has no decision. Decide every line before finishing the claim.",
+    "CLAIM_LINE_NOT_FOUND": "This version has no such line.",
+    "CLAIM_LINE_REQUIRED": "A claim cannot be submitted with no line on it.",
+    "CLAIM_APPROVAL_NOT_PERMITTED": "You may not approve this amount; the approval policy asks for a different role at this band.",
+    "CLAIM_NOT_DECIDED": "The claim has not been decided. Invoice readiness is answered only for an approved or partially approved claim.",
+    "CLAIM_PROVIDER_SCOPE": "You may not act on behalf of this provider.",
+    "CLAIM_PROVIDER_UNKNOWN": "The selected organization is not a provider of this tenant.",
+    "CLAIM_PROVIDER_PROFILE_MISSING": "The provider has no provider profile; one is needed before a claim can be priced.",
+    "CLAIM_ENROLLMENT_MISMATCH": "The enrollment does not belong to this person or programme.",
+    "CLAIM_SERVICE_UNKNOWN": "The service definition was not found in the catalogue."
   },
   "fieldErrors": {
     "RULE_COMPILE_FAILED": "The rule condition did not compile",

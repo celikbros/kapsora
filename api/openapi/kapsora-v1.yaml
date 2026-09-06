@@ -61,6 +61,8 @@ tags:
     description: Bildirim şablonları, gönderilen mesajlar, gönderim denemeleri ve tercihler
   - name: Clinical
     description: Sağlık vakası, encounter, tanı ve klinik erişim kaydı
+  - name: Claims
+    description: Hasar dosyası sürümleri, satır kararları, tıbbi ve mali inceleme
 paths:
   /health/live:
     get:
@@ -9219,6 +9221,762 @@ paths:
         '422':
           $ref: '#/components/responses/ValidationError'
 
+  /api/v1/claims:
+    get:
+      tags: [Claims]
+      operationId: listClaims
+      description: |
+        Claims, newest first. Each row is served in the projection the caller has earned: a
+        caller without `health.clinical.read`, or one reading a claim on a sensitive case
+        without `health.sensitive.read`, gets the financial half — every figure, every
+        decision, every reason code, and no line description, no `diagnosisId`, no
+        `medicalReportId` and no `reviewCommentMedical`.
+
+        A list never answers 428. Refusing the whole page over one sensitive row would make it
+        useless, and refusing that one row would say which row is sensitive.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/AccessPurposeHeader'
+        - $ref: '#/components/parameters/AccessReasonHeader'
+        - name: personId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: caseId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: providerOrganizationId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/ClaimStatus'
+        - name: serviceDateFrom
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: serviceDateTo
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Claim page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimPage'
+        '400':
+          description: Cursor invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags: [Claims]
+      operationId: createClaim
+      description: |
+        Opens a claim as a draft, with version 1 and the lines it was given. Nothing is priced
+        and nothing is decided here: a draft is the provider's statement in progress, and the
+        pipeline runs at `submitClaim`.
+
+        The provider is required and it is the caller's own when the caller is scoped to one
+        organization. `caseId`, `fulfilmentId` and `authorizationId` are optional and each of
+        them changes what submit will check — a claim naming an authorization consumes it line
+        by line, and a claim naming no authorization consumes nothing.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/AccessPurposeHeader'
+        - $ref: '#/components/parameters/AccessReasonHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateClaim'
+      responses:
+        '201':
+          description: Claim created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            Location:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claim'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/claims/{claimId}:
+    get:
+      tags: [Claims]
+      operationId: getClaim
+      description: |
+        One claim with the lines of its current version and the decision each of them carries.
+
+        This is the read that demands a purpose. A claim on a SENSITIVE case read by a caller
+        holding `health.clinical.read` and `health.sensitive.read` but sending no
+        `X-Access-Purpose` is answered 428 ACCESS_PURPOSE_REQUIRED, and the refusal is
+        recorded as a DENIED access event with resource type `claim`.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ClaimId'
+        - $ref: '#/components/parameters/AccessPurposeHeader'
+        - $ref: '#/components/parameters/AccessReasonHeader'
+      responses:
+        '200':
+          description: Claim
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claim'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: |
+            The claim belongs to a sensitive case and the caller stated no access purpose.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+    patch:
+      tags: [Claims]
+      operationId: patchClaimDraft
+      description: |
+        Edits the header of a claim whose current version is still a DRAFT: the service dates,
+        the channel, the case, the fulfilment and the authorization it hangs off.
+
+        A claim whose current version has been submitted answers 409 CLAIM_VERSION_FROZEN. That
+        is the rule the whole package exists for — a submitted version is never edited, and a
+        correction is `returnClaim` followed by a new draft version.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ClaimId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchClaimDraft'
+      responses:
+        '200':
+          description: Claim updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claim'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            The current version has been submitted and is frozen. CLAIM_VERSION_FROZEN.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: The claim changed since the caller read it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match is missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/claims/{claimId}/lines:
+    put:
+      tags: [Claims]
+      operationId: putClaimLines
+      description: |
+        Replaces the whole line set of the claim's DRAFT version. The set is the unit: a claim
+        is what its lines say together, and a per-line PATCH would let two clerks leave a claim
+        nobody meant to send.
+
+        A submitted version answers 409 CLAIM_VERSION_FROZEN here for the same reason
+        `patchClaimDraft` does.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ClaimId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutClaimLines'
+      responses:
+        '200':
+          description: Lines replaced
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claim'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            The current version has been submitted and is frozen. CLAIM_VERSION_FROZEN.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: The claim changed since the caller read it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match is missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/claims/{claimId}/submit:
+    post:
+      tags: [Claims]
+      operationId: submitClaim
+      description: |
+        Freezes the draft version and runs the whole pipeline in one transaction: price, then
+        rules, then the cross-checks that are not rules, then the route.
+
+        1. **Price.** Every line goes through the pricing ladder for this provider, this
+           service date and this enrollment — contract price, plan share, member share. A line
+           the ladder cannot price is not guessed at: it is `REVIEW_REQUIRED` with the pricing
+           explanation attached, and it sends the claim to financial review.
+        2. **Rules.** The tenant's published ADJUDICATION rule set is evaluated once per line.
+           `REQUIRE_MEDICAL_REVIEW` and `REQUIRE_FINANCIAL_REVIEW` route; `REJECT` and
+           `PARTIAL_APPROVE` decide the line then and there, with `stage = AUTO`.
+        3. **Cross-checks.** A line against the claim's authorization consumes it, and an
+           over-consumption is an exception line rather than a silent consume; a line naming a
+           medical report asks the report coverage port, and a report that does not cover it
+           goes to medical review; a stay that ran over what anybody approved goes to medical
+           review; a line matching another live claim for the same person, service and day goes
+           to financial review as `DUPLICATE_SUSPECTED`, naming the other claim's reference.
+        4. **Route.** Medical review precedes financial when both are needed. With neither
+           needed and the approval policy allowing the amount, the claim is AUTO_ADJUDICATED
+           and then APPROVED, PARTIALLY_APPROVED or REJECTED by what the AUTO decisions say.
+
+        Every step that decided something writes a `ClaimLineDecision` with `stage = AUTO`.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ClaimId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/AccessPurposeHeader'
+        - $ref: '#/components/parameters/AccessReasonHeader'
+      responses:
+        '200':
+          description: Claim submitted and routed
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claim'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            The claim is not in a state that can be submitted. CLAIM_TRANSITION_INVALID.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: The claim changed since the caller read it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: |
+            The draft carries no line, or a line names something this tenant does not have.
+            CLAIM_LINE_REQUIRED, VALIDATION_FAILED.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '428':
+          description: If-Match is missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/claims/{claimId}/line-decisions:
+    post:
+      tags: [Claims]
+      operationId: decideClaimLines
+      description: |
+        Records a decision on each named line of the current version, at the stage the claim is
+        waiting in.
+
+        The stage is not the caller's choice. A claim in PENDING_MEDICAL is decided by a holder
+        of `claim.medical.review` and the decisions are written `MEDICAL`; a claim in
+        PENDING_FINANCIAL is decided by a holder of `claim.financial.review` and they are
+        written `FINANCIAL`. A financial reviewer reaching a claim that is still in medical
+        review is answered 409 CLAIM_STAGE_MISMATCH — medical review precedes financial when
+        both are needed, and that ordering is the point of the two stages.
+
+        Decisions are append-only. A line decided twice has two rows and the latest is the
+        decision, so a reviewer who cut a line and a reviewer who later restored it are both on
+        the record.
+
+        `payerAmount + memberAmount` must equal `approvedAmount` on every line, exactly. It is
+        a database CHECK as well as a validation, because a settlement that could not be
+        reconciled by a kuruş is a settlement nobody can sign off.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ClaimId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/AccessPurposeHeader'
+        - $ref: '#/components/parameters/AccessReasonHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecideClaimLines'
+      responses:
+        '200':
+          description: Lines decided
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claim'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            The claim is not waiting for this stage. CLAIM_STAGE_MISMATCH,
+            CLAIM_TRANSITION_INVALID.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: The claim changed since the caller read it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match is missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/claims/{claimId}/approve:
+    post:
+      tags: [Claims]
+      operationId: approveClaim
+      description: |
+        Finishes the claim. Every line of the current version must carry a decision; the status
+        it lands in is what those decisions say — APPROVED when every line was approved,
+        PARTIALLY_APPROVED when some were cut or rejected and something is still payable,
+        REJECTED when nothing is.
+
+        The approval policy for `claim.approve` decides who may do this: the band the approved
+        total falls in names the roles, and a caller whose review stage is not one of them is
+        answered 403 CLAIM_APPROVAL_NOT_PERMITTED. A policy that names no role lets either
+        reviewer finish.
+
+        Whatever it lands on is published as `claim.decided` inside this transaction, with the
+        reference, the status word, the day, the approved total and the currency — and nothing
+        else. There is no slot in the template for a diagnosis, a line description or a
+        reviewer's comment.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ClaimId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClaimDecisionReason'
+      responses:
+        '200':
+          description: Claim decided
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claim'
+        '403':
+          description: |
+            The approval policy does not admit this caller's stage.
+            CLAIM_APPROVAL_NOT_PERMITTED.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            The claim cannot be approved from this status, or a line is still undecided.
+            CLAIM_TRANSITION_INVALID, CLAIM_LINE_UNDECIDED.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: The claim changed since the caller read it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match is missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/claims/{claimId}/reject:
+    post:
+      tags: [Claims]
+      operationId: rejectClaim
+      description: |
+        Refuses the claim outright, with a reason. Every line of the current version is
+        recorded REJECTED at the caller's stage, whatever it carried before, and anything the
+        claim was holding on its authorization is released — a refused claim must not keep a
+        member's entitlement reserved.
+
+        It publishes `claim.decided` exactly as `approveClaim` does.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ClaimId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClaimDecisionReason'
+      responses:
+        '200':
+          description: Claim rejected
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claim'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            The claim cannot be rejected from this status. CLAIM_TRANSITION_INVALID.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: The claim changed since the caller read it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match is missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/claims/{claimId}/return:
+    post:
+      tags: [Claims]
+      operationId: returnClaim
+      description: |
+        Sends the claim back to the provider to be corrected, with a reason.
+
+        It never edits the decided version. The submitted version becomes SUPERSEDED with the
+        return reason on it and keeps every line decision it was given, and version n+1 is
+        opened as a DRAFT with the lines copied. That is the whole correction model: the old
+        answer stays readable and the new statement is a new version.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ClaimId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClaimReturnReason'
+      responses:
+        '200':
+          description: Claim returned; a new draft version is open
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claim'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            The claim cannot be returned from this status. CLAIM_TRANSITION_INVALID.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: The claim changed since the caller read it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match is missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/claims/{claimId}/cancel:
+    post:
+      tags: [Claims]
+      operationId: cancelClaim
+      description: |
+        Withdraws a claim the provider should not have raised. It needs `claim.cancel`, and it
+        is refused on anything already decided: a cancelled claim is a fact, and cancelling a
+        settled one would be an accounting entry rather than a withdrawal.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ClaimId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClaimReason'
+      responses:
+        '200':
+          description: Claim cancelled
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claim'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            The claim cannot be cancelled from this status. CLAIM_TRANSITION_INVALID.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: The claim changed since the caller read it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match is missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/claims/{claimId}/versions:
+    get:
+      tags: [Claims]
+      operationId: listClaimVersions
+      description: |
+        Every version of the claim, newest first, with what each one was submitted and returned
+        for. It is how a screen draws "sürüm 2 / 2" and how anybody finds the decision that was
+        made about a version somebody has since corrected.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ClaimId'
+      responses:
+        '200':
+          description: Claim versions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimVersionList'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/claims/{claimId}/versions/{versionNo}:
+    get:
+      tags: [Claims]
+      operationId: getClaimVersion
+      description: |
+        One version with the lines it carried and the decision each line was given, in the
+        projection the caller has earned. A superseded version answers exactly what it answered
+        the day it was decided.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ClaimId'
+        - $ref: '#/components/parameters/VersionNo'
+        - $ref: '#/components/parameters/AccessPurposeHeader'
+        - $ref: '#/components/parameters/AccessReasonHeader'
+      responses:
+        '200':
+          description: Claim version
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimVersion'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: |
+            The claim belongs to a sensitive case and the caller stated no access purpose.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/claims/{claimId}/invoice-readiness:
+    get:
+      tags: [Claims]
+      operationId: getClaimInvoiceReadiness
+      description: |
+        What M7's invoice will need, answered now: the approved total, the payer total and the
+        member total — exact decimals, summed on the server once — and whether anything still
+        blocks an invoice.
+
+        The blockers are named rather than counted: `PROVIDER_TAX_IDENTITY_MISSING` when the
+        provider organization carries no tax identity to invoice against,
+        `CURRENCY_NOT_SINGLE` when the lines are not all in one currency, and
+        `LINE_NOT_DECIDED` when a line of the current version still has no decision.
+
+        Only an APPROVED or PARTIALLY_APPROVED claim has an answer; anything else is 409
+        CLAIM_NOT_DECIDED, because "is this invoiceable" is not a question about a draft.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ClaimId'
+      responses:
+        '200':
+          description: Invoice readiness
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimInvoiceReadiness'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            The claim has not been decided. CLAIM_NOT_DECIDED.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
 components:
   securitySchemes:
     sessionCookie:
@@ -9583,6 +10341,21 @@ components:
       schema:
         type: string
         format: uuid
+    ClaimId:
+      name: claimId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    VersionNo:
+      name: versionNo
+      in: path
+      required: true
+      description: The version number, counting from one.
+      schema:
+        type: integer
+        minimum: 1
     AccessPurposeHeader:
       name: X-Access-Purpose
       in: header
@@ -16965,3 +17738,593 @@ components:
             and zero when it ran over.
         overAuthorization:
           type: boolean
+    ClaimStatus:
+      type: string
+      enum:
+        [DRAFT, SUBMITTED, AUTO_ADJUDICATED, PENDING_MEDICAL, PENDING_FINANCIAL, RETURNED,
+         PARTIALLY_APPROVED, APPROVED, REJECTED, INVOICED, BATCHED, SETTLED, CANCELLED]
+      description: |
+        The claim lifecycle of v1.2 12.5. INVOICED, BATCHED and SETTLED are declared because
+        the lifecycle is one list; the commands that reach them belong to M7 and nothing in
+        this contract puts a claim into one of them.
+    ClaimVersionStatus:
+      type: string
+      enum: [DRAFT, SUBMITTED, SUPERSEDED]
+    ClaimDecisionKind:
+      type: string
+      enum: [APPROVED, PARTIALLY_APPROVED, REJECTED, CUT]
+      description: |
+        What was decided about one line. CUT is a reduction the payer applied to an otherwise
+        valid line; PARTIALLY_APPROVED is a smaller quantity than was claimed. They are two
+        words because a provider reads them differently and disputes them differently.
+    ClaimDecisionStage:
+      type: string
+      enum: [AUTO, MEDICAL, FINANCIAL]
+      description: |
+        Who decided. AUTO means the rules did and nobody looked, which is why an AUTO decision
+        never carries a `decidedBy`.
+    ClaimException:
+      type: object
+      additionalProperties: false
+      required: [code, stage]
+      description: |
+        One thing the submit pipeline found that a person has to look at. It is not a decision
+        — the line is still undecided — it is the answer to "why is this claim in front of me",
+        line by line, which is the first thing either reviewer's screen has to say.
+
+        `detail` carries the fact the reviewer needs and nothing else: the reference of the
+        other claim a duplicate suspicion found, the quantity a hold still had, the code of the
+        rule that asked for a review. Never a diagnosis, never a line description.
+
+        The three report codes — `REPORT_NOT_APPROVED`, `REPORT_OUT_OF_WINDOW`,
+        `SERVICE_NOT_IN_REPORT` — are served only in the clinical projection, for the same
+        reason `medicalReportId` is: an exception naming a treatment report says the line leans
+        on one.
+      properties:
+        lineNo:
+          type: [integer, 'null']
+          minimum: 1
+          description: Null for an exception about the claim as a whole.
+        code:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_.:-]{1,79}$'
+        stage:
+          $ref: '#/components/schemas/ClaimDecisionStage'
+        detail:
+          type: [string, 'null']
+          maxLength: 200
+    ClaimLine:
+      type: object
+      additionalProperties: false
+      required:
+        [id, lineNo, serviceDefinitionId, unitType, quantity, lineAmount, currencyCode,
+         createdAt, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        lineNo:
+          type: integer
+          minimum: 1
+        serviceDefinitionId:
+          type: string
+          format: uuid
+        serviceCode:
+          type: [string, 'null']
+          description: The catalogue code of the service, resolved on the way out.
+        unitType:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]{1,31}$'
+        quantity:
+          type: string
+          description: Exact decimal as a string, never a JSON number.
+        unitAmount:
+          type: [string, 'null']
+        lineAmount:
+          type: string
+        currencyCode:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        diagnosisId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            Present only in the clinical projection. An id beside a name is an invitation to
+            go and look it up.
+        medicalReportId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            Present only in the clinical projection: that a line leans on a treatment report
+            at all is a fact about the patient.
+        practitionerId:
+          type: [string, 'null']
+          format: uuid
+        description:
+          type: [string, 'null']
+          maxLength: 1000
+          description: |
+            The provider's own words about the line. Present only in the clinical projection —
+            "sol diz artroskopi sonrası kontrol" is a diagnosis in a sentence, and a provider
+            typing a line description is not thinking about who will read it.
+        decision:
+          oneOf:
+            - $ref: '#/components/schemas/ClaimLineDecision'
+            - type: 'null'
+          description: |
+            The latest decision for this line, or null while nobody has decided it. The history
+            is append-only in the database; this is its head.
+        createdAt:
+          type: string
+          format: date-time
+        rowVersion:
+          type: integer
+          format: int64
+    ClaimLineDecision:
+      type: object
+      additionalProperties: false
+      required:
+        [id, lineId, decidedInVersionNo, decision, approvedQuantity, approvedAmount,
+         payerAmount, memberAmount, reasonCode, decidedAt, stage]
+      properties:
+        id:
+          type: string
+          format: uuid
+        lineId:
+          type: string
+          format: uuid
+        decidedInVersionNo:
+          type: integer
+          minimum: 1
+        decision:
+          $ref: '#/components/schemas/ClaimDecisionKind'
+        approvedQuantity:
+          type: string
+        approvedAmount:
+          type: string
+        contractAmount:
+          type: [string, 'null']
+          description: |
+            What the contract said the line costs, before anything was cut from it. Null when
+            the pricing ladder found no contracted price, which is itself a reason for review.
+        payerAmount:
+          type: string
+        memberAmount:
+          type: string
+          description: |
+            payerAmount plus memberAmount is exactly approvedAmount. It is a database CHECK as
+            well as a validation.
+        reasonCode:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_.:-]{1,79}$'
+        reasonText:
+          type: [string, 'null']
+          maxLength: 1000
+          description: |
+            The reviewer's own words. A MEDICAL decision's reason text is clinical and is
+            present only in the clinical projection.
+        decidedBy:
+          type: [string, 'null']
+          format: uuid
+          description: Null when the rules decided it.
+        decidedAt:
+          type: string
+          format: date-time
+        stage:
+          $ref: '#/components/schemas/ClaimDecisionStage'
+    Claim:
+      type: object
+      additionalProperties: false
+      required:
+        [id, reference, personId, programId, enrollmentId, providerOrganizationId, domainCode,
+         currentVersionNo, status, serviceDateFrom, serviceDateTo, channel, projection, lines,
+         exceptions, createdAt, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        reference:
+          type: string
+          pattern: '^[A-Z][A-Z0-9-]{3,63}$'
+        personId:
+          type: string
+          format: uuid
+        programId:
+          type: string
+          format: uuid
+        enrollmentId:
+          type: string
+          format: uuid
+        providerOrganizationId:
+          type: string
+          format: uuid
+        domainCode:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]{1,31}$'
+        caseId:
+          type: [string, 'null']
+          format: uuid
+        fulfilmentId:
+          type: [string, 'null']
+          format: uuid
+        authorizationId:
+          type: [string, 'null']
+          format: uuid
+        currentVersionNo:
+          type: integer
+          minimum: 1
+        status:
+          $ref: '#/components/schemas/ClaimStatus'
+        serviceDateFrom:
+          type: string
+          format: date
+        serviceDateTo:
+          type: string
+          format: date
+        channel:
+          $ref: '#/components/schemas/ServiceRequestChannel'
+        projection:
+          $ref: '#/components/schemas/HealthProjection'
+        rejectReasonCode:
+          type: [string, 'null']
+          pattern: '^[A-Z][A-Z0-9_.:-]{1,79}$'
+        returnReasonCode:
+          type: [string, 'null']
+          pattern: '^[A-Z][A-Z0-9_.:-]{1,79}$'
+        reviewCommentMedical:
+          type: [string, 'null']
+          maxLength: 2000
+          description: |
+            The medical reviewer's comment. Present only in the clinical projection: it is a
+            doctor's sentence about a patient.
+        reviewCommentFinancial:
+          type: [string, 'null']
+          maxLength: 2000
+        closedAt:
+          type: [string, 'null']
+          format: date-time
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClaimLine'
+          description: The lines of the current version, with the decision each carries.
+        exceptions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClaimException'
+          description: |
+            What the submit pipeline found that a person has to look at, read back from the
+            frozen snapshot of the current version. Empty on a draft and on a claim nothing
+            objected to.
+        createdAt:
+          type: string
+          format: date-time
+        rowVersion:
+          type: integer
+          format: int64
+    ClaimPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Claim'
+        nextCursor:
+          type: [string, 'null']
+    ClaimVersionSummary:
+      type: object
+      additionalProperties: false
+      required: [id, versionNo, status, createdAt, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        versionNo:
+          type: integer
+          minimum: 1
+        status:
+          $ref: '#/components/schemas/ClaimVersionStatus'
+        submittedAt:
+          type: [string, 'null']
+          format: date-time
+        submittedBy:
+          type: [string, 'null']
+          format: uuid
+        returnedAt:
+          type: [string, 'null']
+          format: date-time
+        returnedBy:
+          type: [string, 'null']
+          format: uuid
+        returnReasonCode:
+          type: [string, 'null']
+          pattern: '^[A-Z][A-Z0-9_.:-]{1,79}$'
+        returnReasonText:
+          type: [string, 'null']
+          maxLength: 1000
+        createdAt:
+          type: string
+          format: date-time
+        rowVersion:
+          type: integer
+          format: int64
+    ClaimVersionList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClaimVersionSummary'
+    ClaimVersion:
+      type: object
+      additionalProperties: false
+      required: [version, projection, lines, exceptions]
+      properties:
+        version:
+          $ref: '#/components/schemas/ClaimVersionSummary'
+        projection:
+          $ref: '#/components/schemas/HealthProjection'
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClaimLine'
+        exceptions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClaimException'
+    NewClaimLine:
+      type: object
+      additionalProperties: false
+      required: [lineNo, serviceDefinitionId, unitType, quantity, lineAmount]
+      properties:
+        lineNo:
+          type: integer
+          minimum: 1
+          maximum: 500
+        serviceDefinitionId:
+          type: string
+          format: uuid
+        unitType:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]{1,31}$'
+        quantity:
+          type: string
+          pattern: '^[0-9]{1,14}(\.[0-9]{1,6})?$'
+        unitAmount:
+          type: [string, 'null']
+          pattern: '^[0-9]{1,14}(\.[0-9]{1,6})?$'
+        lineAmount:
+          type: string
+          pattern: '^[0-9]{1,14}(\.[0-9]{1,6})?$'
+        currencyCode:
+          type: [string, 'null']
+          pattern: '^[A-Z]{3}$'
+        diagnosisId:
+          type: [string, 'null']
+          format: uuid
+        medicalReportId:
+          type: [string, 'null']
+          format: uuid
+        practitionerId:
+          type: [string, 'null']
+          format: uuid
+        description:
+          type: [string, 'null']
+          maxLength: 1000
+    CreateClaim:
+      type: object
+      additionalProperties: false
+      required:
+        [personId, programId, enrollmentId, providerOrganizationId, serviceDateFrom,
+         serviceDateTo, lines]
+      properties:
+        personId:
+          type: string
+          format: uuid
+        programId:
+          type: string
+          format: uuid
+        enrollmentId:
+          type: string
+          format: uuid
+        providerOrganizationId:
+          type: string
+          format: uuid
+        caseId:
+          type: [string, 'null']
+          format: uuid
+        fulfilmentId:
+          type: [string, 'null']
+          format: uuid
+        authorizationId:
+          type: [string, 'null']
+          format: uuid
+        serviceDateFrom:
+          type: string
+          format: date
+        serviceDateTo:
+          type: string
+          format: date
+        channel:
+          oneOf:
+            - $ref: '#/components/schemas/ServiceRequestChannel'
+            - type: 'null'
+        lines:
+          type: array
+          minItems: 1
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/NewClaimLine'
+    PatchClaimDraft:
+      type: object
+      additionalProperties: false
+      required: [serviceDateFrom, serviceDateTo]
+      description: |
+        Every field is sent every time: a merge would make "clear the authorization"
+        unexpressible.
+      properties:
+        serviceDateFrom:
+          type: string
+          format: date
+        serviceDateTo:
+          type: string
+          format: date
+        channel:
+          oneOf:
+            - $ref: '#/components/schemas/ServiceRequestChannel'
+            - type: 'null'
+        caseId:
+          type: [string, 'null']
+          format: uuid
+        fulfilmentId:
+          type: [string, 'null']
+          format: uuid
+        authorizationId:
+          type: [string, 'null']
+          format: uuid
+    PutClaimLines:
+      type: object
+      additionalProperties: false
+      required: [lines]
+      properties:
+        lines:
+          type: array
+          minItems: 1
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/NewClaimLine'
+    ClaimLineDecisionInput:
+      type: object
+      additionalProperties: false
+      required: [lineNo, decision, approvedQuantity, approvedAmount, payerAmount, memberAmount, reasonCode]
+      properties:
+        lineNo:
+          type: integer
+          minimum: 1
+        decision:
+          $ref: '#/components/schemas/ClaimDecisionKind'
+        approvedQuantity:
+          type: string
+          pattern: '^[0-9]{1,14}(\.[0-9]{1,6})?$'
+        approvedAmount:
+          type: string
+          pattern: '^[0-9]{1,14}(\.[0-9]{1,6})?$'
+        payerAmount:
+          type: string
+          pattern: '^[0-9]{1,14}(\.[0-9]{1,6})?$'
+        memberAmount:
+          type: string
+          pattern: '^[0-9]{1,14}(\.[0-9]{1,6})?$'
+        reasonCode:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_.:-]{1,79}$'
+        reasonText:
+          type: [string, 'null']
+          maxLength: 1000
+          description: |
+            Free text the reviewer typed. On a MEDICAL decision it is clinical and is served
+            only in the clinical projection.
+    DecideClaimLines:
+      type: object
+      additionalProperties: false
+      required: [decisions]
+      properties:
+        decisions:
+          type: array
+          minItems: 1
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/ClaimLineDecisionInput'
+        reviewComment:
+          type: [string, 'null']
+          maxLength: 2000
+          description: |
+            The reviewer's comment on the claim as a whole. It is stored on the medical or the
+            financial comment column according to the stage, which is why the two are separate
+            columns rather than one with a flag.
+    ClaimReason:
+      type: object
+      additionalProperties: false
+      required: [reasonCode]
+      properties:
+        reasonCode:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_.:-]{1,79}$'
+        reasonText:
+          type: [string, 'null']
+          maxLength: 1000
+    ClaimDecisionReason:
+      type: object
+      additionalProperties: false
+      required: [reasonCode]
+      properties:
+        reasonCode:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_.:-]{1,79}$'
+        reasonText:
+          type: [string, 'null']
+          maxLength: 1000
+        reviewComment:
+          type: [string, 'null']
+          maxLength: 2000
+    ClaimReturnReason:
+      type: object
+      additionalProperties: false
+      required: [reasonCode]
+      properties:
+        reasonCode:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_.:-]{1,79}$'
+        reasonText:
+          type: [string, 'null']
+          maxLength: 1000
+          description: |
+            What the provider has to correct, in the reviewer's words. It is stored on the
+            version that was sent back, because the reason belongs to that version rather than
+            to the claim as a whole.
+    ClaimInvoiceBlocker:
+      type: string
+      enum: [PROVIDER_TAX_IDENTITY_MISSING, CURRENCY_NOT_SINGLE, LINE_NOT_DECIDED]
+      description: |
+        Named rather than counted, so a screen can say what to fix rather than "not ready".
+    ClaimInvoiceReadiness:
+      type: object
+      additionalProperties: false
+      required:
+        [claimId, status, currencyCode, approvedTotal, payerTotal, memberTotal, lineCount,
+         decidedLineCount, ready, blockers]
+      properties:
+        claimId:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/ClaimStatus'
+        currencyCode:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        approvedTotal:
+          type: string
+          description: |
+            The sum of every line's approved amount, summed on the server once. Exact decimal
+            as a string, never a JSON number and never a total a frontend added up.
+        payerTotal:
+          type: string
+        memberTotal:
+          type: string
+          description: payerTotal plus memberTotal is exactly approvedTotal.
+        lineCount:
+          type: integer
+          minimum: 0
+        decidedLineCount:
+          type: integer
+          minimum: 0
+        ready:
+          type: boolean
+        blockers:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClaimInvoiceBlocker'

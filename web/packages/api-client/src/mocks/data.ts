@@ -1140,6 +1140,8 @@ const ADMIN_PERMISSIONS = [
   'entitlement.mapping.manage',
   'member.contact.read',
   'member.contact.manage',
+  // A back-office administrator reads claims; deciding one is a reviewer's job.
+  'claim.read',
   // Every move through the request lifecycle is its own grant: the person who asks for
   // something is not the person who grants it, so `review` is never implied by `create`.
   'service_request.read',
@@ -1197,6 +1199,10 @@ const REVIEWER_PERMISSIONS = [
   'worklist.claim',
   'document.read',
   'notification.read',
+  // The financial half of a claim review (WP-I5-04). No clinical grant sits beside it, which
+  // is what makes the financial projection the one this account is served.
+  'claim.read',
+  'claim.financial.review',
 ];
 
 /**
@@ -1228,6 +1234,11 @@ const PROVIDER_PERMISSIONS = [
   'organization.read',
   'catalog.read',
   'provider.read',
+  // The provider's billing side (WP-I5-04): raise, send, and take back a claim.
+  'claim.read',
+  'claim.create',
+  'claim.submit',
+  'claim.cancel',
 ];
 
 /**
@@ -1240,6 +1251,9 @@ const SPONSOR_HR_PERMISSIONS = [
   'member.read',
   'service_request.read',
   'health.case.read',
+  // It reads claims and is served the financial projection of every one of them: the money
+  // and the process, and never a description, a diagnosis or a reviewer's clinical sentence.
+  'claim.read',
   'entitlement.read',
   'report.read',
 ];
@@ -1258,6 +1272,9 @@ const MEDICAL_REVIEWER_PERMISSIONS = [
   'health.clinical.read',
   'health.sensitive.read',
   'health.medical_report.review',
+  // The clinical half of a claim review (WP-I5-04).
+  'claim.read',
+  'claim.medical.review',
   'document.read',
   'worklist.read',
   'worklist.claim',
@@ -1366,6 +1383,127 @@ function isoDaysAgo(base: number, days: number): string {
 }
 
 /** The whole in-memory world of the mock API. */
+/**
+ * The claim (WP-I5-04). Five arrays rather than one nested shape, because that is what the
+ * schema is: a version freezes, its lines hang off it, and a line's decisions are append-only
+ * — a line decided twice has two rows and the latest is the decision.
+ */
+export interface StoredClaim {
+  id: string;
+  tenantId: string;
+  reference: string;
+  personId: string;
+  programId: string;
+  enrollmentId: string;
+  providerOrganizationId: string;
+  domainCode: string;
+  caseId: string | null;
+  fulfilmentId: string | null;
+  authorizationId: string | null;
+  currentVersionNo: number;
+  status: Schemas['ClaimStatus'];
+  serviceDateFrom: string;
+  serviceDateTo: string;
+  channel: Schemas['ServiceRequestChannel'];
+  rejectReasonCode: string | null;
+  returnReasonCode: string | null;
+  /** Clinical: served only in the clinical projection. */
+  reviewCommentMedical: string | null;
+  reviewCommentFinancial: string | null;
+  closedAt: string | null;
+  createdAt: string;
+  rowVersion: number;
+}
+
+export interface StoredClaimVersion {
+  id: string;
+  tenantId: string;
+  claimId: string;
+  versionNo: number;
+  status: Schemas['ClaimVersionStatus'];
+  submittedAt: string | null;
+  submittedBy: string | null;
+  returnedAt: string | null;
+  returnedBy: string | null;
+  returnReasonCode: string | null;
+  returnReasonText: string | null;
+  /**
+   * What the submit decided about routing and what it found, frozen. `financialRequired` is
+   * what makes "medical first, then financial" survive the medical stage.
+   */
+  financialRequired: boolean;
+  exceptions: Schemas['ClaimException'][];
+  createdAt: string;
+  rowVersion: number;
+}
+
+export interface StoredClaimLine {
+  id: string;
+  tenantId: string;
+  versionId: string;
+  lineNo: number;
+  serviceDefinitionId: string;
+  unitType: string;
+  quantity: string;
+  unitAmount: string | null;
+  lineAmount: string;
+  currencyCode: string;
+  /** The three clinical fields the financial projection drops. */
+  diagnosisId: string | null;
+  medicalReportId: string | null;
+  practitionerId: string | null;
+  description: string | null;
+  createdAt: string;
+  rowVersion: number;
+}
+
+export interface StoredClaimLineDecision {
+  id: string;
+  tenantId: string;
+  lineId: string;
+  decidedInVersionNo: number;
+  decision: Schemas['ClaimDecisionKind'];
+  approvedQuantity: string;
+  approvedAmount: string;
+  contractAmount: string | null;
+  payerAmount: string;
+  memberAmount: string;
+  reasonCode: string;
+  reasonText: string | null;
+  decidedBy: string | null;
+  decidedAt: string;
+  stage: Schemas['ClaimDecisionStage'];
+}
+
+export interface StoredClaimAdjustment {
+  id: string;
+  tenantId: string;
+  claimId: string;
+  versionNo: number;
+  adjustmentType: 'CUT' | 'RECOVERY' | 'CORRECTION';
+  amount: string;
+  currencyCode: string;
+  reasonCode: string;
+  reasonText: string | null;
+  createdBy: string | null;
+  createdAt: string;
+}
+
+/**
+ * The hold a claim draws on, as much of it as the claim needs. WP-I4-02 has no mock surface of
+ * its own — nothing in this file serves /api/v1/authorizations — so this is the smallest honest
+ * stand-in: an approved quantity per service and what has been drawn from it. It exists so the
+ * one rule the claim owns can be exercised, which is that an over-consumption is an exception
+ * and **nothing moves**, not even the part that was left.
+ */
+export interface StoredClaimAuthorization {
+  id: string;
+  tenantId: string;
+  reference: string;
+  personId: string;
+  items: { serviceDefinitionId: string; approvedQuantity: string; consumedQuantity: string }[];
+}
+
 export interface MockWorld {
   tenants: MockTenant[];
   accounts: MockAccount[];
@@ -1446,6 +1584,17 @@ export interface MockWorld {
   inpatientStays: StoredInpatientStay[];
   stayExtensions: StoredStayExtension[];
   staySegments: StoredStaySegment[];
+  /**
+   * The claim and everything that hangs off it (WP-I5-04). `claimLineDecisions` is treated as
+   * append-only here exactly as the schema treats it: nothing below ever edits a row, and the
+   * latest row for a line is the decision.
+   */
+  claims: StoredClaim[];
+  claimVersions: StoredClaimVersion[];
+  claimLines: StoredClaimLine[];
+  claimLineDecisions: StoredClaimLineDecision[];
+  claimAdjustments: StoredClaimAdjustment[];
+  claimAuthorizations: StoredClaimAuthorization[];
   /**
    * Moves a document on from SCANNING the way the scan worker does. It is the mock's
    * stand-in for the worker, so a screen can show "taranıyor" and then a verdict without
@@ -4195,6 +4344,323 @@ export function buildWorld(
     },
   ];
 
+  // The claim (WP-I5-04), appended at the very end for the same reason the reports and the
+  // stay are: `buildWorld` runs off one seeded random stream, and an id drawn earlier would
+  // change which organizations a small world gets and break four unrelated app tests.
+  //
+  // One claim per resting status a screen has to be able to draw. SUBMITTED and
+  // AUTO_ADJUDICATED are not among them on purpose: the pipeline passes through both inside
+  // one transaction and a claim is never found sitting in either, so seeding one would teach a
+  // screen to draw a state the server never serves.
+  const claims: StoredClaim[] = [];
+  const claimVersions: StoredClaimVersion[] = [];
+  const claimLines: StoredClaimLine[] = [];
+  const claimLineDecisions: StoredClaimLineDecision[] = [];
+  const claimAdjustments: StoredClaimAdjustment[] = [];
+
+  // The hold two of the claims draw on. WP-I4-02 has no mock surface, so this is the claim's
+  // own minimal stand-in; see StoredClaimAuthorization.
+  const claimAuthorizations: StoredClaimAuthorization[] = [
+    {
+      id: nextId(-30 * 86_400_000),
+      tenantId: demoA.id,
+      reference: 'AUT-20260801-CLAIMFIX',
+      personId: familyPrincipal.id,
+      items: [
+        {
+          serviceDefinitionId: defPhysio.id,
+          approvedQuantity: '4.000000',
+          consumedQuantity: '2.000000',
+        },
+      ],
+    },
+  ];
+
+  let claimSequence = 0;
+  const seedClaim = (
+    status: Schemas['ClaimStatus'],
+    daysAgo: number,
+    over: Partial<StoredClaim> = {},
+  ): StoredClaim => {
+    claimSequence += 1;
+    const row: StoredClaim = {
+      id: nextId(daysAgo * -86_400_000),
+      tenantId: demoA.id,
+      reference: `CLM-20260${String(600 + claimSequence)}-AAAAAAA${claimSequence}`,
+      personId: familyPrincipal.id,
+      programId: programHealth.id,
+      enrollmentId: familyEnrollment.id,
+      providerOrganizationId: providerRel.id,
+      domainCode: 'HEALTH',
+      caseId: caseStandard.id,
+      fulfilmentId: null,
+      authorizationId: null,
+      currentVersionNo: 1,
+      status,
+      serviceDateFrom: isoDaysAgo(base, daysAgo).slice(0, 10),
+      serviceDateTo: isoDaysAgo(base, daysAgo).slice(0, 10),
+      channel: 'PROVIDER_PORTAL',
+      rejectReasonCode: status === 'REJECTED' ? 'NOT_COVERED' : null,
+      returnReasonCode: status === 'RETURNED' ? 'DOCUMENT_MISSING' : null,
+      reviewCommentMedical: null,
+      reviewCommentFinancial: null,
+      closedAt:
+        status === 'REJECTED' || status === 'CANCELLED' ? isoDaysAgo(base, daysAgo - 1) : null,
+      createdAt: isoDaysAgo(base, daysAgo),
+      rowVersion: 2,
+      ...over,
+    };
+    claims.push(row);
+    return row;
+  };
+
+  const seedVersion = (
+    claim: StoredClaim,
+    versionNo: number,
+    status: Schemas['ClaimVersionStatus'],
+    over: Partial<StoredClaimVersion> = {},
+  ): StoredClaimVersion => {
+    const row: StoredClaimVersion = {
+      id: nextId(),
+      tenantId: demoA.id,
+      claimId: claim.id,
+      versionNo,
+      status,
+      submittedAt: status === 'DRAFT' ? null : claim.createdAt,
+      submittedBy: status === 'DRAFT' ? null : providerActorId,
+      returnedAt: null,
+      returnedBy: null,
+      returnReasonCode: null,
+      returnReasonText: null,
+      financialRequired: false,
+      exceptions: [],
+      createdAt: claim.createdAt,
+      rowVersion: 1,
+      ...over,
+    };
+    claimVersions.push(row);
+    return row;
+  };
+
+  const seedLine = (
+    version: StoredClaimVersion,
+    lineNo: number,
+    service: StoredServiceDefinition,
+    quantity: string,
+    amount: string,
+    description: string | null,
+    diagnosisId: string | null,
+  ): StoredClaimLine => {
+    const row: StoredClaimLine = {
+      id: nextId(),
+      tenantId: demoA.id,
+      versionId: version.id,
+      lineNo,
+      serviceDefinitionId: service.id,
+      unitType: service.defaultUnitType,
+      quantity,
+      unitAmount: null,
+      lineAmount: amount,
+      currencyCode: 'TRY',
+      diagnosisId,
+      medicalReportId: null,
+      practitionerId: practitioners[0]!.id,
+      description,
+      createdAt: version.createdAt,
+      rowVersion: 1,
+    };
+    claimLines.push(row);
+    return row;
+  };
+
+  const seedDecision = (
+    line: StoredClaimLine,
+    versionNo: number,
+    decision: Schemas['ClaimDecisionKind'],
+    approved: string,
+    payer: string,
+    member: string,
+    reasonCode: string,
+    stage: Schemas['ClaimDecisionStage'],
+    reasonText: string | null = null,
+  ): StoredClaimLineDecision => {
+    const row: StoredClaimLineDecision = {
+      id: nextId(),
+      tenantId: demoA.id,
+      lineId: line.id,
+      decidedInVersionNo: versionNo,
+      decision,
+      approvedQuantity: line.quantity,
+      approvedAmount: approved,
+      contractAmount: line.lineAmount,
+      payerAmount: payer,
+      memberAmount: member,
+      reasonCode,
+      reasonText,
+      decidedBy: stage === 'AUTO' ? null : doctorActorId,
+      decidedAt: line.createdAt,
+      stage,
+    };
+    claimLineDecisions.push(row);
+    return row;
+  };
+
+  // The physiotherapy diagnosis every seeded line points at, so a screen drawing the clinical
+  // projection has something to draw and the financial projection has something to drop.
+  const seededDiagnosisId = diagnoses[0]!.id;
+  const physioDescription = 'Sol diz menisküs onarımı sonrası seans';
+  const visitDescription = 'Kontrol muayenesi, sol diz';
+
+  // APPROVED, and invoice-ready: two lines, both decided, the halves adding up.
+  const claimApproved = seedClaim('APPROVED', 26, {
+    authorizationId: claimAuthorizations[0]!.id,
+    reviewCommentFinancial: 'Tarife ve ön onay ile uyumlu.',
+  });
+  const versionApproved = seedVersion(claimApproved, 1, 'SUBMITTED');
+  seedDecision(
+    seedLine(versionApproved, 1, defGpVisit, '1', '450', visitDescription, seededDiagnosisId),
+    1,
+    'APPROVED',
+    '450',
+    '360',
+    '90',
+    'AUTO_APPROVED',
+    'AUTO',
+  );
+  seedDecision(
+    seedLine(versionApproved, 2, defPhysio, '2', '500', physioDescription, seededDiagnosisId),
+    1,
+    'APPROVED',
+    '500',
+    '500',
+    '0',
+    'WITHIN_AUTHORIZATION',
+    'FINANCIAL',
+  );
+
+  // PARTIALLY_APPROVED: one line cut, and the cut is on the adjustment ledger M7 will read.
+  const claimPartial = seedClaim('PARTIALLY_APPROVED', 20);
+  const versionPartial = seedVersion(claimPartial, 1, 'SUBMITTED');
+  seedDecision(
+    seedLine(versionPartial, 1, defGpVisit, '1', '450', visitDescription, seededDiagnosisId),
+    1,
+    'APPROVED',
+    '450',
+    '360',
+    '90',
+    'AUTO_APPROVED',
+    'AUTO',
+  );
+  const partialCutLine = seedLine(
+    versionPartial,
+    2,
+    defPhysio,
+    '2',
+    '500',
+    physioDescription,
+    seededDiagnosisId,
+  );
+  seedDecision(partialCutLine, 1, 'CUT', '400', '400', '0', 'TARIFF_EXCEEDED', 'FINANCIAL');
+  claimAdjustments.push({
+    id: nextId(),
+    tenantId: demoA.id,
+    claimId: claimPartial.id,
+    versionNo: 1,
+    adjustmentType: 'CUT',
+    amount: '100',
+    currencyCode: 'TRY',
+    reasonCode: 'TARIFF_EXCEEDED',
+    reasonText: null,
+    createdBy: doctorActorId,
+    createdAt: claimPartial.createdAt,
+  });
+
+  // PENDING_MEDICAL, carrying the exception that sent it there and the financial review it
+  // still owes: this is the claim a screen draws the "why is this in front of me" list from.
+  const claimMedical = seedClaim('PENDING_MEDICAL', 4, {
+    authorizationId: claimAuthorizations[0]!.id,
+  });
+  const versionMedical = seedVersion(claimMedical, 1, 'SUBMITTED', {
+    financialRequired: true,
+    exceptions: [
+      { lineNo: 1, code: 'AUTHORIZATION_EXCEEDED', stage: 'MEDICAL', detail: '2' },
+      { lineNo: 2, code: 'RULE_FINANCIAL_REVIEW', stage: 'FINANCIAL', detail: 'HIGH_AMOUNT' },
+    ],
+  });
+  seedLine(versionMedical, 1, defPhysio, '3', '750', physioDescription, seededDiagnosisId);
+  seedLine(versionMedical, 2, defMri, '1', '2400', 'Kontrol MR', seededDiagnosisId);
+
+  // PENDING_FINANCIAL, with a duplicate suspicion naming the approved claim above.
+  const claimFinancial = seedClaim('PENDING_FINANCIAL', 3);
+  const versionFinancial = seedVersion(claimFinancial, 1, 'SUBMITTED', {
+    exceptions: [
+      {
+        lineNo: 1,
+        code: 'DUPLICATE_SUSPECTED',
+        stage: 'FINANCIAL',
+        detail: claimApproved.reference,
+      },
+    ],
+  });
+  seedLine(versionFinancial, 1, defGpVisit, '1', '450', visitDescription, seededDiagnosisId);
+
+  // RETURNED: version 1 superseded with its decision intact, version 2 a draft with the lines
+  // copied. This is the correction model, drawable.
+  const claimReturned = seedClaim('RETURNED', 8, { currentVersionNo: 2, rowVersion: 4 });
+  const returnedV1 = seedVersion(claimReturned, 1, 'SUPERSEDED', {
+    returnedAt: isoDaysAgo(base, 7),
+    returnedBy: doctorActorId,
+    returnReasonCode: 'DOCUMENT_MISSING',
+    returnReasonText: 'Ameliyat notu eklenmemiş.',
+  });
+  const returnedLine = seedLine(
+    returnedV1,
+    1,
+    defPhysio,
+    '2',
+    '500',
+    physioDescription,
+    seededDiagnosisId,
+  );
+  seedDecision(returnedLine, 1, 'CUT', '400', '400', '0', 'TARIFF_EXCEEDED', 'FINANCIAL');
+  const returnedV2 = seedVersion(claimReturned, 2, 'DRAFT');
+  seedLine(returnedV2, 1, defPhysio, '2', '500', physioDescription, seededDiagnosisId);
+
+  // REJECTED, CANCELLED and a DRAFT nobody has sent yet.
+  const claimRejected = seedClaim('REJECTED', 15);
+  const versionRejected = seedVersion(claimRejected, 1, 'SUBMITTED');
+  seedDecision(
+    seedLine(versionRejected, 1, defMri, '1', '2400', 'Kontrol MR', seededDiagnosisId),
+    1,
+    'REJECTED',
+    '0',
+    '0',
+    '0',
+    'NOT_COVERED',
+    'MEDICAL',
+    'Endikasyon dosyada gösterilmemiştir.',
+  );
+  const claimCancelled = seedClaim('CANCELLED', 10);
+  seedLine(
+    seedVersion(claimCancelled, 1, 'DRAFT'),
+    1,
+    defGpVisit,
+    '1',
+    '450',
+    visitDescription,
+    seededDiagnosisId,
+  );
+  const claimDraft = seedClaim('DRAFT', 1, { rowVersion: 1, closedAt: null });
+  seedLine(
+    seedVersion(claimDraft, 1, 'DRAFT'),
+    1,
+    defGpVisit,
+    '1',
+    '450',
+    visitDescription,
+    seededDiagnosisId,
+  );
+
   return {
     tenants,
     accounts,
@@ -4258,6 +4724,12 @@ export function buildWorld(
     inpatientStays,
     stayExtensions,
     staySegments,
+    claims,
+    claimVersions,
+    claimLines,
+    claimLineDecisions,
+    claimAdjustments,
+    claimAuthorizations,
     advanceScan,
     nextId,
     random,

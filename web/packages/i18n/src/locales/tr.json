@@ -369,7 +369,22 @@
     "STAY_SEGMENT_OVERLAP": "Segmentler aynı saatleri paylaşamaz. Refakatçi dışındaki segmentler çakışamaz.",
     "INPATIENT_ADMISSION_SERVICE_UNKNOWN": "Yatış hizmet tanımı katalogda bulunamadı; etkin bir INPATIENT_DAY tanımı gerekir.",
     "INPATIENT_STAY_DIAGNOSIS_MISMATCH": "Yatış tanısı bu vakaya ait değil.",
-    "INPATIENT_STAY_NOT_DISCHARGED": "Yatış henüz taburcu edilmedi; mutabakat yalnızca taburcu sonrası hesaplanır."
+    "INPATIENT_STAY_NOT_DISCHARGED": "Yatış henüz taburcu edilmedi; mutabakat yalnızca taburcu sonrası hesaplanır.",
+    "CLAIM_NOT_FOUND": "Hasar dosyası bulunamadı ya da bu kurumda görünmüyor.",
+    "CLAIM_VERSION_NOT_FOUND": "Hasar dosyasının bu sürümü bulunamadı.",
+    "CLAIM_VERSION_FROZEN": "Gönderilmiş sürüm değiştirilemez. Düzeltme için dosyayı iade edin; yeni sürüm taslak olarak açılır.",
+    "CLAIM_TRANSITION_INVALID": "Hasar dosyası bu durumdayken bu işlem yapılamaz.",
+    "CLAIM_STAGE_MISMATCH": "Dosya bu inceleme aşamasında değil. Tıbbi inceleme, mali incelemeden önce tamamlanır.",
+    "CLAIM_LINE_UNDECIDED": "Karara bağlanmamış satır var. Dosyayı sonuçlandırmadan önce her satır için karar girin.",
+    "CLAIM_LINE_NOT_FOUND": "Bu sürümde böyle bir satır yok.",
+    "CLAIM_LINE_REQUIRED": "Gönderim için en az bir kalem gerekli.",
+    "CLAIM_APPROVAL_NOT_PERMITTED": "Bu tutarı onaylama yetkiniz yok; onay politikası bu tutar için başka bir rol istiyor.",
+    "CLAIM_NOT_DECIDED": "Dosya henüz sonuçlanmadı. Fatura hazırlığı yalnızca onaylanmış ya da kısmen onaylanmış dosya için sorulur.",
+    "CLAIM_PROVIDER_SCOPE": "Bu sağlayıcı adına işlem yapamazsınız.",
+    "CLAIM_PROVIDER_UNKNOWN": "Seçilen kurum bu tenant'ın sağlayıcısı değil.",
+    "CLAIM_PROVIDER_PROFILE_MISSING": "Sağlayıcı profili tanımlı değil; fiyatlandırma için kurumun sağlayıcı profili oluşturulmalı.",
+    "CLAIM_ENROLLMENT_MISMATCH": "Plan kaydı bu kişiye veya programa ait değil.",
+    "CLAIM_SERVICE_UNKNOWN": "Hizmet tanımı katalogda bulunamadı."
   },
   "fieldErrors": {
     "RULE_COMPILE_FAILED": "Kural koşulu derlenemedi",

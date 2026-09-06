@@ -67,6 +67,144 @@ func (e AuthorizationStatus) Valid() bool {
 	}
 }
 
+// Defines values for ClaimDecisionKind.
+const (
+	ClaimDecisionKindAPPROVED          ClaimDecisionKind = "APPROVED"
+	ClaimDecisionKindCUT               ClaimDecisionKind = "CUT"
+	ClaimDecisionKindPARTIALLYAPPROVED ClaimDecisionKind = "PARTIALLY_APPROVED"
+	ClaimDecisionKindREJECTED          ClaimDecisionKind = "REJECTED"
+)
+
+// Valid indicates whether the value is a known member of the ClaimDecisionKind enum.
+func (e ClaimDecisionKind) Valid() bool {
+	switch e {
+	case ClaimDecisionKindAPPROVED:
+		return true
+	case ClaimDecisionKindCUT:
+		return true
+	case ClaimDecisionKindPARTIALLYAPPROVED:
+		return true
+	case ClaimDecisionKindREJECTED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ClaimDecisionStage.
+const (
+	ClaimDecisionStageAUTO      ClaimDecisionStage = "AUTO"
+	ClaimDecisionStageFINANCIAL ClaimDecisionStage = "FINANCIAL"
+	ClaimDecisionStageMEDICAL   ClaimDecisionStage = "MEDICAL"
+)
+
+// Valid indicates whether the value is a known member of the ClaimDecisionStage enum.
+func (e ClaimDecisionStage) Valid() bool {
+	switch e {
+	case ClaimDecisionStageAUTO:
+		return true
+	case ClaimDecisionStageFINANCIAL:
+		return true
+	case ClaimDecisionStageMEDICAL:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ClaimInvoiceBlocker.
+const (
+	CURRENCYNOTSINGLE          ClaimInvoiceBlocker = "CURRENCY_NOT_SINGLE"
+	LINENOTDECIDED             ClaimInvoiceBlocker = "LINE_NOT_DECIDED"
+	PROVIDERTAXIDENTITYMISSING ClaimInvoiceBlocker = "PROVIDER_TAX_IDENTITY_MISSING"
+)
+
+// Valid indicates whether the value is a known member of the ClaimInvoiceBlocker enum.
+func (e ClaimInvoiceBlocker) Valid() bool {
+	switch e {
+	case CURRENCYNOTSINGLE:
+		return true
+	case LINENOTDECIDED:
+		return true
+	case PROVIDERTAXIDENTITYMISSING:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ClaimStatus.
+const (
+	ClaimStatusAPPROVED          ClaimStatus = "APPROVED"
+	ClaimStatusAUTOADJUDICATED   ClaimStatus = "AUTO_ADJUDICATED"
+	ClaimStatusBATCHED           ClaimStatus = "BATCHED"
+	ClaimStatusCANCELLED         ClaimStatus = "CANCELLED"
+	ClaimStatusDRAFT             ClaimStatus = "DRAFT"
+	ClaimStatusINVOICED          ClaimStatus = "INVOICED"
+	ClaimStatusPARTIALLYAPPROVED ClaimStatus = "PARTIALLY_APPROVED"
+	ClaimStatusPENDINGFINANCIAL  ClaimStatus = "PENDING_FINANCIAL"
+	ClaimStatusPENDINGMEDICAL    ClaimStatus = "PENDING_MEDICAL"
+	ClaimStatusREJECTED          ClaimStatus = "REJECTED"
+	ClaimStatusRETURNED          ClaimStatus = "RETURNED"
+	ClaimStatusSETTLED           ClaimStatus = "SETTLED"
+	ClaimStatusSUBMITTED         ClaimStatus = "SUBMITTED"
+)
+
+// Valid indicates whether the value is a known member of the ClaimStatus enum.
+func (e ClaimStatus) Valid() bool {
+	switch e {
+	case ClaimStatusAPPROVED:
+		return true
+	case ClaimStatusAUTOADJUDICATED:
+		return true
+	case ClaimStatusBATCHED:
+		return true
+	case ClaimStatusCANCELLED:
+		return true
+	case ClaimStatusDRAFT:
+		return true
+	case ClaimStatusINVOICED:
+		return true
+	case ClaimStatusPARTIALLYAPPROVED:
+		return true
+	case ClaimStatusPENDINGFINANCIAL:
+		return true
+	case ClaimStatusPENDINGMEDICAL:
+		return true
+	case ClaimStatusREJECTED:
+		return true
+	case ClaimStatusRETURNED:
+		return true
+	case ClaimStatusSETTLED:
+		return true
+	case ClaimStatusSUBMITTED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ClaimVersionStatus.
+const (
+	ClaimVersionStatusDRAFT      ClaimVersionStatus = "DRAFT"
+	ClaimVersionStatusSUBMITTED  ClaimVersionStatus = "SUBMITTED"
+	ClaimVersionStatusSUPERSEDED ClaimVersionStatus = "SUPERSEDED"
+)
+
+// Valid indicates whether the value is a known member of the ClaimVersionStatus enum.
+func (e ClaimVersionStatus) Valid() bool {
+	switch e {
+	case ClaimVersionStatusDRAFT:
+		return true
+	case ClaimVersionStatusSUBMITTED:
+		return true
+	case ClaimVersionStatusSUPERSEDED:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CodeSystemStatus.
 const (
 	CodeSystemStatusACTIVE   CodeSystemStatus = "ACTIVE"
@@ -1107,16 +1245,16 @@ func (e HealthCaseType) Valid() bool {
 
 // Defines values for HealthProjection.
 const (
-	CLINICAL  HealthProjection = "CLINICAL"
-	FINANCIAL HealthProjection = "FINANCIAL"
+	HealthProjectionCLINICAL  HealthProjection = "CLINICAL"
+	HealthProjectionFINANCIAL HealthProjection = "FINANCIAL"
 )
 
 // Valid indicates whether the value is a known member of the HealthProjection enum.
 func (e HealthProjection) Valid() bool {
 	switch e {
-	case CLINICAL:
+	case HealthProjectionCLINICAL:
 		return true
-	case FINANCIAL:
+	case HealthProjectionFINANCIAL:
 		return true
 	default:
 		return false
@@ -3376,6 +3514,186 @@ func (e AccessPurposeHeader) Valid() bool {
 	}
 }
 
+// Defines values for ListClaimsParamsXAccessPurpose.
+const (
+	ListClaimsParamsXAccessPurposeAUDIT            ListClaimsParamsXAccessPurpose = "AUDIT"
+	ListClaimsParamsXAccessPurposeCLAIMREVIEW      ListClaimsParamsXAccessPurpose = "CLAIM_REVIEW"
+	ListClaimsParamsXAccessPurposeMEDICALREVIEW    ListClaimsParamsXAccessPurpose = "MEDICAL_REVIEW"
+	ListClaimsParamsXAccessPurposeMEMBERREQUEST    ListClaimsParamsXAccessPurpose = "MEMBER_REQUEST"
+	ListClaimsParamsXAccessPurposePREAUTHORIZATION ListClaimsParamsXAccessPurpose = "PRE_AUTHORIZATION"
+	ListClaimsParamsXAccessPurposeTREATMENT        ListClaimsParamsXAccessPurpose = "TREATMENT"
+)
+
+// Valid indicates whether the value is a known member of the ListClaimsParamsXAccessPurpose enum.
+func (e ListClaimsParamsXAccessPurpose) Valid() bool {
+	switch e {
+	case ListClaimsParamsXAccessPurposeAUDIT:
+		return true
+	case ListClaimsParamsXAccessPurposeCLAIMREVIEW:
+		return true
+	case ListClaimsParamsXAccessPurposeMEDICALREVIEW:
+		return true
+	case ListClaimsParamsXAccessPurposeMEMBERREQUEST:
+		return true
+	case ListClaimsParamsXAccessPurposePREAUTHORIZATION:
+		return true
+	case ListClaimsParamsXAccessPurposeTREATMENT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateClaimParamsXAccessPurpose.
+const (
+	CreateClaimParamsXAccessPurposeAUDIT            CreateClaimParamsXAccessPurpose = "AUDIT"
+	CreateClaimParamsXAccessPurposeCLAIMREVIEW      CreateClaimParamsXAccessPurpose = "CLAIM_REVIEW"
+	CreateClaimParamsXAccessPurposeMEDICALREVIEW    CreateClaimParamsXAccessPurpose = "MEDICAL_REVIEW"
+	CreateClaimParamsXAccessPurposeMEMBERREQUEST    CreateClaimParamsXAccessPurpose = "MEMBER_REQUEST"
+	CreateClaimParamsXAccessPurposePREAUTHORIZATION CreateClaimParamsXAccessPurpose = "PRE_AUTHORIZATION"
+	CreateClaimParamsXAccessPurposeTREATMENT        CreateClaimParamsXAccessPurpose = "TREATMENT"
+)
+
+// Valid indicates whether the value is a known member of the CreateClaimParamsXAccessPurpose enum.
+func (e CreateClaimParamsXAccessPurpose) Valid() bool {
+	switch e {
+	case CreateClaimParamsXAccessPurposeAUDIT:
+		return true
+	case CreateClaimParamsXAccessPurposeCLAIMREVIEW:
+		return true
+	case CreateClaimParamsXAccessPurposeMEDICALREVIEW:
+		return true
+	case CreateClaimParamsXAccessPurposeMEMBERREQUEST:
+		return true
+	case CreateClaimParamsXAccessPurposePREAUTHORIZATION:
+		return true
+	case CreateClaimParamsXAccessPurposeTREATMENT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetClaimParamsXAccessPurpose.
+const (
+	GetClaimParamsXAccessPurposeAUDIT            GetClaimParamsXAccessPurpose = "AUDIT"
+	GetClaimParamsXAccessPurposeCLAIMREVIEW      GetClaimParamsXAccessPurpose = "CLAIM_REVIEW"
+	GetClaimParamsXAccessPurposeMEDICALREVIEW    GetClaimParamsXAccessPurpose = "MEDICAL_REVIEW"
+	GetClaimParamsXAccessPurposeMEMBERREQUEST    GetClaimParamsXAccessPurpose = "MEMBER_REQUEST"
+	GetClaimParamsXAccessPurposePREAUTHORIZATION GetClaimParamsXAccessPurpose = "PRE_AUTHORIZATION"
+	GetClaimParamsXAccessPurposeTREATMENT        GetClaimParamsXAccessPurpose = "TREATMENT"
+)
+
+// Valid indicates whether the value is a known member of the GetClaimParamsXAccessPurpose enum.
+func (e GetClaimParamsXAccessPurpose) Valid() bool {
+	switch e {
+	case GetClaimParamsXAccessPurposeAUDIT:
+		return true
+	case GetClaimParamsXAccessPurposeCLAIMREVIEW:
+		return true
+	case GetClaimParamsXAccessPurposeMEDICALREVIEW:
+		return true
+	case GetClaimParamsXAccessPurposeMEMBERREQUEST:
+		return true
+	case GetClaimParamsXAccessPurposePREAUTHORIZATION:
+		return true
+	case GetClaimParamsXAccessPurposeTREATMENT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DecideClaimLinesParamsXAccessPurpose.
+const (
+	DecideClaimLinesParamsXAccessPurposeAUDIT            DecideClaimLinesParamsXAccessPurpose = "AUDIT"
+	DecideClaimLinesParamsXAccessPurposeCLAIMREVIEW      DecideClaimLinesParamsXAccessPurpose = "CLAIM_REVIEW"
+	DecideClaimLinesParamsXAccessPurposeMEDICALREVIEW    DecideClaimLinesParamsXAccessPurpose = "MEDICAL_REVIEW"
+	DecideClaimLinesParamsXAccessPurposeMEMBERREQUEST    DecideClaimLinesParamsXAccessPurpose = "MEMBER_REQUEST"
+	DecideClaimLinesParamsXAccessPurposePREAUTHORIZATION DecideClaimLinesParamsXAccessPurpose = "PRE_AUTHORIZATION"
+	DecideClaimLinesParamsXAccessPurposeTREATMENT        DecideClaimLinesParamsXAccessPurpose = "TREATMENT"
+)
+
+// Valid indicates whether the value is a known member of the DecideClaimLinesParamsXAccessPurpose enum.
+func (e DecideClaimLinesParamsXAccessPurpose) Valid() bool {
+	switch e {
+	case DecideClaimLinesParamsXAccessPurposeAUDIT:
+		return true
+	case DecideClaimLinesParamsXAccessPurposeCLAIMREVIEW:
+		return true
+	case DecideClaimLinesParamsXAccessPurposeMEDICALREVIEW:
+		return true
+	case DecideClaimLinesParamsXAccessPurposeMEMBERREQUEST:
+		return true
+	case DecideClaimLinesParamsXAccessPurposePREAUTHORIZATION:
+		return true
+	case DecideClaimLinesParamsXAccessPurposeTREATMENT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SubmitClaimParamsXAccessPurpose.
+const (
+	SubmitClaimParamsXAccessPurposeAUDIT            SubmitClaimParamsXAccessPurpose = "AUDIT"
+	SubmitClaimParamsXAccessPurposeCLAIMREVIEW      SubmitClaimParamsXAccessPurpose = "CLAIM_REVIEW"
+	SubmitClaimParamsXAccessPurposeMEDICALREVIEW    SubmitClaimParamsXAccessPurpose = "MEDICAL_REVIEW"
+	SubmitClaimParamsXAccessPurposeMEMBERREQUEST    SubmitClaimParamsXAccessPurpose = "MEMBER_REQUEST"
+	SubmitClaimParamsXAccessPurposePREAUTHORIZATION SubmitClaimParamsXAccessPurpose = "PRE_AUTHORIZATION"
+	SubmitClaimParamsXAccessPurposeTREATMENT        SubmitClaimParamsXAccessPurpose = "TREATMENT"
+)
+
+// Valid indicates whether the value is a known member of the SubmitClaimParamsXAccessPurpose enum.
+func (e SubmitClaimParamsXAccessPurpose) Valid() bool {
+	switch e {
+	case SubmitClaimParamsXAccessPurposeAUDIT:
+		return true
+	case SubmitClaimParamsXAccessPurposeCLAIMREVIEW:
+		return true
+	case SubmitClaimParamsXAccessPurposeMEDICALREVIEW:
+		return true
+	case SubmitClaimParamsXAccessPurposeMEMBERREQUEST:
+		return true
+	case SubmitClaimParamsXAccessPurposePREAUTHORIZATION:
+		return true
+	case SubmitClaimParamsXAccessPurposeTREATMENT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetClaimVersionParamsXAccessPurpose.
+const (
+	GetClaimVersionParamsXAccessPurposeAUDIT            GetClaimVersionParamsXAccessPurpose = "AUDIT"
+	GetClaimVersionParamsXAccessPurposeCLAIMREVIEW      GetClaimVersionParamsXAccessPurpose = "CLAIM_REVIEW"
+	GetClaimVersionParamsXAccessPurposeMEDICALREVIEW    GetClaimVersionParamsXAccessPurpose = "MEDICAL_REVIEW"
+	GetClaimVersionParamsXAccessPurposeMEMBERREQUEST    GetClaimVersionParamsXAccessPurpose = "MEMBER_REQUEST"
+	GetClaimVersionParamsXAccessPurposePREAUTHORIZATION GetClaimVersionParamsXAccessPurpose = "PRE_AUTHORIZATION"
+	GetClaimVersionParamsXAccessPurposeTREATMENT        GetClaimVersionParamsXAccessPurpose = "TREATMENT"
+)
+
+// Valid indicates whether the value is a known member of the GetClaimVersionParamsXAccessPurpose enum.
+func (e GetClaimVersionParamsXAccessPurpose) Valid() bool {
+	switch e {
+	case GetClaimVersionParamsXAccessPurposeAUDIT:
+		return true
+	case GetClaimVersionParamsXAccessPurposeCLAIMREVIEW:
+		return true
+	case GetClaimVersionParamsXAccessPurposeMEDICALREVIEW:
+		return true
+	case GetClaimVersionParamsXAccessPurposeMEMBERREQUEST:
+		return true
+	case GetClaimVersionParamsXAccessPurposePREAUTHORIZATION:
+		return true
+	case GetClaimVersionParamsXAccessPurposeTREATMENT:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListCodeSystemsParamsStatus.
 const (
 	ListCodeSystemsParamsStatusACTIVE   ListCodeSystemsParamsStatus = "ACTIVE"
@@ -4184,6 +4502,275 @@ type CancelInpatientStay struct {
 	ReasonText *string `json:"reasonText,omitempty"`
 }
 
+// Claim defines model for Claim.
+type Claim struct {
+	AuthorizationId *openapi_types.UUID `json:"authorizationId,omitempty"`
+	CaseId          *openapi_types.UUID `json:"caseId,omitempty"`
+
+	// Channel Where the request came from; a phone call is not the same as a portal.
+	Channel          ServiceRequestChannel `json:"channel"`
+	ClosedAt         *time.Time            `json:"closedAt,omitempty"`
+	CreatedAt        time.Time             `json:"createdAt"`
+	CurrentVersionNo int                   `json:"currentVersionNo"`
+	DomainCode       string                `json:"domainCode"`
+	EnrollmentId     openapi_types.UUID    `json:"enrollmentId"`
+
+	// Exceptions What the submit pipeline found that a person has to look at, read back from the
+	// frozen snapshot of the current version. Empty on a draft and on a claim nothing
+	// objected to.
+	Exceptions   []ClaimException    `json:"exceptions"`
+	FulfilmentId *openapi_types.UUID `json:"fulfilmentId,omitempty"`
+	Id           openapi_types.UUID  `json:"id"`
+
+	// Lines The lines of the current version, with the decision each carries.
+	Lines     []ClaimLine        `json:"lines"`
+	PersonId  openapi_types.UUID `json:"personId"`
+	ProgramId openapi_types.UUID `json:"programId"`
+
+	// Projection Which half of the record was served. It reports what the caller holds, which the
+	// caller already knows, so it reveals nothing about the patient — and it is what lets
+	// a screen say "you may not see clinical detail" instead of showing a record with
+	// holes in it.
+	Projection             HealthProjection   `json:"projection"`
+	ProviderOrganizationId openapi_types.UUID `json:"providerOrganizationId"`
+	Reference              string             `json:"reference"`
+	RejectReasonCode       *string            `json:"rejectReasonCode,omitempty"`
+	ReturnReasonCode       *string            `json:"returnReasonCode,omitempty"`
+	ReviewCommentFinancial *string            `json:"reviewCommentFinancial,omitempty"`
+
+	// ReviewCommentMedical The medical reviewer's comment. Present only in the clinical projection: it is a
+	// doctor's sentence about a patient.
+	ReviewCommentMedical *string            `json:"reviewCommentMedical,omitempty"`
+	RowVersion           int64              `json:"rowVersion"`
+	ServiceDateFrom      openapi_types.Date `json:"serviceDateFrom"`
+	ServiceDateTo        openapi_types.Date `json:"serviceDateTo"`
+
+	// Status The claim lifecycle of v1.2 12.5. INVOICED, BATCHED and SETTLED are declared because
+	// the lifecycle is one list; the commands that reach them belong to M7 and nothing in
+	// this contract puts a claim into one of them.
+	Status ClaimStatus `json:"status"`
+}
+
+// ClaimDecisionKind What was decided about one line. CUT is a reduction the payer applied to an otherwise
+// valid line; PARTIALLY_APPROVED is a smaller quantity than was claimed. They are two
+// words because a provider reads them differently and disputes them differently.
+type ClaimDecisionKind string
+
+// ClaimDecisionReason defines model for ClaimDecisionReason.
+type ClaimDecisionReason struct {
+	ReasonCode    string  `json:"reasonCode"`
+	ReasonText    *string `json:"reasonText,omitempty"`
+	ReviewComment *string `json:"reviewComment,omitempty"`
+}
+
+// ClaimDecisionStage Who decided. AUTO means the rules did and nobody looked, which is why an AUTO decision
+// never carries a `decidedBy`.
+type ClaimDecisionStage string
+
+// ClaimException One thing the submit pipeline found that a person has to look at. It is not a decision
+// — the line is still undecided — it is the answer to "why is this claim in front of me",
+// line by line, which is the first thing either reviewer's screen has to say.
+//
+// `detail` carries the fact the reviewer needs and nothing else: the reference of the
+// other claim a duplicate suspicion found, the quantity a hold still had, the code of the
+// rule that asked for a review. Never a diagnosis, never a line description.
+//
+// The three report codes — `REPORT_NOT_APPROVED`, `REPORT_OUT_OF_WINDOW`,
+// `SERVICE_NOT_IN_REPORT` — are served only in the clinical projection, for the same
+// reason `medicalReportId` is: an exception naming a treatment report says the line leans
+// on one.
+type ClaimException struct {
+	Code   string  `json:"code"`
+	Detail *string `json:"detail,omitempty"`
+
+	// LineNo Null for an exception about the claim as a whole.
+	LineNo *int `json:"lineNo,omitempty"`
+
+	// Stage Who decided. AUTO means the rules did and nobody looked, which is why an AUTO decision
+	// never carries a `decidedBy`.
+	Stage ClaimDecisionStage `json:"stage"`
+}
+
+// ClaimInvoiceBlocker Named rather than counted, so a screen can say what to fix rather than "not ready".
+type ClaimInvoiceBlocker string
+
+// ClaimInvoiceReadiness defines model for ClaimInvoiceReadiness.
+type ClaimInvoiceReadiness struct {
+	// ApprovedTotal The sum of every line's approved amount, summed on the server once. Exact decimal
+	// as a string, never a JSON number and never a total a frontend added up.
+	ApprovedTotal    string                `json:"approvedTotal"`
+	Blockers         []ClaimInvoiceBlocker `json:"blockers"`
+	ClaimId          openapi_types.UUID    `json:"claimId"`
+	CurrencyCode     string                `json:"currencyCode"`
+	DecidedLineCount int                   `json:"decidedLineCount"`
+	LineCount        int                   `json:"lineCount"`
+
+	// MemberTotal payerTotal plus memberTotal is exactly approvedTotal.
+	MemberTotal string `json:"memberTotal"`
+	PayerTotal  string `json:"payerTotal"`
+	Ready       bool   `json:"ready"`
+
+	// Status The claim lifecycle of v1.2 12.5. INVOICED, BATCHED and SETTLED are declared because
+	// the lifecycle is one list; the commands that reach them belong to M7 and nothing in
+	// this contract puts a claim into one of them.
+	Status ClaimStatus `json:"status"`
+}
+
+// ClaimLine defines model for ClaimLine.
+type ClaimLine struct {
+	CreatedAt    time.Time `json:"createdAt"`
+	CurrencyCode string    `json:"currencyCode"`
+
+	// Decision The latest decision for this line, or null while nobody has decided it. The history
+	// is append-only in the database; this is its head.
+	Decision *ClaimLineDecision `json:"decision,omitempty"`
+
+	// Description The provider's own words about the line. Present only in the clinical projection —
+	// "sol diz artroskopi sonrası kontrol" is a diagnosis in a sentence, and a provider
+	// typing a line description is not thinking about who will read it.
+	Description *string `json:"description,omitempty"`
+
+	// DiagnosisId Present only in the clinical projection. An id beside a name is an invitation to
+	// go and look it up.
+	DiagnosisId *openapi_types.UUID `json:"diagnosisId,omitempty"`
+	Id          openapi_types.UUID  `json:"id"`
+	LineAmount  string              `json:"lineAmount"`
+	LineNo      int                 `json:"lineNo"`
+
+	// MedicalReportId Present only in the clinical projection: that a line leans on a treatment report
+	// at all is a fact about the patient.
+	MedicalReportId *openapi_types.UUID `json:"medicalReportId,omitempty"`
+	PractitionerId  *openapi_types.UUID `json:"practitionerId,omitempty"`
+
+	// Quantity Exact decimal as a string, never a JSON number.
+	Quantity   string `json:"quantity"`
+	RowVersion int64  `json:"rowVersion"`
+
+	// ServiceCode The catalogue code of the service, resolved on the way out.
+	ServiceCode         *string            `json:"serviceCode,omitempty"`
+	ServiceDefinitionId openapi_types.UUID `json:"serviceDefinitionId"`
+	UnitAmount          *string            `json:"unitAmount,omitempty"`
+	UnitType            string             `json:"unitType"`
+}
+
+// ClaimLineDecision defines model for ClaimLineDecision.
+type ClaimLineDecision struct {
+	ApprovedAmount   string `json:"approvedAmount"`
+	ApprovedQuantity string `json:"approvedQuantity"`
+
+	// ContractAmount What the contract said the line costs, before anything was cut from it. Null when
+	// the pricing ladder found no contracted price, which is itself a reason for review.
+	ContractAmount *string   `json:"contractAmount,omitempty"`
+	DecidedAt      time.Time `json:"decidedAt"`
+
+	// DecidedBy Null when the rules decided it.
+	DecidedBy          *openapi_types.UUID `json:"decidedBy,omitempty"`
+	DecidedInVersionNo int                 `json:"decidedInVersionNo"`
+
+	// Decision What was decided about one line. CUT is a reduction the payer applied to an otherwise
+	// valid line; PARTIALLY_APPROVED is a smaller quantity than was claimed. They are two
+	// words because a provider reads them differently and disputes them differently.
+	Decision ClaimDecisionKind  `json:"decision"`
+	Id       openapi_types.UUID `json:"id"`
+	LineId   openapi_types.UUID `json:"lineId"`
+
+	// MemberAmount payerAmount plus memberAmount is exactly approvedAmount. It is a database CHECK as
+	// well as a validation.
+	MemberAmount string `json:"memberAmount"`
+	PayerAmount  string `json:"payerAmount"`
+	ReasonCode   string `json:"reasonCode"`
+
+	// ReasonText The reviewer's own words. A MEDICAL decision's reason text is clinical and is
+	// present only in the clinical projection.
+	ReasonText *string `json:"reasonText,omitempty"`
+
+	// Stage Who decided. AUTO means the rules did and nobody looked, which is why an AUTO decision
+	// never carries a `decidedBy`.
+	Stage ClaimDecisionStage `json:"stage"`
+}
+
+// ClaimLineDecisionInput defines model for ClaimLineDecisionInput.
+type ClaimLineDecisionInput struct {
+	ApprovedAmount   string `json:"approvedAmount"`
+	ApprovedQuantity string `json:"approvedQuantity"`
+
+	// Decision What was decided about one line. CUT is a reduction the payer applied to an otherwise
+	// valid line; PARTIALLY_APPROVED is a smaller quantity than was claimed. They are two
+	// words because a provider reads them differently and disputes them differently.
+	Decision     ClaimDecisionKind `json:"decision"`
+	LineNo       int               `json:"lineNo"`
+	MemberAmount string            `json:"memberAmount"`
+	PayerAmount  string            `json:"payerAmount"`
+	ReasonCode   string            `json:"reasonCode"`
+
+	// ReasonText Free text the reviewer typed. On a MEDICAL decision it is clinical and is served
+	// only in the clinical projection.
+	ReasonText *string `json:"reasonText,omitempty"`
+}
+
+// ClaimPage defines model for ClaimPage.
+type ClaimPage struct {
+	Items      []Claim `json:"items"`
+	NextCursor *string `json:"nextCursor"`
+}
+
+// ClaimReason defines model for ClaimReason.
+type ClaimReason struct {
+	ReasonCode string  `json:"reasonCode"`
+	ReasonText *string `json:"reasonText,omitempty"`
+}
+
+// ClaimReturnReason defines model for ClaimReturnReason.
+type ClaimReturnReason struct {
+	ReasonCode string `json:"reasonCode"`
+
+	// ReasonText What the provider has to correct, in the reviewer's words. It is stored on the
+	// version that was sent back, because the reason belongs to that version rather than
+	// to the claim as a whole.
+	ReasonText *string `json:"reasonText,omitempty"`
+}
+
+// ClaimStatus The claim lifecycle of v1.2 12.5. INVOICED, BATCHED and SETTLED are declared because
+// the lifecycle is one list; the commands that reach them belong to M7 and nothing in
+// this contract puts a claim into one of them.
+type ClaimStatus string
+
+// ClaimVersion defines model for ClaimVersion.
+type ClaimVersion struct {
+	Exceptions []ClaimException `json:"exceptions"`
+	Lines      []ClaimLine      `json:"lines"`
+
+	// Projection Which half of the record was served. It reports what the caller holds, which the
+	// caller already knows, so it reveals nothing about the patient — and it is what lets
+	// a screen say "you may not see clinical detail" instead of showing a record with
+	// holes in it.
+	Projection HealthProjection    `json:"projection"`
+	Version    ClaimVersionSummary `json:"version"`
+}
+
+// ClaimVersionList defines model for ClaimVersionList.
+type ClaimVersionList struct {
+	Items []ClaimVersionSummary `json:"items"`
+}
+
+// ClaimVersionStatus defines model for ClaimVersionStatus.
+type ClaimVersionStatus string
+
+// ClaimVersionSummary defines model for ClaimVersionSummary.
+type ClaimVersionSummary struct {
+	CreatedAt        time.Time           `json:"createdAt"`
+	Id               openapi_types.UUID  `json:"id"`
+	ReturnReasonCode *string             `json:"returnReasonCode,omitempty"`
+	ReturnReasonText *string             `json:"returnReasonText,omitempty"`
+	ReturnedAt       *time.Time          `json:"returnedAt,omitempty"`
+	ReturnedBy       *openapi_types.UUID `json:"returnedBy,omitempty"`
+	RowVersion       int64               `json:"rowVersion"`
+	Status           ClaimVersionStatus  `json:"status"`
+	SubmittedAt      *time.Time          `json:"submittedAt,omitempty"`
+	SubmittedBy      *openapi_types.UUID `json:"submittedBy,omitempty"`
+	VersionNo        int                 `json:"versionNo"`
+}
+
 // CloseHealthCase defines model for CloseHealthCase.
 type CloseHealthCase struct {
 	// ReasonText Free text kept on the audit row, not on the case. Two hundred characters is the
@@ -4409,6 +4996,21 @@ type CreateAuthorization struct {
 
 	// ValidTo When the promise stops holding and the reservations are released.
 	ValidTo time.Time `json:"validTo"`
+}
+
+// CreateClaim defines model for CreateClaim.
+type CreateClaim struct {
+	AuthorizationId        *openapi_types.UUID    `json:"authorizationId,omitempty"`
+	CaseId                 *openapi_types.UUID    `json:"caseId,omitempty"`
+	Channel                *ServiceRequestChannel `json:"channel,omitempty"`
+	EnrollmentId           openapi_types.UUID     `json:"enrollmentId"`
+	FulfilmentId           *openapi_types.UUID    `json:"fulfilmentId,omitempty"`
+	Lines                  []NewClaimLine         `json:"lines"`
+	PersonId               openapi_types.UUID     `json:"personId"`
+	ProgramId              openapi_types.UUID     `json:"programId"`
+	ProviderOrganizationId openapi_types.UUID     `json:"providerOrganizationId"`
+	ServiceDateFrom        openapi_types.Date     `json:"serviceDateFrom"`
+	ServiceDateTo          openapi_types.Date     `json:"serviceDateTo"`
 }
 
 // CreateCodeSystemRequest defines model for CreateCodeSystemRequest.
@@ -4875,6 +5477,16 @@ type CreateWorkQueue struct {
 	EscalationQueueId *openapi_types.UUID `json:"escalationQueueId,omitempty"`
 	Name              string              `json:"name"`
 	SlaMinutes        *int                `json:"slaMinutes,omitempty"`
+}
+
+// DecideClaimLines defines model for DecideClaimLines.
+type DecideClaimLines struct {
+	Decisions []ClaimLineDecisionInput `json:"decisions"`
+
+	// ReviewComment The reviewer's comment on the claim as a whole. It is stored on the medical or the
+	// financial comment column according to the stage, which is why the two are separate
+	// columns rather than one with a flag.
+	ReviewComment *string `json:"reviewComment,omitempty"`
 }
 
 // DecideMedicalReport defines model for DecideMedicalReport.
@@ -5960,6 +6572,21 @@ type MemberImportRowStatus string
 // MemberShareMethod How much of the price the member carries; NONE means the payer carries all of it.
 type MemberShareMethod string
 
+// NewClaimLine defines model for NewClaimLine.
+type NewClaimLine struct {
+	CurrencyCode        *string             `json:"currencyCode,omitempty"`
+	Description         *string             `json:"description,omitempty"`
+	DiagnosisId         *openapi_types.UUID `json:"diagnosisId,omitempty"`
+	LineAmount          string              `json:"lineAmount"`
+	LineNo              int                 `json:"lineNo"`
+	MedicalReportId     *openapi_types.UUID `json:"medicalReportId,omitempty"`
+	PractitionerId      *openapi_types.UUID `json:"practitionerId,omitempty"`
+	Quantity            string              `json:"quantity"`
+	ServiceDefinitionId openapi_types.UUID  `json:"serviceDefinitionId"`
+	UnitAmount          *string             `json:"unitAmount,omitempty"`
+	UnitType            string              `json:"unitType"`
+}
+
 // NotificationChannel How a message reaches somebody. EMAIL goes through SMTP; SMS is recorded until a
 // provider is chosen; PUSH is recorded and not delivered in this milestone; INAPP is
 // delivered by being recorded, because the message log is what a screen reads.
@@ -6326,6 +6953,17 @@ type PartyCatalogs struct {
 	IdentifierTypes   []PartyCatalogEntry `json:"identifierTypes"`
 	MembershipTypes   []PartyCatalogEntry `json:"membershipTypes"`
 	RelationshipTypes []PartyCatalogEntry `json:"relationshipTypes"`
+}
+
+// PatchClaimDraft Every field is sent every time: a merge would make "clear the authorization"
+// unexpressible.
+type PatchClaimDraft struct {
+	AuthorizationId *openapi_types.UUID    `json:"authorizationId,omitempty"`
+	CaseId          *openapi_types.UUID    `json:"caseId,omitempty"`
+	Channel         *ServiceRequestChannel `json:"channel,omitempty"`
+	FulfilmentId    *openapi_types.UUID    `json:"fulfilmentId,omitempty"`
+	ServiceDateFrom openapi_types.Date     `json:"serviceDateFrom"`
+	ServiceDateTo   openapi_types.Date     `json:"serviceDateTo"`
 }
 
 // PatchMedicalReportDraft defines model for PatchMedicalReportDraft.
@@ -7106,6 +7744,11 @@ type PutApprovalPolicies struct {
 	// Policies The whole set for this action. An empty array is a legitimate request: it means
 	// this action needs no policy at all, and it removes whatever was there.
 	Policies []ApprovalPolicyInput `json:"policies"`
+}
+
+// PutClaimLines defines model for PutClaimLines.
+type PutClaimLines struct {
+	Lines []NewClaimLine `json:"lines"`
 }
 
 // PutEncounterDiagnoses defines model for PutEncounterDiagnoses.
@@ -8467,6 +9110,9 @@ type AuthorizationId = openapi_types.UUID
 // CaseId defines model for CaseId.
 type CaseId = openapi_types.UUID
 
+// ClaimId defines model for ClaimId.
+type ClaimId = openapi_types.UUID
+
 // CodeSystemId defines model for CodeSystemId.
 type CodeSystemId = openapi_types.UUID
 
@@ -8592,6 +9238,9 @@ type StayId = openapi_types.UUID
 
 // TenantHeader defines model for TenantHeader.
 type TenantHeader = openapi_types.UUID
+
+// VersionNo defines model for VersionNo.
+type VersionNo = int
 
 // WorkItemId defines model for WorkItemId.
 type WorkItemId = openapi_types.UUID
@@ -8740,6 +9389,277 @@ type IssueVoucherParams struct {
 	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
 	XTenantID TenantHeader `json:"X-Tenant-ID"`
 }
+
+// ListClaimsParams defines parameters for ListClaims.
+type ListClaimsParams struct {
+	// Cursor Opaque cursor from the previous response.
+	Cursor                 *Cursor             `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit                  *Limit              `form:"limit,omitempty" json:"limit,omitempty"`
+	PersonId               *openapi_types.UUID `form:"personId,omitempty" json:"personId,omitempty"`
+	CaseId                 *openapi_types.UUID `form:"caseId,omitempty" json:"caseId,omitempty"`
+	ProviderOrganizationId *openapi_types.UUID `form:"providerOrganizationId,omitempty" json:"providerOrganizationId,omitempty"`
+	Status                 *ClaimStatus        `form:"status,omitempty" json:"status,omitempty"`
+	ServiceDateFrom        *openapi_types.Date `form:"serviceDateFrom,omitempty" json:"serviceDateFrom,omitempty"`
+	ServiceDateTo          *openapi_types.Date `form:"serviceDateTo,omitempty" json:"serviceDateTo,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// XAccessPurpose Why the caller is opening clinical data, as a code from the clinical access purpose
+	// reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+	// MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+	// read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+	// event, because "who read this" without "why" is not an answer a data protection
+	// review can use.
+	XAccessPurpose *ListClaimsParamsXAccessPurpose `json:"X-Access-Purpose,omitempty"`
+
+	// XAccessReason Free text beside the purpose, at most 200 characters once decoded, kept on the access
+	// event. It never carries an identifier: the event already names the person and the
+	// actor.
+	//
+	// The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+	// ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+	// the Turkish somebody would actually type. A value with no percent sequences decodes
+	// to itself, so a plain ASCII reason may be sent as it is.
+	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+}
+
+// ListClaimsParamsXAccessPurpose defines parameters for ListClaims.
+type ListClaimsParamsXAccessPurpose string
+
+// CreateClaimParams defines parameters for CreateClaim.
+type CreateClaimParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+
+	// XAccessPurpose Why the caller is opening clinical data, as a code from the clinical access purpose
+	// reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+	// MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+	// read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+	// event, because "who read this" without "why" is not an answer a data protection
+	// review can use.
+	XAccessPurpose *CreateClaimParamsXAccessPurpose `json:"X-Access-Purpose,omitempty"`
+
+	// XAccessReason Free text beside the purpose, at most 200 characters once decoded, kept on the access
+	// event. It never carries an identifier: the event already names the person and the
+	// actor.
+	//
+	// The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+	// ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+	// the Turkish somebody would actually type. A value with no percent sequences decodes
+	// to itself, so a plain ASCII reason may be sent as it is.
+	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+}
+
+// CreateClaimParamsXAccessPurpose defines parameters for CreateClaim.
+type CreateClaimParamsXAccessPurpose string
+
+// GetClaimParams defines parameters for GetClaim.
+type GetClaimParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// XAccessPurpose Why the caller is opening clinical data, as a code from the clinical access purpose
+	// reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+	// MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+	// read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+	// event, because "who read this" without "why" is not an answer a data protection
+	// review can use.
+	XAccessPurpose *GetClaimParamsXAccessPurpose `json:"X-Access-Purpose,omitempty"`
+
+	// XAccessReason Free text beside the purpose, at most 200 characters once decoded, kept on the access
+	// event. It never carries an identifier: the event already names the person and the
+	// actor.
+	//
+	// The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+	// ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+	// the Turkish somebody would actually type. A value with no percent sequences decodes
+	// to itself, so a plain ASCII reason may be sent as it is.
+	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+}
+
+// GetClaimParamsXAccessPurpose defines parameters for GetClaim.
+type GetClaimParamsXAccessPurpose string
+
+// PatchClaimDraftParams defines parameters for PatchClaimDraft.
+type PatchClaimDraftParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ApproveClaimParams defines parameters for ApproveClaim.
+type ApproveClaimParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// CancelClaimParams defines parameters for CancelClaim.
+type CancelClaimParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// GetClaimInvoiceReadinessParams defines parameters for GetClaimInvoiceReadiness.
+type GetClaimInvoiceReadinessParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// DecideClaimLinesParams defines parameters for DecideClaimLines.
+type DecideClaimLinesParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+
+	// XAccessPurpose Why the caller is opening clinical data, as a code from the clinical access purpose
+	// reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+	// MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+	// read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+	// event, because "who read this" without "why" is not an answer a data protection
+	// review can use.
+	XAccessPurpose *DecideClaimLinesParamsXAccessPurpose `json:"X-Access-Purpose,omitempty"`
+
+	// XAccessReason Free text beside the purpose, at most 200 characters once decoded, kept on the access
+	// event. It never carries an identifier: the event already names the person and the
+	// actor.
+	//
+	// The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+	// ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+	// the Turkish somebody would actually type. A value with no percent sequences decodes
+	// to itself, so a plain ASCII reason may be sent as it is.
+	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+}
+
+// DecideClaimLinesParamsXAccessPurpose defines parameters for DecideClaimLines.
+type DecideClaimLinesParamsXAccessPurpose string
+
+// PutClaimLinesParams defines parameters for PutClaimLines.
+type PutClaimLinesParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// RejectClaimParams defines parameters for RejectClaim.
+type RejectClaimParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ReturnClaimParams defines parameters for ReturnClaim.
+type ReturnClaimParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// SubmitClaimParams defines parameters for SubmitClaim.
+type SubmitClaimParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+
+	// XAccessPurpose Why the caller is opening clinical data, as a code from the clinical access purpose
+	// reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+	// MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+	// read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+	// event, because "who read this" without "why" is not an answer a data protection
+	// review can use.
+	XAccessPurpose *SubmitClaimParamsXAccessPurpose `json:"X-Access-Purpose,omitempty"`
+
+	// XAccessReason Free text beside the purpose, at most 200 characters once decoded, kept on the access
+	// event. It never carries an identifier: the event already names the person and the
+	// actor.
+	//
+	// The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+	// ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+	// the Turkish somebody would actually type. A value with no percent sequences decodes
+	// to itself, so a plain ASCII reason may be sent as it is.
+	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+}
+
+// SubmitClaimParamsXAccessPurpose defines parameters for SubmitClaim.
+type SubmitClaimParamsXAccessPurpose string
+
+// ListClaimVersionsParams defines parameters for ListClaimVersions.
+type ListClaimVersionsParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// GetClaimVersionParams defines parameters for GetClaimVersion.
+type GetClaimVersionParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// XAccessPurpose Why the caller is opening clinical data, as a code from the clinical access purpose
+	// reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
+	// MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
+	// read without it is answered 428 ACCESS_PURPOSE_REQUIRED. It travels onto the access
+	// event, because "who read this" without "why" is not an answer a data protection
+	// review can use.
+	XAccessPurpose *GetClaimVersionParamsXAccessPurpose `json:"X-Access-Purpose,omitempty"`
+
+	// XAccessReason Free text beside the purpose, at most 200 characters once decoded, kept on the access
+	// event. It never carries an identifier: the event already names the person and the
+	// actor.
+	//
+	// The value is percent-encoded UTF-8 (`encodeURIComponent`). An HTTP header value is
+	// ISO-8859-1, so a browser refuses to send one containing ğ, ş or ı — which is most of
+	// the Turkish somebody would actually type. A value with no percent sequences decodes
+	// to itself, so a plain ASCII reason may be sent as it is.
+	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+}
+
+// GetClaimVersionParamsXAccessPurpose defines parameters for GetClaimVersion.
+type GetClaimVersionParamsXAccessPurpose string
 
 // ListCodeSystemsParams defines parameters for ListCodeSystems.
 type ListCodeSystemsParams struct {
@@ -11378,6 +12298,30 @@ type ExtendAuthorizationJSONRequestBody = ExtendAuthorization
 // IssueVoucherJSONRequestBody defines body for IssueVoucher for application/json ContentType.
 type IssueVoucherJSONRequestBody = IssueVoucher
 
+// CreateClaimJSONRequestBody defines body for CreateClaim for application/json ContentType.
+type CreateClaimJSONRequestBody = CreateClaim
+
+// PatchClaimDraftJSONRequestBody defines body for PatchClaimDraft for application/json ContentType.
+type PatchClaimDraftJSONRequestBody = PatchClaimDraft
+
+// ApproveClaimJSONRequestBody defines body for ApproveClaim for application/json ContentType.
+type ApproveClaimJSONRequestBody = ClaimDecisionReason
+
+// CancelClaimJSONRequestBody defines body for CancelClaim for application/json ContentType.
+type CancelClaimJSONRequestBody = ClaimReason
+
+// DecideClaimLinesJSONRequestBody defines body for DecideClaimLines for application/json ContentType.
+type DecideClaimLinesJSONRequestBody = DecideClaimLines
+
+// PutClaimLinesJSONRequestBody defines body for PutClaimLines for application/json ContentType.
+type PutClaimLinesJSONRequestBody = PutClaimLines
+
+// RejectClaimJSONRequestBody defines body for RejectClaim for application/json ContentType.
+type RejectClaimJSONRequestBody = ClaimDecisionReason
+
+// ReturnClaimJSONRequestBody defines body for ReturnClaim for application/json ContentType.
+type ReturnClaimJSONRequestBody = ClaimReturnReason
+
 // CreateCodeSystemJSONRequestBody defines body for CreateCodeSystem for application/json ContentType.
 type CreateCodeSystemJSONRequestBody = CreateCodeSystemRequest
 
@@ -11915,6 +12859,48 @@ type ServerInterface interface {
 
 	// (POST /api/v1/authorizations/{authorizationId}/vouchers)
 	IssueVoucher(w http.ResponseWriter, r *http.Request, authorizationId AuthorizationId, params IssueVoucherParams)
+
+	// (GET /api/v1/claims)
+	ListClaims(w http.ResponseWriter, r *http.Request, params ListClaimsParams)
+
+	// (POST /api/v1/claims)
+	CreateClaim(w http.ResponseWriter, r *http.Request, params CreateClaimParams)
+
+	// (GET /api/v1/claims/{claimId})
+	GetClaim(w http.ResponseWriter, r *http.Request, claimId ClaimId, params GetClaimParams)
+
+	// (PATCH /api/v1/claims/{claimId})
+	PatchClaimDraft(w http.ResponseWriter, r *http.Request, claimId ClaimId, params PatchClaimDraftParams)
+
+	// (POST /api/v1/claims/{claimId}/approve)
+	ApproveClaim(w http.ResponseWriter, r *http.Request, claimId ClaimId, params ApproveClaimParams)
+
+	// (POST /api/v1/claims/{claimId}/cancel)
+	CancelClaim(w http.ResponseWriter, r *http.Request, claimId ClaimId, params CancelClaimParams)
+
+	// (GET /api/v1/claims/{claimId}/invoice-readiness)
+	GetClaimInvoiceReadiness(w http.ResponseWriter, r *http.Request, claimId ClaimId, params GetClaimInvoiceReadinessParams)
+
+	// (POST /api/v1/claims/{claimId}/line-decisions)
+	DecideClaimLines(w http.ResponseWriter, r *http.Request, claimId ClaimId, params DecideClaimLinesParams)
+
+	// (PUT /api/v1/claims/{claimId}/lines)
+	PutClaimLines(w http.ResponseWriter, r *http.Request, claimId ClaimId, params PutClaimLinesParams)
+
+	// (POST /api/v1/claims/{claimId}/reject)
+	RejectClaim(w http.ResponseWriter, r *http.Request, claimId ClaimId, params RejectClaimParams)
+
+	// (POST /api/v1/claims/{claimId}/return)
+	ReturnClaim(w http.ResponseWriter, r *http.Request, claimId ClaimId, params ReturnClaimParams)
+
+	// (POST /api/v1/claims/{claimId}/submit)
+	SubmitClaim(w http.ResponseWriter, r *http.Request, claimId ClaimId, params SubmitClaimParams)
+
+	// (GET /api/v1/claims/{claimId}/versions)
+	ListClaimVersions(w http.ResponseWriter, r *http.Request, claimId ClaimId, params ListClaimVersionsParams)
+
+	// (GET /api/v1/claims/{claimId}/versions/{versionNo})
+	GetClaimVersion(w http.ResponseWriter, r *http.Request, claimId ClaimId, versionNo VersionNo, params GetClaimVersionParams)
 
 	// (GET /api/v1/code-systems)
 	ListCodeSystems(w http.ResponseWriter, r *http.Request, params ListCodeSystemsParams)
@@ -12612,6 +13598,76 @@ func (_ Unimplemented) ExtendAuthorization(w http.ResponseWriter, r *http.Reques
 
 // (POST /api/v1/authorizations/{authorizationId}/vouchers)
 func (_ Unimplemented) IssueVoucher(w http.ResponseWriter, r *http.Request, authorizationId AuthorizationId, params IssueVoucherParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/claims)
+func (_ Unimplemented) ListClaims(w http.ResponseWriter, r *http.Request, params ListClaimsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/claims)
+func (_ Unimplemented) CreateClaim(w http.ResponseWriter, r *http.Request, params CreateClaimParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/claims/{claimId})
+func (_ Unimplemented) GetClaim(w http.ResponseWriter, r *http.Request, claimId ClaimId, params GetClaimParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PATCH /api/v1/claims/{claimId})
+func (_ Unimplemented) PatchClaimDraft(w http.ResponseWriter, r *http.Request, claimId ClaimId, params PatchClaimDraftParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/claims/{claimId}/approve)
+func (_ Unimplemented) ApproveClaim(w http.ResponseWriter, r *http.Request, claimId ClaimId, params ApproveClaimParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/claims/{claimId}/cancel)
+func (_ Unimplemented) CancelClaim(w http.ResponseWriter, r *http.Request, claimId ClaimId, params CancelClaimParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/claims/{claimId}/invoice-readiness)
+func (_ Unimplemented) GetClaimInvoiceReadiness(w http.ResponseWriter, r *http.Request, claimId ClaimId, params GetClaimInvoiceReadinessParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/claims/{claimId}/line-decisions)
+func (_ Unimplemented) DecideClaimLines(w http.ResponseWriter, r *http.Request, claimId ClaimId, params DecideClaimLinesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PUT /api/v1/claims/{claimId}/lines)
+func (_ Unimplemented) PutClaimLines(w http.ResponseWriter, r *http.Request, claimId ClaimId, params PutClaimLinesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/claims/{claimId}/reject)
+func (_ Unimplemented) RejectClaim(w http.ResponseWriter, r *http.Request, claimId ClaimId, params RejectClaimParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/claims/{claimId}/return)
+func (_ Unimplemented) ReturnClaim(w http.ResponseWriter, r *http.Request, claimId ClaimId, params ReturnClaimParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/claims/{claimId}/submit)
+func (_ Unimplemented) SubmitClaim(w http.ResponseWriter, r *http.Request, claimId ClaimId, params SubmitClaimParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/claims/{claimId}/versions)
+func (_ Unimplemented) ListClaimVersions(w http.ResponseWriter, r *http.Request, claimId ClaimId, params ListClaimVersionsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/claims/{claimId}/versions/{versionNo})
+func (_ Unimplemented) GetClaimVersion(w http.ResponseWriter, r *http.Request, claimId ClaimId, versionNo VersionNo, params GetClaimVersionParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -14369,6 +15425,1476 @@ func (siw *ServerInterfaceWrapper) IssueVoucher(w http.ResponseWriter, r *http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.IssueVoucher(w, r, authorizationId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListClaims operation middleware
+func (siw *ServerInterfaceWrapper) ListClaims(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListClaimsParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "personId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "personId", r.URL.Query(), &params.PersonId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "personId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "personId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "caseId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "caseId", r.URL.Query(), &params.CaseId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "caseId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "caseId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "providerOrganizationId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "providerOrganizationId", r.URL.Query(), &params.ProviderOrganizationId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "providerOrganizationId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "providerOrganizationId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "serviceDateFrom" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "serviceDateFrom", r.URL.Query(), &params.ServiceDateFrom, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "serviceDateFrom"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "serviceDateFrom", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "serviceDateTo" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "serviceDateTo", r.URL.Query(), &params.ServiceDateTo, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "serviceDateTo"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "serviceDateTo", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-Access-Purpose" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Purpose")]; found {
+		var XAccessPurpose ListClaimsParamsXAccessPurpose
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Purpose", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Purpose", valueList[0], &XAccessPurpose, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Purpose", Err: err})
+			return
+		}
+
+		params.XAccessPurpose = &XAccessPurpose
+
+	}
+
+	// ------------- Optional header parameter "X-Access-Reason" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Reason")]; found {
+		var XAccessReason AccessReasonHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Reason", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Reason", valueList[0], &XAccessReason, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Reason", Err: err})
+			return
+		}
+
+		params.XAccessReason = &XAccessReason
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListClaims(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateClaim operation middleware
+func (siw *ServerInterfaceWrapper) CreateClaim(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateClaimParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-Access-Purpose" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Purpose")]; found {
+		var XAccessPurpose CreateClaimParamsXAccessPurpose
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Purpose", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Purpose", valueList[0], &XAccessPurpose, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Purpose", Err: err})
+			return
+		}
+
+		params.XAccessPurpose = &XAccessPurpose
+
+	}
+
+	// ------------- Optional header parameter "X-Access-Reason" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Reason")]; found {
+		var XAccessReason AccessReasonHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Reason", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Reason", valueList[0], &XAccessReason, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Reason", Err: err})
+			return
+		}
+
+		params.XAccessReason = &XAccessReason
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateClaim(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetClaim operation middleware
+func (siw *ServerInterfaceWrapper) GetClaim(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "claimId" -------------
+	var claimId ClaimId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "claimId", chi.URLParam(r, "claimId"), &claimId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "claimId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetClaimParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-Access-Purpose" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Purpose")]; found {
+		var XAccessPurpose GetClaimParamsXAccessPurpose
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Purpose", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Purpose", valueList[0], &XAccessPurpose, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Purpose", Err: err})
+			return
+		}
+
+		params.XAccessPurpose = &XAccessPurpose
+
+	}
+
+	// ------------- Optional header parameter "X-Access-Reason" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Reason")]; found {
+		var XAccessReason AccessReasonHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Reason", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Reason", valueList[0], &XAccessReason, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Reason", Err: err})
+			return
+		}
+
+		params.XAccessReason = &XAccessReason
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetClaim(w, r, claimId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PatchClaimDraft operation middleware
+func (siw *ServerInterfaceWrapper) PatchClaimDraft(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "claimId" -------------
+	var claimId ClaimId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "claimId", chi.URLParam(r, "claimId"), &claimId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "claimId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PatchClaimDraftParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PatchClaimDraft(w, r, claimId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ApproveClaim operation middleware
+func (siw *ServerInterfaceWrapper) ApproveClaim(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "claimId" -------------
+	var claimId ClaimId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "claimId", chi.URLParam(r, "claimId"), &claimId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "claimId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ApproveClaimParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ApproveClaim(w, r, claimId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CancelClaim operation middleware
+func (siw *ServerInterfaceWrapper) CancelClaim(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "claimId" -------------
+	var claimId ClaimId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "claimId", chi.URLParam(r, "claimId"), &claimId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "claimId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CancelClaimParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CancelClaim(w, r, claimId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetClaimInvoiceReadiness operation middleware
+func (siw *ServerInterfaceWrapper) GetClaimInvoiceReadiness(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "claimId" -------------
+	var claimId ClaimId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "claimId", chi.URLParam(r, "claimId"), &claimId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "claimId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetClaimInvoiceReadinessParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetClaimInvoiceReadiness(w, r, claimId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DecideClaimLines operation middleware
+func (siw *ServerInterfaceWrapper) DecideClaimLines(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "claimId" -------------
+	var claimId ClaimId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "claimId", chi.URLParam(r, "claimId"), &claimId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "claimId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DecideClaimLinesParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-Access-Purpose" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Purpose")]; found {
+		var XAccessPurpose DecideClaimLinesParamsXAccessPurpose
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Purpose", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Purpose", valueList[0], &XAccessPurpose, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Purpose", Err: err})
+			return
+		}
+
+		params.XAccessPurpose = &XAccessPurpose
+
+	}
+
+	// ------------- Optional header parameter "X-Access-Reason" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Reason")]; found {
+		var XAccessReason AccessReasonHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Reason", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Reason", valueList[0], &XAccessReason, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Reason", Err: err})
+			return
+		}
+
+		params.XAccessReason = &XAccessReason
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DecideClaimLines(w, r, claimId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutClaimLines operation middleware
+func (siw *ServerInterfaceWrapper) PutClaimLines(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "claimId" -------------
+	var claimId ClaimId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "claimId", chi.URLParam(r, "claimId"), &claimId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "claimId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PutClaimLinesParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutClaimLines(w, r, claimId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RejectClaim operation middleware
+func (siw *ServerInterfaceWrapper) RejectClaim(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "claimId" -------------
+	var claimId ClaimId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "claimId", chi.URLParam(r, "claimId"), &claimId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "claimId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RejectClaimParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RejectClaim(w, r, claimId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReturnClaim operation middleware
+func (siw *ServerInterfaceWrapper) ReturnClaim(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "claimId" -------------
+	var claimId ClaimId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "claimId", chi.URLParam(r, "claimId"), &claimId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "claimId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ReturnClaimParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReturnClaim(w, r, claimId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SubmitClaim operation middleware
+func (siw *ServerInterfaceWrapper) SubmitClaim(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "claimId" -------------
+	var claimId ClaimId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "claimId", chi.URLParam(r, "claimId"), &claimId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "claimId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SubmitClaimParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-Access-Purpose" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Purpose")]; found {
+		var XAccessPurpose SubmitClaimParamsXAccessPurpose
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Purpose", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Purpose", valueList[0], &XAccessPurpose, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Purpose", Err: err})
+			return
+		}
+
+		params.XAccessPurpose = &XAccessPurpose
+
+	}
+
+	// ------------- Optional header parameter "X-Access-Reason" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Reason")]; found {
+		var XAccessReason AccessReasonHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Reason", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Reason", valueList[0], &XAccessReason, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Reason", Err: err})
+			return
+		}
+
+		params.XAccessReason = &XAccessReason
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SubmitClaim(w, r, claimId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListClaimVersions operation middleware
+func (siw *ServerInterfaceWrapper) ListClaimVersions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "claimId" -------------
+	var claimId ClaimId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "claimId", chi.URLParam(r, "claimId"), &claimId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "claimId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListClaimVersionsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListClaimVersions(w, r, claimId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetClaimVersion operation middleware
+func (siw *ServerInterfaceWrapper) GetClaimVersion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "claimId" -------------
+	var claimId ClaimId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "claimId", chi.URLParam(r, "claimId"), &claimId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "claimId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "versionNo" -------------
+	var versionNo VersionNo
+
+	err = runtime.BindStyledParameterWithOptions("simple", "versionNo", chi.URLParam(r, "versionNo"), &versionNo, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "versionNo", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetClaimVersionParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "X-Access-Purpose" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Purpose")]; found {
+		var XAccessPurpose GetClaimVersionParamsXAccessPurpose
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Purpose", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Purpose", valueList[0], &XAccessPurpose, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Purpose", Err: err})
+			return
+		}
+
+		params.XAccessPurpose = &XAccessPurpose
+
+	}
+
+	// ------------- Optional header parameter "X-Access-Reason" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Reason")]; found {
+		var XAccessReason AccessReasonHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Reason", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Reason", valueList[0], &XAccessReason, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Reason", Err: err})
+			return
+		}
+
+		params.XAccessReason = &XAccessReason
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetClaimVersion(w, r, claimId, versionNo, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -33117,6 +35643,48 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/inpatient-stays/{stayId}/reconciliation", wrapper.GetInpatientStayReconciliation)
 	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/claims", wrapper.ListClaims)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/claims", wrapper.CreateClaim)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/claims/{claimId}", wrapper.GetClaim)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/api/v1/claims/{claimId}", wrapper.PatchClaimDraft)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/v1/claims/{claimId}/lines", wrapper.PutClaimLines)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/claims/{claimId}/submit", wrapper.SubmitClaim)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/claims/{claimId}/line-decisions", wrapper.DecideClaimLines)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/claims/{claimId}/approve", wrapper.ApproveClaim)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/claims/{claimId}/reject", wrapper.RejectClaim)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/claims/{claimId}/return", wrapper.ReturnClaim)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/claims/{claimId}/cancel", wrapper.CancelClaim)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/claims/{claimId}/versions", wrapper.ListClaimVersions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/claims/{claimId}/versions/{versionNo}", wrapper.GetClaimVersion)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/claims/{claimId}/invoice-readiness", wrapper.GetClaimInvoiceReadiness)
+	})
 
 	return r
 }
@@ -33888,6 +36456,1616 @@ func (response IssueVoucher429ApplicationProblemPlusJSONResponse) VisitIssueVouc
 		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
 	}
 	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListClaimsRequestObject struct {
+	Params ListClaimsParams
+}
+
+type ListClaimsResponseObject interface {
+	VisitListClaimsResponse(w http.ResponseWriter) error
+}
+
+type ListClaims200JSONResponse ClaimPage
+
+func (response ListClaims200JSONResponse) VisitListClaimsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListClaims400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListClaims400ApplicationProblemPlusJSONResponse) VisitListClaimsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListClaims403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListClaims403ApplicationProblemPlusJSONResponse) VisitListClaimsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListClaims422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListClaims422ApplicationProblemPlusJSONResponse) VisitListClaimsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateClaimRequestObject struct {
+	Params CreateClaimParams
+	Body   *CreateClaimJSONRequestBody
+}
+
+type CreateClaimResponseObject interface {
+	VisitCreateClaimResponse(w http.ResponseWriter) error
+}
+
+type CreateClaim201ResponseHeaders struct {
+	ETag     *string
+	Location *string
+}
+
+type CreateClaim201JSONResponse struct {
+	Body    Claim
+	Headers CreateClaim201ResponseHeaders
+}
+
+func (response CreateClaim201JSONResponse) VisitCreateClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	if response.Headers.Location != nil {
+		w.Header().Set("Location", fmt.Sprint(*response.Headers.Location))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateClaim403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CreateClaim403ApplicationProblemPlusJSONResponse) VisitCreateClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateClaim404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CreateClaim404ApplicationProblemPlusJSONResponse) VisitCreateClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateClaim422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CreateClaim422ApplicationProblemPlusJSONResponse) VisitCreateClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateClaim429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response CreateClaim429ApplicationProblemPlusJSONResponse) VisitCreateClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetClaimRequestObject struct {
+	ClaimId ClaimId `json:"claimId"`
+	Params  GetClaimParams
+}
+
+type GetClaimResponseObject interface {
+	VisitGetClaimResponse(w http.ResponseWriter) error
+}
+
+type GetClaim200ResponseHeaders struct {
+	ETag *string
+}
+
+type GetClaim200JSONResponse struct {
+	Body    Claim
+	Headers GetClaim200ResponseHeaders
+}
+
+func (response GetClaim200JSONResponse) VisitGetClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetClaim403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetClaim403ApplicationProblemPlusJSONResponse) VisitGetClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetClaim404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetClaim404ApplicationProblemPlusJSONResponse) VisitGetClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetClaim422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response GetClaim422ApplicationProblemPlusJSONResponse) VisitGetClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetClaim428ApplicationProblemPlusJSONResponse Problem
+
+func (response GetClaim428ApplicationProblemPlusJSONResponse) VisitGetClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchClaimDraftRequestObject struct {
+	ClaimId ClaimId `json:"claimId"`
+	Params  PatchClaimDraftParams
+	Body    *PatchClaimDraftJSONRequestBody
+}
+
+type PatchClaimDraftResponseObject interface {
+	VisitPatchClaimDraftResponse(w http.ResponseWriter) error
+}
+
+type PatchClaimDraft200ResponseHeaders struct {
+	ETag *string
+}
+
+type PatchClaimDraft200JSONResponse struct {
+	Body    Claim
+	Headers PatchClaimDraft200ResponseHeaders
+}
+
+func (response PatchClaimDraft200JSONResponse) VisitPatchClaimDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchClaimDraft403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response PatchClaimDraft403ApplicationProblemPlusJSONResponse) VisitPatchClaimDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchClaimDraft404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response PatchClaimDraft404ApplicationProblemPlusJSONResponse) VisitPatchClaimDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchClaimDraft409ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchClaimDraft409ApplicationProblemPlusJSONResponse) VisitPatchClaimDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchClaimDraft412ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchClaimDraft412ApplicationProblemPlusJSONResponse) VisitPatchClaimDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchClaimDraft422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response PatchClaimDraft422ApplicationProblemPlusJSONResponse) VisitPatchClaimDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchClaimDraft428ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchClaimDraft428ApplicationProblemPlusJSONResponse) VisitPatchClaimDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveClaimRequestObject struct {
+	ClaimId ClaimId `json:"claimId"`
+	Params  ApproveClaimParams
+	Body    *ApproveClaimJSONRequestBody
+}
+
+type ApproveClaimResponseObject interface {
+	VisitApproveClaimResponse(w http.ResponseWriter) error
+}
+
+type ApproveClaim200ResponseHeaders struct {
+	ETag *string
+}
+
+type ApproveClaim200JSONResponse struct {
+	Body    Claim
+	Headers ApproveClaim200ResponseHeaders
+}
+
+func (response ApproveClaim200JSONResponse) VisitApproveClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveClaim403ApplicationProblemPlusJSONResponse Problem
+
+func (response ApproveClaim403ApplicationProblemPlusJSONResponse) VisitApproveClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveClaim404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ApproveClaim404ApplicationProblemPlusJSONResponse) VisitApproveClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveClaim409ApplicationProblemPlusJSONResponse Problem
+
+func (response ApproveClaim409ApplicationProblemPlusJSONResponse) VisitApproveClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveClaim412ApplicationProblemPlusJSONResponse Problem
+
+func (response ApproveClaim412ApplicationProblemPlusJSONResponse) VisitApproveClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveClaim422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ApproveClaim422ApplicationProblemPlusJSONResponse) VisitApproveClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveClaim428ApplicationProblemPlusJSONResponse Problem
+
+func (response ApproveClaim428ApplicationProblemPlusJSONResponse) VisitApproveClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveClaim429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response ApproveClaim429ApplicationProblemPlusJSONResponse) VisitApproveClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelClaimRequestObject struct {
+	ClaimId ClaimId `json:"claimId"`
+	Params  CancelClaimParams
+	Body    *CancelClaimJSONRequestBody
+}
+
+type CancelClaimResponseObject interface {
+	VisitCancelClaimResponse(w http.ResponseWriter) error
+}
+
+type CancelClaim200ResponseHeaders struct {
+	ETag *string
+}
+
+type CancelClaim200JSONResponse struct {
+	Body    Claim
+	Headers CancelClaim200ResponseHeaders
+}
+
+func (response CancelClaim200JSONResponse) VisitCancelClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelClaim403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CancelClaim403ApplicationProblemPlusJSONResponse) VisitCancelClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelClaim404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CancelClaim404ApplicationProblemPlusJSONResponse) VisitCancelClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelClaim409ApplicationProblemPlusJSONResponse Problem
+
+func (response CancelClaim409ApplicationProblemPlusJSONResponse) VisitCancelClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelClaim412ApplicationProblemPlusJSONResponse Problem
+
+func (response CancelClaim412ApplicationProblemPlusJSONResponse) VisitCancelClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelClaim422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CancelClaim422ApplicationProblemPlusJSONResponse) VisitCancelClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelClaim428ApplicationProblemPlusJSONResponse Problem
+
+func (response CancelClaim428ApplicationProblemPlusJSONResponse) VisitCancelClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelClaim429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response CancelClaim429ApplicationProblemPlusJSONResponse) VisitCancelClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetClaimInvoiceReadinessRequestObject struct {
+	ClaimId ClaimId `json:"claimId"`
+	Params  GetClaimInvoiceReadinessParams
+}
+
+type GetClaimInvoiceReadinessResponseObject interface {
+	VisitGetClaimInvoiceReadinessResponse(w http.ResponseWriter) error
+}
+
+type GetClaimInvoiceReadiness200JSONResponse ClaimInvoiceReadiness
+
+func (response GetClaimInvoiceReadiness200JSONResponse) VisitGetClaimInvoiceReadinessResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetClaimInvoiceReadiness403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetClaimInvoiceReadiness403ApplicationProblemPlusJSONResponse) VisitGetClaimInvoiceReadinessResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetClaimInvoiceReadiness404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetClaimInvoiceReadiness404ApplicationProblemPlusJSONResponse) VisitGetClaimInvoiceReadinessResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetClaimInvoiceReadiness409ApplicationProblemPlusJSONResponse Problem
+
+func (response GetClaimInvoiceReadiness409ApplicationProblemPlusJSONResponse) VisitGetClaimInvoiceReadinessResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetClaimInvoiceReadiness422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response GetClaimInvoiceReadiness422ApplicationProblemPlusJSONResponse) VisitGetClaimInvoiceReadinessResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DecideClaimLinesRequestObject struct {
+	ClaimId ClaimId `json:"claimId"`
+	Params  DecideClaimLinesParams
+	Body    *DecideClaimLinesJSONRequestBody
+}
+
+type DecideClaimLinesResponseObject interface {
+	VisitDecideClaimLinesResponse(w http.ResponseWriter) error
+}
+
+type DecideClaimLines200ResponseHeaders struct {
+	ETag *string
+}
+
+type DecideClaimLines200JSONResponse struct {
+	Body    Claim
+	Headers DecideClaimLines200ResponseHeaders
+}
+
+func (response DecideClaimLines200JSONResponse) VisitDecideClaimLinesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DecideClaimLines403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DecideClaimLines403ApplicationProblemPlusJSONResponse) VisitDecideClaimLinesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DecideClaimLines404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response DecideClaimLines404ApplicationProblemPlusJSONResponse) VisitDecideClaimLinesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DecideClaimLines409ApplicationProblemPlusJSONResponse Problem
+
+func (response DecideClaimLines409ApplicationProblemPlusJSONResponse) VisitDecideClaimLinesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DecideClaimLines412ApplicationProblemPlusJSONResponse Problem
+
+func (response DecideClaimLines412ApplicationProblemPlusJSONResponse) VisitDecideClaimLinesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DecideClaimLines422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response DecideClaimLines422ApplicationProblemPlusJSONResponse) VisitDecideClaimLinesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DecideClaimLines428ApplicationProblemPlusJSONResponse Problem
+
+func (response DecideClaimLines428ApplicationProblemPlusJSONResponse) VisitDecideClaimLinesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DecideClaimLines429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response DecideClaimLines429ApplicationProblemPlusJSONResponse) VisitDecideClaimLinesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutClaimLinesRequestObject struct {
+	ClaimId ClaimId `json:"claimId"`
+	Params  PutClaimLinesParams
+	Body    *PutClaimLinesJSONRequestBody
+}
+
+type PutClaimLinesResponseObject interface {
+	VisitPutClaimLinesResponse(w http.ResponseWriter) error
+}
+
+type PutClaimLines200ResponseHeaders struct {
+	ETag *string
+}
+
+type PutClaimLines200JSONResponse struct {
+	Body    Claim
+	Headers PutClaimLines200ResponseHeaders
+}
+
+func (response PutClaimLines200JSONResponse) VisitPutClaimLinesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutClaimLines403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response PutClaimLines403ApplicationProblemPlusJSONResponse) VisitPutClaimLinesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutClaimLines404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response PutClaimLines404ApplicationProblemPlusJSONResponse) VisitPutClaimLinesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutClaimLines409ApplicationProblemPlusJSONResponse Problem
+
+func (response PutClaimLines409ApplicationProblemPlusJSONResponse) VisitPutClaimLinesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutClaimLines412ApplicationProblemPlusJSONResponse Problem
+
+func (response PutClaimLines412ApplicationProblemPlusJSONResponse) VisitPutClaimLinesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutClaimLines422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response PutClaimLines422ApplicationProblemPlusJSONResponse) VisitPutClaimLinesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutClaimLines428ApplicationProblemPlusJSONResponse Problem
+
+func (response PutClaimLines428ApplicationProblemPlusJSONResponse) VisitPutClaimLinesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectClaimRequestObject struct {
+	ClaimId ClaimId `json:"claimId"`
+	Params  RejectClaimParams
+	Body    *RejectClaimJSONRequestBody
+}
+
+type RejectClaimResponseObject interface {
+	VisitRejectClaimResponse(w http.ResponseWriter) error
+}
+
+type RejectClaim200ResponseHeaders struct {
+	ETag *string
+}
+
+type RejectClaim200JSONResponse struct {
+	Body    Claim
+	Headers RejectClaim200ResponseHeaders
+}
+
+func (response RejectClaim200JSONResponse) VisitRejectClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectClaim403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RejectClaim403ApplicationProblemPlusJSONResponse) VisitRejectClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectClaim404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response RejectClaim404ApplicationProblemPlusJSONResponse) VisitRejectClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectClaim409ApplicationProblemPlusJSONResponse Problem
+
+func (response RejectClaim409ApplicationProblemPlusJSONResponse) VisitRejectClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectClaim412ApplicationProblemPlusJSONResponse Problem
+
+func (response RejectClaim412ApplicationProblemPlusJSONResponse) VisitRejectClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectClaim422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response RejectClaim422ApplicationProblemPlusJSONResponse) VisitRejectClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectClaim428ApplicationProblemPlusJSONResponse Problem
+
+func (response RejectClaim428ApplicationProblemPlusJSONResponse) VisitRejectClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectClaim429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response RejectClaim429ApplicationProblemPlusJSONResponse) VisitRejectClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReturnClaimRequestObject struct {
+	ClaimId ClaimId `json:"claimId"`
+	Params  ReturnClaimParams
+	Body    *ReturnClaimJSONRequestBody
+}
+
+type ReturnClaimResponseObject interface {
+	VisitReturnClaimResponse(w http.ResponseWriter) error
+}
+
+type ReturnClaim200ResponseHeaders struct {
+	ETag *string
+}
+
+type ReturnClaim200JSONResponse struct {
+	Body    Claim
+	Headers ReturnClaim200ResponseHeaders
+}
+
+func (response ReturnClaim200JSONResponse) VisitReturnClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReturnClaim403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ReturnClaim403ApplicationProblemPlusJSONResponse) VisitReturnClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReturnClaim404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ReturnClaim404ApplicationProblemPlusJSONResponse) VisitReturnClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReturnClaim409ApplicationProblemPlusJSONResponse Problem
+
+func (response ReturnClaim409ApplicationProblemPlusJSONResponse) VisitReturnClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReturnClaim412ApplicationProblemPlusJSONResponse Problem
+
+func (response ReturnClaim412ApplicationProblemPlusJSONResponse) VisitReturnClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReturnClaim422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ReturnClaim422ApplicationProblemPlusJSONResponse) VisitReturnClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReturnClaim428ApplicationProblemPlusJSONResponse Problem
+
+func (response ReturnClaim428ApplicationProblemPlusJSONResponse) VisitReturnClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReturnClaim429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response ReturnClaim429ApplicationProblemPlusJSONResponse) VisitReturnClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitClaimRequestObject struct {
+	ClaimId ClaimId `json:"claimId"`
+	Params  SubmitClaimParams
+}
+
+type SubmitClaimResponseObject interface {
+	VisitSubmitClaimResponse(w http.ResponseWriter) error
+}
+
+type SubmitClaim200ResponseHeaders struct {
+	ETag *string
+}
+
+type SubmitClaim200JSONResponse struct {
+	Body    Claim
+	Headers SubmitClaim200ResponseHeaders
+}
+
+func (response SubmitClaim200JSONResponse) VisitSubmitClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitClaim403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response SubmitClaim403ApplicationProblemPlusJSONResponse) VisitSubmitClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitClaim404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response SubmitClaim404ApplicationProblemPlusJSONResponse) VisitSubmitClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitClaim409ApplicationProblemPlusJSONResponse Problem
+
+func (response SubmitClaim409ApplicationProblemPlusJSONResponse) VisitSubmitClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitClaim412ApplicationProblemPlusJSONResponse Problem
+
+func (response SubmitClaim412ApplicationProblemPlusJSONResponse) VisitSubmitClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitClaim422ApplicationProblemPlusJSONResponse Problem
+
+func (response SubmitClaim422ApplicationProblemPlusJSONResponse) VisitSubmitClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitClaim428ApplicationProblemPlusJSONResponse Problem
+
+func (response SubmitClaim428ApplicationProblemPlusJSONResponse) VisitSubmitClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitClaim429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response SubmitClaim429ApplicationProblemPlusJSONResponse) VisitSubmitClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListClaimVersionsRequestObject struct {
+	ClaimId ClaimId `json:"claimId"`
+	Params  ListClaimVersionsParams
+}
+
+type ListClaimVersionsResponseObject interface {
+	VisitListClaimVersionsResponse(w http.ResponseWriter) error
+}
+
+type ListClaimVersions200JSONResponse ClaimVersionList
+
+func (response ListClaimVersions200JSONResponse) VisitListClaimVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListClaimVersions403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListClaimVersions403ApplicationProblemPlusJSONResponse) VisitListClaimVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListClaimVersions404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ListClaimVersions404ApplicationProblemPlusJSONResponse) VisitListClaimVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListClaimVersions422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListClaimVersions422ApplicationProblemPlusJSONResponse) VisitListClaimVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetClaimVersionRequestObject struct {
+	ClaimId   ClaimId   `json:"claimId"`
+	VersionNo VersionNo `json:"versionNo"`
+	Params    GetClaimVersionParams
+}
+
+type GetClaimVersionResponseObject interface {
+	VisitGetClaimVersionResponse(w http.ResponseWriter) error
+}
+
+type GetClaimVersion200JSONResponse ClaimVersion
+
+func (response GetClaimVersion200JSONResponse) VisitGetClaimVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetClaimVersion403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetClaimVersion403ApplicationProblemPlusJSONResponse) VisitGetClaimVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetClaimVersion404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetClaimVersion404ApplicationProblemPlusJSONResponse) VisitGetClaimVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetClaimVersion422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response GetClaimVersion422ApplicationProblemPlusJSONResponse) VisitGetClaimVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetClaimVersion428ApplicationProblemPlusJSONResponse Problem
+
+func (response GetClaimVersion428ApplicationProblemPlusJSONResponse) VisitGetClaimVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -53201,6 +57379,48 @@ type StrictServerInterface interface {
 	// (POST /api/v1/authorizations/{authorizationId}/vouchers)
 	IssueVoucher(ctx context.Context, request IssueVoucherRequestObject) (IssueVoucherResponseObject, error)
 
+	// (GET /api/v1/claims)
+	ListClaims(ctx context.Context, request ListClaimsRequestObject) (ListClaimsResponseObject, error)
+
+	// (POST /api/v1/claims)
+	CreateClaim(ctx context.Context, request CreateClaimRequestObject) (CreateClaimResponseObject, error)
+
+	// (GET /api/v1/claims/{claimId})
+	GetClaim(ctx context.Context, request GetClaimRequestObject) (GetClaimResponseObject, error)
+
+	// (PATCH /api/v1/claims/{claimId})
+	PatchClaimDraft(ctx context.Context, request PatchClaimDraftRequestObject) (PatchClaimDraftResponseObject, error)
+
+	// (POST /api/v1/claims/{claimId}/approve)
+	ApproveClaim(ctx context.Context, request ApproveClaimRequestObject) (ApproveClaimResponseObject, error)
+
+	// (POST /api/v1/claims/{claimId}/cancel)
+	CancelClaim(ctx context.Context, request CancelClaimRequestObject) (CancelClaimResponseObject, error)
+
+	// (GET /api/v1/claims/{claimId}/invoice-readiness)
+	GetClaimInvoiceReadiness(ctx context.Context, request GetClaimInvoiceReadinessRequestObject) (GetClaimInvoiceReadinessResponseObject, error)
+
+	// (POST /api/v1/claims/{claimId}/line-decisions)
+	DecideClaimLines(ctx context.Context, request DecideClaimLinesRequestObject) (DecideClaimLinesResponseObject, error)
+
+	// (PUT /api/v1/claims/{claimId}/lines)
+	PutClaimLines(ctx context.Context, request PutClaimLinesRequestObject) (PutClaimLinesResponseObject, error)
+
+	// (POST /api/v1/claims/{claimId}/reject)
+	RejectClaim(ctx context.Context, request RejectClaimRequestObject) (RejectClaimResponseObject, error)
+
+	// (POST /api/v1/claims/{claimId}/return)
+	ReturnClaim(ctx context.Context, request ReturnClaimRequestObject) (ReturnClaimResponseObject, error)
+
+	// (POST /api/v1/claims/{claimId}/submit)
+	SubmitClaim(ctx context.Context, request SubmitClaimRequestObject) (SubmitClaimResponseObject, error)
+
+	// (GET /api/v1/claims/{claimId}/versions)
+	ListClaimVersions(ctx context.Context, request ListClaimVersionsRequestObject) (ListClaimVersionsResponseObject, error)
+
+	// (GET /api/v1/claims/{claimId}/versions/{versionNo})
+	GetClaimVersion(ctx context.Context, request GetClaimVersionRequestObject) (GetClaimVersionResponseObject, error)
+
 	// (GET /api/v1/code-systems)
 	ListCodeSystems(ctx context.Context, request ListCodeSystemsRequestObject) (ListCodeSystemsResponseObject, error)
 
@@ -54138,6 +58358,439 @@ func (sh *strictHandler) IssueVoucher(w http.ResponseWriter, r *http.Request, au
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(IssueVoucherResponseObject); ok {
 		if err := validResponse.VisitIssueVoucherResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListClaims operation middleware
+func (sh *strictHandler) ListClaims(w http.ResponseWriter, r *http.Request, params ListClaimsParams) {
+	var request ListClaimsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListClaims(ctx, request.(ListClaimsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListClaims")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListClaimsResponseObject); ok {
+		if err := validResponse.VisitListClaimsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateClaim operation middleware
+func (sh *strictHandler) CreateClaim(w http.ResponseWriter, r *http.Request, params CreateClaimParams) {
+	var request CreateClaimRequestObject
+
+	request.Params = params
+
+	var body CreateClaimJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateClaim(ctx, request.(CreateClaimRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateClaim")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateClaimResponseObject); ok {
+		if err := validResponse.VisitCreateClaimResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetClaim operation middleware
+func (sh *strictHandler) GetClaim(w http.ResponseWriter, r *http.Request, claimId ClaimId, params GetClaimParams) {
+	var request GetClaimRequestObject
+
+	request.ClaimId = claimId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetClaim(ctx, request.(GetClaimRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetClaim")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetClaimResponseObject); ok {
+		if err := validResponse.VisitGetClaimResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PatchClaimDraft operation middleware
+func (sh *strictHandler) PatchClaimDraft(w http.ResponseWriter, r *http.Request, claimId ClaimId, params PatchClaimDraftParams) {
+	var request PatchClaimDraftRequestObject
+
+	request.ClaimId = claimId
+	request.Params = params
+
+	var body PatchClaimDraftJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PatchClaimDraft(ctx, request.(PatchClaimDraftRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PatchClaimDraft")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PatchClaimDraftResponseObject); ok {
+		if err := validResponse.VisitPatchClaimDraftResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ApproveClaim operation middleware
+func (sh *strictHandler) ApproveClaim(w http.ResponseWriter, r *http.Request, claimId ClaimId, params ApproveClaimParams) {
+	var request ApproveClaimRequestObject
+
+	request.ClaimId = claimId
+	request.Params = params
+
+	var body ApproveClaimJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ApproveClaim(ctx, request.(ApproveClaimRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ApproveClaim")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ApproveClaimResponseObject); ok {
+		if err := validResponse.VisitApproveClaimResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CancelClaim operation middleware
+func (sh *strictHandler) CancelClaim(w http.ResponseWriter, r *http.Request, claimId ClaimId, params CancelClaimParams) {
+	var request CancelClaimRequestObject
+
+	request.ClaimId = claimId
+	request.Params = params
+
+	var body CancelClaimJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CancelClaim(ctx, request.(CancelClaimRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CancelClaim")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CancelClaimResponseObject); ok {
+		if err := validResponse.VisitCancelClaimResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetClaimInvoiceReadiness operation middleware
+func (sh *strictHandler) GetClaimInvoiceReadiness(w http.ResponseWriter, r *http.Request, claimId ClaimId, params GetClaimInvoiceReadinessParams) {
+	var request GetClaimInvoiceReadinessRequestObject
+
+	request.ClaimId = claimId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetClaimInvoiceReadiness(ctx, request.(GetClaimInvoiceReadinessRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetClaimInvoiceReadiness")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetClaimInvoiceReadinessResponseObject); ok {
+		if err := validResponse.VisitGetClaimInvoiceReadinessResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DecideClaimLines operation middleware
+func (sh *strictHandler) DecideClaimLines(w http.ResponseWriter, r *http.Request, claimId ClaimId, params DecideClaimLinesParams) {
+	var request DecideClaimLinesRequestObject
+
+	request.ClaimId = claimId
+	request.Params = params
+
+	var body DecideClaimLinesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DecideClaimLines(ctx, request.(DecideClaimLinesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DecideClaimLines")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DecideClaimLinesResponseObject); ok {
+		if err := validResponse.VisitDecideClaimLinesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutClaimLines operation middleware
+func (sh *strictHandler) PutClaimLines(w http.ResponseWriter, r *http.Request, claimId ClaimId, params PutClaimLinesParams) {
+	var request PutClaimLinesRequestObject
+
+	request.ClaimId = claimId
+	request.Params = params
+
+	var body PutClaimLinesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutClaimLines(ctx, request.(PutClaimLinesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutClaimLines")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutClaimLinesResponseObject); ok {
+		if err := validResponse.VisitPutClaimLinesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RejectClaim operation middleware
+func (sh *strictHandler) RejectClaim(w http.ResponseWriter, r *http.Request, claimId ClaimId, params RejectClaimParams) {
+	var request RejectClaimRequestObject
+
+	request.ClaimId = claimId
+	request.Params = params
+
+	var body RejectClaimJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RejectClaim(ctx, request.(RejectClaimRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RejectClaim")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RejectClaimResponseObject); ok {
+		if err := validResponse.VisitRejectClaimResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReturnClaim operation middleware
+func (sh *strictHandler) ReturnClaim(w http.ResponseWriter, r *http.Request, claimId ClaimId, params ReturnClaimParams) {
+	var request ReturnClaimRequestObject
+
+	request.ClaimId = claimId
+	request.Params = params
+
+	var body ReturnClaimJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReturnClaim(ctx, request.(ReturnClaimRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReturnClaim")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReturnClaimResponseObject); ok {
+		if err := validResponse.VisitReturnClaimResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SubmitClaim operation middleware
+func (sh *strictHandler) SubmitClaim(w http.ResponseWriter, r *http.Request, claimId ClaimId, params SubmitClaimParams) {
+	var request SubmitClaimRequestObject
+
+	request.ClaimId = claimId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SubmitClaim(ctx, request.(SubmitClaimRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SubmitClaim")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SubmitClaimResponseObject); ok {
+		if err := validResponse.VisitSubmitClaimResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListClaimVersions operation middleware
+func (sh *strictHandler) ListClaimVersions(w http.ResponseWriter, r *http.Request, claimId ClaimId, params ListClaimVersionsParams) {
+	var request ListClaimVersionsRequestObject
+
+	request.ClaimId = claimId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListClaimVersions(ctx, request.(ListClaimVersionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListClaimVersions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListClaimVersionsResponseObject); ok {
+		if err := validResponse.VisitListClaimVersionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetClaimVersion operation middleware
+func (sh *strictHandler) GetClaimVersion(w http.ResponseWriter, r *http.Request, claimId ClaimId, versionNo VersionNo, params GetClaimVersionParams) {
+	var request GetClaimVersionRequestObject
+
+	request.ClaimId = claimId
+	request.VersionNo = versionNo
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetClaimVersion(ctx, request.(GetClaimVersionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetClaimVersion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetClaimVersionResponseObject); ok {
+		if err := validResponse.VisitGetClaimVersionResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
