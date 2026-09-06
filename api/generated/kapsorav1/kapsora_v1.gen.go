@@ -3484,6 +3484,21 @@ func (e WorkQueueDomain) Valid() bool {
 	}
 }
 
+// Defines values for AccessProjectionHeader.
+const (
+	AccessProjectionHeaderFINANCIAL AccessProjectionHeader = "FINANCIAL"
+)
+
+// Valid indicates whether the value is a known member of the AccessProjectionHeader enum.
+func (e AccessProjectionHeader) Valid() bool {
+	switch e {
+	case AccessProjectionHeaderFINANCIAL:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AccessPurposeHeader.
 const (
 	AccessPurposeHeaderAUDIT            AccessPurposeHeader = "AUDIT"
@@ -3544,6 +3559,21 @@ func (e ListClaimsParamsXAccessPurpose) Valid() bool {
 	}
 }
 
+// Defines values for ListClaimsParamsXAccessProjection.
+const (
+	ListClaimsParamsXAccessProjectionFINANCIAL ListClaimsParamsXAccessProjection = "FINANCIAL"
+)
+
+// Valid indicates whether the value is a known member of the ListClaimsParamsXAccessProjection enum.
+func (e ListClaimsParamsXAccessProjection) Valid() bool {
+	switch e {
+	case ListClaimsParamsXAccessProjectionFINANCIAL:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CreateClaimParamsXAccessPurpose.
 const (
 	CreateClaimParamsXAccessPurposeAUDIT            CreateClaimParamsXAccessPurpose = "AUDIT"
@@ -3568,6 +3598,21 @@ func (e CreateClaimParamsXAccessPurpose) Valid() bool {
 	case CreateClaimParamsXAccessPurposePREAUTHORIZATION:
 		return true
 	case CreateClaimParamsXAccessPurposeTREATMENT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateClaimParamsXAccessProjection.
+const (
+	CreateClaimParamsXAccessProjectionFINANCIAL CreateClaimParamsXAccessProjection = "FINANCIAL"
+)
+
+// Valid indicates whether the value is a known member of the CreateClaimParamsXAccessProjection enum.
+func (e CreateClaimParamsXAccessProjection) Valid() bool {
+	switch e {
+	case CreateClaimParamsXAccessProjectionFINANCIAL:
 		return true
 	default:
 		return false
@@ -3604,6 +3649,21 @@ func (e GetClaimParamsXAccessPurpose) Valid() bool {
 	}
 }
 
+// Defines values for GetClaimParamsXAccessProjection.
+const (
+	GetClaimParamsXAccessProjectionFINANCIAL GetClaimParamsXAccessProjection = "FINANCIAL"
+)
+
+// Valid indicates whether the value is a known member of the GetClaimParamsXAccessProjection enum.
+func (e GetClaimParamsXAccessProjection) Valid() bool {
+	switch e {
+	case GetClaimParamsXAccessProjectionFINANCIAL:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DecideClaimLinesParamsXAccessPurpose.
 const (
 	DecideClaimLinesParamsXAccessPurposeAUDIT            DecideClaimLinesParamsXAccessPurpose = "AUDIT"
@@ -3628,6 +3688,21 @@ func (e DecideClaimLinesParamsXAccessPurpose) Valid() bool {
 	case DecideClaimLinesParamsXAccessPurposePREAUTHORIZATION:
 		return true
 	case DecideClaimLinesParamsXAccessPurposeTREATMENT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DecideClaimLinesParamsXAccessProjection.
+const (
+	DecideClaimLinesParamsXAccessProjectionFINANCIAL DecideClaimLinesParamsXAccessProjection = "FINANCIAL"
+)
+
+// Valid indicates whether the value is a known member of the DecideClaimLinesParamsXAccessProjection enum.
+func (e DecideClaimLinesParamsXAccessProjection) Valid() bool {
+	switch e {
+	case DecideClaimLinesParamsXAccessProjectionFINANCIAL:
 		return true
 	default:
 		return false
@@ -3664,6 +3739,21 @@ func (e SubmitClaimParamsXAccessPurpose) Valid() bool {
 	}
 }
 
+// Defines values for SubmitClaimParamsXAccessProjection.
+const (
+	SubmitClaimParamsXAccessProjectionFINANCIAL SubmitClaimParamsXAccessProjection = "FINANCIAL"
+)
+
+// Valid indicates whether the value is a known member of the SubmitClaimParamsXAccessProjection enum.
+func (e SubmitClaimParamsXAccessProjection) Valid() bool {
+	switch e {
+	case SubmitClaimParamsXAccessProjectionFINANCIAL:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for GetClaimVersionParamsXAccessPurpose.
 const (
 	GetClaimVersionParamsXAccessPurposeAUDIT            GetClaimVersionParamsXAccessPurpose = "AUDIT"
@@ -3688,6 +3778,21 @@ func (e GetClaimVersionParamsXAccessPurpose) Valid() bool {
 	case GetClaimVersionParamsXAccessPurposePREAUTHORIZATION:
 		return true
 	case GetClaimVersionParamsXAccessPurposeTREATMENT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetClaimVersionParamsXAccessProjection.
+const (
+	GetClaimVersionParamsXAccessProjectionFINANCIAL GetClaimVersionParamsXAccessProjection = "FINANCIAL"
+)
+
+// Valid indicates whether the value is a known member of the GetClaimVersionParamsXAccessProjection enum.
+func (e GetClaimVersionParamsXAccessProjection) Valid() bool {
+	switch e {
+	case GetClaimVersionParamsXAccessProjectionFINANCIAL:
 		return true
 	default:
 		return false
@@ -3742,6 +3847,21 @@ func (e GetEncounterParamsXAccessPurpose) Valid() bool {
 	}
 }
 
+// Defines values for GetEncounterParamsXAccessProjection.
+const (
+	GetEncounterParamsXAccessProjectionFINANCIAL GetEncounterParamsXAccessProjection = "FINANCIAL"
+)
+
+// Valid indicates whether the value is a known member of the GetEncounterParamsXAccessProjection enum.
+func (e GetEncounterParamsXAccessProjection) Valid() bool {
+	switch e {
+	case GetEncounterParamsXAccessProjectionFINANCIAL:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListEncounterDiagnosesParamsXAccessPurpose.
 const (
 	ListEncounterDiagnosesParamsXAccessPurposeAUDIT            ListEncounterDiagnosesParamsXAccessPurpose = "AUDIT"
@@ -3766,6 +3886,21 @@ func (e ListEncounterDiagnosesParamsXAccessPurpose) Valid() bool {
 	case ListEncounterDiagnosesParamsXAccessPurposePREAUTHORIZATION:
 		return true
 	case ListEncounterDiagnosesParamsXAccessPurposeTREATMENT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListEncounterDiagnosesParamsXAccessProjection.
+const (
+	ListEncounterDiagnosesParamsXAccessProjectionFINANCIAL ListEncounterDiagnosesParamsXAccessProjection = "FINANCIAL"
+)
+
+// Valid indicates whether the value is a known member of the ListEncounterDiagnosesParamsXAccessProjection enum.
+func (e ListEncounterDiagnosesParamsXAccessProjection) Valid() bool {
+	switch e {
+	case ListEncounterDiagnosesParamsXAccessProjectionFINANCIAL:
 		return true
 	default:
 		return false
@@ -3847,6 +3982,21 @@ func (e ListHealthCasesParamsXAccessPurpose) Valid() bool {
 	}
 }
 
+// Defines values for ListHealthCasesParamsXAccessProjection.
+const (
+	ListHealthCasesParamsXAccessProjectionFINANCIAL ListHealthCasesParamsXAccessProjection = "FINANCIAL"
+)
+
+// Valid indicates whether the value is a known member of the ListHealthCasesParamsXAccessProjection enum.
+func (e ListHealthCasesParamsXAccessProjection) Valid() bool {
+	switch e {
+	case ListHealthCasesParamsXAccessProjectionFINANCIAL:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for GetHealthCaseParamsXAccessPurpose.
 const (
 	GetHealthCaseParamsXAccessPurposeAUDIT            GetHealthCaseParamsXAccessPurpose = "AUDIT"
@@ -3871,6 +4021,21 @@ func (e GetHealthCaseParamsXAccessPurpose) Valid() bool {
 	case GetHealthCaseParamsXAccessPurposePREAUTHORIZATION:
 		return true
 	case GetHealthCaseParamsXAccessPurposeTREATMENT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetHealthCaseParamsXAccessProjection.
+const (
+	GetHealthCaseParamsXAccessProjectionFINANCIAL GetHealthCaseParamsXAccessProjection = "FINANCIAL"
+)
+
+// Valid indicates whether the value is a known member of the GetHealthCaseParamsXAccessProjection enum.
+func (e GetHealthCaseParamsXAccessProjection) Valid() bool {
+	switch e {
+	case GetHealthCaseParamsXAccessProjectionFINANCIAL:
 		return true
 	default:
 		return false
@@ -3997,6 +4162,21 @@ func (e ListInpatientStaysParamsXAccessPurpose) Valid() bool {
 	}
 }
 
+// Defines values for ListInpatientStaysParamsXAccessProjection.
+const (
+	ListInpatientStaysParamsXAccessProjectionFINANCIAL ListInpatientStaysParamsXAccessProjection = "FINANCIAL"
+)
+
+// Valid indicates whether the value is a known member of the ListInpatientStaysParamsXAccessProjection enum.
+func (e ListInpatientStaysParamsXAccessProjection) Valid() bool {
+	switch e {
+	case ListInpatientStaysParamsXAccessProjectionFINANCIAL:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CreateInpatientStayParamsXAccessPurpose.
 const (
 	CreateInpatientStayParamsXAccessPurposeAUDIT            CreateInpatientStayParamsXAccessPurpose = "AUDIT"
@@ -4021,6 +4201,21 @@ func (e CreateInpatientStayParamsXAccessPurpose) Valid() bool {
 	case CreateInpatientStayParamsXAccessPurposePREAUTHORIZATION:
 		return true
 	case CreateInpatientStayParamsXAccessPurposeTREATMENT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateInpatientStayParamsXAccessProjection.
+const (
+	CreateInpatientStayParamsXAccessProjectionFINANCIAL CreateInpatientStayParamsXAccessProjection = "FINANCIAL"
+)
+
+// Valid indicates whether the value is a known member of the CreateInpatientStayParamsXAccessProjection enum.
+func (e CreateInpatientStayParamsXAccessProjection) Valid() bool {
+	switch e {
+	case CreateInpatientStayParamsXAccessProjectionFINANCIAL:
 		return true
 	default:
 		return false
@@ -4057,6 +4252,21 @@ func (e GetInpatientStayParamsXAccessPurpose) Valid() bool {
 	}
 }
 
+// Defines values for GetInpatientStayParamsXAccessProjection.
+const (
+	GetInpatientStayParamsXAccessProjectionFINANCIAL GetInpatientStayParamsXAccessProjection = "FINANCIAL"
+)
+
+// Valid indicates whether the value is a known member of the GetInpatientStayParamsXAccessProjection enum.
+func (e GetInpatientStayParamsXAccessProjection) Valid() bool {
+	switch e {
+	case GetInpatientStayParamsXAccessProjectionFINANCIAL:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CancelInpatientStayParamsXAccessPurpose.
 const (
 	CancelInpatientStayParamsXAccessPurposeAUDIT            CancelInpatientStayParamsXAccessPurpose = "AUDIT"
@@ -4081,6 +4291,21 @@ func (e CancelInpatientStayParamsXAccessPurpose) Valid() bool {
 	case CancelInpatientStayParamsXAccessPurposePREAUTHORIZATION:
 		return true
 	case CancelInpatientStayParamsXAccessPurposeTREATMENT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CancelInpatientStayParamsXAccessProjection.
+const (
+	CancelInpatientStayParamsXAccessProjectionFINANCIAL CancelInpatientStayParamsXAccessProjection = "FINANCIAL"
+)
+
+// Valid indicates whether the value is a known member of the CancelInpatientStayParamsXAccessProjection enum.
+func (e CancelInpatientStayParamsXAccessProjection) Valid() bool {
+	switch e {
+	case CancelInpatientStayParamsXAccessProjectionFINANCIAL:
 		return true
 	default:
 		return false
@@ -4117,6 +4342,21 @@ func (e DischargeInpatientStayParamsXAccessPurpose) Valid() bool {
 	}
 }
 
+// Defines values for DischargeInpatientStayParamsXAccessProjection.
+const (
+	DischargeInpatientStayParamsXAccessProjectionFINANCIAL DischargeInpatientStayParamsXAccessProjection = "FINANCIAL"
+)
+
+// Valid indicates whether the value is a known member of the DischargeInpatientStayParamsXAccessProjection enum.
+func (e DischargeInpatientStayParamsXAccessProjection) Valid() bool {
+	switch e {
+	case DischargeInpatientStayParamsXAccessProjectionFINANCIAL:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ExtendInpatientStayParamsXAccessPurpose.
 const (
 	ExtendInpatientStayParamsXAccessPurposeAUDIT            ExtendInpatientStayParamsXAccessPurpose = "AUDIT"
@@ -4141,6 +4381,21 @@ func (e ExtendInpatientStayParamsXAccessPurpose) Valid() bool {
 	case ExtendInpatientStayParamsXAccessPurposePREAUTHORIZATION:
 		return true
 	case ExtendInpatientStayParamsXAccessPurposeTREATMENT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ExtendInpatientStayParamsXAccessProjection.
+const (
+	ExtendInpatientStayParamsXAccessProjectionFINANCIAL ExtendInpatientStayParamsXAccessProjection = "FINANCIAL"
+)
+
+// Valid indicates whether the value is a known member of the ExtendInpatientStayParamsXAccessProjection enum.
+func (e ExtendInpatientStayParamsXAccessProjection) Valid() bool {
+	switch e {
+	case ExtendInpatientStayParamsXAccessProjectionFINANCIAL:
 		return true
 	default:
 		return false
@@ -4177,6 +4432,21 @@ func (e GetInpatientStayReconciliationParamsXAccessPurpose) Valid() bool {
 	}
 }
 
+// Defines values for GetInpatientStayReconciliationParamsXAccessProjection.
+const (
+	GetInpatientStayReconciliationParamsXAccessProjectionFINANCIAL GetInpatientStayReconciliationParamsXAccessProjection = "FINANCIAL"
+)
+
+// Valid indicates whether the value is a known member of the GetInpatientStayReconciliationParamsXAccessProjection enum.
+func (e GetInpatientStayReconciliationParamsXAccessProjection) Valid() bool {
+	switch e {
+	case GetInpatientStayReconciliationParamsXAccessProjectionFINANCIAL:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PutStaySegmentsParamsXAccessPurpose.
 const (
 	PutStaySegmentsParamsXAccessPurposeAUDIT            PutStaySegmentsParamsXAccessPurpose = "AUDIT"
@@ -4201,6 +4471,21 @@ func (e PutStaySegmentsParamsXAccessPurpose) Valid() bool {
 	case PutStaySegmentsParamsXAccessPurposePREAUTHORIZATION:
 		return true
 	case PutStaySegmentsParamsXAccessPurposeTREATMENT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PutStaySegmentsParamsXAccessProjection.
+const (
+	PutStaySegmentsParamsXAccessProjectionFINANCIAL PutStaySegmentsParamsXAccessProjection = "FINANCIAL"
+)
+
+// Valid indicates whether the value is a known member of the PutStaySegmentsParamsXAccessProjection enum.
+func (e PutStaySegmentsParamsXAccessProjection) Valid() bool {
+	switch e {
+	case PutStaySegmentsParamsXAccessProjectionFINANCIAL:
 		return true
 	default:
 		return false
@@ -4237,6 +4522,21 @@ func (e ListMedicalReportsParamsXAccessPurpose) Valid() bool {
 	}
 }
 
+// Defines values for ListMedicalReportsParamsXAccessProjection.
+const (
+	ListMedicalReportsParamsXAccessProjectionFINANCIAL ListMedicalReportsParamsXAccessProjection = "FINANCIAL"
+)
+
+// Valid indicates whether the value is a known member of the ListMedicalReportsParamsXAccessProjection enum.
+func (e ListMedicalReportsParamsXAccessProjection) Valid() bool {
+	switch e {
+	case ListMedicalReportsParamsXAccessProjectionFINANCIAL:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for GetMedicalReportParamsXAccessPurpose.
 const (
 	GetMedicalReportParamsXAccessPurposeAUDIT            GetMedicalReportParamsXAccessPurpose = "AUDIT"
@@ -4261,6 +4561,21 @@ func (e GetMedicalReportParamsXAccessPurpose) Valid() bool {
 	case GetMedicalReportParamsXAccessPurposePREAUTHORIZATION:
 		return true
 	case GetMedicalReportParamsXAccessPurposeTREATMENT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetMedicalReportParamsXAccessProjection.
+const (
+	GetMedicalReportParamsXAccessProjectionFINANCIAL GetMedicalReportParamsXAccessProjection = "FINANCIAL"
+)
+
+// Valid indicates whether the value is a known member of the GetMedicalReportParamsXAccessProjection enum.
+func (e GetMedicalReportParamsXAccessProjection) Valid() bool {
+	switch e {
+	case GetMedicalReportParamsXAccessProjectionFINANCIAL:
 		return true
 	default:
 		return false
@@ -9092,6 +9407,9 @@ type WorkQueuePage struct {
 	NextCursor *string     `json:"nextCursor,omitempty"`
 }
 
+// AccessProjectionHeader defines model for AccessProjectionHeader.
+type AccessProjectionHeader string
+
 // AccessPurposeHeader defines model for AccessPurposeHeader.
 type AccessPurposeHeader string
 
@@ -9422,10 +9740,18 @@ type ListClaimsParams struct {
 	// the Turkish somebody would actually type. A value with no percent sequences decodes
 	// to itself, so a plain ASCII reason may be sent as it is.
 	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+
+	// XAccessProjection Ask for the financial projection only. A caller who holds the sensitive grant may
+	// decline to read clinical detail; the answer is the financial projection, no purpose
+	// is required, and nothing is written to the access log.
+	XAccessProjection *ListClaimsParamsXAccessProjection `json:"X-Access-Projection,omitempty"`
 }
 
 // ListClaimsParamsXAccessPurpose defines parameters for ListClaims.
 type ListClaimsParamsXAccessPurpose string
+
+// ListClaimsParamsXAccessProjection defines parameters for ListClaims.
+type ListClaimsParamsXAccessProjection string
 
 // CreateClaimParams defines parameters for CreateClaim.
 type CreateClaimParams struct {
@@ -9452,10 +9778,18 @@ type CreateClaimParams struct {
 	// the Turkish somebody would actually type. A value with no percent sequences decodes
 	// to itself, so a plain ASCII reason may be sent as it is.
 	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+
+	// XAccessProjection Ask for the financial projection only. A caller who holds the sensitive grant may
+	// decline to read clinical detail; the answer is the financial projection, no purpose
+	// is required, and nothing is written to the access log.
+	XAccessProjection *CreateClaimParamsXAccessProjection `json:"X-Access-Projection,omitempty"`
 }
 
 // CreateClaimParamsXAccessPurpose defines parameters for CreateClaim.
 type CreateClaimParamsXAccessPurpose string
+
+// CreateClaimParamsXAccessProjection defines parameters for CreateClaim.
+type CreateClaimParamsXAccessProjection string
 
 // GetClaimParams defines parameters for GetClaim.
 type GetClaimParams struct {
@@ -9479,10 +9813,18 @@ type GetClaimParams struct {
 	// the Turkish somebody would actually type. A value with no percent sequences decodes
 	// to itself, so a plain ASCII reason may be sent as it is.
 	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+
+	// XAccessProjection Ask for the financial projection only. A caller who holds the sensitive grant may
+	// decline to read clinical detail; the answer is the financial projection, no purpose
+	// is required, and nothing is written to the access log.
+	XAccessProjection *GetClaimParamsXAccessProjection `json:"X-Access-Projection,omitempty"`
 }
 
 // GetClaimParamsXAccessPurpose defines parameters for GetClaim.
 type GetClaimParamsXAccessPurpose string
+
+// GetClaimParamsXAccessProjection defines parameters for GetClaim.
+type GetClaimParamsXAccessProjection string
 
 // PatchClaimDraftParams defines parameters for PatchClaimDraft.
 type PatchClaimDraftParams struct {
@@ -9554,10 +9896,18 @@ type DecideClaimLinesParams struct {
 	// the Turkish somebody would actually type. A value with no percent sequences decodes
 	// to itself, so a plain ASCII reason may be sent as it is.
 	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+
+	// XAccessProjection Ask for the financial projection only. A caller who holds the sensitive grant may
+	// decline to read clinical detail; the answer is the financial projection, no purpose
+	// is required, and nothing is written to the access log.
+	XAccessProjection *DecideClaimLinesParamsXAccessProjection `json:"X-Access-Projection,omitempty"`
 }
 
 // DecideClaimLinesParamsXAccessPurpose defines parameters for DecideClaimLines.
 type DecideClaimLinesParamsXAccessPurpose string
+
+// DecideClaimLinesParamsXAccessProjection defines parameters for DecideClaimLines.
+type DecideClaimLinesParamsXAccessProjection string
 
 // PutClaimLinesParams defines parameters for PutClaimLines.
 type PutClaimLinesParams struct {
@@ -9623,10 +9973,18 @@ type SubmitClaimParams struct {
 	// the Turkish somebody would actually type. A value with no percent sequences decodes
 	// to itself, so a plain ASCII reason may be sent as it is.
 	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+
+	// XAccessProjection Ask for the financial projection only. A caller who holds the sensitive grant may
+	// decline to read clinical detail; the answer is the financial projection, no purpose
+	// is required, and nothing is written to the access log.
+	XAccessProjection *SubmitClaimParamsXAccessProjection `json:"X-Access-Projection,omitempty"`
 }
 
 // SubmitClaimParamsXAccessPurpose defines parameters for SubmitClaim.
 type SubmitClaimParamsXAccessPurpose string
+
+// SubmitClaimParamsXAccessProjection defines parameters for SubmitClaim.
+type SubmitClaimParamsXAccessProjection string
 
 // ListClaimVersionsParams defines parameters for ListClaimVersions.
 type ListClaimVersionsParams struct {
@@ -9656,10 +10014,18 @@ type GetClaimVersionParams struct {
 	// the Turkish somebody would actually type. A value with no percent sequences decodes
 	// to itself, so a plain ASCII reason may be sent as it is.
 	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+
+	// XAccessProjection Ask for the financial projection only. A caller who holds the sensitive grant may
+	// decline to read clinical detail; the answer is the financial projection, no purpose
+	// is required, and nothing is written to the access log.
+	XAccessProjection *GetClaimVersionParamsXAccessProjection `json:"X-Access-Projection,omitempty"`
 }
 
 // GetClaimVersionParamsXAccessPurpose defines parameters for GetClaimVersion.
 type GetClaimVersionParamsXAccessPurpose string
+
+// GetClaimVersionParamsXAccessProjection defines parameters for GetClaimVersion.
+type GetClaimVersionParamsXAccessProjection string
 
 // ListCodeSystemsParams defines parameters for ListCodeSystems.
 type ListCodeSystemsParams struct {
@@ -10032,10 +10398,18 @@ type GetEncounterParams struct {
 	// the Turkish somebody would actually type. A value with no percent sequences decodes
 	// to itself, so a plain ASCII reason may be sent as it is.
 	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+
+	// XAccessProjection Ask for the financial projection only. A caller who holds the sensitive grant may
+	// decline to read clinical detail; the answer is the financial projection, no purpose
+	// is required, and nothing is written to the access log.
+	XAccessProjection *GetEncounterParamsXAccessProjection `json:"X-Access-Projection,omitempty"`
 }
 
 // GetEncounterParamsXAccessPurpose defines parameters for GetEncounter.
 type GetEncounterParamsXAccessPurpose string
+
+// GetEncounterParamsXAccessProjection defines parameters for GetEncounter.
+type GetEncounterParamsXAccessProjection string
 
 // ListEncounterDiagnosesParams defines parameters for ListEncounterDiagnoses.
 type ListEncounterDiagnosesParams struct {
@@ -10059,10 +10433,18 @@ type ListEncounterDiagnosesParams struct {
 	// the Turkish somebody would actually type. A value with no percent sequences decodes
 	// to itself, so a plain ASCII reason may be sent as it is.
 	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+
+	// XAccessProjection Ask for the financial projection only. A caller who holds the sensitive grant may
+	// decline to read clinical detail; the answer is the financial projection, no purpose
+	// is required, and nothing is written to the access log.
+	XAccessProjection *ListEncounterDiagnosesParamsXAccessProjection `json:"X-Access-Projection,omitempty"`
 }
 
 // ListEncounterDiagnosesParamsXAccessPurpose defines parameters for ListEncounterDiagnoses.
 type ListEncounterDiagnosesParamsXAccessPurpose string
+
+// ListEncounterDiagnosesParamsXAccessProjection defines parameters for ListEncounterDiagnoses.
+type ListEncounterDiagnosesParamsXAccessProjection string
 
 // PutEncounterDiagnosesParams defines parameters for PutEncounterDiagnoses.
 type PutEncounterDiagnosesParams struct {
@@ -10280,10 +10662,18 @@ type ListHealthCasesParams struct {
 	// the Turkish somebody would actually type. A value with no percent sequences decodes
 	// to itself, so a plain ASCII reason may be sent as it is.
 	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+
+	// XAccessProjection Ask for the financial projection only. A caller who holds the sensitive grant may
+	// decline to read clinical detail; the answer is the financial projection, no purpose
+	// is required, and nothing is written to the access log.
+	XAccessProjection *ListHealthCasesParamsXAccessProjection `json:"X-Access-Projection,omitempty"`
 }
 
 // ListHealthCasesParamsXAccessPurpose defines parameters for ListHealthCases.
 type ListHealthCasesParamsXAccessPurpose string
+
+// ListHealthCasesParamsXAccessProjection defines parameters for ListHealthCases.
+type ListHealthCasesParamsXAccessProjection string
 
 // CreateHealthCaseParams defines parameters for CreateHealthCase.
 type CreateHealthCaseParams struct {
@@ -10316,10 +10706,18 @@ type GetHealthCaseParams struct {
 	// the Turkish somebody would actually type. A value with no percent sequences decodes
 	// to itself, so a plain ASCII reason may be sent as it is.
 	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+
+	// XAccessProjection Ask for the financial projection only. A caller who holds the sensitive grant may
+	// decline to read clinical detail; the answer is the financial projection, no purpose
+	// is required, and nothing is written to the access log.
+	XAccessProjection *GetHealthCaseParamsXAccessProjection `json:"X-Access-Projection,omitempty"`
 }
 
 // GetHealthCaseParamsXAccessPurpose defines parameters for GetHealthCase.
 type GetHealthCaseParamsXAccessPurpose string
+
+// GetHealthCaseParamsXAccessProjection defines parameters for GetHealthCase.
+type GetHealthCaseParamsXAccessProjection string
 
 // CloseHealthCaseParams defines parameters for CloseHealthCase.
 type CloseHealthCaseParams struct {
@@ -10475,10 +10873,18 @@ type ListInpatientStaysParams struct {
 	// the Turkish somebody would actually type. A value with no percent sequences decodes
 	// to itself, so a plain ASCII reason may be sent as it is.
 	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+
+	// XAccessProjection Ask for the financial projection only. A caller who holds the sensitive grant may
+	// decline to read clinical detail; the answer is the financial projection, no purpose
+	// is required, and nothing is written to the access log.
+	XAccessProjection *ListInpatientStaysParamsXAccessProjection `json:"X-Access-Projection,omitempty"`
 }
 
 // ListInpatientStaysParamsXAccessPurpose defines parameters for ListInpatientStays.
 type ListInpatientStaysParamsXAccessPurpose string
+
+// ListInpatientStaysParamsXAccessProjection defines parameters for ListInpatientStays.
+type ListInpatientStaysParamsXAccessProjection string
 
 // CreateInpatientStayParams defines parameters for CreateInpatientStay.
 type CreateInpatientStayParams struct {
@@ -10505,10 +10911,18 @@ type CreateInpatientStayParams struct {
 	// the Turkish somebody would actually type. A value with no percent sequences decodes
 	// to itself, so a plain ASCII reason may be sent as it is.
 	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+
+	// XAccessProjection Ask for the financial projection only. A caller who holds the sensitive grant may
+	// decline to read clinical detail; the answer is the financial projection, no purpose
+	// is required, and nothing is written to the access log.
+	XAccessProjection *CreateInpatientStayParamsXAccessProjection `json:"X-Access-Projection,omitempty"`
 }
 
 // CreateInpatientStayParamsXAccessPurpose defines parameters for CreateInpatientStay.
 type CreateInpatientStayParamsXAccessPurpose string
+
+// CreateInpatientStayParamsXAccessProjection defines parameters for CreateInpatientStay.
+type CreateInpatientStayParamsXAccessProjection string
 
 // GetInpatientStayParams defines parameters for GetInpatientStay.
 type GetInpatientStayParams struct {
@@ -10532,10 +10946,18 @@ type GetInpatientStayParams struct {
 	// the Turkish somebody would actually type. A value with no percent sequences decodes
 	// to itself, so a plain ASCII reason may be sent as it is.
 	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+
+	// XAccessProjection Ask for the financial projection only. A caller who holds the sensitive grant may
+	// decline to read clinical detail; the answer is the financial projection, no purpose
+	// is required, and nothing is written to the access log.
+	XAccessProjection *GetInpatientStayParamsXAccessProjection `json:"X-Access-Projection,omitempty"`
 }
 
 // GetInpatientStayParamsXAccessPurpose defines parameters for GetInpatientStay.
 type GetInpatientStayParamsXAccessPurpose string
+
+// GetInpatientStayParamsXAccessProjection defines parameters for GetInpatientStay.
+type GetInpatientStayParamsXAccessProjection string
 
 // CancelInpatientStayParams defines parameters for CancelInpatientStay.
 type CancelInpatientStayParams struct {
@@ -10565,10 +10987,18 @@ type CancelInpatientStayParams struct {
 	// the Turkish somebody would actually type. A value with no percent sequences decodes
 	// to itself, so a plain ASCII reason may be sent as it is.
 	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+
+	// XAccessProjection Ask for the financial projection only. A caller who holds the sensitive grant may
+	// decline to read clinical detail; the answer is the financial projection, no purpose
+	// is required, and nothing is written to the access log.
+	XAccessProjection *CancelInpatientStayParamsXAccessProjection `json:"X-Access-Projection,omitempty"`
 }
 
 // CancelInpatientStayParamsXAccessPurpose defines parameters for CancelInpatientStay.
 type CancelInpatientStayParamsXAccessPurpose string
+
+// CancelInpatientStayParamsXAccessProjection defines parameters for CancelInpatientStay.
+type CancelInpatientStayParamsXAccessProjection string
 
 // DischargeInpatientStayParams defines parameters for DischargeInpatientStay.
 type DischargeInpatientStayParams struct {
@@ -10598,10 +11028,18 @@ type DischargeInpatientStayParams struct {
 	// the Turkish somebody would actually type. A value with no percent sequences decodes
 	// to itself, so a plain ASCII reason may be sent as it is.
 	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+
+	// XAccessProjection Ask for the financial projection only. A caller who holds the sensitive grant may
+	// decline to read clinical detail; the answer is the financial projection, no purpose
+	// is required, and nothing is written to the access log.
+	XAccessProjection *DischargeInpatientStayParamsXAccessProjection `json:"X-Access-Projection,omitempty"`
 }
 
 // DischargeInpatientStayParamsXAccessPurpose defines parameters for DischargeInpatientStay.
 type DischargeInpatientStayParamsXAccessPurpose string
+
+// DischargeInpatientStayParamsXAccessProjection defines parameters for DischargeInpatientStay.
+type DischargeInpatientStayParamsXAccessProjection string
 
 // ExtendInpatientStayParams defines parameters for ExtendInpatientStay.
 type ExtendInpatientStayParams struct {
@@ -10631,10 +11069,18 @@ type ExtendInpatientStayParams struct {
 	// the Turkish somebody would actually type. A value with no percent sequences decodes
 	// to itself, so a plain ASCII reason may be sent as it is.
 	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+
+	// XAccessProjection Ask for the financial projection only. A caller who holds the sensitive grant may
+	// decline to read clinical detail; the answer is the financial projection, no purpose
+	// is required, and nothing is written to the access log.
+	XAccessProjection *ExtendInpatientStayParamsXAccessProjection `json:"X-Access-Projection,omitempty"`
 }
 
 // ExtendInpatientStayParamsXAccessPurpose defines parameters for ExtendInpatientStay.
 type ExtendInpatientStayParamsXAccessPurpose string
+
+// ExtendInpatientStayParamsXAccessProjection defines parameters for ExtendInpatientStay.
+type ExtendInpatientStayParamsXAccessProjection string
 
 // GetInpatientStayReconciliationParams defines parameters for GetInpatientStayReconciliation.
 type GetInpatientStayReconciliationParams struct {
@@ -10658,10 +11104,18 @@ type GetInpatientStayReconciliationParams struct {
 	// the Turkish somebody would actually type. A value with no percent sequences decodes
 	// to itself, so a plain ASCII reason may be sent as it is.
 	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+
+	// XAccessProjection Ask for the financial projection only. A caller who holds the sensitive grant may
+	// decline to read clinical detail; the answer is the financial projection, no purpose
+	// is required, and nothing is written to the access log.
+	XAccessProjection *GetInpatientStayReconciliationParamsXAccessProjection `json:"X-Access-Projection,omitempty"`
 }
 
 // GetInpatientStayReconciliationParamsXAccessPurpose defines parameters for GetInpatientStayReconciliation.
 type GetInpatientStayReconciliationParamsXAccessPurpose string
+
+// GetInpatientStayReconciliationParamsXAccessProjection defines parameters for GetInpatientStayReconciliation.
+type GetInpatientStayReconciliationParamsXAccessProjection string
 
 // PutStaySegmentsParams defines parameters for PutStaySegments.
 type PutStaySegmentsParams struct {
@@ -10691,10 +11145,18 @@ type PutStaySegmentsParams struct {
 	// the Turkish somebody would actually type. A value with no percent sequences decodes
 	// to itself, so a plain ASCII reason may be sent as it is.
 	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+
+	// XAccessProjection Ask for the financial projection only. A caller who holds the sensitive grant may
+	// decline to read clinical detail; the answer is the financial projection, no purpose
+	// is required, and nothing is written to the access log.
+	XAccessProjection *PutStaySegmentsParamsXAccessProjection `json:"X-Access-Projection,omitempty"`
 }
 
 // PutStaySegmentsParamsXAccessPurpose defines parameters for PutStaySegments.
 type PutStaySegmentsParamsXAccessPurpose string
+
+// PutStaySegmentsParamsXAccessProjection defines parameters for PutStaySegments.
+type PutStaySegmentsParamsXAccessProjection string
 
 // PutLegalHoldParams defines parameters for PutLegalHold.
 type PutLegalHoldParams struct {
@@ -10760,10 +11222,18 @@ type ListMedicalReportsParams struct {
 	// the Turkish somebody would actually type. A value with no percent sequences decodes
 	// to itself, so a plain ASCII reason may be sent as it is.
 	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+
+	// XAccessProjection Ask for the financial projection only. A caller who holds the sensitive grant may
+	// decline to read clinical detail; the answer is the financial projection, no purpose
+	// is required, and nothing is written to the access log.
+	XAccessProjection *ListMedicalReportsParamsXAccessProjection `json:"X-Access-Projection,omitempty"`
 }
 
 // ListMedicalReportsParamsXAccessPurpose defines parameters for ListMedicalReports.
 type ListMedicalReportsParamsXAccessPurpose string
+
+// ListMedicalReportsParamsXAccessProjection defines parameters for ListMedicalReports.
+type ListMedicalReportsParamsXAccessProjection string
 
 // CreateMedicalReportParams defines parameters for CreateMedicalReport.
 type CreateMedicalReportParams struct {
@@ -10796,10 +11266,18 @@ type GetMedicalReportParams struct {
 	// the Turkish somebody would actually type. A value with no percent sequences decodes
 	// to itself, so a plain ASCII reason may be sent as it is.
 	XAccessReason *AccessReasonHeader `json:"X-Access-Reason,omitempty"`
+
+	// XAccessProjection Ask for the financial projection only. A caller who holds the sensitive grant may
+	// decline to read clinical detail; the answer is the financial projection, no purpose
+	// is required, and nothing is written to the access log.
+	XAccessProjection *GetMedicalReportParamsXAccessProjection `json:"X-Access-Projection,omitempty"`
 }
 
 // GetMedicalReportParamsXAccessPurpose defines parameters for GetMedicalReport.
 type GetMedicalReportParamsXAccessPurpose string
+
+// GetMedicalReportParamsXAccessProjection defines parameters for GetMedicalReport.
+type GetMedicalReportParamsXAccessProjection string
 
 // PatchMedicalReportDraftParams defines parameters for PatchMedicalReportDraft.
 type PatchMedicalReportDraftParams struct {
@@ -15610,6 +16088,25 @@ func (siw *ServerInterfaceWrapper) ListClaims(w http.ResponseWriter, r *http.Req
 
 	}
 
+	// ------------- Optional header parameter "X-Access-Projection" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Projection")]; found {
+		var XAccessProjection ListClaimsParamsXAccessProjection
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Projection", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Projection", valueList[0], &XAccessProjection, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Projection", Err: err})
+			return
+		}
+
+		params.XAccessProjection = &XAccessProjection
+
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListClaims(w, r, params)
 	}))
@@ -15716,6 +16213,25 @@ func (siw *ServerInterfaceWrapper) CreateClaim(w http.ResponseWriter, r *http.Re
 
 	}
 
+	// ------------- Optional header parameter "X-Access-Projection" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Projection")]; found {
+		var XAccessProjection CreateClaimParamsXAccessProjection
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Projection", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Projection", valueList[0], &XAccessProjection, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Projection", Err: err})
+			return
+		}
+
+		params.XAccessProjection = &XAccessProjection
+
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateClaim(w, r, params)
 	}))
@@ -15805,6 +16321,25 @@ func (siw *ServerInterfaceWrapper) GetClaim(w http.ResponseWriter, r *http.Reque
 		}
 
 		params.XAccessReason = &XAccessReason
+
+	}
+
+	// ------------- Optional header parameter "X-Access-Projection" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Projection")]; found {
+		var XAccessProjection GetClaimParamsXAccessProjection
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Projection", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Projection", valueList[0], &XAccessProjection, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Projection", Err: err})
+			return
+		}
+
+		params.XAccessProjection = &XAccessProjection
 
 	}
 
@@ -16300,6 +16835,25 @@ func (siw *ServerInterfaceWrapper) DecideClaimLines(w http.ResponseWriter, r *ht
 
 	}
 
+	// ------------- Optional header parameter "X-Access-Projection" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Projection")]; found {
+		var XAccessProjection DecideClaimLinesParamsXAccessProjection
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Projection", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Projection", valueList[0], &XAccessProjection, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Projection", Err: err})
+			return
+		}
+
+		params.XAccessProjection = &XAccessProjection
+
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DecideClaimLines(w, r, claimId, params)
 	}))
@@ -16738,6 +17292,25 @@ func (siw *ServerInterfaceWrapper) SubmitClaim(w http.ResponseWriter, r *http.Re
 
 	}
 
+	// ------------- Optional header parameter "X-Access-Projection" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Projection")]; found {
+		var XAccessProjection SubmitClaimParamsXAccessProjection
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Projection", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Projection", valueList[0], &XAccessProjection, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Projection", Err: err})
+			return
+		}
+
+		params.XAccessProjection = &XAccessProjection
+
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.SubmitClaim(w, r, claimId, params)
 	}))
@@ -16890,6 +17463,25 @@ func (siw *ServerInterfaceWrapper) GetClaimVersion(w http.ResponseWriter, r *htt
 		}
 
 		params.XAccessReason = &XAccessReason
+
+	}
+
+	// ------------- Optional header parameter "X-Access-Projection" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Projection")]; found {
+		var XAccessProjection GetClaimVersionParamsXAccessProjection
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Projection", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Projection", valueList[0], &XAccessProjection, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Projection", Err: err})
+			return
+		}
+
+		params.XAccessProjection = &XAccessProjection
 
 	}
 
@@ -19631,6 +20223,25 @@ func (siw *ServerInterfaceWrapper) GetEncounter(w http.ResponseWriter, r *http.R
 
 	}
 
+	// ------------- Optional header parameter "X-Access-Projection" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Projection")]; found {
+		var XAccessProjection GetEncounterParamsXAccessProjection
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Projection", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Projection", valueList[0], &XAccessProjection, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Projection", Err: err})
+			return
+		}
+
+		params.XAccessProjection = &XAccessProjection
+
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetEncounter(w, r, encounterId, params)
 	}))
@@ -19720,6 +20331,25 @@ func (siw *ServerInterfaceWrapper) ListEncounterDiagnoses(w http.ResponseWriter,
 		}
 
 		params.XAccessReason = &XAccessReason
+
+	}
+
+	// ------------- Optional header parameter "X-Access-Projection" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Projection")]; found {
+		var XAccessProjection ListEncounterDiagnosesParamsXAccessProjection
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Projection", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Projection", valueList[0], &XAccessProjection, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Projection", Err: err})
+			return
+		}
+
+		params.XAccessProjection = &XAccessProjection
 
 	}
 
@@ -21257,6 +21887,25 @@ func (siw *ServerInterfaceWrapper) ListHealthCases(w http.ResponseWriter, r *htt
 
 	}
 
+	// ------------- Optional header parameter "X-Access-Projection" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Projection")]; found {
+		var XAccessProjection ListHealthCasesParamsXAccessProjection
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Projection", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Projection", valueList[0], &XAccessProjection, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Projection", Err: err})
+			return
+		}
+
+		params.XAccessProjection = &XAccessProjection
+
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListHealthCases(w, r, params)
 	}))
@@ -21414,6 +22063,25 @@ func (siw *ServerInterfaceWrapper) GetHealthCase(w http.ResponseWriter, r *http.
 		}
 
 		params.XAccessReason = &XAccessReason
+
+	}
+
+	// ------------- Optional header parameter "X-Access-Projection" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Projection")]; found {
+		var XAccessProjection GetHealthCaseParamsXAccessProjection
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Projection", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Projection", valueList[0], &XAccessProjection, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Projection", Err: err})
+			return
+		}
+
+		params.XAccessProjection = &XAccessProjection
 
 	}
 
@@ -22377,6 +23045,25 @@ func (siw *ServerInterfaceWrapper) ListInpatientStays(w http.ResponseWriter, r *
 
 	}
 
+	// ------------- Optional header parameter "X-Access-Projection" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Projection")]; found {
+		var XAccessProjection ListInpatientStaysParamsXAccessProjection
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Projection", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Projection", valueList[0], &XAccessProjection, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Projection", Err: err})
+			return
+		}
+
+		params.XAccessProjection = &XAccessProjection
+
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListInpatientStays(w, r, params)
 	}))
@@ -22483,6 +23170,25 @@ func (siw *ServerInterfaceWrapper) CreateInpatientStay(w http.ResponseWriter, r 
 
 	}
 
+	// ------------- Optional header parameter "X-Access-Projection" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Projection")]; found {
+		var XAccessProjection CreateInpatientStayParamsXAccessProjection
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Projection", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Projection", valueList[0], &XAccessProjection, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Projection", Err: err})
+			return
+		}
+
+		params.XAccessProjection = &XAccessProjection
+
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateInpatientStay(w, r, params)
 	}))
@@ -22572,6 +23278,25 @@ func (siw *ServerInterfaceWrapper) GetInpatientStay(w http.ResponseWriter, r *ht
 		}
 
 		params.XAccessReason = &XAccessReason
+
+	}
+
+	// ------------- Optional header parameter "X-Access-Projection" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Projection")]; found {
+		var XAccessProjection GetInpatientStayParamsXAccessProjection
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Projection", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Projection", valueList[0], &XAccessProjection, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Projection", Err: err})
+			return
+		}
+
+		params.XAccessProjection = &XAccessProjection
 
 	}
 
@@ -22713,6 +23438,25 @@ func (siw *ServerInterfaceWrapper) CancelInpatientStay(w http.ResponseWriter, r 
 
 	}
 
+	// ------------- Optional header parameter "X-Access-Projection" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Projection")]; found {
+		var XAccessProjection CancelInpatientStayParamsXAccessProjection
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Projection", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Projection", valueList[0], &XAccessProjection, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Projection", Err: err})
+			return
+		}
+
+		params.XAccessProjection = &XAccessProjection
+
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CancelInpatientStay(w, r, stayId, params)
 	}))
@@ -22848,6 +23592,25 @@ func (siw *ServerInterfaceWrapper) DischargeInpatientStay(w http.ResponseWriter,
 		}
 
 		params.XAccessReason = &XAccessReason
+
+	}
+
+	// ------------- Optional header parameter "X-Access-Projection" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Projection")]; found {
+		var XAccessProjection DischargeInpatientStayParamsXAccessProjection
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Projection", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Projection", valueList[0], &XAccessProjection, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Projection", Err: err})
+			return
+		}
+
+		params.XAccessProjection = &XAccessProjection
 
 	}
 
@@ -22989,6 +23752,25 @@ func (siw *ServerInterfaceWrapper) ExtendInpatientStay(w http.ResponseWriter, r 
 
 	}
 
+	// ------------- Optional header parameter "X-Access-Projection" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Projection")]; found {
+		var XAccessProjection ExtendInpatientStayParamsXAccessProjection
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Projection", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Projection", valueList[0], &XAccessProjection, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Projection", Err: err})
+			return
+		}
+
+		params.XAccessProjection = &XAccessProjection
+
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ExtendInpatientStay(w, r, stayId, params)
 	}))
@@ -23078,6 +23860,25 @@ func (siw *ServerInterfaceWrapper) GetInpatientStayReconciliation(w http.Respons
 		}
 
 		params.XAccessReason = &XAccessReason
+
+	}
+
+	// ------------- Optional header parameter "X-Access-Projection" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Projection")]; found {
+		var XAccessProjection GetInpatientStayReconciliationParamsXAccessProjection
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Projection", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Projection", valueList[0], &XAccessProjection, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Projection", Err: err})
+			return
+		}
+
+		params.XAccessProjection = &XAccessProjection
 
 	}
 
@@ -23216,6 +24017,25 @@ func (siw *ServerInterfaceWrapper) PutStaySegments(w http.ResponseWriter, r *htt
 		}
 
 		params.XAccessReason = &XAccessReason
+
+	}
+
+	// ------------- Optional header parameter "X-Access-Projection" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Projection")]; found {
+		var XAccessProjection PutStaySegmentsParamsXAccessProjection
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Projection", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Projection", valueList[0], &XAccessProjection, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Projection", Err: err})
+			return
+		}
+
+		params.XAccessProjection = &XAccessProjection
 
 	}
 
@@ -23601,6 +24421,25 @@ func (siw *ServerInterfaceWrapper) ListMedicalReports(w http.ResponseWriter, r *
 
 	}
 
+	// ------------- Optional header parameter "X-Access-Projection" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Projection")]; found {
+		var XAccessProjection ListMedicalReportsParamsXAccessProjection
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Projection", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Projection", valueList[0], &XAccessProjection, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Projection", Err: err})
+			return
+		}
+
+		params.XAccessProjection = &XAccessProjection
+
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListMedicalReports(w, r, params)
 	}))
@@ -23758,6 +24597,25 @@ func (siw *ServerInterfaceWrapper) GetMedicalReport(w http.ResponseWriter, r *ht
 		}
 
 		params.XAccessReason = &XAccessReason
+
+	}
+
+	// ------------- Optional header parameter "X-Access-Projection" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Access-Projection")]; found {
+		var XAccessProjection GetMedicalReportParamsXAccessProjection
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Access-Projection", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Access-Projection", valueList[0], &XAccessProjection, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Access-Projection", Err: err})
+			return
+		}
+
+		params.XAccessProjection = &XAccessProjection
 
 	}
 
@@ -36565,6 +37423,20 @@ func (response CreateClaim201JSONResponse) VisitCreateClaimResponse(w http.Respo
 	return err
 }
 
+type CreateClaim400ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateClaim400ApplicationProblemPlusJSONResponse) VisitCreateClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type CreateClaim403ApplicationProblemPlusJSONResponse struct {
 	ForbiddenApplicationProblemPlusJSONResponse
 }
@@ -36661,6 +37533,20 @@ func (response GetClaim200JSONResponse) VisitGetClaimResponse(w http.ResponseWri
 		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
 	}
 	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetClaim400ApplicationProblemPlusJSONResponse Problem
+
+func (response GetClaim400ApplicationProblemPlusJSONResponse) VisitGetClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -37254,6 +38140,20 @@ func (response DecideClaimLines200JSONResponse) VisitDecideClaimLinesResponse(w 
 	return err
 }
 
+type DecideClaimLines400ApplicationProblemPlusJSONResponse Problem
+
+func (response DecideClaimLines400ApplicationProblemPlusJSONResponse) VisitDecideClaimLinesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type DecideClaimLines403ApplicationProblemPlusJSONResponse struct {
 	ForbiddenApplicationProblemPlusJSONResponse
 }
@@ -37806,6 +38706,20 @@ func (response SubmitClaim200JSONResponse) VisitSubmitClaimResponse(w http.Respo
 	return err
 }
 
+type SubmitClaim400ApplicationProblemPlusJSONResponse Problem
+
+func (response SubmitClaim400ApplicationProblemPlusJSONResponse) VisitSubmitClaimResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type SubmitClaim403ApplicationProblemPlusJSONResponse struct {
 	ForbiddenApplicationProblemPlusJSONResponse
 }
@@ -38004,6 +38918,20 @@ func (response GetClaimVersion200JSONResponse) VisitGetClaimVersionResponse(w ht
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetClaimVersion400ApplicationProblemPlusJSONResponse Problem
+
+func (response GetClaimVersion400ApplicationProblemPlusJSONResponse) VisitGetClaimVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -41097,6 +42025,20 @@ func (response GetEncounter200JSONResponse) VisitGetEncounterResponse(w http.Res
 	return err
 }
 
+type GetEncounter400ApplicationProblemPlusJSONResponse Problem
+
+func (response GetEncounter400ApplicationProblemPlusJSONResponse) VisitGetEncounterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetEncounter403ApplicationProblemPlusJSONResponse struct {
 	ForbiddenApplicationProblemPlusJSONResponse
 }
@@ -41178,6 +42120,20 @@ func (response ListEncounterDiagnoses200JSONResponse) VisitListEncounterDiagnose
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListEncounterDiagnoses400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListEncounterDiagnoses400ApplicationProblemPlusJSONResponse) VisitListEncounterDiagnosesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -42666,6 +43622,20 @@ func (response GetHealthCase200JSONResponse) VisitGetHealthCaseResponse(w http.R
 	return err
 }
 
+type GetHealthCase400ApplicationProblemPlusJSONResponse Problem
+
+func (response GetHealthCase400ApplicationProblemPlusJSONResponse) VisitGetHealthCaseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetHealthCase403ApplicationProblemPlusJSONResponse struct {
 	ForbiddenApplicationProblemPlusJSONResponse
 }
@@ -43533,6 +44503,20 @@ func (response CreateInpatientStay201JSONResponse) VisitCreateInpatientStayRespo
 	return err
 }
 
+type CreateInpatientStay400ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateInpatientStay400ApplicationProblemPlusJSONResponse) VisitCreateInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type CreateInpatientStay403ApplicationProblemPlusJSONResponse struct {
 	ForbiddenApplicationProblemPlusJSONResponse
 }
@@ -43647,6 +44631,20 @@ func (response GetInpatientStay200JSONResponse) VisitGetInpatientStayResponse(w 
 	return err
 }
 
+type GetInpatientStay400ApplicationProblemPlusJSONResponse Problem
+
+func (response GetInpatientStay400ApplicationProblemPlusJSONResponse) VisitGetInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetInpatientStay403ApplicationProblemPlusJSONResponse struct {
 	ForbiddenApplicationProblemPlusJSONResponse
 }
@@ -43739,6 +44737,20 @@ func (response CancelInpatientStay200JSONResponse) VisitCancelInpatientStayRespo
 		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
 	}
 	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelInpatientStay400ApplicationProblemPlusJSONResponse Problem
+
+func (response CancelInpatientStay400ApplicationProblemPlusJSONResponse) VisitCancelInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -43867,6 +44879,20 @@ func (response DischargeInpatientStay200JSONResponse) VisitDischargeInpatientSta
 	return err
 }
 
+type DischargeInpatientStay400ApplicationProblemPlusJSONResponse Problem
+
+func (response DischargeInpatientStay400ApplicationProblemPlusJSONResponse) VisitDischargeInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type DischargeInpatientStay403ApplicationProblemPlusJSONResponse struct {
 	ForbiddenApplicationProblemPlusJSONResponse
 }
@@ -43991,6 +45017,20 @@ func (response ExtendInpatientStay200JSONResponse) VisitExtendInpatientStayRespo
 	return err
 }
 
+type ExtendInpatientStay400ApplicationProblemPlusJSONResponse Problem
+
+func (response ExtendInpatientStay400ApplicationProblemPlusJSONResponse) VisitExtendInpatientStayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ExtendInpatientStay403ApplicationProblemPlusJSONResponse struct {
 	ForbiddenApplicationProblemPlusJSONResponse
 }
@@ -44104,6 +45144,20 @@ func (response GetInpatientStayReconciliation200JSONResponse) VisitGetInpatientS
 	return err
 }
 
+type GetInpatientStayReconciliation400ApplicationProblemPlusJSONResponse Problem
+
+func (response GetInpatientStayReconciliation400ApplicationProblemPlusJSONResponse) VisitGetInpatientStayReconciliationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetInpatientStayReconciliation403ApplicationProblemPlusJSONResponse struct {
 	ForbiddenApplicationProblemPlusJSONResponse
 }
@@ -44196,6 +45250,20 @@ func (response PutStaySegments200JSONResponse) VisitPutStaySegmentsResponse(w ht
 		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
 	}
 	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutStaySegments400ApplicationProblemPlusJSONResponse Problem
+
+func (response PutStaySegments400ApplicationProblemPlusJSONResponse) VisitPutStaySegmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -44746,6 +45814,20 @@ func (response GetMedicalReport200JSONResponse) VisitGetMedicalReportResponse(w 
 		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
 	}
 	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMedicalReport400ApplicationProblemPlusJSONResponse Problem
+
+func (response GetMedicalReport400ApplicationProblemPlusJSONResponse) VisitGetMedicalReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
 	_, err := buf.WriteTo(w)
 	return err
 }

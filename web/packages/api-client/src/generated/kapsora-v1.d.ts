@@ -9072,6 +9072,12 @@ export interface components {
     };
     parameters: {
         /**
+         * @description Ask for the financial projection only. A caller who holds the sensitive grant may
+         *     decline to read clinical detail; the answer is the financial projection, no purpose
+         *     is required, and nothing is written to the access log.
+         */
+        AccessProjectionHeader: "FINANCIAL";
+        /**
          * @description Why the caller is opening clinical data, as a code from the clinical access purpose
          *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
          *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
@@ -9521,6 +9527,7 @@ export type ResponseNotFound = components['responses']['NotFound'];
 export type ResponseTooManyRequests = components['responses']['TooManyRequests'];
 export type ResponseUnauthorized = components['responses']['Unauthorized'];
 export type ResponseValidationError = components['responses']['ValidationError'];
+export type ParameterAccessProjectionHeader = components['parameters']['AccessProjectionHeader'];
 export type ParameterAccessPurposeHeader = components['parameters']['AccessPurposeHeader'];
 export type ParameterAccessReasonHeader = components['parameters']['AccessReasonHeader'];
 export type ParameterAccountId = components['parameters']['AccountId'];
@@ -9913,6 +9920,12 @@ export interface operations {
             };
             header: {
                 /**
+                 * @description Ask for the financial projection only. A caller who holds the sensitive grant may
+                 *     decline to read clinical detail; the answer is the financial projection, no purpose
+                 *     is required, and nothing is written to the access log.
+                 */
+                "X-Access-Projection"?: components["parameters"]["AccessProjectionHeader"];
+                /**
                  * @description Why the caller is opening clinical data, as a code from the clinical access purpose
                  *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
                  *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
@@ -9949,7 +9962,7 @@ export interface operations {
                     "application/json": components["schemas"]["ClaimPage"];
                 };
             };
-            /** @description Cursor invalid */
+            /** @description Cursor or access projection header invalid */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -9968,6 +9981,12 @@ export interface operations {
             header: {
                 /** @description Client-generated unique key retained for at least 24 hours. */
                 "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /**
+                 * @description Ask for the financial projection only. A caller who holds the sensitive grant may
+                 *     decline to read clinical detail; the answer is the financial projection, no purpose
+                 *     is required, and nothing is written to the access log.
+                 */
+                "X-Access-Projection"?: components["parameters"]["AccessProjectionHeader"];
                 /**
                  * @description Why the caller is opening clinical data, as a code from the clinical access purpose
                  *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
@@ -10011,6 +10030,15 @@ export interface operations {
                     "application/json": components["schemas"]["Claim"];
                 };
             };
+            /** @description Access projection header invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             422: components["responses"]["ValidationError"];
@@ -10021,6 +10049,12 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
+                /**
+                 * @description Ask for the financial projection only. A caller who holds the sensitive grant may
+                 *     decline to read clinical detail; the answer is the financial projection, no purpose
+                 *     is required, and nothing is written to the access log.
+                 */
+                "X-Access-Projection"?: components["parameters"]["AccessProjectionHeader"];
                 /**
                  * @description Why the caller is opening clinical data, as a code from the clinical access purpose
                  *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
@@ -10059,6 +10093,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Claim"];
+                };
+            };
+            /** @description Access projection header invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             403: components["responses"]["Forbidden"];
@@ -10329,6 +10372,12 @@ export interface operations {
                 /** @description Optimistic concurrency token returned as ETag. */
                 "If-Match": components["parameters"]["IfMatch"];
                 /**
+                 * @description Ask for the financial projection only. A caller who holds the sensitive grant may
+                 *     decline to read clinical detail; the answer is the financial projection, no purpose
+                 *     is required, and nothing is written to the access log.
+                 */
+                "X-Access-Projection"?: components["parameters"]["AccessProjectionHeader"];
+                /**
                  * @description Why the caller is opening clinical data, as a code from the clinical access purpose
                  *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
                  *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
@@ -10370,6 +10419,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Claim"];
+                };
+            };
+            /** @description Access projection header invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             403: components["responses"]["Forbidden"];
@@ -10611,6 +10669,12 @@ export interface operations {
                 /** @description Optimistic concurrency token returned as ETag. */
                 "If-Match": components["parameters"]["IfMatch"];
                 /**
+                 * @description Ask for the financial projection only. A caller who holds the sensitive grant may
+                 *     decline to read clinical detail; the answer is the financial projection, no purpose
+                 *     is required, and nothing is written to the access log.
+                 */
+                "X-Access-Projection"?: components["parameters"]["AccessProjectionHeader"];
+                /**
                  * @description Why the caller is opening clinical data, as a code from the clinical access purpose
                  *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
                  *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
@@ -10648,6 +10712,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Claim"];
+                };
+            };
+            /** @description Access projection header invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             403: components["responses"]["Forbidden"];
@@ -10727,6 +10800,12 @@ export interface operations {
             query?: never;
             header: {
                 /**
+                 * @description Ask for the financial projection only. A caller who holds the sensitive grant may
+                 *     decline to read clinical detail; the answer is the financial projection, no purpose
+                 *     is required, and nothing is written to the access log.
+                 */
+                "X-Access-Projection"?: components["parameters"]["AccessProjectionHeader"];
+                /**
                  * @description Why the caller is opening clinical data, as a code from the clinical access purpose
                  *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
                  *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
@@ -10765,6 +10844,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ClaimVersion"];
+                };
+            };
+            /** @description Access projection header invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             403: components["responses"]["Forbidden"];
@@ -12185,6 +12273,12 @@ export interface operations {
             query?: never;
             header: {
                 /**
+                 * @description Ask for the financial projection only. A caller who holds the sensitive grant may
+                 *     decline to read clinical detail; the answer is the financial projection, no purpose
+                 *     is required, and nothing is written to the access log.
+                 */
+                "X-Access-Projection"?: components["parameters"]["AccessProjectionHeader"];
+                /**
                  * @description Why the caller is opening clinical data, as a code from the clinical access purpose
                  *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
                  *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
@@ -12224,6 +12318,15 @@ export interface operations {
                     "application/json": components["schemas"]["Encounter"];
                 };
             };
+            /** @description Access projection header invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             422: components["responses"]["ValidationError"];
@@ -12242,6 +12345,12 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
+                /**
+                 * @description Ask for the financial projection only. A caller who holds the sensitive grant may
+                 *     decline to read clinical detail; the answer is the financial projection, no purpose
+                 *     is required, and nothing is written to the access log.
+                 */
+                "X-Access-Projection"?: components["parameters"]["AccessProjectionHeader"];
                 /**
                  * @description Why the caller is opening clinical data, as a code from the clinical access purpose
                  *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
@@ -12279,6 +12388,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DiagnosisList"];
+                };
+            };
+            /** @description Access projection header invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /**
@@ -12965,6 +13083,12 @@ export interface operations {
             };
             header: {
                 /**
+                 * @description Ask for the financial projection only. A caller who holds the sensitive grant may
+                 *     decline to read clinical detail; the answer is the financial projection, no purpose
+                 *     is required, and nothing is written to the access log.
+                 */
+                "X-Access-Projection"?: components["parameters"]["AccessProjectionHeader"];
+                /**
                  * @description Why the caller is opening clinical data, as a code from the clinical access purpose
                  *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
                  *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
@@ -13001,7 +13125,7 @@ export interface operations {
                     "application/json": components["schemas"]["HealthCasePage"];
                 };
             };
-            /** @description Cursor invalid */
+            /** @description Cursor or access projection header invalid */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -13053,6 +13177,12 @@ export interface operations {
             query?: never;
             header: {
                 /**
+                 * @description Ask for the financial projection only. A caller who holds the sensitive grant may
+                 *     decline to read clinical detail; the answer is the financial projection, no purpose
+                 *     is required, and nothing is written to the access log.
+                 */
+                "X-Access-Projection"?: components["parameters"]["AccessProjectionHeader"];
+                /**
                  * @description Why the caller is opening clinical data, as a code from the clinical access purpose
                  *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
                  *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
@@ -13090,6 +13220,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthCase"];
+                };
+            };
+            /** @description Access projection header invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             403: components["responses"]["Forbidden"];
@@ -13510,6 +13649,12 @@ export interface operations {
             };
             header: {
                 /**
+                 * @description Ask for the financial projection only. A caller who holds the sensitive grant may
+                 *     decline to read clinical detail; the answer is the financial projection, no purpose
+                 *     is required, and nothing is written to the access log.
+                 */
+                "X-Access-Projection"?: components["parameters"]["AccessProjectionHeader"];
+                /**
                  * @description Why the caller is opening clinical data, as a code from the clinical access purpose
                  *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
                  *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
@@ -13546,7 +13691,7 @@ export interface operations {
                     "application/json": components["schemas"]["InpatientStayPage"];
                 };
             };
-            /** @description Cursor invalid */
+            /** @description Cursor or access projection header invalid */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -13565,6 +13710,12 @@ export interface operations {
             header: {
                 /** @description Client-generated unique key retained for at least 24 hours. */
                 "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /**
+                 * @description Ask for the financial projection only. A caller who holds the sensitive grant may
+                 *     decline to read clinical detail; the answer is the financial projection, no purpose
+                 *     is required, and nothing is written to the access log.
+                 */
+                "X-Access-Projection"?: components["parameters"]["AccessProjectionHeader"];
                 /**
                  * @description Why the caller is opening clinical data, as a code from the clinical access purpose
                  *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
@@ -13608,6 +13759,15 @@ export interface operations {
                     "application/json": components["schemas"]["InpatientStay"];
                 };
             };
+            /** @description Access projection header invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             /** @description The case already has an open stay at this provider. INPATIENT_STAY_ALREADY_OPEN. */
@@ -13627,6 +13787,12 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
+                /**
+                 * @description Ask for the financial projection only. A caller who holds the sensitive grant may
+                 *     decline to read clinical detail; the answer is the financial projection, no purpose
+                 *     is required, and nothing is written to the access log.
+                 */
+                "X-Access-Projection"?: components["parameters"]["AccessProjectionHeader"];
                 /**
                  * @description Why the caller is opening clinical data, as a code from the clinical access purpose
                  *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
@@ -13667,6 +13833,15 @@ export interface operations {
                     "application/json": components["schemas"]["InpatientStay"];
                 };
             };
+            /** @description Access projection header invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             422: components["responses"]["ValidationError"];
@@ -13689,6 +13864,12 @@ export interface operations {
                 "Idempotency-Key": components["parameters"]["IdempotencyKey"];
                 /** @description Optimistic concurrency token returned as ETag. */
                 "If-Match": components["parameters"]["IfMatch"];
+                /**
+                 * @description Ask for the financial projection only. A caller who holds the sensitive grant may
+                 *     decline to read clinical detail; the answer is the financial projection, no purpose
+                 *     is required, and nothing is written to the access log.
+                 */
+                "X-Access-Projection"?: components["parameters"]["AccessProjectionHeader"];
                 /**
                  * @description Why the caller is opening clinical data, as a code from the clinical access purpose
                  *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
@@ -13733,6 +13914,15 @@ export interface operations {
                     "application/json": components["schemas"]["InpatientStay"];
                 };
             };
+            /** @description Access projection header invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             /** @description The stay has already finished. INPATIENT_STAY_TRANSITION_INVALID. */
@@ -13773,6 +13963,12 @@ export interface operations {
                 "Idempotency-Key": components["parameters"]["IdempotencyKey"];
                 /** @description Optimistic concurrency token returned as ETag. */
                 "If-Match": components["parameters"]["IfMatch"];
+                /**
+                 * @description Ask for the financial projection only. A caller who holds the sensitive grant may
+                 *     decline to read clinical detail; the answer is the financial projection, no purpose
+                 *     is required, and nothing is written to the access log.
+                 */
+                "X-Access-Projection"?: components["parameters"]["AccessProjectionHeader"];
                 /**
                  * @description Why the caller is opening clinical data, as a code from the clinical access purpose
                  *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
@@ -13817,6 +14013,15 @@ export interface operations {
                     "application/json": components["schemas"]["InpatientStay"];
                 };
             };
+            /** @description Access projection header invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             /** @description The stay is not AUTHORIZED or ADMITTED. INPATIENT_STAY_TRANSITION_INVALID. */
@@ -13857,6 +14062,12 @@ export interface operations {
                 "Idempotency-Key": components["parameters"]["IdempotencyKey"];
                 /** @description Optimistic concurrency token returned as ETag. */
                 "If-Match": components["parameters"]["IfMatch"];
+                /**
+                 * @description Ask for the financial projection only. A caller who holds the sensitive grant may
+                 *     decline to read clinical detail; the answer is the financial projection, no purpose
+                 *     is required, and nothing is written to the access log.
+                 */
+                "X-Access-Projection"?: components["parameters"]["AccessProjectionHeader"];
                 /**
                  * @description Why the caller is opening clinical data, as a code from the clinical access purpose
                  *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
@@ -13901,6 +14112,15 @@ export interface operations {
                     "application/json": components["schemas"]["InpatientStay"];
                 };
             };
+            /** @description Access projection header invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             /**
@@ -13941,6 +14161,12 @@ export interface operations {
             query?: never;
             header: {
                 /**
+                 * @description Ask for the financial projection only. A caller who holds the sensitive grant may
+                 *     decline to read clinical detail; the answer is the financial projection, no purpose
+                 *     is required, and nothing is written to the access log.
+                 */
+                "X-Access-Projection"?: components["parameters"]["AccessProjectionHeader"];
+                /**
                  * @description Why the caller is opening clinical data, as a code from the clinical access purpose
                  *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
                  *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
@@ -13979,6 +14205,15 @@ export interface operations {
                     "application/json": components["schemas"]["StayReconciliation"];
                 };
             };
+            /** @description Access projection header invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             /** @description The stay has not been discharged. INPATIENT_STAY_NOT_DISCHARGED. */
@@ -14001,6 +14236,12 @@ export interface operations {
                 "Idempotency-Key": components["parameters"]["IdempotencyKey"];
                 /** @description Optimistic concurrency token returned as ETag. */
                 "If-Match": components["parameters"]["IfMatch"];
+                /**
+                 * @description Ask for the financial projection only. A caller who holds the sensitive grant may
+                 *     decline to read clinical detail; the answer is the financial projection, no purpose
+                 *     is required, and nothing is written to the access log.
+                 */
+                "X-Access-Projection"?: components["parameters"]["AccessProjectionHeader"];
                 /**
                  * @description Why the caller is opening clinical data, as a code from the clinical access purpose
                  *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
@@ -14043,6 +14284,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InpatientStay"];
+                };
+            };
+            /** @description Access projection header invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             403: components["responses"]["Forbidden"];
@@ -14210,6 +14460,12 @@ export interface operations {
             };
             header: {
                 /**
+                 * @description Ask for the financial projection only. A caller who holds the sensitive grant may
+                 *     decline to read clinical detail; the answer is the financial projection, no purpose
+                 *     is required, and nothing is written to the access log.
+                 */
+                "X-Access-Projection"?: components["parameters"]["AccessProjectionHeader"];
+                /**
                  * @description Why the caller is opening clinical data, as a code from the clinical access purpose
                  *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
                  *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
@@ -14246,7 +14502,7 @@ export interface operations {
                     "application/json": components["schemas"]["MedicalReportPage"];
                 };
             };
-            /** @description Cursor invalid */
+            /** @description Cursor or access projection header invalid */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -14299,6 +14555,12 @@ export interface operations {
             query?: never;
             header: {
                 /**
+                 * @description Ask for the financial projection only. A caller who holds the sensitive grant may
+                 *     decline to read clinical detail; the answer is the financial projection, no purpose
+                 *     is required, and nothing is written to the access log.
+                 */
+                "X-Access-Projection"?: components["parameters"]["AccessProjectionHeader"];
+                /**
                  * @description Why the caller is opening clinical data, as a code from the clinical access purpose
                  *     reference (TREATMENT, PRE_AUTHORIZATION, CLAIM_REVIEW, MEDICAL_REVIEW, AUDIT,
                  *     MEMBER_REQUEST). It is required for the clinical projection of a SENSITIVE case; a
@@ -14336,6 +14598,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MedicalReport"];
+                };
+            };
+            /** @description Access projection header invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             403: components["responses"]["Forbidden"];

@@ -83,12 +83,24 @@ const BRANCH_CODE = /^[A-Z][A-Z0-9_.-]{0,63}$/;
 /** A clinical body is not something an intermediary should keep a copy of. */
 export const NO_STORE = { 'Cache-Control': 'no-store' } as const;
 
+/** The only value `X-Access-Projection` is defined to carry. */
+const PROJECTION_FINANCIAL = 'FINANCIAL';
+
 export type Projection = Schemas['HealthProjection'];
 
-/** Why the caller is opening clinical data, as the two headers state it. */
+/** Why the caller is opening clinical data, as the three access headers state it. */
 export interface AccessRequest {
   purposeCode: string;
   reasonText: string;
+  /**
+   * The caller declined to read clinical detail: `X-Access-Projection: FINANCIAL`. It is
+   * answered with the financial projection whatever the caller holds and whatever the case
+   * is — no purpose is demanded and nothing is written to the access log, because choosing
+   * not to look is not a look.
+   */
+  financialOnly: boolean;
+  /** `X-Access-Projection` carried a value the contract does not define: a 400, not a 422. */
+  projectionInvalid: boolean;
 }
 
 /**
@@ -107,9 +119,12 @@ function decodeReason(raw: string): string {
 }
 
 export function accessRequest(request: Request): AccessRequest {
+  const projection = (request.headers.get('X-Access-Projection') ?? '').trim();
   return {
     purposeCode: (request.headers.get('X-Access-Purpose') ?? '').trim(),
     reasonText: decodeReason(request.headers.get('X-Access-Reason') ?? ''),
+    financialOnly: projection.toUpperCase() === PROJECTION_FINANCIAL,
+    projectionInvalid: projection !== '' && projection.toUpperCase() !== PROJECTION_FINANCIAL,
   };
 }
 
@@ -175,6 +190,27 @@ export function accessHeaderErrors(req: AccessRequest): FieldError[] {
   return errors;
 }
 
+/**
+ * The access headers as one answer, in the order the server checks them: a projection
+ * outside the contract's enum is a malformed request and earns 400, and a purpose outside
+ * the reference table is a rejected value and earns 422.
+ */
+export function accessHeaderProblem(api: MockApi, req: AccessRequest): Response | null {
+  if (req.projectionInvalid) {
+    return problem(api, 400, 'VALIDATION_FAILED', 'Doğrulama hatası', {
+      errors: [
+        {
+          field: 'X-Access-Projection',
+          code: 'ENUM',
+          message: `geçerli değer: ${PROJECTION_FINANCIAL}`,
+        },
+      ],
+    });
+  }
+  const bad = accessHeaderErrors(req);
+  return bad.length > 0 ? validationFailed(api, bad) : null;
+}
+
 export function decideProjection(
   api: MockApi,
   session: MockSession,
@@ -182,6 +218,9 @@ export function decideProjection(
   sensitivity: Schemas['HealthCaseSensitivity'],
   req: AccessRequest,
 ): Decision {
+  if (req.financialOnly) {
+    return { projection: 'FINANCIAL', refusedSensitive: false, purposeMissing: false };
+  }
   if (!hasPermission(api, session, tenantId, PERMISSION_CLINICAL_READ)) {
     return { projection: 'FINANCIAL', refusedSensitive: false, purposeMissing: false };
   }
@@ -324,9 +363,6 @@ export function healthHandlers(api: MockApi): HttpHandler[] {
       .encounters.filter((e) => e.caseId === caseId)
       .sort((a, b) => a.startedAt.localeCompare(b.startedAt));
 
-  /** The purpose header, checked against the reference the migration seeds. */
-  const badPurpose = (req: AccessRequest): FieldError[] => accessHeaderErrors(req);
-
   /** Recomputes a case's sensitivity from the diagnoses that are actually stored. */
   const refreshSensitivity = (row: StoredHealthCase): void => {
     const ids = new Set(encountersOf(row.id).map((e) => e.id));
@@ -341,8 +377,8 @@ export function healthHandlers(api: MockApi): HttpHandler[] {
       const g = guardTenant(api, request, PERMISSION_CASE_READ, false);
       if ('error' in g) return g.error;
       const req = accessRequest(request);
-      const bad = badPurpose(req);
-      if (bad.length > 0) return validationFailed(api, bad);
+      const badAccess = accessHeaderProblem(api, req);
+      if (badAccess) return badAccess;
 
       const url = new URL(request.url);
       const limit = parseLimit(url);
@@ -525,8 +561,8 @@ export function healthHandlers(api: MockApi): HttpHandler[] {
       const g = guardTenant(api, request, PERMISSION_CASE_READ, false);
       if ('error' in g) return g.error;
       const req = accessRequest(request);
-      const bad = badPurpose(req);
-      if (bad.length > 0) return validationFailed(api, bad);
+      const badAccess = accessHeaderProblem(api, req);
+      if (badAccess) return badAccess;
       const row = findCase(g.session, g.tenantId, pathParam(params, 'caseId'));
       if (!row) return caseNotFound(api);
 
@@ -666,8 +702,8 @@ export function healthHandlers(api: MockApi): HttpHandler[] {
       const g = guardTenant(api, request, PERMISSION_CASE_READ, false);
       if ('error' in g) return g.error;
       const req = accessRequest(request);
-      const bad = badPurpose(req);
-      if (bad.length > 0) return validationFailed(api, bad);
+      const badAccess = accessHeaderProblem(api, req);
+      if (badAccess) return badAccess;
       const encounter = world().encounters.find(
         (e) => e.id === pathParam(params, 'encounterId') && e.tenantId === g.tenantId,
       );
@@ -723,8 +759,8 @@ export function healthHandlers(api: MockApi): HttpHandler[] {
       const g = guardTenant(api, request, PERMISSION_CASE_READ, false);
       if ('error' in g) return g.error;
       const req = accessRequest(request);
-      const bad = badPurpose(req);
-      if (bad.length > 0) return validationFailed(api, bad);
+      const badAccess = accessHeaderProblem(api, req);
+      if (badAccess) return badAccess;
       const encounter = world().encounters.find(
         (e) => e.id === pathParam(params, 'encounterId') && e.tenantId === g.tenantId,
       );

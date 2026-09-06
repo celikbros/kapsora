@@ -98,7 +98,20 @@ export const NAV_ENTRIES: NavEntry[] = [
   },
   { key: 'health', path: '/health-services', labelKey: 'nav.health', implemented: false },
   { key: 'lodging', path: '/lodging', labelKey: 'nav.lodging', implemented: false },
-  { key: 'claims', path: '/claims', labelKey: 'nav.claims', implemented: false },
+  {
+    key: 'claims',
+    path: '/claims',
+    labelKey: 'nav.claims',
+    implemented: true,
+    permission: 'claim.read',
+  },
+  {
+    key: 'medicalReports',
+    path: '/medical-reports',
+    labelKey: 'nav.medicalReports',
+    implemented: true,
+    permission: 'health.medical_report.review',
+  },
   {
     key: 'reconciliation',
     path: '/reconciliation',

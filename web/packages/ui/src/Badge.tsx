@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
 import { cn } from './cn';
 
 export type BadgeTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
@@ -11,28 +11,27 @@ const tones: Record<BadgeTone, string> = {
   danger: 'bg-danger-soft text-danger border-danger/40',
 };
 
+/**
+ * A status word. Everything a span accepts passes through — a `data-testid`, a `title` —
+ * so a screen can name the badge it asserts on without wrapping it.
+ */
 export function Badge({
   tone = 'neutral',
   children,
   className,
-  style,
-  title,
-}: {
+  ...rest
+}: HTMLAttributes<HTMLSpanElement> & {
   tone?: BadgeTone;
   children: ReactNode;
-  className?: string;
-  style?: CSSProperties;
-  title?: string;
 }) {
   return (
     <span
+      {...rest}
       className={cn(
         'inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap',
         tones[tone],
         className,
       )}
-      style={style}
-      title={title}
     >
       {children}
     </span>

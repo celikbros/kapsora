@@ -55,6 +55,10 @@ func (h *Handler) ListMedicalReports(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	access, ok := h.accessRequest(w, r)
+	if !ok {
+		return
+	}
 	var fields []domain.FieldError
 	filter := application.ReportFilter{
 		Cursor:                 r.URL.Query().Get("cursor"),
@@ -71,7 +75,7 @@ func (h *Handler) ListMedicalReports(w http.ResponseWriter, r *http.Request) {
 		writeValidation(w, r, fields)
 		return
 	}
-	page, err := h.svc.ListReports(r.Context(), rc, filter, accessRequest(r))
+	page, err := h.svc.ListReports(r.Context(), rc, filter, access)
 	if err != nil {
 		h.writeError(w, r, err)
 		return
@@ -93,11 +97,15 @@ func (h *Handler) GetMedicalReport(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	access, ok := h.accessRequest(w, r)
+	if !ok {
+		return
+	}
 	id, ok := h.pathUUID(w, r, "reportId", application.ErrReportNotFound)
 	if !ok {
 		return
 	}
-	view, err := h.svc.GetReport(r.Context(), rc, id, accessRequest(r))
+	view, err := h.svc.GetReport(r.Context(), rc, id, access)
 	if err != nil {
 		h.writeError(w, r, err)
 		return

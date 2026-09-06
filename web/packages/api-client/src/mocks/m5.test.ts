@@ -13,6 +13,8 @@
  * sponsor HR user receives is scanned for the diagnosis code and the clinical notes, and
  * neither may appear. Remove the projection from health-handlers.ts and this fails.
  */
+import { readFileSync } from 'node:fs';
+
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import { createKapsoraClient, randomId, type KapsoraClient } from '../client';
@@ -107,6 +109,66 @@ describe('the health world', () => {
     expect(permissions).not.toContain('health.clinical.read');
     expect(permissions).not.toContain('health.sensitive.read');
     expect(permissions).not.toContain('health.case.manage');
+  });
+});
+
+/**
+ * The mock's role fixtures are copies of internal/identity/application/roles.go, and a copy
+ * drifts. These read the Go source itself rather than a second copy of it: a permission
+ * added to a role on the server and not here would leave a screen passing against the mock
+ * and refused in production, which is exactly what happened once to PROVIDER_STAFF.
+ */
+function goRolePermissions(code: string): string[] {
+  const source = readFileSync(
+    new URL('../../../../../internal/identity/application/roles.go', import.meta.url),
+    'utf8',
+  );
+  const role = source.indexOf(`{Code: "${code}"`);
+  if (role < 0) throw new Error(`roles.go declares no role ${code}`);
+  const marker = 'Permissions: []string{';
+  const open = source.indexOf(marker, role);
+  if (open < 0) throw new Error(`roles.go role ${code} declares no permissions`);
+  const from = open + marker.length;
+  const to = source.indexOf('}', from);
+  return [...source.slice(from, to).matchAll(/"([^"]+)"/g)].map((m) => m[1]!);
+}
+
+function permissionsOf(username: string): string[] {
+  const account = api.world.accounts.find((a) => a.username === username);
+  if (!account) throw new Error(`fixture: no account ${username}`);
+  return account.memberships[0]!.permissions;
+}
+
+describe('the M5 review and billing accounts', () => {
+  it('grants financial.reviewer exactly the Go FINANCIAL_REVIEWER list', () => {
+    expect(permissionsOf('financial.reviewer')).toEqual(goRolePermissions('FINANCIAL_REVIEWER'));
+  });
+
+  it('grants billing.a exactly the Go PROVIDER_BILLING list', () => {
+    expect(permissionsOf('billing.a')).toEqual(goRolePermissions('PROVIDER_BILLING'));
+  });
+
+  /**
+   * Neither of them holds a clinical grant, which is what makes them the accounts the
+   * financial projection is written for. Asserted rather than assumed: adding
+   * health.clinical.read to either list would silently turn every WP-I5-04 projection test
+   * that uses them into a test of nothing.
+   */
+  it('gives neither of them any clinical grant', () => {
+    for (const username of ['financial.reviewer', 'billing.a']) {
+      const permissions = permissionsOf(username);
+      expect(permissions).not.toContain('health.clinical.read');
+      expect(permissions).not.toContain('health.sensitive.read');
+      expect(permissions).not.toContain('health.case.read');
+    }
+  });
+
+  /** The billing desk is bounded by the same relationship row the clinic desk is. */
+  it('scopes billing.a to the organization provider.a is scoped to', () => {
+    const billing = api.world.accounts.find((a) => a.username === 'billing.a')!;
+    const provider = api.world.accounts.find((a) => a.username === 'provider.a')!;
+    expect(billing.memberships[0]!.scopes).toEqual(provider.memberships[0]!.scopes);
+    expect(billing.memberships[0]!.scopes![0]!.type).toBe('ORGANIZATION');
   });
 });
 
@@ -440,6 +502,54 @@ describe('a sensitive case', () => {
     );
     expect(problem.status).toBe(422);
     expect(problem.errors?.[0]?.field).toBe('X-Access-Purpose');
+  });
+
+  it('serves the financial half, with no purpose and no access row, to a caller that declines', async () => {
+    // doctor.a holds both grants, so a plain read of the sensitive case would be the 428
+    // above and a plain read of the standard one would be the clinical projection. Saying
+    // "financial only" is the reviewer declining to look, and choosing not to look is not a
+    // look: no precondition, no clinical field, and nothing on the member's access log.
+    const s = await signIn('doctor.a');
+    for (const sensitivity of ['SENSITIVE', 'STANDARD'] as const) {
+      const row = caseWithSensitivity(sensitivity);
+      const one = await unwrap(
+        s.c.GET('/api/v1/health-cases/{caseId}', {
+          params: {
+            header: { ...tenant(s), 'X-Access-Projection': 'FINANCIAL' },
+            path: { caseId: row.id },
+          },
+        }),
+      );
+      expect(one.data.projection).toBe('FINANCIAL');
+      expect(one.data.sensitivity).toBeUndefined();
+      expect(one.data.encounters.every((e) => e.notesClinical === undefined)).toBe(true);
+      expect(JSON.stringify(one.data)).not.toContain('SENSITIVE');
+
+      const log = await unwrap(
+        s.c.GET('/api/v1/health-access-log', {
+          params: { header: tenant(s), query: { personId: row.personId } },
+        }),
+      );
+      expect(log.data.items.filter((e) => e.actorId === s.actorId)).toHaveLength(0);
+    }
+  });
+
+  it('refuses a projection the contract does not define, before anything is read', async () => {
+    const s = await signIn('doctor.a');
+    const problem = await refusal(
+      unwrap(
+        s.c.GET('/api/v1/health-cases/{caseId}', {
+          params: {
+            // CLINICAL is not a value a caller may ask for: the clinical projection is
+            // earned, not requested. The generated type carries only FINANCIAL.
+            header: { ...tenant(s), 'X-Access-Projection': 'CLINICAL' } as never,
+            path: { caseId: caseWithSensitivity('SENSITIVE').id },
+          },
+        }),
+      ),
+    );
+    expect(problem.status).toBe(400);
+    expect(problem.errors?.[0]?.field).toBe('X-Access-Projection');
   });
 });
 

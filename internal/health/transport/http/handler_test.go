@@ -718,6 +718,102 @@ func TestSensitiveCaseNeedsThePermissionAndAPurpose(t *testing.T) {
 	}
 }
 
+// TestDecliningTheClinicalHalfIsNotALook is the decline path WP-I5-06's screens need. A
+// reviewer holding both grants may say "serve me the financial half, I am not looking at
+// clinical detail" by sending X-Access-Projection: FINANCIAL. The answer is the financial
+// projection — no 428, no clinical field on the wire, and no row on the member's access log,
+// because choosing not to look is not a look.
+//
+// It is asked of a SENSITIVE case and of a STANDARD one, because the rule is not a narrowing
+// of what the caller may see: the caller asked for less than it is entitled to, and that is
+// the answer either way.
+func TestDecliningTheClinicalHalfIsNotALook(t *testing.T) {
+	for _, tc := range []struct {
+		name        string
+		strict      bool
+		sensitivity string
+	}{
+		{name: "sensitive case", strict: true, sensitivity: "SENSITIVE"},
+		{name: "standard case", strict: false, sensitivity: "STANDARD"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := newServer(t)
+			code := s.codePlain
+			if tc.strict {
+				code = s.codeStrict
+			}
+			caseID, _ := s.openCase(t, code, "PRIMARY")
+
+			ctx, cancel := s.h.Ctx()
+			defer cancel()
+			var sensitivity string
+			if err := s.h.Admin.QueryRow(ctx,
+				`SELECT sensitivity FROM health.health_case WHERE id = $1`, caseID).Scan(&sensitivity); err != nil {
+				t.Fatalf("read sensitivity: %v", err)
+			}
+			if sensitivity != tc.sensitivity {
+				t.Fatalf("case sensitivity = %s, want %s", sensitivity, tc.sensitivity)
+			}
+
+			// Lower case on purpose: the value is an enum, not a password, and a client that
+			// spells it "financial" has said the same thing.
+			rec := s.do(t, http.MethodGet, "/api/v1/health-cases/"+caseID.String(),
+				reviewerPermissions, nil, "X-Access-Projection", "financial")
+			if rec.Code != http.StatusOK {
+				t.Fatalf("financial-only read = %d, want 200 and no 428: %s", rec.Code, rec.Body.String())
+			}
+			view := decode[caseBody](t, rec)
+			if view.Projection != "FINANCIAL" {
+				t.Fatalf("projection = %s, want FINANCIAL: the caller asked for the financial half",
+					view.Projection)
+			}
+			if view.Sensitivity != nil {
+				t.Fatalf("financial projection carried sensitivity = %v, want it absent", *view.Sensitivity)
+			}
+			for i, enc := range view.Encounters {
+				if enc.BranchCode != nil || enc.NotesClinical != nil {
+					t.Fatalf("encounters[%d] kept a clinical field: branchCode=%v notesClinical=%v",
+						i, enc.BranchCode, enc.NotesClinical)
+				}
+			}
+			if body := rec.Body.String(); strings.Contains(body, clinicalNote) ||
+				strings.Contains(body, "SENSITIVE") {
+				t.Fatalf("the financial projection leaked clinical text:\n%s", body)
+			}
+
+			// The whole point: nothing was read, so nothing is on the record. Not a SUCCESS
+			// row, because no clinical half was served, and not a DENIED row either, because
+			// nobody was refused anything.
+			if events := s.accessEvents(t, caseID); len(events) != 0 {
+				t.Fatalf("declining to read clinical detail wrote %d access events, want none: %+v",
+					len(events), events)
+			}
+		})
+	}
+
+	// A value the contract does not define is a malformed request, and it is answered before
+	// anything is read: 400, naming the header a caller would have to fix.
+	t.Run("unknown projection value", func(t *testing.T) {
+		s := newServer(t)
+		caseID, _ := s.openCase(t, s.codeStrict, "PRIMARY")
+		rec := s.do(t, http.MethodGet, "/api/v1/health-cases/"+caseID.String(),
+			reviewerPermissions, nil, "X-Access-Projection", "CLINICAL")
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("unknown projection = %d, want 400: %s", rec.Code, rec.Body.String())
+		}
+		p := decode[problemBody](t, rec)
+		if p.Code != "VALIDATION_FAILED" {
+			t.Fatalf("problem code = %s, want VALIDATION_FAILED", p.Code)
+		}
+		if len(p.Errors) != 1 || p.Errors[0].Field != "X-Access-Projection" {
+			t.Fatalf("field errors = %+v, want one naming X-Access-Projection", p.Errors)
+		}
+		if events := s.accessEvents(t, caseID); len(events) != 0 {
+			t.Fatalf("a refused header wrote %d access events, want none", len(events))
+		}
+	})
+}
+
 // TestSensitivityFollowsTheDiagnosisSet: it is derived from what is stored, in both
 // directions, and a caller never sends it.
 func TestSensitivityFollowsTheDiagnosisSet(t *testing.T) {

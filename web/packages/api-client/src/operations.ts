@@ -13,6 +13,10 @@ import { documentOperations } from './document';
 import { notificationOperations } from './notification';
 import { providerOperations } from './provider';
 import { ruleOperations } from './rules';
+import { healthOperations } from './health';
+import { medicalReportOperations } from './medicalreport';
+import { inpatientOperations } from './inpatient';
+import { claimOperations } from './claim';
 import { randomId } from './client';
 import type { components } from './generated/kapsora-v1';
 import { unwrap } from './problem';
@@ -148,6 +152,10 @@ export function createOperations(client: KapsoraClient) {
     worklist: workflowOperations(client),
     documents: documentOperations(client),
     notifications: notificationOperations(client),
+    health: healthOperations(client),
+    reports: medicalReportOperations(client),
+    stays: inpatientOperations(client),
+    claims: claimOperations(client),
   };
 }
 

@@ -50,7 +50,7 @@ import {
 } from './handlers';
 import {
   NO_STORE,
-  accessHeaderErrors,
+  accessHeaderProblem,
   accessPurposeRequired,
   accessRequest,
   decideProjection,
@@ -445,7 +445,12 @@ export function medicalReportHandlers(api: MockApi): HttpHandler[] {
     HttpResponse.json(
       projectReport(
         row,
-        decide(session, tenantId, row, { purposeCode: '', reasonText: '' }).projection,
+        decide(session, tenantId, row, {
+          purposeCode: '',
+          reasonText: '',
+          financialOnly: false,
+          projectionInvalid: false,
+        }).projection,
       ),
       { status, headers: { ...NO_STORE, ETag: etagOf(row.rowVersion) } },
     );
@@ -456,8 +461,8 @@ export function medicalReportHandlers(api: MockApi): HttpHandler[] {
       const g = guardTenant(api, request, PERMISSION_CASE_READ, false);
       if ('error' in g) return g.error;
       const req = accessRequest(request);
-      const bad = accessHeaderErrors(req);
-      if (bad.length > 0) return validationFailed(api, bad);
+      const badAccess = accessHeaderProblem(api, req);
+      if (badAccess) return badAccess;
 
       const url = new URL(request.url);
       const limit = parseLimit(url);
@@ -519,8 +524,8 @@ export function medicalReportHandlers(api: MockApi): HttpHandler[] {
       const g = guardTenant(api, request, PERMISSION_CASE_READ, false);
       if ('error' in g) return g.error;
       const req = accessRequest(request);
-      const bad = accessHeaderErrors(req);
-      if (bad.length > 0) return validationFailed(api, bad);
+      const badAccess = accessHeaderProblem(api, req);
+      if (badAccess) return badAccess;
       const row = findReport(g.session, g.tenantId, pathParam(params, 'reportId'));
       if (!row) return reportNotFound(api);
 

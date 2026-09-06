@@ -87,3 +87,75 @@ test('backoffice: request list, a request under review, the worklist, the messag
   await expect(page.getByTestId('message-table')).toBeVisible();
   await capture(page, 'notifications');
 });
+
+test('backoffice: the medical reviewer’s claim and report, the financial reviewer’s claim', async ({
+  page,
+}) => {
+  await page.goto('/claims');
+  await login(page, 'doctor.a');
+  await expect(page.getByTestId('claim-table')).toBeVisible();
+  await capture(page, 'claims');
+  await page.getByLabel('Durum').selectOption('PENDING_MEDICAL');
+  await expect(page.getByTestId('claim-table').locator('tbody tr').first()).toContainText(
+    'Tıbbi incelemede',
+  );
+  // The newest pending claim is the sensitive one; the standard one is behind it.
+  await page.getByTestId('claim-table').getByRole('link').last().click();
+  await expect(page.getByTestId('claim-lines')).toHaveAttribute('data-projection', 'CLINICAL');
+  await capture(page, 'claim-medical');
+
+  await page.getByRole('link', { name: 'Tıbbi inceleme' }).click();
+  await page.getByLabel('Durum').selectOption('APPROVED');
+  await page.getByTestId('report-table').getByRole('link').first().click();
+  await expect(page.getByTestId('report-summary')).toBeVisible();
+  await capture(page, 'report-review');
+});
+
+test('backoffice: the purpose prompt on a sensitive case, and the declined half', async ({
+  page,
+}) => {
+  await page.goto('/claims');
+  await login(page, 'doctor.a');
+  await page.getByLabel('Durum').selectOption('PENDING_MEDICAL');
+  // The sensitive claim is the newest of the two pending medical ones.
+  await page.getByTestId('claim-table').getByRole('link').first().click();
+  await expect(page.getByTestId('purpose-dialog')).toBeVisible();
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.screenshot({ path: `${OUT}/purpose-dialog-desktop.png`, fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: `${OUT}/purpose-dialog-mobile.png`, fullPage: true });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.getByTestId('purpose-decline').click();
+  await expect(page.getByTestId('declined-note')).toBeVisible();
+  await capture(page, 'claim-declined');
+});
+
+test('backoffice: the financial reviewer’s claim', async ({ page }) => {
+  await page.goto('/claims');
+  await login(page, 'financial.reviewer');
+  await page.getByLabel('Durum').selectOption('PENDING_FINANCIAL');
+  await expect(page.getByTestId('claim-table').locator('tbody tr').first()).toContainText(
+    'Mali incelemede',
+  );
+  await page.getByTestId('claim-table').getByRole('link').first().click();
+  await expect(page.getByTestId('claim-lines')).toHaveAttribute('data-projection', 'FINANCIAL');
+  await capture(page, 'claim-financial');
+});
+
+test('backoffice: what sponsor HR sees, and the access log', async ({ page }) => {
+  await page.goto('/people');
+  await login(page, 'sponsor.hr');
+  await page.getByRole('link', { name: 'Kaan Aydemir' }).first().click();
+  await page.getByRole('tab', { name: 'Sağlık' }).click();
+  await expect(page.getByTestId('person-claims')).toBeVisible();
+  await capture(page, 'person-health-hr');
+});
+
+test('backoffice: the access log', async ({ page }) => {
+  await page.goto('/people');
+  await login(page, 'admin.a');
+  await page.getByRole('link', { name: 'Kaan Aydemir' }).first().click();
+  await page.getByRole('tab', { name: 'Erişim kaydı' }).click();
+  await expect(page.getByTestId('access-log-tab')).toBeVisible();
+  await capture(page, 'person-access-log');
+});

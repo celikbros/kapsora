@@ -11,6 +11,8 @@ import { EntitlementsTab } from './EntitlementsTab';
 import { FamilyTab } from './FamilyTab';
 import { IdentityTab } from './IdentityTab';
 import { MembershipsTab } from './MembershipsTab';
+import { AccessLogTab } from './AccessLogTab';
+import { HealthTab } from './HealthTab';
 import { usePerson } from './queries';
 
 /** One member with everything hanging off them, one tab per concern. */
@@ -22,6 +24,9 @@ export function PersonDetailPage() {
   const canReadEntitlements = usePermission('entitlement.read');
   const canCheckEligibility = usePermission('eligibility.check');
   const canReadPrograms = usePermission('program.read');
+  const canReadCases = usePermission('health.case.read');
+  const canReadClaims = usePermission('claim.read');
+  const canReadAudit = usePermission('audit.read');
 
   if (query.isPending) {
     return (
@@ -126,6 +131,18 @@ export function PersonDetailPage() {
             label: t('people.tabs.eligibility'),
             visible: canCheckEligibility,
             content: <EligibilityTab personId={personId} />,
+          },
+          {
+            value: 'health',
+            label: t('people.tabs.health'),
+            visible: canReadCases || canReadClaims,
+            content: <HealthTab personId={personId} />,
+          },
+          {
+            value: 'accessLog',
+            label: t('people.tabs.accessLog'),
+            visible: canReadAudit,
+            content: <AccessLogTab personId={personId} />,
           },
         ]}
       />

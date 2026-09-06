@@ -1,4 +1,5 @@
 import { formatDate, formatDateTime, useTranslation } from '@kapsora/i18n';
+import { usePermission } from '@kapsora/auth';
 import { Badge, Breadcrumb, Button, Card, PageHeader, ProblemAlert, Spinner } from '@kapsora/ui';
 import { Link, useParams } from '@tanstack/react-router';
 
@@ -15,6 +16,7 @@ export function RequestPage() {
   const { t } = useTranslation();
   const { requestId } = useParams({ from: '/app/requests/$requestId' });
   const query = useRequest(requestId);
+  const canOpenCase = usePermission('health.case.manage');
   // The name is on the row (WP-I5-05 section 2.6); the request is read once either way.
   const personName = query.data?.data.personDisplayName;
   const serviceName = useServiceName(query.data?.data.items[0]?.serviceDefinitionId);
@@ -63,9 +65,19 @@ export function RequestPage() {
           />
         }
         actions={
-          <Badge tone={waiting ? 'warning' : request.status === 'REJECTED' ? 'danger' : 'info'}>
-            {t(`requests.status.${request.status}`)}
-          </Badge>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge tone={waiting ? 'warning' : request.status === 'REJECTED' ? 'danger' : 'info'}>
+              {t(`requests.status.${request.status}`)}
+            </Badge>
+            {canOpenCase &&
+            (request.status === 'APPROVED' || request.status === 'PARTIALLY_APPROVED') ? (
+              <Link to="/cases/new" search={{ requestId: request.id }}>
+                <Button size="sm" variant="secondary">
+                  {t('health.cases.open')}
+                </Button>
+              </Link>
+            ) : null}
+          </div>
         }
       />
       <div className="grid gap-4">

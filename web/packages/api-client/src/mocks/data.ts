@@ -1281,6 +1281,57 @@ const MEDICAL_REVIEWER_PERMISSIONS = [
   'audit.read',
 ];
 
+/**
+ * FINANCIAL_REVIEWER exactly as internal/identity/application/roles.go grants it, in the
+ * same order, and m5.test.ts asserts the two lists are the same rather than trusting this
+ * copy. It is the account WP-I5-04's financial stage exists for: it reviews the money on a
+ * claim and holds no clinical grant at all, so every claim, report and stay it reads
+ * arrives in the financial projection — which is the point, not a limitation to work
+ * around by adding health.clinical.read here.
+ */
+const FINANCIAL_REVIEWER_PERMISSIONS = [
+  'member.read',
+  'service_request.read',
+  'claim.read',
+  'claim.financial.review',
+  'invoice.read',
+  'invoice.manage',
+  'batch.review',
+  'settlement.read',
+  'fiscal.edocument.read',
+  'fiscal.edocument.match',
+  'accounting.posting.read',
+  'document.read',
+  'document.link',
+  'pricing.quote',
+  'report.read',
+  'worklist.read',
+  'worklist.claim',
+];
+
+/**
+ * PROVIDER_BILLING exactly as internal/identity/application/roles.go grants it, in the same
+ * order, asserted against the Go list by m5.test.ts. It is the provider's billing desk:
+ * it raises, sends and takes back a claim and follows the invoice, and it holds neither
+ * health.case.read nor any clinical grant — the clinic side of the same organization is
+ * PROVIDER_STAFF, and keeping the two apart is what stops a billing clerk reading a
+ * diagnosis.
+ */
+const PROVIDER_BILLING_PERMISSIONS = [
+  'claim.read',
+  'claim.create',
+  'claim.submit',
+  'claim.cancel',
+  'invoice.read',
+  'invoice.manage',
+  'batch.create',
+  'batch.submit',
+  'settlement.read',
+  'fiscal.edocument.read',
+  'document.read',
+  'document.link',
+];
+
 const ORG_PREFIXES = [
   'Anadolu',
   'Marmara',
@@ -3979,6 +4030,29 @@ export function buildWorld(
       email: 'doctor.a@example.invalid',
       memberships: [{ tenantCode: 'DEMO_A', permissions: MEDICAL_REVIEWER_PERMISSIONS }],
     },
+    {
+      actorId: nextId(),
+      username: 'financial.reviewer',
+      displayName: 'Fuat Mali Değerlendirici',
+      email: 'financial.reviewer@example.invalid',
+      memberships: [{ tenantCode: 'DEMO_A', permissions: FINANCIAL_REVIEWER_PERMISSIONS }],
+    },
+    {
+      actorId: nextId(),
+      username: 'billing.a',
+      displayName: 'Burak Faturalama',
+      email: 'billing.a@example.invalid',
+      // Scoped to provider organization A exactly as provider.a is, by the same
+      // relationship row: the billing desk and the clinic desk of one hospital see the
+      // same organization and neither sees anybody else's.
+      memberships: [
+        {
+          tenantCode: 'DEMO_A',
+          permissions: PROVIDER_BILLING_PERMISSIONS,
+          scopes: [{ type: 'ORGANIZATION', id: providerRel.id }],
+        },
+      ],
+    },
   );
 
   // M5: two cases for the same member. One is ordinary and one carries a diagnosis from a
@@ -4661,6 +4735,59 @@ export function buildWorld(
     seededDiagnosisId,
   );
 
+  // M5 screens: a claim on the sensitive case, so the purpose prompt has something to guard
+  // in a browser as well as in a test, and two looks on the person's access log — one
+  // stated and recorded, one refused — so the log is a table rather than an empty state.
+  // Appended last for the same reason the accounts were: nothing seeded above moves.
+  const sensitiveDiagnosisId =
+    diagnoses.find((d) => d.encounterId === encounterSensitive.id)?.id ?? null;
+  const claimSensitive = seedClaim('PENDING_MEDICAL', 2, { caseId: caseSensitive.id });
+  const versionSensitive = seedVersion(claimSensitive, 1, 'SUBMITTED', {
+    financialRequired: false,
+    exceptions: [
+      { lineNo: 1, code: 'RULE_MEDICAL_REVIEW', stage: 'MEDICAL', detail: 'HEALTH_REVIEW' },
+    ],
+  });
+  seedLine(
+    versionSensitive,
+    1,
+    defGpVisit,
+    '1',
+    '450',
+    'Depresif atak sonrası kontrol görüşmesi',
+    sensitiveDiagnosisId,
+  );
+  const healthAccessEvents: StoredHealthAccessEvent[] = [
+    {
+      id: nextId(-3 * 86_400_000),
+      tenantId: demoA.id,
+      actorId: reviewerActorId,
+      personId: familyPrincipal.id,
+      membershipId: null,
+      resourceType: 'HEALTH_CASE',
+      resourceId: caseSensitive.id,
+      accessType: 'VIEW',
+      purposeCode: 'MEDICAL_REVIEW',
+      reasonText: 'Rapor incelemesi',
+      outcome: 'SUCCESS',
+      occurredAt: isoDaysAgo(base, 3),
+    },
+    {
+      id: nextId(-2 * 86_400_000),
+      tenantId: demoA.id,
+      actorId: providerActorId,
+      personId: familyPrincipal.id,
+      membershipId: null,
+      resourceType: 'HEALTH_CASE',
+      resourceId: caseSensitive.id,
+      accessType: 'VIEW',
+      purposeCode: null,
+      reasonText: null,
+      outcome: 'DENIED',
+      occurredAt: isoDaysAgo(base, 2),
+    },
+  ];
+
   return {
     tenants,
     accounts,
@@ -4717,7 +4844,7 @@ export function buildWorld(
     healthCases,
     encounters,
     diagnoses,
-    healthAccessEvents: [],
+    healthAccessEvents,
     medicalReports,
     medicalReportServices,
     medicalReportUsages,

@@ -19,6 +19,10 @@ import { ContractDetailPage } from './contracts/ContractDetailPage';
 import { ContractListPage, type ContractListSearch } from './contracts/ContractListPage';
 import { ContractVersionPage } from './contracts/ContractVersionPage';
 import { QuotePage } from './pricing/QuotePage';
+import { ClaimDetailPage } from './claims/ClaimDetailPage';
+import { ClaimListPage, type ClaimListSearch } from './claims/ClaimListPage';
+import { ReportReviewListPage } from './health/ReportReviewListPage';
+import { ReportReviewPage } from './health/ReportReviewPage';
 import { RequestCreatePage } from './requests/RequestCreatePage';
 import { RequestDetailPage } from './requests/RequestDetailPage';
 import { RequestListPage, type RequestListSearch } from './requests/RequestListPage';
@@ -162,6 +166,34 @@ const worklistRoute = createRoute({
   path: '/worklist',
   validateSearch: worklistSearch,
   component: WorklistPage,
+});
+function claimListSearch(raw: Record<string, unknown>): ClaimListSearch {
+  const out: ClaimListSearch = {};
+  if (typeof raw['status'] === 'string' && raw['status'] !== '')
+    out.status = raw['status'] as NonNullable<ClaimListSearch['status']>;
+  if (typeof raw['cursor'] === 'string' && raw['cursor'] !== '') out.cursor = raw['cursor'];
+  return out;
+}
+const claimsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/claims',
+  validateSearch: claimListSearch,
+  component: ClaimListPage,
+});
+const claimDetailRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/claims/$claimId',
+  component: ClaimDetailPage,
+});
+const medicalReportsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/medical-reports',
+  component: ReportReviewListPage,
+});
+const medicalReportRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/medical-reports/$reportId',
+  component: ReportReviewPage,
 });
 const notificationsRoute = createRoute({
   getParentRoute: () => appRoute,
@@ -480,6 +512,10 @@ const routeTree = rootRoute.addChildren([
     requestsRoute,
     requestCreateRoute,
     requestDetailRoute,
+    claimsRoute,
+    claimDetailRoute,
+    medicalReportsRoute,
+    medicalReportRoute,
     worklistRoute,
     notificationsRoute,
     ...soonRoutes,

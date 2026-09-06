@@ -28,7 +28,8 @@
     "mainMenu": "Main menu",
     "adjustments": "Entitlement adjustments",
     "imports": "Member import",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "medicalReports": "Medical review"
   },
   "auth": {
     "loginTitle": "Sign in",
@@ -388,7 +389,42 @@
       "memberships": "Memberships",
       "enrollments": "Enrollments",
       "entitlements": "Entitlements",
-      "eligibility": "Eligibility"
+      "eligibility": "Eligibility",
+      "health": "Health",
+      "accessLog": "Access log"
+    },
+    "health": {
+      "casesTitle": "Health cases",
+      "casesEmpty": "No health cases for this person.",
+      "claimsTitle": "Health claims",
+      "claimsEmpty": "No claims for this person.",
+      "intro": "The person's cases and claims: reference, dates, amounts and status. No diagnosis appears in this view."
+    },
+    "accessLog": {
+      "title": "Clinical data access log",
+      "intro": "Who looked at this person's clinical data, when and why — or tried to.",
+      "empty": "No access to this person's clinical data has been recorded.",
+      "columns": {
+        "at": "When",
+        "actor": "Who",
+        "resource": "Record",
+        "access": "Access",
+        "purpose": "Purpose",
+        "reason": "Reason",
+        "outcome": "Outcome"
+      },
+      "outcome": {
+        "SUCCESS": "Viewed",
+        "DENIED": "Denied"
+      },
+      "access": {
+        "VIEW": "View",
+        "SEARCH": "Search",
+        "DOWNLOAD": "Download",
+        "EXPORT": "Export",
+        "PRINT": "Print",
+        "BREAK_GLASS": "Break glass"
+      }
     }
   },
   "programs": {
@@ -444,6 +480,594 @@
       "cancelReasonText": "Explanation",
       "program": "Program",
       "sponsorPlaceholder": "Choose a sponsor"
+    }
+  },
+  "provider": {
+    "nav": {
+      "cases": "Cases",
+      "claims": "Claims"
+    }
+  },
+  "health": {
+    "cases": {
+      "title": "Cases",
+      "intro": "The cases your organization opened: encounters, diagnosis, report, stay and claim run from here.",
+      "open": "Open a case",
+      "empty": "No cases yet.",
+      "columns": {
+        "member": "Member",
+        "type": "Type",
+        "status": "Status",
+        "openedAt": "Opened",
+        "encounters": "Encounters",
+        "sensitivity": "Sensitivity"
+      },
+      "filters": {
+        "status": "Status",
+        "all": "All"
+      }
+    },
+    "caseType": {
+      "OUTPATIENT": "Outpatient",
+      "INPATIENT": "Inpatient",
+      "CHRONIC": "Chronic",
+      "MATERNITY": "Maternity",
+      "OTHER": "Other"
+    },
+    "caseStatus": {
+      "OPEN": "Open",
+      "CLOSED": "Closed"
+    },
+    "sensitivity": {
+      "STANDARD": "Standard",
+      "SENSITIVE": "Sensitive"
+    },
+    "openCase": {
+      "title": "Open a case",
+      "intro": "Choose the member and the enrollment; encounters and diagnoses are recorded on the case page.",
+      "member": "Member",
+      "enrollment": "Enrollment",
+      "enrollmentHint": "One of the person's valid enrollments.",
+      "type": "Case type",
+      "openedAt": "Opened on",
+      "submit": "Open the case",
+      "fromRequest": "Opening from request {{reference}}",
+      "created": "Case opened.",
+      "service": "Related service",
+      "serviceHint": "Only to find the enrollment; not written to the case.",
+      "checking": "Looking up the enrollment…",
+      "candidatesHint": "The person has more than one enrollment; choose the one this case belongs to.",
+      "noEnrollment": "No valid enrollment on that date."
+    },
+    "case": {
+      "title": "Case",
+      "member": "Member",
+      "openedAt": "Opened",
+      "closedAt": "Closed",
+      "request": "Request",
+      "close": "Close the case",
+      "closeConfirm": "The case closes once every encounter has ended; no encounter can be added afterwards.",
+      "closed": "Case closed.",
+      "financialNote": "This account does not see the clinical half: diagnosis, branch and clinical notes were not sent by the server.",
+      "sensitiveNote": "This case carries a sensitive diagnosis category. Only accounts with the additional grant see its clinical detail.",
+      "sections": {
+        "encounters": "Encounters",
+        "documents": "Documents",
+        "reports": "Treatment reports",
+        "stays": "Stay",
+        "claims": "Claims",
+        "stayOpen": "Open the stay",
+        "claimsOpen": "{{n}} open"
+      }
+    },
+    "encounters": {
+      "empty": "No encounter recorded yet.",
+      "add": "Add an encounter",
+      "columns": {
+        "startedAt": "Started",
+        "endedAt": "Ended",
+        "type": "Type",
+        "branch": "Branch",
+        "diagnosis": "Primary diagnosis",
+        "notes": "Clinical note"
+      },
+      "type": {
+        "OUTPATIENT": "Outpatient",
+        "INPATIENT": "Inpatient",
+        "EMERGENCY": "Emergency",
+        "TELEHEALTH": "Telehealth"
+      },
+      "form": {
+        "type": "Encounter type",
+        "startedAt": "Started",
+        "endedAt": "Ended",
+        "branch": "Branch code",
+        "branchHint": "e.g. ORT, ENT, INT",
+        "notes": "Clinical note",
+        "submit": "Save the encounter",
+        "ongoing": "Ongoing"
+      },
+      "created": "Encounter saved.",
+      "diagnoses": "Diagnoses",
+      "editDiagnoses": "Edit diagnoses",
+      "noDiagnosis": "No diagnosis"
+    },
+    "diagnoses": {
+      "title": "Diagnoses",
+      "search": "Search ICD-10",
+      "searchHint": "Type a name or a code",
+      "noMatch": "No matching code.",
+      "chosen": "Chosen diagnoses",
+      "none": "No diagnosis chosen yet.",
+      "type": "Diagnosis type",
+      "types": {
+        "PRIMARY": "Primary",
+        "SECONDARY": "Secondary",
+        "SUSPECTED": "Suspected"
+      },
+      "sensitive": "Sensitive category",
+      "sensitiveChosen": "This diagnosis is in a sensitive category. Once saved the case is sensitive and only accounts with the additional grant see its clinical half.",
+      "onePrimary": "Only one primary diagnosis is allowed.",
+      "remove": "Remove",
+      "save": "Save diagnoses",
+      "saved": "Diagnoses saved.",
+      "cancel": "Cancel"
+    },
+    "reports": {
+      "title": "Treatment report",
+      "listTitle": "Treatment reports",
+      "empty": "No report on this case.",
+      "create": "Create a report",
+      "created": "Report draft opened.",
+      "columns": {
+        "reference": "Reference",
+        "version": "Version",
+        "status": "Status",
+        "valid": "Validity",
+        "issuedAt": "Issued"
+      },
+      "status": {
+        "DRAFT": "Draft",
+        "SUBMITTED": "Submitted",
+        "UNDER_REVIEW": "Under review",
+        "APPROVED": "Approved",
+        "REJECTED": "Rejected",
+        "CANCELLED": "Cancelled",
+        "EXPIRED": "Expired",
+        "SUPERSEDED": "Superseded"
+      },
+      "header": {
+        "title": "Report details",
+        "type": "Report type",
+        "typeHint": "A code",
+        "subtype": "Subtype",
+        "issuedAt": "Issued on",
+        "validFrom": "Valid from",
+        "validTo": "Valid to",
+        "summary": "Clinical summary",
+        "summaryHint": "Seen only by clinical readers; never reaches a notification or the worklist.",
+        "save": "Save",
+        "saved": "Report saved."
+      },
+      "services": {
+        "title": "Services and limits",
+        "intro": "The services the report covers; a claim is checked against these lines.",
+        "service": "Service",
+        "quantity": "Covered quantity",
+        "amount": "Covered amount",
+        "currency": "Currency",
+        "notes": "Note",
+        "add": "Add a service",
+        "remove": "Remove",
+        "save": "Save services",
+        "saved": "Services saved.",
+        "empty": "No service line yet."
+      },
+      "documents": {
+        "title": "Report file",
+        "intro": "The report cannot be submitted until its file scans clean."
+      },
+      "commands": {
+        "submit": "Submit",
+        "cancel": "Cancel",
+        "correct": "Create a correction"
+      },
+      "submitted": "Report submitted for medical review.",
+      "cancelled": "Report cancelled.",
+      "correctionOpened": "Correction version opened.",
+      "decision": {
+        "title": "Review outcome",
+        "APPROVED": "Approved; claims may lean on this version.",
+        "REJECTED": "Rejected.",
+        "SUPERSEDED": "A later approved version replaced this one.",
+        "reason": "Reason",
+        "comment": "Reviewer's note",
+        "reviewedAt": "Decided at"
+      },
+      "versions": {
+        "title": "Versions",
+        "current": "This version"
+      },
+      "frozenNote": "This version is decided; a change is a new version.",
+      "financialNote": "This account does not see the clinical half of the report.",
+      "createForm": {
+        "intro": "The draft opens with its type and validity; services, summary and file are on the report itself.",
+        "submit": "Open the report draft"
+      }
+    },
+    "stays": {
+      "title": "Stay",
+      "listTitle": "Stay",
+      "empty": "No stay on this case.",
+      "admit": "Request admission",
+      "columns": {
+        "admissionAt": "Admission",
+        "status": "Status",
+        "days": "Days (authorized / actual)",
+        "expected": "Expected discharge"
+      },
+      "status": {
+        "REQUESTED": "Awaiting preauthorization",
+        "AUTHORIZED": "Authorized",
+        "ADMITTED": "Admitted",
+        "DISCHARGED": "Discharged",
+        "CANCELLED": "Cancelled",
+        "REJECTED": "Rejected"
+      },
+      "form": {
+        "title": "Admission request",
+        "intro": "The preauthorization goes to review as a request; the answer appears here.",
+        "admissionAt": "Admission date and time",
+        "estimatedDays": "Estimated days",
+        "diagnosis": "Admission diagnosis",
+        "diagnosisHint": "One of the diagnoses on the case.",
+        "windowHint": "The date must fall inside the tenant's backdate/forward window.",
+        "submit": "Request preauthorization",
+        "created": "Admission requested; awaiting preauthorization."
+      },
+      "figures": {
+        "title": "Days",
+        "admissionAt": "Admission",
+        "expected": "Expected discharge",
+        "dischargeAt": "Discharge",
+        "estimated": "Estimated",
+        "authorized": "Authorized",
+        "actual": "Actual",
+        "released": "Released",
+        "over": "Over authorization"
+      },
+      "overNote": "The stay ran over its authorized days. The claim carries it as an exception; nothing was released.",
+      "segments": {
+        "title": "Segments",
+        "intro": "Where the patient is; the first segment admits.",
+        "type": "Type",
+        "startsAt": "Starts",
+        "endsAt": "Ends",
+        "room": "Room",
+        "bed": "Bed",
+        "add": "Add a segment",
+        "remove": "Remove",
+        "save": "Save segments",
+        "saved": "Segments saved.",
+        "empty": "No segment yet.",
+        "types": {
+          "WARD": "Ward",
+          "ICU": "ICU",
+          "SURGERY": "Surgery",
+          "OBSERVATION": "Observation",
+          "COMPANION": "Companion"
+        }
+      },
+      "extensions": {
+        "title": "Extensions",
+        "empty": "No extension requested.",
+        "sequence": "No.",
+        "days": "Extra days",
+        "reason": "Reason",
+        "status": "Status",
+        "statuses": {
+          "REQUESTED": "Awaiting decision",
+          "APPROVED": "Approved",
+          "REJECTED": "Rejected",
+          "CANCELLED": "Cancelled"
+        },
+        "pendingNote": "An extension is undecided; another cannot be requested until it is."
+      },
+      "extend": {
+        "button": "Extend",
+        "title": "Extend the stay",
+        "intro": "A new preauthorization request is opened for the added days.",
+        "days": "Extra days",
+        "reasonCode": "Reason code",
+        "reasonText": "Reason (clinical)",
+        "submit": "Request extension",
+        "created": "Extension requested."
+      },
+      "discharge": {
+        "button": "Discharge",
+        "title": "Discharge",
+        "intro": "Open segments end; authorized days not used are released.",
+        "at": "Discharge time",
+        "submit": "Discharge",
+        "done": "Discharge recorded."
+      },
+      "reconciliation": {
+        "title": "Reconciliation",
+        "intro": "Authorized and actual days and the release, in the server's exact figures."
+      },
+      "cancel": {
+        "button": "Cancel",
+        "title": "Cancel the stay",
+        "reasonCode": "Reason code",
+        "submit": "Cancel",
+        "done": "Stay cancelled."
+      }
+    }
+  },
+  "claims": {
+    "title": "Claims",
+    "intro": "What the provider delivered and what the payer answers, line by line.",
+    "new": "New claim",
+    "empty": "No claims.",
+    "columns": {
+      "reference": "Reference",
+      "status": "Status",
+      "member": "Member",
+      "provider": "Provider",
+      "serviceDates": "Service dates",
+      "lines": "Lines",
+      "version": "Version",
+      "createdAt": "Created",
+      "total": "Approved total"
+    },
+    "filters": {
+      "status": "Status",
+      "all": "All"
+    },
+    "status": {
+      "DRAFT": "Draft",
+      "SUBMITTED": "Submitted",
+      "AUTO_ADJUDICATED": "Auto-adjudicated",
+      "PENDING_MEDICAL": "Medical review",
+      "PENDING_FINANCIAL": "Financial review",
+      "RETURNED": "Returned",
+      "PARTIALLY_APPROVED": "Partially approved",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected",
+      "INVOICED": "Invoiced",
+      "BATCHED": "Batched",
+      "SETTLED": "Settled",
+      "CANCELLED": "Cancelled"
+    },
+    "create": {
+      "title": "New claim",
+      "intro": "Member, enrollment, service dates and at least one line. The server prices; only the asked amount is written here.",
+      "member": "Member",
+      "enrollment": "Enrollment",
+      "case": "Case",
+      "caseNone": "No case",
+      "serviceDateFrom": "Service from",
+      "serviceDateTo": "Service to",
+      "submit": "Create the draft",
+      "created": "Claim draft created.",
+      "fromCase": "Opening from a case",
+      "needsCase": "A claim is opened from a case.",
+      "needsCaseHint": "The case carries whose it is and under which plan; a provider cannot list those on its own.",
+      "chooseCase": "Go to cases"
+    },
+    "detail": {
+      "member": "Member",
+      "provider": "Provider",
+      "serviceDates": "Service dates",
+      "version": "Version {{n}}",
+      "header": {
+        "title": "Claim details",
+        "save": "Save",
+        "saved": "Claim saved."
+      },
+      "financialNote": "This is the financial projection: description, diagnosis and medical reasons were not sent.",
+      "clinicalNote": "This is the clinical projection; the look is on the access log."
+    },
+    "lines": {
+      "title": "Lines",
+      "intro": "Every line carries its own decision and reason.",
+      "line": "#",
+      "service": "Service",
+      "unit": "Unit",
+      "quantity": "Quantity",
+      "asked": "Asked amount",
+      "askedHint": "What the provider asked; pricing happens on the server.",
+      "description": "Description",
+      "diagnosis": "Diagnosis",
+      "report": "Report",
+      "contract": "Contract",
+      "approvedQuantity": "Approved quantity",
+      "approvedAmount": "Approved",
+      "payer": "Payer",
+      "member": "Member share",
+      "decision": "Decision",
+      "reason": "Reason",
+      "stage": "Stage",
+      "add": "Add a line",
+      "remove": "Remove",
+      "save": "Save lines",
+      "saved": "Lines saved.",
+      "empty": "No lines yet.",
+      "unpriced": "Priced on submit",
+      "noDecision": "Undecided",
+      "totalPending": "Undecided"
+    },
+    "decision": {
+      "APPROVED": "Approved",
+      "PARTIALLY_APPROVED": "Partially approved",
+      "REJECTED": "Rejected",
+      "CUT": "Cut"
+    },
+    "stage": {
+      "AUTO": "Auto",
+      "MEDICAL": "Medical",
+      "FINANCIAL": "Financial"
+    },
+    "exceptions": {
+      "title": "Why it is under review",
+      "intro": "What the submit left to a person.",
+      "none": "Nothing objected; the lines were decided automatically.",
+      "line": "Line {{n}}",
+      "codes": {
+        "PRICE_REVIEW_REQUIRED": "Could not be priced; review required",
+        "RULE_MEDICAL_REVIEW": "A rule asked for medical review",
+        "RULE_FINANCIAL_REVIEW": "A rule asked for financial review",
+        "RULE_REJECTED": "A rule rejected the line",
+        "RULE_CUT": "A rule cut the line",
+        "AUTHORIZATION_EXCEEDED": "Authorization exceeded",
+        "STAY_OVER_AUTHORIZATION": "The stay ran over its authorized days",
+        "DUPLICATE_SUSPECTED": "Duplicate suspected",
+        "APPROVAL_POLICY_REVIEW": "The approval policy asks for a person",
+        "REPORT_NOT_APPROVED": "The report is not approved",
+        "REPORT_OUT_OF_WINDOW": "Outside the report's validity",
+        "SERVICE_NOT_IN_REPORT": "The service is not in the report"
+      },
+      "detail": {
+        "DUPLICATE_SUSPECTED": "Compared claim",
+        "AUTHORIZATION_EXCEEDED": "Remaining on the authorization",
+        "STAY_OVER_AUTHORIZATION": "Stay",
+        "RULE_MEDICAL_REVIEW": "Rule",
+        "RULE_FINANCIAL_REVIEW": "Rule",
+        "RULE_REJECTED": "Rule",
+        "RULE_CUT": "Rule",
+        "PRICE_REVIEW_REQUIRED": "Pricing",
+        "APPROVAL_POLICY_REVIEW": "Policy",
+        "other": "Detail"
+      }
+    },
+    "review": {
+      "title": "Line decisions",
+      "medicalIntro": "Decide line by line on clinical grounds. Description and diagnosis are in this view.",
+      "financialIntro": "Decide line by line on the amounts; approved, payer and member share are exact figures.",
+      "decision": "Decision",
+      "reasonCode": "Reason code",
+      "reasonText": "Reason",
+      "comment": "Review comment",
+      "approvedQuantity": "Approved quantity",
+      "approvedAmount": "Approved amount",
+      "payerAmount": "Payer amount",
+      "memberAmount": "Member share",
+      "splitHint": "Payer + member share = approved amount.",
+      "submit": "Save decisions",
+      "saved": "Line decisions saved.",
+      "notYourStage": "This claim is in another review stage.",
+      "reasonRequired": "Every line needs a reason code: upper case, no spaces.",
+      "figuresRequired": "Approved quantity, approved amount, payer and member share are needed on every line.",
+      "medicalIntroFinancial": "Decide line by line on clinical grounds. Description and diagnosis are not in this view."
+    },
+    "commands": {
+      "submit": "Submit",
+      "approve": "Approve",
+      "reject": "Reject",
+      "return": "Return",
+      "cancel": "Cancel",
+      "correct": "Correct"
+    },
+    "toast": {
+      "submitted": "Claim submitted.",
+      "approved": "Claim approved.",
+      "rejected": "Claim rejected.",
+      "returned": "Claim returned; a correction version is open.",
+      "cancelled": "Claim cancelled."
+    },
+    "reasonDialog": {
+      "approve": "Approve the claim",
+      "reject": "Reject the claim",
+      "return": "Return the claim",
+      "cancel": "Cancel the claim",
+      "reasonCode": "Reason code",
+      "reasonText": "Reason",
+      "comment": "Note"
+    },
+    "returned": {
+      "title": "Correction version",
+      "intro": "Version {{prev}} is decided and stays as it is; version {{next}} carries the correction.",
+      "previous": "Version {{n}} (decided)",
+      "current": "Version {{n}} (draft)",
+      "reason": "Return reason"
+    },
+    "versions": {
+      "title": "Versions",
+      "columns": {
+        "version": "Version",
+        "status": "Status",
+        "submittedAt": "Submitted",
+        "returnedAt": "Returned"
+      },
+      "status": {
+        "DRAFT": "Draft",
+        "SUBMITTED": "Submitted",
+        "SUPERSEDED": "Superseded"
+      }
+    },
+    "readiness": {
+      "title": "Invoice readiness",
+      "ready": "Ready to invoice.",
+      "notReady": "Not ready to invoice.",
+      "approvedTotal": "Approved total",
+      "payerTotal": "Payer total",
+      "memberTotal": "Member share total",
+      "decided": "Decided lines",
+      "blockers": "Blockers",
+      "blocker": {
+        "PROVIDER_TAX_IDENTITY_MISSING": "The provider's tax identity is missing",
+        "CURRENCY_NOT_SINGLE": "The lines are not in one currency",
+        "LINE_NOT_DECIDED": "A line is undecided"
+      }
+    }
+  },
+  "review": {
+    "purpose": {
+      "title": "Access purpose",
+      "intro": "This record carries a sensitive diagnosis category. State your purpose to open its clinical half; the look is written to the person's access log.",
+      "purpose": "Purpose",
+      "reason": "Reason",
+      "reasonHint": "Short and concrete.",
+      "confirm": "Open clinical detail",
+      "decline": "Continue with the financial view",
+      "recorded": "This look will be written to the access log.",
+      "declinedNote": "You did not open clinical detail; this is the financial projection. Diagnosis, description and clinical notes are not in it.",
+      "codes": {
+        "MEDICAL_REVIEW": "Medical review",
+        "CLAIM_REVIEW": "Claim review",
+        "PRE_AUTHORIZATION": "Preauthorization",
+        "TREATMENT": "Treatment",
+        "MEMBER_REQUEST": "Member request",
+        "AUDIT": "Audit"
+      }
+    },
+    "report": {
+      "title": "Medical review",
+      "intro": "The report's clinical projection and the decision.",
+      "listTitle": "Medical review",
+      "listIntro": "Reports awaiting medical review.",
+      "empty": "Nothing to review.",
+      "summary": "Clinical summary",
+      "noSummary": "No summary.",
+      "type": "Report type",
+      "subtype": "Subtype",
+      "valid": "Validity",
+      "issuedAt": "Issued",
+      "practitioner": "Issuing practitioner",
+      "provider": "Provider",
+      "services": "Services and limits",
+      "documents": "Documents",
+      "noDocuments": "No linked document.",
+      "start": "Start review",
+      "started": "Review started.",
+      "approve": "Approve",
+      "reject": "Reject",
+      "approved": "Report approved.",
+      "rejected": "Report rejected.",
+      "reasonCode": "Rejection reason code",
+      "comment": "Review comment",
+      "commentHint": "Stored as a clinical note; never reaches a notification.",
+      "decided": "This report is decided."
     }
   }
 }

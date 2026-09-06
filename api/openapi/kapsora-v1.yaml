@@ -7785,6 +7785,7 @@ paths:
         - $ref: '#/components/parameters/TenantHeader'
         - $ref: '#/components/parameters/AccessPurposeHeader'
         - $ref: '#/components/parameters/AccessReasonHeader'
+        - $ref: '#/components/parameters/AccessProjectionHeader'
         - $ref: '#/components/parameters/Cursor'
         - $ref: '#/components/parameters/Limit'
         - name: personId
@@ -7830,7 +7831,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/HealthCasePage'
         '400':
-          description: Cursor invalid
+          description: Cursor or access projection header invalid
           content:
             application/problem+json:
               schema:
@@ -7895,6 +7896,7 @@ paths:
         - $ref: '#/components/parameters/CaseId'
         - $ref: '#/components/parameters/AccessPurposeHeader'
         - $ref: '#/components/parameters/AccessReasonHeader'
+        - $ref: '#/components/parameters/AccessProjectionHeader'
       responses:
         '200':
           description: Health case
@@ -7905,6 +7907,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthCase'
+        '400':
+          description: Access projection header invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -8023,6 +8031,7 @@ paths:
         - $ref: '#/components/parameters/EncounterId'
         - $ref: '#/components/parameters/AccessPurposeHeader'
         - $ref: '#/components/parameters/AccessReasonHeader'
+        - $ref: '#/components/parameters/AccessProjectionHeader'
       responses:
         '200':
           description: Encounter
@@ -8033,6 +8042,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Encounter'
+        '400':
+          description: Access projection header invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -8066,6 +8081,7 @@ paths:
         - $ref: '#/components/parameters/EncounterId'
         - $ref: '#/components/parameters/AccessPurposeHeader'
         - $ref: '#/components/parameters/AccessReasonHeader'
+        - $ref: '#/components/parameters/AccessProjectionHeader'
       responses:
         '200':
           description: Diagnoses
@@ -8073,6 +8089,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DiagnosisList'
+        '400':
+          description: Access projection header invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
         '403':
           description: |
             The caller does not hold the clinical read this endpoint requires. It is never
@@ -8198,6 +8220,7 @@ paths:
         - $ref: '#/components/parameters/TenantHeader'
         - $ref: '#/components/parameters/AccessPurposeHeader'
         - $ref: '#/components/parameters/AccessReasonHeader'
+        - $ref: '#/components/parameters/AccessProjectionHeader'
         - $ref: '#/components/parameters/Cursor'
         - $ref: '#/components/parameters/Limit'
         - name: personId
@@ -8249,7 +8272,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/MedicalReportPage'
         '400':
-          description: Cursor invalid
+          description: Cursor or access projection header invalid
           content:
             application/problem+json:
               schema:
@@ -8320,6 +8343,7 @@ paths:
         - $ref: '#/components/parameters/ReportId'
         - $ref: '#/components/parameters/AccessPurposeHeader'
         - $ref: '#/components/parameters/AccessReasonHeader'
+        - $ref: '#/components/parameters/AccessProjectionHeader'
       responses:
         '200':
           description: Medical report
@@ -8330,6 +8354,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MedicalReport'
+        '400':
+          description: Access projection header invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -8769,6 +8799,7 @@ paths:
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/AccessPurposeHeader'
         - $ref: '#/components/parameters/AccessReasonHeader'
+        - $ref: '#/components/parameters/AccessProjectionHeader'
         - name: caseId
           in: query
           schema:
@@ -8806,7 +8837,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/InpatientStayPage'
         '400':
-          description: Cursor invalid
+          description: Cursor or access projection header invalid
           content:
             application/problem+json:
               schema:
@@ -8845,6 +8876,7 @@ paths:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/AccessPurposeHeader'
         - $ref: '#/components/parameters/AccessReasonHeader'
+        - $ref: '#/components/parameters/AccessProjectionHeader'
       requestBody:
         required: true
         content:
@@ -8864,6 +8896,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InpatientStay'
+        '400':
+          description: Access projection header invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -8895,6 +8933,7 @@ paths:
         - $ref: '#/components/parameters/StayId'
         - $ref: '#/components/parameters/AccessPurposeHeader'
         - $ref: '#/components/parameters/AccessReasonHeader'
+        - $ref: '#/components/parameters/AccessProjectionHeader'
       responses:
         '200':
           description: Inpatient stay
@@ -8905,6 +8944,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InpatientStay'
+        '400':
+          description: Access projection header invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -8945,6 +8990,7 @@ paths:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/AccessPurposeHeader'
         - $ref: '#/components/parameters/AccessReasonHeader'
+        - $ref: '#/components/parameters/AccessProjectionHeader'
       requestBody:
         required: true
         content:
@@ -8961,6 +9007,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InpatientStay'
+        '400':
+          description: Access projection header invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -9014,6 +9066,7 @@ paths:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/AccessPurposeHeader'
         - $ref: '#/components/parameters/AccessReasonHeader'
+        - $ref: '#/components/parameters/AccessProjectionHeader'
       requestBody:
         required: true
         content:
@@ -9030,6 +9083,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InpatientStay'
+        '400':
+          description: Access projection header invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -9080,6 +9139,7 @@ paths:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/AccessPurposeHeader'
         - $ref: '#/components/parameters/AccessReasonHeader'
+        - $ref: '#/components/parameters/AccessProjectionHeader'
       requestBody:
         required: false
         content:
@@ -9096,6 +9156,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InpatientStay'
+        '400':
+          description: Access projection header invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -9137,6 +9203,7 @@ paths:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/AccessPurposeHeader'
         - $ref: '#/components/parameters/AccessReasonHeader'
+        - $ref: '#/components/parameters/AccessProjectionHeader'
       requestBody:
         required: true
         content:
@@ -9153,6 +9220,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InpatientStay'
+        '400':
+          description: Access projection header invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -9200,6 +9273,7 @@ paths:
         - $ref: '#/components/parameters/StayId'
         - $ref: '#/components/parameters/AccessPurposeHeader'
         - $ref: '#/components/parameters/AccessReasonHeader'
+        - $ref: '#/components/parameters/AccessProjectionHeader'
       responses:
         '200':
           description: Reconciliation
@@ -9207,6 +9281,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StayReconciliation'
+        '400':
+          description: Access projection header invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -9240,6 +9320,7 @@ paths:
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/AccessPurposeHeader'
         - $ref: '#/components/parameters/AccessReasonHeader'
+        - $ref: '#/components/parameters/AccessProjectionHeader'
         - name: personId
           in: query
           schema:
@@ -9277,7 +9358,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ClaimPage'
         '400':
-          description: Cursor invalid
+          description: Cursor or access projection header invalid
           content:
             application/problem+json:
               schema:
@@ -9303,6 +9384,7 @@ paths:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/AccessPurposeHeader'
         - $ref: '#/components/parameters/AccessReasonHeader'
+        - $ref: '#/components/parameters/AccessProjectionHeader'
       requestBody:
         required: true
         content:
@@ -9322,6 +9404,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Claim'
+        '400':
+          description: Access projection header invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -9346,6 +9434,7 @@ paths:
         - $ref: '#/components/parameters/ClaimId'
         - $ref: '#/components/parameters/AccessPurposeHeader'
         - $ref: '#/components/parameters/AccessReasonHeader'
+        - $ref: '#/components/parameters/AccessProjectionHeader'
       responses:
         '200':
           description: Claim
@@ -9356,6 +9445,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Claim'
+        '400':
+          description: Access projection header invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -9515,6 +9610,7 @@ paths:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/AccessPurposeHeader'
         - $ref: '#/components/parameters/AccessReasonHeader'
+        - $ref: '#/components/parameters/AccessProjectionHeader'
       responses:
         '200':
           description: Claim submitted and routed
@@ -9525,6 +9621,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Claim'
+        '400':
+          description: Access projection header invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -9587,6 +9689,7 @@ paths:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/AccessPurposeHeader'
         - $ref: '#/components/parameters/AccessReasonHeader'
+        - $ref: '#/components/parameters/AccessProjectionHeader'
       requestBody:
         required: true
         content:
@@ -9603,6 +9706,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Claim'
+        '400':
+          description: Access projection header invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -9917,6 +10026,7 @@ paths:
         - $ref: '#/components/parameters/VersionNo'
         - $ref: '#/components/parameters/AccessPurposeHeader'
         - $ref: '#/components/parameters/AccessReasonHeader'
+        - $ref: '#/components/parameters/AccessProjectionHeader'
       responses:
         '200':
           description: Claim version
@@ -9924,6 +10034,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ClaimVersion'
+        '400':
+          description: Access projection header invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -10386,6 +10502,17 @@ components:
       schema:
         type: string
         maxLength: 800
+    AccessProjectionHeader:
+      name: X-Access-Projection
+      in: header
+      required: false
+      description: |
+        Ask for the financial projection only. A caller who holds the sensitive grant may
+        decline to read clinical detail; the answer is the financial projection, no purpose
+        is required, and nothing is written to the access log.
+      schema:
+        type: string
+        enum: [FINANCIAL]
   headers:
     ETag:
       description: Strong optimistic concurrency tag based on row_version.

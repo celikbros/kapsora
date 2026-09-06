@@ -33,7 +33,8 @@
     "rules": "Kurallar",
     "pricing": "Fiyat Sorgusu",
     "codeSystems": "Kod Sistemleri",
-    "notifications": "Bildirimler"
+    "notifications": "Bildirimler",
+    "medicalReports": "Tıbbi inceleme"
   },
   "auth": {
     "loginTitle": "Oturum aç",
@@ -472,7 +473,9 @@
       "memberships": "Üyelikler",
       "enrollments": "Kayıtlar",
       "entitlements": "Haklar",
-      "eligibility": "Uygunluk"
+      "eligibility": "Uygunluk",
+      "health": "Sağlık",
+      "accessLog": "Erişim kaydı"
     },
     "fields": {
       "firstName": "Ad",
@@ -502,7 +505,40 @@
     },
     "created": "Hak sahibi oluşturuldu.",
     "updated": "Hak sahibi güncellendi.",
-    "identifierHint": "TCKN 11 hane, kontrol basamağıyla doğrulanır. Bir türden yalnız bir numara tutulur; yeni değer eskisinin yerine geçer."
+    "identifierHint": "TCKN 11 hane, kontrol basamağıyla doğrulanır. Bir türden yalnız bir numara tutulur; yeni değer eskisinin yerine geçer.",
+    "health": {
+      "casesTitle": "Sağlık vakaları",
+      "casesEmpty": "Bu kişinin kayıtlı sağlık vakası yok.",
+      "claimsTitle": "Sağlık claim'leri",
+      "claimsEmpty": "Bu kişi için claim yok.",
+      "intro": "Kişinin vakaları ve claim'leri: referans, tarih, tutar ve durum. Bu görünümde tanı yer almaz."
+    },
+    "accessLog": {
+      "title": "Klinik veriye erişim kaydı",
+      "intro": "Bu kişinin klinik verisine kim, ne zaman, hangi amaçla baktı ya da bakmayı denedi.",
+      "empty": "Bu kişinin klinik verisine erişim kaydı yok.",
+      "columns": {
+        "at": "Zaman",
+        "actor": "Kim",
+        "resource": "Kayıt",
+        "access": "Erişim",
+        "purpose": "Amaç",
+        "reason": "Gerekçe",
+        "outcome": "Sonuç"
+      },
+      "outcome": {
+        "SUCCESS": "Görüntülendi",
+        "DENIED": "Reddedildi"
+      },
+      "access": {
+        "VIEW": "Görüntüleme",
+        "SEARCH": "Arama",
+        "DOWNLOAD": "İndirme",
+        "EXPORT": "Dışa aktarma",
+        "PRINT": "Yazdırma",
+        "BREAK_GLASS": "Acil erişim"
+      }
+    }
   },
   "family": {
     "title": "Aile ve ilişkiler",
@@ -2071,7 +2107,9 @@
     "nav": {
       "newRequest": "Yeni talep",
       "myRequests": "Taleplerim",
-      "eligibility": "Uygunluk sorgusu"
+      "eligibility": "Uygunluk sorgusu",
+      "cases": "Vakalar",
+      "claims": "Claim'ler"
     },
     "newRequest": {
       "title": "Yeni talep",
@@ -2136,5 +2174,587 @@
     "HOUR": "saat",
     "KILOMETER": "km",
     "POINT": "puan"
+  },
+  "health": {
+    "cases": {
+      "title": "Vakalar",
+      "intro": "Sağlayıcınızın açtığı vakalar: muayeneler, tanı, rapor, yatış ve claim buradan yürür.",
+      "open": "Vaka aç",
+      "empty": "Henüz vaka yok. Bir talepten ya da buradan vaka açabilirsiniz.",
+      "columns": {
+        "member": "Hak sahibi",
+        "type": "Tür",
+        "status": "Durum",
+        "openedAt": "Açılış",
+        "encounters": "Muayene",
+        "sensitivity": "Hassasiyet"
+      },
+      "filters": {
+        "status": "Durum",
+        "all": "Tümü"
+      }
+    },
+    "caseType": {
+      "OUTPATIENT": "Ayakta",
+      "INPATIENT": "Yatan",
+      "CHRONIC": "Kronik",
+      "MATERNITY": "Doğum",
+      "OTHER": "Diğer"
+    },
+    "caseStatus": {
+      "OPEN": "Açık",
+      "CLOSED": "Kapandı"
+    },
+    "sensitivity": {
+      "STANDARD": "Standart",
+      "SENSITIVE": "Hassas"
+    },
+    "openCase": {
+      "title": "Vaka aç",
+      "intro": "Hak sahibini ve plan kaydını seçin; muayene ve tanı vaka sayfasında girilir.",
+      "member": "Hak sahibi",
+      "enrollment": "Plan kaydı",
+      "enrollmentHint": "Kişinin geçerli plan kayıtlarından biri.",
+      "type": "Vaka türü",
+      "openedAt": "Açılış tarihi",
+      "submit": "Vakayı aç",
+      "fromRequest": "Talepten açılıyor: {{reference}}",
+      "created": "Vaka açıldı.",
+      "service": "İlgili hizmet",
+      "serviceHint": "Yalnızca plan kaydını bulmak için; vakaya yazılmaz.",
+      "checking": "Plan kaydı aranıyor…",
+      "candidatesHint": "Kişinin birden fazla plan kaydı var; vakanın hangisine bağlanacağını seçin.",
+      "noEnrollment": "Bu tarihte geçerli bir plan kaydı bulunamadı."
+    },
+    "case": {
+      "title": "Vaka",
+      "member": "Hak sahibi",
+      "openedAt": "Açılış",
+      "closedAt": "Kapanış",
+      "request": "Talep",
+      "close": "Vakayı kapat",
+      "closeConfirm": "Her muayene sonlandırıldıysa vaka kapanır; sonrasında muayene eklenemez.",
+      "closed": "Vaka kapatıldı.",
+      "financialNote": "Bu hesapla vakanın klinik yarısı görünmez: tanı, branş ve klinik not sunucudan gelmedi.",
+      "sensitiveNote": "Bu vaka hassas bir tanı kategorisi taşıyor. Klinik detayı yalnızca ek yetkisi olan hesaplar görür.",
+      "sections": {
+        "encounters": "Muayeneler",
+        "documents": "Belgeler",
+        "reports": "Tedavi raporları",
+        "stays": "Yatış",
+        "claims": "Claim'ler",
+        "stayOpen": "Yatışa git",
+        "claimsOpen": "{{n}} açık"
+      }
+    },
+    "encounters": {
+      "empty": "Henüz muayene kaydı yok.",
+      "add": "Muayene ekle",
+      "columns": {
+        "startedAt": "Başlangıç",
+        "endedAt": "Bitiş",
+        "type": "Tür",
+        "branch": "Branş",
+        "diagnosis": "Birincil tanı",
+        "notes": "Klinik not"
+      },
+      "type": {
+        "OUTPATIENT": "Ayakta",
+        "INPATIENT": "Yatan",
+        "EMERGENCY": "Acil",
+        "TELEHEALTH": "Uzaktan"
+      },
+      "form": {
+        "type": "Muayene türü",
+        "startedAt": "Başlangıç",
+        "endedAt": "Bitiş",
+        "branch": "Branş kodu",
+        "branchHint": "Örn. ORT, KBB, DAH",
+        "notes": "Klinik not",
+        "submit": "Muayeneyi kaydet",
+        "ongoing": "Devam ediyor"
+      },
+      "created": "Muayene kaydedildi.",
+      "diagnoses": "Tanılar",
+      "editDiagnoses": "Tanıları düzenle",
+      "noDiagnosis": "Tanı girilmedi"
+    },
+    "diagnoses": {
+      "title": "Tanılar",
+      "search": "ICD-10 ara",
+      "searchHint": "Ad ya da kod yazın: gonartroz, M17…",
+      "noMatch": "Eşleşen kod yok.",
+      "chosen": "Seçilen tanılar",
+      "none": "Henüz tanı seçilmedi.",
+      "type": "Tanı türü",
+      "types": {
+        "PRIMARY": "Birincil",
+        "SECONDARY": "İkincil",
+        "SUSPECTED": "Şüpheli"
+      },
+      "sensitive": "Hassas kategori",
+      "sensitiveChosen": "Bu tanı hassas bir kategoride (psikiyatri, genetik, üreme sağlığı). Kaydedince vaka hassas sayılır ve klinik yarısını yalnızca ek yetkisi olan hesaplar görür.",
+      "onePrimary": "Yalnızca bir birincil tanı olabilir.",
+      "remove": "Kaldır",
+      "save": "Tanıları kaydet",
+      "saved": "Tanılar kaydedildi.",
+      "cancel": "Vazgeç"
+    },
+    "reports": {
+      "title": "Tedavi raporu",
+      "listTitle": "Tedavi raporları",
+      "empty": "Bu vakada rapor yok.",
+      "create": "Rapor oluştur",
+      "created": "Rapor taslağı açıldı.",
+      "columns": {
+        "reference": "Referans",
+        "version": "Sürüm",
+        "status": "Durum",
+        "valid": "Geçerlilik",
+        "issuedAt": "Düzenlenme"
+      },
+      "status": {
+        "DRAFT": "Taslak",
+        "SUBMITTED": "Gönderildi",
+        "UNDER_REVIEW": "İncelemede",
+        "APPROVED": "Onaylandı",
+        "REJECTED": "Reddedildi",
+        "CANCELLED": "İptal edildi",
+        "EXPIRED": "Süresi doldu",
+        "SUPERSEDED": "Yerini yenisi aldı"
+      },
+      "header": {
+        "title": "Rapor bilgileri",
+        "type": "Rapor türü",
+        "typeHint": "Kod, örn. TEDAVI, ILAC, FTR",
+        "subtype": "Alt tür",
+        "issuedAt": "Düzenlenme tarihi",
+        "validFrom": "Geçerlilik başlangıcı",
+        "validTo": "Geçerlilik bitişi",
+        "summary": "Klinik özet",
+        "summaryHint": "Yalnızca klinik yetkisi olanlar görür; bildirimlere ve iş listesine hiç çıkmaz.",
+        "save": "Kaydet",
+        "saved": "Rapor kaydedildi."
+      },
+      "services": {
+        "title": "Hizmetler ve limitler",
+        "intro": "Raporun kapsadığı hizmetler; claim bu satırlara karşı kontrol edilir.",
+        "service": "Hizmet",
+        "quantity": "Kapsanan miktar",
+        "amount": "Kapsanan tutar",
+        "currency": "Para birimi",
+        "notes": "Not",
+        "add": "Hizmet ekle",
+        "remove": "Kaldır",
+        "save": "Hizmetleri kaydet",
+        "saved": "Hizmetler kaydedildi.",
+        "empty": "Henüz hizmet satırı yok."
+      },
+      "documents": {
+        "title": "Rapor dosyası",
+        "intro": "Rapor dosyası temiz çıkmadan gönderim yapılamaz."
+      },
+      "commands": {
+        "submit": "Gönder",
+        "cancel": "İptal et",
+        "correct": "Düzeltme oluştur"
+      },
+      "submitted": "Rapor gönderildi; tıbbi inceleme kuyruğuna alındı.",
+      "cancelled": "Rapor iptal edildi.",
+      "correctionOpened": "Düzeltme sürümü açıldı.",
+      "decision": {
+        "title": "İnceleme sonucu",
+        "APPROVED": "Rapor onaylandı; claim'ler bu sürüme dayanabilir.",
+        "REJECTED": "Rapor reddedildi.",
+        "SUPERSEDED": "Bu sürümün yerini daha yeni bir onaylı sürüm aldı.",
+        "reason": "Gerekçe",
+        "comment": "İnceleyen notu",
+        "reviewedAt": "Karar zamanı"
+      },
+      "versions": {
+        "title": "Sürümler",
+        "current": "Bu sürüm"
+      },
+      "frozenNote": "Bu sürüm karara bağlandı; değişiklik yeni bir sürümdür.",
+      "financialNote": "Bu hesapla raporun klinik yarısı görünmez: özet, tür ve dosya sunucudan gelmedi.",
+      "createForm": {
+        "intro": "Rapor türü ve geçerlilik tarihleriyle taslak açılır; hizmetler, özet ve dosya raporun kendi sayfasında.",
+        "submit": "Rapor taslağını aç"
+      }
+    },
+    "stays": {
+      "title": "Yatış",
+      "listTitle": "Yatış",
+      "empty": "Bu vakada yatış yok.",
+      "admit": "Yatış talebi",
+      "columns": {
+        "admissionAt": "Yatış",
+        "status": "Durum",
+        "days": "Gün (onaylı / gerçek)",
+        "expected": "Beklenen taburcu"
+      },
+      "status": {
+        "REQUESTED": "Ön onay bekliyor",
+        "AUTHORIZED": "Onaylandı",
+        "ADMITTED": "Yatan",
+        "DISCHARGED": "Taburcu",
+        "CANCELLED": "İptal edildi",
+        "REJECTED": "Reddedildi"
+      },
+      "form": {
+        "title": "Yatış talebi",
+        "intro": "Ön onay, talep olarak incelemeye gider; yatış onayı geldiğinde burada görünür.",
+        "admissionAt": "Yatış tarihi ve saati",
+        "estimatedDays": "Tahmini gün",
+        "diagnosis": "Yatış tanısı",
+        "diagnosisHint": "Vakada kayıtlı tanılardan biri.",
+        "windowHint": "Tarih, tenant'ın izin verdiği geriye/ileriye dönük aralıkta olmalı.",
+        "submit": "Ön onay iste",
+        "created": "Yatış talebi oluşturuldu; ön onay bekliyor."
+      },
+      "figures": {
+        "title": "Günler",
+        "admissionAt": "Yatış",
+        "expected": "Beklenen taburcu",
+        "dischargeAt": "Taburcu",
+        "estimated": "Tahmini",
+        "authorized": "Onaylı",
+        "actual": "Gerçekleşen",
+        "released": "Serbest bırakılan",
+        "over": "Onayın üstünde"
+      },
+      "overNote": "Yatış onaylanan gün sayısını aştı. Claim bunu istisna olarak taşır; hiçbir gün serbest bırakılmadı.",
+      "segments": {
+        "title": "Segmentler",
+        "intro": "Hastanın nerede yattığı; ilk segment yatışı başlatır.",
+        "type": "Tür",
+        "startsAt": "Başlangıç",
+        "endsAt": "Bitiş",
+        "room": "Oda",
+        "bed": "Yatak",
+        "add": "Segment ekle",
+        "remove": "Kaldır",
+        "save": "Segmentleri kaydet",
+        "saved": "Segmentler kaydedildi.",
+        "empty": "Henüz segment yok.",
+        "types": {
+          "WARD": "Servis",
+          "ICU": "Yoğun bakım",
+          "SURGERY": "Ameliyathane",
+          "OBSERVATION": "Gözlem",
+          "COMPANION": "Refakatçi"
+        }
+      },
+      "extensions": {
+        "title": "Uzatmalar",
+        "empty": "Uzatma talebi yok.",
+        "sequence": "Sıra",
+        "days": "Ek gün",
+        "reason": "Gerekçe",
+        "status": "Durum",
+        "statuses": {
+          "REQUESTED": "Karar bekliyor",
+          "APPROVED": "Onaylandı",
+          "REJECTED": "Reddedildi",
+          "CANCELLED": "İptal edildi"
+        },
+        "pendingNote": "Karara bağlanmamış bir uzatma var; karar gelmeden yeni uzatma istenemez."
+      },
+      "extend": {
+        "button": "Uzat",
+        "title": "Yatışı uzat",
+        "intro": "Ek günler için yeni bir ön onay talebi açılır.",
+        "days": "Ek gün",
+        "reasonCode": "Gerekçe kodu",
+        "reasonText": "Gerekçe (klinik)",
+        "submit": "Uzatma iste",
+        "created": "Uzatma talebi oluşturuldu."
+      },
+      "discharge": {
+        "button": "Taburcu et",
+        "title": "Taburcu",
+        "intro": "Açık segmentler kapanır; onaylanıp kullanılmayan günler serbest bırakılır.",
+        "at": "Taburcu zamanı",
+        "submit": "Taburcu et",
+        "done": "Taburcu kaydedildi."
+      },
+      "reconciliation": {
+        "title": "Mutabakat",
+        "intro": "Onaylanan ve gerçekleşen günler ile serbest bırakılan kısım, sunucunun kesin rakamlarıyla."
+      },
+      "cancel": {
+        "button": "İptal et",
+        "title": "Yatışı iptal et",
+        "reasonCode": "Gerekçe kodu",
+        "submit": "İptal et",
+        "done": "Yatış iptal edildi."
+      }
+    }
+  },
+  "claims": {
+    "title": "Claim'ler",
+    "intro": "Sağlayıcının teslim ettiği hizmetlerin beyanı ve ödeyenin satır satır cevabı.",
+    "new": "Yeni claim",
+    "empty": "Claim yok.",
+    "columns": {
+      "reference": "Referans",
+      "status": "Durum",
+      "member": "Hak sahibi",
+      "provider": "Sağlayıcı",
+      "serviceDates": "Hizmet tarihi",
+      "lines": "Satır",
+      "version": "Sürüm",
+      "createdAt": "Oluşturma",
+      "total": "Onaylanan toplam"
+    },
+    "filters": {
+      "status": "Durum",
+      "all": "Tümü"
+    },
+    "status": {
+      "DRAFT": "Taslak",
+      "SUBMITTED": "Gönderildi",
+      "AUTO_ADJUDICATED": "Otomatik değerlendirildi",
+      "PENDING_MEDICAL": "Tıbbi incelemede",
+      "PENDING_FINANCIAL": "Mali incelemede",
+      "RETURNED": "İade edildi",
+      "PARTIALLY_APPROVED": "Kısmen onaylandı",
+      "APPROVED": "Onaylandı",
+      "REJECTED": "Reddedildi",
+      "INVOICED": "Faturalandı",
+      "BATCHED": "Partiye alındı",
+      "SETTLED": "Ödendi",
+      "CANCELLED": "İptal edildi"
+    },
+    "create": {
+      "title": "Yeni claim",
+      "intro": "Hak sahibi, plan kaydı, hizmet tarihleri ve en az bir satır. Fiyatları sunucu koyar; burada yalnızca istediğiniz tutar yazılır.",
+      "member": "Hak sahibi",
+      "enrollment": "Plan kaydı",
+      "case": "Vaka",
+      "caseNone": "Vakasız",
+      "serviceDateFrom": "Hizmet başlangıcı",
+      "serviceDateTo": "Hizmet bitişi",
+      "submit": "Taslağı oluştur",
+      "created": "Claim taslağı oluşturuldu.",
+      "fromCase": "Vakadan açılıyor",
+      "needsCase": "Claim bir vakadan açılır.",
+      "needsCaseHint": "Vaka, kimin ve hangi plan altında olduğunu taşır; sağlayıcı bunları ayrıca listeleyemez.",
+      "chooseCase": "Vakalara git"
+    },
+    "detail": {
+      "member": "Hak sahibi",
+      "provider": "Sağlayıcı",
+      "serviceDates": "Hizmet tarihi",
+      "version": "Sürüm {{n}}",
+      "header": {
+        "title": "Claim bilgileri",
+        "save": "Kaydet",
+        "saved": "Claim kaydedildi."
+      },
+      "financialNote": "Bu görünüm mali projeksiyon: açıklama, tanı ve tıbbi gerekçe sunucudan gelmedi.",
+      "clinicalNote": "Bu görünüm klinik projeksiyon; bakış erişim kaydına yazıldı."
+    },
+    "lines": {
+      "title": "Satırlar",
+      "intro": "Her satır kendi kararını ve gerekçesini taşır.",
+      "line": "#",
+      "service": "Hizmet",
+      "unit": "Birim",
+      "quantity": "Miktar",
+      "asked": "İstenen tutar",
+      "askedHint": "Sağlayıcının istediği; fiyatlandırma sunucuda.",
+      "description": "Açıklama",
+      "diagnosis": "Tanı",
+      "report": "Rapor",
+      "contract": "Sözleşme",
+      "approvedQuantity": "Onaylanan miktar",
+      "approvedAmount": "Onaylanan",
+      "payer": "Ödeyen",
+      "member": "Üye payı",
+      "decision": "Karar",
+      "reason": "Gerekçe",
+      "stage": "Aşama",
+      "add": "Satır ekle",
+      "remove": "Kaldır",
+      "save": "Satırları kaydet",
+      "saved": "Satırlar kaydedildi.",
+      "empty": "Henüz satır yok.",
+      "unpriced": "Fiyat gönderimde belirlenir",
+      "noDecision": "Karar bekliyor",
+      "totalPending": "Karar bekliyor"
+    },
+    "decision": {
+      "APPROVED": "Onaylandı",
+      "PARTIALLY_APPROVED": "Kısmen onaylandı",
+      "REJECTED": "Reddedildi",
+      "CUT": "Kesinti"
+    },
+    "stage": {
+      "AUTO": "Otomatik",
+      "MEDICAL": "Tıbbi",
+      "FINANCIAL": "Mali"
+    },
+    "exceptions": {
+      "title": "Neden inceleniyor",
+      "intro": "Gönderimde sistemin bir kişiye bıraktığı noktalar.",
+      "none": "Sistem itiraz etmedi; satırlar otomatik karara bağlandı.",
+      "line": "Satır {{n}}",
+      "codes": {
+        "PRICE_REVIEW_REQUIRED": "Fiyatlandırılamadı; inceleme gerekli",
+        "RULE_MEDICAL_REVIEW": "Kural tıbbi inceleme istedi",
+        "RULE_FINANCIAL_REVIEW": "Kural mali inceleme istedi",
+        "RULE_REJECTED": "Kural reddetti",
+        "RULE_CUT": "Kural kesinti uyguladı",
+        "AUTHORIZATION_EXCEEDED": "Ön onay aşıldı",
+        "STAY_OVER_AUTHORIZATION": "Yatış onaylı günü aştı",
+        "DUPLICATE_SUSPECTED": "Mükerrer şüphesi",
+        "APPROVAL_POLICY_REVIEW": "Onay politikası bir kişi istiyor",
+        "REPORT_NOT_APPROVED": "Rapor onaylı değil",
+        "REPORT_OUT_OF_WINDOW": "Rapor geçerlilik aralığı dışında",
+        "SERVICE_NOT_IN_REPORT": "Hizmet raporun kapsamında değil"
+      },
+      "detail": {
+        "DUPLICATE_SUSPECTED": "Karşılaştırılan claim",
+        "AUTHORIZATION_EXCEEDED": "Ön onayda kalan miktar",
+        "STAY_OVER_AUTHORIZATION": "Yatış",
+        "RULE_MEDICAL_REVIEW": "Kural",
+        "RULE_FINANCIAL_REVIEW": "Kural",
+        "RULE_REJECTED": "Kural",
+        "RULE_CUT": "Kural",
+        "PRICE_REVIEW_REQUIRED": "Fiyatlandırma",
+        "APPROVAL_POLICY_REVIEW": "Politika",
+        "other": "Detay"
+      }
+    },
+    "review": {
+      "title": "Satır kararları",
+      "medicalIntro": "Klinik gerekçeyle satır satır karar verin. Açıklama ve tanı bu görünümde.",
+      "financialIntro": "Tutarlar üzerinden satır satır karar verin: onaylanan, ödeyen ve üye payı tam tutar olarak yazılır.",
+      "decision": "Karar",
+      "reasonCode": "Gerekçe kodu",
+      "reasonText": "Gerekçe",
+      "comment": "İnceleme notu",
+      "approvedQuantity": "Onaylanan miktar",
+      "approvedAmount": "Onaylanan tutar",
+      "payerAmount": "Ödeyen tutarı",
+      "memberAmount": "Üye payı",
+      "splitHint": "Ödeyen + üye payı = onaylanan tutar.",
+      "submit": "Kararları kaydet",
+      "saved": "Satır kararları kaydedildi.",
+      "notYourStage": "Bu claim başka bir inceleme aşamasında.",
+      "reasonRequired": "Her satır için bir gerekçe kodu gerekir: büyük harf, boşluksuz.",
+      "figuresRequired": "Onaylanan miktar, onaylanan tutar, ödeyen ve üye payı her satırda yazılmalı.",
+      "medicalIntroFinancial": "Klinik gerekçeyle satır satır karar verin. Açıklama ve tanı bu görünümde yer almıyor."
+    },
+    "commands": {
+      "submit": "Gönder",
+      "approve": "Onayla",
+      "reject": "Reddet",
+      "return": "İade et",
+      "cancel": "İptal et",
+      "correct": "Düzelt"
+    },
+    "toast": {
+      "submitted": "Claim gönderildi.",
+      "approved": "Claim onaylandı.",
+      "rejected": "Claim reddedildi.",
+      "returned": "Claim iade edildi; düzeltme sürümü açıldı.",
+      "cancelled": "Claim iptal edildi."
+    },
+    "reasonDialog": {
+      "approve": "Claim'i onayla",
+      "reject": "Claim'i reddet",
+      "return": "Claim'i iade et",
+      "cancel": "Claim'i iptal et",
+      "reasonCode": "Gerekçe kodu",
+      "reasonText": "Gerekçe",
+      "comment": "Not"
+    },
+    "returned": {
+      "title": "Düzeltme sürümü",
+      "intro": "Sürüm {{prev}} karara bağlandı ve olduğu gibi duruyor; düzeltmeyi sürüm {{next}} taşır.",
+      "previous": "Sürüm {{n}} (karara bağlı)",
+      "current": "Sürüm {{n}} (taslak)",
+      "reason": "İade gerekçesi"
+    },
+    "versions": {
+      "title": "Sürümler",
+      "columns": {
+        "version": "Sürüm",
+        "status": "Durum",
+        "submittedAt": "Gönderim",
+        "returnedAt": "İade"
+      },
+      "status": {
+        "DRAFT": "Taslak",
+        "SUBMITTED": "Gönderildi",
+        "SUPERSEDED": "Yerini yenisi aldı"
+      }
+    },
+    "readiness": {
+      "title": "Faturaya hazırlık",
+      "ready": "Faturaya hazır.",
+      "notReady": "Faturaya hazır değil.",
+      "approvedTotal": "Onaylanan toplam",
+      "payerTotal": "Ödeyen toplamı",
+      "memberTotal": "Üye payı toplamı",
+      "decided": "Karara bağlanan satır",
+      "blockers": "Engeller",
+      "blocker": {
+        "PROVIDER_TAX_IDENTITY_MISSING": "Sağlayıcının vergi kimliği kayıtlı değil",
+        "CURRENCY_NOT_SINGLE": "Satırlar tek para biriminde değil",
+        "LINE_NOT_DECIDED": "Karara bağlanmamış satır var"
+      }
+    }
+  },
+  "review": {
+    "purpose": {
+      "title": "Erişim amacı",
+      "intro": "Bu kayıt hassas bir tanı kategorisi taşıyor. Klinik yarısını açmak için amacınızı belirtin; bakışınız kişinin erişim kaydına yazılır.",
+      "purpose": "Amaç",
+      "reason": "Gerekçe",
+      "reasonHint": "Kısa ve somut: neye, neden bakıyorsunuz.",
+      "confirm": "Klinik detayı aç",
+      "decline": "Mali görünümle devam et",
+      "recorded": "Bu bakış erişim kaydına yazılır.",
+      "declinedNote": "Klinik detayı açmadınız; mali projeksiyondasınız. Tanı, açıklama ve klinik notlar bu görünümde yer almaz.",
+      "codes": {
+        "MEDICAL_REVIEW": "Tıbbi inceleme",
+        "CLAIM_REVIEW": "Claim incelemesi",
+        "PRE_AUTHORIZATION": "Ön onay",
+        "TREATMENT": "Tedavi",
+        "MEMBER_REQUEST": "Üye talebi",
+        "AUDIT": "Denetim"
+      }
+    },
+    "report": {
+      "title": "Tıbbi inceleme",
+      "intro": "Raporun klinik projeksiyonu ve karar.",
+      "listTitle": "Tıbbi inceleme",
+      "listIntro": "Tıbbi incelemede bekleyen raporlar.",
+      "empty": "İncelenecek rapor yok.",
+      "summary": "Klinik özet",
+      "noSummary": "Özet girilmemiş.",
+      "type": "Rapor türü",
+      "subtype": "Alt tür",
+      "valid": "Geçerlilik",
+      "issuedAt": "Düzenlenme",
+      "practitioner": "Düzenleyen hekim",
+      "provider": "Sağlayıcı",
+      "services": "Hizmetler ve limitler",
+      "documents": "Belgeler",
+      "noDocuments": "Bağlı belge yok.",
+      "start": "İncelemeye al",
+      "started": "Rapor incelemeye alındı.",
+      "approve": "Onayla",
+      "reject": "Reddet",
+      "approved": "Rapor onaylandı.",
+      "rejected": "Rapor reddedildi.",
+      "reasonCode": "Ret gerekçesi kodu",
+      "comment": "İnceleme notu",
+      "commentHint": "Klinik not olarak saklanır; bildirimlere çıkmaz.",
+      "decided": "Bu rapor karara bağlandı."
+    }
   }
 }

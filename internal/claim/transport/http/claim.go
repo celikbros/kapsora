@@ -21,6 +21,10 @@ func (h *Handler) ListClaims(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	access, ok := h.accessRequest(w, r)
+	if !ok {
+		return
+	}
 	var fields []domain.FieldError
 	filter := application.ClaimFilter{
 		Cursor: r.URL.Query().Get("cursor"), Limit: queryLimit(r),
@@ -34,7 +38,7 @@ func (h *Handler) ListClaims(w http.ResponseWriter, r *http.Request) {
 		writeValidation(w, r, fields)
 		return
 	}
-	page, err := h.svc.ListClaims(r.Context(), rc, filter, accessRequest(r))
+	page, err := h.svc.ListClaims(r.Context(), rc, filter, access)
 	if err != nil {
 		h.writeError(w, r, err)
 		return
@@ -56,6 +60,10 @@ func (h *Handler) CreateClaim(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	access, ok := h.accessRequest(w, r)
+	if !ok {
+		return
+	}
 	var body kapsorav1.CreateClaim
 	if !decodeJSON(w, r, &body) {
 		return
@@ -71,7 +79,7 @@ func (h *Handler) CreateClaim(w http.ResponseWriter, r *http.Request) {
 	if body.Channel != nil {
 		in.Channel = string(*body.Channel)
 	}
-	view, err := h.svc.CreateClaim(r.Context(), rc, in, accessRequest(r))
+	view, err := h.svc.CreateClaim(r.Context(), rc, in, access)
 	if err != nil {
 		h.writeError(w, r, err)
 		return
@@ -87,11 +95,15 @@ func (h *Handler) GetClaim(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	access, ok := h.accessRequest(w, r)
+	if !ok {
+		return
+	}
 	id, ok := h.claimID(w, r)
 	if !ok {
 		return
 	}
-	view, err := h.svc.GetClaim(r.Context(), rc, id, accessRequest(r))
+	view, err := h.svc.GetClaim(r.Context(), rc, id, access)
 	if err != nil {
 		h.writeError(w, r, err)
 		return
@@ -168,6 +180,10 @@ func (h *Handler) SubmitClaim(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	access, ok := h.accessRequest(w, r)
+	if !ok {
+		return
+	}
 	id, ok := h.claimID(w, r)
 	if !ok {
 		return
@@ -176,7 +192,7 @@ func (h *Handler) SubmitClaim(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	view, err := h.svc.Submit(r.Context(), rc, id, expected, accessRequest(r))
+	view, err := h.svc.Submit(r.Context(), rc, id, expected, access)
 	if err != nil {
 		h.writeError(w, r, err)
 		return
@@ -188,6 +204,10 @@ func (h *Handler) SubmitClaim(w http.ResponseWriter, r *http.Request) {
 // DecideClaimLines serves POST /claims/{claimId}/line-decisions.
 func (h *Handler) DecideClaimLines(w http.ResponseWriter, r *http.Request) {
 	rc, ok := h.requireReview(w, r)
+	if !ok {
+		return
+	}
+	access, ok := h.accessRequest(w, r)
 	if !ok {
 		return
 	}
@@ -215,7 +235,7 @@ func (h *Handler) DecideClaimLines(w http.ResponseWriter, r *http.Request) {
 			ReasonCode: d.ReasonCode, ReasonText: d.ReasonText,
 		})
 	}
-	view, err := h.svc.DecideLines(r.Context(), rc, id, in, accessRequest(r))
+	view, err := h.svc.DecideLines(r.Context(), rc, id, in, access)
 	if err != nil {
 		h.writeError(w, r, err)
 		return
@@ -324,6 +344,10 @@ func (h *Handler) GetClaimVersion(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	access, ok := h.accessRequest(w, r)
+	if !ok {
+		return
+	}
 	id, ok := h.claimID(w, r)
 	if !ok {
 		return
@@ -333,7 +357,7 @@ func (h *Handler) GetClaimVersion(w http.ResponseWriter, r *http.Request) {
 		h.writeError(w, r, application.ErrVersionNotFound)
 		return
 	}
-	view, err := h.svc.GetVersion(r.Context(), rc, id, versionNo, accessRequest(r))
+	view, err := h.svc.GetVersion(r.Context(), rc, id, versionNo, access)
 	if err != nil {
 		h.writeError(w, r, err)
 		return

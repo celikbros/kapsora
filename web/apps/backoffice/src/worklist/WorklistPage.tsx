@@ -104,6 +104,28 @@ function AggregateLink({ item }: { item: WorkItem }) {
       </Link>
     );
   }
+  if (item.aggregateType === 'CLAIM') {
+    return (
+      <Link
+        to="/claims/$claimId"
+        params={{ claimId: item.aggregateId }}
+        className="font-medium underline-offset-2 hover:underline"
+      >
+        {item.title}
+      </Link>
+    );
+  }
+  if (item.aggregateType === 'MEDICAL_REPORT') {
+    return (
+      <Link
+        to="/medical-reports/$reportId"
+        params={{ reportId: item.aggregateId }}
+        className="font-medium underline-offset-2 hover:underline"
+      >
+        {item.title}
+      </Link>
+    );
+  }
   return <span className="font-medium">{item.title}</span>;
 }
 

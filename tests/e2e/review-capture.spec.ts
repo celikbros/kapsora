@@ -84,3 +84,49 @@ test('provider portal: the form-first home and a request waiting on a document',
   await expect(page.getByTestId('document-upload-form')).toBeVisible();
   await capture(page, 'provider-request');
 });
+
+test('provider portal: the case as a story, a treatment report, the stay, a returned claim', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await login(page, 'provider.a');
+  await expect(page.getByRole('heading', { name: 'Yeni talep' })).toBeVisible();
+  const rail = page.getByRole('navigation', { name: 'Sağlayıcı portalı' });
+  await rail.getByRole('link', { name: 'Vakalar' }).click();
+  await expect(page.getByTestId('case-table')).toBeVisible();
+  await capture(page, 'provider-cases');
+
+  // Newest first, so the sensitive case leads: for this desk it is the narrowed, financial
+  // half, with the sentence that says so.
+  await page.getByTestId('case-table').locator('tbody tr').first().getByRole('link').click();
+  await expect(page.getByTestId('financial-note')).toBeVisible();
+  await capture(page, 'provider-case-narrowed');
+
+  // The standard case: its diagnosis is on the page, its chapters under it.
+  await rail.getByRole('link', { name: 'Vakalar' }).click();
+  await expect(page.getByTestId('case-table')).toBeVisible();
+  await page.getByTestId('case-table').locator('tbody tr').last().getByRole('link').click();
+  await expect(page.getByTestId('encounter-table')).toBeVisible();
+  await expect(page.getByTestId('case-stays')).toBeVisible();
+  await capture(page, 'provider-case');
+
+  await page.getByTestId('case-stays').getByRole('link').first().click();
+  await expect(page.getByTestId('stay-figures')).toBeVisible();
+  await capture(page, 'provider-stay');
+
+  await rail.getByRole('link', { name: "Claim'ler" }).click();
+  await expect(page.getByTestId('claim-table')).toBeVisible();
+  await page.getByLabel('Durum').selectOption('RETURNED');
+  await expect(page.getByTestId('claim-table').locator('tbody tr').first()).toContainText(
+    'İade edildi',
+  );
+  await page.getByTestId('claim-table').getByRole('link').first().click();
+  await expect(page.getByTestId('correction')).toBeVisible();
+  await capture(page, 'provider-claim-returned');
+
+  await rail.getByRole('link', { name: "Claim'ler" }).click();
+  await page.getByLabel('Durum').selectOption('APPROVED');
+  await page.getByTestId('claim-table').getByRole('link').first().click();
+  await expect(page.getByTestId('readiness')).toBeVisible();
+  await capture(page, 'provider-claim-approved');
+});

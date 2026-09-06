@@ -44,9 +44,15 @@ const maxBodyBytes = 1 << 20
 
 // Headers a clinical read may state its reason in.
 const (
-	headerAccessPurpose = "X-Access-Purpose"
-	headerAccessReason  = "X-Access-Reason"
+	headerAccessPurpose    = "X-Access-Purpose"
+	headerAccessReason     = "X-Access-Reason"
+	headerAccessProjection = "X-Access-Projection"
 )
+
+// projectionFinancial is the only value X-Access-Projection is defined to carry: a caller
+// declining to read clinical detail. There is no CLINICAL counterpart, because asking for
+// the clinical projection is not a thing a caller does — it is a thing it has earned.
+const projectionFinancial = "FINANCIAL"
 
 // Denier writes and audits a failed permission check (identityhttp.Middleware.Deny).
 type Denier interface {
@@ -134,18 +140,38 @@ func (h *Handler) requireReview(w http.ResponseWriter, r *http.Request) (identit
 	return rc, true
 }
 
-// accessRequest reads the two headers a clinical read may state its reason in. Neither is
-// validated here: the service checks the purpose against the reference table, so there is one
-// authority rather than a copy of the list in the transport.
+// accessRequest reads the three headers a clinical read states its terms in. The purpose and
+// the reason are not validated here: the service checks the purpose against the reference
+// table, so there is one authority rather than a copy of the list in the transport.
+//
+// X-Access-Projection is different, and is checked here, because it is not a fact about the
+// tenant's data at all: the contract defines exactly one value for it, and a caller sending
+// another has written a request the API does not have. A false return means the problem has
+// already been written and the handler owes the caller nothing further.
 //
 // The reason is percent-decoded because an HTTP header value is ISO-8859-1 and a browser
 // refuses to send one containing ğ, ş or ı — which is most of the Turkish a person would
 // actually type.
-func accessRequest(r *http.Request) application.AccessRequest {
-	return application.AccessRequest{
+func (h *Handler) accessRequest(w http.ResponseWriter, r *http.Request) (application.AccessRequest, bool) {
+	req := application.AccessRequest{
 		PurposeCode: strings.TrimSpace(r.Header.Get(headerAccessPurpose)),
 		ReasonText:  decodeReason(r.Header.Get(headerAccessReason)),
 	}
+	switch projection := strings.TrimSpace(r.Header.Get(headerAccessProjection)); {
+	case projection == "":
+	case strings.EqualFold(projection, projectionFinancial):
+		req.FinancialOnly = true
+	default:
+		// 400 rather than the 422 an unknown purpose is answered: a purpose outside the
+		// reference table is a statement about the tenant's data, and a projection outside
+		// this enum is a request the contract has no shape for.
+		writeHealthValidationStatus(w, r, http.StatusBadRequest, []healthdomain.FieldError{{
+			Field: headerAccessProjection, Code: "ENUM",
+			Message: "geçerli değer: " + projectionFinancial,
+		}})
+		return application.AccessRequest{}, false
+	}
+	return req, true
 }
 
 func decodeReason(raw string) string {
@@ -298,9 +324,17 @@ func writeValidation(w http.ResponseWriter, r *http.Request, fields []domain.Fie
 }
 
 func writeHealthValidation(w http.ResponseWriter, r *http.Request, fields []healthdomain.FieldError) {
+	writeHealthValidationStatus(w, r, http.StatusUnprocessableEntity, fields)
+}
+
+// writeHealthValidationStatus is writeHealthValidation with the status spelled out, for the
+// one field error that is a malformed request rather than a rejected value.
+func writeHealthValidationStatus(w http.ResponseWriter, r *http.Request, status int,
+	fields []healthdomain.FieldError,
+) {
 	p := httpx.Problem{
 		Type: httpx.ProblemTypeBase + "generic/validation-failed", Title: "Doğrulama hatası",
-		Status: http.StatusUnprocessableEntity, Code: "VALIDATION_FAILED",
+		Status: status, Code: "VALIDATION_FAILED",
 	}
 	for _, f := range fields {
 		p.Errors = append(p.Errors, httpx.FieldError{Field: f.Field, Code: f.Code, Message: f.Message})

@@ -50,11 +50,15 @@ func (h *Handler) GetEncounter(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	access, ok := h.accessRequest(w, r)
+	if !ok {
+		return
+	}
 	id, ok := h.pathUUID(w, r, "encounterId", application.ErrEncounterNotFound)
 	if !ok {
 		return
 	}
-	view, err := h.svc.GetEncounter(r.Context(), rc, id, accessRequest(r))
+	view, err := h.svc.GetEncounter(r.Context(), rc, id, access)
 	if err != nil {
 		h.writeError(w, r, err)
 		return
@@ -69,11 +73,15 @@ func (h *Handler) ListEncounterDiagnoses(w http.ResponseWriter, r *http.Request)
 	if !ok {
 		return
 	}
+	access, ok := h.accessRequest(w, r)
+	if !ok {
+		return
+	}
 	id, ok := h.pathUUID(w, r, "encounterId", application.ErrEncounterNotFound)
 	if !ok {
 		return
 	}
-	rows, err := h.svc.ListDiagnoses(r.Context(), rc, id, accessRequest(r))
+	rows, err := h.svc.ListDiagnoses(r.Context(), rc, id, access)
 	if err != nil {
 		h.writeError(w, r, err)
 		return

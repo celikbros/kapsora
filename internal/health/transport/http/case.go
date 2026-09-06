@@ -15,6 +15,10 @@ func (h *Handler) ListHealthCases(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	access, ok := h.accessRequest(w, r)
+	if !ok {
+		return
+	}
 	var fields []domain.FieldError
 	filter := application.ListFilter{
 		Cursor:                 r.URL.Query().Get("cursor"),
@@ -31,7 +35,7 @@ func (h *Handler) ListHealthCases(w http.ResponseWriter, r *http.Request) {
 		writeValidation(w, r, fields)
 		return
 	}
-	page, err := h.svc.ListCases(r.Context(), rc, filter, accessRequest(r))
+	page, err := h.svc.ListCases(r.Context(), rc, filter, access)
 	if err != nil {
 		h.writeError(w, r, err)
 		return
@@ -77,11 +81,15 @@ func (h *Handler) GetHealthCase(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	access, ok := h.accessRequest(w, r)
+	if !ok {
+		return
+	}
 	id, ok := h.pathUUID(w, r, "caseId", application.ErrCaseNotFound)
 	if !ok {
 		return
 	}
-	view, err := h.svc.GetCase(r.Context(), rc, id, accessRequest(r))
+	view, err := h.svc.GetCase(r.Context(), rc, id, access)
 	if err != nil {
 		h.writeError(w, r, err)
 		return
@@ -93,6 +101,10 @@ func (h *Handler) GetHealthCase(w http.ResponseWriter, r *http.Request) {
 // CloseHealthCase implements closeHealthCase.
 func (h *Handler) CloseHealthCase(w http.ResponseWriter, r *http.Request) {
 	rc, ok := h.require(w, r, PermissionCaseManage)
+	if !ok {
+		return
+	}
+	access, ok := h.accessRequest(w, r)
 	if !ok {
 		return
 	}
@@ -108,7 +120,7 @@ func (h *Handler) CloseHealthCase(w http.ResponseWriter, r *http.Request) {
 	if !decodeOptionalJSON(w, r, &body) {
 		return
 	}
-	view, err := h.svc.CloseCase(r.Context(), rc, id, body.ReasonText, expected, accessRequest(r))
+	view, err := h.svc.CloseCase(r.Context(), rc, id, body.ReasonText, expected, access)
 	if err != nil {
 		h.writeError(w, r, err)
 		return

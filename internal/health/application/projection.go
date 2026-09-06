@@ -28,6 +28,11 @@ const (
 type AccessRequest struct {
 	PurposeCode string
 	ReasonText  string
+	// FinancialOnly is the caller declining to read clinical detail: "serve me the financial
+	// half, I am not looking". It is answered with the financial projection whatever the
+	// caller holds and whatever the case is — no purpose is demanded and nothing reaches the
+	// access log, because choosing not to look is not a look.
+	FinancialOnly bool
 }
 
 // decision is what one read was allowed to be.
@@ -83,7 +88,15 @@ var (
 //     the sensitive grant, so knowing that this case is sensitive is its job; what is
 //     missing is the reason, and a look with no reason is the thing the regulation forbids.
 //   - A SENSITIVE case with the grant and a purpose: the clinical projection, on the record.
+//
+// One thing comes before all of it: a caller that asked for the financial projection gets
+// the financial projection. It is not a refusal and it is not a narrowing — the caller asked
+// for less than it is entitled to, which nothing here has any reason to argue with. A
+// STANDARD case asked for financial-only is answered financially too, for the same reason.
 func decide(rc identity.RequestContext, sensitivity string, req AccessRequest) (decision, error) {
+	if req.FinancialOnly {
+		return decision{projection: ProjectionFinancial}, nil
+	}
 	if !rc.Has(PermissionClinicalRead) {
 		return decision{projection: ProjectionFinancial}, nil
 	}

@@ -48,6 +48,10 @@ func (h *Handler) ListInpatientStays(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	access, ok := h.accessRequest(w, r)
+	if !ok {
+		return
+	}
 	var fields []domain.FieldError
 	filter := application.StayFilter{
 		Cursor:                 r.URL.Query().Get("cursor"),
@@ -63,7 +67,7 @@ func (h *Handler) ListInpatientStays(w http.ResponseWriter, r *http.Request) {
 		writeValidation(w, r, fields)
 		return
 	}
-	page, err := h.svc.ListStays(r.Context(), rc, filter, accessRequest(r))
+	page, err := h.svc.ListStays(r.Context(), rc, filter, access)
 	if err != nil {
 		h.writeError(w, r, err)
 		return
@@ -85,11 +89,15 @@ func (h *Handler) GetInpatientStay(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	access, ok := h.accessRequest(w, r)
+	if !ok {
+		return
+	}
 	id, ok := h.pathUUID(w, r, "stayId", application.ErrStayNotFound)
 	if !ok {
 		return
 	}
-	view, err := h.svc.GetStay(r.Context(), rc, id, accessRequest(r))
+	view, err := h.svc.GetStay(r.Context(), rc, id, access)
 	if err != nil {
 		h.writeError(w, r, err)
 		return
@@ -103,6 +111,10 @@ func (h *Handler) CreateInpatientStay(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	access, ok := h.accessRequest(w, r)
+	if !ok {
+		return
+	}
 	var body kapsorav1.CreateInpatientStay
 	if !decodeJSON(w, r, &body) {
 		return
@@ -112,7 +124,7 @@ func (h *Handler) CreateInpatientStay(w http.ResponseWriter, r *http.Request) {
 		LocationID: body.LocationId, AttendingPractitionerID: body.AttendingPractitionerId,
 		AdmissionAt: body.AdmissionAt, EstimatedDays: body.EstimatedDays,
 		AdmissionDiagnosisID: body.AdmissionDiagnosisId,
-	}, accessRequest(r))
+	}, access)
 	if err != nil {
 		h.writeError(w, r, err)
 		return
@@ -127,6 +139,10 @@ func (h *Handler) ExtendInpatientStay(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	access, ok := h.accessRequest(w, r)
+	if !ok {
+		return
+	}
 	var body kapsorav1.ExtendInpatientStay
 	if !decodeJSON(w, r, &body) {
 		return
@@ -134,7 +150,7 @@ func (h *Handler) ExtendInpatientStay(w http.ResponseWriter, r *http.Request) {
 	view, err := h.svc.ExtendStay(r.Context(), rc, id, application.StayExtensionInput{
 		AdditionalDays: body.AdditionalDays, ReasonCode: body.ReasonCode,
 		ReasonText: body.ReasonText,
-	}, expected, accessRequest(r))
+	}, expected, access)
 	if err != nil {
 		h.writeError(w, r, err)
 		return
@@ -145,6 +161,10 @@ func (h *Handler) ExtendInpatientStay(w http.ResponseWriter, r *http.Request) {
 // PutStaySegments implements putStaySegments.
 func (h *Handler) PutStaySegments(w http.ResponseWriter, r *http.Request) {
 	rc, id, expected, ok := h.stayCommand(w, r)
+	if !ok {
+		return
+	}
+	access, ok := h.accessRequest(w, r)
 	if !ok {
 		return
 	}
@@ -159,7 +179,7 @@ func (h *Handler) PutStaySegments(w http.ResponseWriter, r *http.Request) {
 			EndsAt: item.EndsAt, RoomCode: item.RoomCode, BedCode: item.BedCode,
 		})
 	}
-	view, err := h.svc.PutStaySegments(r.Context(), rc, id, items, expected, accessRequest(r))
+	view, err := h.svc.PutStaySegments(r.Context(), rc, id, items, expected, access)
 	if err != nil {
 		h.writeError(w, r, err)
 		return
@@ -173,6 +193,10 @@ func (h *Handler) DischargeInpatientStay(w http.ResponseWriter, r *http.Request)
 	if !ok {
 		return
 	}
+	access, ok := h.accessRequest(w, r)
+	if !ok {
+		return
+	}
 	var body kapsorav1.DischargeInpatientStay
 	if !decodeOptionalJSON(w, r, &body) {
 		return
@@ -181,7 +205,7 @@ func (h *Handler) DischargeInpatientStay(w http.ResponseWriter, r *http.Request)
 	if body.DischargeAt != nil {
 		dischargeAt = *body.DischargeAt
 	}
-	view, err := h.svc.DischargeStay(r.Context(), rc, id, dischargeAt, expected, accessRequest(r))
+	view, err := h.svc.DischargeStay(r.Context(), rc, id, dischargeAt, expected, access)
 	if err != nil {
 		h.writeError(w, r, err)
 		return
@@ -195,12 +219,16 @@ func (h *Handler) CancelInpatientStay(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	access, ok := h.accessRequest(w, r)
+	if !ok {
+		return
+	}
 	var body kapsorav1.CancelInpatientStay
 	if !decodeJSON(w, r, &body) {
 		return
 	}
 	view, err := h.svc.CancelStay(r.Context(), rc, id, body.ReasonCode, body.ReasonText,
-		expected, accessRequest(r))
+		expected, access)
 	if err != nil {
 		h.writeError(w, r, err)
 		return
@@ -214,11 +242,15 @@ func (h *Handler) GetInpatientStayReconciliation(w http.ResponseWriter, r *http.
 	if !ok {
 		return
 	}
+	access, ok := h.accessRequest(w, r)
+	if !ok {
+		return
+	}
 	id, ok := h.pathUUID(w, r, "stayId", application.ErrStayNotFound)
 	if !ok {
 		return
 	}
-	out, err := h.svc.GetStayReconciliation(r.Context(), rc, id, accessRequest(r))
+	out, err := h.svc.GetStayReconciliation(r.Context(), rc, id, access)
 	if err != nil {
 		h.writeError(w, r, err)
 		return

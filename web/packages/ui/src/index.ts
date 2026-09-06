@@ -27,3 +27,4 @@ export { Tabs } from './Tabs';
 export type { TabDefinition, TabsProps } from './Tabs';
 export { ToastProvider, useToast } from './Toast';
 export type { ToastMessage, ToastTone } from './Toast';
+export { useMinWidth } from './useMinWidth';

@@ -72,7 +72,7 @@ import {
 } from './handlers';
 import {
   NO_STORE,
-  accessHeaderErrors,
+  accessHeaderProblem,
   accessPurposeRequired,
   accessRequest,
   decideProjection,
@@ -438,7 +438,12 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
     HttpResponse.json(
       projectClaim(
         row,
-        decide(session, tenantId, row, { purposeCode: '', reasonText: '' }).projection,
+        decide(session, tenantId, row, {
+          purposeCode: '',
+          reasonText: '',
+          financialOnly: false,
+          projectionInvalid: false,
+        }).projection,
       ),
       { status, headers: { ...NO_STORE, ETag: etagOf(row.rowVersion) } },
     );
@@ -876,8 +881,8 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
       const g = guardTenant(api, request, PERMISSION_READ, false);
       if ('error' in g) return g.error;
       const req = accessRequest(request);
-      const bad = accessHeaderErrors(req);
-      if (bad.length > 0) return validationFailed(api, bad);
+      const badAccess = accessHeaderProblem(api, req);
+      if (badAccess) return badAccess;
 
       const url = new URL(request.url);
       const limit = parseLimit(url);
@@ -1021,8 +1026,8 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
       const g = guardTenant(api, request, PERMISSION_READ, false);
       if ('error' in g) return g.error;
       const req = accessRequest(request);
-      const bad = accessHeaderErrors(req);
-      if (bad.length > 0) return validationFailed(api, bad);
+      const badAccess = accessHeaderProblem(api, req);
+      if (badAccess) return badAccess;
 
       const row = findClaim(g.session, g.tenantId, pathParam(params, 'claimId'));
       if (!row) return claimNotFound(api);
@@ -1491,8 +1496,8 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
       const g = guardTenant(api, request, PERMISSION_READ, false);
       if ('error' in g) return g.error;
       const req = accessRequest(request);
-      const bad = accessHeaderErrors(req);
-      if (bad.length > 0) return validationFailed(api, bad);
+      const badAccess = accessHeaderProblem(api, req);
+      if (badAccess) return badAccess;
       const row = findClaim(g.session, g.tenantId, pathParam(params, 'claimId'));
       if (!row) return claimNotFound(api);
       const versionNo = Number.parseInt(pathParam(params, 'versionNo'), 10);

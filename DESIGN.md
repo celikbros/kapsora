@@ -345,6 +345,62 @@ are in, in every viewport, and a truncated tenant is not "seeing".
 
 **A name being fetched is only a name.** Since the request and work-item lists carry `personDisplayName`, `providerDisplayName` and `assigneeDisplayName` on the wire, the "…" of a pending row is rare rather than usual, and the ellipsis stays for the cells no list carries yet. A screen asks for a name row by row only when the list does not have one.
 
+**The projection the server sent decides which columns a page has.** A claim arrives as
+`CLINICAL` or `FINANCIAL` and its lines table is built for the half that came: diagnosis and
+description for the medical reviewer, contract, approved, payer and member amounts for the
+financial one. Neither is the other with columns hidden — a column that would be empty for
+every row does not exist — and the same rule lays out the case's encounters, where a branch
+or a diagnosis heading is there because the field arrived. Where the financial half is what
+came, the page says so in a line at the top rather than leaving the absence to be noticed.
+
+**A column the caller may not read does not exist.** The claim and the case carry the
+provider's id and not its name, and resolving that name needs `organization.read`; without
+the permission the provider column is absent from the header and from every row, instead of
+a dash repeated down the table. Where a code is on the wire it is the identity — monospace,
+always shown — and the looked-up name is an appendix to it. A permission decides a column,
+never a cell.
+
+**A sensitive record asks why before its clinical half opens, once per record, in memory
+only.** The server answers 428 and the screen puts a real dialog in front of the page: a
+purpose from the reference list, a reason, and the sentence that the look is recorded. The
+answer lives for the tab's lifetime and nowhere else, because a stated purpose is not a
+credential to store and asking again on every refetch would turn a question into a
+click-through. Declining is a button that leads somewhere — the financial half, with a
+sentence saying why the diagnosis is not on the page — and not a dead end.
+
+**A sensitive category says so the moment it is chosen, before anything is saved.** The
+ICD-10 search marks the sensitive codes in its own result list, the chosen set keeps the mark
+per row, and a warning-soft line under the set says what choosing one means. What it changes
+— who may read this case from now on — belongs to the person recording it while their hand is
+still on the control, not to a dialog they meet three screens later.
+
+**The medical stage answers yes or no; the money is the financial stage's.** The medical
+reviewer's decision offers approved or rejected and no amount field appears at all; only the
+financial stage offers partial approval and a cut, and only there are figures typed. A
+refused line carries zeros the client writes as strings, and the line that reminds the
+financial reviewer that payer plus member equals the approved amount is a sentence, not a
+sum the screen performs: nothing here adds, rounds or checks arithmetic on money.
+
+**A decided version stands above its correction, never beside it.** A returned claim shows
+the decided version and then the draft that replaces it, stacked down one card, sharing the
+first columns — line, service, description, quantity, asked — in the same places, so the eye
+compares by dropping straight down. Two line tables in half a viewport each are crushed to
+where neither can be read, which is the opposite of what a comparison is for.
+
+**Below `md` the decision sits under its line, and only one structure is rendered.**
+`useMinWidth(768)` chooses the table or the stacked blocks; the controls are built once and
+placed into whichever is rendered, so a test, a screen reader and a keyboard meet one set of
+controls rather than two with one hidden by CSS. A wide table may scroll, but what the
+scroller hides is the detail and never the answer: the decision, its figures and its reason
+move under that line's own numbers.
+
+**A chapter header carries its chapter's state.** On the case, the report section's heading
+shows the latest report's status, the admission's shows the open stay's, the claims' shows
+how many are still open, each with its single action on the same line. The case is read as a
+spine — what happened, what was written, who was admitted, what was billed — and the person
+opening it needs to see from the first viewport which chapter still wants work. A heading
+that is only a noun makes them open every section to find out.
+
 ## Motion
 
 Toasts slide up 160ms ease-out; nothing else animates. `prefers-reduced-motion`

@@ -25,12 +25,12 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      testIgnore: /(provider|review-capture)\.spec\.ts/,
+      testIgnore: /(provider[a-z-]*|review-capture)\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'provider',
-      testMatch: /(provider|review-capture)\.spec\.ts/,
+      testMatch: /(provider[a-z-]*|review-capture)\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'], baseURL: `http://127.0.0.1:${PROVIDER_PORT}` },
     },
   ],

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, type HTMLAttributes, type ReactNode } from 'react';
 import { cn } from './cn';
 
 export interface AppShellProps {
@@ -187,9 +187,14 @@ export function Breadcrumb({
   );
 }
 
-export function Card({ children, className }: { children: ReactNode; className?: string }) {
+export function Card({
+  children,
+  className,
+  ...rest
+}: HTMLAttributes<HTMLElement> & { children: ReactNode }) {
   return (
     <section
+      {...rest}
       className={cn(
         'bg-surface-raised border-line shadow-card rounded-lg border p-4 md:p-6 min-w-0',
         className,
