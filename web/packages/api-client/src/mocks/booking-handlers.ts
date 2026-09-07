@@ -199,7 +199,9 @@ export function bookingHandlers(api: MockApi, tools: BookingTools): HttpHandler[
     for (const day of stayDatesOf(booking.checkIn, booking.nights)) {
       const night = world().inventoryDays.find(
         (d) =>
-          d.tenantId === booking.tenantId && d.roomTypeId === booking.roomTypeId && d.stayDate === day,
+          d.tenantId === booking.tenantId &&
+          d.roomTypeId === booking.roomTypeId &&
+          d.stayDate === day,
       );
       if (night) night.held = Math.max(0, night.held + delta);
     }
@@ -210,7 +212,9 @@ export function bookingHandlers(api: MockApi, tools: BookingTools): HttpHandler[
     for (const day of stayDatesOf(booking.checkIn, booking.nights)) {
       const night = world().inventoryDays.find(
         (d) =>
-          d.tenantId === booking.tenantId && d.roomTypeId === booking.roomTypeId && d.stayDate === day,
+          d.tenantId === booking.tenantId &&
+          d.roomTypeId === booking.roomTypeId &&
+          d.stayDate === day,
       );
       if (!night) continue;
       night.held = Math.max(0, night.held - 1);
@@ -380,9 +384,15 @@ export function bookingHandlers(api: MockApi, tools: BookingTools): HttpHandler[
           (!body.programId || e.programId === body.programId),
       );
       if (!enrollment) {
-        return problem(api, 422, 'ENROLLMENT_NOT_FOUND', 'Bu tarihlerde geçerli bir plan kaydı yok', {
-          detail: 'Rezervasyon, giriş tarihinde aktif bir plan kaydı üzerinden yapılır.',
-        });
+        return problem(
+          api,
+          422,
+          'ENROLLMENT_NOT_FOUND',
+          'Bu tarihlerde geçerli bir plan kaydı yok',
+          {
+            detail: 'Rezervasyon, giriş tarihinde aktif bir plan kaydı üzerinden yapılır.',
+          },
+        );
       }
 
       const stayDates = stayDatesOf(body.checkIn, nights);
@@ -468,8 +478,7 @@ export function bookingHandlers(api: MockApi, tools: BookingTools): HttpHandler[
       );
       if (!priced.quote) {
         return problem(api, 409, 'QUOTE_UNAVAILABLE', 'Bu tarihler için fiyat bulunamadı', {
-          detail:
-            'Sözleşmede bu oda tipi için konaklamanın tüm gecelerini kapsayan fiyat yok.',
+          detail: 'Sözleşmede bu oda tipi için konaklamanın tüm gecelerini kapsayan fiyat yok.',
           extensions: { reason: priced.reason ?? 'PRICE_NOT_FOUND' },
         });
       }

@@ -763,7 +763,10 @@ describe('the hold', () => {
 
     await unwrap(
       s.c.POST('/api/v1/accommodation/bookings/{bookingId}/release', {
-        params: { header: { ...tenant(s), 'Idempotency-Key': key() }, path: { bookingId: first.id } },
+        params: {
+          header: { ...tenant(s), 'Idempotency-Key': key() },
+          path: { bookingId: first.id },
+        },
       }),
     );
     const again = (await createHold(s, holdBody(person.id, room.id, checkIn))).data;
@@ -1039,9 +1042,7 @@ describe('the booking', () => {
   it('seeds a hold, a confirmed stay, a check-in and a completed stay', async () => {
     const s = await signIn('admin.a');
     const page = (
-      await unwrap(
-        s.c.GET('/api/v1/accommodation/bookings', { params: { header: tenant(s) } }),
-      )
+      await unwrap(s.c.GET('/api/v1/accommodation/bookings', { params: { header: tenant(s) } }))
     ).data;
     const statuses = new Set(page.items.map((b) => b.status));
     expect(statuses.has('HOLD')).toBe(true);
