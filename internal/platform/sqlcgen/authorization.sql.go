@@ -1457,6 +1457,34 @@ func (q *Queries) RedeemVoucher(ctx context.Context, arg RedeemVoucherParams) (i
 	return result.RowsAffected(), nil
 }
 
+const revokeVoucher = `-- name: RevokeVoucher :execrows
+UPDATE service.voucher
+   SET status = 'REVOKED', revoke_reason_code = $1
+ WHERE tenant_id = $2
+   AND id = $3
+   AND status = 'ISSUED'
+`
+
+type RevokeVoucherParams struct {
+	RevokeReasonCode *string
+	TenantID         uuid.UUID
+	ID               uuid.UUID
+}
+
+// Withdraw a live voucher so a replacement may be issued (WP-I6-02's reissue: a member who
+// lost the code they were shown gets a new one, and the old digest stops working the
+// instant the new one exists).
+//
+// The ISSUED predicate is the whole of it: a voucher already redeemed is history and a
+// second revoke changes nothing, so running this twice is the same as running it once.
+func (q *Queries) RevokeVoucher(ctx context.Context, arg RevokeVoucherParams) (int64, error) {
+	result, err := q.db.Exec(ctx, revokeVoucher, arg.RevokeReasonCode, arg.TenantID, arg.ID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const setAuthorizationItemReservation = `-- name: SetAuthorizationItemReservation :execrows
 UPDATE service.authorization_item
    SET entitlement_reservation_id = $1

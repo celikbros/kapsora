@@ -31,6 +31,11 @@ type EligibilityChecker interface {
 type Service struct {
 	pool        *pgxpool.Pool
 	repo        Repository
+	bookings    BookingRepository
+	ledger      LedgerPort
+	requests    RequestPort
+	auths       AuthorizationPort
+	policies    LodgingPolicyPort
 	eligibility EligibilityChecker
 	audit       audit.Recorder
 	cursors     *httpx.CursorCodec
@@ -47,7 +52,19 @@ type Deps struct {
 	// half-working: an availability answer with no record of what was shown is exactly
 	// the thing WP-I2-04 exists to prevent.
 	Eligibility EligibilityChecker
-	Audit       audit.Recorder
+	// Bookings is the booking half's persistence. A process wired without it can search
+	// and cannot hold, which is what a search-only deployment actually is.
+	Bookings BookingRepository
+	// Ledger is benefit/ledger. It must be the same movement engine the rest of the
+	// process holds: two ledgers over one database would take two different account locks
+	// for one account, which is exactly how a no-double-spend rule stops holding.
+	Ledger LedgerPort
+	// Requests, Authorizations and Policies default to their refusing implementations, so
+	// a process that was never given them says so rather than half-confirming a booking.
+	Requests       RequestPort
+	Authorizations AuthorizationPort
+	Policies       LodgingPolicyPort
+	Audit          audit.Recorder
 	// Cursors may be nil in a process that never pages.
 	Cursors *httpx.CursorCodec
 	Logger  *slog.Logger
@@ -69,8 +86,19 @@ func New(d Deps) (*Service, error) {
 	if d.Now == nil {
 		d.Now = func() time.Time { return time.Now().UTC() }
 	}
+	if d.Requests == nil {
+		d.Requests = NoRequests{}
+	}
+	if d.Authorizations == nil {
+		d.Authorizations = NoAuthorizations{}
+	}
+	if d.Policies == nil {
+		d.Policies = NoPolicies{}
+	}
 	return &Service{
-		pool: d.Pool, repo: d.Repo, eligibility: d.Eligibility, audit: d.Audit,
+		pool: d.Pool, repo: d.Repo, bookings: d.Bookings, ledger: d.Ledger,
+		requests: d.Requests, auths: d.Authorizations, policies: d.Policies,
+		eligibility: d.Eligibility, audit: d.Audit,
 		cursors: d.Cursors, logger: d.Logger, now: d.Now,
 	}, nil
 }
@@ -157,9 +185,18 @@ const (
 	ActionInventoryPut       = "accommodation.inventory.put"
 	ActionAvailabilitySearch = "accommodation.availability.search"
 
+	ActionBookingHold            = "accommodation.booking.hold"
+	ActionBookingRelease         = "accommodation.booking.release"
+	ActionBookingConfirm         = "accommodation.booking.confirm"
+	ActionBookingPendingApproval = "accommodation.booking.pending_approval"
+	ActionBookingCancel          = "accommodation.booking.cancel"
+	ActionBookingExpire          = "accommodation.booking.expire"
+	ActionBookingVoucherIssue    = "accommodation.booking.voucher.issue"
+
 	ResourceProperty  = "accommodation_property"
 	ResourceRoomType  = "accommodation_room_type"
 	ResourceInventory = "accommodation_inventory_day"
+	ResourceBooking   = "accommodation_booking"
 )
 
 func nullUUID(id uuid.UUID) uuid.NullUUID {

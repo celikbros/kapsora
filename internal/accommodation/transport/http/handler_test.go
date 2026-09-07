@@ -26,14 +26,21 @@ import (
 
 	"github.com/celikbros/kapsora/api/generated/kapsorav1"
 	"github.com/celikbros/kapsora/internal/accommodation/application"
+	accommodationgw "github.com/celikbros/kapsora/internal/accommodation/infrastructure/gateway"
 	accommodationpg "github.com/celikbros/kapsora/internal/accommodation/infrastructure/postgres"
 	accommodationhttp "github.com/celikbros/kapsora/internal/accommodation/transport/http"
 	auditpg "github.com/celikbros/kapsora/internal/audit/postgres"
+	authorizationapp "github.com/celikbros/kapsora/internal/authorization/application"
+	authorizationpg "github.com/celikbros/kapsora/internal/authorization/infrastructure/postgres"
 	"github.com/celikbros/kapsora/internal/benefit/eligibility"
 	benefitledger "github.com/celikbros/kapsora/internal/benefit/ledger"
+	contractapp "github.com/celikbros/kapsora/internal/contract/application"
+	contractpg "github.com/celikbros/kapsora/internal/contract/infrastructure/postgres"
 	"github.com/celikbros/kapsora/internal/identity"
 	"github.com/celikbros/kapsora/internal/platform/dbtest"
 	"github.com/celikbros/kapsora/internal/platform/httpx"
+	servicerequestapp "github.com/celikbros/kapsora/internal/servicerequest/application"
+	servicerequestpg "github.com/celikbros/kapsora/internal/servicerequest/infrastructure/postgres"
 )
 
 // permsHeader and scopeHeader let each request choose what the caller holds and which
@@ -78,6 +85,12 @@ func (denyRecorder) Deny(w http.ResponseWriter, r *http.Request, err error, _ st
 type server struct {
 	h       *dbtest.Harness
 	handler http.Handler
+	svc     *application.Service
+	// requests is WP-I4-01's own service, so the booking tests can decide a reservation
+	// request the way a reviewer does rather than writing its rows by hand.
+	requests *servicerequestapp.Service
+	// crowd is the five hundred separate members the oversell test holds with.
+	crowd []uuid.UUID
 
 	tenant     uuid.UUID
 	actor      uuid.UUID
@@ -93,6 +106,17 @@ type server struct {
 	person     uuid.UUID
 	program    uuid.UUID
 	definition uuid.UUID
+
+	// The plan behind the member, promoted out of the fixture so the booking tests can
+	// grant a bigger entitlement and add more members without a second seed.
+	sponsor               uuid.UUID
+	payer                 uuid.UUID
+	plan                  uuid.UUID
+	planVersion           uuid.UUID
+	entitlementDefinition uuid.UUID
+	enrollment            uuid.UUID
+	account               uuid.UUID
+	contractVersion       uuid.UUID
 
 	property      uuid.UUID
 	roomType      uuid.UUID
@@ -118,15 +142,44 @@ func newServer(t *testing.T) *server {
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc, err := application.New(application.Deps{
-		Pool: h.App, Repo: accommodationpg.New(), Eligibility: eligibilitySvc,
+	movements := benefitledger.NewLedger(time.Now)
+	authorizationSvc, err := authorizationapp.New(authorizationapp.Deps{
+		Pool: h.App, Repo: authorizationpg.New(), Ledger: movements,
 		Audit: auditpg.New(), Cursors: cursors, Logger: logger,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
+	requestSvc, err := servicerequestapp.New(servicerequestapp.Deps{
+		Pool: h.App, Repo: servicerequestpg.New(), Audit: auditpg.New(),
+		Cursors: cursors, Logger: logger,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	contractSvc, err := contractapp.New(contractapp.Deps{
+		Pool: h.App, Repo: contractpg.New(), Audit: auditpg.New(), Cursors: cursors,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The whole vertical, wired the way cmd/api wires it. The booking half is not stubbed
+	// anywhere: the request really goes through WP-I4-01's gate, the authorization really
+	// adopts the hold's reservation, and the voucher's digest really lands in
+	// service.voucher — because every one of those is a link a stub would hide.
+	svc, err := application.New(application.Deps{
+		Pool: h.App, Repo: accommodationpg.New(), Bookings: accommodationpg.NewBookings(),
+		Ledger: movements, Eligibility: eligibilitySvc,
+		Requests:       accommodationgw.NewRequests(requestSvc),
+		Authorizations: accommodationgw.NewAuthorizations(authorizationSvc),
+		Policies:       accommodationgw.NewPolicies(contractSvc),
+		Audit:          auditpg.New(), Cursors: cursors, Logger: logger,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	s := &server{h: h}
+	s := &server{h: h, svc: svc, requests: requestSvc}
 	s.tenant = h.CreateTenant("HTTP_ACC")
 	s.actor = h.CreateActor("acc-http-clerk", "Accommodation Clerk")
 	s.membership = h.CreateMembership(s.tenant, s.actor)
@@ -176,6 +229,12 @@ func newServer(t *testing.T) *server {
 	router.Route("/api/v1/accommodation/availability", func(r chi.Router) {
 		handler.AvailabilityRoutes(r, accommodationhttp.Middlewares{})
 	})
+	router.Route("/api/v1/accommodation/holds", func(r chi.Router) {
+		handler.HoldRoutes(r, accommodationhttp.BookingMiddlewares{})
+	})
+	router.Route("/api/v1/accommodation/bookings", func(r chi.Router) {
+		handler.BookingRoutes(r, accommodationhttp.BookingMiddlewares{})
+	})
 	s.handler = router
 	return s
 }
@@ -204,6 +263,7 @@ func (s *server) seedWorld(t *testing.T) { //nolint:funlen // one linear fixture
 
 	sponsor := h.CreateTenantOrganization(s.tenant, "Sponsor", "SPONSOR")
 	payer := h.CreateTenantOrganization(s.tenant, "Payer", "PAYER")
+	s.sponsor, s.payer = sponsor, payer
 	s.providerOr = h.CreateTenantOrganization(s.tenant, "Otel A", "PROVIDER")
 	s.otherOr = h.CreateTenantOrganization(s.tenant, "Otel B", "PROVIDER")
 
@@ -233,6 +293,10 @@ func (s *server) seedWorld(t *testing.T) { //nolint:funlen // one linear fixture
 		VALUES ($1, $2, $3, 'TATIL', 'Tatil programı', 'BENEFIT', 'ACTIVE',
 		        daterange('2026-01-01', NULL, '[)')) RETURNING id`, s.tenant, sponsor, payer)
 	var plan, planVersion, entitlementDefinition, enrollment, account uuid.UUID
+	defer func() {
+		s.plan, s.planVersion = plan, planVersion
+		s.entitlementDefinition, s.enrollment, s.account = entitlementDefinition, enrollment, account
+	}()
 	scan(&plan, "plan", `
 		INSERT INTO benefit.plan (tenant_id, program_id, code, name, status)
 		VALUES ($1, $2, 'PLAN', 'Plan', 'ACTIVE') RETURNING id`, s.tenant, s.program)
@@ -294,6 +358,7 @@ func (s *server) seedWorld(t *testing.T) { //nolint:funlen // one linear fixture
 		                               provider_profile_id, domain_code, status)
 		VALUES ($1, 'KONAKLAMA_2026', 'Konaklama 2026', $2, $3, 'ACCOMMODATION', 'ACTIVE')
 		RETURNING id`, s.tenant, payer, s.provider)
+	defer func() { s.contractVersion = contractVersion }()
 	scan(&contractVersion, "contract version", `
 		INSERT INTO contract.contract_version (tenant_id, contract_id, version_no, status,
 		                                       valid_from, valid_to, currency_code,
@@ -407,6 +472,12 @@ func (s *server) do(t *testing.T, method, path, permissions string, body any,
 	s.handler.ServeHTTP(rec, req)
 	return rec
 }
+
+// isError and asError are errors.Is and errors.As with the noise removed, because half the
+// assertions in the booking tests are about which refusal came back.
+func isError(err, target error) bool { return errors.Is(err, target) }
+
+func asError(err error, target any) bool { return errors.As(err, target) }
 
 func decode[T any](t *testing.T, rec *httptest.ResponseRecorder) T {
 	t.Helper()

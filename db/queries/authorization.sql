@@ -378,3 +378,16 @@ SELECT a.id, a.authorization_reference, a.valid_to, r.person_id
    AND a.valid_to < sqlc.arg('day_end')
  ORDER BY a.valid_to, a.id
  LIMIT sqlc.arg('page_size');
+
+-- name: RevokeVoucher :execrows
+-- Withdraw a live voucher so a replacement may be issued (WP-I6-02's reissue: a member who
+-- lost the code they were shown gets a new one, and the old digest stops working the
+-- instant the new one exists).
+--
+-- The ISSUED predicate is the whole of it: a voucher already redeemed is history and a
+-- second revoke changes nothing, so running this twice is the same as running it once.
+UPDATE service.voucher
+   SET status = 'REVOKED', revoke_reason_code = sqlc.arg('revoke_reason_code')
+ WHERE tenant_id = sqlc.arg('tenant_id')
+   AND id = sqlc.arg('id')
+   AND status = 'ISSUED';

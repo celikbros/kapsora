@@ -555,6 +555,19 @@ func (Repository) MarkVoucherRedeemed(ctx context.Context, tx pgx.Tx, tenantID, 
 	return affected == 1, nil
 }
 
+// MarkVoucherRevoked implements application.Repository.
+func (Repository) MarkVoucherRevoked(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID,
+	reasonCode string,
+) (bool, error) {
+	affected, err := sqlcgen.New(tx).RevokeVoucher(ctx, sqlcgen.RevokeVoucherParams{
+		TenantID: tenantID, ID: id, RevokeReasonCode: &reasonCode,
+	})
+	if err != nil {
+		return false, fmt.Errorf("authorization: revoke voucher: %w", err)
+	}
+	return affected == 1, nil
+}
+
 // GetRequest implements application.Repository. It reads the service request module's own
 // row, boundary and all, so an authorization can never be granted against a request its
 // caller may not see.

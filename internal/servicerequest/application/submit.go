@@ -91,6 +91,26 @@ func (s *Service) Submit(ctx context.Context, rc identity.RequestContext, id uui
 func (s *Service) SubmitInTx(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
 	id uuid.UUID, comment *string, expected int64,
 ) (RequestView, error) {
+	return s.SubmitInTxHolding(ctx, tx, rc, id, comment, expected, nil)
+}
+
+// SubmitInTxHolding is SubmitInTx for a caller that has already reserved part of what the
+// request asks for, keyed by service definition id and given in the entitlement's own unit.
+//
+// It exists for one shape, and the shape is WP-I6-02's booking. A room is held minutes
+// before anybody confirms it, and the nights it will spend are reserved at that moment --
+// otherwise a member could hold ten rooms against two nights of plan. When the confirmation
+// then raises its reservation request, the gate's eligibility check reads a balance this
+// very booking has already drawn down, and a member whose plan covers exactly the stay they
+// held would be told they are ineligible for it.
+//
+// So the request declares what it is holding and the resolver adds it back before comparing.
+// It is not a way around the gate: the mapping, the plan version, the rules and the document
+// requirement all run exactly as they do for anybody else, and a caller that declared a hold
+// it does not have would still be refused by the ledger the moment it tried to spend it.
+func (s *Service) SubmitInTxHolding(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
+	id uuid.UUID, comment *string, expected int64, held map[uuid.UUID]benefitdomain.Quantity,
+) (RequestView, error) {
 	if err := domain.ValidateComment(comment); err != nil {
 		return RequestView{}, err
 	}
@@ -120,7 +140,7 @@ func (s *Service) SubmitInTx(ctx context.Context, tx pgx.Tx, rc identity.Request
 		return RequestView{}, err
 	}
 
-	decision, err := s.runGate(ctx, tx, rc, current, items, definitions)
+	decision, err := s.runGate(ctx, tx, rc, current, items, definitions, held)
 	if err != nil {
 		return RequestView{}, err
 	}
@@ -144,6 +164,22 @@ func (s *Service) SubmitInTx(ctx context.Context, tx pgx.Tx, rc identity.Request
 		ActorID:                 actorPtr(rc.Principal.ActorID),
 	}, expected); err != nil {
 		return RequestView{}, err
+	}
+
+	// A request the gate approved outright is approved in full, and its lines have to say
+	// so. Without this the request would land in APPROVED with every line still REQUESTED
+	// and no approved quantity — which reads as "approved for nothing" to everything
+	// downstream, and would leave WP-I4-02 with nothing to authorize and a booking or an
+	// admission stuck waiting for a hold nobody could take. It is the same rule a reviewer
+	// who approves without naming lines gets: each line is approved for what it asked for.
+	if decision.Status == domain.StatusApproved {
+		decisions, err := decisionRows(items, nil, decision.ReasonCode)
+		if err != nil {
+			return RequestView{}, err
+		}
+		if err := s.repo.DecideItems(ctx, tx, rc.TenantID, version.ID, decisions); err != nil {
+			return RequestView{}, err
+		}
 	}
 
 	// Two events, because two things happened: somebody submitted, and then the gate
@@ -223,11 +259,12 @@ func (d gateDecision) metadata(versionNo int) map[string]any {
 // the plan's own answer to "does a person still have to look at this".
 func (s *Service) runGate(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
 	request RequestRecord, items []ItemRecord, definitions map[uuid.UUID]ServiceDefinitionRecord,
+	held map[uuid.UUID]benefitdomain.Quantity,
 ) (gateDecision, error) {
 	day := domain.DateOnly(request.ServiceDate)
 	out := gateDecision{RuleVersionIDs: []uuid.UUID{}}
 
-	result, evaluationID, err := s.resolveEligibility(ctx, tx, rc, request, items, definitions, day)
+	result, evaluationID, err := s.resolveEligibility(ctx, tx, rc, request, items, definitions, day, held)
 	if err != nil {
 		return gateDecision{}, err
 	}
@@ -288,7 +325,7 @@ func (s *Service) runGate(ctx context.Context, tx pgx.Tx, rc identity.RequestCon
 // the evaluation, so the answer the gate was given survives the balances moving on.
 func (s *Service) resolveEligibility(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
 	request RequestRecord, items []ItemRecord, definitions map[uuid.UUID]ServiceDefinitionRecord,
-	day time.Time,
+	day time.Time, held map[uuid.UUID]benefitdomain.Quantity,
 ) (eligibility.Result, uuid.UUID, error) {
 	program := request.ProgramID
 	loaded, err := s.repo.LoadEligibility(ctx, tx, rc.TenantID, request.PersonID, &program, day)
@@ -308,10 +345,14 @@ func (s *Service) resolveEligibility(ctx context.Context, tx pgx.Tx, rc identity
 			return eligibility.Result{}, uuid.Nil, fmt.Errorf(
 				"servicerequest: line %d quantity: %w", item.LineNo, err)
 		}
-		input.Items = append(input.Items, eligibility.Item{
+		line := eligibility.Item{
 			Index: i, ServiceDefinitionID: item.ServiceDefinitionID,
 			EntitlementCode: entitlementCodeOf(item, definitions), Quantity: quantity,
-		})
+		}
+		if already, ok := held[item.ServiceDefinitionID]; ok {
+			line.AlreadyHeld = already
+		}
+		input.Items = append(input.Items, line)
 	}
 	result := eligibility.Resolve(input)
 

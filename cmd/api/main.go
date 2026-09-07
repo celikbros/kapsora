@@ -16,6 +16,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	accommodationapp "github.com/celikbros/kapsora/internal/accommodation/application"
+	accommodationgw "github.com/celikbros/kapsora/internal/accommodation/infrastructure/gateway"
 	accommodationpg "github.com/celikbros/kapsora/internal/accommodation/infrastructure/postgres"
 	accommodationhttp "github.com/celikbros/kapsora/internal/accommodation/transport/http"
 	auditpg "github.com/celikbros/kapsora/internal/audit/postgres"
@@ -336,9 +337,21 @@ func run() error {
 	// and keeps its evaluation id, so months later "what did the system show them" is a
 	// row somebody can read rather than a guess. The prices go through the same contract
 	// selection and the same calculator a counter quote uses, per night, summed once.
+	//
+	// The booking half reaches three other modules through narrow ports and nothing wider:
+	// it may raise a RESERVATION request and hand it to WP-I4-01's gate, take an
+	// authorization for an approved one, and freeze WP-I6-04's lodging terms. The movement
+	// engine is the one this process already holds, not a second one — two ledgers over one
+	// database would take two different account locks for one account, which is exactly the
+	// way a no-double-spend rule stops holding.
 	accommodationSvc, err := accommodationapp.New(accommodationapp.Deps{
-		Pool: pool, Repo: accommodationpg.New(), Eligibility: eligibilitySvc,
-		Audit: auditpg.New(), Cursors: cursors, Logger: logger,
+		Pool: pool, Repo: accommodationpg.New(), Bookings: accommodationpg.NewBookings(),
+		Ledger:         entitlementSvc.Ledger(),
+		Eligibility:    eligibilitySvc,
+		Requests:       accommodationgw.NewRequests(serviceRequestSvc),
+		Authorizations: accommodationgw.NewAuthorizations(authorizationSvc),
+		Policies:       accommodationgw.NewPolicies(contractSvc),
+		Audit:          auditpg.New(), Cursors: cursors, Logger: logger,
 	})
 	if err != nil {
 		return err
@@ -853,6 +866,24 @@ func newRouter(d routerDeps) http.Handler {
 			})
 			tenant.Route("/accommodation/availability", func(r chi.Router) {
 				accommodationHandler.AvailabilityRoutes(r, accommodationMW)
+			})
+			// The hold and the booking. Every command that changes state carries an
+			// Idempotency-Key — a retried hold must not set aside two rooms and a retried
+			// confirmation must not raise two requests — with exactly one exception, and it
+			// is the same exception WP-I4-02 makes: the voucher route is not wrapped,
+			// because the middleware persists response bodies for replay and that response
+			// is the only place in the system a usable voucher token exists. Wrapping it
+			// would write the token into a column.
+			bookingMW := accommodationhttp.BookingMiddlewares{
+				CreateHold:  d.idempotent("accommodation.booking.hold"),
+				Confirm:     d.idempotent("accommodation.booking.confirm"),
+				ReleaseHold: d.idempotent("accommodation.booking.release"),
+			}
+			tenant.Route("/accommodation/holds", func(r chi.Router) {
+				accommodationHandler.HoldRoutes(r, bookingMW)
+			})
+			tenant.Route("/accommodation/bookings", func(r chi.Router) {
+				accommodationHandler.BookingRoutes(r, bookingMW)
 			})
 
 			// Notifications. Templates are configuration, the message log is a record of

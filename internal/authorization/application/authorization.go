@@ -26,6 +26,15 @@ type NewAuthorizationInput struct {
 	// IdempotencyKey is required: a create without one is a create that can reserve the
 	// same balance twice.
 	IdempotencyKey string
+	// AdoptReservationID is a hold the caller has already placed, which this
+	// authorization takes over instead of reserving again (WP-I6-02's booking: the room
+	// is held, and the nights with it, before anybody approves anything). When it is set
+	// the authorization must have exactly one line — one hold cannot be split across two
+	// lines drawing on two accounts — and no RESERVE movement is posted at all.
+	AdoptReservationID *uuid.UUID
+	// AdoptReservationExpiresAt is how far the adopted hold's deadline is moved out. It
+	// is only ever moved later, by the ledger.
+	AdoptReservationExpiresAt *time.Time
 }
 
 // ExtendInput is the extend command.
@@ -155,9 +164,17 @@ func (s *Service) create(ctx context.Context, tx pgx.Tx, rc identity.RequestCont
 	if err != nil {
 		return AuthorizationView{}, err
 	}
-	accounts, err := s.accountsFor(ctx, tx, rc.TenantID, request, lines)
-	if err != nil {
-		return AuthorizationView{}, err
+	// The accounts are resolved only when this authorization is going to reserve. An
+	// authorization that adopts a hold somebody else placed needs no account of its own:
+	// the quantity is already out of `available` and into `reserved` on whichever account
+	// the original reserve chose, and resolving a second one here would be this package
+	// deciding, from a convention it owns, which balance a hold it did not take belongs to.
+	var accounts map[uuid.UUID]uuid.UUID
+	if in.AdoptReservationID == nil {
+		accounts, err = s.accountsFor(ctx, tx, rc.TenantID, request, lines)
+		if err != nil {
+			return AuthorizationView{}, err
+		}
 	}
 
 	reserved := benefitdomain.ZeroQuantity()
@@ -174,6 +191,12 @@ func (s *Service) create(ctx context.Context, tx pgx.Tx, rc identity.RequestCont
 		return AuthorizationView{}, err
 	}
 
+	if in.AdoptReservationID != nil && len(lines) != 1 {
+		// One hold cannot cover two lines that may draw on two different accounts, and
+		// splitting it would mean deciding which line the existing quantity belongs to.
+		// The caller that adopts is the one that placed the hold, and it placed one.
+		return AuthorizationView{}, ErrAdoptionNotSingleLine
+	}
 	for _, line := range lines {
 		itemID, err := s.repo.CreateAuthorizationItem(ctx, tx, rc.TenantID, NewAuthorizationItemRow{
 			AuthorizationID: record.ID, RequestItemID: line.item.ID,
@@ -184,19 +207,11 @@ func (s *Service) create(ctx context.Context, tx pgx.Tx, rc identity.RequestCont
 		if err != nil {
 			return AuthorizationView{}, err
 		}
-		// The hold references the line rather than the authorization: two lines of one
-		// authorization may draw on the same account, and the ledger's uniqueness on
-		// (reference type, reference id, account) would fold them into a single hold.
-		reservation, err := s.ledger.Reserve(ctx, tx, ledger.ReserveInput{
-			TenantID: rc.TenantID, AccountID: accounts[line.item.ID], Quantity: line.quantity,
-			ReferenceType: ledger.ReferenceAuthorization, ReferenceID: itemID,
-			Key: reserveKey(itemID), ReasonCode: "AUTHORIZATION",
-			ActorID: rc.Principal.ActorID,
-		})
+		reservationID, err := s.holdFor(ctx, tx, rc, in, line, itemID, accounts[line.item.ID])
 		if err != nil {
 			return AuthorizationView{}, err
 		}
-		if err := s.repo.SetAuthorizationItemReservation(ctx, tx, rc.TenantID, itemID, reservation.ID); err != nil {
+		if err := s.repo.SetAuthorizationItemReservation(ctx, tx, rc.TenantID, itemID, reservationID); err != nil {
 			return AuthorizationView{}, err
 		}
 	}
@@ -214,6 +229,51 @@ func (s *Service) create(ctx context.Context, tx pgx.Tx, rc identity.RequestCont
 		return AuthorizationView{}, err
 	}
 	return s.reloadAuthorization(ctx, tx, rc.TenantID, record.ID, scope)
+}
+
+// holdFor is where a line gets the entitlement it promises: a fresh reservation, or the
+// one the caller already placed.
+//
+// The two paths are here rather than at the call site so there is exactly one place in this
+// package that answers "how did this line come to hold what it holds", and so that no
+// future edit can accidentally do both. An adopted hold posts no movement — the quantity is
+// already out of `available` and into `reserved`, and posting a second RESERVE is precisely
+// the double-spend this branch exists to prevent.
+func (s *Service) holdFor(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
+	in NewAuthorizationInput, line approvedLine, itemID, accountID uuid.UUID,
+) (uuid.UUID, error) {
+	if in.AdoptReservationID != nil {
+		adopt := ledger.AdoptInput{TenantID: rc.TenantID, ReservationID: *in.AdoptReservationID}
+		if in.AdoptReservationExpiresAt != nil {
+			adopt.ExpiresAt = in.AdoptReservationExpiresAt.UTC()
+		}
+		existing, err := s.ledger.AdoptReservation(ctx, tx, adopt)
+		if err != nil {
+			return uuid.Nil, err
+		}
+		// The adopted hold has to cover what this line promises. A reviewer who approved
+		// fewer nights than were held leaves the surplus on the hold, which the booking
+		// gives back at check-out; one who approved more than was ever held would be
+		// promising entitlement nobody reserved, and that is refused here rather than
+		// discovered at consumption.
+		if existing.Remaining().Cmp(line.quantity) < 0 {
+			return uuid.Nil, ErrAdoptedReservationTooSmall
+		}
+		return existing.ID, nil
+	}
+	// The hold references the line rather than the authorization: two lines of one
+	// authorization may draw on the same account, and the ledger's uniqueness on
+	// (reference type, reference id, account) would fold them into a single hold.
+	reservation, err := s.ledger.Reserve(ctx, tx, ledger.ReserveInput{
+		TenantID: rc.TenantID, AccountID: accountID, Quantity: line.quantity,
+		ReferenceType: ledger.ReferenceAuthorization, ReferenceID: itemID,
+		Key: reserveKey(itemID), ReasonCode: "AUTHORIZATION",
+		ActorID: rc.Principal.ActorID,
+	})
+	if err != nil {
+		return uuid.Nil, err
+	}
+	return reservation.ID, nil
 }
 
 // replay answers a key that was already used, in its own transaction.

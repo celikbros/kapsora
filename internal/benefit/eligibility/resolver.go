@@ -174,11 +174,18 @@ type Account struct {
 // Item is one requested service line. ServiceDefinitionID is what the mapping of the
 // resolved plan version is looked up by; EntitlementCode is the older hint taken from the
 // request context, which still answers for a service nobody has mapped yet.
+//
+// AlreadyHeld is entitlement this line has *already* reserved on the account it draws from,
+// in the entitlement's own unit. It is added back before the balance is compared, so a
+// request that took its hold before it was raised is not refused for spending what it is
+// holding. It is the zero value everywhere except WP-I6-02's booking confirmation.
 type Item struct {
 	Index               int
 	ServiceDefinitionID uuid.UUID
 	EntitlementCode     string
 	Quantity            domain.Quantity
+	// AlreadyHeld is what this line has already reserved on the entitlement it draws from.
+	AlreadyHeld domain.Quantity
 }
 
 // Mapping is one row of benefit.service_entitlement_mapping as the resolution reads it:
@@ -416,9 +423,19 @@ func resolveItem(item Item, accounts map[string]Account, mappings map[uuid.UUID]
 		return out
 	}
 	available := account.Available
+	// The balance reported is the one the account really carries; the balance *compared*
+	// adds back whatever this very line already holds.
+	//
+	// Without that, a request that reserved its entitlement before it was raised would be
+	// judged against a balance it had itself drawn down, and would be refused for spending
+	// what it is holding. WP-I6-02's booking is exactly that shape: the room and the nights
+	// are taken at the hold, minutes before the reservation request reaches this gate, and a
+	// member whose plan covers precisely the stay they held would be told they are
+	// ineligible for it. AlreadyHeld is zero for every other caller, so nothing else moves.
+	effective := available.Add(item.AlreadyHeld)
 	out.AvailableQuantity = &available
 	switch {
-	case drawn.Cmp(available) <= 0:
+	case drawn.Cmp(effective) <= 0:
 		out.Outcome = ItemEligible
 	case account.AllowOverdraft:
 		out.Outcome = ItemEligible

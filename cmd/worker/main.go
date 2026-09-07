@@ -14,11 +14,16 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	accommodationapp "github.com/celikbros/kapsora/internal/accommodation/application"
+	accommodationgw "github.com/celikbros/kapsora/internal/accommodation/infrastructure/gateway"
+	accommodationpg "github.com/celikbros/kapsora/internal/accommodation/infrastructure/postgres"
 	auditpg "github.com/celikbros/kapsora/internal/audit/postgres"
 	authorizationapp "github.com/celikbros/kapsora/internal/authorization/application"
 	authorizationpg "github.com/celikbros/kapsora/internal/authorization/infrastructure/postgres"
 	benefitapp "github.com/celikbros/kapsora/internal/benefit/application"
 	"github.com/celikbros/kapsora/internal/benefit/ledger"
+	contractapp "github.com/celikbros/kapsora/internal/contract/application"
+	contractpg "github.com/celikbros/kapsora/internal/contract/infrastructure/postgres"
 	documentapp "github.com/celikbros/kapsora/internal/document/application"
 	documentpg "github.com/celikbros/kapsora/internal/document/infrastructure/postgres"
 	healthapp "github.com/celikbros/kapsora/internal/health/application"
@@ -125,6 +130,20 @@ func run() error {
 		return err
 	}
 
+	// The booking's side of the same decided request (WP-I6-02). It is a second subscriber
+	// to one event rather than a branch inside the first: an admission and a hotel booking
+	// have nothing to say to each other, and each handler quietly recognises none of its own
+	// in most of what it is handed.
+	//
+	// The one thing that makes this handler safe to redeliver is the adoption: the
+	// authorization it creates takes over the reservation the hold already placed rather
+	// than reserving the nights again, so neither the first delivery nor the fifth can draw
+	// a member's plan down twice for one stay.
+	bookings, err := newBookings(pool, entitlements.Ledger(), cursors, logger)
+	if err != nil {
+		return err
+	}
+
 	dispatcher := outbox.New(pool, outbox.Options{Logger: logger})
 	// A new enrollment opens its entitlement accounts here rather than in the request
 	// that created it: the accounts follow the plan configuration, and the handler is
@@ -154,6 +173,9 @@ func run() error {
 	// It is idempotent by predicate rather than by flag, so a redelivery finds nothing left
 	// to do rather than reserving the same entitlement twice.
 	dispatcher.Handle(servicerequestapp.DecidedEvent, stays.HandleServiceRequestDecided)
+	// The same event, the other subscriber: an approved RESERVATION request turns its hold
+	// into a confirmed stay, and a refused one gives the room and the nights back.
+	dispatcher.Handle(servicerequestapp.DecidedEvent, bookings.HandleServiceRequestDecided)
 
 	go reportBacklog(ctx, logger, dispatcher)
 
@@ -161,6 +183,42 @@ func run() error {
 	err = dispatcher.Run(ctx)
 	logger.Info("worker stopped")
 	return err
+}
+
+// newBookings builds the accommodation service the decided-request subscription needs: the
+// booking tables, WP-I4-02 behind the narrow port that takes a hold and mints a voucher, and
+// WP-I6-04's lodging terms.
+//
+// It is given no request port, because it raises none — a booking is confirmed from the API
+// and the decision comes back here — so that port is left at its refusing default and a bug
+// that tried to raise a request would say so rather than quietly working.
+//
+// The movement engine is the one this process already holds. Two ledgers over one database
+// would take two different account locks for the same account, which is exactly the way a
+// no-double-spend rule stops holding.
+func newBookings(pool *pgxpool.Pool, movements *ledger.Ledger,
+	cursors *httpx.CursorCodec, logger *slog.Logger,
+) (*accommodationapp.Service, error) {
+	authorizations, err := authorizationapp.New(authorizationapp.Deps{
+		Pool: pool, Repo: authorizationpg.New(), Ledger: movements,
+		Audit: auditpg.New(), Logger: logger,
+	})
+	if err != nil {
+		return nil, err
+	}
+	contracts, err := contractapp.New(contractapp.Deps{
+		Pool: pool, Repo: contractpg.New(), Audit: auditpg.New(), Cursors: cursors,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return accommodationapp.New(accommodationapp.Deps{
+		Pool: pool, Repo: accommodationpg.New(), Bookings: accommodationpg.NewBookings(),
+		Ledger:         movements,
+		Authorizations: accommodationgw.NewAuthorizations(authorizations),
+		Policies:       accommodationgw.NewPolicies(contracts),
+		Audit:          auditpg.New(), Cursors: cursors, Logger: logger,
+	})
 }
 
 // newDocuments builds the document service with both the object store and the scanner. A

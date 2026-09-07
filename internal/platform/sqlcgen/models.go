@@ -12,6 +12,66 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type AccommodationBooking struct {
+	ID                       uuid.UUID
+	TenantID                 uuid.UUID
+	Reference                string
+	PersonID                 uuid.UUID
+	EnrollmentID             uuid.UUID
+	ProgramID                uuid.UUID
+	PropertyID               uuid.UUID
+	RoomTypeID               uuid.UUID
+	CheckIn                  pgtype.Date
+	CheckOut                 pgtype.Date
+	Nights                   int32
+	Adults                   int32
+	Children                 int32
+	Status                   string
+	HoldExpiresAt            *time.Time
+	EntitlementReservationID uuid.NullUUID
+	ServiceRequestID         uuid.NullUUID
+	AuthorizationID          uuid.NullUUID
+	VoucherID                uuid.NullUUID
+	QuoteSnapshot            []byte
+	PolicySnapshot           []byte
+	Channel                  string
+	ConfirmedAt              *time.Time
+	CheckedInAt              *time.Time
+	CheckedOutAt             *time.Time
+	CancelledAt              *time.Time
+	CancelReasonCode         *string
+	ActualNights             *int32
+	CreatedAt                time.Time
+	CreatedBy                uuid.NullUUID
+	UpdatedAt                time.Time
+	UpdatedBy                uuid.NullUUID
+	RowVersion               int64
+}
+
+type AccommodationBookingGuest struct {
+	ID          uuid.UUID
+	TenantID    uuid.UUID
+	BookingID   uuid.UUID
+	PersonID    uuid.NullUUID
+	DisplayName string
+	GuestType   string
+	IsMinor     bool
+	CreatedAt   time.Time
+}
+
+type AccommodationBookingNight struct {
+	ID           uuid.UUID
+	TenantID     uuid.UUID
+	BookingID    uuid.UUID
+	StayDate     pgtype.Date
+	RoomTypeID   uuid.UUID
+	UnitAmount   pgtype.Numeric
+	PayerAmount  pgtype.Numeric
+	MemberAmount pgtype.Numeric
+	CurrencyCode string
+	CreatedAt    time.Time
+}
+
 type AccommodationInventoryDay struct {
 	TenantID   uuid.UUID
 	RoomTypeID uuid.UUID

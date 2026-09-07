@@ -119,6 +119,16 @@ type QuoteView struct {
 	TotalAmount    string
 	PayerAmount    string
 	MemberAmount   string
+	// CoveredNights is how many nights of this stay the plan is applied to: the nights the
+	// eligibility verdict marked eligible, counted here and nowhere else.
+	//
+	// It is a field on the quote rather than something a later caller re-derives, because
+	// it is the same number twice over. It is what the search means when it shows a member
+	// two of their three nights carried and the third as their own, and it is the quantity
+	// WP-I6-02's hold reserves, its reservation request asks for and its authorization
+	// promises. Two derivations of it would be two answers to "how much of this stay does
+	// the plan pay for", and the member would have been shown one of them.
+	CoveredNights int
 }
 
 // NightAmount is one night of the stay.
@@ -515,6 +525,11 @@ func (s *Service) quoteRoomType(world searchWorld, property AvailabilityProperty
 	items := make([]pricing.Item, 0, len(world.stayDates))
 	currency := ""
 	reason := ""
+	// The nights the plan is applied to, counted as they are decided rather than inferred
+	// afterwards from the figures. A night the plan covers whose split happens to leave the
+	// payer nothing is still a night drawn from the count, and reading the count back off
+	// `payerAmount` would silently stop being true for a contract with a 100 % member share.
+	carried := 0
 	for i, night := range world.stayDates {
 		item := pricing.Item{LineNo: i + 1, Quantity: oneNight, Available: unboundedBalance}
 		switch {
@@ -532,6 +547,9 @@ func (s *Service) quoteRoomType(world searchWorld, property AvailabilityProperty
 			// A NIGHT-unit entitlement is a count: the plan carries the first
 			// `coveredNights` nights and the member carries the rest.
 			item.Eligible = i < coveredNights
+		}
+		if item.Eligible {
+			carried++
 		}
 
 		request.ServiceDate = night
@@ -582,6 +600,7 @@ func (s *Service) quoteRoomType(world searchWorld, property AvailabilityProperty
 	}
 
 	view := &QuoteView{
+		CoveredNights:  carried,
 		CurrencyCode:   currency,
 		NightlyAmounts: make([]NightAmount, 0, len(result.Items)),
 		TotalAmount:    result.Contract.String(),

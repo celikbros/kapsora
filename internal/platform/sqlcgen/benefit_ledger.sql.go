@@ -235,6 +235,39 @@ func (q *Queries) DecideEntitlementAdjustment(ctx context.Context, arg DecideEnt
 	return result.RowsAffected(), nil
 }
 
+const extendEntitlementReservationExpiry = `-- name: ExtendEntitlementReservationExpiry :execrows
+UPDATE benefit.entitlement_reservation
+   SET expires_at = $1
+ WHERE tenant_id = $2
+   AND id = $3
+   AND status IN ('HELD','PARTIALLY_CONSUMED')
+   AND expires_at IS NOT NULL
+   AND expires_at < $1
+`
+
+type ExtendEntitlementReservationExpiryParams struct {
+	ExpiresAt *time.Time
+	TenantID  uuid.UUID
+	ID        uuid.UUID
+}
+
+// Move an open hold's deadline later (WP-I6-02's adoption: a booking's hold expires with
+// the fifteen-minute countdown, and the authorization that confirms it moves that deadline
+// out to the end of the stay).
+//
+// It only ever moves the deadline forward, and the predicate says so rather than the
+// caller: a statement that could pull it back would be a way to expire somebody's hold
+// early, and a redelivered confirmation that ran this twice must be the same as running it
+// once. A hold with no deadline at all is left alone -- it already outlives every date this
+// would set.
+func (q *Queries) ExtendEntitlementReservationExpiry(ctx context.Context, arg ExtendEntitlementReservationExpiryParams) (int64, error) {
+	result, err := q.db.Exec(ctx, extendEntitlementReservationExpiry, arg.ExpiresAt, arg.TenantID, arg.ID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const findEntitlementAccountForPeriod = `-- name: FindEntitlementAccountForPeriod :one
 SELECT id
   FROM benefit.entitlement_account

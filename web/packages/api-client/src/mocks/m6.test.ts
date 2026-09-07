@@ -638,3 +638,425 @@ describe('the provider boundary', () => {
     expect(patched.data.rowVersion).toBe(version + 1);
   });
 });
+
+// --- the hold and the booking (WP-I6-02) --------------------------------------------------
+
+/** A night this room type has an allotment on and nothing has taken yet. */
+function freeNight(roomTypeId: string, from = 60): string {
+  const nights = allottedNights(roomTypeId);
+  const sold = new Set(soldOutNights(roomTypeId));
+  for (let i = from; i < nights.length - 4; i += 1) {
+    const start = nights[i]!;
+    const window = nights.slice(i, i + 3);
+    if (window.length === 3 && window.every((n) => !sold.has(n))) return start;
+  }
+  throw new Error('fixture: no free three-night window');
+}
+
+function holdBody(personId: string, roomTypeId: string, checkIn: string, nights = 2, adults = 2) {
+  return {
+    personId,
+    roomTypeId,
+    checkIn,
+    checkOut: addDays(checkIn, nights),
+    adults,
+  };
+}
+
+function createHold(s: Session, body: ReturnType<typeof holdBody>) {
+  return unwrap(
+    s.c.POST('/api/v1/accommodation/holds', {
+      params: { header: { ...tenant(s), 'Idempotency-Key': key() } },
+      body,
+    }),
+  );
+}
+
+describe('the hold', () => {
+  /**
+   * The acceptance criterion of the package, as far as a mock can carry it: the room is set
+   * aside on every night of the stay, the countdown is a real one, and the frozen quote adds
+   * up night by night rather than only in the total.
+   */
+  it('sets a room aside on every night and freezes the quote', async () => {
+    const s = await signIn('admin.a');
+    const room = roomTypeByCode('STD_DBL');
+    const person = personByFirstName('Kaan');
+    const checkIn = freeNight(room.id);
+    const before = await getInventory(s, room.id, checkIn, addDays(checkIn, 1));
+
+    const held = (await createHold(s, holdBody(person.id, room.id, checkIn))).data;
+    expect(held.status).toBe('HOLD');
+    expect(held.nights).toBe(2);
+    expect(held.nightlyAmounts).toHaveLength(2);
+    // The countdown is the server's own, not a difference two clocks computed.
+    expect(held.secondsToExpiry).toBeGreaterThan(0);
+    expect(held.secondsToExpiry).toBeLessThanOrEqual(15 * 60);
+    // Payer plus member is exactly the amount, on every night and on the total.
+    for (const night of held.nightlyAmounts) {
+      expect(sum(night.payerAmount, night.memberAmount)).toBe(night.unitAmount);
+    }
+    expect(sum(held.quoteSnapshot.payerAmount, held.quoteSnapshot.memberAmount)).toBe(
+      held.quoteSnapshot.totalAmount,
+    );
+    expect(sum(...held.nightlyAmounts.map((n) => n.unitAmount))).toBe(
+      held.quoteSnapshot.totalAmount,
+    );
+
+    const after = await getInventory(s, room.id, checkIn, addDays(checkIn, 1));
+    for (let i = 0; i < after.days.length; i += 1) {
+      expect(after.days[i]!.held).toBe(before.days[i]!.held + 1);
+      expect(after.days[i]!.confirmed).toBe(before.days[i]!.confirmed);
+      expect(after.days[i]!.available).toBe(before.days[i]!.available - 1);
+    }
+  });
+
+  /**
+   * A night with no room refuses the whole stay and names itself. A member looking at a
+   * fortnight needs the night to move, not a message that something somewhere failed.
+   */
+  it('refuses the whole stay with the first full night', async () => {
+    const s = await signIn('admin.a');
+    const room = roomTypeByCode('STD_DBL');
+    const person = personByFirstName('Kaan');
+    const soldOut = soldOutNights(room.id)[0]!;
+    // A stay that starts the day before the sold-out night: the first night is free and the
+    // second is not, so the refusal has to name the second.
+    const checkIn = addDays(soldOut, -1);
+
+    const refused = await refusal(createHold(s, holdBody(person.id, room.id, checkIn)));
+    expect(refused.status).toBe(409);
+    expect(refused.code).toBe('ROOM_UNAVAILABLE');
+    expect(refused.stayDate).toBe(soldOut);
+    expect(refused.allotted).toBe(true);
+  });
+
+  /** A night the provider opened nothing on is "no allotment" and says so. */
+  it('tells a night with no allotment apart from a full one', async () => {
+    const s = await signIn('admin.a');
+    const room = roomTypeByCode('STD_DBL');
+    const person = personByFirstName('Kaan');
+    const nights = allottedNights(room.id);
+    // The last allotted night, so the second night of the stay has no row at all.
+    const checkIn = nights[nights.length - 1]!;
+
+    const refused = await refusal(createHold(s, holdBody(person.id, room.id, checkIn)));
+    expect(refused.code).toBe('ROOM_UNAVAILABLE');
+    expect(refused.allotted).toBe(false);
+  });
+
+  /**
+   * One live booking of one room type per person and arrival. The server states it as a
+   * partial unique index, and the "partial" is the half a naive unique constraint gets wrong:
+   * once the first is given back, the same room and the same day may be booked again.
+   */
+  it('allows one live booking per person, room type and arrival', async () => {
+    const s = await signIn('admin.a');
+    const room = roomTypeByCode('GUEST_DBL');
+    const person = personByFirstName('Kaan');
+    const checkIn = freeNight(room.id);
+
+    const first = (await createHold(s, holdBody(person.id, room.id, checkIn))).data;
+    const clash = await refusal(createHold(s, holdBody(person.id, room.id, checkIn)));
+    expect(clash.status).toBe(409);
+    expect(clash.code).toBe('BOOKING_ALREADY_LIVE');
+
+    await unwrap(
+      s.c.POST('/api/v1/accommodation/bookings/{bookingId}/release', {
+        params: { header: { ...tenant(s), 'Idempotency-Key': key() }, path: { bookingId: first.id } },
+      }),
+    );
+    const again = (await createHold(s, holdBody(person.id, room.id, checkIn))).data;
+    expect(again.status).toBe('HOLD');
+    expect(again.id).not.toBe(first.id);
+  });
+
+  /**
+   * Giving the room back before anything was agreed. Nothing is charged, the counters return
+   * to where they were, and the reason code says which of the two cancellations this is.
+   */
+  it('gives the room back when the hold is released', async () => {
+    const s = await signIn('admin.a');
+    const room = roomTypeByCode('FAM_SUITE');
+    const person = personByFirstName('Kaan');
+    const checkIn = freeNight(room.id);
+    const before = await getInventory(s, room.id, checkIn, addDays(checkIn, 1));
+
+    const held = (await createHold(s, holdBody(person.id, room.id, checkIn))).data;
+    const released = (
+      await unwrap(
+        s.c.POST('/api/v1/accommodation/bookings/{bookingId}/release', {
+          params: {
+            header: { ...tenant(s), 'Idempotency-Key': key() },
+            path: { bookingId: held.id },
+          },
+        }),
+      )
+    ).data;
+    expect(released.status).toBe('CANCELLED');
+    expect(released.cancelReasonCode).toBe('HOLD_RELEASED');
+    expect(released.secondsToExpiry).toBe(0);
+
+    const after = await getInventory(s, room.id, checkIn, addDays(checkIn, 1));
+    for (let i = 0; i < after.days.length; i += 1) {
+      expect(after.days[i]!.held).toBe(before.days[i]!.held);
+    }
+  });
+
+  /**
+   * The expiry, advanced by moving the deadline into the past. On the server this is a
+   * scheduler job; either way the room comes back without anybody calling anything, and a
+   * second pass gives nothing back twice.
+   */
+  it('expires a hold nobody confirmed and releases once', async () => {
+    const s = await signIn('admin.a');
+    const room = roomTypeByCode('GUEST_SGL');
+    const person = personByFirstName('Kaan');
+    const checkIn = freeNight(room.id);
+    const before = await getInventory(s, room.id, checkIn, addDays(checkIn, 1));
+
+    const held = (await createHold(s, holdBody(person.id, room.id, checkIn, 2, 1))).data;
+    api.world.bookings.find((b) => b.id === held.id)!.holdExpiresAt = new Date(
+      Date.now() - 60_000,
+    ).toISOString();
+
+    const expired = (
+      await unwrap(
+        s.c.GET('/api/v1/accommodation/bookings/{bookingId}', {
+          params: { header: tenant(s), path: { bookingId: held.id } },
+        }),
+      )
+    ).data;
+    expect(expired.status).toBe('EXPIRED');
+    expect(expired.secondsToExpiry).toBe(0);
+
+    const after = await getInventory(s, room.id, checkIn, addDays(checkIn, 1));
+    for (let i = 0; i < after.days.length; i += 1) {
+      expect(after.days[i]!.held).toBe(before.days[i]!.held);
+    }
+    // A second read must not give the room back again.
+    await unwrap(
+      s.c.GET('/api/v1/accommodation/bookings/{bookingId}', {
+        params: { header: tenant(s), path: { bookingId: held.id } },
+      }),
+    );
+    const twice = await getInventory(s, room.id, checkIn, addDays(checkIn, 1));
+    for (let i = 0; i < twice.days.length; i += 1) {
+      expect(twice.days[i]!.held).toBe(before.days[i]!.held);
+    }
+  });
+});
+
+describe('the booking', () => {
+  /**
+   * Confirming moves the room from held to confirmed on every night, freezes the cancellation
+   * policy, and charges the amounts the member already saw. The nights are asserted one by
+   * one because a confirmation that moved the counters on the first night only would still
+   * look right in a total.
+   */
+  it('confirms the stay, moves the counters and freezes the policy', async () => {
+    const s = await signIn('admin.a');
+    const room = roomTypeByCode('STD_DBL');
+    const person = personByFirstName('Kaan');
+    const checkIn = freeNight(room.id, 70);
+    const before = await getInventory(s, room.id, checkIn, addDays(checkIn, 1));
+
+    const held = (await createHold(s, holdBody(person.id, room.id, checkIn))).data;
+    const confirmed = (
+      await unwrap(
+        s.c.POST('/api/v1/accommodation/bookings/{bookingId}/confirm', {
+          params: {
+            header: { ...tenant(s), 'Idempotency-Key': key() },
+            path: { bookingId: held.id },
+          },
+        }),
+      )
+    ).data;
+    expect(confirmed.status).toBe('CONFIRMED');
+    expect(confirmed.confirmedAt).not.toBeNull();
+    expect(confirmed.serviceRequestId).not.toBeNull();
+    expect(confirmed.authorizationId).not.toBeNull();
+    expect(confirmed.policySnapshot?.freeCancellationHoursBefore).toBe(48);
+    expect(confirmed.secondsToExpiry).toBe(0);
+    // Pricing is never recomputed: the confirmation carries the hold's own figures.
+    expect(confirmed.quoteSnapshot.totalAmount).toBe(held.quoteSnapshot.totalAmount);
+
+    const after = await getInventory(s, room.id, checkIn, addDays(checkIn, 1));
+    for (let i = 0; i < after.days.length; i += 1) {
+      expect(after.days[i]!.held).toBe(before.days[i]!.held);
+      expect(after.days[i]!.confirmed).toBe(before.days[i]!.confirmed + 1);
+    }
+  });
+
+  /**
+   * A quote nobody has looked at for an hour is not a price anybody should be committed to.
+   * The room stays held, so the member can search again rather than losing it.
+   */
+  it('refuses a stale quote and keeps the room held', async () => {
+    const s = await signIn('admin.a');
+    const room = roomTypeByCode('FAM_SUITE');
+    const person = personByFirstName('Kaan');
+    const checkIn = freeNight(room.id, 70);
+
+    const held = (await createHold(s, holdBody(person.id, room.id, checkIn))).data;
+    const stored = api.world.bookings.find((b) => b.id === held.id)!;
+    stored.quoteSnapshot.quotedAt = new Date(Date.now() - 2 * 3_600_000).toISOString();
+
+    const refused = await refusal(
+      unwrap(
+        s.c.POST('/api/v1/accommodation/bookings/{bookingId}/confirm', {
+          params: {
+            header: { ...tenant(s), 'Idempotency-Key': key() },
+            path: { bookingId: held.id },
+          },
+        }),
+      ),
+    );
+    expect(refused.status).toBe(409);
+    expect(refused.code).toBe('QUOTE_STALE');
+    expect(stored.status).toBe('HOLD');
+  });
+
+  /**
+   * The voucher token is returned once, by the command that mints it, and appears in no
+   * other body. Reissuing retires the previous one, so exactly one code works at a time.
+   */
+  it('hands out a voucher token once and rotates it on a reissue', async () => {
+    const s = await signIn('admin.a');
+    const room = roomTypeByCode('GUEST_DBL');
+    const person = personByFirstName('Kaan');
+    const checkIn = freeNight(room.id, 70);
+
+    const held = (await createHold(s, holdBody(person.id, room.id, checkIn))).data;
+    await unwrap(
+      s.c.POST('/api/v1/accommodation/bookings/{bookingId}/confirm', {
+        params: {
+          header: { ...tenant(s), 'Idempotency-Key': key() },
+          path: { bookingId: held.id },
+        },
+      }),
+    );
+    const first = (
+      await unwrap(
+        s.c.POST('/api/v1/accommodation/bookings/{bookingId}/voucher', {
+          params: { header: tenant(s), path: { bookingId: held.id } },
+        }),
+      )
+    ).data;
+    expect(first.token).not.toBe('');
+    expect(first.maskedToken).not.toBe(first.token);
+
+    const second = (
+      await unwrap(
+        s.c.POST('/api/v1/accommodation/bookings/{bookingId}/voucher', {
+          params: { header: tenant(s), path: { bookingId: held.id } },
+        }),
+      )
+    ).data;
+    expect(second.token).not.toBe(first.token);
+    const live = api.world.bookingVouchers.filter(
+      (v) => v.bookingId === held.id && v.status === 'ISSUED',
+    );
+    expect(live).toHaveLength(1);
+    expect(live[0]!.id).toBe(second.id);
+
+    // The booking itself never carries a token, on any read.
+    const read = (
+      await unwrap(
+        s.c.GET('/api/v1/accommodation/bookings/{bookingId}', {
+          params: { header: tenant(s), path: { bookingId: held.id } },
+        }),
+      )
+    ).data;
+    expect(JSON.stringify(read)).not.toContain(first.token);
+    expect(JSON.stringify(read)).not.toContain(second.token);
+  });
+
+  /** A voucher may not be minted for a stay nobody has agreed to yet. */
+  it('refuses a voucher on a booking that is still a hold', async () => {
+    const s = await signIn('admin.a');
+    const room = roomTypeByCode('GUEST_SGL');
+    const person = personByFirstName('Kaan');
+    const checkIn = freeNight(room.id, 70);
+
+    const held = (await createHold(s, holdBody(person.id, room.id, checkIn, 2, 1))).data;
+    const refused = await refusal(
+      unwrap(
+        s.c.POST('/api/v1/accommodation/bookings/{bookingId}/voucher', {
+          params: { header: tenant(s), path: { bookingId: held.id } },
+        }),
+      ),
+    );
+    expect(refused.status).toBe(409);
+    expect(refused.code).toBe('BOOKING_TRANSITION_INVALID');
+  });
+
+  /**
+   * Partial coverage is a booking, not a refusal. The spouse has two nights left; a
+   * three-night stay holds the room, reserves the two the plan carries, and tells the screen
+   * which is which. A hold that insisted on the whole stay would refuse exactly the booking
+   * the search had just quoted.
+   */
+  it('holds a stay the plan covers only part of', async () => {
+    const s = await signIn('admin.a');
+    const room = roomTypeByCode('STD_DBL');
+    const spouse = personByFirstName('Sevgi');
+    const checkIn = freeNight(room.id, 75);
+
+    const held = (await createHold(s, holdBody(spouse.id, room.id, checkIn, 3))).data;
+    expect(held.nights).toBe(3);
+    expect(held.nightlyAmounts).toHaveLength(3);
+    expect(held.quoteSnapshot.coveredNights).toBe(2);
+    // `eligible` is "the plan covers every night", which this stay is not.
+    expect(held.quoteSnapshot.eligible).toBe(false);
+    // The two carried nights have a payer share; the third is entirely the member's.
+    const carried = held.nightlyAmounts.filter((n) => toMicros(n.payerAmount) > 0n);
+    expect(carried).toHaveLength(2);
+    const own = held.nightlyAmounts.find((n) => toMicros(n.payerAmount) === 0n)!;
+    expect(own.memberAmount).toBe(own.unitAmount);
+    // And the totals still add up exactly.
+    expect(sum(held.quoteSnapshot.payerAmount, held.quoteSnapshot.memberAmount)).toBe(
+      held.quoteSnapshot.totalAmount,
+    );
+  });
+
+  /** A stay the plan carries no night of is the one refusal left. */
+  it('refuses a stay the plan carries no night of', async () => {
+    const s = await signIn('admin.a');
+    const room = roomTypeByCode('STD_DBL');
+    const spouse = personByFirstName('Sevgi');
+    const checkIn = freeNight(room.id, 75);
+    for (const account of api.world.entitlementAccounts) {
+      if (account.personId === spouse.id) account.available = '0.000000';
+    }
+
+    const refused = await refusal(createHold(s, holdBody(spouse.id, room.id, checkIn, 3)));
+    expect(refused.status).toBe(409);
+    expect(refused.code).toBe('ENTITLEMENT_INSUFFICIENT');
+  });
+
+  /** The seeded world holds the four states a screen has to draw. */
+  it('seeds a hold, a confirmed stay, a check-in and a completed stay', async () => {
+    const s = await signIn('admin.a');
+    const page = (
+      await unwrap(
+        s.c.GET('/api/v1/accommodation/bookings', { params: { header: tenant(s) } }),
+      )
+    ).data;
+    const statuses = new Set(page.items.map((b) => b.status));
+    expect(statuses.has('HOLD')).toBe(true);
+    expect(statuses.has('CONFIRMED')).toBe(true);
+    expect(statuses.has('CHECKED_IN')).toBe(true);
+    expect(statuses.has('COMPLETED')).toBe(true);
+    // Every seeded booking carries as many night rows as it says it has nights.
+    for (const booking of page.items) {
+      expect(booking.nightlyAmounts).toHaveLength(booking.nights);
+    }
+    // The confirmed ones carry the frozen policy; the hold does not.
+    const hold = page.items.find((b) => b.status === 'HOLD')!;
+    expect(hold.policySnapshot ?? null).toBeNull();
+    expect(hold.secondsToExpiry).toBeGreaterThan(0);
+    const confirmed = page.items.find((b) => b.status === 'CONFIRMED')!;
+    expect(confirmed.policySnapshot?.penaltyKind).toBe('NIGHTS');
+  });
+});

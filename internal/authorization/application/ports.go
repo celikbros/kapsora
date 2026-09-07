@@ -73,6 +73,14 @@ var (
 	// middleware normally refuses it first; the service refuses it again because a
 	// create without a key is a create that can reserve twice.
 	ErrIdempotencyKeyRequired = errors.New("authorization: an idempotency key is required")
+	// ErrAdoptionNotSingleLine refuses an authorization that adopts an existing hold and
+	// has more than one line. One hold covers one account; two lines may draw on two, and
+	// there is no honest way to split a quantity somebody else reserved between them.
+	ErrAdoptionNotSingleLine = errors.New("authorization: only a single-line authorization may adopt a reservation")
+	// ErrAdoptedReservationTooSmall refuses an approval for more than the adopted hold
+	// actually holds. Promising entitlement nobody reserved is the failure this whole
+	// path exists to avoid, and it is refused here rather than found at consumption.
+	ErrAdoptedReservationTooSmall = errors.New("authorization: the adopted reservation does not cover what was approved")
 	// ErrKeyReplay reports that this key already produced an authorization. The caller
 	// re-reads it in a fresh transaction: a unique violation has aborted this one.
 	ErrKeyReplay = errors.New("authorization: this idempotency key already created an authorization")
@@ -361,6 +369,10 @@ type Repository interface {
 	LockVoucherByTokenHash(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, hash []byte, scope Scope) (VoucherRecord, error)
 	ListVouchers(ctx context.Context, tx pgx.Tx, tenantID, authorizationID uuid.UUID) ([]VoucherRecord, error)
 	MarkVoucherRedeemed(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID, redeemedAt time.Time, actorID *uuid.UUID) (bool, error)
+	// MarkVoucherRevoked withdraws a live voucher so a replacement may be issued. It
+	// reports false for a voucher that was not ISSUED, which is what makes a second
+	// revoke a no-op rather than an error.
+	MarkVoucherRevoked(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID, reasonCode string) (bool, error)
 
 	GetRequest(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID, scope Scope) (RequestRecord, error)
 
@@ -391,4 +403,15 @@ type Ledger interface {
 	Reserve(ctx context.Context, tx pgx.Tx, in ledger.ReserveInput) (ledger.Reservation, error)
 	Release(ctx context.Context, tx pgx.Tx, in ledger.MovementInput) (ledger.Reservation, error)
 	Consume(ctx context.Context, tx pgx.Tx, in ledger.MovementInput) (ledger.Reservation, error)
+	// AdoptReservation takes over a hold somebody else already placed, moving its deadline
+	// out to this promise's own end. It posts no movement, because nothing moves: the
+	// quantity is already reserved.
+	//
+	// It is the fourth verb because of the booking (WP-I6-02). A held room reserves its
+	// nights the moment the countdown starts, fifteen minutes before anybody has approved
+	// anything; when the approval arrives, this package must promise the same nights for
+	// the length of the stay. Reserving them again would be two real holds for one stay —
+	// the ledger conserved, the constraints satisfied, and the member's plan drawn down
+	// twice with nothing anywhere saying so.
+	AdoptReservation(ctx context.Context, tx pgx.Tx, in ledger.AdoptInput) (ledger.Reservation, error)
 }

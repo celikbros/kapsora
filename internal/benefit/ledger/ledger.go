@@ -377,6 +377,52 @@ func (l *Ledger) Consume(ctx context.Context, tx pgx.Tx, in MovementInput) (Rese
 	return l.settle(ctx, tx, in, MovementConsume, "")
 }
 
+// AdoptInput hands an existing hold to a longer-lived owner (WP-I6-02).
+type AdoptInput struct {
+	TenantID      uuid.UUID
+	ReservationID uuid.UUID
+	// ExpiresAt is the new deadline. It is only ever moved later; a value at or before
+	// the hold's current deadline leaves the row untouched.
+	ExpiresAt time.Time
+}
+
+// AdoptReservation hands an open hold to whatever now owns it, by moving its deadline out.
+//
+// It exists so that a promise taken once is not taken twice. A booking reserves its nights
+// at the hold, under a fifteen-minute deadline; when the reservation request is approved,
+// the authorization has to hold the same nights for the length of the stay. Reserving again
+// would leave the member two holds for one stay — both real, both counted, the ledger's own
+// conservation still satisfied, and the plan drawn down twice. So the authorization adopts
+// this row instead, and this is the whole of what adopting means.
+//
+// No movement is posted, because nothing moves: the quantity is already reserved and stays
+// reserved. Only the deadline changes, only forwards, and only for a hold that is still
+// open — so a redelivered approval that runs this a second time changes nothing, and a
+// caller cannot use it to expire somebody's hold early.
+func (l *Ledger) AdoptReservation(ctx context.Context, tx pgx.Tx, in AdoptInput) (Reservation, error) {
+	current, err := reservationByID(ctx, tx, in.TenantID, in.ReservationID, true)
+	if err != nil {
+		return Reservation{}, err
+	}
+	if !current.Open() {
+		return Reservation{}, ErrReservationClosed
+	}
+	if in.ExpiresAt.IsZero() {
+		return current, nil
+	}
+	expiresAt := in.ExpiresAt.UTC()
+	if _, err := sqlcgen.New(tx).ExtendEntitlementReservationExpiry(ctx,
+		sqlcgen.ExtendEntitlementReservationExpiryParams{
+			TenantID: in.TenantID, ID: in.ReservationID, ExpiresAt: &expiresAt,
+		}); err != nil {
+		return Reservation{}, fmt.Errorf("benefit: extend reservation expiry: %w", err)
+	}
+	// The row is re-read rather than patched in memory: the statement above may have
+	// changed nothing (a hold that already outlives the new date), and returning a
+	// deadline the database does not hold would be a lie the caller could act on.
+	return reservationByID(ctx, tx, in.TenantID, in.ReservationID, true)
+}
+
 // settle is the shared body of Release and Consume: both move quantity out of reserved,
 // one into available and the other into consumed, and both update the hold's counters.
 // finalStatus overrides the computed status (the expiry job passes EXPIRED).

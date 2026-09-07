@@ -13,6 +13,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	accommodationapp "github.com/celikbros/kapsora/internal/accommodation/application"
+	accommodationpg "github.com/celikbros/kapsora/internal/accommodation/infrastructure/postgres"
 	auditpg "github.com/celikbros/kapsora/internal/audit/postgres"
 	authorizationapp "github.com/celikbros/kapsora/internal/authorization/application"
 	authorizationpg "github.com/celikbros/kapsora/internal/authorization/infrastructure/postgres"
@@ -106,6 +108,19 @@ func run() error {
 		return err
 	}
 
+	// The accommodation sweeps. Neither of them can confirm a booking, and both say so by
+	// construction: this service is given no request port, no authorization port and no
+	// policy port, so the only things it can do are give a room back and tell somebody they
+	// are arriving tomorrow. A process that could confirm would be a process in which an
+	// unattended job could agree a stay on somebody's behalf.
+	bookings, err := accommodationapp.New(accommodationapp.Deps{
+		Pool: pool, Repo: accommodationpg.New(), Bookings: accommodationpg.NewBookings(),
+		Ledger: entitlements.Ledger(), Audit: auditpg.New(), Logger: logger,
+	})
+	if err != nil {
+		return err
+	}
+
 	registry := scheduler.NewRegistry()
 	registry.Register(scheduler.AuditEnsurePartitions(pool))
 	registry.Register(scheduler.OutboxRecoverStale(outbox.New(pool, outbox.Options{Logger: logger})))
@@ -117,6 +132,8 @@ func run() error {
 	registry.Register(scheduler.AuthorizationExpiring(authorizations))
 	registry.Register(scheduler.WorkflowEscalate(workflows))
 	registry.Register(scheduler.MedicalReportExpire(reports))
+	registry.Register(scheduler.AccommodationHoldExpire(bookings))
+	registry.Register(scheduler.AccommodationBookingReminder(bookings))
 	// Document retention runs only when an object store and a retention period are both
 	// configured. Purging real documents after a number nobody chose would be worse than
 	// keeping them, so keeping them is the default; when the sweep does run, every

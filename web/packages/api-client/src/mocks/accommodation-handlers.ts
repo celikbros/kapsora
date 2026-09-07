@@ -32,6 +32,7 @@
  */
 import { HttpResponse, http, type HttpHandler } from 'msw';
 
+import { bookingHandlers } from './booking-handlers';
 import { resolveContractPrice } from './contract-handlers';
 import {
   fromMicros,
@@ -308,6 +309,13 @@ function wholeNights(available: Decimal): number {
 interface RoomTypeQuote {
   quote: Schemas['AvailabilityQuote'] | null;
   reason: Schemas['QuoteUnavailableReason'] | null;
+  /**
+   * How many nights of the stay the plan was applied to. It is counted where the decision is
+   * made rather than read back off `payerAmount` afterwards: a night the plan covers whose
+   * split happens to leave the payer nothing is still a night drawn from the count, and a
+   * contract with a 100 % member share would make the two readings disagree.
+   */
+  coveredNights: number;
 }
 
 export function accommodationHandlers(api: MockApi): HttpHandler[] {
@@ -656,6 +664,46 @@ export function accommodationHandlers(api: MockApi): HttpHandler[] {
   };
 
   /**
+   * What the plan carries for one service, as the search decides it for every service at
+   * once: whether the person may use it at all, and how many nights of it are left.
+   *
+   * It is the same rule the search above applies -- one eligibility check, the NIGHT unit
+   * read as a count of nights and anything else as a budget -- reached through one service
+   * rather than a list, because a hold is about one room type. WP-I6-02 asks for it so the
+   * hold reserves the nights the member was quoted and not the length of the stay.
+   */
+  const coverForService = (
+    tenantId: string,
+    personId: string,
+    programId: string | null,
+    serviceDate: string,
+    serviceDefinitionId: string,
+  ): { eligible: boolean; nightsCarried: number; money: bigint | null } => {
+    const check: EligibilityCheckRequest = {
+      personId,
+      programId,
+      serviceDate,
+      serviceItems: [{ serviceDefinitionId, quantity: '1.000000' }],
+      context: { domain: 'ACCOMMODATION' },
+    };
+    const verdict = resolveEligibility(world(), tenantId, check, world().nextId());
+    const item = (verdict.items ?? [])[0];
+    if (!item) return { eligible: false, nightsCarried: 0, money: null };
+    const eligible = item.outcome === 'ELIGIBLE';
+    const code = item.entitlementCode ?? null;
+    const available = item.availableQuantity ?? null;
+    if (code === null || available === null || available === undefined) {
+      return { eligible, nightsCarried: 0, money: null };
+    }
+    const unit = (verdict.balances ?? []).find((b) => b.entitlementCode === code)?.unit ?? '';
+    return {
+      eligible,
+      nightsCarried: unit === 'NIGHT' ? wholeNights(available) : 0,
+      money: unit === 'NIGHT' ? null : toMicros(available),
+    };
+  };
+
+  /**
    * Prices one room type over the stay and sums it once.
    *
    * Each night is resolved through the same price ladder every quote, authorization and claim
@@ -679,6 +727,8 @@ export function accommodationHandlers(api: MockApi): HttpHandler[] {
     let totalPayer = ZERO;
     let totalMember = ZERO;
     let moneyLeft = cover.money ?? ZERO;
+    // Counted where the plan is applied, not inferred from the figures afterwards.
+    let carried = 0;
 
     nights.forEach((night, index) => {
       const resolution = resolveContractPrice(world(), tenantId, {
@@ -713,6 +763,7 @@ export function accommodationHandlers(api: MockApi): HttpHandler[] {
 
       let payer: bigint;
       let member: bigint;
+      if (cover.eligible && (cover.money !== null || index < cover.nightsCarried)) carried += 1;
       if (!cover.eligible) {
         // A member the plan does not cover may still choose to pay privately, so the night
         // is still priced; the payer simply carries none of it.
@@ -746,8 +797,8 @@ export function accommodationHandlers(api: MockApi): HttpHandler[] {
       });
     });
 
-    if (reason !== null) return { quote: null, reason };
-    if (currency === '') return { quote: null, reason: 'PRICE_NOT_FOUND' };
+    if (reason !== null) return { quote: null, reason, coveredNights: 0 };
+    if (currency === '') return { quote: null, reason: 'PRICE_NOT_FOUND', coveredNights: 0 };
     return {
       quote: {
         currencyCode: currency,
@@ -757,6 +808,7 @@ export function accommodationHandlers(api: MockApi): HttpHandler[] {
         memberAmount: fromMicros(totalMember),
       },
       reason: null,
+      coveredNights: carried,
     };
   };
 
@@ -1456,6 +1508,17 @@ export function accommodationHandlers(api: MockApi): HttpHandler[] {
         entitlement,
         results,
       });
+    }),
+
+    // The hold and the booking (WP-I6-02). They live in their own module and are handed the
+    // four search helpers above rather than copying them: a second pricing ladder or a second
+    // provider boundary here is exactly the divergence the mock exists to catch.
+    ...bookingHandlers(api, {
+      findRoomType,
+      findProperty,
+      searchableProperties,
+      quoteRoomType,
+      coverForService,
     }),
   ];
 }

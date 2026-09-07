@@ -110,6 +110,8 @@ func (h *Handler) require(w http.ResponseWriter, r *http.Request, permission str
 func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) {
 	var ve *domain.ValidationError
 	var below *application.InventoryBelowCommitment
+	var unavailable *application.RoomUnavailable
+	var unpriceable *application.QuoteUnavailable
 	switch {
 	case errors.As(err, &ve):
 		writeValidation(w, r, ve.Fields)
@@ -129,6 +131,76 @@ func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) 
 				"confirmed": below.Confirmed,
 			},
 		})
+	case errors.As(err, &unavailable):
+		// The refusal the booking half exists for, with the one fact that makes it
+		// actionable: a member looking at a fortnight is told which night to move rather
+		// than that something somewhere failed. `allotted` separates a night that is full
+		// from one the provider never opened, which are different things to a clerk.
+		httpx.WriteProblem(w, r, httpx.Problem{
+			Type:   httpx.ProblemTypeBase + "accommodation/room-unavailable",
+			Title:  "Bu tarihlerde boş oda yok",
+			Status: http.StatusConflict, Code: "ROOM_UNAVAILABLE",
+			Detail: "Konaklamanın en az bir gecesinde bu oda tipinden boş oda kalmadı.",
+			Extensions: map[string]any{
+				"stayDate":  unavailable.StayDate.Format(time.DateOnly),
+				"allotted":  unavailable.Allotted,
+				"capacity":  unavailable.Capacity,
+				"held":      unavailable.Held,
+				"confirmed": unavailable.Confirmed,
+			},
+		})
+	case errors.As(err, &unpriceable):
+		httpx.WriteProblem(w, r, httpx.Problem{
+			Type:   httpx.ProblemTypeBase + "accommodation/quote-unavailable",
+			Title:  "Bu tarihler için fiyat bulunamadı",
+			Status: http.StatusConflict, Code: "QUOTE_UNAVAILABLE",
+			Detail:     "Sözleşmede bu oda tipi için konaklamanın tüm gecelerini kapsayan fiyat yok.",
+			Extensions: map[string]any{"reason": unpriceable.Reason},
+		})
+	case errors.Is(err, application.ErrBookingNotFound):
+		problem(w, r, http.StatusNotFound, "accommodation/booking-not-found",
+			"BOOKING_NOT_FOUND", "Rezervasyon bulunamadı", "")
+	case errors.Is(err, application.ErrBookingAlreadyLive):
+		problem(w, r, http.StatusConflict, "accommodation/booking-already-live",
+			"BOOKING_ALREADY_LIVE", "Bu tarihte bu oda tipinde açık bir rezervasyonunuz var",
+			"Aynı kişi, aynı oda tipi ve aynı giriş tarihi için tek bir açık rezervasyon olabilir.")
+	case errors.Is(err, application.ErrBookingTransitionInvalid):
+		problem(w, r, http.StatusConflict, "accommodation/booking-transition-invalid",
+			"BOOKING_TRANSITION_INVALID", "Rezervasyon bu işlem için uygun durumda değil",
+			"Rezervasyonun güncel durumunu alıp yeniden deneyin.")
+	case errors.Is(err, application.ErrQuoteStale):
+		problem(w, r, http.StatusConflict, "accommodation/quote-stale", "QUOTE_STALE",
+			"Fiyat teklifi güncelliğini yitirdi",
+			"Aramayı yenileyip odayı yeniden seçin; onaylanan tutar gördüğünüz tutar olmalı.")
+	case errors.Is(err, application.ErrLodgingTermsMissing):
+		problem(w, r, http.StatusConflict, "accommodation/lodging-terms-missing",
+			"LODGING_TERMS_MISSING", "Sözleşmede konaklama koşulları tanımlı değil",
+			"İptal ve iade koşulları tanımlanmadan rezervasyon onaylanamaz.")
+	case errors.Is(err, application.ErrEntitlementAccountNotFound):
+		problem(w, r, http.StatusConflict, "accommodation/entitlement-account-not-found",
+			"ENTITLEMENT_ACCOUNT_NOT_FOUND", "Bu oda tipi için kullanılabilir hak bulunamadı",
+			"Planınızda bu hizmete karşılık gelen ve yeterli bakiyesi olan bir hak yok.")
+	case errors.Is(err, application.ErrEntitlementInsufficient):
+		problem(w, r, http.StatusConflict, "accommodation/entitlement-insufficient",
+			"ENTITLEMENT_INSUFFICIENT", "Planınız bu konaklamanın hiçbir gecesini karşılamıyor",
+			"Bu hizmet planınızda tanımlı değil ya da konaklama hakkınız tükendi; "+
+				"planın karşılamadığı bir konaklama bu ekrandan rezerve edilemez.")
+	case errors.Is(err, application.ErrVoucherNotAvailable):
+		problem(w, r, http.StatusConflict, "accommodation/voucher-not-available",
+			"VOUCHER_NOT_AVAILABLE", "Rezervasyon belgesi henüz oluşturulamaz",
+			"Rezervasyon onaylanmadan belge düzenlenemez.")
+	case errors.Is(err, application.ErrOccupancyExceeded):
+		problem(w, r, http.StatusUnprocessableEntity, "accommodation/occupancy-exceeded",
+			"OCCUPANCY_EXCEEDED", "Kişi sayısı bu oda tipine sığmıyor",
+			"Yetişkin, çocuk ve toplam kişi sınırlarını aşmayan bir oda tipi seçin.")
+	case errors.Is(err, application.ErrEnrollmentNotFound):
+		problem(w, r, http.StatusUnprocessableEntity, "accommodation/enrollment-not-found",
+			"ENROLLMENT_NOT_FOUND", "Bu tarihlerde geçerli bir plan kaydı yok",
+			"Rezervasyon, giriş tarihinde aktif bir plan kaydı üzerinden yapılır.")
+	case errors.Is(err, identity.ErrStepUpRequired):
+		problem(w, r, http.StatusForbidden, "identity/step-up-required", "STEP_UP_REQUIRED",
+			"Bu işlem için parolanızı yeniden doğrulayın",
+			"Ödeyeceğiniz tutar kurumun eşiğinin üzerinde; onaydan önce kimliğinizi doğrulayın.")
 	case errors.Is(err, application.ErrPropertyNotFound):
 		problem(w, r, http.StatusNotFound, "accommodation/property-not-found",
 			"PROPERTY_NOT_FOUND", "Tesis bulunamadı", "")

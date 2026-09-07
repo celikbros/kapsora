@@ -16,6 +16,14 @@ type IssueVoucherInput struct {
 	AuthorizationID uuid.UUID
 	ValidFrom       *time.Time
 	ValidTo         *time.Time
+	// Replace revokes whatever live voucher the authorization already has instead of
+	// refusing. It is the reissue: a member who lost the code they were shown gets a new
+	// one, and the old digest stops working in the same transaction.
+	Replace bool
+	// RevokeReasonCode is written on the voucher Replace withdrew. The column has a CHECK
+	// requiring one, because "this voucher stopped working" with no reason is a support
+	// call nobody can answer.
+	RevokeReasonCode string
 }
 
 // RedeemVoucherInput is the redeem command. Token is the plaintext the member presented;
@@ -37,6 +45,30 @@ func (s *Service) IssueVoucher(ctx context.Context, rc identity.RequestContext,
 ) (IssuedVoucher, error) {
 	var out IssuedVoucher
 	err := s.withTx(ctx, rc, func(ctx context.Context, tx pgx.Tx) error {
+		issued, err := s.IssueVoucherInTx(ctx, tx, rc, in)
+		out = issued
+		return err
+	})
+	if err != nil {
+		return IssuedVoucher{}, err
+	}
+	return out, nil
+}
+
+// IssueVoucherInTx is the body of IssueVoucher inside a transaction the caller owns, so a
+// module that mints a voucher as part of its own command (WP-I6-02's booking) commits the
+// voucher and its own row together or not at all.
+//
+// `Replace` is what separates the two callers. Issuing refuses a second live voucher,
+// because a double-clicked issue would otherwise leave the member holding two usable tokens
+// for one promise. Reissuing is the member saying they lost the first one: the live voucher
+// is revoked here, in the same transaction, so the old digest stops working at exactly the
+// moment the new one starts.
+func (s *Service) IssueVoucherInTx(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
+	in IssueVoucherInput,
+) (IssuedVoucher, error) {
+	var out IssuedVoucher
+	err := func() error {
 		authorization, err := s.repo.GetAuthorization(ctx, tx, rc.TenantID, in.AuthorizationID, scopeOf(rc))
 		if err != nil {
 			return err
@@ -54,7 +86,12 @@ func (s *Service) IssueVoucher(ctx context.Context, rc identity.RequestContext,
 			return err
 		}
 		if live > 0 {
-			return ErrVoucherAlreadyIssued
+			if !in.Replace {
+				return ErrVoucherAlreadyIssued
+			}
+			if err := s.revokeLiveVouchers(ctx, tx, rc, authorization.ID, in.RevokeReasonCode); err != nil {
+				return err
+			}
 		}
 		validFrom, validTo := authorization.ValidFrom, authorization.ValidTo
 		if in.ValidFrom != nil {
@@ -94,11 +131,41 @@ func (s *Service) IssueVoucher(ctx context.Context, rc identity.RequestContext,
 		}
 		out = IssuedVoucher{Voucher: voucher, Token: token}
 		return nil
-	})
+	}()
 	if err != nil {
 		return IssuedVoucher{}, err
 	}
 	return out, nil
+}
+
+// revokeLiveVouchers withdraws whatever is still usable on this promise, so the reissue
+// below can mint a replacement. Every revocation is its own audit row: a voucher that
+// stopped working with nothing recorded is a support call nobody can answer.
+func (s *Service) revokeLiveVouchers(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
+	authorizationID uuid.UUID, reasonCode string,
+) error {
+	vouchers, err := s.repo.ListVouchers(ctx, tx, rc.TenantID, authorizationID)
+	if err != nil {
+		return err
+	}
+	for _, voucher := range vouchers {
+		if voucher.Status != domain.VoucherIssued {
+			continue
+		}
+		revoked, err := s.repo.MarkVoucherRevoked(ctx, tx, rc.TenantID, voucher.ID, reasonCode)
+		if err != nil {
+			return err
+		}
+		if !revoked {
+			continue
+		}
+		if err := s.record(ctx, tx, rc, "voucher.revoke", "voucher", voucher.ID, map[string]any{
+			"authorization_id": authorizationID.String(), "reason_code": reasonCode,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // RedeemVoucher marks the voucher used and records the fulfilment it was presented for,

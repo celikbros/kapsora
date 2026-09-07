@@ -56,6 +56,201 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/accommodation/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Bookings this caller may see, newest first, with keyset paging.
+         *
+         *     The boundary is computed from the caller's own grants and is never widened by a
+         *     filter: a member sees their own bookings whatever `personId` they send, a provider
+         *     sees the bookings at its own properties, and a payer sees all of them. The filters
+         *     narrow that set by person, property, status and arrival range.
+         */
+        get: operations["listBookings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accommodation/bookings/{bookingId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One booking with its nights, its guests, the quote it was held on and - once it is
+         *     confirmed - the cancellation policy frozen onto it.
+         *
+         *     A booking outside the caller's boundary is 404 rather than 403: that a member is
+         *     going to Antalya is not another provider's business.
+         */
+        get: operations["getBooking"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accommodation/bookings/{bookingId}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Turns a hold into a reservation request and hands it to the gate.
+         *
+         *     **This command asks; it does not decide.** The eligibility gate, the document
+         *     requirement and the rule trace are the service request module's, and the answer
+         *     arrives asynchronously: the booking is still `HOLD` or `PENDING_APPROVAL` when this
+         *     returns, and it becomes `CONFIRMED` when the request is approved. A booking waiting
+         *     on a reviewer keeps its room - the countdown is pushed out to the review's own
+         *     deadline rather than expiring while somebody decides.
+         *
+         *     **Three refusals happen here** because all three are things the member can act on.
+         *     A quote older than the tenant's `accommodation.quote_ttl_minutes` (default 60) is
+         *     QUOTE_STALE and the member is sent back to search: the frozen prices are what they
+         *     will be charged, and a price nobody has looked at for an hour is not one anybody
+         *     should be committed to. A member share above `accommodation.stepup_member_amount`
+         *     takes a re-entered password (STEP_UP_REQUIRED). A contract version with no lodging
+         *     terms is LODGING_TERMS_MISSING - a stay agreed with no cancellation policy is a stay
+         *     nobody could cancel fairly, and a default invented here would be a fee invented here.
+         *
+         *     Pricing is never recomputed: the booking's nights carry the amounts the member saw.
+         *     The reservation request asks for `quoteSnapshot.coveredNights` nights and for the
+         *     payer's own share of them, which is the part of the stay the plan is being asked to
+         *     carry; the authorization that an approval produces adopts the hold's reservation for
+         *     exactly that quantity, so nothing is reserved twice and nothing is promised that was
+         *     never held.
+         */
+        post: operations["confirmBooking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accommodation/bookings/{bookingId}/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description The member giving the room back before the countdown runs out.
+         *
+         *     It has exactly the effect the expiry sweep has - the nights come back to the
+         *     allotment and the plan's entitlement is released - and differs from it in one way
+         *     that matters: it is on the record as a command somebody gave, with its own reason
+         *     code, rather than as a deadline nobody met. Nothing was agreed, so nothing is charged.
+         */
+        post: operations["releaseHold"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accommodation/bookings/{bookingId}/voucher": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Hands the member the code they show at the hotel desk, and returns it exactly once.
+         *
+         *     **There is no command anywhere that reads a voucher back**, because there is nothing
+         *     to read: the database keeps a SHA-256 digest and a masked tail, and the plaintext
+         *     exists only in the response of the command that generated it. A member who lost their
+         *     code is therefore given a new one - the previous digest is retired in the same
+         *     transaction, so exactly one code works at any moment.
+         *
+         *     Like the authorization module's own issue, this command takes **no Idempotency-Key**.
+         *     The Idempotency-Key contract stores response bodies so a replay can be answered from
+         *     one, and this response is the single place a usable token exists; storing it would
+         *     put the token in a column.
+         *
+         *     Available on a booking that has been confirmed and whose member the caller is, or to
+         *     a desk holding `accommodation.booking.manage`. Every issue is an audit row, and no
+         *     audit row, log line or notification ever contains the token.
+         */
+        post: operations["reissueBookingVoucher"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accommodation/holds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Sets a room aside for this member, for the length of the tenant's
+         *     `accommodation.hold_minutes` (default 15), and freezes the price they were shown.
+         *
+         *     **What a hold is.** One transaction locks the `inventory_day` rows of
+         *     `[checkIn, checkOut)` in `stay_date` order, refuses if any night has no room left,
+         *     increments `held` on every night, reserves the nights the plan actually carries on
+         *     the entitlement account with the same deadline as the hold, and writes the booking as
+         *     `HOLD` with the quote frozen into it. The date ordering is what makes hundreds of
+         *     simultaneous holds on the same room a queue rather than a deadlock, and
+         *     `held + confirmed <= capacity` is a database constraint underneath it, so the room
+         *     can never be sold twice even if the check above were removed.
+         *
+         *     **Partial cover is a booking, not a refusal.** The search already tells a member with
+         *     two nights left and a three-night stay that the plan carries two of them and the
+         *     third is theirs; the hold reserves exactly those two. The booking is still three
+         *     nights long — the guest sleeps three nights — and `quoteSnapshot.coveredNights` says
+         *     how many of them the plan pays for. A stay the plan carries *no* night of is the one
+         *     refusal: ENTITLEMENT_INSUFFICIENT.
+         *
+         *     **Whose stay.** A member account is bound to one person and the person is taken from
+         *     that binding, never from the body: a body naming somebody else is refused with
+         *     PERSON_SCOPE. A desk that is bound to no person must name one in `personId`.
+         *
+         *     **The price.** It is the same quote the availability search answers with, computed
+         *     once here and stored on the booking. It is never recomputed: confirming charges what
+         *     the member saw, and a contract that changes in between changes the next booking.
+         *
+         *     **Nothing is agreed yet.** A hold is a promise of a room for a quarter of an hour.
+         *     It gives the room and the nights back on its own if nobody confirms, with no
+         *     cancellation fee and no record of anybody changing their mind.
+         */
+        post: operations["createHold"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/accommodation/properties": {
         parameters: {
             query?: never;
@@ -5031,6 +5226,208 @@ export interface components {
             personId: string;
             results: components["schemas"]["AvailabilityRoomTypeResult"][];
         };
+        /**
+         * @description A hold, and what it became.
+         *
+         *     `secondsToExpiry` is the countdown, computed on the server: a browser deriving it
+         *     from two timestamps would be wrong by whatever its own clock is out by, and the
+         *     countdown is the whole of what a hold means to a member.
+         *
+         *     There is no voucher token anywhere in this document, and there is nowhere one could
+         *     appear. The proof of entitlement is fetched, once, from the booking's own voucher
+         *     command; what is kept is a digest.
+         */
+        Booking: {
+            actualNights?: number | null;
+            adults: number;
+            /** Format: uuid */
+            authorizationId?: string | null;
+            /** Format: date-time */
+            cancelledAt?: string | null;
+            cancelReasonCode?: string | null;
+            channel: components["schemas"]["ServiceRequestChannel"];
+            /** Format: date-time */
+            checkedInAt?: string | null;
+            /** Format: date-time */
+            checkedOutAt?: string | null;
+            /** Format: date */
+            checkIn: string;
+            /** Format: date */
+            checkOut: string;
+            children: number;
+            /** Format: date-time */
+            confirmedAt?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: uuid */
+            enrollmentId?: string;
+            /**
+             * Format: uuid
+             * @description The hold this booking took on the plan. The authorization created at confirmation
+             *     adopts this same reservation rather than taking a second one, which is why one
+             *     stay draws the member's plan down once.
+             */
+            entitlementReservationId?: string | null;
+            guests: components["schemas"]["BookingGuest"][];
+            /** Format: date-time */
+            holdExpiresAt?: string | null;
+            /** Format: uuid */
+            id: string;
+            nightlyAmounts: components["schemas"]["BookingNight"][];
+            /**
+             * @description The nights of [checkIn, checkOut). It is a stored column checked against the
+             *     dates, so it and the booking's night rows can never disagree.
+             */
+            nights: number;
+            /** Format: uuid */
+            personId: string;
+            /**
+             * @description The cancellation policy, frozen at confirmation. Null on a booking nobody has
+             *     confirmed yet; never re-read afterwards, so a later edit of the contract cannot
+             *     change what a member already agreed to.
+             */
+            policySnapshot?: components["schemas"]["LodgingPolicySnapshot"] | null;
+            /** Format: uuid */
+            programId?: string;
+            /** Format: uuid */
+            propertyId: string;
+            quoteSnapshot: components["schemas"]["BookingQuoteSnapshot"];
+            /** @description BK-YYYYMMDD-XXXXXXXX, unique in the tenant. */
+            reference: string;
+            /** Format: uuid */
+            roomTypeId: string;
+            rowVersion?: number;
+            /** @description Seconds left on the countdown, zero for a booking that is not holding a room. */
+            secondsToExpiry: number;
+            /** Format: uuid */
+            serviceRequestId?: string | null;
+            status: components["schemas"]["BookingStatus"];
+            /** Format: date-time */
+            updatedAt?: string | null;
+            /** Format: uuid */
+            voucherId?: string | null;
+        };
+        /**
+         * @description One person sleeping in the room.
+         *
+         *     There is no identifier field here and there will not be one. A national id, a
+         *     passport number or a telephone number belongs behind the field cipher in the person
+         *     record; a slot on a booking that a provider clerk types into would be plaintext
+         *     personal data in a table nobody thinks of as holding any. `isMinor` is a boolean
+         *     rather than a date of birth for the same reason: the room needs to know a child is
+         *     in it, and nothing here needs to know when they were born.
+         */
+        BookingGuest: {
+            /** @description A name, and only ever a name. */
+            displayName: string;
+            guestType: components["schemas"]["BookingGuestType"];
+            /** Format: uuid */
+            id?: string;
+            isMinor: boolean;
+            /** Format: uuid */
+            personId?: string | null;
+        };
+        /**
+         * @description Whether the guest is somebody the tenant already knows. `MEMBER` and `DEPENDANT`
+         *     carry a `personId`; `GUEST` never does and carries only a name.
+         * @enum {string}
+         */
+        BookingGuestType: "MEMBER" | "DEPENDANT" | "GUEST";
+        BookingList: {
+            items: components["schemas"]["Booking"][];
+            nextCursor?: string | null;
+        };
+        /**
+         * @description One night of the stay with the amounts the member was shown, copied at the hold and
+         *     never recomputed. `payerAmount` plus `memberAmount` is exactly `unitAmount`, which is
+         *     a constraint on the row and not a convention.
+         */
+        BookingNight: {
+            currencyCode: string;
+            /** @description payerAmount plus memberAmount is exactly unitAmount, on every night. */
+            memberAmount: string;
+            payerAmount: string;
+            /** Format: date */
+            stayDate: string;
+            /** @description What the contract says the night costs. Exact decimal as a string. */
+            unitAmount: string;
+        };
+        BookingQuoteNight: {
+            amount: string;
+            memberAmount: string;
+            payerAmount: string;
+            /** Format: date */
+            stayDate: string;
+        };
+        /**
+         * @description The quote as the member saw it, frozen at the moment the room was held.
+         *
+         *     Nothing in it is a reference to something that can change: the amounts are copies,
+         *     the entitlement is what the plan had at that moment, and `evaluationId` is the record
+         *     of what was shown. `quotedAt` is what the tenant's `accommodation.quote_ttl_minutes`
+         *     is measured against, which is how a confirmation an hour later can be refused as
+         *     stale rather than silently charged at a price nobody looked at.
+         */
+        BookingQuoteSnapshot: {
+            /**
+             * @description How many of the stay's nights the plan carries. It is never more than `nights`
+             *     and is frozen here rather than derived later, because three separate things read
+             *     it and all three have to read the same number: the entitlement the hold reserves,
+             *     the quantity the reservation request asks for, and the quantity the authorization
+             *     adopts. A three-night stay on a plan with two nights left is `nights: 3,
+             *     coveredNights: 2`, and the member pays for the third.
+             */
+            coveredNights: number;
+            currencyCode: string;
+            /**
+             * @description Whether the plan covers *every* night of this stay. It is `coveredNights ==
+             *     nights` said as a flag, so a screen does not have to compare two numbers to know
+             *     whether the member owes anything beyond their own share.
+             */
+            eligible: boolean;
+            entitlement?: components["schemas"]["AvailabilityEntitlement"] | null;
+            /** Format: uuid */
+            evaluationId?: string | null;
+            memberAmount: string;
+            nights: components["schemas"]["BookingQuoteNight"][];
+            payerAmount: string;
+            /** Format: uuid */
+            propertyId: string;
+            /** Format: date-time */
+            quotedAt: string;
+            /** Format: uuid */
+            roomTypeId: string;
+            /** Format: uuid */
+            serviceDefinitionId: string;
+            totalAmount: string;
+            /** @description The snapshot shape, so a reader that meets a newer one says so. */
+            version: number;
+        };
+        /**
+         * @description Where a booking stands (v1.2 12.3). `HOLD` is a room set aside with a countdown
+         *     running and nothing agreed. `PENDING_APPROVAL` is a confirmation a reviewer has not
+         *     decided; the room is still held and only the deadline has moved. `EXPIRED` is a hold
+         *     nobody confirmed in time, and it is deliberately not `CANCELLED`: nobody decided it,
+         *     and a cancellation fee may only ever follow somebody changing their mind.
+         * @enum {string}
+         */
+        BookingStatus: "HOLD" | "PENDING_APPROVAL" | "CONFIRMED" | "CHECKED_IN" | "COMPLETED" | "CANCELLED" | "NO_SHOW" | "EXPIRED";
+        /**
+         * @description The voucher, and the one and only time its token is shown. `token` is not stored
+         *     anywhere: the database keeps `maskedToken` and a SHA-256 digest, and a lost code is
+         *     reissued rather than recovered.
+         */
+        BookingVoucher: {
+            /** Format: uuid */
+            id: string;
+            maskedToken: string;
+            /** @description Shown once, in this response, and never again. */
+            token: string;
+            /** Format: date-time */
+            validFrom: string;
+            /** Format: date-time */
+            validTo: string;
+        };
         CancelInpatientStay: {
             reasonCode: string;
             reasonText?: string | null;
@@ -5529,6 +5926,13 @@ export interface components {
              */
             validTo: string;
         };
+        CreateBookingGuest: {
+            displayName: string;
+            guestType: components["schemas"]["BookingGuestType"];
+            isMinor?: boolean;
+            /** Format: uuid */
+            personId?: string;
+        };
         CreateClaim: {
             /** Format: uuid */
             authorizationId?: string | null;
@@ -5671,6 +6075,34 @@ export interface components {
              *     a case a provider opened standalone.
              */
             serviceRequestId?: string | null;
+        };
+        /**
+         * @description The room, the dates and the party. `personId` is honoured only for a caller that is
+         *     not bound to a person; a member sending somebody else's is refused with PERSON_SCOPE.
+         */
+        CreateHoldRequest: {
+            adults: number;
+            channel?: components["schemas"]["ServiceRequestChannel"];
+            /** Format: date */
+            checkIn: string;
+            /** Format: date */
+            checkOut: string;
+            children?: number;
+            /**
+             * @description Who is sleeping in the room. Optional; when given, the count must equal
+             *     `adults + children`.
+             */
+            guests?: components["schemas"]["CreateBookingGuest"][];
+            /** Format: uuid */
+            personId?: string;
+            /**
+             * Format: uuid
+             * @description Narrows a member with two programs to one of them. It is honoured, never trusted:
+             *     a program the person is not enrolled in on the first night selects nothing.
+             */
+            programId?: string;
+            /** Format: uuid */
+            roomTypeId: string;
         };
         CreateInpatientStay: {
             /**
@@ -9825,6 +10257,7 @@ export interface components {
         AccountId: string;
         AdjustmentId: string;
         AuthorizationId: string;
+        BookingId: string;
         CaseId: string;
         ClaimId: string;
         CodeSystemId: string;
@@ -9909,6 +10342,15 @@ export type SchemaAvailabilityQuote = components['schemas']['AvailabilityQuote']
 export type SchemaAvailabilityRoomTypeResult = components['schemas']['AvailabilityRoomTypeResult'];
 export type SchemaAvailabilitySearchRequest = components['schemas']['AvailabilitySearchRequest'];
 export type SchemaAvailabilitySearchResult = components['schemas']['AvailabilitySearchResult'];
+export type SchemaBooking = components['schemas']['Booking'];
+export type SchemaBookingGuest = components['schemas']['BookingGuest'];
+export type SchemaBookingGuestType = components['schemas']['BookingGuestType'];
+export type SchemaBookingList = components['schemas']['BookingList'];
+export type SchemaBookingNight = components['schemas']['BookingNight'];
+export type SchemaBookingQuoteNight = components['schemas']['BookingQuoteNight'];
+export type SchemaBookingQuoteSnapshot = components['schemas']['BookingQuoteSnapshot'];
+export type SchemaBookingStatus = components['schemas']['BookingStatus'];
+export type SchemaBookingVoucher = components['schemas']['BookingVoucher'];
 export type SchemaCancelInpatientStay = components['schemas']['CancelInpatientStay'];
 export type SchemaClaim = components['schemas']['Claim'];
 export type SchemaClaimDecisionKind = components['schemas']['ClaimDecisionKind'];
@@ -9949,6 +10391,7 @@ export type SchemaContractVersionStatus = components['schemas']['ContractVersion
 export type SchemaContractVersionSummary = components['schemas']['ContractVersionSummary'];
 export type SchemaCreateAdjustmentRequest = components['schemas']['CreateAdjustmentRequest'];
 export type SchemaCreateAuthorization = components['schemas']['CreateAuthorization'];
+export type SchemaCreateBookingGuest = components['schemas']['CreateBookingGuest'];
 export type SchemaCreateClaim = components['schemas']['CreateClaim'];
 export type SchemaCreateCodeSystemRequest = components['schemas']['CreateCodeSystemRequest'];
 export type SchemaCreateContractRequest = components['schemas']['CreateContractRequest'];
@@ -9958,6 +10401,7 @@ export type SchemaCreateEncounter = components['schemas']['CreateEncounter'];
 export type SchemaCreateEnrollmentRequest = components['schemas']['CreateEnrollmentRequest'];
 export type SchemaCreateFulfilment = components['schemas']['CreateFulfilment'];
 export type SchemaCreateHealthCase = components['schemas']['CreateHealthCase'];
+export type SchemaCreateHoldRequest = components['schemas']['CreateHoldRequest'];
 export type SchemaCreateInpatientStay = components['schemas']['CreateInpatientStay'];
 export type SchemaCreateLegalHold = components['schemas']['CreateLegalHold'];
 export type SchemaCreateMedicalReport = components['schemas']['CreateMedicalReport'];
@@ -10288,6 +10732,7 @@ export type ParameterAccessReasonHeader = components['parameters']['AccessReason
 export type ParameterAccountId = components['parameters']['AccountId'];
 export type ParameterAdjustmentId = components['parameters']['AdjustmentId'];
 export type ParameterAuthorizationId = components['parameters']['AuthorizationId'];
+export type ParameterBookingId = components['parameters']['BookingId'];
 export type ParameterCaseId = components['parameters']['CaseId'];
 export type ParameterClaimId = components['parameters']['ClaimId'];
 export type ParameterCodeSystemId = components['parameters']['CodeSystemId'];
@@ -10384,6 +10829,277 @@ export interface operations {
              * @description The dates or the party are outside what a stay may be: `checkOut` on or before
              *     `checkIn`, a stay longer than the tenant's `accommodation.max_nights`, or neither
              *     of `propertyId` and `regionCode`. VALIDATION_FAILED.
+             */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listBookings: {
+        parameters: {
+            query?: {
+                /** @description Earliest arrival date, inclusive. */
+                checkInFrom?: string;
+                /** @description Latest arrival date, inclusive. */
+                checkInTo?: string;
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                /** @description Narrows to one member. A member's own binding still applies on top of it. */
+                personId?: string;
+                /** @description Narrows to one property. */
+                propertyId?: string;
+                /** @description Narrows to one booking status. */
+                status?: components["schemas"]["BookingStatus"];
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of bookings */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getBooking: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                bookingId: components["parameters"]["BookingId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The booking */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Booking"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    confirmBooking: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                bookingId: components["parameters"]["BookingId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The reservation request was raised; the booking's status says what happened */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Booking"];
+                };
+            };
+            /**
+             * @description PERMISSION_DENIED, PERSON_SCOPE, or STEP_UP_REQUIRED when the member's own share
+             *     is above the tenant's step-up threshold and the session has not been re-verified.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /**
+             * @description QUOTE_STALE, LODGING_TERMS_MISSING, or BOOKING_TRANSITION_INVALID for a hold that
+             *     has already expired, been released, or been confirmed.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    releaseHold: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                bookingId: components["parameters"]["BookingId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The room and the nights are back; the booking is CANCELLED */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Booking"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description BOOKING_TRANSITION_INVALID - only a held booking can be given back. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    reissueBookingVoucher: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                bookingId: components["parameters"]["BookingId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The voucher; the token is in this body and is never shown again */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingVoucher"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /**
+             * @description BOOKING_TRANSITION_INVALID for a booking that is not confirmed, or
+             *     VOUCHER_NOT_AVAILABLE for one with no authorization behind it yet.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    createHold: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateHoldRequest"];
+            };
+        };
+        responses: {
+            /** @description The room is held, with the seconds left on the countdown */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Booking"];
+                };
+            };
+            /**
+             * @description The caller named a person other than the one its account is bound to, or holds no
+             *     person binding at all. PERSON_SCOPE, PERSON_BINDING_MISSING, PERMISSION_DENIED.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /**
+             * @description ROOM_UNAVAILABLE names the first night of the stay with no room left, so a member
+             *     looking at a fortnight is told which night to move rather than that something
+             *     failed. BOOKING_ALREADY_LIVE is the one-live-booking rule: this person already
+             *     holds or has confirmed this room type arriving on this day. QUOTE_UNAVAILABLE is a
+             *     room type no contracted price covers over these dates, with the reason code the
+             *     search would have shown. ENTITLEMENT_ACCOUNT_NOT_FOUND is a plan with no
+             *     entitlement account behind this room's service, and ENTITLEMENT_INSUFFICIENT is a
+             *     plan that carries no night of this stay at all — a plan that carries only some of
+             *     them is not refused, it is booked for the nights it carries.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /**
+             * @description The dates, the party or the guest list are outside what a stay may be.
+             *     VALIDATION_FAILED, OCCUPANCY_EXCEEDED, ENROLLMENT_NOT_FOUND.
              */
             422: {
                 headers: {

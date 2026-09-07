@@ -367,3 +367,21 @@ SELECT e.id, lower(e.valid_period)::date AS valid_from
    AND e.valid_period @> sqlc.arg('as_of')::date
  ORDER BY lower(e.valid_period) DESC
  LIMIT 1;
+
+-- name: ExtendEntitlementReservationExpiry :execrows
+-- Move an open hold's deadline later (WP-I6-02's adoption: a booking's hold expires with
+-- the fifteen-minute countdown, and the authorization that confirms it moves that deadline
+-- out to the end of the stay).
+--
+-- It only ever moves the deadline forward, and the predicate says so rather than the
+-- caller: a statement that could pull it back would be a way to expire somebody's hold
+-- early, and a redelivered confirmation that ran this twice must be the same as running it
+-- once. A hold with no deadline at all is left alone -- it already outlives every date this
+-- would set.
+UPDATE benefit.entitlement_reservation
+   SET expires_at = sqlc.arg('expires_at')
+ WHERE tenant_id = sqlc.arg('tenant_id')
+   AND id = sqlc.arg('id')
+   AND status IN ('HELD','PARTIALLY_CONSUMED')
+   AND expires_at IS NOT NULL
+   AND expires_at < sqlc.arg('expires_at');

@@ -1137,6 +1137,117 @@ export interface StoredInventoryDay {
   rowVersion: number;
 }
 
+/**
+ * The cancellation policy of one contract version (WP-I6-04). A booking freezes a copy of it
+ * at confirmation and is judged by that copy afterwards, so a later edit of the contract
+ * cannot change what a member already agreed to.
+ */
+export interface StoredLodgingTerms {
+  id: string;
+  tenantId: string;
+  contractVersionId: string;
+  freeCancellationHoursBefore: number;
+  penaltyKind: 'NIGHTS' | 'PERCENT';
+  penaltyNights: number | null;
+  penaltyPercent: string | null;
+  noShowPercent: string;
+  holdMinutes: number | null;
+  minNights: number;
+  maxNights: number | null;
+  childFreeUnderAge: number | null;
+  rowVersion: number;
+}
+
+/**
+ * One booking: a hold, and what it became.
+ *
+ * `quoteSnapshot` is what the member saw at the moment the room was set aside, and it is
+ * never recomputed — confirming charges the frozen figures, which is why a stale one is
+ * refused rather than silently repriced. `entitlementReservationId` is the hold on the plan,
+ * taken once at the hold; the authorization a confirmation produces adopts that same
+ * reservation rather than taking a second one.
+ *
+ * There is no token here and there is nowhere one could go: a voucher is a digest plus a
+ * masked tail, and the plaintext exists only in the response of the command that minted it.
+ */
+export interface StoredBooking {
+  id: string;
+  tenantId: string;
+  reference: string;
+  personId: string;
+  enrollmentId: string;
+  programId: string;
+  propertyId: string;
+  roomTypeId: string;
+  checkIn: string;
+  checkOut: string;
+  nights: number;
+  adults: number;
+  children: number;
+  status: Schemas['BookingStatus'];
+  holdExpiresAt: string | null;
+  entitlementReservationId: string | null;
+  serviceRequestId: string | null;
+  authorizationId: string | null;
+  voucherId: string | null;
+  quoteSnapshot: Schemas['BookingQuoteSnapshot'];
+  policySnapshot: Schemas['LodgingPolicySnapshot'] | null;
+  channel: Schemas['ServiceRequestChannel'];
+  confirmedAt: string | null;
+  checkedInAt: string | null;
+  checkedOutAt: string | null;
+  cancelledAt: string | null;
+  cancelReasonCode: string | null;
+  actualNights: number | null;
+  createdAt: string;
+  updatedAt: string | null;
+  rowVersion: number;
+}
+
+/** One night of a booking, with the amounts the member was shown. */
+export interface StoredBookingNight {
+  id: string;
+  tenantId: string;
+  bookingId: string;
+  stayDate: string;
+  roomTypeId: string;
+  unitAmount: Decimal;
+  payerAmount: Decimal;
+  memberAmount: Decimal;
+  currencyCode: string;
+}
+
+/**
+ * One guest. A name, and only ever a name: there is no identifier field here and there will
+ * not be one, because a slot a passport number could be typed into is a slot it eventually
+ * would be.
+ */
+export interface StoredBookingGuest {
+  id: string;
+  tenantId: string;
+  bookingId: string;
+  personId: string | null;
+  displayName: string;
+  guestType: Schemas['BookingGuestType'];
+  isMinor: boolean;
+}
+
+/**
+ * A booking's voucher. `token` is held here only because a mock has no other way to answer
+ * a redemption; the server keeps a SHA-256 digest and the plaintext leaves it once. Nothing
+ * in any response body but the issue command's own ever carries it.
+ */
+export interface StoredBookingVoucher {
+  id: string;
+  tenantId: string;
+  bookingId: string;
+  token: string;
+  maskedToken: string;
+  validFrom: string;
+  validTo: string;
+  status: 'ISSUED' | 'REDEEMED' | 'EXPIRED' | 'REVOKED';
+}
+
 /** Reference catalogs; tenant-independent so every tenant sees the same options. */
 export const IDENTIFIER_TYPE_CATALOG: Schemas['PartyCatalogEntry'][] = [
   {
@@ -1263,6 +1374,10 @@ const ADMIN_PERMISSIONS = [
   // `accommodation.inventory.manage` is what it deliberately does not.
   'accommodation.property.read',
   'accommodation.inventory.manage',
+  // The back office books for a member who telephoned. `booking.manage` and not
+  // `booking.create`: the first is holding a room for somebody else, which is exactly what a
+  // desk does, and the second is a member booking for themselves.
+  'accommodation.booking.manage',
 ];
 const REVIEWER_PERMISSIONS = [
   'organization.read',
@@ -1758,6 +1873,17 @@ export interface MockWorld {
   properties: StoredProperty[];
   roomTypes: StoredRoomType[];
   inventoryDays: StoredInventoryDay[];
+  lodgingTerms: StoredLodgingTerms[];
+  /**
+   * The bookings, their nights, their guests and their vouchers (WP-I6-02). `held` and
+   * `confirmed` on `inventoryDays` are the counters these rows moved, and the fixture keeps
+   * them consistent: a seeded hold has a room in `held` and a seeded confirmation has one in
+   * `confirmed`, so a screen reading availability and a screen reading bookings agree.
+   */
+  bookings: StoredBooking[];
+  bookingNights: StoredBookingNight[];
+  bookingGuests: StoredBookingGuest[];
+  bookingVouchers: StoredBookingVoucher[];
   /**
    * Moves a document on from SCANNING the way the scan worker does. It is the mock's
    * stand-in for the worker, so a screen can show "taranıyor" and then a verdict without
@@ -5262,6 +5388,205 @@ export function buildWorld(
     }
   }
 
+  // ---------------------------------------------------------------------------------------
+  // The bookings (WP-I6-02)
+  // ---------------------------------------------------------------------------------------
+  //
+  // This block is last on purpose. The id factory is a sequence, so anything inserted above
+  // it would renumber every id the M2-M5 fixtures and their tests already name.
+  //
+  // Four bookings, because four are the states a screen has to be able to draw: a hold with a
+  // countdown still running, a confirmed stay with a voucher behind it, a guest who has
+  // checked in, and a stay that is over.
+
+  // The cancellation policy the confirmations froze. It is on the published version, which is
+  // the one the room prices hang off: the terms a booking carries have to be the ones behind
+  // the price the member was quoted.
+  const lodgingTerms: StoredLodgingTerms[] = [
+    {
+      id: nextId(),
+      tenantId: demoA.id,
+      contractVersionId: publishedContractVersion.id,
+      freeCancellationHoursBefore: 48,
+      penaltyKind: 'NIGHTS',
+      penaltyNights: 1,
+      penaltyPercent: null,
+      noShowPercent: '100.0000',
+      holdMinutes: null,
+      minNights: 1,
+      maxNights: 21,
+      childFreeUnderAge: 6,
+      rowVersion: 1,
+    },
+  ];
+
+  const bookings: StoredBooking[] = [];
+  const bookingNights: StoredBookingNight[] = [];
+  const bookingGuests: StoredBookingGuest[] = [];
+  const bookingVouchers: StoredBookingVoucher[] = [];
+
+  const policyOf = (terms: StoredLodgingTerms): Schemas['LodgingPolicySnapshot'] => ({
+    contractVersionId: terms.contractVersionId,
+    snapshotAt: isoDaysAgo(base, 20),
+    timezone: 'Europe/Istanbul',
+    freeCancellationHoursBefore: terms.freeCancellationHoursBefore,
+    penaltyKind: terms.penaltyKind,
+    penaltyNights: terms.penaltyNights,
+    noShowPercent: terms.noShowPercent,
+    minNights: terms.minNights,
+    maxNights: terms.maxNights,
+    childFreeUnderAge: terms.childFreeUnderAge,
+  });
+
+  let bookingSequence = 0;
+  const bookingReference = (): string => {
+    bookingSequence += 1;
+    const day = new Date(base).toISOString().slice(0, 10).replace(/-/g, '');
+    return 'BK-' + day + '-SEED' + String(bookingSequence).padStart(4, '0');
+  };
+
+  const seedBooking = (
+    room: StoredRoomType,
+    firstNight: number,
+    nights: number,
+    status: Schemas['BookingStatus'],
+    unitAmount: Decimal,
+  ): StoredBooking => {
+    const checkIn = nightOf(firstNight);
+    const checkOut = nightOf(firstNight + nights);
+    const stayDates = Array.from({ length: nights }, (_, i) => nightOf(firstNight + i));
+    // The split is the contract's: fifteen per cent of every night is the member's own, and
+    // the two halves are summed once so payer + member is exactly the total on every line.
+    const unitMicros = toMicros(unitAmount);
+    const memberMicros = percentOfMicros(unitMicros, toMicros('15.000000'));
+    const payerMicros = unitMicros - memberMicros;
+    const bookingId = nextId();
+    const quoteSnapshot: Schemas['BookingQuoteSnapshot'] = {
+      version: 1,
+      quotedAt: isoDaysAgo(base, 20),
+      evaluationId: null,
+      propertyId: room.propertyId,
+      roomTypeId: room.id,
+      serviceDefinitionId: room.serviceDefinitionId,
+      currencyCode: 'TRY',
+      totalAmount: fromMicros(multiplyMicros(unitMicros, BigInt(nights))),
+      payerAmount: fromMicros(multiplyMicros(payerMicros, BigInt(nights))),
+      memberAmount: fromMicros(multiplyMicros(memberMicros, BigInt(nights))),
+      nights: stayDates.map((day) => ({
+        stayDate: day,
+        amount: fromMicros(unitMicros),
+        payerAmount: fromMicros(payerMicros),
+        memberAmount: fromMicros(memberMicros),
+      })),
+      // The seeded bookings are all fully covered: every night is carried by the plan, so
+      // `coveredNights` is the stay's own length and `eligible` is true. The partial case is
+      // reached by holding against the spouse's two-night balance.
+      coveredNights: nights,
+      entitlement: {
+        entitlementCode: 'ACCOMMODATION_NIGHT',
+        unit: 'NIGHT',
+        remaining: '10.000000',
+      },
+      eligible: true,
+    };
+    const live = status === 'HOLD';
+    const confirmed = status === 'CONFIRMED' || status === 'CHECKED_IN' || status === 'COMPLETED';
+    const row: StoredBooking = {
+      id: bookingId,
+      tenantId: demoA.id,
+      reference: bookingReference(),
+      personId: familyPrincipal.id,
+      enrollmentId: familyEnrollment.id,
+      programId: familyEnrollment.programId,
+      propertyId: room.propertyId,
+      roomTypeId: room.id,
+      checkIn,
+      checkOut,
+      nights,
+      adults: 2,
+      children: 0,
+      status,
+      // The countdown is a real one: a hold seeded with a deadline in the past would be a
+      // hold the sweep should already have taken, and a screen would draw a timer at zero.
+      holdExpiresAt: live ? new Date(Date.now() + 11 * 60_000).toISOString() : null,
+      entitlementReservationId: null,
+      serviceRequestId: null,
+      authorizationId: null,
+      voucherId: null,
+      quoteSnapshot,
+      policySnapshot: confirmed ? policyOf(lodgingTerms[0]!) : null,
+      channel: 'MEMBER_PORTAL',
+      confirmedAt: confirmed ? isoDaysAgo(base, 19) : null,
+      checkedInAt: status === 'CHECKED_IN' || status === 'COMPLETED' ? isoDaysAgo(base, 5) : null,
+      checkedOutAt: status === 'COMPLETED' ? isoDaysAgo(base, 2) : null,
+      cancelledAt: null,
+      cancelReasonCode: null,
+      actualNights: status === 'COMPLETED' ? nights : null,
+      createdAt: isoDaysAgo(base, 20),
+      updatedAt: null,
+      rowVersion: confirmed ? 2 : 1,
+    };
+    bookings.push(row);
+    for (const day of stayDates) {
+      bookingNights.push({
+        id: nextId(),
+        tenantId: demoA.id,
+        bookingId,
+        stayDate: day,
+        roomTypeId: room.id,
+        unitAmount: fromMicros(unitMicros),
+        payerAmount: fromMicros(payerMicros),
+        memberAmount: fromMicros(memberMicros),
+        currencyCode: 'TRY',
+      });
+    }
+    bookingGuests.push({
+      id: nextId(),
+      tenantId: demoA.id,
+      bookingId,
+      personId: familyPrincipal.id,
+      displayName: familyPrincipal.firstName + ' ' + familyPrincipal.lastName,
+      guestType: 'MEMBER',
+      isMinor: false,
+    });
+    if (confirmed) {
+      const voucherId = nextId();
+      bookingVouchers.push({
+        id: voucherId,
+        tenantId: demoA.id,
+        bookingId,
+        // A mock has to be able to answer a redemption, so it keeps the plaintext. The
+        // server keeps a SHA-256 digest and a masked tail and nothing else, and no response
+        // body here carries this string except the issue command's own.
+        token: 'KPS-' + bookingId.slice(0, 8).toUpperCase(),
+        maskedToken: 'KPS-****' + bookingId.slice(4, 8).toUpperCase(),
+        validFrom: checkIn + 'T00:00:00Z',
+        validTo: checkOut + 'T00:00:00Z',
+        status: status === 'COMPLETED' ? 'REDEEMED' : 'ISSUED',
+      });
+      row.voucherId = voucherId;
+    }
+    // The room these bookings took is accounted for in the allotment above, so a screen
+    // reading availability and a screen reading bookings never disagree: a hold sits in
+    // `held` and a confirmed stay in `confirmed`, exactly as the server's counters do.
+    for (const day of stayDates) {
+      const night = inventoryDays.find((d) => d.roomTypeId === room.id && d.stayDate === day);
+      if (!night) continue;
+      if (live) night.held += 1;
+      else if (confirmed) night.confirmed += 1;
+    }
+    return row;
+  };
+
+  // The four, on nights the allotment above is not already full: the sold-out weekend is
+  // `fullWeekend`, so these sit well clear of it.
+  const stdRoom = roomTypes[0]!;
+  const suite = roomTypes[1]!;
+  seedBooking(stdRoom, 40, 3, 'HOLD', '2400.000000');
+  seedBooking(suite, 45, 4, 'CONFIRMED', '3800.000000');
+  seedBooking(stdRoom, 50, 2, 'CHECKED_IN', '2400.000000');
+  seedBooking(suite, 55, 5, 'COMPLETED', '3800.000000');
+
   return {
     tenants,
     accounts,
@@ -5334,6 +5659,11 @@ export function buildWorld(
     properties,
     roomTypes,
     inventoryDays,
+    lodgingTerms,
+    bookings,
+    bookingNights,
+    bookingGuests,
+    bookingVouchers,
     advanceScan,
     nextId,
     random,
