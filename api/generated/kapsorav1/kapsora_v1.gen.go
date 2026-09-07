@@ -9186,41 +9186,10 @@ type PutEncounterDiagnoses struct {
 	Items []DiagnosisInput `json:"items"`
 }
 
-// PutLodgingTermsRequest defines model for PutLodgingTermsRequest.
-type PutLodgingTermsRequest struct {
-	// ChildFreeUnderAge A child below this age stays free. Null is not zero: it is an agreement that
-	// says nothing about children, and a booking under it charges for all of them.
-	ChildFreeUnderAge *int `json:"childFreeUnderAge,omitempty"`
-
-	// FreeCancellationHoursBefore How many hours before check-in a cancellation is still free. Zero is a policy
-	// too: the free window closes at check-in.
-	FreeCancellationHoursBefore int `json:"freeCancellationHoursBefore"`
-
-	// HoldMinutes How long a hold stands at this provider. Null means the tenant's own
-	// accommodation.hold_minutes applies, which is the answer for almost every
-	// provider; this field exists for the one that negotiated its own.
-	HoldMinutes *int `json:"holdMinutes,omitempty"`
-	MaxNights   *int `json:"maxNights,omitempty"`
-	MinNights   int  `json:"minNights"`
-
-	// NoShowPercent A percentage between 0 and 100 as an exact decimal string with at most four
-	// decimals, which is the scale of the numeric(7,4) column behind it. A string and not
-	// a JSON number because it decides what somebody is charged, and a float would round
-	// it silently.
-	NoShowPercent LodgingPercent `json:"noShowPercent"`
-
-	// PenaltyKind What a late cancellation is charged in: a number of nights of the stay, or a
-	// percentage of the member's own share. Never both -- "3" meaning three nights and
-	// "3" meaning three percent are two different numbers, and a policy that could mean
-	// either is a fee nobody can explain to the person paying it.
-	PenaltyKind LodgingPenaltyKind `json:"penaltyKind"`
-
-	// PenaltyNights Present exactly when penaltyKind is NIGHTS.
-	PenaltyNights *int `json:"penaltyNights,omitempty"`
-
-	// PenaltyPercent Present exactly when penaltyKind is PERCENT.
-	PenaltyPercent *LodgingPercent `json:"penaltyPercent,omitempty"`
-}
+// PutLodgingTermsRequest The terms to write on a DRAFT version, whole. It is the policy and nothing else; a
+// second allOf member with `additionalProperties: false` would generate a request
+// type no client could construct.
+type PutLodgingTermsRequest = LodgingTermsPolicy
 
 // PutMedicalReportServices defines model for PutMedicalReportServices.
 type PutMedicalReportServices struct {

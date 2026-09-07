@@ -107,9 +107,11 @@ func RoleTemplates() []RoleTemplate {
 		// hold or change anything.
 		{Code: "PROVIDER_RESERVATION", Name: "Sağlayıcı Rezervasyon", Scope: ScopeOrganization,
 			Description: "Konaklama kontenjanı, rezervasyon, check-in/out; sağlık verisine erişemez.",
+			// document.read and document.upload: a no-show is reported with evidence, and the
+			// desk that reports it is the one that has the evidence (WP-I6-03 §2.4).
 			Permissions: []string{"accommodation.property.read", "accommodation.inventory.manage",
 				"accommodation.booking.manage", "accommodation.waitlist.manage",
-				"member.read", "eligibility.check"}},
+				"member.read", "eligibility.check", "document.read", "document.upload"}},
 		// The sponsor's own HR user. It exists so the acceptance criterion of WP-I5-01 has a
 		// subject: this is the role that may see that a member has an open health case, and
 		// may never see what the case is about. health.clinical.read is absent on purpose,

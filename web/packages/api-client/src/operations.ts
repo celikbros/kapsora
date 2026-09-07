@@ -17,6 +17,7 @@ import { healthOperations } from './health';
 import { medicalReportOperations } from './medicalreport';
 import { inpatientOperations } from './inpatient';
 import { claimOperations } from './claim';
+import { accommodationOperations } from './accommodation';
 import { randomId } from './client';
 import type { components } from './generated/kapsora-v1';
 import { unwrap } from './problem';
@@ -156,6 +157,7 @@ export function createOperations(client: KapsoraClient) {
     reports: medicalReportOperations(client),
     stays: inpatientOperations(client),
     claims: claimOperations(client),
+    lodging: accommodationOperations(client),
   };
 }
 

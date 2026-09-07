@@ -385,7 +385,23 @@
     "CLAIM_PROVIDER_UNKNOWN": "Seçilen kurum bu tenant'ın sağlayıcısı değil.",
     "CLAIM_PROVIDER_PROFILE_MISSING": "Sağlayıcı profili tanımlı değil; fiyatlandırma için kurumun sağlayıcı profili oluşturulmalı.",
     "CLAIM_ENROLLMENT_MISMATCH": "Plan kaydı bu kişiye veya programa ait değil.",
-    "CLAIM_SERVICE_UNKNOWN": "Hizmet tanımı katalogda bulunamadı."
+    "CLAIM_SERVICE_UNKNOWN": "Hizmet tanımı katalogda bulunamadı.",
+    "ROOM_UNAVAILABLE": "Seçtiğiniz gecelerden en az birinde bu odadan boş kalmadı. Başka tarih veya oda seçin.",
+    "QUOTE_UNAVAILABLE": "Bu oda için fiyat hesaplanamadı; oda tutulamaz.",
+    "QUOTE_STALE": "Gösterilen fiyatın süresi doldu. Yeniden arayın.",
+    "ENTITLEMENT_INSUFFICIENT": "Planınız bu konaklamanın hiçbir gecesini karşılamıyor.",
+    "PERSON_SCOPE": "Yalnızca kendi adınıza işlem yapabilirsiniz.",
+    "PERSON_BINDING_MISSING": "Hesabınız bir hak sahibine bağlı değil. Kurumunuzla görüşün.",
+    "LODGING_TERMS_MISSING": "Bu tesisin sözleşmesinde iptal koşulları yazılmadığı için rezervasyon onaylanamıyor.",
+    "INVENTORY_BELOW_COMMITMENT": "Girilen kontenjan, o gece için zaten tutulmuş veya onaylanmış oda sayısının altında.",
+    "BOOKING_CHECK_IN_WINDOW": "Giriş penceresi dışında. Giriş, geliş gününden önceki ve sonraki belirli saatlerde yapılabilir.",
+    "BOOKING_NOT_CANCELLABLE": "Bu rezervasyon bu durumda iptal edilemez.",
+    "PROPERTY_CODE_TAKEN": "Bu tesis kodu zaten kullanılıyor.",
+    "ROOM_TYPE_CODE_TAKEN": "Bu oda tipi kodu bu tesiste zaten kullanılıyor.",
+    "NO_SHOW_EVIDENCE_REQUIRED": "Gelmeme bildirimi için kanıt belgesi gerekli.",
+    "NO_SHOW_SAME_REVIEWER": "Bildirimi yapan kişi kendi bildirimini onaylayamaz.",
+    "WAITLIST_DUPLICATE": "Bu tarihler için zaten bekleme listesindesiniz.",
+    "VOUCHER_NOT_AVAILABLE": "Rezervasyon onaylanmadan kupon üretilemez."
   },
   "fieldErrors": {
     "RULE_COMPILE_FAILED": "Kural koşulu derlenemedi",
@@ -475,7 +491,8 @@
       "entitlements": "Haklar",
       "eligibility": "Uygunluk",
       "health": "Sağlık",
-      "accessLog": "Erişim kaydı"
+      "accessLog": "Erişim kaydı",
+      "lodging": "Konaklama"
     },
     "fields": {
       "firstName": "Ad",
@@ -538,6 +555,13 @@
         "PRINT": "Yazdırma",
         "BREAK_GLASS": "Acil erişim"
       }
+    },
+    "lodging": {
+      "intro": "Kişinin rezervasyonları ve bekleme listesi kayıtları.",
+      "bookingsTitle": "Rezervasyonlar",
+      "bookingsEmpty": "Bu kişinin rezervasyonu yok.",
+      "waitlistTitle": "Bekleme listesi",
+      "waitlistEmpty": "Bu kişinin bekleme listesi kaydı yok."
     }
   },
   "family": {
@@ -2109,7 +2133,9 @@
       "myRequests": "Taleplerim",
       "eligibility": "Uygunluk sorgusu",
       "cases": "Vakalar",
-      "claims": "Claim'ler"
+      "claims": "Claim'ler",
+      "inventory": "Kontenjan",
+      "desk": "Gelenler / Gidenler"
     },
     "newRequest": {
       "title": "Yeni talep",
@@ -2164,6 +2190,53 @@
       "title": "Uygunluk sorgusu",
       "intro": "Talep açmadan, bu kişi bu hizmeti bu tarihte alabilir mi?",
       "check": "Sorgula"
+    },
+    "lodging": {
+      "property": "Tesis",
+      "roomType": "Oda tipi",
+      "choose": "Seçin",
+      "inventory": {
+        "title": "Kontenjan",
+        "month": "Ay",
+        "days": "Günler",
+        "pick": "Kontenjanı görmek için tesis ve oda tipi seçin.",
+        "season": "Sezonu aç",
+        "seasonHint": "Bir tarih aralığının tamamına tek seferde kontenjan yazar. Zaten tutulmuş veya onaylanmış odaların altına inilemez; sunucu ilk uymayan geceyi söyler.",
+        "from": "Başlangıç",
+        "to": "Bitiş (dahil değil)",
+        "capacity": "Kontenjan",
+        "open": "Aç",
+        "seasonOpened": "Kontenjan yazıldı.",
+        "daySaved": "Gün kaydedildi.",
+        "date": "Gece",
+        "held": "Tutulan",
+        "confirmed": "Onaylı",
+        "available": "Boş",
+        "edit": "Düzenle",
+        "notAllotted": "Açılmadı"
+      },
+      "desk": {
+        "title": "Gelenler / Gidenler",
+        "arrivals": "Gelenler",
+        "departures": "Gidenler",
+        "noArrivals": "Onaylı rezervasyon yok.",
+        "noDepartures": "Konaklamakta olan misafir yok.",
+        "token": "Kupon kodu",
+        "checkIn": "Giriş yap",
+        "checkedIn": "Giriş kaydedildi.",
+        "checkedInAt": "Giriş",
+        "checkOut": "Çıkış yap",
+        "checkOutHint": "Çıkışta kalınan gece sayısını sunucu hesaplar; kullanılmayan geceler hak sahibine geri döner.",
+        "checkedOut_one": "Çıkış kaydedildi; {{count}} gece kalındı.",
+        "checkedOut_other": "Çıkış kaydedildi; {{count}} gece kalındı.",
+        "noShow": "Gelmedi",
+        "noShowIntro": "Misafir gelmediyse kanıt belgesini yükleyin ve bildirin. Bildirim, ödeyen kurumdan ikinci bir kişi onaylayana kadar hak sahibine hiçbir şey yansıtmaz.",
+        "noShowEvidence": "Bildirmek için önce temiz taranmış bir kanıt belgesi gerekir.",
+        "noShowSubmit": "Gelmediğini bildir",
+        "noShowReported": "Gelmeme bildirildi.",
+        "assessedFee": "Hesaplanan ücret",
+        "noShowReviewNote": "Ödeyen kurumdan ikinci bir kişi onaylayana kadar kayıt incelemede kalır."
+      }
     }
   },
   "units": {
@@ -2755,6 +2828,372 @@
       "comment": "İnceleme notu",
       "commentHint": "Klinik not olarak saklanır; bildirimlere çıkmaz.",
       "decided": "Bu rapor karara bağlandı."
+    }
+  },
+  "member": {
+    "home": "Ana sayfa",
+    "search": "Ara",
+    "bookings": "Rezervasyonlarım",
+    "title": "Hak sahibi",
+    "nav": "Ana gezinme"
+  },
+  "lodging": {
+    "home": {
+      "remaining": "Kalan haklarınız",
+      "remainingHint": "Planınızın bu dönem size ayırdığı, henüz kullanmadığınız haklar.",
+      "noEntitlements": "Planınızda kullanılabilir hak görünmüyor.",
+      "next": "Yaklaşan konaklama",
+      "none": "Planlanmış konaklamanız yok.",
+      "search": "Konaklama ara",
+      "hold": "Onay bekleyen seçiminiz var",
+      "unbound": "Hesabınız henüz bir hak sahibine bağlanmamış. Kurumunuzla görüşün.",
+      "period": "Dönem",
+      "shared": "Aile ile paylaşımlı"
+    },
+    "unit": {
+      "NIGHT": "gece",
+      "SESSION": "seans",
+      "VISIT": "ziyaret",
+      "DAY": "gün",
+      "MONEY": "tutar",
+      "ITEM": "adet",
+      "UNIT": "birim",
+      "HOUR": "saat"
+    },
+    "search": {
+      "title": "Konaklama ara",
+      "checkIn": "Giriş",
+      "checkOut": "Çıkış",
+      "adults": "Yetişkin",
+      "children": "Çocuk",
+      "where": "Nerede",
+      "region": "Bölge",
+      "property": "Tesis",
+      "anyProperty": "Bölgedeki tüm tesisler",
+      "submit": "Ara",
+      "results": "Uygun odalar",
+      "nights_one": "{{count}} gece",
+      "nights_other": "{{count}} gece",
+      "coveredAll": "Planınız tüm geceleri karşılıyor",
+      "coveredSome": "Planınız {{covered}} geceyi karşılıyor, {{rest}} gece sizin",
+      "coveredNone": "Planınız bu odayı karşılamıyor",
+      "noQuote": "Bu oda için fiyat verilemiyor",
+      "noQuoteReason": {
+        "PRICE_NOT_FOUND": "Bu tarihler için sözleşmeli fiyat yok.",
+        "PRICE_AMBIGUOUS": "Birden fazla eşit fiyat bulundu; sistem seçim yapmaz.",
+        "PRICE_FORMULA_UNKNOWN": "Fiyat formülü tanınmıyor.",
+        "PRICE_CURRENCY_MISMATCH": "Geceler farklı para birimlerinde."
+      },
+      "available_one": "{{count}} oda boş",
+      "available_other": "{{count}} oda boş",
+      "full": "Bu tarihlerde dolu",
+      "none": "Bu tarihlerde uygun oda bulunamadı.",
+      "empty": "Tarih ve kişi sayısını girip arayın.",
+      "choose": "Seç",
+      "chosen": "Seçili",
+      "remaining": "Kalan hakkınız: {{remaining}} {{unit}}",
+      "waitlist": "Bekleme listesine yazıl",
+      "waitlistJoined": "Bekleme listesine yazıldınız. Oda boşalırsa size haber verilir.",
+      "occupancy": "En fazla {{adults}} yetişkin, {{children}} çocuk",
+      "ineligible": "Bu tarihlerde planınız konaklama karşılamıyor."
+    },
+    "receipt": {
+      "title": "Makbuz",
+      "dates": "Tarihler",
+      "room": "Oda",
+      "nights": "Gece",
+      "total": "Toplam",
+      "plan": "Plan payı",
+      "member": "Ödeyeceğiniz",
+      "empty": "Bir oda seçtiğinizde makbuz burada dolar.",
+      "hold": "Odayı tut",
+      "holding": "Oda tutuluyor…",
+      "confirm": "Onayla",
+      "confirming": "Onaylanıyor…",
+      "payLine": "Ödeyeceğiniz {{amount}}",
+      "expiresIn": "Onay için kalan süre",
+      "expiresAt": "Son onay zamanı",
+      "expired": "Süresi doldu",
+      "expiredBody": "Oda başkasına açıldı. Yeniden arayabilirsiniz.",
+      "backToSearch": "Aramaya dön",
+      "release": "Odayı bırak",
+      "released": "Oda bırakıldı.",
+      "policy": "İptal koşulu",
+      "guests": "Kişi",
+      "coveredNights": "Plan karşılıyor",
+      "memberNights": "Sizin ödediğiniz",
+      "policyAtConfirm": "İptal koşulları onayla birlikte kesinleşir ve bu makbuzda görünür."
+    },
+    "policy": {
+      "free": "Girişten {{hours}} saat öncesine kadar ücretsiz iptal.",
+      "freeNone": "Ücretsiz iptal süresi yok.",
+      "penaltyNights_one": "Sonrasında {{count}} gece ücreti alınır.",
+      "penaltyNights_other": "Sonrasında {{count}} gece ücreti alınır.",
+      "penaltyPercent": "Sonrasında ödeyeceğiniz tutar üzerinden %{{percent}} ceza alınır.",
+      "noShow": "Gelinmezse ödeyeceğiniz tutar üzerinden %{{percent}} alınır.",
+      "none": "Bu rezervasyon için iptal koşulu henüz yazılmamış."
+    },
+    "booking": {
+      "title": "Rezervasyon",
+      "list": "Rezervasyonlarım",
+      "empty": "Henüz rezervasyonunuz yok.",
+      "reference": "Referans",
+      "property": "Tesis",
+      "room": "Oda",
+      "dates": "Tarihler",
+      "guests": "Kişi",
+      "nights": "Gece",
+      "amount": "Ödeyeceğiniz",
+      "planShare": "Plan payı",
+      "status": {
+        "HOLD": "Tutuldu",
+        "PENDING_APPROVAL": "Onay bekliyor",
+        "CONFIRMED": "Onaylandı",
+        "CHECKED_IN": "Giriş yapıldı",
+        "COMPLETED": "Tamamlandı",
+        "CANCELLED": "İptal edildi",
+        "NO_SHOW": "Gelinmedi",
+        "EXPIRED": "Süresi doldu"
+      },
+      "pendingBody": "Talebiniz inceleniyor. Sonuç size bildirilecek; oda bu sürede sizin için tutuluyor.",
+      "confirmedBody": "Rezervasyonunuz onaylandı. Girişte kuponunuzu gösterin.",
+      "voucher": "Kupon",
+      "voucherShow": "Kuponu göster",
+      "voucherReissue": "Kuponu yeniden üret",
+      "voucherOnce": "Bu kod yalnızca şimdi gösterilir ve e-postayla gönderilmez. Yeni kod üretildiğinde eskisi geçersiz olur.",
+      "voucherValid": "Geçerlilik",
+      "voucherCode": "Kupon kodu",
+      "voucherHidden": "Kodu gizle",
+      "cancelPreview": "İptal edersem ne öderim?",
+      "cancel": "İptal et",
+      "cancelConfirm": "İptali onayla",
+      "cancelFree": "Şu an iptal ücretsiz.",
+      "cancelFreeUntil": "{{until}} tarihine kadar ücretsiz.",
+      "cancelFee": "İptal ücreti",
+      "cancelPenaltyNights_one": "{{count}} gece hakkınızdan düşer",
+      "cancelPenaltyNights_other": "{{count}} gece hakkınızdan düşer",
+      "cancelReleased_one": "{{count}} gece hakkınıza geri döner",
+      "cancelReleased_other": "{{count}} gece hakkınıza geri döner",
+      "cancelled": "Rezervasyon iptal edildi.",
+      "cancelledFee": "İptal ücreti {{amount}} olarak kaydedildi.",
+      "keep": "Vazgeç",
+      "checkedIn": "Giriş yapıldı",
+      "checkedOut": "Çıkış yapıldı",
+      "actualNights_one": "{{count}} gece kalındı",
+      "actualNights_other": "{{count}} gece kalındı",
+      "noShowReported": "Tesis gelmediğinizi bildirdi; kayıt inceleniyor.",
+      "noShow": "Gelmediğiniz kaydedildi.",
+      "goToHold": "Onaya git",
+      "sequence": "Ne oldu"
+    },
+    "waitlist": {
+      "title": "Bekleme listesi",
+      "empty": "Bekleme listesinde kaydınız yok.",
+      "position": "Sıra",
+      "offered": "Size oda teklif edildi",
+      "offerExpires": "Teklif son zamanı",
+      "accept": "Teklifi kabul et",
+      "cancel": "Listeden çık",
+      "status": {
+        "WAITING": "Bekliyor",
+        "OFFERED": "Teklif edildi",
+        "ACCEPTED": "Kabul edildi",
+        "EXPIRED": "Süresi doldu",
+        "CANCELLED": "İptal edildi"
+      },
+      "joinTitle": "Bekleme listesine yazıl",
+      "joinBody": "Bu tarihlerde oda boşalırsa sizin için tutulur ve size haber verilir.",
+      "joined": "Bekleme listesine yazıldınız."
+    },
+    "office": {
+      "properties": {
+        "title": "Tesisler",
+        "intro": "Sağlayıcıların açtığı tesisler ve oda tipleri. Kontenjan tesisin kendi masasından yazılır.",
+        "new": "Yeni tesis",
+        "empty": "Henüz tesis yok.",
+        "columns": {
+          "name": "Tesis",
+          "code": "Kod",
+          "provider": "Sağlayıcı",
+          "type": "Tür",
+          "city": "Şehir",
+          "status": "Durum"
+        },
+        "fields": {
+          "provider": "Sağlayıcı kurum",
+          "code": "Kod",
+          "name": "Ad",
+          "type": "Tür",
+          "timezone": "Saat dilimi",
+          "city": "Şehir",
+          "region": "Bölge kodu"
+        },
+        "types": {
+          "HOTEL": "Otel",
+          "RESORT": "Tatil köyü",
+          "GUESTHOUSE": "Misafirhane",
+          "SOCIAL_FACILITY": "Sosyal tesis",
+          "OTHER": "Diğer"
+        },
+        "status": {
+          "ACTIVE": "Etkin",
+          "INACTIVE": "Pasif"
+        },
+        "created": "Tesis oluşturuldu.",
+        "create": "Oluştur",
+        "detailTitle": "Tesis",
+        "roomTypes": "Oda tipleri",
+        "roomTypesEmpty": "Bu tesiste oda tipi yok.",
+        "newRoomType": "Yeni oda tipi",
+        "roomTypeCreated": "Oda tipi oluşturuldu.",
+        "roomFields": {
+          "code": "Kod",
+          "name": "Ad",
+          "maxAdults": "En fazla yetişkin",
+          "maxChildren": "En fazla çocuk",
+          "maxOccupancy": "En fazla kişi",
+          "service": "Fiyatlandığı hizmet (gece)"
+        },
+        "roomColumns": {
+          "code": "Kod",
+          "name": "Oda tipi",
+          "occupancy": "Kapasite",
+          "service": "Hizmet",
+          "status": "Durum"
+        }
+      },
+      "bookings": {
+        "title": "Rezervasyonlar",
+        "intro": "Her rezervasyon olduğu gibi: ne arandı, ne tutuldu, ne kararlaştırıldı, kapıda ne oldu, neye mal oldu.",
+        "empty": "Kayıt yok.",
+        "columns": {
+          "reference": "Referans",
+          "person": "Hak sahibi",
+          "property": "Tesis",
+          "dates": "Tarihler",
+          "status": "Durum",
+          "member": "Üye payı"
+        },
+        "filters": {
+          "status": "Durum",
+          "allStatuses": "Tüm durumlar",
+          "property": "Tesis",
+          "allProperties": "Tüm tesisler"
+        },
+        "detailTitle": "Rezervasyon",
+        "sequence": {
+          "searched": "Arandı ve gösterildi",
+          "held": "Tutuldu",
+          "decided": "Talep kararı",
+          "confirmed": "Onaylandı",
+          "door": "Kapıda",
+          "cost": "Maliyet"
+        },
+        "labels": {
+          "quotedAt": "Teklif zamanı",
+          "evaluation": "Uygunluk değerlendirmesi",
+          "nights": "Gece",
+          "covered": "Plan karşılıyor",
+          "total": "Toplam",
+          "payer": "Ödeyen payı",
+          "member": "Üye payı",
+          "holdExpires": "Tutma süresi sonu",
+          "request": "Hizmet talebi",
+          "authorization": "Yetki",
+          "policy": "İptal koşulu",
+          "checkedIn": "Giriş",
+          "checkedOut": "Çıkış",
+          "actualNights": "Kalınan gece",
+          "cancelledAt": "İptal",
+          "reason": "Gerekçe",
+          "channel": "Kanal",
+          "guests": "Kişi",
+          "voucher": "Kupon",
+          "voucherIssued": "Düzenlendi",
+          "none": "—",
+          "pending": "Henüz yok",
+          "policyFree": "Ücretsiz iptal",
+          "policyFreeValue": "Girişten {{hours}} saat öncesine kadar",
+          "policyPenalty": "İptal cezası",
+          "policyPenaltyNights_one": "{{count}} gece",
+          "policyPenaltyNights_other": "{{count}} gece",
+          "policyPenaltyPercent": "Üye payının %{{percent}} kadarı",
+          "policyNoShow": "Gelmeme ücreti",
+          "policyNoShowValue": "Üye payının %{{percent}} kadarı"
+        },
+        "channels": {
+          "BACKOFFICE": "Arka ofis",
+          "PROVIDER_PORTAL": "Sağlayıcı portalı",
+          "MEMBER_PORTAL": "Üye uygulaması",
+          "API": "API",
+          "BATCH_IMPORT": "Toplu içe aktarma",
+          "CALL_CENTER": "Çağrı merkezi"
+        }
+      },
+      "noShow": {
+        "title": "Gelmeme bildirimi",
+        "none": "Bu rezervasyon için gelmeme bildirimi yok.",
+        "reportedAt": "Bildirim",
+        "evidence": "Kanıt belgesi",
+        "assessed": "Hesaplanan ücret",
+        "payer": "Ödeyen payı",
+        "member": "Üye payı",
+        "consumedNights": "Düşülecek gece",
+        "status": {
+          "REPORTED": "Bildirildi",
+          "CONFIRMED": "Onaylandı",
+          "DISPUTED": "İtirazlı",
+          "REJECTED": "Reddedildi"
+        },
+        "review": "İnceleme",
+        "reviewHint": "Bildirimi yapan kişi kendi bildirimini onaylayamaz; onay ikinci bir kişinin kararıdır.",
+        "comment": "Not",
+        "confirm": "Onayla",
+        "dispute": "İtiraz olarak işaretle",
+        "reject": "Reddet",
+        "reviewed": "İnceleme kaydedildi.",
+        "reviewedBy": "İnceleyen",
+        "reviewedAt": "İnceleme zamanı"
+      },
+      "waitlist": {
+        "title": "Bekleme listesi",
+        "intro": "Sırasıyla: önce öncelik, sonra kayıt zamanı. Oda boşaldığında tarama sıradaki kişi için gerçek bir tutma yapar.",
+        "empty": "Bu tesis için bekleyen yok.",
+        "property": "Tesis",
+        "allProperties": "Tüm tesisler",
+        "columns": {
+          "position": "Sıra",
+          "person": "Hak sahibi",
+          "dates": "Tarihler",
+          "guests": "Kişi",
+          "priority": "Öncelik",
+          "status": "Durum",
+          "offerExpires": "Teklif sonu"
+        }
+      },
+      "terms": {
+        "title": "Konaklama koşulları",
+        "intro": "Bu sürümle onaylanan her rezervasyon bu koşulların bir kopyasını taşır; iptal ve gelmeme ücreti o kopyaya göre hesaplanır.",
+        "none": "Bu sürüm için konaklama koşulu yazılmamış. Koşulsuz bir sürümle rezervasyon onaylanamaz.",
+        "fields": {
+          "freeHours": "Ücretsiz iptal (girişten kaç saat önce)",
+          "penaltyKind": "Ceza türü",
+          "penaltyNights": "Ceza (gece)",
+          "penaltyPercent": "Ceza (üye payının yüzdesi)",
+          "noShowPercent": "Gelmeme (üye payının yüzdesi)",
+          "holdMinutes": "Tutma süresi (dakika, boşsa tenant varsayılanı)",
+          "minNights": "En az gece",
+          "maxNights": "En fazla gece",
+          "childFreeUnderAge": "Ücretsiz çocuk yaşı (altı)"
+        },
+        "kinds": {
+          "NIGHTS": "Gece sayısı",
+          "PERCENT": "Yüzde"
+        },
+        "save": "Koşulları kaydet",
+        "saved": "Koşullar kaydedildi.",
+        "readOnly": "Koşullar yalnızca taslak sürümde yazılır."
+      }
     }
   }
 }

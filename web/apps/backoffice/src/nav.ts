@@ -97,7 +97,13 @@ export const NAV_ENTRIES: NavEntry[] = [
     permission: 'service_request.read',
   },
   { key: 'health', path: '/health-services', labelKey: 'nav.health', implemented: false },
-  { key: 'lodging', path: '/lodging', labelKey: 'nav.lodging', implemented: false },
+  {
+    key: 'lodging',
+    path: '/lodging/bookings',
+    labelKey: 'nav.lodging',
+    implemented: true,
+    permission: 'accommodation.property.read',
+  },
   {
     key: 'claims',
     path: '/claims',

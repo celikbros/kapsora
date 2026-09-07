@@ -44,6 +44,8 @@ import { CaseOpenPage } from './health/CaseOpenPage';
 import { CasePage } from './health/CasePage';
 import { ReportPage } from './health/ReportPage';
 import { StayPage } from './health/StayPage';
+import { DeskPage } from './lodging/DeskPage';
+import { InventoryPage } from './lodging/InventoryPage';
 import { ServicesProvider, type AppServices } from './services';
 
 /** Provider portal shell: routing, session bootstrap, tenant header, the desk's rail. */
@@ -164,6 +166,8 @@ function Shell() {
   const me = useSession((s) => s.me);
   const active = useSession((s) => s.activeTenant);
   const canReadClaims = usePermission('claim.read');
+  const canManageInventory = usePermission('accommodation.inventory.manage');
+  const canRunDesk = usePermission('accommodation.booking.manage');
   const color = active ? tenantColor(active.tenant.code) : null;
   const header = (
     <div className="flex h-14 min-w-0 items-center gap-2 px-3 sm:gap-3 sm:px-4">
@@ -219,6 +223,16 @@ function Shell() {
       {canReadClaims ? (
         <Link to="/claims" className={item}>
           {t('provider.nav.claims')}
+        </Link>
+      ) : null}
+      {canManageInventory ? (
+        <Link to="/lodging/inventory" className={item}>
+          {t('provider.nav.inventory')}
+        </Link>
+      ) : null}
+      {canRunDesk ? (
+        <Link to="/lodging/desk" className={item}>
+          {t('provider.nav.desk')}
         </Link>
       ) : null}
     </nav>
@@ -330,6 +344,16 @@ const claimRoute = createRoute({
   path: '/claims/$claimId',
   component: ClaimPage,
 });
+const inventoryRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/lodging/inventory',
+  component: InventoryPage,
+});
+const deskRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/lodging/desk',
+  component: DeskPage,
+});
 const routeTree = rootRoute.addChildren([
   loginRoute,
   tenantRoute,
@@ -346,6 +370,8 @@ const routeTree = rootRoute.addChildren([
     claimsRoute,
     claimNewRoute,
     claimRoute,
+    inventoryRoute,
+    deskRoute,
   ]),
 ]);
 

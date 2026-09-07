@@ -34,6 +34,11 @@ import { RuleSetListPage } from './rules/RuleSetListPage';
 import { RuleSetVersionPage } from './rules/RuleSetVersionPage';
 import type { RuleSetListSearch } from './rules/routing';
 import { ProviderDetailPage } from './providers/ProviderDetailPage';
+import { BookingDetailPage } from './lodging/BookingDetailPage';
+import { BookingListPage } from './lodging/BookingListPage';
+import { PropertiesPage } from './lodging/PropertiesPage';
+import { PropertyDetailPage } from './lodging/PropertyDetailPage';
+import { WaitlistPage } from './lodging/WaitlistPage';
 import { ProviderListPage } from './providers/ProviderListPage';
 import { providerListSearch } from './providers/routes';
 import { ImportDetailPage } from './imports/ImportDetailPage';
@@ -184,6 +189,31 @@ const claimDetailRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/claims/$claimId',
   component: ClaimDetailPage,
+});
+const lodgingPropertiesRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/lodging/properties',
+  component: PropertiesPage,
+});
+const lodgingPropertyRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/lodging/properties/$propertyId',
+  component: PropertyDetailPage,
+});
+const lodgingBookingsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/lodging/bookings',
+  component: BookingListPage,
+});
+const lodgingBookingRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/lodging/bookings/$bookingId',
+  component: BookingDetailPage,
+});
+const lodgingWaitlistRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/lodging/waitlist',
+  component: WaitlistPage,
 });
 const medicalReportsRoute = createRoute({
   getParentRoute: () => appRoute,
@@ -514,6 +544,11 @@ const routeTree = rootRoute.addChildren([
     requestDetailRoute,
     claimsRoute,
     claimDetailRoute,
+    lodgingPropertiesRoute,
+    lodgingPropertyRoute,
+    lodgingBookingsRoute,
+    lodgingBookingRoute,
+    lodgingWaitlistRoute,
     medicalReportsRoute,
     medicalReportRoute,
     worklistRoute,

@@ -341,7 +341,23 @@
     "CLAIM_PROVIDER_UNKNOWN": "The selected organization is not a provider of this tenant.",
     "CLAIM_PROVIDER_PROFILE_MISSING": "The provider has no provider profile; one is needed before a claim can be priced.",
     "CLAIM_ENROLLMENT_MISMATCH": "The enrollment does not belong to this person or programme.",
-    "CLAIM_SERVICE_UNKNOWN": "The service definition was not found in the catalogue."
+    "CLAIM_SERVICE_UNKNOWN": "The service definition was not found in the catalogue.",
+    "ROOM_UNAVAILABLE": "No room of this type is left on at least one of the chosen nights. Pick other dates or another room.",
+    "QUOTE_UNAVAILABLE": "No price could be computed for this room; it cannot be held.",
+    "QUOTE_STALE": "The price you were shown has expired. Search again.",
+    "ENTITLEMENT_INSUFFICIENT": "Your plan carries no night of this stay.",
+    "PERSON_SCOPE": "You may act only for yourself.",
+    "PERSON_BINDING_MISSING": "This account is not bound to a member. Contact your organization.",
+    "LODGING_TERMS_MISSING": "The property's contract states no cancellation terms, so the booking cannot be confirmed.",
+    "INVENTORY_BELOW_COMMITMENT": "The capacity entered is below what is already held or confirmed on that night.",
+    "BOOKING_CHECK_IN_WINDOW": "Outside the check-in window.",
+    "BOOKING_NOT_CANCELLABLE": "This booking cannot be cancelled in its current state.",
+    "PROPERTY_CODE_TAKEN": "This property code is already in use.",
+    "ROOM_TYPE_CODE_TAKEN": "This room type code is already used at this property.",
+    "NO_SHOW_EVIDENCE_REQUIRED": "A no-show report needs an evidence document.",
+    "NO_SHOW_SAME_REVIEWER": "The reporter cannot confirm their own report.",
+    "WAITLIST_DUPLICATE": "You are already on the waiting list for these dates.",
+    "VOUCHER_NOT_AVAILABLE": "A voucher cannot be issued before the booking is confirmed."
   },
   "fieldErrors": {
     "RULE_COMPILE_FAILED": "The rule condition did not compile",
@@ -391,7 +407,8 @@
       "entitlements": "Entitlements",
       "eligibility": "Eligibility",
       "health": "Health",
-      "accessLog": "Access log"
+      "accessLog": "Access log",
+      "lodging": "Lodging"
     },
     "health": {
       "casesTitle": "Health cases",
@@ -425,6 +442,13 @@
         "PRINT": "Print",
         "BREAK_GLASS": "Break glass"
       }
+    },
+    "lodging": {
+      "intro": "The person's bookings and waiting-list entries.",
+      "bookingsTitle": "Bookings",
+      "bookingsEmpty": "No bookings for this person.",
+      "waitlistTitle": "Waiting list",
+      "waitlistEmpty": "No waiting-list entries for this person."
     }
   },
   "programs": {
@@ -485,7 +509,56 @@
   "provider": {
     "nav": {
       "cases": "Cases",
-      "claims": "Claims"
+      "claims": "Claims",
+      "inventory": "Allotment",
+      "desk": "Arrivals / Departures"
+    },
+    "lodging": {
+      "property": "Property",
+      "roomType": "Room type",
+      "choose": "Choose",
+      "inventory": {
+        "title": "Allotment",
+        "month": "Month",
+        "days": "Days",
+        "pick": "Choose a property and a room type to see the allotment.",
+        "season": "Open a season",
+        "seasonHint": "Writes one capacity over a whole date range. It cannot go below rooms already held or confirmed; the server names the first offending night.",
+        "from": "From",
+        "to": "To (exclusive)",
+        "capacity": "Capacity",
+        "open": "Open",
+        "seasonOpened": "Allotment written.",
+        "daySaved": "Day saved.",
+        "date": "Night",
+        "held": "Held",
+        "confirmed": "Confirmed",
+        "available": "Free",
+        "edit": "Edit",
+        "notAllotted": "Not opened"
+      },
+      "desk": {
+        "title": "Arrivals / Departures",
+        "arrivals": "Arrivals",
+        "departures": "Departures",
+        "noArrivals": "No confirmed bookings.",
+        "noDepartures": "No guest is staying.",
+        "token": "Voucher code",
+        "checkIn": "Check in",
+        "checkedIn": "Checked in.",
+        "checkedInAt": "Checked in",
+        "checkOut": "Check out",
+        "checkOutHint": "The server computes the nights stayed at check-out; unused nights return to the member.",
+        "checkedOut_one": "Checked out; {{count}} night stayed.",
+        "checkedOut_other": "Checked out; {{count}} nights stayed.",
+        "noShow": "No-show",
+        "noShowIntro": "If the guest never came, upload the evidence and report it. Nothing reaches the member until a second person at the payer confirms.",
+        "noShowEvidence": "A clean-scanned evidence document is needed before reporting.",
+        "noShowSubmit": "Report no-show",
+        "noShowReported": "No-show reported.",
+        "assessedFee": "Assessed fee",
+        "noShowReviewNote": "The record stays under review until a second person at the payer confirms it."
+      }
     }
   },
   "health": {
@@ -1068,6 +1141,372 @@
       "comment": "Review comment",
       "commentHint": "Stored as a clinical note; never reaches a notification.",
       "decided": "This report is decided."
+    }
+  },
+  "member": {
+    "home": "Home",
+    "search": "Search",
+    "bookings": "My bookings",
+    "title": "Member",
+    "nav": "Main navigation"
+  },
+  "lodging": {
+    "home": {
+      "remaining": "Remaining entitlements",
+      "remainingHint": "What your plan set aside for this period and you have not used.",
+      "noEntitlements": "No usable entitlement on your plan.",
+      "next": "Next stay",
+      "none": "No stay planned.",
+      "search": "Find a stay",
+      "hold": "You have a hold waiting for confirmation",
+      "unbound": "This account is not bound to a member yet. Contact your organization.",
+      "period": "Period",
+      "shared": "Shared with family"
+    },
+    "unit": {
+      "NIGHT": "nights",
+      "SESSION": "sessions",
+      "VISIT": "visits",
+      "DAY": "days",
+      "MONEY": "amount",
+      "ITEM": "items",
+      "UNIT": "units",
+      "HOUR": "hours"
+    },
+    "search": {
+      "title": "Find a stay",
+      "checkIn": "Check-in",
+      "checkOut": "Check-out",
+      "adults": "Adults",
+      "children": "Children",
+      "where": "Where",
+      "region": "Region",
+      "property": "Property",
+      "anyProperty": "Any property in the region",
+      "submit": "Search",
+      "results": "Available rooms",
+      "nights_one": "{{count}} night",
+      "nights_other": "{{count}} nights",
+      "coveredAll": "Your plan covers every night",
+      "coveredSome": "Your plan covers {{covered}} nights, {{rest}} are yours",
+      "coveredNone": "Your plan does not cover this room",
+      "noQuote": "No price for this room",
+      "noQuoteReason": {
+        "PRICE_NOT_FOUND": "No contracted price for these dates.",
+        "PRICE_AMBIGUOUS": "Two equal prices tied; the system does not choose.",
+        "PRICE_FORMULA_UNKNOWN": "Unknown price formula.",
+        "PRICE_CURRENCY_MISMATCH": "Nights in different currencies."
+      },
+      "available_one": "{{count}} room free",
+      "available_other": "{{count}} rooms free",
+      "full": "Full on these dates",
+      "none": "No room available on these dates.",
+      "empty": "Enter dates and guests, then search.",
+      "choose": "Choose",
+      "chosen": "Chosen",
+      "remaining": "Remaining: {{remaining}} {{unit}}",
+      "waitlist": "Join the waiting list",
+      "waitlistJoined": "You are on the waiting list. You will be told when a room frees.",
+      "occupancy": "Up to {{adults}} adults, {{children}} children",
+      "ineligible": "Your plan carries no stay on these dates."
+    },
+    "receipt": {
+      "title": "Receipt",
+      "dates": "Dates",
+      "room": "Room",
+      "nights": "Nights",
+      "total": "Total",
+      "plan": "Plan share",
+      "member": "You pay",
+      "empty": "The receipt fills in when you choose a room.",
+      "hold": "Hold the room",
+      "holding": "Holding…",
+      "confirm": "Confirm",
+      "confirming": "Confirming…",
+      "payLine": "You pay {{amount}}",
+      "expiresIn": "Time left to confirm",
+      "expiresAt": "Confirm by",
+      "expired": "Expired",
+      "expiredBody": "The room is open to others again. You can search again.",
+      "backToSearch": "Back to search",
+      "release": "Give the room back",
+      "released": "Room released.",
+      "policy": "Cancellation terms",
+      "guests": "Guests",
+      "coveredNights": "Plan covers",
+      "memberNights": "You pay for",
+      "policyAtConfirm": "The cancellation terms are fixed at confirmation and appear on this receipt."
+    },
+    "policy": {
+      "free": "Free cancellation until {{hours}} hours before check-in.",
+      "freeNone": "No free cancellation window.",
+      "penaltyNights_one": "After that, {{count}} night is charged.",
+      "penaltyNights_other": "After that, {{count}} nights are charged.",
+      "penaltyPercent": "After that, a penalty of {{percent}}% of your share is charged.",
+      "noShow": "A no-show is charged {{percent}}% of your share.",
+      "none": "No cancellation terms written for this booking yet."
+    },
+    "booking": {
+      "title": "Booking",
+      "list": "My bookings",
+      "empty": "No bookings yet.",
+      "reference": "Reference",
+      "property": "Property",
+      "room": "Room",
+      "dates": "Dates",
+      "guests": "Guests",
+      "nights": "Nights",
+      "amount": "You pay",
+      "planShare": "Plan share",
+      "status": {
+        "HOLD": "On hold",
+        "PENDING_APPROVAL": "Pending approval",
+        "CONFIRMED": "Confirmed",
+        "CHECKED_IN": "Checked in",
+        "COMPLETED": "Completed",
+        "CANCELLED": "Cancelled",
+        "NO_SHOW": "No-show",
+        "EXPIRED": "Expired"
+      },
+      "pendingBody": "Your request is under review. You will be told the result; the room is held for you meanwhile.",
+      "confirmedBody": "Your booking is confirmed. Show your voucher at check-in.",
+      "voucher": "Voucher",
+      "voucherShow": "Show voucher",
+      "voucherReissue": "Issue a new voucher",
+      "voucherOnce": "This code is shown only now and is never e-mailed. Issuing a new code retires the old one.",
+      "voucherValid": "Valid",
+      "voucherCode": "Voucher code",
+      "voucherHidden": "Hide code",
+      "cancelPreview": "What do I pay if I cancel?",
+      "cancel": "Cancel booking",
+      "cancelConfirm": "Confirm cancellation",
+      "cancelFree": "Cancelling now is free.",
+      "cancelFreeUntil": "Free until {{until}}.",
+      "cancelFee": "Cancellation fee",
+      "cancelPenaltyNights_one": "{{count}} night is taken from your entitlement",
+      "cancelPenaltyNights_other": "{{count}} nights are taken from your entitlement",
+      "cancelReleased_one": "{{count}} night returns to your entitlement",
+      "cancelReleased_other": "{{count}} nights return to your entitlement",
+      "cancelled": "Booking cancelled.",
+      "cancelledFee": "A cancellation fee of {{amount}} was recorded.",
+      "keep": "Keep it",
+      "checkedIn": "Checked in",
+      "checkedOut": "Checked out",
+      "actualNights_one": "{{count}} night stayed",
+      "actualNights_other": "{{count}} nights stayed",
+      "noShowReported": "The property reported a no-show; the record is under review.",
+      "noShow": "Recorded as a no-show.",
+      "goToHold": "Go to confirmation",
+      "sequence": "What happened"
+    },
+    "waitlist": {
+      "title": "Waiting list",
+      "empty": "You are on no waiting list.",
+      "position": "Position",
+      "offered": "A room was offered to you",
+      "offerExpires": "Offer expires",
+      "accept": "Accept the offer",
+      "cancel": "Leave the list",
+      "status": {
+        "WAITING": "Waiting",
+        "OFFERED": "Offered",
+        "ACCEPTED": "Accepted",
+        "EXPIRED": "Expired",
+        "CANCELLED": "Cancelled"
+      },
+      "joinTitle": "Join the waiting list",
+      "joinBody": "If a room frees on these dates it is held for you and you are told.",
+      "joined": "You are on the waiting list."
+    },
+    "office": {
+      "properties": {
+        "title": "Properties",
+        "intro": "The properties providers opened and their room types. Allotment is written from the property's own desk.",
+        "new": "New property",
+        "empty": "No properties yet.",
+        "columns": {
+          "name": "Property",
+          "code": "Code",
+          "provider": "Provider",
+          "type": "Type",
+          "city": "City",
+          "status": "Status"
+        },
+        "fields": {
+          "provider": "Provider organization",
+          "code": "Code",
+          "name": "Name",
+          "type": "Type",
+          "timezone": "Time zone",
+          "city": "City",
+          "region": "Region code"
+        },
+        "types": {
+          "HOTEL": "Hotel",
+          "RESORT": "Resort",
+          "GUESTHOUSE": "Guesthouse",
+          "SOCIAL_FACILITY": "Social facility",
+          "OTHER": "Other"
+        },
+        "status": {
+          "ACTIVE": "Active",
+          "INACTIVE": "Inactive"
+        },
+        "created": "Property created.",
+        "create": "Create",
+        "detailTitle": "Property",
+        "roomTypes": "Room types",
+        "roomTypesEmpty": "No room types at this property.",
+        "newRoomType": "New room type",
+        "roomTypeCreated": "Room type created.",
+        "roomFields": {
+          "code": "Code",
+          "name": "Name",
+          "maxAdults": "Max adults",
+          "maxChildren": "Max children",
+          "maxOccupancy": "Max occupancy",
+          "service": "Priced as (night service)"
+        },
+        "roomColumns": {
+          "code": "Code",
+          "name": "Room type",
+          "occupancy": "Occupancy",
+          "service": "Service",
+          "status": "Status"
+        }
+      },
+      "bookings": {
+        "title": "Bookings",
+        "intro": "Every booking as it is: what was searched, held, decided, what happened at the door, what it cost.",
+        "empty": "No records.",
+        "columns": {
+          "reference": "Reference",
+          "person": "Member",
+          "property": "Property",
+          "dates": "Dates",
+          "status": "Status",
+          "member": "Member share"
+        },
+        "filters": {
+          "status": "Status",
+          "allStatuses": "All statuses",
+          "property": "Property",
+          "allProperties": "All properties"
+        },
+        "detailTitle": "Booking",
+        "sequence": {
+          "searched": "Searched and shown",
+          "held": "Held",
+          "decided": "Request decision",
+          "confirmed": "Confirmed",
+          "door": "At the door",
+          "cost": "Cost"
+        },
+        "labels": {
+          "quotedAt": "Quoted at",
+          "evaluation": "Eligibility evaluation",
+          "nights": "Nights",
+          "covered": "Plan covers",
+          "total": "Total",
+          "payer": "Payer share",
+          "member": "Member share",
+          "holdExpires": "Hold expires",
+          "request": "Service request",
+          "authorization": "Authorization",
+          "policy": "Cancellation terms",
+          "checkedIn": "Checked in",
+          "checkedOut": "Checked out",
+          "actualNights": "Nights stayed",
+          "cancelledAt": "Cancelled",
+          "reason": "Reason",
+          "channel": "Channel",
+          "guests": "Guests",
+          "voucher": "Voucher",
+          "voucherIssued": "Issued",
+          "none": "—",
+          "pending": "Not yet",
+          "policyFree": "Free cancellation",
+          "policyFreeValue": "Until {{hours}} hours before check-in",
+          "policyPenalty": "Cancellation penalty",
+          "policyPenaltyNights_one": "{{count}} night",
+          "policyPenaltyNights_other": "{{count}} nights",
+          "policyPenaltyPercent": "{{percent}}% of the member share",
+          "policyNoShow": "No-show fee",
+          "policyNoShowValue": "{{percent}}% of the member share"
+        },
+        "channels": {
+          "BACKOFFICE": "Back office",
+          "PROVIDER_PORTAL": "Provider portal",
+          "MEMBER_PORTAL": "Member app",
+          "API": "API",
+          "BATCH_IMPORT": "Batch import",
+          "CALL_CENTER": "Call centre"
+        }
+      },
+      "noShow": {
+        "title": "No-show report",
+        "none": "No no-show report for this booking.",
+        "reportedAt": "Reported",
+        "evidence": "Evidence document",
+        "assessed": "Assessed fee",
+        "payer": "Payer share",
+        "member": "Member share",
+        "consumedNights": "Nights to consume",
+        "status": {
+          "REPORTED": "Reported",
+          "CONFIRMED": "Confirmed",
+          "DISPUTED": "Disputed",
+          "REJECTED": "Rejected"
+        },
+        "review": "Review",
+        "reviewHint": "The reporter cannot confirm their own report; confirmation is a second person's decision.",
+        "comment": "Comment",
+        "confirm": "Confirm",
+        "dispute": "Mark as disputed",
+        "reject": "Reject",
+        "reviewed": "Review recorded.",
+        "reviewedBy": "Reviewed by",
+        "reviewedAt": "Reviewed at"
+      },
+      "waitlist": {
+        "title": "Waiting list",
+        "intro": "In order: priority first, then time of entry. When a room frees, the sweep places a real hold for the next person.",
+        "empty": "Nobody is waiting for this property.",
+        "property": "Property",
+        "allProperties": "All properties",
+        "columns": {
+          "position": "Position",
+          "person": "Member",
+          "dates": "Dates",
+          "guests": "Guests",
+          "priority": "Priority",
+          "status": "Status",
+          "offerExpires": "Offer expires"
+        }
+      },
+      "terms": {
+        "title": "Lodging terms",
+        "intro": "Every booking confirmed under this version carries a copy of these terms; cancellation and no-show fees are judged by that copy.",
+        "none": "No lodging terms written for this version. A booking cannot be confirmed under a version without them.",
+        "fields": {
+          "freeHours": "Free cancellation (hours before check-in)",
+          "penaltyKind": "Penalty kind",
+          "penaltyNights": "Penalty (nights)",
+          "penaltyPercent": "Penalty (percent of member share)",
+          "noShowPercent": "No-show (percent of member share)",
+          "holdMinutes": "Hold minutes (blank: tenant default)",
+          "minNights": "Min nights",
+          "maxNights": "Max nights",
+          "childFreeUnderAge": "Children free under age"
+        },
+        "kinds": {
+          "NIGHTS": "Nights",
+          "PERCENT": "Percent"
+        },
+        "save": "Save terms",
+        "saved": "Terms saved.",
+        "readOnly": "Terms are written on a draft version only."
+      }
     }
   }
 }

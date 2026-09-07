@@ -9386,7 +9386,12 @@ export interface components {
             /** @description The whole set. An empty array clears the encounter's diagnoses. */
             items: components["schemas"]["DiagnosisInput"][];
         };
-        PutLodgingTermsRequest: components["schemas"]["LodgingTermsPolicy"] & Record<string, never>;
+        /**
+         * @description The terms to write on a DRAFT version, whole. It is the policy and nothing else; a
+         *     second allOf member with `additionalProperties: false` would generate a request
+         *     type no client could construct.
+         */
+        PutLodgingTermsRequest: components["schemas"]["LodgingTermsPolicy"];
         PutMedicalReportServices: {
             /** @description The whole set. An empty array clears the report's service lines. */
             items: components["schemas"]["MedicalReportServiceInput"][];

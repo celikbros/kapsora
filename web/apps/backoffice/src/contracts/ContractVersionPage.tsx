@@ -26,6 +26,7 @@ import { useCategoryOptions, useDefinitionOptions } from '../catalogOptions';
 import { parseIssueMessage, problemOf } from '../problems';
 import { PriceItemsEditor, PriceItemsTable, type Option } from './PriceItemsEditor';
 import { PriceListsEditor } from './PriceListsEditor';
+import { LodgingTermsEditor } from '../lodging/LodgingTermsEditor';
 import {
   useContract,
   useContractVersion,
@@ -295,6 +296,12 @@ export function ContractVersionPage() {
             />
           </Card>
         ) : null}
+
+        <LodgingTermsEditor
+          contractVersionId={contractVersionId}
+          versionEtag={version.data.etag}
+          editable={isDraft && canManage}
+        />
 
         <Card>
           <div className="flex flex-wrap items-end justify-between gap-3">

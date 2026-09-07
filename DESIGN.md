@@ -142,6 +142,20 @@ components:
   nav-item-active:
     backgroundColor: '{colors.primary-soft}'
     textColor: '{colors.primary-hover}'
+  receipt:
+    backgroundColor: '{colors.surface}'
+    textColor: '{colors.fg}'
+    borderColor: '{colors.border}'
+    rounded: '{rounded.lg}'
+    padding: '1rem'
+  tab-bar:
+    backgroundColor: '{colors.surface}'
+    textColor: '{colors.fg-muted}'
+    borderColor: '{colors.border}'
+    typography: '{typography.caption}'
+    height: '3.5rem'
+  tab-bar-active:
+    textColor: '{colors.primary}'
 ---
 
 # Design System: KAPSORA
@@ -170,8 +184,9 @@ needs:
 in for hours, on wide screens, with keyboard and tab order that just work.
 
 **Modes:** the backoffice is _Operate_ (dense lists, forms, review). The provider portal
-is _Operate_ with a fast-entry bias. The member app is _Read_ first, _Experience_ only
-on the search and booking screens that arrive in later increments.
+is _Operate_ with a fast-entry bias. The member app is _Read_ on the home and the booking
+list and _Operate_ on the search-hold-confirm flow; from M6 it is a product rather than a
+placeholder, and its first viewport is a 390px phone.
 
 **Anti-references:** the consumer fintech dashboard (big rounded metric cards, pastel
 gradients, celebratory copy); the crowded insurer portal (nested tabs, everything on one
@@ -233,6 +248,13 @@ surface: 12px uppercase headers on `surface-2`, 8px/12px cell padding, hover fil
 `primary-soft` at 40%, no zebra stripes. A table scrolls inside its own container, and
 that container is positioned, so an sr-only header label cannot widen the document.
 
+Member app: no sidebar. A 56px header carries the wordmark, the tenant badge and the exit;
+the three tabs stand in that header on ≥768px and are a fixed bottom bar below it, inside
+`env(safe-area-inset-bottom)`. Content is padded 16px and capped at `max-w-5xl` on a wide
+screen. At ≥1024px the search and booking screens split into content and a 22rem receipt
+column (`grid-cols-[1fr_22rem]`, the receipt `sticky top-20`); below that the receipt is
+pinned above the tab bar and the list under it is padded clear of it.
+
 Forms: two columns on ≥768px, label above control, hint below, error below hint in
 `danger`, required marked with `*` and an sr-only word. Client validation gives instant
 feedback; the server's 422 field errors are mapped onto the same fields and win.
@@ -246,9 +268,20 @@ status, never a coloured row. The tenant is a `Badge` in the header with a 10px 
 dot and a 3px accent line under the header — the only place the tenant colour appears
 as a line.
 
+**The receipt** (`member/src/lodging/Receipt.tsx`) is the surface's signature component: a
+titled `<dl>` of label/value lines, a rule, then the total as the largest line and the one
+action beneath it. Money lines are monospace, right-aligned and `tabular-nums`; a line may
+carry a muted note under its value. It is the same component pinned (phone) and in column
+(desktop), never two.
+
+**The member tab bar** is three links — Ana sayfa · Ara · Rezervasyonlarım — each a drawn
+20px icon over a 12px label, `aria-current` colouring the active one `primary`. Above 768px
+the same three links are a tab strip in the header, square with a 2px underline, as the tab
+strip rule requires.
+
 ## Patterns settled while building
 
-These were decided against real screens in M2 and M3. They are here so the next screen
+These were decided against real screens, M2 through M6. They are here so the next screen
 does not re-argue them.
 
 **A dense editable set is a table that edits in place.** Price items, entitlement
@@ -401,10 +434,97 @@ spine — what happened, what was written, who was admitted, what was billed —
 opening it needs to see from the first viewport which chapter still wants work. A heading
 that is only a noun makes them open every section to find out.
 
+**A commitment that costs money keeps the amount on screen before, during and after it.**
+The member's booking is a receipt that fills in as they choose — dates, room, nights, total,
+plan payı — with **Ödeyeceğiniz** as the last and largest line and the one action under it.
+It is one component in one place, pinned above the tab bar on a phone and a sticky column on
+a wide screen, so the figure is never a screen away from the button. The consumer-travel
+pattern of photo cards and a total revealed at the end is refused outright: a member is
+agreeing to their share of a plan, and a share they cannot see is not agreed to.
+
+**A command that costs money carries the amount on itself.** Onayla is two lines — the verb,
+then "Ödeyeceğiniz 4.940,00 TRY" in monospace beneath it — because the button is the last
+thing the thumb touches and the last place the figure can still stop someone. A cancellation
+that costs a fee says the fee in the toast it produces, for the same reason.
+
+**A countdown renders the server's deadline and nothing else.** The hold shows `holdExpiresAt`
+through a `<time role="timer">`, ticking a local clock only to redraw it, so a screen that
+slept, a tab that was restored and a second device all agree on the same moment; a timer
+started on click would drift away from the server that will actually release the room. The
+exact expiry is repeated underneath as a date and time, because a number counting down is
+not a thing anyone can write down.
+
+**When the deadline passes, the action is replaced by the way back.** The expired hold does
+not keep Onayla in a disabled state or leave it live for the server to refuse: the panel
+becomes a sentence saying the hold has lapsed and a primary link to search again. This is the
+absent-not-disabled rule at its sharpest — the moment a screen has nothing to offer, it owes
+the member the next move rather than the corpse of the last one.
+
+**A one-time secret is shown on request, hidden again, and stored nowhere.** The voucher
+token appears only after the member asks for it, "Gizle" puts it away, and nothing is written
+to browser storage; the code lives in the tab's memory and a reissue is a fresh request to the
+server. It is set large in monospace with wide tracking because its whole job is to be read
+aloud or typed at a desk, and a code shown by default is a code shown to whoever is standing
+behind the member on a bus.
+
+**One structure per viewport, and it is built once.** `useMinWidth` decides the table or the
+stacked rows, the header links or the bottom tab bar, the receipt column or the pinned
+receipt — and only the chosen one is rendered, so a test, a screen reader and a keyboard meet
+one set of controls instead of two with one hidden by CSS. The shared halves are lifted into a
+single `controls` expression and placed into whichever structure renders, which is what keeps
+the two arms from drifting apart as the screen grows.
+
+**A stacked row carries its status beside its reference.** Where a wide table becomes rows on
+a phone, the identifier and the badge share the first line, the people and places the second,
+the dates and the money the third. What a horizontal scroller hides is always detail; the
+answer to "what state is this in" is never something an operator has to drag sideways to see.
+
+**A remaining entitlement is a name, a dotted leader, a numeral and its unit word.** The home
+screen's first block is what the member has left — nights sorted to the top, because that is
+the question they opened the app with — as a four-column baseline grid where the leader is
+`aria-hidden` decoration and the figure is monospace, large and right-aligned against the unit.
+The wallet's benefit period sits under its name in the muted voice, so two accounts with the
+same definition name stay distinct without a code being shown to a member.
+
+**A refusal names the night.** Inventory that would fall below what is already held is refused
+as `INVENTORY_BELOW_COMMITMENT` with the offending date, and a search that cannot be held is
+`ROOM_UNAVAILABLE` naming the first night with no room; both reach the screen through
+`ProblemAlert`, which renders the server's own Turkish sentence and the trace id. The client
+never writes a friendlier version of a refusal it did not compute — a rewritten "bir şeyler
+ters gitti" would drop the one fact that tells the member which date to change.
+
+**What undoing costs is answered before undoing is offered.** İptal et is not on the
+confirmed booking until the member asks "İptal edersem ne öderim" and the server's preview has
+answered in sentences — free until a date, or a fee with its amount and the nights it covers,
+and how many nights come back to the plan. Only then does the danger button appear, beside a
+"Vazgeç" that clears the preview. A destructive command whose price is discovered afterwards
+is a trap, however clearly the policy was written somewhere else.
+
+**A policy is shown as labelled rows in Turkish, never as a compact code line.** The lodging
+terms read back as a definition list — free-cancellation hours, penalty kind with its value,
+no-show percent, hold minutes, night bounds — and the member's copy of the same terms is a
+short list of sentences. `NIGHTS · 1 · %100` is what the record holds; it is not what a person
+can act on, and the screen owes them the sentence.
+
+**A loading state carries the words of the section it is in.** Each panel that is still
+fetching shows a spinner beside "Yükleniyor" under its own heading, marked `aria-busy`, rather
+than a bare spinner floating next to content that has already settled. A lone spinner in a page
+of finished panels reads as something being wrong; a spinner with a label reads as a panel
+still arriving, which is what it is.
+
+**An icon is drawn, at one stroke weight, and never a character standing in for one.** The
+member tabs are three 20px SVG paths at 1.6 stroke with round caps, `aria-hidden` because the
+label under each one is the name. A typographic glyph pressed into service as an icon inherits
+the text metrics and the font's own idea of a shape, and it goes wrong in exactly the place —
+a 390px bottom bar — where the icon is doing the most work.
+
 ## Motion
 
-Toasts slide up 160ms ease-out; nothing else animates. `prefers-reduced-motion`
-disables the slide and the spinner rotation.
+Toasts slide up 160ms ease-out. The member surface adds the system's one authored moment:
+`.receipt-line` settles in 260ms on an exponential ease-out
+(`cubic-bezier(0.16, 1, 0.3, 1)`) from an already-visible resting state — opacity 0.35 and
+6px down, so a line reads as settling and never as missing. Nothing else animates.
+`prefers-reduced-motion` disables the slide, the settle and the spinner rotation.
 
 ## Accessibility
 

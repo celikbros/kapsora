@@ -57,6 +57,15 @@ export default defineConfig({
           setupFiles: ['../../packages/config/vitest.setup.ts'],
         },
       },
+      {
+        test: {
+          name: 'member',
+          root: 'web/apps/member',
+          environment: 'jsdom',
+          include: ['src/**/*.test.{ts,tsx}'],
+          setupFiles: ['../../packages/config/vitest.setup.ts'],
+        },
+      },
     ],
   },
 });

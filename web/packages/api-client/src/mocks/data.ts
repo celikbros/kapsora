@@ -1641,6 +1641,9 @@ const PROVIDER_RESERVATION_PERMISSIONS = [
   'accommodation.waitlist.manage',
   'member.read',
   'eligibility.check',
+  // The desk reports a no-show with evidence, so it uploads and reads documents.
+  'document.read',
+  'document.upload',
 ];
 
 const ORG_PREFIXES = [
@@ -5580,9 +5583,11 @@ export function buildWorld(
       roomTypeId: room.id,
       serviceDefinitionId: room.serviceDefinitionId,
       currencyCode: 'TRY',
-      totalAmount: fromMicros(multiplyMicros(unitMicros, BigInt(nights))),
-      payerAmount: fromMicros(multiplyMicros(payerMicros, BigInt(nights))),
-      memberAmount: fromMicros(multiplyMicros(memberMicros, BigInt(nights))),
+      // A count of nights is a plain integer, not a micro-unit amount: multiplying through
+      // multiplyMicros divided the seeded totals by a million and every booking read 0,00.
+      totalAmount: fromMicros(unitMicros * BigInt(nights)),
+      payerAmount: fromMicros(payerMicros * BigInt(nights)),
+      memberAmount: fromMicros(memberMicros * BigInt(nights)),
       nights: stayDates.map((day) => ({
         stayDate: day,
         amount: fromMicros(unitMicros),
@@ -5621,8 +5626,10 @@ export function buildWorld(
       // hold the sweep should already have taken, and a screen would draw a timer at zero.
       holdExpiresAt: live ? new Date(Date.now() + 11 * 60_000).toISOString() : null,
       entitlementReservationId: null,
-      serviceRequestId: null,
-      authorizationId: null,
+      // A booking past confirmation stands on a decided request and an authorization,
+      // exactly as it does on the server; the voucher command refuses one that does not.
+      serviceRequestId: confirmed ? nextId() : null,
+      authorizationId: confirmed ? nextId() : null,
       voucherId: null,
       quoteSnapshot,
       policySnapshot: confirmed ? policyOf(lodgingTerms[0]!) : null,

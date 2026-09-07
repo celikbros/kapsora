@@ -13,6 +13,7 @@ import { IdentityTab } from './IdentityTab';
 import { MembershipsTab } from './MembershipsTab';
 import { AccessLogTab } from './AccessLogTab';
 import { HealthTab } from './HealthTab';
+import { LodgingTab } from './LodgingTab';
 import { usePerson } from './queries';
 
 /** One member with everything hanging off them, one tab per concern. */
@@ -27,6 +28,7 @@ export function PersonDetailPage() {
   const canReadCases = usePermission('health.case.read');
   const canReadClaims = usePermission('claim.read');
   const canReadAudit = usePermission('audit.read');
+  const canReadLodging = usePermission('accommodation.property.read');
 
   if (query.isPending) {
     return (
@@ -137,6 +139,12 @@ export function PersonDetailPage() {
             label: t('people.tabs.health'),
             visible: canReadCases || canReadClaims,
             content: <HealthTab personId={personId} />,
+          },
+          {
+            value: 'lodging',
+            label: t('people.tabs.lodging'),
+            visible: canReadLodging,
+            content: <LodgingTab personId={personId} />,
           },
           {
             value: 'accessLog',
