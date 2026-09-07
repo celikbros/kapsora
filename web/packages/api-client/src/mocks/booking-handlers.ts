@@ -44,6 +44,7 @@ import {
   type StoredProperty,
   type StoredRoomType,
 } from './data';
+import type { AfterTools } from './after-handlers';
 import type { MockApi, MockSession } from './handlers';
 import {
   ANY,
@@ -52,9 +53,11 @@ import {
   guardTenant,
   organizationScope,
   parseLimit,
+  personScope,
   pathParam,
   problem,
   readJson,
+  resolvePerson,
   validationFailed,
   wait,
   withinScope,
@@ -161,10 +164,27 @@ function stayDatesOf(checkIn: string, nights: number): string[] {
   return Array.from({ length: nights }, (_, i) => addDays(checkIn, i));
 }
 
-export function bookingHandlers(api: MockApi, tools: BookingTools): HttpHandler[] {
+/**
+ * The handlers, and the four things WP-I6-03 needs to reach into them.
+ *
+ * They are handed out rather than reimplemented next to the offer sweep: a hold placed by the
+ * sweep and a hold placed at the search screen are the same act, and two placements would be
+ * two answers to "may this room be set aside" that drift the first time either is corrected.
+ */
+export interface BookingModule {
+  handlers: HttpHandler[];
+  after: AfterTools;
+}
+
+export function bookingHandlers(api: MockApi, tools: BookingTools): BookingModule {
   const world = (): MockWorld => api.world;
 
   const visible = (session: MockSession, tenantId: string, booking: StoredBooking): boolean => {
+    // The member boundary first: an account bound to a person sees that person's bookings
+    // and nobody else's, whatever it asks for. It is computed here rather than applied as a
+    // filter afterwards, because a filter applied after a page has already been defeated.
+    const bound = personScope(api, session, tenantId);
+    if (bound !== null && booking.personId !== bound) return false;
     const scope = organizationScope(api, session, tenantId);
     if (scope === null) return true;
     const property = world().properties.find((p) => p.id === booking.propertyId);
@@ -204,6 +224,25 @@ export function bookingHandlers(api: MockApi, tools: BookingTools): HttpHandler[
           d.stayDate === day,
       );
       if (night) night.held = Math.max(0, night.held + delta);
+    }
+  };
+
+  /**
+   * Moves `confirmed` by a signed delta over the stay's nights, optionally from an offset.
+   *
+   * The offset is what an early check-out needs: the nights the guest actually slept stay
+   * taken, because the room really was occupied on them, and only the tail goes back to the
+   * allotment where the search can sell it again.
+   */
+  const moveConfirmed = (booking: StoredBooking, delta: number, from = 0): void => {
+    for (const day of stayDatesOf(booking.checkIn, booking.nights).slice(from)) {
+      const night = world().inventoryDays.find(
+        (d) =>
+          d.tenantId === booking.tenantId &&
+          d.roomTypeId === booking.roomTypeId &&
+          d.stayDate === day,
+      );
+      if (night) night.confirmed = Math.max(0, night.confirmed + delta);
     }
   };
 
@@ -271,7 +310,354 @@ export function bookingHandlers(api: MockApi, tools: BookingTools): HttpHandler[
     return guardTenant(api, request, PERMISSION_BOOKING_MANAGE, mutation);
   };
 
-  return [
+  /**
+   * The hold itself, without the HTTP around it: the counters, the frozen quote, the booking
+   * and its nights and guests.
+   *
+   * It is a function rather than the body of one handler because the waitlist offer job
+   * (WP-I6-03) places a hold on a waiting member's behalf, and it has to be *this* hold --
+   * the same availability check, the same one-live-booking rule, the same frozen quote. A
+   * second placement written next to the sweep would be a second answer to "may this room be
+   * set aside", and the two would drift the first time either was corrected.
+   *
+   * It returns a Response for every refusal, so the caller that has one to send sends it and
+   * the sweep, which has nobody to tell, reads it as "not this entry's turn" and moves on.
+   */
+  const placeHold = (
+    session: MockSession,
+    tenantId: string,
+    personId: string,
+    roomTypeId: string,
+    checkIn: string,
+    checkOut: string,
+    adults: number,
+    children: number,
+    nights: number,
+    guests: Schemas['CreateBookingGuest'][],
+    programId?: string | null,
+    channel?: Schemas['ServiceRequestChannel'],
+  ): StoredBooking | Response => {
+    const room = tools.findRoomType(session, tenantId, roomTypeId);
+    if (!room || room.status !== 'ACTIVE') {
+      return problem(api, 404, 'ROOM_TYPE_NOT_FOUND', 'Oda tipi bulunamadı');
+    }
+    if (
+      adults > room.maxAdults ||
+      children > room.maxChildren ||
+      adults + children > room.maxOccupancy
+    ) {
+      return problem(api, 422, 'OCCUPANCY_EXCEEDED', 'Kişi sayısı bu oda tipine sığmıyor', {
+        detail: 'Yetişkin, çocuk ve toplam kişi sınırlarını aşmayan bir oda tipi seçin.',
+      });
+    }
+    const enrollment = world().enrollments.find(
+      (e) =>
+        e.tenantId === tenantId &&
+        e.personId === personId &&
+        e.status === 'ACTIVE' &&
+        (!programId || e.programId === programId),
+    );
+    if (!enrollment) {
+      return problem(api, 422, 'ENROLLMENT_NOT_FOUND', 'Bu tarihlerde geçerli bir plan kaydı yok', {
+        detail: 'Rezervasyon, giriş tarihinde aktif bir plan kaydı üzerinden yapılır.',
+      });
+    }
+
+    const stayDates = stayDatesOf(checkIn, nights);
+    const lastNight = stayDates[stayDates.length - 1]!;
+    const reachable = tools.searchableProperties(
+      session,
+      tenantId,
+      personId,
+      programId ?? null,
+      checkIn,
+      lastNight,
+    );
+    const entry = reachable.find((p) => p.property.id === room.propertyId);
+    if (!entry) {
+      // No contract with a payer behind this person's programmes covers the stay. It is
+      // the same answer the search gives them, and for the same reason.
+      return problem(api, 404, 'PROPERTY_NOT_FOUND', 'Tesis bulunamadı');
+    }
+
+    // One live booking of one room type per person and arrival. The server states it as a
+    // partial unique index, so the four live statuses are the whole of the rule: a
+    // cancelled or expired booking must not stop the member booking the same room again.
+    const clash = world().bookings.find(
+      (b) =>
+        b.tenantId === tenantId &&
+        b.personId === personId &&
+        b.roomTypeId === room.id &&
+        b.checkIn === checkIn &&
+        LIVE_STATUSES.has(b.status),
+    );
+    if (clash) {
+      return problem(
+        api,
+        409,
+        'BOOKING_ALREADY_LIVE',
+        'Bu tarihte bu oda tipinde açık bir rezervasyonunuz var',
+        {
+          detail:
+            'Aynı kişi, aynı oda tipi ve aynı giriş tarihi için tek bir açık rezervasyon olabilir.',
+        },
+      );
+    }
+
+    // The nights, checked before anything is written. The first one with no room refuses
+    // the whole stay and names itself: a member looking at a fortnight needs to know which
+    // night to move, and `allotted` separates a full night from one nobody opened.
+    for (const day of stayDates) {
+      const night = world().inventoryDays.find(
+        (d) => d.tenantId === tenantId && d.roomTypeId === room.id && d.stayDate === day,
+      );
+      if (!night || night.capacity - night.held - night.confirmed < 1) {
+        return problem(api, 409, 'ROOM_UNAVAILABLE', 'Bu tarihlerde boş oda yok', {
+          detail: 'Konaklamanın en az bir gecesinde bu oda tipinden boş oda kalmadı.',
+          extensions: {
+            stayDate: day,
+            allotted: Boolean(night),
+            capacity: night?.capacity ?? 0,
+            held: night?.held ?? 0,
+            confirmed: night?.confirmed ?? 0,
+          },
+        });
+      }
+    }
+
+    // What the plan carries, decided the same way the search decides it. A member with
+    // two nights left and a three-night stay holds the room and reserves two: the search
+    // has already told them the third is theirs, and refusing here would refuse exactly
+    // the booking they were quoted.
+    const cover = tools.coverForService(
+      tenantId,
+      personId,
+      programId ?? null,
+      checkIn,
+      room.serviceDefinitionId,
+    );
+    const priced = tools.quoteRoomType(
+      tenantId,
+      entry.providerProfileId,
+      entry.property,
+      room,
+      stayDates,
+      cover,
+    );
+    if (!priced.quote) {
+      return problem(api, 409, 'QUOTE_UNAVAILABLE', 'Bu tarihler için fiyat bulunamadı', {
+        detail: 'Sözleşmede bu oda tipi için konaklamanın tüm gecelerini kapsayan fiyat yok.',
+        extensions: { reason: priced.reason ?? 'PRICE_NOT_FOUND' },
+      });
+    }
+    const quote = priced.quote;
+    // A stay the plan carries no night of is the one refusal. Fewer nights than the stay
+    // is long is a booking, not an error.
+    if (priced.coveredNights === 0) {
+      return problem(
+        api,
+        409,
+        'ENTITLEMENT_INSUFFICIENT',
+        'Planınız bu konaklamanın hiçbir gecesini karşılamıyor',
+        {
+          detail:
+            'Bu hizmet planınızda tanımlı değil ya da konaklama hakkınız tükendi; ' +
+            'planın karşılamadığı bir konaklama bu ekrandan rezerve edilemez.',
+        },
+      );
+    }
+
+    const now = new Date();
+    const bookingId = world().nextId();
+    const booking: StoredBooking = {
+      id: bookingId,
+      tenantId: tenantId,
+      reference: `BK-${now.toISOString().slice(0, 10).replace(/-/g, '')}-${bookingId
+        .replace(/-/g, '')
+        .slice(0, 8)
+        .toUpperCase()}`,
+      personId,
+      enrollmentId: enrollment.id,
+      programId: enrollment.programId,
+      propertyId: room.propertyId,
+      roomTypeId: room.id,
+      checkIn: checkIn,
+      checkOut: checkOut,
+      nights,
+      adults,
+      children,
+      status: 'HOLD',
+      holdExpiresAt: new Date(now.getTime() + DEFAULT_HOLD_MINUTES * 60_000).toISOString(),
+      entitlementReservationId: world().nextId(),
+      serviceRequestId: null,
+      authorizationId: null,
+      voucherId: null,
+      // Frozen here and never recomputed. Confirming charges these figures, which is the
+      // whole reason a stale one is refused rather than quietly repriced.
+      quoteSnapshot: {
+        version: 1,
+        quotedAt: now.toISOString(),
+        evaluationId: null,
+        propertyId: room.propertyId,
+        roomTypeId: room.id,
+        serviceDefinitionId: room.serviceDefinitionId,
+        currencyCode: quote.currencyCode,
+        totalAmount: quote.totalAmount,
+        payerAmount: quote.payerAmount,
+        memberAmount: quote.memberAmount,
+        nights: quote.nightlyAmounts.map((n) => ({
+          stayDate: n.stayDate,
+          amount: n.amount,
+          payerAmount: n.payerAmount,
+          memberAmount: n.memberAmount,
+        })),
+        coveredNights: priced.coveredNights,
+        entitlement: null,
+        // Whether the plan covers *every* night, which is not the same as covering some.
+        eligible: priced.coveredNights === nights,
+      },
+      policySnapshot: null,
+      channel: channel ?? 'BACKOFFICE',
+      confirmedAt: null,
+      checkedInAt: null,
+      checkedOutAt: null,
+      cancelledAt: null,
+      cancelReasonCode: null,
+      actualNights: null,
+      overBooking: false,
+      createdAt: now.toISOString(),
+      updatedAt: null,
+      rowVersion: 1,
+    };
+    world().bookings.push(booking);
+    for (const night of quote.nightlyAmounts) {
+      const row: StoredBookingNight = {
+        id: world().nextId(),
+        tenantId: tenantId,
+        bookingId,
+        stayDate: night.stayDate,
+        roomTypeId: room.id,
+        unitAmount: night.amount,
+        payerAmount: night.payerAmount,
+        memberAmount: night.memberAmount,
+        currencyCode: quote.currencyCode,
+      };
+      world().bookingNights.push(row);
+    }
+    for (const guest of guests) {
+      const row: StoredBookingGuest = {
+        id: world().nextId(),
+        tenantId: tenantId,
+        bookingId,
+        personId: guest.personId ?? null,
+        displayName: guest.displayName,
+        guestType: guest.guestType,
+        isMinor: guest.isMinor ?? false,
+      };
+      world().bookingGuests.push(row);
+    }
+    moveHeld(booking, 1);
+    return booking;
+  };
+
+  /**
+   * The confirmation itself, without the HTTP around it: the staleness check, the policy the
+   * stay is agreed under, the counters and the voucher.
+   *
+   * It is a function for the same reason `placeHold` is: accepting a waitlist offer (WP-I6-03)
+   * confirms the hold the sweep placed, and it has to be *this* confirmation -- the same quote
+   * TTL, the same LODGING_TERMS_MISSING refusal, the same voucher. An offer accepted through a
+   * second path would be a stay agreed under rules nobody else applies.
+   *
+   * It returns a Response for a refusal and null for success.
+   */
+  const confirmHold = (tenantId: string, booking: StoredBooking): Response | null => {
+    if (booking.status !== 'HOLD') return transitionInvalid();
+
+    // The frozen prices are what the member will be charged, and a price nobody has
+    // looked at for an hour is not one anybody should be committed to.
+    const quotedAt = Date.parse(booking.quoteSnapshot.quotedAt);
+    if (Date.now() - quotedAt > DEFAULT_QUOTE_TTL_MINUTES * 60_000) {
+      return problem(api, 409, 'QUOTE_STALE', 'Fiyat teklifi güncelliğini yitirdi', {
+        detail: 'Aramayı yenileyip odayı yeniden seçin; onaylanan tutar gördüğünüz tutar olmalı.',
+      });
+    }
+
+    // The policy the stay is agreed under. A contract version with none is refused: a
+    // stay with no cancellation policy is a stay nobody could cancel fairly.
+    const property = world().properties.find((p) => p.id === booking.propertyId);
+    const provider = property
+      ? world().providers.find(
+          (pp) =>
+            pp.tenantId === tenantId && pp.tenantOrganizationId === property.providerOrganizationId,
+        )
+      : undefined;
+    const contract = provider
+      ? world().contracts.find(
+          (c) => c.tenantId === tenantId && c.providerProfileId === provider.id,
+        )
+      : undefined;
+    const version = contract
+      ? world().contractVersions.find(
+          (v) => v.contractId === contract.id && v.status === 'PUBLISHED',
+        )
+      : undefined;
+    const terms = version
+      ? world().lodgingTerms.find((t) => t.contractVersionId === version.id)
+      : undefined;
+    if (!terms || !version) {
+      return problem(
+        api,
+        409,
+        'LODGING_TERMS_MISSING',
+        'Sözleşmede konaklama koşulları tanımlı değil',
+        { detail: 'İptal ve iade koşulları tanımlanmadan rezervasyon onaylanamaz.' },
+      );
+    }
+
+    // The gate. In the mock it approves outright, which is what the server's own gate
+    // does for a request with no document requirement and no pre-authorisation rule; a
+    // request a reviewer has to see leaves the booking in PENDING_APPROVAL there, and a
+    // screen must not assume either.
+    const now = new Date().toISOString();
+    booking.serviceRequestId = world().nextId();
+    booking.authorizationId = world().nextId();
+    booking.status = 'CONFIRMED';
+    booking.confirmedAt = now;
+    booking.holdExpiresAt = null;
+    booking.policySnapshot = {
+      contractVersionId: version.id,
+      snapshotAt: now,
+      timezone: property?.timezone ?? 'Europe/Istanbul',
+      freeCancellationHoursBefore: terms.freeCancellationHoursBefore,
+      penaltyKind: terms.penaltyKind,
+      penaltyNights: terms.penaltyNights,
+      noShowPercent: terms.noShowPercent,
+      minNights: terms.minNights,
+      maxNights: terms.maxNights,
+      childFreeUnderAge: terms.childFreeUnderAge,
+    };
+    booking.updatedAt = now;
+    booking.rowVersion += 1;
+    confirmNights(booking);
+    // The voucher exists from the moment the stay does; its token is not in this body
+    // and is minted only by the voucher command.
+    const voucherId = world().nextId();
+    world().bookingVouchers.push({
+      id: voucherId,
+      tenantId: tenantId,
+      bookingId: booking.id,
+      token: voucherToken(voucherId),
+      maskedToken: `KPS-****${voucherToken(voucherId).slice(-4)}`,
+      validFrom: `${booking.checkIn}T00:00:00Z`,
+      validTo: `${booking.checkOut}T00:00:00Z`,
+      status: 'ISSUED',
+    });
+    booking.voucherId = voucherId;
+    return null;
+  };
+
+  const handlers: HttpHandler[] = [
     // -------------------------------------------------------------------------------------
     // createHold
     // -------------------------------------------------------------------------------------
@@ -293,15 +679,11 @@ export function bookingHandlers(api: MockApi, tools: BookingTools): HttpHandler[
       const body = await readJson<Schemas['CreateHoldRequest']>(request);
       if (!body) return problem(api, 400, 'INVALID_REQUEST_BODY', 'İstek gövdesi geçersiz');
 
-      // None of the mock's seeded accounts carries a PERSON grant, so every caller here is a
-      // desk and a desk has to name the person it is acting for. On the server a member's own
-      // binding wins over the body and a body naming somebody else is PERSON_SCOPE.
-      const personId = (body.personId ?? '').trim();
-      if (personId === '') {
-        return problem(api, 422, 'PERSON_REQUIRED', 'Sorgu bir hak sahibi adına yapılmalı', {
-          detail: 'Hangi hak sahibi için rezervasyon yaptığınızı personId ile belirtin.',
-        });
-      }
+      // Whose stay. A member's own binding wins over the body, and a body naming somebody
+      // else is PERSON_SCOPE; a desk is bound to nobody and has to name whom it acts for.
+      const whose = resolvePerson(api, g.session, g.tenantId, body.personId);
+      if ('error' in whose) return whose.error;
+      const personId = whose.personId;
 
       const errors: FieldError[] = [];
       const adults = Number(body.adults);
@@ -363,233 +745,23 @@ export function bookingHandlers(api: MockApi, tools: BookingTools): HttpHandler[
         ]);
       }
 
-      const room = tools.findRoomType(g.session, g.tenantId, body.roomTypeId);
-      if (!room || room.status !== 'ACTIVE') {
-        return problem(api, 404, 'ROOM_TYPE_NOT_FOUND', 'Oda tipi bulunamadı');
-      }
-      if (
-        adults > room.maxAdults ||
-        children > room.maxChildren ||
-        adults + children > room.maxOccupancy
-      ) {
-        return problem(api, 422, 'OCCUPANCY_EXCEEDED', 'Kişi sayısı bu oda tipine sığmıyor', {
-          detail: 'Yetişkin, çocuk ve toplam kişi sınırlarını aşmayan bir oda tipi seçin.',
-        });
-      }
-      const enrollment = world().enrollments.find(
-        (e) =>
-          e.tenantId === g.tenantId &&
-          e.personId === personId &&
-          e.status === 'ACTIVE' &&
-          (!body.programId || e.programId === body.programId),
-      );
-      if (!enrollment) {
-        return problem(
-          api,
-          422,
-          'ENROLLMENT_NOT_FOUND',
-          'Bu tarihlerde geçerli bir plan kaydı yok',
-          {
-            detail: 'Rezervasyon, giriş tarihinde aktif bir plan kaydı üzerinden yapılır.',
-          },
-        );
-      }
-
-      const stayDates = stayDatesOf(body.checkIn, nights);
-      const lastNight = stayDates[stayDates.length - 1]!;
-      const reachable = tools.searchableProperties(
+      const held = placeHold(
         g.session,
         g.tenantId,
         personId,
-        body.programId ?? null,
+        body.roomTypeId,
         body.checkIn,
-        lastNight,
-      );
-      const entry = reachable.find((p) => p.property.id === room.propertyId);
-      if (!entry) {
-        // No contract with a payer behind this person's programmes covers the stay. It is
-        // the same answer the search gives them, and for the same reason.
-        return problem(api, 404, 'PROPERTY_NOT_FOUND', 'Tesis bulunamadı');
-      }
-
-      // One live booking of one room type per person and arrival. The server states it as a
-      // partial unique index, so the four live statuses are the whole of the rule: a
-      // cancelled or expired booking must not stop the member booking the same room again.
-      const clash = world().bookings.find(
-        (b) =>
-          b.tenantId === g.tenantId &&
-          b.personId === personId &&
-          b.roomTypeId === room.id &&
-          b.checkIn === body.checkIn &&
-          LIVE_STATUSES.has(b.status),
-      );
-      if (clash) {
-        return problem(
-          api,
-          409,
-          'BOOKING_ALREADY_LIVE',
-          'Bu tarihte bu oda tipinde açık bir rezervasyonunuz var',
-          {
-            detail:
-              'Aynı kişi, aynı oda tipi ve aynı giriş tarihi için tek bir açık rezervasyon olabilir.',
-          },
-        );
-      }
-
-      // The nights, checked before anything is written. The first one with no room refuses
-      // the whole stay and names itself: a member looking at a fortnight needs to know which
-      // night to move, and `allotted` separates a full night from one nobody opened.
-      for (const day of stayDates) {
-        const night = world().inventoryDays.find(
-          (d) => d.tenantId === g.tenantId && d.roomTypeId === room.id && d.stayDate === day,
-        );
-        if (!night || night.capacity - night.held - night.confirmed < 1) {
-          return problem(api, 409, 'ROOM_UNAVAILABLE', 'Bu tarihlerde boş oda yok', {
-            detail: 'Konaklamanın en az bir gecesinde bu oda tipinden boş oda kalmadı.',
-            extensions: {
-              stayDate: day,
-              allotted: Boolean(night),
-              capacity: night?.capacity ?? 0,
-              held: night?.held ?? 0,
-              confirmed: night?.confirmed ?? 0,
-            },
-          });
-        }
-      }
-
-      // What the plan carries, decided the same way the search decides it. A member with
-      // two nights left and a three-night stay holds the room and reserves two: the search
-      // has already told them the third is theirs, and refusing here would refuse exactly
-      // the booking they were quoted.
-      const cover = tools.coverForService(
-        g.tenantId,
-        personId,
-        body.programId ?? null,
-        body.checkIn,
-        room.serviceDefinitionId,
-      );
-      const priced = tools.quoteRoomType(
-        g.tenantId,
-        entry.providerProfileId,
-        entry.property,
-        room,
-        stayDates,
-        cover,
-      );
-      if (!priced.quote) {
-        return problem(api, 409, 'QUOTE_UNAVAILABLE', 'Bu tarihler için fiyat bulunamadı', {
-          detail: 'Sözleşmede bu oda tipi için konaklamanın tüm gecelerini kapsayan fiyat yok.',
-          extensions: { reason: priced.reason ?? 'PRICE_NOT_FOUND' },
-        });
-      }
-      const quote = priced.quote;
-      // A stay the plan carries no night of is the one refusal. Fewer nights than the stay
-      // is long is a booking, not an error.
-      if (priced.coveredNights === 0) {
-        return problem(
-          api,
-          409,
-          'ENTITLEMENT_INSUFFICIENT',
-          'Planınız bu konaklamanın hiçbir gecesini karşılamıyor',
-          {
-            detail:
-              'Bu hizmet planınızda tanımlı değil ya da konaklama hakkınız tükendi; ' +
-              'planın karşılamadığı bir konaklama bu ekrandan rezerve edilemez.',
-          },
-        );
-      }
-
-      const now = new Date();
-      const bookingId = world().nextId();
-      const booking: StoredBooking = {
-        id: bookingId,
-        tenantId: g.tenantId,
-        reference: `BK-${now.toISOString().slice(0, 10).replace(/-/g, '')}-${bookingId
-          .replace(/-/g, '')
-          .slice(0, 8)
-          .toUpperCase()}`,
-        personId,
-        enrollmentId: enrollment.id,
-        programId: enrollment.programId,
-        propertyId: room.propertyId,
-        roomTypeId: room.id,
-        checkIn: body.checkIn,
-        checkOut: body.checkOut,
-        nights,
+        body.checkOut,
         adults,
         children,
-        status: 'HOLD',
-        holdExpiresAt: new Date(now.getTime() + DEFAULT_HOLD_MINUTES * 60_000).toISOString(),
-        entitlementReservationId: world().nextId(),
-        serviceRequestId: null,
-        authorizationId: null,
-        voucherId: null,
-        // Frozen here and never recomputed. Confirming charges these figures, which is the
-        // whole reason a stale one is refused rather than quietly repriced.
-        quoteSnapshot: {
-          version: 1,
-          quotedAt: now.toISOString(),
-          evaluationId: null,
-          propertyId: room.propertyId,
-          roomTypeId: room.id,
-          serviceDefinitionId: room.serviceDefinitionId,
-          currencyCode: quote.currencyCode,
-          totalAmount: quote.totalAmount,
-          payerAmount: quote.payerAmount,
-          memberAmount: quote.memberAmount,
-          nights: quote.nightlyAmounts.map((n) => ({
-            stayDate: n.stayDate,
-            amount: n.amount,
-            payerAmount: n.payerAmount,
-            memberAmount: n.memberAmount,
-          })),
-          coveredNights: priced.coveredNights,
-          entitlement: null,
-          // Whether the plan covers *every* night, which is not the same as covering some.
-          eligible: priced.coveredNights === nights,
-        },
-        policySnapshot: null,
-        channel: body.channel ?? 'BACKOFFICE',
-        confirmedAt: null,
-        checkedInAt: null,
-        checkedOutAt: null,
-        cancelledAt: null,
-        cancelReasonCode: null,
-        actualNights: null,
-        createdAt: now.toISOString(),
-        updatedAt: null,
-        rowVersion: 1,
-      };
-      world().bookings.push(booking);
-      for (const night of quote.nightlyAmounts) {
-        const row: StoredBookingNight = {
-          id: world().nextId(),
-          tenantId: g.tenantId,
-          bookingId,
-          stayDate: night.stayDate,
-          roomTypeId: room.id,
-          unitAmount: night.amount,
-          payerAmount: night.payerAmount,
-          memberAmount: night.memberAmount,
-          currencyCode: quote.currencyCode,
-        };
-        world().bookingNights.push(row);
-      }
-      for (const guest of guests) {
-        const row: StoredBookingGuest = {
-          id: world().nextId(),
-          tenantId: g.tenantId,
-          bookingId,
-          personId: guest.personId ?? null,
-          displayName: guest.displayName,
-          guestType: guest.guestType,
-          isMinor: guest.isMinor ?? false,
-        };
-        world().bookingGuests.push(row);
-      }
-      moveHeld(booking, 1);
+        nights,
+        guests,
+        body.programId ?? null,
+        body.channel,
+      );
+      if (held instanceof Response) return held;
 
-      const out = toBooking(booking);
+      const out = toBooking(held);
       api.rememberIdempotent(key, 201, out, null);
       return HttpResponse.json(out, { status: 201 });
     }),
@@ -617,12 +789,17 @@ export function bookingHandlers(api: MockApi, tools: BookingTools): HttpHandler[
       const offset = decodeCursor(url.searchParams.get('cursor'));
       if (offset === null) return problem(api, 400, 'CURSOR_INVALID', 'Sayfa imleci geçersiz');
 
+      // A member's own binding *replaces* the person filter rather than narrowing it: a
+      // member who asks for somebody else's bookings gets their own, which is what the
+      // server does and what stops a filter being read as an escape from the boundary.
+      const bound = personScope(api, g.session, g.tenantId);
+      const wanted = bound ?? personId;
       const rows = world()
         .bookings.filter(
           (b) =>
             b.tenantId === g.tenantId &&
             visible(g.session, g.tenantId, b) &&
-            (!personId || b.personId === personId) &&
+            (!wanted || b.personId === wanted) &&
             (!propertyId || b.propertyId === propertyId) &&
             (!status || b.status === status) &&
             (!from || b.checkIn >= from) &&
@@ -671,90 +848,8 @@ export function bookingHandlers(api: MockApi, tools: BookingTools): HttpHandler[
 
         const booking = findBooking(g.session, g.tenantId, pathParam(params, 'bookingId'));
         if (!booking) return bookingNotFound();
-        if (booking.status !== 'HOLD') return transitionInvalid();
-
-        // The frozen prices are what the member will be charged, and a price nobody has
-        // looked at for an hour is not one anybody should be committed to.
-        const quotedAt = Date.parse(booking.quoteSnapshot.quotedAt);
-        if (Date.now() - quotedAt > DEFAULT_QUOTE_TTL_MINUTES * 60_000) {
-          return problem(api, 409, 'QUOTE_STALE', 'Fiyat teklifi güncelliğini yitirdi', {
-            detail:
-              'Aramayı yenileyip odayı yeniden seçin; onaylanan tutar gördüğünüz tutar olmalı.',
-          });
-        }
-
-        // The policy the stay is agreed under. A contract version with none is refused: a
-        // stay with no cancellation policy is a stay nobody could cancel fairly.
-        const property = world().properties.find((p) => p.id === booking.propertyId);
-        const provider = property
-          ? world().providers.find(
-              (pp) =>
-                pp.tenantId === g.tenantId &&
-                pp.tenantOrganizationId === property.providerOrganizationId,
-            )
-          : undefined;
-        const contract = provider
-          ? world().contracts.find(
-              (c) => c.tenantId === g.tenantId && c.providerProfileId === provider.id,
-            )
-          : undefined;
-        const version = contract
-          ? world().contractVersions.find(
-              (v) => v.contractId === contract.id && v.status === 'PUBLISHED',
-            )
-          : undefined;
-        const terms = version
-          ? world().lodgingTerms.find((t) => t.contractVersionId === version.id)
-          : undefined;
-        if (!terms || !version) {
-          return problem(
-            api,
-            409,
-            'LODGING_TERMS_MISSING',
-            'Sözleşmede konaklama koşulları tanımlı değil',
-            { detail: 'İptal ve iade koşulları tanımlanmadan rezervasyon onaylanamaz.' },
-          );
-        }
-
-        // The gate. In the mock it approves outright, which is what the server's own gate
-        // does for a request with no document requirement and no pre-authorisation rule; a
-        // request a reviewer has to see leaves the booking in PENDING_APPROVAL there, and a
-        // screen must not assume either.
-        const now = new Date().toISOString();
-        booking.serviceRequestId = world().nextId();
-        booking.authorizationId = world().nextId();
-        booking.status = 'CONFIRMED';
-        booking.confirmedAt = now;
-        booking.holdExpiresAt = null;
-        booking.policySnapshot = {
-          contractVersionId: version.id,
-          snapshotAt: now,
-          timezone: property?.timezone ?? 'Europe/Istanbul',
-          freeCancellationHoursBefore: terms.freeCancellationHoursBefore,
-          penaltyKind: terms.penaltyKind,
-          penaltyNights: terms.penaltyNights,
-          noShowPercent: terms.noShowPercent,
-          minNights: terms.minNights,
-          maxNights: terms.maxNights,
-          childFreeUnderAge: terms.childFreeUnderAge,
-        };
-        booking.updatedAt = now;
-        booking.rowVersion += 1;
-        confirmNights(booking);
-        // The voucher exists from the moment the stay does; its token is not in this body
-        // and is minted only by the voucher command.
-        const voucherId = world().nextId();
-        world().bookingVouchers.push({
-          id: voucherId,
-          tenantId: g.tenantId,
-          bookingId: booking.id,
-          token: voucherToken(voucherId),
-          maskedToken: `KPS-****${voucherToken(voucherId).slice(-4)}`,
-          validFrom: `${booking.checkIn}T00:00:00Z`,
-          validTo: `${booking.checkOut}T00:00:00Z`,
-          status: 'ISSUED',
-        });
-        booking.voucherId = voucherId;
+        const refusal = confirmHold(g.tenantId, booking);
+        if (refusal) return refusal;
 
         const out = toBooking(booking);
         api.rememberIdempotent(key, 200, out, null);
@@ -851,4 +946,38 @@ export function bookingHandlers(api: MockApi, tools: BookingTools): HttpHandler[
       },
     ),
   ];
+
+  return {
+    handlers,
+    after: {
+      sweepExpiredHolds,
+      toBooking,
+      moveHeld,
+      moveConfirmed,
+      // The sweep has nobody to hand a refusal to: a room that is not free is simply not
+      // this entry's turn, so a Response becomes null and the caller tries the next room.
+      placeHold: (tenantId, personId, roomTypeId, checkIn, checkOut, adults, children) => {
+        const nights = nightsOf(checkIn, checkOut);
+        if (nights === 0) return null;
+        const session = api.session;
+        if (!session) return null;
+        const held = placeHold(
+          session,
+          tenantId,
+          personId,
+          roomTypeId,
+          checkIn,
+          checkOut,
+          adults,
+          children,
+          nights,
+          [],
+          null,
+          'BACKOFFICE',
+        );
+        return held instanceof Response ? null : held;
+      },
+      confirmHold,
+    },
+  };
 }

@@ -32,6 +32,7 @@
  */
 import { HttpResponse, http, type HttpHandler } from 'msw';
 
+import { afterHandlers } from './after-handlers';
 import { bookingHandlers } from './booking-handlers';
 import { resolveContractPrice } from './contract-handlers';
 import {
@@ -61,6 +62,7 @@ import {
   pathParam,
   problem,
   readJson,
+  resolvePerson,
   requireIdempotencyKey,
   requireIfMatch,
   validationFailed,
@@ -812,6 +814,16 @@ export function accommodationHandlers(api: MockApi): HttpHandler[] {
     };
   };
 
+  // The hold and the booking (WP-I6-02). They live in their own module and are handed the
+  // four search helpers above rather than copying them: a second pricing ladder or a second
+  // provider boundary here is exactly the divergence the mock exists to catch.
+  const booking = bookingHandlers(api, {
+    findRoomType,
+    findProperty,
+    searchableProperties,
+    quoteRoomType,
+    coverForService,
+  });
   return [
     http.get(`${ANY}/api/v1/accommodation/properties`, async ({ request }) => {
       await wait(api);
@@ -1298,17 +1310,13 @@ export function accommodationHandlers(api: MockApi): HttpHandler[] {
       const body = await readJson<Schemas['AvailabilitySearchRequest']>(request);
       if (!body) return problem(api, 400, 'INVALID_REQUEST_BODY', 'İstek gövdesi geçersiz');
 
-      // Whose stay. On the server a member account is bound to one person and the person is
-      // taken from that binding, never from the body: a body naming somebody else is refused
-      // with PERSON_SCOPE, which is what stops a member searching — and later holding — a
-      // room for their neighbour. None of the mock's seeded accounts carries a PERSON grant,
-      // so every caller here is a desk, and a desk has to name the person it is acting for.
-      const personId = (body.personId ?? '').trim();
-      if (personId === '') {
-        return problem(api, 422, 'PERSON_REQUIRED', 'Sorgu bir hak sahibi adına yapılmalı', {
-          detail: 'Hangi hak sahibi için sorguladığınızı personId ile belirtin.',
-        });
-      }
+      // Whose stay. A member account is bound to one person and the person is taken from
+      // that binding, never from the body: a body naming somebody else is refused with
+      // PERSON_SCOPE, which is what stops a member searching -- and later holding -- a room
+      // for their neighbour. A desk is bound to nobody and has to name whom it acts for.
+      const whose = resolvePerson(api, g.session, g.tenantId, body.personId);
+      if ('error' in whose) return whose.error;
+      const personId = whose.personId;
 
       const errors: FieldError[] = [];
       const named = [body.propertyId, body.regionCode].filter(
@@ -1513,12 +1521,11 @@ export function accommodationHandlers(api: MockApi): HttpHandler[] {
     // The hold and the booking (WP-I6-02). They live in their own module and are handed the
     // four search helpers above rather than copying them: a second pricing ladder or a second
     // provider boundary here is exactly the divergence the mock exists to catch.
-    ...bookingHandlers(api, {
-      findRoomType,
-      findProperty,
-      searchableProperties,
-      quoteRoomType,
-      coverForService,
-    }),
+    ...booking.handlers,
+
+    // And what happens after the promise (WP-I6-03). It is handed the booking module's own
+    // hold, confirmation and counters rather than copies: a room offered to somebody on a
+    // waiting list and a room taken at the search screen are the same act.
+    ...afterHandlers(api, booking.after),
   ];
 }

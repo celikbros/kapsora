@@ -527,7 +527,7 @@ func (s *Service) ReleaseHold(ctx context.Context, rc identity.RequestContext, i
 			return err
 		}
 		if err := s.notifyBookingCancelled(ctx, tx, rc.TenantID, record,
-			domain.CancelReasonHoldReleased); err != nil {
+			domain.CancelReasonHoldReleased, "0"); err != nil {
 			return err
 		}
 		record.Status = domain.BookingCancelled

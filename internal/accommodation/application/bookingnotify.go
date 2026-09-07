@@ -113,13 +113,19 @@ func (s *Service) notifyBookingConfirmed(ctx context.Context, tx pgx.Tx, tenantI
 	})
 }
 
-// notifyBookingCancelled tells both sides a stay is off, with what it cost. The amount is
-// zero here and stays zero for every cancellation this package raises: a hold given back
-// and a request refused are both stays nobody ever agreed to, and a fee may only follow a
-// cancellation of something that was. WP-I6-03's own cancellation carries the real figure.
+// notifyBookingCancelled tells both sides a stay is off, with what it cost.
+//
+// The fee is passed in rather than derived, because only the caller knows it. A hold given
+// back and a request refused are stays nobody ever agreed to and carry "0"; WP-I6-03's own
+// cancellation carries what the booking's frozen policy actually charged. Deriving it here
+// would mean this function re-running the cancellation arithmetic, which is exactly one
+// place too many for a fee to be computed.
 func (s *Service) notifyBookingCancelled(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
-	record BookingRecord, reasonCode string,
+	record BookingRecord, reasonCode, feeAmount string,
 ) error {
+	if feeAmount == "" {
+		feeAmount = "0"
+	}
 	currency := ""
 	if snapshot, err := decodeQuoteSnapshot(record.QuoteSnapshot); err == nil {
 		currency = snapshot.CurrencyCode
@@ -140,7 +146,7 @@ func (s *Service) notifyBookingCancelled(ctx context.Context, tx pgx.Tx, tenantI
 			notificationdomain.VarPropertyName: propertyName,
 			notificationdomain.VarEventDate:    record.CheckIn.Format(time.DateOnly),
 			notificationdomain.VarStatusCode:   reasonCode,
-			notificationdomain.VarAmount:       "0",
+			notificationdomain.VarAmount:       feeAmount,
 			notificationdomain.VarCurrency:     currency,
 			notificationdomain.VarDeepLink:     bookingLink(record.ID),
 		},

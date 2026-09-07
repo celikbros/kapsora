@@ -1657,6 +1657,30 @@ func (e MemberShareMethod) Valid() bool {
 	}
 }
 
+// Defines values for NoShowStatus.
+const (
+	NoShowStatusCONFIRMED NoShowStatus = "CONFIRMED"
+	NoShowStatusDISPUTED  NoShowStatus = "DISPUTED"
+	NoShowStatusREJECTED  NoShowStatus = "REJECTED"
+	NoShowStatusREPORTED  NoShowStatus = "REPORTED"
+)
+
+// Valid indicates whether the value is a known member of the NoShowStatus enum.
+func (e NoShowStatus) Valid() bool {
+	switch e {
+	case NoShowStatusCONFIRMED:
+		return true
+	case NoShowStatusDISPUTED:
+		return true
+	case NoShowStatusREJECTED:
+		return true
+	case NoShowStatusREPORTED:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for NotificationChannel.
 const (
 	NotificationChannelEMAIL NotificationChannel = "EMAIL"
@@ -2839,6 +2863,27 @@ func (e ResolvePriceResultOutcome) Valid() bool {
 	}
 }
 
+// Defines values for ReviewNoShowRequestStatus.
+const (
+	ReviewNoShowRequestStatusCONFIRMED ReviewNoShowRequestStatus = "CONFIRMED"
+	ReviewNoShowRequestStatusDISPUTED  ReviewNoShowRequestStatus = "DISPUTED"
+	ReviewNoShowRequestStatusREJECTED  ReviewNoShowRequestStatus = "REJECTED"
+)
+
+// Valid indicates whether the value is a known member of the ReviewNoShowRequestStatus enum.
+func (e ReviewNoShowRequestStatus) Valid() bool {
+	switch e {
+	case ReviewNoShowRequestStatusCONFIRMED:
+		return true
+	case ReviewNoShowRequestStatusDISPUTED:
+		return true
+	case ReviewNoShowRequestStatusREJECTED:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RuleActionType.
 const (
 	ADJUSTPRICE            RuleActionType = "ADJUST_PRICE"
@@ -3631,6 +3676,33 @@ func (e VoucherStatus) Valid() bool {
 	case VoucherStatusREDEEMED:
 		return true
 	case VoucherStatusREVOKED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WaitlistStatus.
+const (
+	WaitlistStatusACCEPTED  WaitlistStatus = "ACCEPTED"
+	WaitlistStatusCANCELLED WaitlistStatus = "CANCELLED"
+	WaitlistStatusEXPIRED   WaitlistStatus = "EXPIRED"
+	WaitlistStatusOFFERED   WaitlistStatus = "OFFERED"
+	WaitlistStatusWAITING   WaitlistStatus = "WAITING"
+)
+
+// Valid indicates whether the value is a known member of the WaitlistStatus enum.
+func (e WaitlistStatus) Valid() bool {
+	switch e {
+	case WaitlistStatusACCEPTED:
+		return true
+	case WaitlistStatusCANCELLED:
+		return true
+	case WaitlistStatusEXPIRED:
+		return true
+	case WaitlistStatusOFFERED:
+		return true
+	case WaitlistStatusWAITING:
 		return true
 	default:
 		return false
@@ -5166,8 +5238,14 @@ type Booking struct {
 
 	// Nights The nights of [checkIn, checkOut). It is a stored column checked against the
 	// dates, so it and the booking's night rows can never disagree.
-	Nights   int                `json:"nights"`
-	PersonId openapi_types.UUID `json:"personId"`
+	Nights int `json:"nights"`
+
+	// OverBooking The stay ran past what the authorization promised. It is a flag rather than a
+	// refusal: the guest has already slept the extra nights, so the check-out records
+	// them and the claim (M7) raises them as an exception a person looks at. Nothing
+	// beyond what was authorized is ever consumed.
+	OverBooking *bool              `json:"overBooking,omitempty"`
+	PersonId    openapi_types.UUID `json:"personId"`
 
 	// PolicySnapshot The cancellation policy, frozen at confirmation. Null on a booking nobody has
 	// confirmed yet; never re-read afterwards, so a later edit of the contract cannot
@@ -5313,10 +5391,148 @@ type BookingVoucher struct {
 	ValidTo   time.Time `json:"validTo"`
 }
 
+// CancelBookingRequest Why the stay is being called off. The reason is a code rather than a sentence because
+// a report counts them and a screen translates them; it defaults to MEMBER_CANCELLED.
+type CancelBookingRequest struct {
+	ReasonCode *string `json:"reasonCode,omitempty"`
+}
+
 // CancelInpatientStay defines model for CancelInpatientStay.
 type CancelInpatientStay struct {
 	ReasonCode string  `json:"reasonCode"`
 	ReasonText *string `json:"reasonText,omitempty"`
+}
+
+// Cancellation The record of a cancellation: what it cost, what came back, and **the policy it was
+// judged by**, copied onto the row. The copy is the point - the row proves which terms
+// were applied even after the contract has been rewritten twice, and nothing has to be
+// re-resolved to read a two-year-old cancellation. The table is append-only.
+type Cancellation struct {
+	BookingId    openapi_types.UUID  `json:"bookingId"`
+	CancelledAt  time.Time           `json:"cancelledAt"`
+	CancelledBy  *openapi_types.UUID `json:"cancelledBy,omitempty"`
+	CurrencyCode string              `json:"currencyCode"`
+
+	// FeeAmount Exact decimal as a string; nothing here passes through a float.
+	FeeAmount string             `json:"feeAmount"`
+	Free      bool               `json:"free"`
+	Id        openapi_types.UUID `json:"id"`
+
+	// MemberFee Exact decimal as a string; nothing here passes through a float.
+	MemberFee string `json:"memberFee"`
+
+	// PayerFee Exact decimal as a string; nothing here passes through a float.
+	PayerFee      string `json:"payerFee"`
+	PenaltyNights int    `json:"penaltyNights"`
+
+	// PolicySnapshot The policy this cancellation was judged by. Null only for a booking cancelled
+	// while it was still waiting on a reviewer, which had agreed nothing and therefore
+	// owed nothing.
+	PolicySnapshot *LodgingPolicySnapshot `json:"policySnapshot,omitempty"`
+	ReasonCode     string                 `json:"reasonCode"`
+	ReleasedNights int                    `json:"releasedNights"`
+}
+
+// CancellationPreview The booking, and what cancelling it now would cost.
+type CancellationPreview struct {
+	// Booking A hold, and what it became.
+	//
+	// `secondsToExpiry` is the countdown, computed on the server: a browser deriving it
+	// from two timestamps would be wrong by whatever its own clock is out by, and the
+	// countdown is the whole of what a hold means to a member.
+	//
+	// There is no voucher token anywhere in this document, and there is nowhere one could
+	// appear. The proof of entitlement is fetched, once, from the booking's own voucher
+	// command; what is kept is a digest.
+	Booking Booking `json:"booking"`
+
+	// Quote What a cancellation costs and gives back, computed from the booking's own frozen
+	// policy and its own night amounts. Every figure is an exact decimal string: these
+	// numbers reach a settlement, and a fee two systems disagree about by a kuruş is a fee
+	// nobody can invoice.
+	Quote CancellationQuote `json:"quote"`
+}
+
+// CancellationQuote What a cancellation costs and gives back, computed from the booking's own frozen
+// policy and its own night amounts. Every figure is an exact decimal string: these
+// numbers reach a settlement, and a fee two systems disagree about by a kuruş is a fee
+// nobody can invoice.
+type CancellationQuote struct {
+	CurrencyCode string `json:"currencyCode"`
+
+	// FeeAmount Exact decimal as a string; nothing here passes through a float.
+	FeeAmount string `json:"feeAmount"`
+
+	// Free Whether the cancellation falls inside the free window the booking was confirmed
+	// under. A free cancellation costs nothing and takes no night, and the row that
+	// records it has a CHECK saying so.
+	Free bool `json:"free"`
+
+	// FreeUntil The moment the free window closed or closes, so a member looking at a fee can see
+	// what they missed rather than being handed a number. It is counted back from the
+	// start of the arrival day on the property's own clock.
+	FreeUntil *time.Time `json:"freeUntil,omitempty"`
+
+	// MemberFee Exact decimal as a string; nothing here passes through a float.
+	MemberFee string `json:"memberFee"`
+
+	// PayerFee Exact decimal as a string; nothing here passes through a float.
+	PayerFee string `json:"payerFee"`
+
+	// PenaltyNights The nights the policy charges, capped at the length of the stay. Zero for a
+	// PERCENT policy, which charges a share of the member's own amount instead.
+	PenaltyNights int `json:"penaltyNights"`
+
+	// ReleasedNights The nights that go back to the plan: the covered nights of the frozen quote less
+	// whatever the penalty spends. The penalty is capped at the covered nights, because
+	// a policy charging three nights against a plan that carried two cannot take a
+	// third from a balance it never held.
+	ReleasedNights int `json:"releasedNights"`
+}
+
+// CancellationResult The cancelled booking, what it cost, and the row that records both.
+type CancellationResult struct {
+	// Booking A hold, and what it became.
+	//
+	// `secondsToExpiry` is the countdown, computed on the server: a browser deriving it
+	// from two timestamps would be wrong by whatever its own clock is out by, and the
+	// countdown is the whole of what a hold means to a member.
+	//
+	// There is no voucher token anywhere in this document, and there is nowhere one could
+	// appear. The proof of entitlement is fetched, once, from the booking's own voucher
+	// command; what is kept is a digest.
+	Booking Booking `json:"booking"`
+
+	// Cancellation The record of a cancellation: what it cost, what came back, and **the policy it was
+	// judged by**, copied onto the row. The copy is the point - the row proves which terms
+	// were applied even after the contract has been rewritten twice, and nothing has to be
+	// re-resolved to read a two-year-old cancellation. The table is append-only.
+	Cancellation Cancellation `json:"cancellation"`
+
+	// Quote What a cancellation costs and gives back, computed from the booking's own frozen
+	// policy and its own night amounts. Every figure is an exact decimal string: these
+	// numbers reach a settlement, and a fee two systems disagree about by a kuruş is a fee
+	// nobody can invoice.
+	Quote CancellationQuote `json:"quote"`
+}
+
+// CheckInBookingRequest The voucher code the guest presented. It is in the body and nowhere else: a token in
+// a path or a query string is a token in every proxy log between the desk and here.
+type CheckInBookingRequest struct {
+	// At The moment of arrival, for a desk recording one it did not enter at the time.
+	// Defaults to now, and must still fall inside the check-in window.
+	At *time.Time `json:"at,omitempty"`
+
+	// Token The plaintext, typed or scanned. It is hashed on arrival and matched against a
+	// digest; it is stored nowhere and appears in no other request or response.
+	Token string `json:"token"`
+}
+
+// CheckOutBookingRequest defines model for CheckOutBookingRequest.
+type CheckOutBookingRequest struct {
+	// At The moment the guest left; defaults to now. It becomes a calendar day on the
+	// property's own clock, because that is what a night is counted in.
+	At *time.Time `json:"at,omitempty"`
 }
 
 // Claim defines model for Claim.
@@ -7206,6 +7422,27 @@ type IssuedVoucher struct {
 	Voucher Voucher `json:"voucher"`
 }
 
+// JoinWaitlistRequest The property, the dates and the party. `personId` is honoured only for a caller that
+// is not bound to a person; a member sending somebody else's is refused with
+// PERSON_SCOPE.
+type JoinWaitlistRequest struct {
+	Adults   int                 `json:"adults"`
+	CheckIn  openapi_types.Date  `json:"checkIn"`
+	CheckOut openapi_types.Date  `json:"checkOut"`
+	Children *int                `json:"children,omitempty"`
+	PersonId *openapi_types.UUID `json:"personId,omitempty"`
+
+	// Priority The desk's own ordering. A member joining for themselves is placed at zero
+	// whatever they send, because a queue a member can push themselves up is not a
+	// queue.
+	Priority   *int                `json:"priority,omitempty"`
+	ProgramId  *openapi_types.UUID `json:"programId,omitempty"`
+	PropertyId openapi_types.UUID  `json:"propertyId"`
+
+	// RoomTypeId Omit for any room of the property.
+	RoomTypeId *openapi_types.UUID `json:"roomTypeId,omitempty"`
+}
+
 // LedgerEntry defines model for LedgerEntry.
 type LedgerEntry struct {
 	CreatedBy      *openapi_types.UUID     `json:"createdBy,omitempty"`
@@ -7642,6 +7879,64 @@ type NewClaimLine struct {
 	UnitAmount          *string             `json:"unitAmount,omitempty"`
 	UnitType            string              `json:"unitType"`
 }
+
+// NoShowReport A provider's claim that nobody arrived, and the payer's answer to it.
+// `payerAmount + memberAmount == assessedFeeAmount` is a CHECK on the row.
+type NoShowReport struct {
+	// AssessedFeeAmount Exact decimal as a string; nothing here passes through a float.
+	AssessedFeeAmount string             `json:"assessedFeeAmount"`
+	BookingId         openapi_types.UUID `json:"bookingId"`
+
+	// ConsumedNights What a confirmation actually took off the plan, in whole nights. It is recorded
+	// because the policy is a percentage and the entitlement is nights: the row says
+	// what was consumed rather than leaving a reader to redo the rounding.
+	ConsumedNights     int                 `json:"consumedNights"`
+	CurrencyCode       string              `json:"currencyCode"`
+	EvidenceDocumentId *openapi_types.UUID `json:"evidenceDocumentId,omitempty"`
+	Id                 openapi_types.UUID  `json:"id"`
+
+	// MemberAmount Exact decimal as a string; nothing here passes through a float.
+	MemberAmount string `json:"memberAmount"`
+
+	// PayerAmount Exact decimal as a string; nothing here passes through a float.
+	PayerAmount string    `json:"payerAmount"`
+	ReportedAt  time.Time `json:"reportedAt"`
+
+	// ReportedByActorId Who claimed it. It is stored because the reviewer may not be this person, and
+	// that rule is a CHECK on the row as well as a refusal in the service.
+	ReportedByActorId *openapi_types.UUID `json:"reportedByActorId,omitempty"`
+	ReviewComment     *string             `json:"reviewComment,omitempty"`
+	ReviewedAt        *time.Time          `json:"reviewedAt,omitempty"`
+	ReviewedBy        *openapi_types.UUID `json:"reviewedBy,omitempty"`
+
+	// Status Where a provider's claim stands. REPORTED costs nobody anything; CONFIRMED is the
+	// payer agreeing; REJECTED leaves the booking exactly as it was; DISPUTED is in
+	// somebody's queue.
+	Status NoShowStatus `json:"status"`
+}
+
+// NoShowResult The report, and the booking as it now stands.
+type NoShowResult struct {
+	// Booking A hold, and what it became.
+	//
+	// `secondsToExpiry` is the countdown, computed on the server: a browser deriving it
+	// from two timestamps would be wrong by whatever its own clock is out by, and the
+	// countdown is the whole of what a hold means to a member.
+	//
+	// There is no voucher token anywhere in this document, and there is nowhere one could
+	// appear. The proof of entitlement is fetched, once, from the booking's own voucher
+	// command; what is kept is a digest.
+	Booking Booking `json:"booking"`
+
+	// Report A provider's claim that nobody arrived, and the payer's answer to it.
+	// `payerAmount + memberAmount == assessedFeeAmount` is a CHECK on the row.
+	Report NoShowReport `json:"report"`
+}
+
+// NoShowStatus Where a provider's claim stands. REPORTED costs nobody anything; CONFIRMED is the
+// payer agreeing; REJECTED leaves the booking exactly as it was; DISPUTED is in
+// somebody's queue.
+type NoShowStatus string
 
 // NotificationChannel How a message reaches somebody. EMAIL goes through SMTP; SMS is recorded until a
 // provider is chosen; PUSH is recorded and not delivered in this milestone; INAPP is
@@ -9070,6 +9365,18 @@ type ReplaceServiceCodeMappingsRequest struct {
 	Items []ServiceCodeMappingInput `json:"items"`
 }
 
+// ReportNoShowRequest defines model for ReportNoShowRequest.
+type ReportNoShowRequest struct {
+	// At The moment the absence was established; defaults to now. It must be after the
+	// check-in window has closed - a guest who is late is not a guest who did not come.
+	At *time.Time `json:"at,omitempty"`
+
+	// EvidenceDocumentId The document object the provider is pointing at. It must be linked to this
+	// booking and cleared by the scanner. Omitted, any clean document linked to the
+	// booking satisfies the gate; a booking with none is refused either way.
+	EvidenceDocumentId *openapi_types.UUID `json:"evidenceDocumentId,omitempty"`
+}
+
 // ResolvePriceRequest defines model for ResolvePriceRequest.
 type ResolvePriceRequest struct {
 	// LocationId Where it will be delivered, when that is already known.
@@ -9141,6 +9448,19 @@ type ResolvedPrice struct {
 type ReviewComment struct {
 	Comment *string `json:"comment,omitempty"`
 }
+
+// ReviewNoShowRequest defines model for ReviewNoShowRequest.
+type ReviewNoShowRequest struct {
+	Comment *string `json:"comment,omitempty"`
+
+	// Status The decision. CONFIRMED closes the booking and moves the plan; REJECTED leaves
+	// the stay bookable; DISPUTED raises a work item and changes nothing.
+	Status ReviewNoShowRequestStatus `json:"status"`
+}
+
+// ReviewNoShowRequestStatus The decision. CONFIRMED closes the booking and moves the plan; REJECTED leaves
+// the stay bookable; DISPUTED raises a work item and changes nothing.
+type ReviewNoShowRequestStatus string
 
 // RoomType defines model for RoomType.
 type RoomType struct {
@@ -10209,6 +10529,56 @@ type Voucher struct {
 // VoucherStatus defines model for VoucherStatus.
 type VoucherStatus string
 
+// WaitlistEntry One member waiting for a room that is full, and the offer they were made if the sweep
+// has reached them.
+type WaitlistEntry struct {
+	Adults   int                `json:"adults"`
+	CheckIn  openapi_types.Date `json:"checkIn"`
+	CheckOut openapi_types.Date `json:"checkOut"`
+	Children int                `json:"children"`
+
+	// CreatedAt The second key of the queue order. An entry that was offered a room and did not
+	// take it goes to the back of the queue by this timestamp moving to now.
+	CreatedAt    time.Time           `json:"createdAt"`
+	EnrollmentId *openapi_types.UUID `json:"enrollmentId,omitempty"`
+	Id           openapi_types.UUID  `json:"id"`
+
+	// Offer The held booking the sweep created on this member's behalf.
+	Offer *Booking `json:"offer,omitempty"`
+
+	// OfferExpiresAt The hold's own deadline, not a second one. An offer that outlived its hold would
+	// be an offer whose room somebody else had already been sold.
+	OfferExpiresAt   *time.Time          `json:"offerExpiresAt,omitempty"`
+	OfferedBookingId *openapi_types.UUID `json:"offeredBookingId,omitempty"`
+	PersonId         openapi_types.UUID  `json:"personId"`
+
+	// Priority The first key of the queue order. A member joining for themselves is always zero;
+	// a plan may raise it for its own people.
+	Priority   int                `json:"priority"`
+	PropertyId openapi_types.UUID `json:"propertyId"`
+
+	// RoomTypeId Null means any room of the property, which is what a member who wants the hotel
+	// rather than the suite is asking for.
+	RoomTypeId *openapi_types.UUID `json:"roomTypeId,omitempty"`
+	RowVersion *int                `json:"rowVersion,omitempty"`
+
+	// Status Where an entry stands. WAITING is in the queue; OFFERED holds a room with a countdown
+	// running; ACCEPTED became a booking; EXPIRED and CANCELLED are history and do not stop
+	// the member joining again.
+	Status    WaitlistStatus `json:"status"`
+	UpdatedAt *time.Time     `json:"updatedAt,omitempty"`
+}
+
+// WaitlistEntryList defines model for WaitlistEntryList.
+type WaitlistEntryList struct {
+	Items []WaitlistEntry `json:"items"`
+}
+
+// WaitlistStatus Where an entry stands. WAITING is in the queue; OFFERED holds a room with a countdown
+// running; ACCEPTED became a booking; EXPIRED and CANCELLED are history and do not stop
+// the member joining again.
+type WaitlistStatus string
+
 // WorkItem defines model for WorkItem.
 type WorkItem struct {
 	AggregateId openapi_types.UUID `json:"aggregateId"`
@@ -10487,6 +10857,9 @@ type TenantHeader = openapi_types.UUID
 // VersionNo defines model for VersionNo.
 type VersionNo = int
 
+// WaitlistEntryId defines model for WaitlistEntryId.
+type WaitlistEntryId = openapi_types.UUID
+
 // WorkItemId defines model for WorkItemId.
 type WorkItemId = openapi_types.UUID
 
@@ -10581,8 +10954,62 @@ type GetBookingParams struct {
 	XTenantID TenantHeader `json:"X-Tenant-ID"`
 }
 
+// CancelBookingParams defines parameters for CancelBooking.
+type CancelBookingParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// PreviewCancellationParams defines parameters for PreviewCancellation.
+type PreviewCancellationParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// CheckInBookingParams defines parameters for CheckInBooking.
+type CheckInBookingParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// CheckOutBookingParams defines parameters for CheckOutBooking.
+type CheckOutBookingParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
 // ConfirmBookingParams defines parameters for ConfirmBooking.
 type ConfirmBookingParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// GetNoShowParams defines parameters for GetNoShow.
+type GetNoShowParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// ReportNoShowParams defines parameters for ReportNoShow.
+type ReportNoShowParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ReviewNoShowParams defines parameters for ReviewNoShow.
+type ReviewNoShowParams struct {
 	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
 	XTenantID TenantHeader `json:"X-Tenant-ID"`
 
@@ -10703,6 +11130,50 @@ type PutRoomTypeInventoryParams struct {
 
 	// IdempotencyKey Optional on query-style POSTs; honoured when present.
 	IdempotencyKey *IdempotencyKeyOptional `json:"Idempotency-Key,omitempty"`
+}
+
+// ListWaitlistParams defines parameters for ListWaitlist.
+type ListWaitlistParams struct {
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// PersonId Narrows to one member. A member's own binding still applies on top of it.
+	PersonId *openapi_types.UUID `form:"personId,omitempty" json:"personId,omitempty"`
+
+	// PropertyId Narrows to one property.
+	PropertyId *openapi_types.UUID `form:"propertyId,omitempty" json:"propertyId,omitempty"`
+
+	// Status Narrows to one entry status.
+	Status *WaitlistStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// JoinWaitlistParams defines parameters for JoinWaitlist.
+type JoinWaitlistParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// AcceptWaitlistOfferParams defines parameters for AcceptWaitlistOffer.
+type AcceptWaitlistOfferParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// CancelWaitlistEntryParams defines parameters for CancelWaitlistEntry.
+type CancelWaitlistEntryParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
 // ListApprovalPoliciesParams defines parameters for ListApprovalPolicies.
@@ -13885,6 +14356,21 @@ type PatchWorkQueueParams struct {
 // SearchAvailabilityJSONRequestBody defines body for SearchAvailability for application/json ContentType.
 type SearchAvailabilityJSONRequestBody = AvailabilitySearchRequest
 
+// CancelBookingJSONRequestBody defines body for CancelBooking for application/json ContentType.
+type CancelBookingJSONRequestBody = CancelBookingRequest
+
+// CheckInBookingJSONRequestBody defines body for CheckInBooking for application/json ContentType.
+type CheckInBookingJSONRequestBody = CheckInBookingRequest
+
+// CheckOutBookingJSONRequestBody defines body for CheckOutBooking for application/json ContentType.
+type CheckOutBookingJSONRequestBody = CheckOutBookingRequest
+
+// ReportNoShowJSONRequestBody defines body for ReportNoShow for application/json ContentType.
+type ReportNoShowJSONRequestBody = ReportNoShowRequest
+
+// ReviewNoShowJSONRequestBody defines body for ReviewNoShow for application/json ContentType.
+type ReviewNoShowJSONRequestBody = ReviewNoShowRequest
+
 // CreateHoldJSONRequestBody defines body for CreateHold for application/json ContentType.
 type CreateHoldJSONRequestBody = CreateHoldRequest
 
@@ -13902,6 +14388,9 @@ type PatchRoomTypeJSONRequestBody = PatchRoomType
 
 // PutRoomTypeInventoryJSONRequestBody defines body for PutRoomTypeInventory for application/json ContentType.
 type PutRoomTypeInventoryJSONRequestBody = PutRoomTypeInventory
+
+// JoinWaitlistJSONRequestBody defines body for JoinWaitlist for application/json ContentType.
+type JoinWaitlistJSONRequestBody = JoinWaitlistRequest
 
 // PutApprovalPoliciesJSONRequestBody defines body for PutApprovalPolicies for application/json ContentType.
 type PutApprovalPoliciesJSONRequestBody = PutApprovalPolicies
@@ -14468,8 +14957,29 @@ type ServerInterface interface {
 	// (GET /api/v1/accommodation/bookings/{bookingId})
 	GetBooking(w http.ResponseWriter, r *http.Request, bookingId BookingId, params GetBookingParams)
 
+	// (POST /api/v1/accommodation/bookings/{bookingId}/cancel)
+	CancelBooking(w http.ResponseWriter, r *http.Request, bookingId BookingId, params CancelBookingParams)
+
+	// (POST /api/v1/accommodation/bookings/{bookingId}/cancellation-preview)
+	PreviewCancellation(w http.ResponseWriter, r *http.Request, bookingId BookingId, params PreviewCancellationParams)
+
+	// (POST /api/v1/accommodation/bookings/{bookingId}/check-in)
+	CheckInBooking(w http.ResponseWriter, r *http.Request, bookingId BookingId, params CheckInBookingParams)
+
+	// (POST /api/v1/accommodation/bookings/{bookingId}/check-out)
+	CheckOutBooking(w http.ResponseWriter, r *http.Request, bookingId BookingId, params CheckOutBookingParams)
+
 	// (POST /api/v1/accommodation/bookings/{bookingId}/confirm)
 	ConfirmBooking(w http.ResponseWriter, r *http.Request, bookingId BookingId, params ConfirmBookingParams)
+
+	// (GET /api/v1/accommodation/bookings/{bookingId}/no-show)
+	GetNoShow(w http.ResponseWriter, r *http.Request, bookingId BookingId, params GetNoShowParams)
+
+	// (POST /api/v1/accommodation/bookings/{bookingId}/no-show)
+	ReportNoShow(w http.ResponseWriter, r *http.Request, bookingId BookingId, params ReportNoShowParams)
+
+	// (POST /api/v1/accommodation/bookings/{bookingId}/no-show/review)
+	ReviewNoShow(w http.ResponseWriter, r *http.Request, bookingId BookingId, params ReviewNoShowParams)
 
 	// (POST /api/v1/accommodation/bookings/{bookingId}/release)
 	ReleaseHold(w http.ResponseWriter, r *http.Request, bookingId BookingId, params ReleaseHoldParams)
@@ -14506,6 +15016,18 @@ type ServerInterface interface {
 
 	// (PUT /api/v1/accommodation/room-types/{roomTypeId}/inventory)
 	PutRoomTypeInventory(w http.ResponseWriter, r *http.Request, roomTypeId RoomTypeId, params PutRoomTypeInventoryParams)
+
+	// (GET /api/v1/accommodation/waitlist)
+	ListWaitlist(w http.ResponseWriter, r *http.Request, params ListWaitlistParams)
+
+	// (POST /api/v1/accommodation/waitlist)
+	JoinWaitlist(w http.ResponseWriter, r *http.Request, params JoinWaitlistParams)
+
+	// (POST /api/v1/accommodation/waitlist/{waitlistEntryId}/accept)
+	AcceptWaitlistOffer(w http.ResponseWriter, r *http.Request, waitlistEntryId WaitlistEntryId, params AcceptWaitlistOfferParams)
+
+	// (POST /api/v1/accommodation/waitlist/{waitlistEntryId}/cancel)
+	CancelWaitlistEntry(w http.ResponseWriter, r *http.Request, waitlistEntryId WaitlistEntryId, params CancelWaitlistEntryParams)
 
 	// (GET /api/v1/approval-policies)
 	ListApprovalPolicies(w http.ResponseWriter, r *http.Request, params ListApprovalPoliciesParams)
@@ -15259,8 +15781,43 @@ func (_ Unimplemented) GetBooking(w http.ResponseWriter, r *http.Request, bookin
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// (POST /api/v1/accommodation/bookings/{bookingId}/cancel)
+func (_ Unimplemented) CancelBooking(w http.ResponseWriter, r *http.Request, bookingId BookingId, params CancelBookingParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/accommodation/bookings/{bookingId}/cancellation-preview)
+func (_ Unimplemented) PreviewCancellation(w http.ResponseWriter, r *http.Request, bookingId BookingId, params PreviewCancellationParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/accommodation/bookings/{bookingId}/check-in)
+func (_ Unimplemented) CheckInBooking(w http.ResponseWriter, r *http.Request, bookingId BookingId, params CheckInBookingParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/accommodation/bookings/{bookingId}/check-out)
+func (_ Unimplemented) CheckOutBooking(w http.ResponseWriter, r *http.Request, bookingId BookingId, params CheckOutBookingParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // (POST /api/v1/accommodation/bookings/{bookingId}/confirm)
 func (_ Unimplemented) ConfirmBooking(w http.ResponseWriter, r *http.Request, bookingId BookingId, params ConfirmBookingParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/accommodation/bookings/{bookingId}/no-show)
+func (_ Unimplemented) GetNoShow(w http.ResponseWriter, r *http.Request, bookingId BookingId, params GetNoShowParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/accommodation/bookings/{bookingId}/no-show)
+func (_ Unimplemented) ReportNoShow(w http.ResponseWriter, r *http.Request, bookingId BookingId, params ReportNoShowParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/accommodation/bookings/{bookingId}/no-show/review)
+func (_ Unimplemented) ReviewNoShow(w http.ResponseWriter, r *http.Request, bookingId BookingId, params ReviewNoShowParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -15321,6 +15878,26 @@ func (_ Unimplemented) GetRoomTypeInventory(w http.ResponseWriter, r *http.Reque
 
 // (PUT /api/v1/accommodation/room-types/{roomTypeId}/inventory)
 func (_ Unimplemented) PutRoomTypeInventory(w http.ResponseWriter, r *http.Request, roomTypeId RoomTypeId, params PutRoomTypeInventoryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/accommodation/waitlist)
+func (_ Unimplemented) ListWaitlist(w http.ResponseWriter, r *http.Request, params ListWaitlistParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/accommodation/waitlist)
+func (_ Unimplemented) JoinWaitlist(w http.ResponseWriter, r *http.Request, params JoinWaitlistParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/accommodation/waitlist/{waitlistEntryId}/accept)
+func (_ Unimplemented) AcceptWaitlistOffer(w http.ResponseWriter, r *http.Request, waitlistEntryId WaitlistEntryId, params AcceptWaitlistOfferParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/accommodation/waitlist/{waitlistEntryId}/cancel)
+func (_ Unimplemented) CancelWaitlistEntry(w http.ResponseWriter, r *http.Request, waitlistEntryId WaitlistEntryId, params CancelWaitlistEntryParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -16807,6 +17384,268 @@ func (siw *ServerInterfaceWrapper) GetBooking(w http.ResponseWriter, r *http.Req
 	handler.ServeHTTP(w, r)
 }
 
+// CancelBooking operation middleware
+func (siw *ServerInterfaceWrapper) CancelBooking(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "bookingId" -------------
+	var bookingId BookingId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "bookingId", chi.URLParam(r, "bookingId"), &bookingId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "bookingId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CancelBookingParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CancelBooking(w, r, bookingId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PreviewCancellation operation middleware
+func (siw *ServerInterfaceWrapper) PreviewCancellation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "bookingId" -------------
+	var bookingId BookingId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "bookingId", chi.URLParam(r, "bookingId"), &bookingId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "bookingId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PreviewCancellationParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PreviewCancellation(w, r, bookingId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CheckInBooking operation middleware
+func (siw *ServerInterfaceWrapper) CheckInBooking(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "bookingId" -------------
+	var bookingId BookingId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "bookingId", chi.URLParam(r, "bookingId"), &bookingId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "bookingId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CheckInBookingParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CheckInBooking(w, r, bookingId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CheckOutBooking operation middleware
+func (siw *ServerInterfaceWrapper) CheckOutBooking(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "bookingId" -------------
+	var bookingId BookingId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "bookingId", chi.URLParam(r, "bookingId"), &bookingId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "bookingId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CheckOutBookingParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CheckOutBooking(w, r, bookingId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ConfirmBooking operation middleware
 func (siw *ServerInterfaceWrapper) ConfirmBooking(w http.ResponseWriter, r *http.Request) {
 
@@ -16875,6 +17714,214 @@ func (siw *ServerInterfaceWrapper) ConfirmBooking(w http.ResponseWriter, r *http
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ConfirmBooking(w, r, bookingId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetNoShow operation middleware
+func (siw *ServerInterfaceWrapper) GetNoShow(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "bookingId" -------------
+	var bookingId BookingId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "bookingId", chi.URLParam(r, "bookingId"), &bookingId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "bookingId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetNoShowParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetNoShow(w, r, bookingId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReportNoShow operation middleware
+func (siw *ServerInterfaceWrapper) ReportNoShow(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "bookingId" -------------
+	var bookingId BookingId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "bookingId", chi.URLParam(r, "bookingId"), &bookingId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "bookingId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ReportNoShowParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReportNoShow(w, r, bookingId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReviewNoShow operation middleware
+func (siw *ServerInterfaceWrapper) ReviewNoShow(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "bookingId" -------------
+	var bookingId BookingId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "bookingId", chi.URLParam(r, "bookingId"), &bookingId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "bookingId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ReviewNoShowParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReviewNoShow(w, r, bookingId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -17829,6 +18876,325 @@ func (siw *ServerInterfaceWrapper) PutRoomTypeInventory(w http.ResponseWriter, r
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PutRoomTypeInventory(w, r, roomTypeId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListWaitlist operation middleware
+func (siw *ServerInterfaceWrapper) ListWaitlist(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListWaitlistParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "personId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "personId", r.URL.Query(), &params.PersonId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "personId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "personId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "propertyId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "propertyId", r.URL.Query(), &params.PropertyId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "propertyId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "propertyId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListWaitlist(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// JoinWaitlist operation middleware
+func (siw *ServerInterfaceWrapper) JoinWaitlist(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params JoinWaitlistParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.JoinWaitlist(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AcceptWaitlistOffer operation middleware
+func (siw *ServerInterfaceWrapper) AcceptWaitlistOffer(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "waitlistEntryId" -------------
+	var waitlistEntryId WaitlistEntryId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "waitlistEntryId", chi.URLParam(r, "waitlistEntryId"), &waitlistEntryId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "waitlistEntryId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params AcceptWaitlistOfferParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AcceptWaitlistOffer(w, r, waitlistEntryId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CancelWaitlistEntry operation middleware
+func (siw *ServerInterfaceWrapper) CancelWaitlistEntry(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "waitlistEntryId" -------------
+	var waitlistEntryId WaitlistEntryId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "waitlistEntryId", chi.URLParam(r, "waitlistEntryId"), &waitlistEntryId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "waitlistEntryId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CancelWaitlistEntryParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CancelWaitlistEntry(w, r, waitlistEntryId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -39442,6 +40808,39 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/accommodation/bookings/{bookingId}/voucher", wrapper.ReissueBookingVoucher)
 	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/accommodation/bookings/{bookingId}/cancellation-preview", wrapper.PreviewCancellation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/accommodation/bookings/{bookingId}/cancel", wrapper.CancelBooking)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/accommodation/bookings/{bookingId}/check-in", wrapper.CheckInBooking)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/accommodation/bookings/{bookingId}/check-out", wrapper.CheckOutBooking)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/accommodation/bookings/{bookingId}/no-show", wrapper.GetNoShow)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/accommodation/bookings/{bookingId}/no-show", wrapper.ReportNoShow)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/accommodation/bookings/{bookingId}/no-show/review", wrapper.ReviewNoShow)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/accommodation/waitlist", wrapper.ListWaitlist)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/accommodation/waitlist", wrapper.JoinWaitlist)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/accommodation/waitlist/{waitlistEntryId}/cancel", wrapper.CancelWaitlistEntry)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/accommodation/waitlist/{waitlistEntryId}/accept", wrapper.AcceptWaitlistOffer)
+	})
 
 	return r
 }
@@ -39660,6 +41059,369 @@ func (response GetBooking404ApplicationProblemPlusJSONResponse) VisitGetBookingR
 	return err
 }
 
+type CancelBookingRequestObject struct {
+	BookingId BookingId `json:"bookingId"`
+	Params    CancelBookingParams
+	Body      *CancelBookingJSONRequestBody
+}
+
+type CancelBookingResponseObject interface {
+	VisitCancelBookingResponse(w http.ResponseWriter) error
+}
+
+type CancelBooking200JSONResponse CancellationResult
+
+func (response CancelBooking200JSONResponse) VisitCancelBookingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelBooking403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CancelBooking403ApplicationProblemPlusJSONResponse) VisitCancelBookingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelBooking404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CancelBooking404ApplicationProblemPlusJSONResponse) VisitCancelBookingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelBooking409ApplicationProblemPlusJSONResponse Problem
+
+func (response CancelBooking409ApplicationProblemPlusJSONResponse) VisitCancelBookingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelBooking422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CancelBooking422ApplicationProblemPlusJSONResponse) VisitCancelBookingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelBooking429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response CancelBooking429ApplicationProblemPlusJSONResponse) VisitCancelBookingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PreviewCancellationRequestObject struct {
+	BookingId BookingId `json:"bookingId"`
+	Params    PreviewCancellationParams
+}
+
+type PreviewCancellationResponseObject interface {
+	VisitPreviewCancellationResponse(w http.ResponseWriter) error
+}
+
+type PreviewCancellation200JSONResponse CancellationPreview
+
+func (response PreviewCancellation200JSONResponse) VisitPreviewCancellationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PreviewCancellation403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response PreviewCancellation403ApplicationProblemPlusJSONResponse) VisitPreviewCancellationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PreviewCancellation404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response PreviewCancellation404ApplicationProblemPlusJSONResponse) VisitPreviewCancellationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PreviewCancellation409ApplicationProblemPlusJSONResponse Problem
+
+func (response PreviewCancellation409ApplicationProblemPlusJSONResponse) VisitPreviewCancellationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CheckInBookingRequestObject struct {
+	BookingId BookingId `json:"bookingId"`
+	Params    CheckInBookingParams
+	Body      *CheckInBookingJSONRequestBody
+}
+
+type CheckInBookingResponseObject interface {
+	VisitCheckInBookingResponse(w http.ResponseWriter) error
+}
+
+type CheckInBooking200JSONResponse Booking
+
+func (response CheckInBooking200JSONResponse) VisitCheckInBookingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CheckInBooking403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CheckInBooking403ApplicationProblemPlusJSONResponse) VisitCheckInBookingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CheckInBooking404ApplicationProblemPlusJSONResponse Problem
+
+func (response CheckInBooking404ApplicationProblemPlusJSONResponse) VisitCheckInBookingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CheckInBooking409ApplicationProblemPlusJSONResponse Problem
+
+func (response CheckInBooking409ApplicationProblemPlusJSONResponse) VisitCheckInBookingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CheckInBooking422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CheckInBooking422ApplicationProblemPlusJSONResponse) VisitCheckInBookingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CheckOutBookingRequestObject struct {
+	BookingId BookingId `json:"bookingId"`
+	Params    CheckOutBookingParams
+	Body      *CheckOutBookingJSONRequestBody
+}
+
+type CheckOutBookingResponseObject interface {
+	VisitCheckOutBookingResponse(w http.ResponseWriter) error
+}
+
+type CheckOutBooking200JSONResponse Booking
+
+func (response CheckOutBooking200JSONResponse) VisitCheckOutBookingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CheckOutBooking403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CheckOutBooking403ApplicationProblemPlusJSONResponse) VisitCheckOutBookingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CheckOutBooking404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CheckOutBooking404ApplicationProblemPlusJSONResponse) VisitCheckOutBookingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CheckOutBooking409ApplicationProblemPlusJSONResponse Problem
+
+func (response CheckOutBooking409ApplicationProblemPlusJSONResponse) VisitCheckOutBookingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CheckOutBooking422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CheckOutBooking422ApplicationProblemPlusJSONResponse) VisitCheckOutBookingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CheckOutBooking429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response CheckOutBooking429ApplicationProblemPlusJSONResponse) VisitCheckOutBookingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ConfirmBookingRequestObject struct {
 	BookingId BookingId `json:"bookingId"`
 	Params    ConfirmBookingParams
@@ -39732,6 +41494,269 @@ type ConfirmBooking429ApplicationProblemPlusJSONResponse struct {
 }
 
 func (response ConfirmBooking429ApplicationProblemPlusJSONResponse) VisitConfirmBookingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetNoShowRequestObject struct {
+	BookingId BookingId `json:"bookingId"`
+	Params    GetNoShowParams
+}
+
+type GetNoShowResponseObject interface {
+	VisitGetNoShowResponse(w http.ResponseWriter) error
+}
+
+type GetNoShow200JSONResponse NoShowResult
+
+func (response GetNoShow200JSONResponse) VisitGetNoShowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetNoShow403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetNoShow403ApplicationProblemPlusJSONResponse) VisitGetNoShowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetNoShow404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetNoShow404ApplicationProblemPlusJSONResponse) VisitGetNoShowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReportNoShowRequestObject struct {
+	BookingId BookingId `json:"bookingId"`
+	Params    ReportNoShowParams
+	Body      *ReportNoShowJSONRequestBody
+}
+
+type ReportNoShowResponseObject interface {
+	VisitReportNoShowResponse(w http.ResponseWriter) error
+}
+
+type ReportNoShow201JSONResponse NoShowResult
+
+func (response ReportNoShow201JSONResponse) VisitReportNoShowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReportNoShow403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ReportNoShow403ApplicationProblemPlusJSONResponse) VisitReportNoShowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReportNoShow404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ReportNoShow404ApplicationProblemPlusJSONResponse) VisitReportNoShowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReportNoShow409ApplicationProblemPlusJSONResponse Problem
+
+func (response ReportNoShow409ApplicationProblemPlusJSONResponse) VisitReportNoShowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReportNoShow422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ReportNoShow422ApplicationProblemPlusJSONResponse) VisitReportNoShowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReportNoShow429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response ReportNoShow429ApplicationProblemPlusJSONResponse) VisitReportNoShowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewNoShowRequestObject struct {
+	BookingId BookingId `json:"bookingId"`
+	Params    ReviewNoShowParams
+	Body      *ReviewNoShowJSONRequestBody
+}
+
+type ReviewNoShowResponseObject interface {
+	VisitReviewNoShowResponse(w http.ResponseWriter) error
+}
+
+type ReviewNoShow200JSONResponse NoShowResult
+
+func (response ReviewNoShow200JSONResponse) VisitReviewNoShowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewNoShow403ApplicationProblemPlusJSONResponse Problem
+
+func (response ReviewNoShow403ApplicationProblemPlusJSONResponse) VisitReviewNoShowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewNoShow404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ReviewNoShow404ApplicationProblemPlusJSONResponse) VisitReviewNoShowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewNoShow409ApplicationProblemPlusJSONResponse Problem
+
+func (response ReviewNoShow409ApplicationProblemPlusJSONResponse) VisitReviewNoShowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewNoShow422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ReviewNoShow422ApplicationProblemPlusJSONResponse) VisitReviewNoShowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewNoShow429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response ReviewNoShow429ApplicationProblemPlusJSONResponse) VisitReviewNoShowResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -40834,6 +42859,315 @@ func (response PutRoomTypeInventory429ApplicationProblemPlusJSONResponse) VisitP
 		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
 	}
 	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListWaitlistRequestObject struct {
+	Params ListWaitlistParams
+}
+
+type ListWaitlistResponseObject interface {
+	VisitListWaitlistResponse(w http.ResponseWriter) error
+}
+
+type ListWaitlist200JSONResponse WaitlistEntryList
+
+func (response ListWaitlist200JSONResponse) VisitListWaitlistResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListWaitlist403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListWaitlist403ApplicationProblemPlusJSONResponse) VisitListWaitlistResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListWaitlist422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListWaitlist422ApplicationProblemPlusJSONResponse) VisitListWaitlistResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type JoinWaitlistRequestObject struct {
+	Params JoinWaitlistParams
+	Body   *JoinWaitlistJSONRequestBody
+}
+
+type JoinWaitlistResponseObject interface {
+	VisitJoinWaitlistResponse(w http.ResponseWriter) error
+}
+
+type JoinWaitlist201JSONResponse WaitlistEntry
+
+func (response JoinWaitlist201JSONResponse) VisitJoinWaitlistResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type JoinWaitlist403ApplicationProblemPlusJSONResponse Problem
+
+func (response JoinWaitlist403ApplicationProblemPlusJSONResponse) VisitJoinWaitlistResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type JoinWaitlist404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response JoinWaitlist404ApplicationProblemPlusJSONResponse) VisitJoinWaitlistResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type JoinWaitlist409ApplicationProblemPlusJSONResponse Problem
+
+func (response JoinWaitlist409ApplicationProblemPlusJSONResponse) VisitJoinWaitlistResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type JoinWaitlist422ApplicationProblemPlusJSONResponse Problem
+
+func (response JoinWaitlist422ApplicationProblemPlusJSONResponse) VisitJoinWaitlistResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type JoinWaitlist429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response JoinWaitlist429ApplicationProblemPlusJSONResponse) VisitJoinWaitlistResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptWaitlistOfferRequestObject struct {
+	WaitlistEntryId WaitlistEntryId `json:"waitlistEntryId"`
+	Params          AcceptWaitlistOfferParams
+}
+
+type AcceptWaitlistOfferResponseObject interface {
+	VisitAcceptWaitlistOfferResponse(w http.ResponseWriter) error
+}
+
+type AcceptWaitlistOffer200JSONResponse WaitlistEntry
+
+func (response AcceptWaitlistOffer200JSONResponse) VisitAcceptWaitlistOfferResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptWaitlistOffer403ApplicationProblemPlusJSONResponse Problem
+
+func (response AcceptWaitlistOffer403ApplicationProblemPlusJSONResponse) VisitAcceptWaitlistOfferResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptWaitlistOffer404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response AcceptWaitlistOffer404ApplicationProblemPlusJSONResponse) VisitAcceptWaitlistOfferResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptWaitlistOffer409ApplicationProblemPlusJSONResponse Problem
+
+func (response AcceptWaitlistOffer409ApplicationProblemPlusJSONResponse) VisitAcceptWaitlistOfferResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptWaitlistOffer429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response AcceptWaitlistOffer429ApplicationProblemPlusJSONResponse) VisitAcceptWaitlistOfferResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelWaitlistEntryRequestObject struct {
+	WaitlistEntryId WaitlistEntryId `json:"waitlistEntryId"`
+	Params          CancelWaitlistEntryParams
+}
+
+type CancelWaitlistEntryResponseObject interface {
+	VisitCancelWaitlistEntryResponse(w http.ResponseWriter) error
+}
+
+type CancelWaitlistEntry200JSONResponse WaitlistEntry
+
+func (response CancelWaitlistEntry200JSONResponse) VisitCancelWaitlistEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelWaitlistEntry403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CancelWaitlistEntry403ApplicationProblemPlusJSONResponse) VisitCancelWaitlistEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelWaitlistEntry404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CancelWaitlistEntry404ApplicationProblemPlusJSONResponse) VisitCancelWaitlistEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelWaitlistEntry409ApplicationProblemPlusJSONResponse Problem
+
+func (response CancelWaitlistEntry409ApplicationProblemPlusJSONResponse) VisitCancelWaitlistEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -63034,8 +65368,29 @@ type StrictServerInterface interface {
 	// (GET /api/v1/accommodation/bookings/{bookingId})
 	GetBooking(ctx context.Context, request GetBookingRequestObject) (GetBookingResponseObject, error)
 
+	// (POST /api/v1/accommodation/bookings/{bookingId}/cancel)
+	CancelBooking(ctx context.Context, request CancelBookingRequestObject) (CancelBookingResponseObject, error)
+
+	// (POST /api/v1/accommodation/bookings/{bookingId}/cancellation-preview)
+	PreviewCancellation(ctx context.Context, request PreviewCancellationRequestObject) (PreviewCancellationResponseObject, error)
+
+	// (POST /api/v1/accommodation/bookings/{bookingId}/check-in)
+	CheckInBooking(ctx context.Context, request CheckInBookingRequestObject) (CheckInBookingResponseObject, error)
+
+	// (POST /api/v1/accommodation/bookings/{bookingId}/check-out)
+	CheckOutBooking(ctx context.Context, request CheckOutBookingRequestObject) (CheckOutBookingResponseObject, error)
+
 	// (POST /api/v1/accommodation/bookings/{bookingId}/confirm)
 	ConfirmBooking(ctx context.Context, request ConfirmBookingRequestObject) (ConfirmBookingResponseObject, error)
+
+	// (GET /api/v1/accommodation/bookings/{bookingId}/no-show)
+	GetNoShow(ctx context.Context, request GetNoShowRequestObject) (GetNoShowResponseObject, error)
+
+	// (POST /api/v1/accommodation/bookings/{bookingId}/no-show)
+	ReportNoShow(ctx context.Context, request ReportNoShowRequestObject) (ReportNoShowResponseObject, error)
+
+	// (POST /api/v1/accommodation/bookings/{bookingId}/no-show/review)
+	ReviewNoShow(ctx context.Context, request ReviewNoShowRequestObject) (ReviewNoShowResponseObject, error)
 
 	// (POST /api/v1/accommodation/bookings/{bookingId}/release)
 	ReleaseHold(ctx context.Context, request ReleaseHoldRequestObject) (ReleaseHoldResponseObject, error)
@@ -63072,6 +65427,18 @@ type StrictServerInterface interface {
 
 	// (PUT /api/v1/accommodation/room-types/{roomTypeId}/inventory)
 	PutRoomTypeInventory(ctx context.Context, request PutRoomTypeInventoryRequestObject) (PutRoomTypeInventoryResponseObject, error)
+
+	// (GET /api/v1/accommodation/waitlist)
+	ListWaitlist(ctx context.Context, request ListWaitlistRequestObject) (ListWaitlistResponseObject, error)
+
+	// (POST /api/v1/accommodation/waitlist)
+	JoinWaitlist(ctx context.Context, request JoinWaitlistRequestObject) (JoinWaitlistResponseObject, error)
+
+	// (POST /api/v1/accommodation/waitlist/{waitlistEntryId}/accept)
+	AcceptWaitlistOffer(ctx context.Context, request AcceptWaitlistOfferRequestObject) (AcceptWaitlistOfferResponseObject, error)
+
+	// (POST /api/v1/accommodation/waitlist/{waitlistEntryId}/cancel)
+	CancelWaitlistEntry(ctx context.Context, request CancelWaitlistEntryRequestObject) (CancelWaitlistEntryResponseObject, error)
 
 	// (GET /api/v1/approval-policies)
 	ListApprovalPolicies(ctx context.Context, request ListApprovalPoliciesRequestObject) (ListApprovalPoliciesResponseObject, error)
@@ -63931,6 +66298,141 @@ func (sh *strictHandler) GetBooking(w http.ResponseWriter, r *http.Request, book
 	}
 }
 
+// CancelBooking operation middleware
+func (sh *strictHandler) CancelBooking(w http.ResponseWriter, r *http.Request, bookingId BookingId, params CancelBookingParams) {
+	var request CancelBookingRequestObject
+
+	request.BookingId = bookingId
+	request.Params = params
+
+	var body CancelBookingJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CancelBooking(ctx, request.(CancelBookingRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CancelBooking")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CancelBookingResponseObject); ok {
+		if err := validResponse.VisitCancelBookingResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PreviewCancellation operation middleware
+func (sh *strictHandler) PreviewCancellation(w http.ResponseWriter, r *http.Request, bookingId BookingId, params PreviewCancellationParams) {
+	var request PreviewCancellationRequestObject
+
+	request.BookingId = bookingId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PreviewCancellation(ctx, request.(PreviewCancellationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PreviewCancellation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PreviewCancellationResponseObject); ok {
+		if err := validResponse.VisitPreviewCancellationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CheckInBooking operation middleware
+func (sh *strictHandler) CheckInBooking(w http.ResponseWriter, r *http.Request, bookingId BookingId, params CheckInBookingParams) {
+	var request CheckInBookingRequestObject
+
+	request.BookingId = bookingId
+	request.Params = params
+
+	var body CheckInBookingJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CheckInBooking(ctx, request.(CheckInBookingRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CheckInBooking")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CheckInBookingResponseObject); ok {
+		if err := validResponse.VisitCheckInBookingResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CheckOutBooking operation middleware
+func (sh *strictHandler) CheckOutBooking(w http.ResponseWriter, r *http.Request, bookingId BookingId, params CheckOutBookingParams) {
+	var request CheckOutBookingRequestObject
+
+	request.BookingId = bookingId
+	request.Params = params
+
+	var body CheckOutBookingJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CheckOutBooking(ctx, request.(CheckOutBookingRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CheckOutBooking")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CheckOutBookingResponseObject); ok {
+		if err := validResponse.VisitCheckOutBookingResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ConfirmBooking operation middleware
 func (sh *strictHandler) ConfirmBooking(w http.ResponseWriter, r *http.Request, bookingId BookingId, params ConfirmBookingParams) {
 	var request ConfirmBookingRequestObject
@@ -63951,6 +66453,104 @@ func (sh *strictHandler) ConfirmBooking(w http.ResponseWriter, r *http.Request, 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ConfirmBookingResponseObject); ok {
 		if err := validResponse.VisitConfirmBookingResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetNoShow operation middleware
+func (sh *strictHandler) GetNoShow(w http.ResponseWriter, r *http.Request, bookingId BookingId, params GetNoShowParams) {
+	var request GetNoShowRequestObject
+
+	request.BookingId = bookingId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetNoShow(ctx, request.(GetNoShowRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetNoShow")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetNoShowResponseObject); ok {
+		if err := validResponse.VisitGetNoShowResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReportNoShow operation middleware
+func (sh *strictHandler) ReportNoShow(w http.ResponseWriter, r *http.Request, bookingId BookingId, params ReportNoShowParams) {
+	var request ReportNoShowRequestObject
+
+	request.BookingId = bookingId
+	request.Params = params
+
+	var body ReportNoShowJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReportNoShow(ctx, request.(ReportNoShowRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReportNoShow")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReportNoShowResponseObject); ok {
+		if err := validResponse.VisitReportNoShowResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReviewNoShow operation middleware
+func (sh *strictHandler) ReviewNoShow(w http.ResponseWriter, r *http.Request, bookingId BookingId, params ReviewNoShowParams) {
+	var request ReviewNoShowRequestObject
+
+	request.BookingId = bookingId
+	request.Params = params
+
+	var body ReviewNoShowJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReviewNoShow(ctx, request.(ReviewNoShowRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReviewNoShow")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReviewNoShowResponseObject); ok {
+		if err := validResponse.VisitReviewNoShowResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -64314,6 +66914,119 @@ func (sh *strictHandler) PutRoomTypeInventory(w http.ResponseWriter, r *http.Req
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PutRoomTypeInventoryResponseObject); ok {
 		if err := validResponse.VisitPutRoomTypeInventoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListWaitlist operation middleware
+func (sh *strictHandler) ListWaitlist(w http.ResponseWriter, r *http.Request, params ListWaitlistParams) {
+	var request ListWaitlistRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListWaitlist(ctx, request.(ListWaitlistRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListWaitlist")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListWaitlistResponseObject); ok {
+		if err := validResponse.VisitListWaitlistResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// JoinWaitlist operation middleware
+func (sh *strictHandler) JoinWaitlist(w http.ResponseWriter, r *http.Request, params JoinWaitlistParams) {
+	var request JoinWaitlistRequestObject
+
+	request.Params = params
+
+	var body JoinWaitlistJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.JoinWaitlist(ctx, request.(JoinWaitlistRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "JoinWaitlist")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(JoinWaitlistResponseObject); ok {
+		if err := validResponse.VisitJoinWaitlistResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AcceptWaitlistOffer operation middleware
+func (sh *strictHandler) AcceptWaitlistOffer(w http.ResponseWriter, r *http.Request, waitlistEntryId WaitlistEntryId, params AcceptWaitlistOfferParams) {
+	var request AcceptWaitlistOfferRequestObject
+
+	request.WaitlistEntryId = waitlistEntryId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AcceptWaitlistOffer(ctx, request.(AcceptWaitlistOfferRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AcceptWaitlistOffer")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AcceptWaitlistOfferResponseObject); ok {
+		if err := validResponse.VisitAcceptWaitlistOfferResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CancelWaitlistEntry operation middleware
+func (sh *strictHandler) CancelWaitlistEntry(w http.ResponseWriter, r *http.Request, waitlistEntryId WaitlistEntryId, params CancelWaitlistEntryParams) {
+	var request CancelWaitlistEntryRequestObject
+
+	request.WaitlistEntryId = waitlistEntryId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CancelWaitlistEntry(ctx, request.(CancelWaitlistEntryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CancelWaitlistEntry")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CancelWaitlistEntryResponseObject); ok {
+		if err := validResponse.VisitCancelWaitlistEntryResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

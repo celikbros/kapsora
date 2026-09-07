@@ -155,7 +155,7 @@ RETURNING id, reference, person_id, enrollment_id, program_id, property_id, room
           check_in, check_out, nights, adults, children, status, hold_expires_at,
           entitlement_reservation_id, service_request_id, authorization_id, voucher_id,
           quote_snapshot, policy_snapshot, channel, confirmed_at, checked_in_at,
-          checked_out_at, cancelled_at, cancel_reason_code, actual_nights,
+          checked_out_at, cancelled_at, cancel_reason_code, actual_nights, over_booking,
           created_at, updated_at, row_version
 `
 
@@ -208,6 +208,7 @@ type CreateBookingRow struct {
 	CancelledAt              *time.Time
 	CancelReasonCode         *string
 	ActualNights             *int32
+	OverBooking              bool
 	CreatedAt                time.Time
 	UpdatedAt                time.Time
 	RowVersion               int64
@@ -266,6 +267,7 @@ func (q *Queries) CreateBooking(ctx context.Context, arg CreateBookingParams) (C
 		&i.CancelledAt,
 		&i.CancelReasonCode,
 		&i.ActualNights,
+		&i.OverBooking,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.RowVersion,
@@ -370,7 +372,8 @@ SELECT b.id, b.reference, b.person_id, b.enrollment_id, b.program_id, b.property
        b.hold_expires_at, b.entitlement_reservation_id, b.service_request_id,
        b.authorization_id, b.voucher_id, b.quote_snapshot, b.policy_snapshot, b.channel,
        b.confirmed_at, b.checked_in_at, b.checked_out_at, b.cancelled_at,
-       b.cancel_reason_code, b.actual_nights, b.created_at, b.updated_at, b.row_version
+       b.cancel_reason_code, b.actual_nights, b.over_booking, b.created_at, b.updated_at,
+       b.row_version
   FROM accommodation.booking b
   JOIN accommodation.property p
     ON p.tenant_id = b.tenant_id AND p.id = b.property_id
@@ -416,6 +419,7 @@ type GetBookingRow struct {
 	CancelledAt              *time.Time
 	CancelReasonCode         *string
 	ActualNights             *int32
+	OverBooking              bool
 	CreatedAt                time.Time
 	UpdatedAt                time.Time
 	RowVersion               int64
@@ -461,6 +465,7 @@ func (q *Queries) GetBooking(ctx context.Context, arg GetBookingParams) (GetBook
 		&i.CancelledAt,
 		&i.CancelReasonCode,
 		&i.ActualNights,
+		&i.OverBooking,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.RowVersion,
@@ -474,7 +479,8 @@ SELECT b.id, b.reference, b.person_id, b.enrollment_id, b.program_id, b.property
        b.hold_expires_at, b.entitlement_reservation_id, b.service_request_id,
        b.authorization_id, b.voucher_id, b.quote_snapshot, b.policy_snapshot, b.channel,
        b.confirmed_at, b.checked_in_at, b.checked_out_at, b.cancelled_at,
-       b.cancel_reason_code, b.actual_nights, b.created_at, b.updated_at, b.row_version
+       b.cancel_reason_code, b.actual_nights, b.over_booking, b.created_at, b.updated_at,
+       b.row_version
   FROM accommodation.booking b
  WHERE b.tenant_id = $1
    AND b.service_request_id = $2
@@ -513,6 +519,7 @@ type GetBookingByRequestRow struct {
 	CancelledAt              *time.Time
 	CancelReasonCode         *string
 	ActualNights             *int32
+	OverBooking              bool
 	CreatedAt                time.Time
 	UpdatedAt                time.Time
 	RowVersion               int64
@@ -551,6 +558,7 @@ func (q *Queries) GetBookingByRequest(ctx context.Context, arg GetBookingByReque
 		&i.CancelledAt,
 		&i.CancelReasonCode,
 		&i.ActualNights,
+		&i.OverBooking,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.RowVersion,
@@ -884,7 +892,8 @@ SELECT b.id, b.reference, b.person_id, b.enrollment_id, b.program_id, b.property
        b.hold_expires_at, b.entitlement_reservation_id, b.service_request_id,
        b.authorization_id, b.voucher_id, b.quote_snapshot, b.policy_snapshot, b.channel,
        b.confirmed_at, b.checked_in_at, b.checked_out_at, b.cancelled_at,
-       b.cancel_reason_code, b.actual_nights, b.created_at, b.updated_at, b.row_version
+       b.cancel_reason_code, b.actual_nights, b.over_booking, b.created_at, b.updated_at,
+       b.row_version
   FROM accommodation.booking b
   JOIN accommodation.property p
     ON p.tenant_id = b.tenant_id AND p.id = b.property_id
@@ -943,6 +952,7 @@ type ListBookingsRow struct {
 	CancelledAt              *time.Time
 	CancelReasonCode         *string
 	ActualNights             *int32
+	OverBooking              bool
 	CreatedAt                time.Time
 	UpdatedAt                time.Time
 	RowVersion               int64
@@ -998,6 +1008,7 @@ func (q *Queries) ListBookings(ctx context.Context, arg ListBookingsParams) ([]L
 			&i.CancelledAt,
 			&i.CancelReasonCode,
 			&i.ActualNights,
+			&i.OverBooking,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.RowVersion,
@@ -1116,7 +1127,8 @@ SELECT b.id, b.reference, b.person_id, b.enrollment_id, b.program_id, b.property
        b.hold_expires_at, b.entitlement_reservation_id, b.service_request_id,
        b.authorization_id, b.voucher_id, b.quote_snapshot, b.policy_snapshot, b.channel,
        b.confirmed_at, b.checked_in_at, b.checked_out_at, b.cancelled_at,
-       b.cancel_reason_code, b.actual_nights, b.created_at, b.updated_at, b.row_version
+       b.cancel_reason_code, b.actual_nights, b.over_booking, b.created_at, b.updated_at,
+       b.row_version
   FROM accommodation.booking b
  WHERE b.tenant_id = $1
    AND b.id = $2
@@ -1156,6 +1168,7 @@ type LockBookingRow struct {
 	CancelledAt              *time.Time
 	CancelReasonCode         *string
 	ActualNights             *int32
+	OverBooking              bool
 	CreatedAt                time.Time
 	UpdatedAt                time.Time
 	RowVersion               int64
@@ -1196,6 +1209,7 @@ func (q *Queries) LockBooking(ctx context.Context, arg LockBookingParams) (LockB
 		&i.CancelledAt,
 		&i.CancelReasonCode,
 		&i.ActualNights,
+		&i.OverBooking,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.RowVersion,

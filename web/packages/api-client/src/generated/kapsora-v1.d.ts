@@ -103,6 +103,161 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/accommodation/bookings/{bookingId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Calls off a stay somebody agreed to, and settles what that costs.
+         *
+         *     **One transaction, in an order that is not interchangeable.** The rooms of every night
+         *     go back to the allotment under the same `stay_date` lock order a hold takes them in
+         *     (`confirmed - 1` for an agreed stay, `held - 1` for one still waiting on a reviewer).
+         *     On the entitlement the penalty is **consumed** first and the remainder **released**
+         *     second: both draw on the same reservation, and releasing first would hand everything
+         *     back and leave nothing to consume, so the ledger would stop agreeing with the fee.
+         *     Consuming is the honest movement - the plan paid for a room the member did not use.
+         *
+         *     **The money fee is recorded and charged nowhere.** KAPSORA holds no card; the
+         *     cancellation row is what M7's settlement turns into an invoice line, and
+         *     `payerFee + memberFee == feeAmount` exactly.
+         *
+         *     **The voucher is retired** in the same transaction, so a cancelled stay and the code
+         *     that would have opened its room stop being true at the same instant.
+         *
+         *     **Running it twice is one cancellation.** The status write names CONFIRMED and
+         *     PENDING_APPROVAL, a unique index allows one cancellation row per booking, and both
+         *     ledger movements are keyed by the booking rather than by a clock.
+         *
+         *     A booking still waiting on a reviewer has agreed nothing, so it is free: its
+         *     reservation request is withdrawn and the hold released, with no fee and no penalty. A
+         *     hold is given back with releaseHold instead.
+         */
+        post: operations["cancelBooking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accommodation/bookings/{bookingId}/cancellation-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description What a cancellation now would cost, and what would come back. Changes nothing.
+         *
+         *     **The answer is the policy the booking was confirmed under, and never today's
+         *     contract.** `policySnapshot` was frozen onto the booking at confirmation, and this
+         *     computation reads that document and the booking's own night amounts. A hotel that
+         *     rewrote its cancellation terms this morning changes what the next booking costs to
+         *     cancel and does not change what this one costs.
+         *
+         *     The free window is counted back from the start of the arrival day **on the property's
+         *     own clock**, which is why the snapshot carries a timezone: a member cancelling a
+         *     Berlin hotel late in the evening is inside a 48-hour window there and outside it in
+         *     Istanbul, and only one of those is the answer they agreed to.
+         *
+         *     `cancelBooking` returns exactly these figures, because both call the same computation
+         *     on the same document. A preview that estimated and a command that decided would be
+         *     two answers to one question, and the member would find out which was real from an
+         *     invoice.
+         *
+         *     It is a POST because it answers about one member's booking inside the caller's own
+         *     boundary; nothing is written and no ledger moves.
+         */
+        post: operations["previewCancellation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accommodation/bookings/{bookingId}/check-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Records the guest's arrival against the voucher they presented at the desk.
+         *
+         *     **The token is in the body and nowhere else.** It is never a path segment and never a
+         *     query parameter, because both are logged by every proxy between the desk and here. It
+         *     is hashed on arrival, matched against a SHA-256 digest, and reaches no column, log
+         *     line, audit row or notification.
+         *
+         *     **A token that is not this booking's is 404**, exactly as an unknown one is. A refusal
+         *     that could tell a real code for another stay apart from a code that does not exist
+         *     would be an oracle for testing a stolen list.
+         *
+         *     The arrival must fall inside `[checkIn - accommodation.checkin_early_hours,
+         *     checkIn + accommodation.checkin_late_hours]`, counted from the start of the arrival
+         *     day **on the property's own clock**. A refusal names both ends of the window, because
+         *     a clerk told "too early" and not "from when" has been told nothing.
+         *
+         *     Nothing is consumed here. Nobody has slept anywhere yet; the nights are consumed at
+         *     check-out, for the nights actually used.
+         */
+        post: operations["checkInBooking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accommodation/bookings/{bookingId}/check-out": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Ends the stay and settles what it used.
+         *
+         *     `actualNights` is counted **on the property's calendar** - the number of civil days
+         *     between the booked arrival and the day the guest left, never fewer than one and never
+         *     a duration divided by twenty-four hours. A stay that spans a clock change is still the
+         *     same number of nights.
+         *
+         *     The fulfilment for those nights is written and consumed in this transaction, and
+         *     everything the authorization still held is released across every hold the booking
+         *     stands on, exactly as an inpatient discharge releases at the end of a stay. The rooms
+         *     of the nights nobody slept in go back to the allotment, where the availability search
+         *     can sell them again; the nights that were used stay confirmed, because the room really
+         *     was occupied on them.
+         *
+         *     **An over-stay consumes nothing extra.** A guest who stayed longer than the plan
+         *     promised has already had the extra nights, so the check-out cannot refuse: it consumes
+         *     what was authorized, sets `overBooking`, and leaves the difference to the claim (M7) as
+         *     an exception a person looks at.
+         *
+         *     Running it twice releases nothing twice: the status write names CHECKED_IN, and the
+         *     ledger movements are keyed by the booking and the reason rather than by the moment.
+         */
+        post: operations["checkOutBooking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/accommodation/bookings/{bookingId}/confirm": {
         parameters: {
             query?: never;
@@ -139,6 +294,80 @@ export interface paths {
          *     never held.
          */
         post: operations["confirmBooking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accommodation/bookings/{bookingId}/no-show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The no-show report on this booking, if there is one. A booking nobody reported answers
+         *     404, which is the same answer a booking outside the caller's boundary gives.
+         */
+        get: operations["getNoShow"];
+        put?: never;
+        /**
+         * @description The provider's claim that nobody arrived.
+         *
+         *     **It changes nothing except the report.** The booking stays CONFIRMED, the room stays
+         *     confirmed in the allotment, and not one night moves on the plan. A provider that could
+         *     close a booking by asserting an absence could close a booking a guest is standing in
+         *     the lobby of, and the member would learn about it from a fee.
+         *
+         *     Two refusals happen here. A report before the check-in window has closed is
+         *     NO_SHOW_TOO_EARLY: a guest who is late is not a guest who did not come. And a report
+         *     with no **clean** document linked to the booking is NO_SHOW_EVIDENCE_REQUIRED - a
+         *     claim that costs a member money and rests on nothing is a claim nobody can review, and
+         *     a link to a file still in quarantine is not a document a reviewer can open.
+         *
+         *     The assessed fee comes from the frozen policy's no-show rate applied to the member's
+         *     own share, and `payerAmount + memberAmount == assessedFeeAmount` exactly. It is a claim
+         *     rather than a charge: nothing is taken from anybody until reviewNoShow confirms it. The
+         *     member is told what has been claimed, so the first they hear of it is not an invoice.
+         */
+        post: operations["reportNoShow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accommodation/bookings/{bookingId}/no-show/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description The payer's answer to a provider's claim, and the only place a no-show costs anybody
+         *     anything.
+         *
+         *     **The reviewer may not be the reporter.** It is refused with NO_SHOW_SAME_ACTOR, and a
+         *     CHECK on the row refuses it again whatever reaches the table. The two sides are told
+         *     apart by scope: a provider clerk holds `accommodation.booking.manage` on an
+         *     ORGANIZATION grant and a payer reviewer holds it tenant-wide, and only the second is a
+         *     second pair of eyes.
+         *
+         *     The three answers do three different things. CONFIRMED closes the booking as NO_SHOW,
+         *     frees the room for the rest of the allotment, consumes what the policy's rate says off
+         *     the plan (rounded **up** to whole nights, because a rate of fifty per cent that
+         *     rounded down would cost the payer nothing on a one-night stay) and releases the rest.
+         *     REJECTED changes nothing but the report - the stay is still CONFIRMED, still
+         *     cancellable and still checkable-in, because a provider who was wrong must not have
+         *     cost the member their booking. DISPUTED raises a work item in the payer's review queue
+         *     and leaves everything where it is, because somebody has to look.
+         */
+        post: operations["reviewNoShow"];
         delete?: never;
         options?: never;
         head?: never;
@@ -421,6 +650,101 @@ export interface paths {
          */
         put: operations["putRoomTypeInventory"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accommodation/waitlist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The waiting list this caller may see, **in the order the offer sweep walks it**:
+         *     highest priority first, then whoever asked first. The list a member is shown their
+         *     place in is the list the offer actually comes out of.
+         *
+         *     The boundary is computed from the caller's own grants and is never widened by a
+         *     filter: a member sees their own entries whatever `personId` they send, and a provider
+         *     sees the entries at its own properties.
+         */
+        get: operations["listWaitlist"];
+        put?: never;
+        /**
+         * @description Puts a member in the queue for a property and a set of dates.
+         *
+         *     It checks nothing about availability, and that is the point: a member joins a queue
+         *     *because* the dates are full, and a join that refused when the room was free would
+         *     refuse exactly nobody - they would have booked it. What it does check is the plan,
+         *     because an entry with no enrollment behind it is a place in a queue that could never
+         *     become a booking.
+         *
+         *     `roomTypeId` is optional: null means any room of the property, which is what a member
+         *     who wants the hotel rather than the suite is actually asking for, and the sweep tries
+         *     each of the property's room types for them.
+         *
+         *     `priority` is the desk's to set - a programme that gives its own people the first
+         *     refusal - and a member joining for themselves always joins at zero, because a queue a
+         *     member can push themselves up is not a queue.
+         *
+         *     A member joins under `accommodation.booking.create`; a desk joining on somebody's
+         *     behalf holds `accommodation.waitlist.manage`.
+         */
+        post: operations["joinWaitlist"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accommodation/waitlist/{waitlistEntryId}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Turns the hold the sweep placed on this member's behalf into a confirmation.
+         *
+         *     It confirms through the same path confirmBooking uses - the same quote staleness rule,
+         *     the same step-up threshold, the same reservation request - because an offer accepted
+         *     **is** a booking confirmed, and a second way to confirm one would be a second set of
+         *     rules for the same act.
+         *
+         *     An offer nobody accepts expires with its hold: the room goes back to the allotment and
+         *     the entry returns to WAITING **behind** everybody who was already queued, because its
+         *     `createdAt` moves to the moment it was requeued and the queue is ordered by it.
+         */
+        post: operations["acceptWaitlistOffer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accommodation/waitlist/{waitlistEntryId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description The member giving up their place.
+         *
+         *     An entry that was holding an offer gives the room back with it: a room set aside for
+         *     somebody who has walked away is a room nobody can book and nobody will use.
+         */
+        post: operations["cancelWaitlistEntry"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5279,6 +5603,13 @@ export interface components {
              *     dates, so it and the booking's night rows can never disagree.
              */
             nights: number;
+            /**
+             * @description The stay ran past what the authorization promised. It is a flag rather than a
+             *     refusal: the guest has already slept the extra nights, so the check-out records
+             *     them and the claim (M7) raises them as an exception a person looks at. Nothing
+             *     beyond what was authorized is ever consumed.
+             */
+            overBooking?: boolean;
             /** Format: uuid */
             personId: string;
             /**
@@ -5428,9 +5759,125 @@ export interface components {
             /** Format: date-time */
             validTo: string;
         };
+        /**
+         * @description Why the stay is being called off. The reason is a code rather than a sentence because
+         *     a report counts them and a screen translates them; it defaults to MEMBER_CANCELLED.
+         */
+        CancelBookingRequest: {
+            reasonCode?: string;
+        };
         CancelInpatientStay: {
             reasonCode: string;
             reasonText?: string | null;
+        };
+        /**
+         * @description The record of a cancellation: what it cost, what came back, and **the policy it was
+         *     judged by**, copied onto the row. The copy is the point - the row proves which terms
+         *     were applied even after the contract has been rewritten twice, and nothing has to be
+         *     re-resolved to read a two-year-old cancellation. The table is append-only.
+         */
+        Cancellation: {
+            /** Format: uuid */
+            bookingId: string;
+            /** Format: date-time */
+            cancelledAt: string;
+            /** Format: uuid */
+            cancelledBy?: string | null;
+            currencyCode: string;
+            /** @description Exact decimal as a string; nothing here passes through a float. */
+            feeAmount: string;
+            free: boolean;
+            /** Format: uuid */
+            id: string;
+            /** @description Exact decimal as a string; nothing here passes through a float. */
+            memberFee: string;
+            /** @description Exact decimal as a string; nothing here passes through a float. */
+            payerFee: string;
+            penaltyNights: number;
+            /**
+             * @description The policy this cancellation was judged by. Null only for a booking cancelled
+             *     while it was still waiting on a reviewer, which had agreed nothing and therefore
+             *     owed nothing.
+             */
+            policySnapshot?: components["schemas"]["LodgingPolicySnapshot"] | null;
+            reasonCode: string;
+            releasedNights: number;
+        };
+        /** @description The booking, and what cancelling it now would cost. */
+        CancellationPreview: {
+            booking: components["schemas"]["Booking"];
+            quote: components["schemas"]["CancellationQuote"];
+        };
+        /**
+         * @description What a cancellation costs and gives back, computed from the booking's own frozen
+         *     policy and its own night amounts. Every figure is an exact decimal string: these
+         *     numbers reach a settlement, and a fee two systems disagree about by a kuruş is a fee
+         *     nobody can invoice.
+         */
+        CancellationQuote: {
+            currencyCode: string;
+            /** @description Exact decimal as a string; nothing here passes through a float. */
+            feeAmount: string;
+            /**
+             * @description Whether the cancellation falls inside the free window the booking was confirmed
+             *     under. A free cancellation costs nothing and takes no night, and the row that
+             *     records it has a CHECK saying so.
+             */
+            free: boolean;
+            /**
+             * Format: date-time
+             * @description The moment the free window closed or closes, so a member looking at a fee can see
+             *     what they missed rather than being handed a number. It is counted back from the
+             *     start of the arrival day on the property's own clock.
+             */
+            freeUntil?: string | null;
+            /** @description Exact decimal as a string; nothing here passes through a float. */
+            memberFee: string;
+            /** @description Exact decimal as a string; nothing here passes through a float. */
+            payerFee: string;
+            /**
+             * @description The nights the policy charges, capped at the length of the stay. Zero for a
+             *     PERCENT policy, which charges a share of the member's own amount instead.
+             */
+            penaltyNights: number;
+            /**
+             * @description The nights that go back to the plan: the covered nights of the frozen quote less
+             *     whatever the penalty spends. The penalty is capped at the covered nights, because
+             *     a policy charging three nights against a plan that carried two cannot take a
+             *     third from a balance it never held.
+             */
+            releasedNights: number;
+        };
+        /** @description The cancelled booking, what it cost, and the row that records both. */
+        CancellationResult: {
+            booking: components["schemas"]["Booking"];
+            cancellation: components["schemas"]["Cancellation"];
+            quote: components["schemas"]["CancellationQuote"];
+        };
+        /**
+         * @description The voucher code the guest presented. It is in the body and nowhere else: a token in
+         *     a path or a query string is a token in every proxy log between the desk and here.
+         */
+        CheckInBookingRequest: {
+            /**
+             * Format: date-time
+             * @description The moment of arrival, for a desk recording one it did not enter at the time.
+             *     Defaults to now, and must still fall inside the check-in window.
+             */
+            at?: string;
+            /**
+             * @description The plaintext, typed or scanned. It is hashed on arrival and matched against a
+             *     digest; it is stored nowhere and appears in no other request or response.
+             */
+            token: string;
+        };
+        CheckOutBookingRequest: {
+            /**
+             * Format: date-time
+             * @description The moment the guest left; defaults to now. It becomes a calendar day on the
+             *     property's own clock, because that is what a night is counted in.
+             */
+            at?: string;
         };
         Claim: {
             /** Format: uuid */
@@ -7331,6 +7778,36 @@ export interface components {
              */
             validTo?: string;
         };
+        /**
+         * @description The property, the dates and the party. `personId` is honoured only for a caller that
+         *     is not bound to a person; a member sending somebody else's is refused with
+         *     PERSON_SCOPE.
+         */
+        JoinWaitlistRequest: {
+            adults: number;
+            /** Format: date */
+            checkIn: string;
+            /** Format: date */
+            checkOut: string;
+            children?: number;
+            /** Format: uuid */
+            personId?: string;
+            /**
+             * @description The desk's own ordering. A member joining for themselves is placed at zero
+             *     whatever they send, because a queue a member can push themselves up is not a
+             *     queue.
+             */
+            priority?: number;
+            /** Format: uuid */
+            programId?: string;
+            /** Format: uuid */
+            propertyId: string;
+            /**
+             * Format: uuid
+             * @description Omit for any room of the property.
+             */
+            roomTypeId?: string;
+        };
         LedgerEntry: {
             /** Format: uuid */
             createdBy?: string | null;
@@ -7713,6 +8190,57 @@ export interface components {
             unitAmount?: string | null;
             unitType: string;
         };
+        /**
+         * @description A provider's claim that nobody arrived, and the payer's answer to it.
+         *     `payerAmount + memberAmount == assessedFeeAmount` is a CHECK on the row.
+         */
+        NoShowReport: {
+            /** @description Exact decimal as a string; nothing here passes through a float. */
+            assessedFeeAmount: string;
+            /** Format: uuid */
+            bookingId: string;
+            /**
+             * @description What a confirmation actually took off the plan, in whole nights. It is recorded
+             *     because the policy is a percentage and the entitlement is nights: the row says
+             *     what was consumed rather than leaving a reader to redo the rounding.
+             */
+            consumedNights: number;
+            currencyCode: string;
+            /** Format: uuid */
+            evidenceDocumentId?: string | null;
+            /** Format: uuid */
+            id: string;
+            /** @description Exact decimal as a string; nothing here passes through a float. */
+            memberAmount: string;
+            /** @description Exact decimal as a string; nothing here passes through a float. */
+            payerAmount: string;
+            /** Format: date-time */
+            reportedAt: string;
+            /**
+             * Format: uuid
+             * @description Who claimed it. It is stored because the reviewer may not be this person, and
+             *     that rule is a CHECK on the row as well as a refusal in the service.
+             */
+            reportedByActorId?: string | null;
+            reviewComment?: string | null;
+            /** Format: date-time */
+            reviewedAt?: string | null;
+            /** Format: uuid */
+            reviewedBy?: string | null;
+            status: components["schemas"]["NoShowStatus"];
+        };
+        /** @description The report, and the booking as it now stands. */
+        NoShowResult: {
+            booking: components["schemas"]["Booking"];
+            report: components["schemas"]["NoShowReport"];
+        };
+        /**
+         * @description Where a provider's claim stands. REPORTED costs nobody anything; CONFIRMED is the
+         *     payer agreeing; REJECTED leaves the booking exactly as it was; DISPUTED is in
+         *     somebody's queue.
+         * @enum {string}
+         */
+        NoShowStatus: "REPORTED" | "CONFIRMED" | "DISPUTED" | "REJECTED";
         /**
          * @description How a message reaches somebody. EMAIL goes through SMTP; SMS is recorded until a
          *     provider is chosen; PUSH is recorded and not delivered in this milestone; INAPP is
@@ -8977,6 +9505,21 @@ export interface components {
         ReplaceServiceCodeMappingsRequest: {
             items: components["schemas"]["ServiceCodeMappingInput"][];
         };
+        ReportNoShowRequest: {
+            /**
+             * Format: date-time
+             * @description The moment the absence was established; defaults to now. It must be after the
+             *     check-in window has closed - a guest who is late is not a guest who did not come.
+             */
+            at?: string;
+            /**
+             * Format: uuid
+             * @description The document object the provider is pointing at. It must be linked to this
+             *     booking and cleared by the scanner. Omitted, any clean document linked to the
+             *     booking satisfies the gate; a booking with none is refused either way.
+             */
+            evidenceDocumentId?: string;
+        };
         ResolvedPrice: {
             amount?: string | null;
             contractCode: string;
@@ -9039,6 +9582,15 @@ export interface components {
         };
         ReviewComment: {
             comment?: string;
+        };
+        ReviewNoShowRequest: {
+            comment?: string;
+            /**
+             * @description The decision. CONFIRMED closes the booking and moves the plan; REJECTED leaves
+             *     the stay bookable; DISPUTED raises a work item and changes nothing.
+             * @enum {string}
+             */
+            status: "CONFIRMED" | "DISPUTED" | "REJECTED";
         };
         RoomType: {
             /**
@@ -10052,6 +10604,67 @@ export interface components {
         };
         /** @enum {string} */
         VoucherStatus: "ISSUED" | "REDEEMED" | "EXPIRED" | "REVOKED";
+        /**
+         * @description One member waiting for a room that is full, and the offer they were made if the sweep
+         *     has reached them.
+         */
+        WaitlistEntry: {
+            adults: number;
+            /** Format: date */
+            checkIn: string;
+            /** Format: date */
+            checkOut: string;
+            children: number;
+            /**
+             * Format: date-time
+             * @description The second key of the queue order. An entry that was offered a room and did not
+             *     take it goes to the back of the queue by this timestamp moving to now.
+             */
+            createdAt: string;
+            /** Format: uuid */
+            enrollmentId?: string;
+            /** Format: uuid */
+            id: string;
+            /** @description The held booking the sweep created on this member's behalf. */
+            offer?: components["schemas"]["Booking"] | null;
+            /** Format: uuid */
+            offeredBookingId?: string | null;
+            /**
+             * Format: date-time
+             * @description The hold's own deadline, not a second one. An offer that outlived its hold would
+             *     be an offer whose room somebody else had already been sold.
+             */
+            offerExpiresAt?: string | null;
+            /** Format: uuid */
+            personId: string;
+            /**
+             * @description The first key of the queue order. A member joining for themselves is always zero;
+             *     a plan may raise it for its own people.
+             */
+            priority: number;
+            /** Format: uuid */
+            propertyId: string;
+            /**
+             * Format: uuid
+             * @description Null means any room of the property, which is what a member who wants the hotel
+             *     rather than the suite is asking for.
+             */
+            roomTypeId?: string | null;
+            rowVersion?: number;
+            status: components["schemas"]["WaitlistStatus"];
+            /** Format: date-time */
+            updatedAt?: string | null;
+        };
+        WaitlistEntryList: {
+            items: components["schemas"]["WaitlistEntry"][];
+        };
+        /**
+         * @description Where an entry stands. WAITING is in the queue; OFFERED holds a room with a countdown
+         *     running; ACCEPTED became a booking; EXPIRED and CANCELLED are history and do not stop
+         *     the member joining again.
+         * @enum {string}
+         */
+        WaitlistStatus: "WAITING" | "OFFERED" | "ACCEPTED" | "EXPIRED" | "CANCELLED";
         WorkItem: {
             /** Format: uuid */
             aggregateId: string;
@@ -10316,6 +10929,7 @@ export interface components {
         TenantHeader: string;
         /** @description The version number, counting from one. */
         VersionNo: number;
+        WaitlistEntryId: string;
         WorkItemId: string;
         WorkQueueId: string;
     };
@@ -10351,7 +10965,14 @@ export type SchemaBookingQuoteNight = components['schemas']['BookingQuoteNight']
 export type SchemaBookingQuoteSnapshot = components['schemas']['BookingQuoteSnapshot'];
 export type SchemaBookingStatus = components['schemas']['BookingStatus'];
 export type SchemaBookingVoucher = components['schemas']['BookingVoucher'];
+export type SchemaCancelBookingRequest = components['schemas']['CancelBookingRequest'];
 export type SchemaCancelInpatientStay = components['schemas']['CancelInpatientStay'];
+export type SchemaCancellation = components['schemas']['Cancellation'];
+export type SchemaCancellationPreview = components['schemas']['CancellationPreview'];
+export type SchemaCancellationQuote = components['schemas']['CancellationQuote'];
+export type SchemaCancellationResult = components['schemas']['CancellationResult'];
+export type SchemaCheckInBookingRequest = components['schemas']['CheckInBookingRequest'];
+export type SchemaCheckOutBookingRequest = components['schemas']['CheckOutBookingRequest'];
 export type SchemaClaim = components['schemas']['Claim'];
 export type SchemaClaimDecisionKind = components['schemas']['ClaimDecisionKind'];
 export type SchemaClaimDecisionReason = components['schemas']['ClaimDecisionReason'];
@@ -10484,6 +11105,7 @@ export type SchemaInpatientStayStatus = components['schemas']['InpatientStayStat
 export type SchemaInventoryDay = components['schemas']['InventoryDay'];
 export type SchemaIssuedVoucher = components['schemas']['IssuedVoucher'];
 export type SchemaIssueVoucher = components['schemas']['IssueVoucher'];
+export type SchemaJoinWaitlistRequest = components['schemas']['JoinWaitlistRequest'];
 export type SchemaLedgerEntry = components['schemas']['LedgerEntry'];
 export type SchemaLedgerPage = components['schemas']['LedgerPage'];
 export type SchemaLegalHold = components['schemas']['LegalHold'];
@@ -10507,6 +11129,9 @@ export type SchemaMemberImportRow = components['schemas']['MemberImportRow'];
 export type SchemaMemberShareMethod = components['schemas']['MemberShareMethod'];
 export type SchemaMyPerson = components['schemas']['MyPerson'];
 export type SchemaNewClaimLine = components['schemas']['NewClaimLine'];
+export type SchemaNoShowReport = components['schemas']['NoShowReport'];
+export type SchemaNoShowResult = components['schemas']['NoShowResult'];
+export type SchemaNoShowStatus = components['schemas']['NoShowStatus'];
 export type SchemaNotificationChannel = components['schemas']['NotificationChannel'];
 export type SchemaNotificationDelivery = components['schemas']['NotificationDelivery'];
 export type SchemaNotificationDeliveryOutcome = components['schemas']['NotificationDeliveryOutcome'];
@@ -10621,10 +11246,12 @@ export type SchemaReplaceProviderQuotasRequest = components['schemas']['ReplaceP
 export type SchemaReplaceRulesRequest = components['schemas']['ReplaceRulesRequest'];
 export type SchemaReplaceRuleTestCasesRequest = components['schemas']['ReplaceRuleTestCasesRequest'];
 export type SchemaReplaceServiceCodeMappingsRequest = components['schemas']['ReplaceServiceCodeMappingsRequest'];
+export type SchemaReportNoShowRequest = components['schemas']['ReportNoShowRequest'];
 export type SchemaResolvedPrice = components['schemas']['ResolvedPrice'];
 export type SchemaResolvePriceRequest = components['schemas']['ResolvePriceRequest'];
 export type SchemaResolvePriceResult = components['schemas']['ResolvePriceResult'];
 export type SchemaReviewComment = components['schemas']['ReviewComment'];
+export type SchemaReviewNoShowRequest = components['schemas']['ReviewNoShowRequest'];
 export type SchemaRoomType = components['schemas']['RoomType'];
 export type SchemaRoomTypeInventoryRange = components['schemas']['RoomTypeInventoryRange'];
 export type SchemaRoomTypeList = components['schemas']['RoomTypeList'];
@@ -10712,6 +11339,9 @@ export type SchemaUpdateServiceRequest = components['schemas']['UpdateServiceReq
 export type SchemaUserContext = components['schemas']['UserContext'];
 export type SchemaVoucher = components['schemas']['Voucher'];
 export type SchemaVoucherStatus = components['schemas']['VoucherStatus'];
+export type SchemaWaitlistEntry = components['schemas']['WaitlistEntry'];
+export type SchemaWaitlistEntryList = components['schemas']['WaitlistEntryList'];
+export type SchemaWaitlistStatus = components['schemas']['WaitlistStatus'];
 export type SchemaWorkItem = components['schemas']['WorkItem'];
 export type SchemaWorkItemComment = components['schemas']['WorkItemComment'];
 export type SchemaWorkItemCommentList = components['schemas']['WorkItemCommentList'];
@@ -10780,6 +11410,7 @@ export type ParameterServiceRequestVersionNo = components['parameters']['Service
 export type ParameterStayId = components['parameters']['StayId'];
 export type ParameterTenantHeader = components['parameters']['TenantHeader'];
 export type ParameterVersionNo = components['parameters']['VersionNo'];
+export type ParameterWaitlistEntryId = components['parameters']['WaitlistEntryId'];
 export type ParameterWorkItemId = components['parameters']['WorkItemId'];
 export type ParameterWorkQueueId = components['parameters']['WorkQueueId'];
 export type HeaderETag = components['headers']['ETag'];
@@ -10907,6 +11538,198 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    cancelBooking: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                bookingId: components["parameters"]["BookingId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CancelBookingRequest"];
+            };
+        };
+        responses: {
+            /** @description The stay is cancelled, with what it cost and what came back */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CancellationResult"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /**
+             * @description BOOKING_TRANSITION_INVALID, BOOKING_CANCELLATION_TOO_LATE or
+             *     POLICY_SNAPSHOT_MISSING, exactly as the preview answers them.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    previewCancellation: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                bookingId: components["parameters"]["BookingId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description What a cancellation now would cost */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CancellationPreview"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /**
+             * @description BOOKING_TRANSITION_INVALID for a hold (which is given back with releaseHold, not
+             *     cancelled) or a booking that has already ended;
+             *     BOOKING_CANCELLATION_TOO_LATE for a guest who has already checked in;
+             *     POLICY_SNAPSHOT_MISSING for a confirmed booking carrying no frozen policy, which
+             *     is a refusal rather than a default - judging it by today's contract is the one
+             *     thing the snapshot exists to prevent.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    checkInBooking: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                bookingId: components["parameters"]["BookingId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckInBookingRequest"];
+            };
+        };
+        responses: {
+            /** @description The guest is checked in */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Booking"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            /**
+             * @description BOOKING_NOT_FOUND, or VOUCHER_NOT_FOUND for a code that is not this booking's -
+             *     the two are deliberately the same kind of answer.
+             */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /**
+             * @description BOOKING_CHECK_IN_WINDOW names when the window opens and closes and the zone it is
+             *     counted in. BOOKING_TRANSITION_INVALID is a booking that is not CONFIRMED.
+             *     VOUCHER_ALREADY_REDEEMED, VOUCHER_REVOKED and VOUCHER_EXPIRED are the voucher's
+             *     own refusals, each separate because "this does not work" tells the person at the
+             *     desk nothing they can act on.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    checkOutBooking: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                bookingId: components["parameters"]["BookingId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CheckOutBookingRequest"];
+            };
+        };
+        responses: {
+            /** @description The stay is complete, with the nights actually used */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Booking"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description BOOKING_TRANSITION_INVALID - only a checked-in stay can be closed. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
     confirmBooking: {
         parameters: {
             query?: never;
@@ -10957,6 +11780,140 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getNoShow: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                bookingId: components["parameters"]["BookingId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The report */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NoShowResult"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    reportNoShow: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                bookingId: components["parameters"]["BookingId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReportNoShowRequest"];
+            };
+        };
+        responses: {
+            /** @description The claim is recorded; the booking is untouched */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NoShowResult"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /**
+             * @description NO_SHOW_EVIDENCE_REQUIRED, NO_SHOW_TOO_EARLY, NO_SHOW_ALREADY_REPORTED (a refused
+             *     report is REJECTED rather than deleted, so a second one cannot replace it),
+             *     BOOKING_TRANSITION_INVALID, or POLICY_SNAPSHOT_MISSING.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    reviewNoShow: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                bookingId: components["parameters"]["BookingId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewNoShowRequest"];
+            };
+        };
+        responses: {
+            /** @description The decision, and the booking as it now stands */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NoShowResult"];
+                };
+            };
+            /**
+             * @description PERMISSION_DENIED, or NO_SHOW_SAME_ACTOR when the caller is the person who
+             *     reported it. The caller is allowed to review - just not this one.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /**
+             * @description NO_SHOW_DECIDED for a report somebody has already answered, or
+             *     BOOKING_TRANSITION_INVALID when the booking stopped being CONFIRMED while the
+             *     report sat in a queue.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
             429: components["responses"]["TooManyRequests"];
         };
     };
@@ -11499,6 +12456,190 @@ export interface operations {
             };
             422: components["responses"]["ValidationError"];
             429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listWaitlist: {
+        parameters: {
+            query?: {
+                limit?: components["parameters"]["Limit"];
+                /** @description Narrows to one member. A member's own binding still applies on top of it. */
+                personId?: string;
+                /** @description Narrows to one property. */
+                propertyId?: string;
+                /** @description Narrows to one entry status. */
+                status?: components["schemas"]["WaitlistStatus"];
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The queue, in queue order */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaitlistEntryList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    joinWaitlist: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JoinWaitlistRequest"];
+            };
+        };
+        responses: {
+            /** @description The place in the queue */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaitlistEntry"];
+                };
+            };
+            /** @description PERMISSION_DENIED, PERSON_SCOPE or PERSON_BINDING_MISSING. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /**
+             * @description WAITLIST_ALREADY_WAITING - this person already holds a live place in this
+             *     property's queue for this arrival. It is a partial unique index, so a cancelled or
+             *     expired entry does not stop them joining again.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED, PERSON_REQUIRED or ENROLLMENT_NOT_FOUND. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    acceptWaitlistOffer: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                waitlistEntryId: components["parameters"]["WaitlistEntryId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The offer is accepted; the booking it became is in `offer` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaitlistEntry"];
+                };
+            };
+            /** @description PERMISSION_DENIED, PERSON_SCOPE, or STEP_UP_REQUIRED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /**
+             * @description WAITLIST_NOT_OFFERED for an entry with no live offer (an offer that expired while
+             *     the member was looking at it is exactly this), or QUOTE_STALE,
+             *     LODGING_TERMS_MISSING and BOOKING_TRANSITION_INVALID from the confirmation itself.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    cancelWaitlistEntry: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                waitlistEntryId: components["parameters"]["WaitlistEntryId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The place is given up */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaitlistEntry"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description WAITLIST_TRANSITION_INVALID - only a live entry can be given up. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
         };
     };
     listApprovalPolicies: {

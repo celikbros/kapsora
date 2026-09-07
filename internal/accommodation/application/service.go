@@ -37,6 +37,7 @@ type Service struct {
 	auths       AuthorizationPort
 	policies    LodgingPolicyPort
 	eligibility EligibilityChecker
+	workItems   WorkItemPort
 	audit       audit.Recorder
 	cursors     *httpx.CursorCodec
 	logger      *slog.Logger
@@ -64,7 +65,11 @@ type Deps struct {
 	Requests       RequestPort
 	Authorizations AuthorizationPort
 	Policies       LodgingPolicyPort
-	Audit          audit.Recorder
+	// WorkItems raises the work a disputed no-show is, inside the review's own
+	// transaction. nil raises nothing, which is the honest behaviour of a deployment with
+	// no review queue: refusing the review would not make anybody watch one.
+	WorkItems WorkItemPort
+	Audit     audit.Recorder
 	// Cursors may be nil in a process that never pages.
 	Cursors *httpx.CursorCodec
 	Logger  *slog.Logger
@@ -95,10 +100,13 @@ func New(d Deps) (*Service, error) {
 	if d.Policies == nil {
 		d.Policies = NoPolicies{}
 	}
+	if d.WorkItems == nil {
+		d.WorkItems = NoWorkItems{}
+	}
 	return &Service{
 		pool: d.Pool, repo: d.Repo, bookings: d.Bookings, ledger: d.Ledger,
 		requests: d.Requests, auths: d.Authorizations, policies: d.Policies,
-		eligibility: d.Eligibility, audit: d.Audit,
+		eligibility: d.Eligibility, workItems: d.WorkItems, audit: d.Audit,
 		cursors: d.Cursors, logger: d.Logger, now: d.Now,
 	}, nil
 }
@@ -193,10 +201,24 @@ const (
 	ActionBookingExpire          = "accommodation.booking.expire"
 	ActionBookingVoucherIssue    = "accommodation.booking.voucher.issue"
 
+	// The commands of WP-I6-03. A check-in and a check-out are separate codes from a
+	// cancellation because they are separate facts a report counts, and a no-show is two
+	// codes because the claim and the decision are made by different people.
+	ActionBookingCheckIn      = "accommodation.booking.check_in"
+	ActionBookingCheckOut     = "accommodation.booking.check_out"
+	ActionBookingNoShowReport = "accommodation.booking.no_show.report"
+	ActionBookingNoShowReview = "accommodation.booking.no_show.review"
+	ActionWaitlistJoin        = "accommodation.waitlist.join"
+	ActionWaitlistCancel      = "accommodation.waitlist.cancel"
+	ActionWaitlistOffer       = "accommodation.waitlist.offer"
+	ActionWaitlistAccept      = "accommodation.waitlist.accept"
+	ActionWaitlistExpire      = "accommodation.waitlist.offer_expired"
+
 	ResourceProperty  = "accommodation_property"
 	ResourceRoomType  = "accommodation_room_type"
 	ResourceInventory = "accommodation_inventory_day"
 	ResourceBooking   = "accommodation_booking"
+	ResourceWaitlist  = "accommodation_waitlist_entry"
 )
 
 func nullUUID(id uuid.UUID) uuid.NullUUID {

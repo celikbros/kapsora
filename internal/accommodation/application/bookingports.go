@@ -128,9 +128,13 @@ type BookingRecord struct {
 	CancelledAt              *time.Time
 	CancelReasonCode         *string
 	ActualNights             *int
-	CreatedAt                time.Time
-	UpdatedAt                time.Time
-	RowVersion               int64
+	// OverBooking is a stay that ran past what the authorization promised. It is a flag
+	// rather than a refusal: the guest has already slept the extra nights, and the claim
+	// (M7) raises them as an exception rather than the check-out failing.
+	OverBooking bool
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	RowVersion  int64
 }
 
 // LastNight is the final night of the stay, which is the day before check-out. Every
@@ -347,6 +351,70 @@ type BookingRepository interface {
 	// ActiveTenants lists the tenants the sweeps walk. platform.tenant carries no RLS, so
 	// it is read outside a tenant transaction like the other cross-tenant jobs.
 	ActiveTenants(ctx context.Context, tx pgx.Tx) ([]uuid.UUID, error)
+
+	// --- What happens after the promise (WP-I6-03) ---
+
+	// AddConfirmed moves `confirmed` by a signed delta over the whole range, with the rows
+	// already locked in stay_date order. It is the confirmed-side twin of AddHeld, and the
+	// two are separate because a cancelled stay gives back a room that is *taken* while a
+	// released hold gives back one that is *held*: moving the wrong counter would leave the
+	// allotment right in total and wrong on every night.
+	AddConfirmed(ctx context.Context, tx pgx.Tx, tenantID, roomTypeID uuid.UUID,
+		from, to time.Time, delta int) error
+	// CancelConfirmedBookingRow moves CONFIRMED or PENDING_APPROVAL to CANCELLED. It never
+	// names CHECKED_IN: a guest who has arrived checks out, they do not cancel.
+	CancelConfirmedBookingRow(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID,
+		cancelledAt time.Time, reasonCode string, actorID uuid.UUID) (bool, error)
+	CheckInBookingRow(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID,
+		checkedInAt time.Time, actorID uuid.UUID) (bool, error)
+	CheckOutBookingRow(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID,
+		checkedOutAt time.Time, actualNights int, overBooking bool, actorID uuid.UUID) (bool, error)
+	MarkBookingNoShowRow(ctx context.Context, tx pgx.Tx, tenantID, id, actorID uuid.UUID) (bool, error)
+
+	CreateCancellation(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
+		in NewCancellationRow) (CancellationRecord, error)
+	GetCancellation(ctx context.Context, tx pgx.Tx, tenantID, bookingID uuid.UUID) (CancellationRecord, error)
+
+	// CountCleanBookingDocuments is the evidence half of the no-show gate: how many
+	// documents linked to this booking the scanner has cleared. A named object narrows it
+	// to one, so a report may point at the file it means rather than at whatever happens to
+	// be attached.
+	CountCleanBookingDocuments(ctx context.Context, tx pgx.Tx, tenantID, bookingID uuid.UUID,
+		objectID *uuid.UUID) (int, error)
+	CreateNoShow(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, in NewNoShowRow) (NoShowRecord, error)
+	GetNoShow(ctx context.Context, tx pgx.Tx, tenantID, bookingID uuid.UUID) (NoShowRecord, error)
+	LockNoShow(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID) (NoShowRecord, error)
+	ReviewNoShowRow(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, in NoShowReviewRow) (bool, error)
+
+	CreateWaitlistEntry(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
+		in NewWaitlistRow) (WaitlistRecord, error)
+	GetWaitlistEntry(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID,
+		personID *uuid.UUID, scopeIDs []uuid.UUID) (WaitlistRecord, error)
+	// LockWaitlistEntry reads the row FOR UPDATE with no boundary applied, for the same
+	// reason LockBooking does: the offer sweep acts for the tenant and for no provider.
+	LockWaitlistEntry(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID) (WaitlistRecord, error)
+	ListWaitlistEntries(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
+		q WaitlistQuery) ([]WaitlistRecord, error)
+	// ListWaitlistQueue is the sweep's read: WAITING entries in queue order -- priority
+	// first, then whoever asked first -- taken FOR UPDATE SKIP LOCKED. The ordering is part
+	// of the contract, like LockInventoryNights': a sweep that ignored priority would be a
+	// plan clause nobody honoured.
+	ListWaitlistQueue(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, limit int) ([]WaitlistRecord, error)
+	ListExpiredWaitlistOffers(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
+		before time.Time, limit int) ([]uuid.UUID, error)
+	OfferWaitlistEntry(ctx context.Context, tx pgx.Tx, tenantID, id, bookingID uuid.UUID,
+		expiresAt time.Time) (bool, error)
+	// ReturnWaitlistEntryToQueue puts an unaccepted offer back in the queue *behind* those
+	// who were already waiting, by moving its created_at to now. The queue is ordered by
+	// that column, so this is the whole of "goes to the back".
+	ReturnWaitlistEntryToQueue(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID,
+		requeuedAt time.Time) (bool, error)
+	AcceptWaitlistEntryRow(ctx context.Context, tx pgx.Tx, tenantID, id, actorID uuid.UUID) (bool, error)
+	CancelWaitlistEntryRow(ctx context.Context, tx pgx.Tx, tenantID, id, actorID uuid.UUID) (bool, error)
+	// ListPropertyRoomTypeIDs is what the sweep walks for an entry that named no room type:
+	// "any room of this hotel" is what that member asked for, and the sweep tries each one
+	// rather than guessing.
+	ListPropertyRoomTypeIDs(ctx context.Context, tx pgx.Tx, tenantID, propertyID uuid.UUID) ([]uuid.UUID, error)
 }
 
 // LedgerPort is benefit/ledger as this package uses it: take a hold on the nights, give it
@@ -405,6 +473,15 @@ type BookingRequestRef struct {
 type RequestPort interface {
 	CreateReservation(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
 		in BookingRequestInput) (BookingRequestRef, error)
+	// CancelReservation withdraws the request a booking waiting on a reviewer raised. It
+	// opens a transaction of its own -- it is WP-I4-01's own command, with its own audit
+	// rows and its own status event -- so it is called before the booking's transaction is
+	// opened, exactly as the authorization is on the approval path. A request somebody has
+	// already decided or cancelled is not an error: the booking is being cancelled either
+	// way, and a member must not be left unable to cancel because a reviewer got there
+	// first.
+	CancelReservation(ctx context.Context, rc identity.RequestContext, requestID uuid.UUID,
+		reasonCode string) error
 }
 
 // BookingAuthorizationInput is the hold this package asks WP-I4-02 for when a reservation
@@ -472,6 +549,33 @@ type AuthorizationPort interface {
 		in BookingAuthorizationInput) (BookingAuthorizationRef, error)
 	IssueVoucher(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
 		in BookingVoucherInput) (IssuedBookingVoucher, error)
+
+	// --- What happens after the promise (WP-I6-03) ---
+
+	// RedeemVoucherToken spends the code the guest presented at the desk, in the caller's
+	// transaction, and records no fulfilment: nobody has slept anywhere yet, and the
+	// fulfilment is written at check-out for the nights actually used.
+	RedeemVoucherToken(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
+		in BookingRedeemInput) error
+	// RevokeVouchers retires every live code of a promise, so a cancelled stay and the
+	// token that would have opened its room stop being true at the same instant.
+	RevokeVouchers(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
+		authorizationID uuid.UUID, reasonCode string) error
+	// ReleaseUnused gives back nights nobody spent, up to the ceiling asked for, and
+	// reports what it actually gave back.
+	ReleaseUnused(ctx context.Context, tx pgx.Tx, in BookingReleaseInput) (string, error)
+	// Consume spends nights the plan paid for and the guest did not sleep -- a cancellation
+	// penalty or a confirmed no-show -- and reports what it actually took.
+	Consume(ctx context.Context, tx pgx.Tx, in BookingConsumeInput) (string, error)
+	// RecordStayFulfilment writes what the stay delivered and consumes it, as one act. A
+	// check-out is the one moment where recording and completing are genuinely the same
+	// fact: the guest has left, the nights are known, and there is nobody left to correct.
+	RecordStayFulfilment(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
+		in BookingFulfilmentInput) error
+	// Lines reads the approved lines of a promise FOR UPDATE, so a caller about to consume
+	// or release computes its arithmetic on numbers nobody else can move before it commits.
+	Lines(ctx context.Context, tx pgx.Tx, tenantID, authorizationID uuid.UUID) (
+		[]BookingAuthorizationLine, error)
 }
 
 // LodgingPolicyPort is WP-I6-04's SnapshotLodgingPolicy, seen from here: the terms of the
@@ -499,6 +603,13 @@ func (NoRequests) CreateReservation(context.Context, pgx.Tx, identity.RequestCon
 	return BookingRequestRef{}, errors.New("accommodation: this process cannot raise a reservation request")
 }
 
+// CancelReservation implements RequestPort.
+func (NoRequests) CancelReservation(context.Context, identity.RequestContext, uuid.UUID,
+	string,
+) error {
+	return errors.New("accommodation: this process cannot cancel a reservation request")
+}
+
 // NoAuthorizations is the refusing AuthorizationPort.
 type NoAuthorizations struct{}
 
@@ -514,6 +625,44 @@ func (NoAuthorizations) IssueVoucher(context.Context, pgx.Tx, identity.RequestCo
 	BookingVoucherInput,
 ) (IssuedBookingVoucher, error) {
 	return IssuedBookingVoucher{}, errors.New("accommodation: this process cannot issue a voucher")
+}
+
+// RedeemVoucherToken implements AuthorizationPort.
+func (NoAuthorizations) RedeemVoucherToken(context.Context, pgx.Tx, identity.RequestContext,
+	BookingRedeemInput,
+) error {
+	return errors.New("accommodation: this process cannot redeem a voucher")
+}
+
+// RevokeVouchers implements AuthorizationPort.
+func (NoAuthorizations) RevokeVouchers(context.Context, pgx.Tx, identity.RequestContext,
+	uuid.UUID, string,
+) error {
+	return errors.New("accommodation: this process cannot revoke a voucher")
+}
+
+// ReleaseUnused implements AuthorizationPort.
+func (NoAuthorizations) ReleaseUnused(context.Context, pgx.Tx, BookingReleaseInput) (string, error) {
+	return "", errors.New("accommodation: this process cannot release an authorization")
+}
+
+// Consume implements AuthorizationPort.
+func (NoAuthorizations) Consume(context.Context, pgx.Tx, BookingConsumeInput) (string, error) {
+	return "", errors.New("accommodation: this process cannot consume an authorization")
+}
+
+// RecordStayFulfilment implements AuthorizationPort.
+func (NoAuthorizations) RecordStayFulfilment(context.Context, pgx.Tx, identity.RequestContext,
+	BookingFulfilmentInput,
+) error {
+	return errors.New("accommodation: this process cannot record a fulfilment")
+}
+
+// Lines implements AuthorizationPort.
+func (NoAuthorizations) Lines(context.Context, pgx.Tx, uuid.UUID, uuid.UUID) (
+	[]BookingAuthorizationLine, error,
+) {
+	return nil, errors.New("accommodation: this process cannot read an authorization")
 }
 
 // NoPolicies is the refusing LodgingPolicyPort.

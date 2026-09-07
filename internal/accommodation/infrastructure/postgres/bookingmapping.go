@@ -43,6 +43,7 @@ type bookingColumns struct {
 	CancelledAt              *time.Time
 	CancelReasonCode         *string
 	ActualNights             *int32
+	OverBooking              bool
 	CreatedAt                time.Time
 	UpdatedAt                time.Time
 	RowVersion               int64
@@ -65,8 +66,8 @@ func bookingOf(c bookingColumns) application.BookingRecord {
 		QuoteSnapshot:            c.QuoteSnapshot, PolicySnapshot: c.PolicySnapshot,
 		Channel: c.Channel, ConfirmedAt: c.ConfirmedAt, CheckedInAt: c.CheckedInAt,
 		CheckedOutAt: c.CheckedOutAt, CancelledAt: c.CancelledAt,
-		CancelReasonCode: c.CancelReasonCode,
-		CreatedAt:        c.CreatedAt, UpdatedAt: c.UpdatedAt, RowVersion: c.RowVersion,
+		CancelReasonCode: c.CancelReasonCode, OverBooking: c.OverBooking,
+		CreatedAt: c.CreatedAt, UpdatedAt: c.UpdatedAt, RowVersion: c.RowVersion,
 	}
 	if c.ActualNights != nil {
 		nights := int(*c.ActualNights)

@@ -112,6 +112,7 @@ func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) 
 	var below *application.InventoryBelowCommitment
 	var unavailable *application.RoomUnavailable
 	var unpriceable *application.QuoteUnavailable
+	var checkInWindow *application.CheckInWindowClosed
 	switch {
 	case errors.As(err, &ve):
 		writeValidation(w, r, ve.Fields)
@@ -157,6 +158,22 @@ func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) 
 			Detail:     "Sözleşmede bu oda tipi için konaklamanın tüm gecelerini kapsayan fiyat yok.",
 			Extensions: map[string]any{"reason": unpriceable.Reason},
 		})
+	case errors.As(err, &checkInWindow):
+		// The refusal a desk can act on: when the window opens, when it closes, and the zone
+		// both are counted in. A clerk told only "outside the window" has been told nothing,
+		// and one who can see the window closed yesterday knows to raise a no-show instead.
+		httpx.WriteProblem(w, r, httpx.Problem{
+			Type:   httpx.ProblemTypeBase + "accommodation/check-in-window",
+			Title:  "Giriş saati aralığının dışında",
+			Status: http.StatusConflict, Code: "BOOKING_CHECK_IN_WINDOW",
+			Detail: "Bu rezervasyon için giriş yalnızca tesisin kendi saatiyle belirlenen " +
+				"aralıkta kaydedilebilir.",
+			Extensions: map[string]any{
+				"opensAt":  checkInWindow.OpensAt.Format(time.RFC3339),
+				"closesAt": checkInWindow.ClosesAt.Format(time.RFC3339),
+				"timezone": checkInWindow.TimeZone,
+			},
+		})
 	case errors.Is(err, application.ErrBookingNotFound):
 		problem(w, r, http.StatusNotFound, "accommodation/booking-not-found",
 			"BOOKING_NOT_FOUND", "Rezervasyon bulunamadı", "")
@@ -185,6 +202,74 @@ func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) 
 			"ENTITLEMENT_INSUFFICIENT", "Planınız bu konaklamanın hiçbir gecesini karşılamıyor",
 			"Bu hizmet planınızda tanımlı değil ya da konaklama hakkınız tükendi; "+
 				"planın karşılamadığı bir konaklama bu ekrandan rezerve edilemez.")
+	case errors.Is(err, application.ErrCancellationTooLate):
+		problem(w, r, http.StatusConflict, "accommodation/cancellation-too-late",
+			"BOOKING_CANCELLATION_TOO_LATE", "Giriş yapılmış rezervasyon iptal edilemez",
+			"Konaklama başladıktan sonra iptal değil, çıkış işlemi yapılır.")
+	case errors.Is(err, application.ErrPolicySnapshotMissing):
+		problem(w, r, http.StatusConflict, "accommodation/policy-snapshot-missing",
+			"POLICY_SNAPSHOT_MISSING", "Rezervasyonun iptal koşulları kayıtlı değil",
+			"İptal, rezervasyonun onaylandığı andaki koşullara göre hesaplanır; "+
+				"bu rezervasyonda o kayıt yok.")
+	case errors.Is(err, application.ErrVoucherRequired):
+		problem(w, r, http.StatusUnprocessableEntity, "accommodation/voucher-required",
+			"VOUCHER_REQUIRED", "Giriş için kupon kodu gerekli",
+			"Misafirin gösterdiği kodu girin.")
+	case errors.Is(err, application.ErrNoShowEvidenceRequired):
+		problem(w, r, http.StatusConflict, "accommodation/no-show-evidence-required",
+			"NO_SHOW_EVIDENCE_REQUIRED", "Gelmedi bildirimi için belge gerekli",
+			"Rezervasyona bağlı, taraması temiz en az bir belge olmadan bildirim yapılamaz.")
+	case errors.Is(err, application.ErrNoShowTooEarly):
+		problem(w, r, http.StatusConflict, "accommodation/no-show-too-early",
+			"NO_SHOW_TOO_EARLY", "Giriş saati aralığı henüz kapanmadı",
+			"Geç kalan misafir ile gelmeyen misafir aynı şey değildir; aralık kapandıktan "+
+				"sonra bildirin.")
+	case errors.Is(err, application.ErrNoShowAlreadyReported):
+		problem(w, r, http.StatusConflict, "accommodation/no-show-already-reported",
+			"NO_SHOW_ALREADY_REPORTED", "Bu rezervasyon için zaten bildirim var",
+			"Reddedilen bir bildirim silinmez; her rezervasyon için tek bildirim yapılır.")
+	case errors.Is(err, application.ErrNoShowNotFound):
+		problem(w, r, http.StatusNotFound, "accommodation/no-show-not-found",
+			"NO_SHOW_NOT_FOUND", "Gelmedi bildirimi bulunamadı", "")
+	case errors.Is(err, application.ErrNoShowDecided):
+		problem(w, r, http.StatusConflict, "accommodation/no-show-decided",
+			"NO_SHOW_DECIDED", "Bu bildirim zaten karara bağlandı",
+			"Güncel durumu alıp yeniden deneyin.")
+	case errors.Is(err, application.ErrNoShowSameActor):
+		problem(w, r, http.StatusForbidden, "accommodation/no-show-same-actor",
+			"NO_SHOW_SAME_ACTOR", "Bildirimi yapan kişi onu onaylayamaz",
+			"Gelmedi bildirimini değerlendiren, bildiren kullanıcıdan farklı olmalı.")
+	case errors.Is(err, application.ErrWaitlistEntryNotFound):
+		problem(w, r, http.StatusNotFound, "accommodation/waitlist-entry-not-found",
+			"WAITLIST_ENTRY_NOT_FOUND", "Bekleme listesi kaydı bulunamadı", "")
+	case errors.Is(err, application.ErrWaitlistAlreadyWaiting):
+		problem(w, r, http.StatusConflict, "accommodation/waitlist-already-waiting",
+			"WAITLIST_ALREADY_WAITING", "Bu tesis ve tarih için zaten bekleme kaydınız var",
+			"Aynı kişi, aynı tesis ve aynı giriş tarihi için tek bir açık bekleme kaydı olabilir.")
+	case errors.Is(err, application.ErrWaitlistNotOffered):
+		problem(w, r, http.StatusConflict, "accommodation/waitlist-not-offered",
+			"WAITLIST_NOT_OFFERED", "Bu kayda açık bir teklif yok",
+			"Teklifin süresi dolmuş olabilir; sıradaki yerinizi koruyoruz.")
+	case errors.Is(err, application.ErrWaitlistTransitionInvalid):
+		problem(w, r, http.StatusConflict, "accommodation/waitlist-transition-invalid",
+			"WAITLIST_TRANSITION_INVALID", "Bekleme kaydı bu işlem için uygun durumda değil",
+			"Kaydın güncel durumunu alıp yeniden deneyin.")
+	case errors.Is(err, application.ErrVoucherNotFound):
+		// The same answer an unknown booking gets. A refusal that told a real code for
+		// another stay apart from one that does not exist would be an oracle a stolen list
+		// could be tested against.
+		problem(w, r, http.StatusNotFound, "accommodation/voucher-not-found",
+			"VOUCHER_NOT_FOUND", "Bu rezervasyona ait böyle bir kupon yok", "")
+	case errors.Is(err, application.ErrVoucherAlreadyRedeemed):
+		problem(w, r, http.StatusConflict, "accommodation/voucher-already-redeemed",
+			"VOUCHER_ALREADY_REDEEMED", "Kupon zaten kullanılmış", "")
+	case errors.Is(err, application.ErrVoucherRevoked):
+		problem(w, r, http.StatusConflict, "accommodation/voucher-revoked",
+			"VOUCHER_REVOKED", "Kupon iptal edilmiş",
+			"Rezervasyon sahibine yeni bir kupon düzenlenebilir.")
+	case errors.Is(err, application.ErrVoucherExpired):
+		problem(w, r, http.StatusConflict, "accommodation/voucher-expired",
+			"VOUCHER_EXPIRED", "Kupon geçerlilik süresi dışında", "")
 	case errors.Is(err, application.ErrVoucherNotAvailable):
 		problem(w, r, http.StatusConflict, "accommodation/voucher-not-available",
 			"VOUCHER_NOT_AVAILABLE", "Rezervasyon belgesi henüz oluşturulamaz",

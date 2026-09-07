@@ -351,7 +351,10 @@ func run() error {
 		Requests:       accommodationgw.NewRequests(serviceRequestSvc),
 		Authorizations: accommodationgw.NewAuthorizations(authorizationSvc),
 		Policies:       accommodationgw.NewPolicies(contractSvc),
-		Audit:          auditpg.New(), Cursors: cursors, Logger: logger,
+		// A disputed no-show is work somebody has to look at, raised into WP-I4-03's
+		// reservation review queue inside the review's own transaction.
+		WorkItems: accommodationpg.NewWorkItems(logger),
+		Audit:     auditpg.New(), Cursors: cursors, Logger: logger,
 	})
 	if err != nil {
 		return err
@@ -882,8 +885,26 @@ func newRouter(d routerDeps) http.Handler {
 			tenant.Route("/accommodation/holds", func(r chi.Router) {
 				accommodationHandler.HoldRoutes(r, bookingMW)
 			})
+			// What happens after the promise (WP-I6-03). The check-in route is the second
+			// exception to the Idempotency-Key rule, and it is the same reason: its request
+			// body carries a usable voucher token, and the middleware persists request and
+			// response bodies for replay. A replayed check-in is refused by the voucher's
+			// own status instead, which is a better answer than a stored one.
+			afterMW := accommodationhttp.AfterMiddlewares{
+				Cancel:              d.idempotent("accommodation.booking.cancel"),
+				CheckOut:            d.idempotent("accommodation.booking.check_out"),
+				ReportNoShow:        d.idempotent("accommodation.booking.no_show.report"),
+				ReviewNoShow:        d.idempotent("accommodation.booking.no_show.review"),
+				JoinWaitlist:        d.idempotent("accommodation.waitlist.join"),
+				CancelWaitlistEntry: d.idempotent("accommodation.waitlist.cancel"),
+				AcceptWaitlistOffer: d.idempotent("accommodation.waitlist.accept"),
+			}
 			tenant.Route("/accommodation/bookings", func(r chi.Router) {
 				accommodationHandler.BookingRoutes(r, bookingMW)
+				accommodationHandler.AfterBookingRoutes(r, afterMW)
+			})
+			tenant.Route("/accommodation/waitlist", func(r chi.Router) {
+				accommodationHandler.WaitlistRoutes(r, afterMW)
 			})
 
 			// Notifications. Templates are configuration, the message log is a record of

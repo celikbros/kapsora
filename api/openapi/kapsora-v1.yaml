@@ -11031,6 +11031,557 @@ paths:
                 $ref: '#/components/schemas/Problem'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+  /api/v1/accommodation/bookings/{bookingId}/cancellation-preview:
+    post:
+      tags: [Accommodation]
+      operationId: previewCancellation
+      description: |
+        What a cancellation now would cost, and what would come back. Changes nothing.
+
+        **The answer is the policy the booking was confirmed under, and never today's
+        contract.** `policySnapshot` was frozen onto the booking at confirmation, and this
+        computation reads that document and the booking's own night amounts. A hotel that
+        rewrote its cancellation terms this morning changes what the next booking costs to
+        cancel and does not change what this one costs.
+
+        The free window is counted back from the start of the arrival day **on the property's
+        own clock**, which is why the snapshot carries a timezone: a member cancelling a
+        Berlin hotel late in the evening is inside a 48-hour window there and outside it in
+        Istanbul, and only one of those is the answer they agreed to.
+
+        `cancelBooking` returns exactly these figures, because both call the same computation
+        on the same document. A preview that estimated and a command that decided would be
+        two answers to one question, and the member would find out which was real from an
+        invoice.
+
+        It is a POST because it answers about one member's booking inside the caller's own
+        boundary; nothing is written and no ledger moves.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/BookingId'
+      responses:
+        '200':
+          description: What a cancellation now would cost
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CancellationPreview'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            BOOKING_TRANSITION_INVALID for a hold (which is given back with releaseHold, not
+            cancelled) or a booking that has already ended;
+            BOOKING_CANCELLATION_TOO_LATE for a guest who has already checked in;
+            POLICY_SNAPSHOT_MISSING for a confirmed booking carrying no frozen policy, which
+            is a refusal rather than a default - judging it by today's contract is the one
+            thing the snapshot exists to prevent.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/accommodation/bookings/{bookingId}/cancel:
+    post:
+      tags: [Accommodation]
+      operationId: cancelBooking
+      description: |
+        Calls off a stay somebody agreed to, and settles what that costs.
+
+        **One transaction, in an order that is not interchangeable.** The rooms of every night
+        go back to the allotment under the same `stay_date` lock order a hold takes them in
+        (`confirmed - 1` for an agreed stay, `held - 1` for one still waiting on a reviewer).
+        On the entitlement the penalty is **consumed** first and the remainder **released**
+        second: both draw on the same reservation, and releasing first would hand everything
+        back and leave nothing to consume, so the ledger would stop agreeing with the fee.
+        Consuming is the honest movement - the plan paid for a room the member did not use.
+
+        **The money fee is recorded and charged nowhere.** KAPSORA holds no card; the
+        cancellation row is what M7's settlement turns into an invoice line, and
+        `payerFee + memberFee == feeAmount` exactly.
+
+        **The voucher is retired** in the same transaction, so a cancelled stay and the code
+        that would have opened its room stop being true at the same instant.
+
+        **Running it twice is one cancellation.** The status write names CONFIRMED and
+        PENDING_APPROVAL, a unique index allows one cancellation row per booking, and both
+        ledger movements are keyed by the booking rather than by a clock.
+
+        A booking still waiting on a reviewer has agreed nothing, so it is free: its
+        reservation request is withdrawn and the hold released, with no fee and no penalty. A
+        hold is given back with releaseHold instead.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/BookingId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelBookingRequest'
+      responses:
+        '200':
+          description: The stay is cancelled, with what it cost and what came back
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CancellationResult'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            BOOKING_TRANSITION_INVALID, BOOKING_CANCELLATION_TOO_LATE or
+            POLICY_SNAPSHOT_MISSING, exactly as the preview answers them.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/accommodation/bookings/{bookingId}/check-in:
+    post:
+      tags: [Accommodation]
+      operationId: checkInBooking
+      description: |
+        Records the guest's arrival against the voucher they presented at the desk.
+
+        **The token is in the body and nowhere else.** It is never a path segment and never a
+        query parameter, because both are logged by every proxy between the desk and here. It
+        is hashed on arrival, matched against a SHA-256 digest, and reaches no column, log
+        line, audit row or notification.
+
+        **A token that is not this booking's is 404**, exactly as an unknown one is. A refusal
+        that could tell a real code for another stay apart from a code that does not exist
+        would be an oracle for testing a stolen list.
+
+        The arrival must fall inside `[checkIn - accommodation.checkin_early_hours,
+        checkIn + accommodation.checkin_late_hours]`, counted from the start of the arrival
+        day **on the property's own clock**. A refusal names both ends of the window, because
+        a clerk told "too early" and not "from when" has been told nothing.
+
+        Nothing is consumed here. Nobody has slept anywhere yet; the nights are consumed at
+        check-out, for the nights actually used.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/BookingId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckInBookingRequest'
+      responses:
+        '200':
+          description: The guest is checked in
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: |
+            BOOKING_NOT_FOUND, or VOUCHER_NOT_FOUND for a code that is not this booking's -
+            the two are deliberately the same kind of answer.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: |
+            BOOKING_CHECK_IN_WINDOW names when the window opens and closes and the zone it is
+            counted in. BOOKING_TRANSITION_INVALID is a booking that is not CONFIRMED.
+            VOUCHER_ALREADY_REDEEMED, VOUCHER_REVOKED and VOUCHER_EXPIRED are the voucher's
+            own refusals, each separate because "this does not work" tells the person at the
+            desk nothing they can act on.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/accommodation/bookings/{bookingId}/check-out:
+    post:
+      tags: [Accommodation]
+      operationId: checkOutBooking
+      description: |
+        Ends the stay and settles what it used.
+
+        `actualNights` is counted **on the property's calendar** - the number of civil days
+        between the booked arrival and the day the guest left, never fewer than one and never
+        a duration divided by twenty-four hours. A stay that spans a clock change is still the
+        same number of nights.
+
+        The fulfilment for those nights is written and consumed in this transaction, and
+        everything the authorization still held is released across every hold the booking
+        stands on, exactly as an inpatient discharge releases at the end of a stay. The rooms
+        of the nights nobody slept in go back to the allotment, where the availability search
+        can sell them again; the nights that were used stay confirmed, because the room really
+        was occupied on them.
+
+        **An over-stay consumes nothing extra.** A guest who stayed longer than the plan
+        promised has already had the extra nights, so the check-out cannot refuse: it consumes
+        what was authorized, sets `overBooking`, and leaves the difference to the claim (M7) as
+        an exception a person looks at.
+
+        Running it twice releases nothing twice: the status write names CHECKED_IN, and the
+        ledger movements are keyed by the booking and the reason rather than by the moment.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/BookingId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckOutBookingRequest'
+      responses:
+        '200':
+          description: The stay is complete, with the nights actually used
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: BOOKING_TRANSITION_INVALID - only a checked-in stay can be closed.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/accommodation/bookings/{bookingId}/no-show:
+    get:
+      tags: [Accommodation]
+      operationId: getNoShow
+      description: |
+        The no-show report on this booking, if there is one. A booking nobody reported answers
+        404, which is the same answer a booking outside the caller's boundary gives.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/BookingId'
+      responses:
+        '200':
+          description: The report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoShowResult'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Accommodation]
+      operationId: reportNoShow
+      description: |
+        The provider's claim that nobody arrived.
+
+        **It changes nothing except the report.** The booking stays CONFIRMED, the room stays
+        confirmed in the allotment, and not one night moves on the plan. A provider that could
+        close a booking by asserting an absence could close a booking a guest is standing in
+        the lobby of, and the member would learn about it from a fee.
+
+        Two refusals happen here. A report before the check-in window has closed is
+        NO_SHOW_TOO_EARLY: a guest who is late is not a guest who did not come. And a report
+        with no **clean** document linked to the booking is NO_SHOW_EVIDENCE_REQUIRED - a
+        claim that costs a member money and rests on nothing is a claim nobody can review, and
+        a link to a file still in quarantine is not a document a reviewer can open.
+
+        The assessed fee comes from the frozen policy's no-show rate applied to the member's
+        own share, and `payerAmount + memberAmount == assessedFeeAmount` exactly. It is a claim
+        rather than a charge: nothing is taken from anybody until reviewNoShow confirms it. The
+        member is told what has been claimed, so the first they hear of it is not an invoice.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/BookingId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportNoShowRequest'
+      responses:
+        '201':
+          description: The claim is recorded; the booking is untouched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoShowResult'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            NO_SHOW_EVIDENCE_REQUIRED, NO_SHOW_TOO_EARLY, NO_SHOW_ALREADY_REPORTED (a refused
+            report is REJECTED rather than deleted, so a second one cannot replace it),
+            BOOKING_TRANSITION_INVALID, or POLICY_SNAPSHOT_MISSING.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/accommodation/bookings/{bookingId}/no-show/review:
+    post:
+      tags: [Accommodation]
+      operationId: reviewNoShow
+      description: |
+        The payer's answer to a provider's claim, and the only place a no-show costs anybody
+        anything.
+
+        **The reviewer may not be the reporter.** It is refused with NO_SHOW_SAME_ACTOR, and a
+        CHECK on the row refuses it again whatever reaches the table. The two sides are told
+        apart by scope: a provider clerk holds `accommodation.booking.manage` on an
+        ORGANIZATION grant and a payer reviewer holds it tenant-wide, and only the second is a
+        second pair of eyes.
+
+        The three answers do three different things. CONFIRMED closes the booking as NO_SHOW,
+        frees the room for the rest of the allotment, consumes what the policy's rate says off
+        the plan (rounded **up** to whole nights, because a rate of fifty per cent that
+        rounded down would cost the payer nothing on a one-night stay) and releases the rest.
+        REJECTED changes nothing but the report - the stay is still CONFIRMED, still
+        cancellable and still checkable-in, because a provider who was wrong must not have
+        cost the member their booking. DISPUTED raises a work item in the payer's review queue
+        and leaves everything where it is, because somebody has to look.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/BookingId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewNoShowRequest'
+      responses:
+        '200':
+          description: The decision, and the booking as it now stands
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoShowResult'
+        '403':
+          description: |
+            PERMISSION_DENIED, or NO_SHOW_SAME_ACTOR when the caller is the person who
+            reported it. The caller is allowed to review - just not this one.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            NO_SHOW_DECIDED for a report somebody has already answered, or
+            BOOKING_TRANSITION_INVALID when the booking stopped being CONFIRMED while the
+            report sat in a queue.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/accommodation/waitlist:
+    get:
+      tags: [Accommodation]
+      operationId: listWaitlist
+      description: |
+        The waiting list this caller may see, **in the order the offer sweep walks it**:
+        highest priority first, then whoever asked first. The list a member is shown their
+        place in is the list the offer actually comes out of.
+
+        The boundary is computed from the caller's own grants and is never widened by a
+        filter: a member sees their own entries whatever `personId` they send, and a provider
+        sees the entries at its own properties.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Limit'
+        - name: personId
+          in: query
+          description: Narrows to one member. A member's own binding still applies on top of it.
+          schema:
+            type: string
+            format: uuid
+        - name: propertyId
+          in: query
+          description: Narrows to one property.
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          description: Narrows to one entry status.
+          schema:
+            $ref: '#/components/schemas/WaitlistStatus'
+      responses:
+        '200':
+          description: The queue, in queue order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WaitlistEntryList'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags: [Accommodation]
+      operationId: joinWaitlist
+      description: |
+        Puts a member in the queue for a property and a set of dates.
+
+        It checks nothing about availability, and that is the point: a member joins a queue
+        *because* the dates are full, and a join that refused when the room was free would
+        refuse exactly nobody - they would have booked it. What it does check is the plan,
+        because an entry with no enrollment behind it is a place in a queue that could never
+        become a booking.
+
+        `roomTypeId` is optional: null means any room of the property, which is what a member
+        who wants the hotel rather than the suite is actually asking for, and the sweep tries
+        each of the property's room types for them.
+
+        `priority` is the desk's to set - a programme that gives its own people the first
+        refusal - and a member joining for themselves always joins at zero, because a queue a
+        member can push themselves up is not a queue.
+
+        A member joins under `accommodation.booking.create`; a desk joining on somebody's
+        behalf holds `accommodation.waitlist.manage`.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JoinWaitlistRequest'
+      responses:
+        '201':
+          description: The place in the queue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WaitlistEntry'
+        '403':
+          description: PERMISSION_DENIED, PERSON_SCOPE or PERSON_BINDING_MISSING.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            WAITLIST_ALREADY_WAITING - this person already holds a live place in this
+            property's queue for this arrival. It is a partial unique index, so a cancelled or
+            expired entry does not stop them joining again.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: VALIDATION_FAILED, PERSON_REQUIRED or ENROLLMENT_NOT_FOUND.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/accommodation/waitlist/{waitlistEntryId}/cancel:
+    post:
+      tags: [Accommodation]
+      operationId: cancelWaitlistEntry
+      description: |
+        The member giving up their place.
+
+        An entry that was holding an offer gives the room back with it: a room set aside for
+        somebody who has walked away is a room nobody can book and nobody will use.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/WaitlistEntryId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: The place is given up
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WaitlistEntry'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: WAITLIST_TRANSITION_INVALID - only a live entry can be given up.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/accommodation/waitlist/{waitlistEntryId}/accept:
+    post:
+      tags: [Accommodation]
+      operationId: acceptWaitlistOffer
+      description: |
+        Turns the hold the sweep placed on this member's behalf into a confirmation.
+
+        It confirms through the same path confirmBooking uses - the same quote staleness rule,
+        the same step-up threshold, the same reservation request - because an offer accepted
+        **is** a booking confirmed, and a second way to confirm one would be a second set of
+        rules for the same act.
+
+        An offer nobody accepts expires with its hold: the room goes back to the allotment and
+        the entry returns to WAITING **behind** everybody who was already queued, because its
+        `createdAt` moves to the moment it was requeued and the queue is ordered by it.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/WaitlistEntryId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: The offer is accepted; the booking it became is in `offer`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WaitlistEntry'
+        '403':
+          description: PERMISSION_DENIED, PERSON_SCOPE, or STEP_UP_REQUIRED.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            WAITLIST_NOT_OFFERED for an entry with no live offer (an offer that expired while
+            the member was looking at it is exactly this), or QUOTE_STALE,
+            LODGING_TERMS_MISSING and BOOKING_TRANSITION_INVALID from the confirmation itself.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
 components:
   securitySchemes:
     sessionCookie:
@@ -11467,6 +12018,13 @@ components:
         format: uuid
     BookingId:
       name: bookingId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    WaitlistEntryId:
+      name: waitlistEntryId
       in: path
       required: true
       schema:
@@ -20384,6 +20942,13 @@ components:
           type: [string, 'null']
         actualNights:
           type: [integer, 'null']
+        overBooking:
+          type: boolean
+          description: |
+            The stay ran past what the authorization promised. It is a flag rather than a
+            refusal: the guest has already slept the extra nights, so the check-out records
+            them and the claim (M7) raises them as an exception a person looks at. Nothing
+            beyond what was authorized is ever consumed.
         createdAt:
           type: string
           format: date-time
@@ -20486,3 +21051,408 @@ components:
         validTo:
           type: string
           format: date-time
+    CancellationQuote:
+      type: object
+      description: |
+        What a cancellation costs and gives back, computed from the booking's own frozen
+        policy and its own night amounts. Every figure is an exact decimal string: these
+        numbers reach a settlement, and a fee two systems disagree about by a kuruş is a fee
+        nobody can invoice.
+      additionalProperties: false
+      required:
+        [free, penaltyNights, releasedNights, feeAmount, payerFee, memberFee, currencyCode]
+      properties:
+        free:
+          type: boolean
+          description: |
+            Whether the cancellation falls inside the free window the booking was confirmed
+            under. A free cancellation costs nothing and takes no night, and the row that
+            records it has a CHECK saying so.
+        penaltyNights:
+          type: integer
+          minimum: 0
+          description: |
+            The nights the policy charges, capped at the length of the stay. Zero for a
+            PERCENT policy, which charges a share of the member's own amount instead.
+        releasedNights:
+          type: integer
+          minimum: 0
+          description: |
+            The nights that go back to the plan: the covered nights of the frozen quote less
+            whatever the penalty spends. The penalty is capped at the covered nights, because
+            a policy charging three nights against a plan that carried two cannot take a
+            third from a balance it never held.
+        feeAmount:
+          type: string
+          description: Exact decimal as a string; nothing here passes through a float.
+        payerFee:
+          type: string
+          description: Exact decimal as a string; nothing here passes through a float.
+        memberFee:
+          type: string
+          description: Exact decimal as a string; nothing here passes through a float.
+        currencyCode:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        freeUntil:
+          type: [string, 'null']
+          format: date-time
+          description: |
+            The moment the free window closed or closes, so a member looking at a fee can see
+            what they missed rather than being handed a number. It is counted back from the
+            start of the arrival day on the property's own clock.
+    CancellationPreview:
+      type: object
+      description: The booking, and what cancelling it now would cost.
+      additionalProperties: false
+      required: [booking, quote]
+      properties:
+        booking:
+          $ref: '#/components/schemas/Booking'
+        quote:
+          $ref: '#/components/schemas/CancellationQuote'
+    Cancellation:
+      type: object
+      description: |
+        The record of a cancellation: what it cost, what came back, and **the policy it was
+        judged by**, copied onto the row. The copy is the point - the row proves which terms
+        were applied even after the contract has been rewritten twice, and nothing has to be
+        re-resolved to read a two-year-old cancellation. The table is append-only.
+      additionalProperties: false
+      required:
+        [id, bookingId, cancelledAt, reasonCode, free, penaltyNights, releasedNights,
+         feeAmount, payerFee, memberFee, currencyCode]
+      properties:
+        id:
+          type: string
+          format: uuid
+        bookingId:
+          type: string
+          format: uuid
+        cancelledAt:
+          type: string
+          format: date-time
+        cancelledBy:
+          type: [string, 'null']
+          format: uuid
+        reasonCode:
+          type: string
+        policySnapshot:
+          oneOf:
+            - $ref: '#/components/schemas/LodgingPolicySnapshot'
+            - type: 'null'
+          description: |
+            The policy this cancellation was judged by. Null only for a booking cancelled
+            while it was still waiting on a reviewer, which had agreed nothing and therefore
+            owed nothing.
+        free:
+          type: boolean
+        penaltyNights:
+          type: integer
+          minimum: 0
+        releasedNights:
+          type: integer
+          minimum: 0
+        feeAmount:
+          type: string
+          description: Exact decimal as a string; nothing here passes through a float.
+        payerFee:
+          type: string
+          description: Exact decimal as a string; nothing here passes through a float.
+        memberFee:
+          type: string
+          description: Exact decimal as a string; nothing here passes through a float.
+        currencyCode:
+          type: string
+          pattern: '^[A-Z]{3}$'
+    CancellationResult:
+      type: object
+      description: The cancelled booking, what it cost, and the row that records both.
+      additionalProperties: false
+      required: [booking, quote, cancellation]
+      properties:
+        booking:
+          $ref: '#/components/schemas/Booking'
+        quote:
+          $ref: '#/components/schemas/CancellationQuote'
+        cancellation:
+          $ref: '#/components/schemas/Cancellation'
+    CancelBookingRequest:
+      type: object
+      description: |
+        Why the stay is being called off. The reason is a code rather than a sentence because
+        a report counts them and a screen translates them; it defaults to MEMBER_CANCELLED.
+      additionalProperties: false
+      properties:
+        reasonCode:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]{1,63}$'
+    CheckInBookingRequest:
+      type: object
+      description: |
+        The voucher code the guest presented. It is in the body and nowhere else: a token in
+        a path or a query string is a token in every proxy log between the desk and here.
+      additionalProperties: false
+      required: [token]
+      properties:
+        token:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: |
+            The plaintext, typed or scanned. It is hashed on arrival and matched against a
+            digest; it is stored nowhere and appears in no other request or response.
+        at:
+          type: string
+          format: date-time
+          description: |
+            The moment of arrival, for a desk recording one it did not enter at the time.
+            Defaults to now, and must still fall inside the check-in window.
+    CheckOutBookingRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        at:
+          type: string
+          format: date-time
+          description: |
+            The moment the guest left; defaults to now. It becomes a calendar day on the
+            property's own clock, because that is what a night is counted in.
+    NoShowStatus:
+      type: string
+      description: |
+        Where a provider's claim stands. REPORTED costs nobody anything; CONFIRMED is the
+        payer agreeing; REJECTED leaves the booking exactly as it was; DISPUTED is in
+        somebody's queue.
+      enum: [REPORTED, CONFIRMED, DISPUTED, REJECTED]
+    NoShowReport:
+      type: object
+      description: |
+        A provider's claim that nobody arrived, and the payer's answer to it.
+        `payerAmount + memberAmount == assessedFeeAmount` is a CHECK on the row.
+      additionalProperties: false
+      required:
+        [id, bookingId, reportedAt, assessedFeeAmount, payerAmount, memberAmount,
+         currencyCode, status, consumedNights]
+      properties:
+        id:
+          type: string
+          format: uuid
+        bookingId:
+          type: string
+          format: uuid
+        reportedByActorId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            Who claimed it. It is stored because the reviewer may not be this person, and
+            that rule is a CHECK on the row as well as a refusal in the service.
+        reportedAt:
+          type: string
+          format: date-time
+        evidenceDocumentId:
+          type: [string, 'null']
+          format: uuid
+        assessedFeeAmount:
+          type: string
+          description: Exact decimal as a string; nothing here passes through a float.
+        payerAmount:
+          type: string
+          description: Exact decimal as a string; nothing here passes through a float.
+        memberAmount:
+          type: string
+          description: Exact decimal as a string; nothing here passes through a float.
+        currencyCode:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        status:
+          $ref: '#/components/schemas/NoShowStatus'
+        reviewedBy:
+          type: [string, 'null']
+          format: uuid
+        reviewedAt:
+          type: [string, 'null']
+          format: date-time
+        reviewComment:
+          type: [string, 'null']
+        consumedNights:
+          type: integer
+          minimum: 0
+          description: |
+            What a confirmation actually took off the plan, in whole nights. It is recorded
+            because the policy is a percentage and the entitlement is nights: the row says
+            what was consumed rather than leaving a reader to redo the rounding.
+    NoShowResult:
+      type: object
+      description: The report, and the booking as it now stands.
+      additionalProperties: false
+      required: [report, booking]
+      properties:
+        report:
+          $ref: '#/components/schemas/NoShowReport'
+        booking:
+          $ref: '#/components/schemas/Booking'
+    ReportNoShowRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        evidenceDocumentId:
+          type: string
+          format: uuid
+          description: |
+            The document object the provider is pointing at. It must be linked to this
+            booking and cleared by the scanner. Omitted, any clean document linked to the
+            booking satisfies the gate; a booking with none is refused either way.
+        at:
+          type: string
+          format: date-time
+          description: |
+            The moment the absence was established; defaults to now. It must be after the
+            check-in window has closed - a guest who is late is not a guest who did not come.
+    ReviewNoShowRequest:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          type: string
+          description: |
+            The decision. CONFIRMED closes the booking and moves the plan; REJECTED leaves
+            the stay bookable; DISPUTED raises a work item and changes nothing.
+          enum: [CONFIRMED, DISPUTED, REJECTED]
+        comment:
+          type: string
+          minLength: 1
+          maxLength: 2000
+    WaitlistStatus:
+      type: string
+      description: |
+        Where an entry stands. WAITING is in the queue; OFFERED holds a room with a countdown
+        running; ACCEPTED became a booking; EXPIRED and CANCELLED are history and do not stop
+        the member joining again.
+      enum: [WAITING, OFFERED, ACCEPTED, EXPIRED, CANCELLED]
+    WaitlistEntry:
+      type: object
+      description: |
+        One member waiting for a room that is full, and the offer they were made if the sweep
+        has reached them.
+      additionalProperties: false
+      required:
+        [id, personId, propertyId, checkIn, checkOut, adults, children, priority, status,
+         createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        personId:
+          type: string
+          format: uuid
+        enrollmentId:
+          type: string
+          format: uuid
+        propertyId:
+          type: string
+          format: uuid
+        roomTypeId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            Null means any room of the property, which is what a member who wants the hotel
+            rather than the suite is asking for.
+        checkIn:
+          type: string
+          format: date
+        checkOut:
+          type: string
+          format: date
+        adults:
+          type: integer
+        children:
+          type: integer
+        priority:
+          type: integer
+          minimum: 0
+          maximum: 1000
+          description: |
+            The first key of the queue order. A member joining for themselves is always zero;
+            a plan may raise it for its own people.
+        status:
+          $ref: '#/components/schemas/WaitlistStatus'
+        offeredBookingId:
+          type: [string, 'null']
+          format: uuid
+        offerExpiresAt:
+          type: [string, 'null']
+          format: date-time
+          description: |
+            The hold's own deadline, not a second one. An offer that outlived its hold would
+            be an offer whose room somebody else had already been sold.
+        offer:
+          oneOf:
+            - $ref: '#/components/schemas/Booking'
+            - type: 'null'
+          description: The held booking the sweep created on this member's behalf.
+        createdAt:
+          type: string
+          format: date-time
+          description: |
+            The second key of the queue order. An entry that was offered a room and did not
+            take it goes to the back of the queue by this timestamp moving to now.
+        updatedAt:
+          type: [string, 'null']
+          format: date-time
+        rowVersion:
+          type: integer
+    WaitlistEntryList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/WaitlistEntry'
+    JoinWaitlistRequest:
+      type: object
+      description: |
+        The property, the dates and the party. `personId` is honoured only for a caller that
+        is not bound to a person; a member sending somebody else's is refused with
+        PERSON_SCOPE.
+      additionalProperties: false
+      required: [propertyId, checkIn, checkOut, adults]
+      properties:
+        personId:
+          type: string
+          format: uuid
+        propertyId:
+          type: string
+          format: uuid
+        roomTypeId:
+          type: string
+          format: uuid
+          description: Omit for any room of the property.
+        checkIn:
+          type: string
+          format: date
+        checkOut:
+          type: string
+          format: date
+        adults:
+          type: integer
+          minimum: 1
+          maximum: 20
+        children:
+          type: integer
+          minimum: 0
+          maximum: 20
+        priority:
+          type: integer
+          minimum: 0
+          maximum: 1000
+          description: |
+            The desk's own ordering. A member joining for themselves is placed at zero
+            whatever they send, because a queue a member can push themselves up is not a
+            queue.
+        programId:
+          type: string
+          format: uuid

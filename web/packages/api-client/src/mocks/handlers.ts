@@ -124,6 +124,12 @@ export class MockApi {
     return account.memberships
       .map((m) => ({
         tenant: this.tenantByCode(m.tenantCode)!,
+        // The person this account acts for in this tenant, read from its PERSON grant
+        // (WP-I6-04 section 2.4). A member client reads it to know it is bound; nothing
+        // trusts it back, and every handler resolves the person from the grant again on
+        // every call — which is what makes a body naming somebody else a refusal rather
+        // than a different answer.
+        personId: (m.scopes ?? []).find((g) => g.type === 'PERSON')?.id ?? null,
         permissions: m.permissions,
         // The access grants that narrow the permissions above. A provider-side role is an
         // ORGANIZATION grant, and it is what every provider boundary in the API is read
@@ -453,6 +459,55 @@ export function organizationScope(
   const grants = (membership?.scopes ?? []).filter((g) => g.type === 'ORGANIZATION');
   if (grants.length === 0) return null;
   return grants.filter((g) => g.id !== null).map((g) => g.id!);
+}
+
+/**
+ * The person this session is bound to in this tenant, or null for a desk.
+ *
+ * It is the PERSON access grant and nothing else, exactly as the server reads it: a member
+ * account acts for one person, and which one is a row rather than anything the client sends.
+ */
+export function personScope(api: MockApi, session: MockSession, tenantId: string): string | null {
+  const tenant = api.world.tenants.find((t) => t.id === tenantId);
+  if (!tenant) return null;
+  const membership = session.account.memberships.find((m) => m.tenantCode === tenant.code);
+  return (membership?.scopes ?? []).find((g) => g.type === 'PERSON')?.id ?? null;
+}
+
+/**
+ * Whose stay a command is about.
+ *
+ * A caller bound to a person is held to that binding: naming somebody else is PERSON_SCOPE
+ * and never a different answer, which is what stops a member searching -- and later holding,
+ * cancelling or checking into -- a room for their neighbour. A desk is bound to nobody and
+ * must name somebody, because there is no such thing as a booking without a member.
+ */
+export function resolvePerson(
+  api: MockApi,
+  session: MockSession,
+  tenantId: string,
+  requested: string | null | undefined,
+): { personId: string } | { error: Response } {
+  const asked = (requested ?? '').trim();
+  const bound = personScope(api, session, tenantId);
+  if (bound !== null) {
+    if (asked !== '' && asked !== bound) {
+      return {
+        error: problem(api, 403, 'PERSON_SCOPE', 'Bu kişi adına işlem yapamazsınız', {
+          detail: 'Hesabınız yalnızca kendi kaydınız için işlem yapabilir.',
+        }),
+      };
+    }
+    return { personId: bound };
+  }
+  if (asked === '') {
+    return {
+      error: problem(api, 422, 'PERSON_REQUIRED', 'Sorgu bir hak sahibi adına yapılmalı', {
+        detail: 'Hangi hak sahibi için işlem yaptığınızı personId ile belirtin.',
+      }),
+    };
+  }
+  return { personId: asked };
 }
 
 /** True when a row naming `organizationId` is inside the caller's provider boundary. */

@@ -1061,3 +1061,475 @@ describe('the booking', () => {
     expect(confirmed.policySnapshot?.penaltyKind).toBe('NIGHTS');
   });
 });
+
+// --- the member's own binding (WP-I6-04 section 2.4) --------------------------------------
+
+describe('a member is bound to one person', () => {
+  /**
+   * The rule the whole member app rests on: an account bound to a person acts for that person
+   * and names nobody, and a body naming somebody else is refused rather than answered.
+   *
+   * It is asserted on both a read and a write, because the two fail differently if the rule is
+   * dropped: a search that ignored the binding would quietly show a member their neighbour's
+   * options, and a hold that ignored it would set aside a room in their neighbour's name.
+   */
+  it('resolves the person from the grant, and refuses a body naming somebody else', async () => {
+    const s = await signIn('member.a');
+    const me = (await unwrap(s.c.GET('/api/v1/me', {}))).data;
+    const context = me.tenants.find((t) => t.tenant.id === s.tenantId)!;
+    expect(context.personId ?? null).not.toBeNull();
+    const bound = context.personId!;
+
+    // A search with no personId at all: the binding is the answer.
+    const room = roomTypeByCode('STD_DBL');
+    const property = propertyOf('STD_DBL');
+    const checkIn = freeNight(room.id, 60);
+    const search = (
+      await unwrap(
+        s.c.POST('/api/v1/accommodation/availability/search', {
+          params: { header: { ...tenant(s), 'Idempotency-Key': key() } },
+          body: { propertyId: property.id, checkIn, checkOut: addDays(checkIn, 3), adults: 2 },
+        }),
+      )
+    ).data;
+    expect(search.personId).toBe(bound);
+    expect(search.results.length).toBeGreaterThan(0);
+
+    // A hold with no personId is hers.
+    const held = (
+      await unwrap(
+        s.c.POST('/api/v1/accommodation/holds', {
+          params: { header: { ...tenant(s), 'Idempotency-Key': key() } },
+          body: { roomTypeId: room.id, checkIn, checkOut: addDays(checkIn, 3), adults: 2 },
+        }),
+      )
+    ).data;
+    expect(held.personId).toBe(bound);
+    // Two of the three nights: her balance is two, and the third is hers to pay. A member app
+    // built against a fully covered stay would never draw that line at all.
+    expect(held.quoteSnapshot.coveredNights).toBe(2);
+    expect(held.quoteSnapshot.eligible).toBe(false);
+
+    // And a hold naming her husband is not hers to place.
+    const neighbour = personByFirstName('Kaan');
+    const other = freeNight(room.id, 70);
+    const refused = await refusal(
+      unwrap(
+        s.c.POST('/api/v1/accommodation/holds', {
+          params: { header: { ...tenant(s), 'Idempotency-Key': key() } },
+          body: {
+            personId: neighbour.id,
+            roomTypeId: room.id,
+            checkIn: other,
+            checkOut: addDays(other, 2),
+            adults: 2,
+          },
+        }),
+      ),
+    );
+    expect(refused.code).toBe('PERSON_SCOPE');
+    expect(refused.status).toBe(403);
+  });
+
+  /**
+   * And she sees her own bookings and nobody else's. The binding *replaces* a personId filter
+   * rather than narrowing it: a member who asks for somebody else's list gets their own, so a
+   * filter can never be read as an escape from the boundary.
+   */
+  it('lists only the bound member own bookings, whatever the filter says', async () => {
+    const s = await signIn('member.a');
+    const me = (await unwrap(s.c.GET('/api/v1/me', {}))).data;
+    const bound = me.tenants.find((t) => t.tenant.id === s.tenantId)!.personId!;
+    const neighbour = personByFirstName('Kaan');
+
+    const page = (
+      await unwrap(
+        s.c.GET('/api/v1/accommodation/bookings', {
+          params: { header: tenant(s), query: { personId: neighbour.id } },
+        }),
+      )
+    ).data;
+    expect(page.items.length).toBeGreaterThan(0);
+    for (const booking of page.items) expect(booking.personId).toBe(bound);
+    // The world gives her something to show: an agreed stay with a voucher, and one still
+    // counting down.
+    const statuses = new Set(page.items.map((b) => b.status));
+    expect(statuses.has('CONFIRMED')).toBe(true);
+    expect(statuses.has('HOLD')).toBe(true);
+    expect(page.items.find((b) => b.status === 'CONFIRMED')!.voucherId ?? null).not.toBeNull();
+  });
+});
+
+// --- after the promise (WP-I6-03) ---------------------------------------------------------
+
+/**
+ * Confirms a fresh stay and hands back the booking.
+ *
+ * `from` decides how far ahead the arrival is, and it is a parameter because it is the whole
+ * of what a cancellation is judged against: a stay two months away is inside its free window
+ * and one arriving today is not.
+ */
+async function confirmedStay(
+  s: Session,
+  personId: string,
+  roomTypeId: string,
+  nights = 3,
+  from = 64,
+) {
+  const checkIn = freeNight(roomTypeId, from);
+  const held = (await createHold(s, holdBody(personId, roomTypeId, checkIn, nights))).data;
+  return (
+    await unwrap(
+      s.c.POST('/api/v1/accommodation/bookings/{bookingId}/confirm', {
+        params: {
+          header: { ...tenant(s), 'Idempotency-Key': key() },
+          path: { bookingId: held.id },
+        },
+      }),
+    )
+  ).data;
+}
+
+describe('cancelling a stay', () => {
+  /**
+   * The acceptance criterion of WP-I6-03: the fee is what the booking's own frozen policy
+   * says, and the row that records it carries that policy.
+   *
+   * The contract is rewritten between the confirmation and the cancellation, which is what a
+   * hotel might do any morning. A mock that read the live terms would answer the new penalty,
+   * and this test would go red on the number.
+   *
+   * The stay arrives at once rather than in two months, because that is what puts it outside
+   * the free window: inside it there is no fee to be wrong about.
+   */
+  it('is judged by the frozen policy and not by the contract as it stands now', async () => {
+    const s = await signIn('admin.a');
+    const room = roomTypeByCode('STD_DBL');
+    const person = personByFirstName('Kaan');
+    const booking = await confirmedStay(s, person.id, room.id, 3, 0);
+    expect(booking.policySnapshot?.penaltyNights).toBe(1);
+    const before = (
+      await getInventory(s, room.id, booking.checkIn, addDays(booking.checkIn, booking.nights - 1))
+    ).days.map((d) => d.confirmed);
+
+    // The contract changes. The booking does not.
+    const terms = api.world.lodgingTerms[0]!;
+    terms.penaltyNights = 3;
+    terms.freeCancellationHoursBefore = 0;
+
+    const preview = (
+      await unwrap(
+        s.c.POST('/api/v1/accommodation/bookings/{bookingId}/cancellation-preview', {
+          params: { header: tenant(s), path: { bookingId: booking.id } },
+        }),
+      )
+    ).data;
+    expect(preview.quote.free).toBe(false);
+    expect(preview.quote.penaltyNights).toBe(1);
+    // payer + member is exactly the fee, summed from the same night rows.
+    expect(sum(preview.quote.payerFee, preview.quote.memberFee)).toBe(preview.quote.feeAmount);
+
+    const result = (
+      await unwrap(
+        s.c.POST('/api/v1/accommodation/bookings/{bookingId}/cancel', {
+          params: {
+            header: { ...tenant(s), 'Idempotency-Key': key() },
+            path: { bookingId: booking.id },
+          },
+          body: {},
+        }),
+      )
+    ).data;
+    // The command answers exactly what the preview did.
+    expect(result.quote).toEqual(preview.quote);
+    expect(result.booking.status).toBe('CANCELLED');
+    expect(result.cancellation.policySnapshot?.penaltyNights).toBe(1);
+    expect(result.cancellation.policySnapshot?.freeCancellationHoursBefore).toBe(48);
+    // The room comes back on every night of the stay.
+    const after = (
+      await getInventory(s, room.id, booking.checkIn, addDays(booking.checkIn, booking.nights - 1))
+    ).days.map((d) => d.confirmed);
+    after.forEach((confirmed, i) => expect(confirmed).toBe(before[i]! - 1));
+    // And the code that would have opened it stops working.
+    expect(api.world.bookingVouchers.find((v) => v.bookingId === booking.id)?.status).toBe(
+      'REVOKED',
+    );
+  });
+
+  /** A guest who has arrived does not cancel: they check out, which is different arithmetic. */
+  it('is refused once the guest has checked in', async () => {
+    const s = await signIn('admin.a');
+    const seeded = api.world.bookings.find((b) => b.status === 'CHECKED_IN')!;
+    const refused = await refusal(
+      unwrap(
+        s.c.POST('/api/v1/accommodation/bookings/{bookingId}/cancellation-preview', {
+          params: { header: tenant(s), path: { bookingId: seeded.id } },
+        }),
+      ),
+    );
+    expect(refused.code).toBe('BOOKING_CANCELLATION_TOO_LATE');
+  });
+});
+
+describe('check-in and check-out', () => {
+  /**
+   * The right code checks the guest in and is spent; a code for somebody else's stay is not
+   * found, which is the same answer an unknown one gets.
+   */
+  it('takes this booking own token, inside the window, once', async () => {
+    const s = await signIn('admin.a');
+    const room = roomTypeByCode('STD_DBL');
+    const person = personByFirstName('Kaan');
+    const booking = await confirmedStay(s, person.id, room.id);
+    const voucher = (
+      await unwrap(
+        s.c.POST('/api/v1/accommodation/bookings/{bookingId}/voucher', {
+          params: { header: tenant(s), path: { bookingId: booking.id } },
+        }),
+      )
+    ).data;
+    const desk = await signIn('reservation.a');
+
+    // Somebody else's perfectly valid code.
+    const other = api.world.bookingVouchers.find(
+      (v) => v.bookingId !== booking.id && v.status === 'ISSUED',
+    )!;
+    const notFound = await refusal(
+      unwrap(
+        desk.c.POST('/api/v1/accommodation/bookings/{bookingId}/check-in', {
+          params: { header: tenant(desk), path: { bookingId: booking.id } },
+          body: { token: other.token, at: `${booking.checkIn}T09:00:00Z` },
+        }),
+      ),
+    );
+    expect(notFound.code).toBe('VOUCHER_NOT_FOUND');
+    expect(notFound.status).toBe(404);
+
+    // Two days early, with both ends of the window named.
+    const early = await refusal(
+      unwrap(
+        desk.c.POST('/api/v1/accommodation/bookings/{bookingId}/check-in', {
+          params: { header: tenant(desk), path: { bookingId: booking.id } },
+          body: { token: voucher.token, at: `${addDays(booking.checkIn, -2)}T09:00:00Z` },
+        }),
+      ),
+    );
+    expect(early.code).toBe('BOOKING_CHECK_IN_WINDOW');
+    expect(typeof early['opensAt']).toBe('string');
+    expect(typeof early['closesAt']).toBe('string');
+
+    const checkedIn = (
+      await unwrap(
+        desk.c.POST('/api/v1/accommodation/bookings/{bookingId}/check-in', {
+          params: { header: tenant(desk), path: { bookingId: booking.id } },
+          body: { token: voucher.token, at: `${booking.checkIn}T09:00:00Z` },
+        }),
+      )
+    ).data;
+    expect(checkedIn.status).toBe('CHECKED_IN');
+
+    // The code is spent, and the booking has moved on: a second guest cannot walk in on it.
+    // The status is checked before the token is, so the refusal names the booking rather than
+    // the code -- which is the server's order too, and the safer one: it never gets as far as
+    // saying anything about a code at all.
+    const spent = await refusal(
+      unwrap(
+        desk.c.POST('/api/v1/accommodation/bookings/{bookingId}/check-in', {
+          params: { header: tenant(desk), path: { bookingId: booking.id } },
+          body: { token: voucher.token, at: `${booking.checkIn}T10:00:00Z` },
+        }),
+      ),
+    );
+    expect(spent.code).toBe('BOOKING_TRANSITION_INVALID');
+    expect(api.world.bookingVouchers.find((v) => v.token === voucher.token)?.status).toBe(
+      'REDEEMED',
+    );
+  });
+
+  /** An early check-out gives the nights nobody slept back to the allotment. */
+  it('releases the rooms of the nights nobody slept in', async () => {
+    const s = await signIn('admin.a');
+    const room = roomTypeByCode('STD_DBL');
+    const person = personByFirstName('Kaan');
+    const booking = await confirmedStay(s, person.id, room.id);
+    const range = { from: booking.checkIn, to: addDays(booking.checkIn, booking.nights - 1) };
+    const before = (await getInventory(s, room.id, range.from, range.to)).days.map(
+      (d) => d.confirmed,
+    );
+    const voucher = (
+      await unwrap(
+        s.c.POST('/api/v1/accommodation/bookings/{bookingId}/voucher', {
+          params: { header: tenant(s), path: { bookingId: booking.id } },
+        }),
+      )
+    ).data;
+    const desk = await signIn('reservation.a');
+    await unwrap(
+      desk.c.POST('/api/v1/accommodation/bookings/{bookingId}/check-in', {
+        params: { header: tenant(desk), path: { bookingId: booking.id } },
+        body: { token: voucher.token, at: `${booking.checkIn}T09:00:00Z` },
+      }),
+    );
+
+    const out = (
+      await unwrap(
+        desk.c.POST('/api/v1/accommodation/bookings/{bookingId}/check-out', {
+          params: {
+            header: { ...tenant(desk), 'Idempotency-Key': key() },
+            path: { bookingId: booking.id },
+          },
+          body: { at: `${addDays(booking.checkIn, 1)}T08:00:00Z` },
+        }),
+      )
+    ).data;
+    expect(out.status).toBe('COMPLETED');
+    expect(out.actualNights).toBe(1);
+    expect(out.overBooking).toBe(false);
+
+    // The night the guest slept stays taken; the two nobody slept in come back.
+    const after = (await getInventory(s, room.id, range.from, range.to)).days.map(
+      (d) => d.confirmed,
+    );
+    expect(after[0]).toBe(before[0]);
+    expect(after[1]).toBe(before[1]! - 1);
+    expect(after[2]).toBe(before[2]! - 1);
+  });
+});
+
+describe('a no-show', () => {
+  /**
+   * The rule the member is protected by: a report costs them nothing, and the person who
+   * filed it may not be the person who decides it.
+   */
+  it('leaves the booking alone until a second person confirms it', async () => {
+    const payer = await signIn('admin.a');
+    const seeded = api.world.noShows[0]!;
+    const booking = api.world.bookings.find((b) => b.id === seeded.bookingId)!;
+    // A claim nobody has answered leaves the stay exactly as it was.
+    expect(booking.status).toBe('CONFIRMED');
+
+    const read = (
+      await unwrap(
+        payer.c.GET('/api/v1/accommodation/bookings/{bookingId}/no-show', {
+          params: { header: tenant(payer), path: { bookingId: booking.id } },
+        }),
+      )
+    ).data;
+    expect(read.report.status).toBe('REPORTED');
+    expect(read.booking.status).toBe('CONFIRMED');
+    expect(sum(read.report.payerAmount, read.report.memberAmount)).toBe(
+      read.report.assessedFeeAmount,
+    );
+
+    // The reporter cannot confirm their own claim.
+    seeded.reportedByActorId = api.session!.account.actorId;
+    const sameActor = await refusal(
+      unwrap(
+        payer.c.POST('/api/v1/accommodation/bookings/{bookingId}/no-show/review', {
+          params: {
+            header: { ...tenant(payer), 'Idempotency-Key': key() },
+            path: { bookingId: booking.id },
+          },
+          body: { status: 'CONFIRMED' },
+        }),
+      ),
+    );
+    expect(sameActor.code).toBe('NO_SHOW_SAME_ACTOR');
+
+    // Somebody else does, and only then does anything move.
+    seeded.reportedByActorId = api.world.accounts.find(
+      (a) => a.username === 'reservation.a',
+    )!.actorId;
+    const reviewed = (
+      await unwrap(
+        payer.c.POST('/api/v1/accommodation/bookings/{bookingId}/no-show/review', {
+          params: {
+            header: { ...tenant(payer), 'Idempotency-Key': key() },
+            path: { bookingId: booking.id },
+          },
+          body: { status: 'CONFIRMED' },
+        }),
+      )
+    ).data;
+    expect(reviewed.report.status).toBe('CONFIRMED');
+    expect(reviewed.booking.status).toBe('NO_SHOW');
+    expect(reviewed.report.consumedNights).toBeGreaterThan(0);
+  });
+});
+
+describe('the waiting list', () => {
+  /**
+   * The acceptance criterion of the queue: a freed room reaches the front of it without
+   * anybody watching, and priority beats arrival order.
+   */
+  it('offers a freed room in priority order, then FIFO', async () => {
+    const s = await signIn('reservation.a');
+    const room = roomTypeByCode('STD_DBL');
+    const property = propertyOf('STD_DBL');
+    const first = personByFirstName('Kaan');
+    const second = personByFirstName('Sevgi');
+    // The second of the two nights this room type is sold out on, which is why anybody is
+    // waiting at all. The second rather than the first, because the seeded world already has
+    // somebody queued for the first, and one live place per person and arrival is the rule
+    // this test would otherwise trip over rather than assert.
+    const soldOut = soldOutNights(room.id)[1]!;
+
+    const join = (personId: string, priority: number) =>
+      unwrap(
+        s.c.POST('/api/v1/accommodation/waitlist', {
+          params: { header: { ...tenant(s), 'Idempotency-Key': key() } },
+          body: {
+            personId,
+            propertyId: property.id,
+            roomTypeId: room.id,
+            checkIn: soldOut,
+            checkOut: addDays(soldOut, 1),
+            adults: 2,
+            priority,
+          },
+        }),
+      );
+    const early = (await join(first.id, 0)).data;
+    const privileged = (await join(second.id, 10)).data;
+    expect(early.status).toBe('WAITING');
+    expect(privileged.priority).toBe(10);
+
+    // A second live place in the same queue is refused.
+    const clash = await refusal(join(first.id, 0));
+    expect(clash.code).toBe('WAITLIST_ALREADY_WAITING');
+
+    // A room comes free, and the sweep hands it to the highest priority rather than the
+    // earliest joiner. Reading the list runs the job, which is what makes it advanceable.
+    const night = api.world.inventoryDays.find(
+      (d) => d.roomTypeId === room.id && d.stayDate === soldOut,
+    )!;
+    night.capacity += 1;
+
+    const queue = (
+      await unwrap(
+        s.c.GET('/api/v1/accommodation/waitlist', {
+          params: { header: tenant(s), query: { propertyId: property.id } },
+        }),
+      )
+    ).data;
+    const offered = queue.items.find((e) => e.id === privileged.id)!;
+    expect(offered.status).toBe('OFFERED');
+    expect(offered.offer?.status).toBe('HOLD');
+    expect(offered.offerExpiresAt).toBe(offered.offer?.holdExpiresAt);
+    expect(queue.items.find((e) => e.id === early.id)!.status).toBe('WAITING');
+
+    // And accepting it confirms the hold the sweep placed.
+    const accepted = (
+      await unwrap(
+        s.c.POST('/api/v1/accommodation/waitlist/{waitlistEntryId}/accept', {
+          params: {
+            header: { ...tenant(s), 'Idempotency-Key': key() },
+            path: { waitlistEntryId: privileged.id },
+          },
+        }),
+      )
+    ).data;
+    expect(accepted.status).toBe('ACCEPTED');
+    expect(accepted.offer?.status).toBe('CONFIRMED');
+  });
+});

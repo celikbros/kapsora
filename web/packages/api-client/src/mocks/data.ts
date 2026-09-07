@@ -1199,6 +1199,12 @@ export interface StoredBooking {
   cancelledAt: string | null;
   cancelReasonCode: string | null;
   actualNights: number | null;
+  /**
+   * The stay ran past what the authorization promised. It is a flag rather than a refusal:
+   * the guest has already slept the extra nights, so the check-out records them and the claim
+   * raises them as an exception. Nothing beyond what was authorized is ever consumed.
+   */
+  overBooking: boolean;
   createdAt: string;
   updatedAt: string | null;
   rowVersion: number;
@@ -1246,6 +1252,82 @@ export interface StoredBookingVoucher {
   validFrom: string;
   validTo: string;
   status: 'ISSUED' | 'REDEEMED' | 'EXPIRED' | 'REVOKED';
+}
+
+/**
+ * The record of a cancellation (WP-I6-03): what it cost, what came back, and **the policy it
+ * was judged by**, copied onto the row.
+ *
+ * The copy is the point. A hotel that rewrites its cancellation terms this morning changes
+ * what the next booking costs to cancel and does not change what this one cost, and the row
+ * proves which terms were applied without the contract having to be resolved again.
+ */
+export interface StoredCancellation {
+  id: string;
+  tenantId: string;
+  bookingId: string;
+  cancelledAt: string;
+  cancelledBy: string | null;
+  reasonCode: string;
+  policySnapshot: Schemas['LodgingPolicySnapshot'] | null;
+  free: boolean;
+  penaltyNights: number;
+  releasedNights: number;
+  feeAmount: Decimal;
+  payerFee: Decimal;
+  memberFee: Decimal;
+  currencyCode: string;
+}
+
+/**
+ * A provider's claim that nobody arrived, and the payer's answer to it.
+ *
+ * `reportedByActorId` is stored because the reviewer may not be that person: a clerk may say
+ * that nobody came and may never be the one who decides it costs the member anything.
+ */
+export interface StoredNoShow {
+  id: string;
+  tenantId: string;
+  bookingId: string;
+  reportedByActorId: string | null;
+  reportedAt: string;
+  evidenceDocumentId: string | null;
+  assessedFeeAmount: Decimal;
+  payerAmount: Decimal;
+  memberAmount: Decimal;
+  currencyCode: string;
+  status: Schemas['NoShowStatus'];
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  reviewComment: string | null;
+  consumedNights: number;
+  rowVersion: number;
+}
+
+/**
+ * One member waiting for a room that is full.
+ *
+ * `priority` is the first key of the queue order and `createdAt` the second, and an entry that
+ * was offered a room and did not take it goes to the back of the queue by that timestamp
+ * moving to now -- which is the whole of "behind the people who were already waiting".
+ */
+export interface StoredWaitlistEntry {
+  id: string;
+  tenantId: string;
+  personId: string;
+  enrollmentId: string;
+  propertyId: string;
+  roomTypeId: string | null;
+  checkIn: string;
+  checkOut: string;
+  adults: number;
+  children: number;
+  priority: number;
+  status: Schemas['WaitlistStatus'];
+  offeredBookingId: string | null;
+  offerExpiresAt: string | null;
+  createdAt: string;
+  rowVersion: number;
 }
 
 /** Reference catalogs; tenant-independent so every tenant sees the same options. */
@@ -1536,10 +1618,27 @@ const PROVIDER_BILLING_PERMISSIONS = [
  * allotment and holds no clinical grant at all — a room is a building, not a person, and
  * the desk that opens ninety nights of it has no business reading a diagnosis.
  */
+// What a member holds for themselves: they may look, ask, book and be told. Every one of
+// these is scoped to their own person by the PERSON grant on the membership, not by the list.
+const MEMBER_PERMISSIONS = [
+  'eligibility.check',
+  'service_request.read',
+  'service_request.create',
+  'service_request.submit',
+  'service_request.cancel',
+  'accommodation.property.read',
+  'accommodation.booking.create',
+  'document.upload',
+  'document.read',
+  'entitlement.read',
+  'notification.read',
+];
+
 const PROVIDER_RESERVATION_PERMISSIONS = [
   'accommodation.property.read',
   'accommodation.inventory.manage',
   'accommodation.booking.manage',
+  'accommodation.waitlist.manage',
   'member.read',
   'eligibility.check',
 ];
@@ -1884,6 +1983,14 @@ export interface MockWorld {
   bookingNights: StoredBookingNight[];
   bookingGuests: StoredBookingGuest[];
   bookingVouchers: StoredBookingVoucher[];
+  /**
+   * What happens after the promise (WP-I6-03): the cancellations, the no-show claims and the
+   * waiting list. `cancellations` is append-only here as it is on the server -- a row nobody
+   * can edit is the whole reason it exists.
+   */
+  cancellations: StoredCancellation[];
+  noShows: StoredNoShow[];
+  waitlistEntries: StoredWaitlistEntry[];
   /**
    * Moves a document on from SCANNING the way the scan worker does. It is the mock's
    * stand-in for the worker, so a screen can show "taranıyor" and then a verdict without
@@ -5451,6 +5558,10 @@ export function buildWorld(
     nights: number,
     status: Schemas['BookingStatus'],
     unitAmount: Decimal,
+    // Whose stay. It defaults to the family principal, who owns the four bookings below;
+    // WP-I6-03 seeds two more for the bound member at the end of this function.
+    guest: StoredPerson = familyPrincipal,
+    guestEnrollment: StoredEnrollment = familyEnrollment,
   ): StoredBooking => {
     const checkIn = nightOf(firstNight);
     const checkOut = nightOf(firstNight + nights);
@@ -5495,9 +5606,9 @@ export function buildWorld(
       id: bookingId,
       tenantId: demoA.id,
       reference: bookingReference(),
-      personId: familyPrincipal.id,
-      enrollmentId: familyEnrollment.id,
-      programId: familyEnrollment.programId,
+      personId: guest.id,
+      enrollmentId: guestEnrollment.id,
+      programId: guestEnrollment.programId,
       propertyId: room.propertyId,
       roomTypeId: room.id,
       checkIn,
@@ -5522,6 +5633,7 @@ export function buildWorld(
       cancelledAt: null,
       cancelReasonCode: null,
       actualNights: status === 'COMPLETED' ? nights : null,
+      overBooking: false,
       createdAt: isoDaysAgo(base, 20),
       updatedAt: null,
       rowVersion: confirmed ? 2 : 1,
@@ -5544,8 +5656,8 @@ export function buildWorld(
       id: nextId(),
       tenantId: demoA.id,
       bookingId,
-      personId: familyPrincipal.id,
-      displayName: familyPrincipal.firstName + ' ' + familyPrincipal.lastName,
+      personId: guest.id,
+      displayName: guest.firstName + ' ' + guest.lastName,
       guestType: 'MEMBER',
       isMinor: false,
     });
@@ -5586,6 +5698,149 @@ export function buildWorld(
   seedBooking(suite, 45, 4, 'CONFIRMED', '3800.000000');
   seedBooking(stdRoom, 50, 2, 'CHECKED_IN', '2400.000000');
   seedBooking(suite, 55, 5, 'COMPLETED', '3800.000000');
+
+  // -------------------------------------------------------------------------------------
+  // WP-I6-03: the bound member, and what happens after the promise
+  // -------------------------------------------------------------------------------------
+  //
+  // Everything below is appended at the end of the world on purpose. `buildWorld` runs off
+  // one seeded random stream, so an id drawn earlier would shift every id after it and every
+  // snapshot taken of this fixture; drawing them last leaves the M2-M6 world byte-identical.
+
+  // The member account, bound to a person the way the server binds one: a PERSON access
+  // grant, and nothing else. `/me` renders it as `personId` on the tenant context, and every
+  // handler resolves the person from the grant again rather than trusting that value back --
+  // which is what makes a body naming somebody else a refusal instead of a different answer.
+  //
+  // The spouse rather than the principal, because her balance is the interesting one: two
+  // nights left against a three-night stay is the partial-cover case the whole NIGHT unit
+  // exists for, and a member app built against a fully covered stay would never draw the
+  // "the third night is yours" line at all.
+  const boundMember = familySpouse;
+  const boundMemberEnrollment = spouseEnrollment;
+  accounts.push({
+    actorId: nextId(),
+    username: 'member.a',
+    displayName: boundMember.firstName + ' ' + boundMember.lastName,
+    email: 'member.a@example.invalid',
+    memberships: [
+      {
+        tenantCode: 'DEMO_A',
+        permissions: MEMBER_PERMISSIONS,
+        scopes: [{ type: 'PERSON', id: boundMember.id }],
+      },
+    ],
+  });
+
+  // Two stays for her, so the member app has something to show the moment it signs in: one
+  // agreed with a voucher she can present, and one still counting down.
+  //
+  // They sit on nights the four above do not, and clear of the sold-out weekend, so the
+  // allotment they take is a room that was actually free.
+  const memberConfirmed = seedBooking(
+    stdRoom,
+    62,
+    3,
+    'CONFIRMED',
+    '2400.000000',
+    boundMember,
+    boundMemberEnrollment,
+  );
+  seedBooking(suite, 70, 2, 'HOLD', '3800.000000', boundMember, boundMemberEnrollment);
+
+  const cancellations: StoredCancellation[] = [];
+  const noShows: StoredNoShow[] = [];
+  const waitlistEntries: StoredWaitlistEntry[] = [];
+
+  // A stay that was called off outside its free window, with the row that proves what it was
+  // judged by: one night of the three, nine hundred of it the payer's and a hundred hers.
+  // `payerFee + memberFee` is exactly `feeAmount`, here as on the row's own CHECK.
+  const cancelled = seedBooking(
+    stdRoom,
+    76,
+    3,
+    'CONFIRMED',
+    '2400.000000',
+    familyPrincipal,
+    familyEnrollment,
+  );
+  cancelled.status = 'CANCELLED';
+  cancelled.cancelledAt = isoDaysAgo(base, 3);
+  cancelled.cancelReasonCode = 'MEMBER_CANCELLED';
+  for (const day of Array.from({ length: 3 }, (_, i) => nightOf(76 + i))) {
+    const night = inventoryDays.find((d) => d.roomTypeId === stdRoom.id && d.stayDate === day);
+    if (night) night.confirmed = Math.max(0, night.confirmed - 1);
+  }
+  cancellations.push({
+    id: nextId(),
+    tenantId: demoA.id,
+    bookingId: cancelled.id,
+    cancelledAt: cancelled.cancelledAt,
+    cancelledBy: null,
+    reasonCode: 'MEMBER_CANCELLED',
+    policySnapshot: policyOf(lodgingTerms[0]!),
+    free: false,
+    penaltyNights: 1,
+    releasedNights: 2,
+    feeAmount: '2400.000000',
+    payerFee: '2040.000000',
+    memberFee: '360.000000',
+    currencyCode: 'TRY',
+  });
+
+  // A claim nobody has answered yet. The booking is still CONFIRMED and not one night has
+  // moved: that is the whole rule, and a fixture that showed a closed booking next to a
+  // REPORTED row would be a screen teaching the wrong thing.
+  const reportedNoShow = seedBooking(
+    suite,
+    80,
+    2,
+    'CONFIRMED',
+    '3800.000000',
+    familyPrincipal,
+    familyEnrollment,
+  );
+  noShows.push({
+    id: nextId(),
+    tenantId: demoA.id,
+    bookingId: reportedNoShow.id,
+    reportedByActorId: null,
+    reportedAt: isoDaysAgo(base, 1),
+    evidenceDocumentId: null,
+    // 100 % of the member's own share of the two nights: fifteen per cent of 3800, twice.
+    assessedFeeAmount: '1140.000000',
+    payerAmount: '0.000000',
+    memberAmount: '1140.000000',
+    currencyCode: 'TRY',
+    status: 'REPORTED',
+    reviewedBy: null,
+    reviewedAt: null,
+    reviewComment: null,
+    consumedNights: 0,
+    rowVersion: 1,
+  });
+
+  // And somebody waiting for the weekend everything is sold out on, so the offer job has a
+  // queue to empty the moment a room comes free.
+  waitlistEntries.push({
+    id: nextId(),
+    tenantId: demoA.id,
+    personId: boundMember.id,
+    enrollmentId: boundMemberEnrollment.id,
+    propertyId: stdRoom.propertyId,
+    roomTypeId: stdRoom.id,
+    checkIn: nightOf(fullWeekend),
+    checkOut: nightOf(fullWeekend + 2),
+    adults: 2,
+    children: 0,
+    priority: 0,
+    status: 'WAITING',
+    offeredBookingId: null,
+    offerExpiresAt: null,
+    createdAt: isoDaysAgo(base, 2),
+    rowVersion: 1,
+  });
+  void memberConfirmed;
 
   return {
     tenants,
@@ -5664,6 +5919,9 @@ export function buildWorld(
     bookingNights,
     bookingGuests,
     bookingVouchers,
+    cancellations,
+    noShows,
+    waitlistEntries,
     advanceScan,
     nextId,
     random,

@@ -18,6 +18,7 @@ import (
 	auditpg "github.com/celikbros/kapsora/internal/audit/postgres"
 	authorizationapp "github.com/celikbros/kapsora/internal/authorization/application"
 	authorizationpg "github.com/celikbros/kapsora/internal/authorization/infrastructure/postgres"
+	benefiteligibility "github.com/celikbros/kapsora/internal/benefit/eligibility"
 	"github.com/celikbros/kapsora/internal/benefit/ledger"
 	documentapp "github.com/celikbros/kapsora/internal/document/application"
 	documentpg "github.com/celikbros/kapsora/internal/document/infrastructure/postgres"
@@ -108,14 +109,27 @@ func run() error {
 		return err
 	}
 
-	// The accommodation sweeps. Neither of them can confirm a booking, and both say so by
+	// The accommodation sweeps. None of them can confirm a booking, and they say so by
 	// construction: this service is given no request port, no authorization port and no
-	// policy port, so the only things it can do are give a room back and tell somebody they
-	// are arriving tomorrow. A process that could confirm would be a process in which an
-	// unattended job could agree a stay on somebody's behalf.
+	// policy port, so the only things it can do are give a room back, tell somebody they are
+	// arriving tomorrow, and set a room aside for whoever is at the front of a waiting list.
+	// A process that could confirm would be a process in which an unattended job could agree
+	// a stay on somebody's behalf.
+	//
+	// The eligibility service is here because the offer sweep places a real hold: it freezes
+	// a real quote and records the evaluation that quote was built from, exactly as the
+	// member's own hold does. An offer priced by a different path from the search that led to
+	// it would be an offer nobody could explain.
+	bookingEligibility, err := benefiteligibility.New(benefiteligibility.Deps{
+		Pool: pool, Audit: auditpg.New(), Ledger: entitlements.Ledger(), Logger: logger,
+	})
+	if err != nil {
+		return err
+	}
 	bookings, err := accommodationapp.New(accommodationapp.Deps{
 		Pool: pool, Repo: accommodationpg.New(), Bookings: accommodationpg.NewBookings(),
-		Ledger: entitlements.Ledger(), Audit: auditpg.New(), Logger: logger,
+		Ledger: entitlements.Ledger(), Eligibility: bookingEligibility,
+		Audit: auditpg.New(), Logger: logger,
 	})
 	if err != nil {
 		return err
@@ -134,6 +148,7 @@ func run() error {
 	registry.Register(scheduler.MedicalReportExpire(reports))
 	registry.Register(scheduler.AccommodationHoldExpire(bookings))
 	registry.Register(scheduler.AccommodationBookingReminder(bookings))
+	registry.Register(scheduler.AccommodationWaitlistOffer(bookings))
 	// Document retention runs only when an object store and a retention period are both
 	// configured. Purging real documents after a number nobody chose would be worse than
 	// keeping them, so keeping them is the default; when the sweep does run, every

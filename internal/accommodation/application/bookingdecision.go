@@ -270,7 +270,8 @@ func (s *Service) refuseBooking(ctx context.Context, rc identity.RequestContext,
 			}); err != nil {
 			return err
 		}
-		return s.notifyBookingCancelled(ctx, tx, rc.TenantID, current, domain.CancelReasonRequestRejected)
+		return s.notifyBookingCancelled(ctx, tx, rc.TenantID, current,
+			domain.CancelReasonRequestRejected, "0")
 	})
 }
 

@@ -88,7 +88,7 @@ RETURNING id, reference, person_id, enrollment_id, program_id, property_id, room
           check_in, check_out, nights, adults, children, status, hold_expires_at,
           entitlement_reservation_id, service_request_id, authorization_id, voucher_id,
           quote_snapshot, policy_snapshot, channel, confirmed_at, checked_in_at,
-          checked_out_at, cancelled_at, cancel_reason_code, actual_nights,
+          checked_out_at, cancelled_at, cancel_reason_code, actual_nights, over_booking,
           created_at, updated_at, row_version;
 
 -- name: GetBooking :one
@@ -101,7 +101,8 @@ SELECT b.id, b.reference, b.person_id, b.enrollment_id, b.program_id, b.property
        b.hold_expires_at, b.entitlement_reservation_id, b.service_request_id,
        b.authorization_id, b.voucher_id, b.quote_snapshot, b.policy_snapshot, b.channel,
        b.confirmed_at, b.checked_in_at, b.checked_out_at, b.cancelled_at,
-       b.cancel_reason_code, b.actual_nights, b.created_at, b.updated_at, b.row_version
+       b.cancel_reason_code, b.actual_nights, b.over_booking, b.created_at, b.updated_at,
+       b.row_version
   FROM accommodation.booking b
   JOIN accommodation.property p
     ON p.tenant_id = b.tenant_id AND p.id = b.property_id
@@ -121,7 +122,8 @@ SELECT b.id, b.reference, b.person_id, b.enrollment_id, b.program_id, b.property
        b.hold_expires_at, b.entitlement_reservation_id, b.service_request_id,
        b.authorization_id, b.voucher_id, b.quote_snapshot, b.policy_snapshot, b.channel,
        b.confirmed_at, b.checked_in_at, b.checked_out_at, b.cancelled_at,
-       b.cancel_reason_code, b.actual_nights, b.created_at, b.updated_at, b.row_version
+       b.cancel_reason_code, b.actual_nights, b.over_booking, b.created_at, b.updated_at,
+       b.row_version
   FROM accommodation.booking b
  WHERE b.tenant_id = sqlc.arg('tenant_id')
    AND b.id = sqlc.arg('id')
@@ -135,7 +137,8 @@ SELECT b.id, b.reference, b.person_id, b.enrollment_id, b.program_id, b.property
        b.hold_expires_at, b.entitlement_reservation_id, b.service_request_id,
        b.authorization_id, b.voucher_id, b.quote_snapshot, b.policy_snapshot, b.channel,
        b.confirmed_at, b.checked_in_at, b.checked_out_at, b.cancelled_at,
-       b.cancel_reason_code, b.actual_nights, b.created_at, b.updated_at, b.row_version
+       b.cancel_reason_code, b.actual_nights, b.over_booking, b.created_at, b.updated_at,
+       b.row_version
   FROM accommodation.booking b
  WHERE b.tenant_id = sqlc.arg('tenant_id')
    AND b.service_request_id = sqlc.arg('service_request_id');
@@ -148,7 +151,8 @@ SELECT b.id, b.reference, b.person_id, b.enrollment_id, b.program_id, b.property
        b.hold_expires_at, b.entitlement_reservation_id, b.service_request_id,
        b.authorization_id, b.voucher_id, b.quote_snapshot, b.policy_snapshot, b.channel,
        b.confirmed_at, b.checked_in_at, b.checked_out_at, b.cancelled_at,
-       b.cancel_reason_code, b.actual_nights, b.created_at, b.updated_at, b.row_version
+       b.cancel_reason_code, b.actual_nights, b.over_booking, b.created_at, b.updated_at,
+       b.row_version
   FROM accommodation.booking b
   JOIN accommodation.property p
     ON p.tenant_id = b.tenant_id AND p.id = b.property_id

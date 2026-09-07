@@ -297,12 +297,7 @@ func bookingView(in application.BookingView) kapsorav1.Booking {
 		version := int(record.RowVersion)
 		out.RowVersion = &version
 	}
-	if len(record.PolicySnapshot) > 0 {
-		var policy kapsorav1.LodgingPolicySnapshot
-		if err := json.Unmarshal(record.PolicySnapshot, &policy); err == nil {
-			out.PolicySnapshot = &policy
-		}
-	}
+	out.PolicySnapshot = policySnapshotView(record.PolicySnapshot)
 	for _, night := range in.Nights {
 		out.NightlyAmounts = append(out.NightlyAmounts, kapsorav1.BookingNight{
 			StayDate:   openapi_types.Date{Time: night.StayDate},
@@ -318,6 +313,22 @@ func bookingView(in application.BookingView) kapsorav1.Booking {
 		})
 	}
 	return out
+}
+
+// policySnapshotView decodes a frozen cancellation policy and re-renders it in the
+// contract's own wire shape, so a snapshot written by an older version cannot leak a field
+// the schema does not describe. A snapshot that cannot be decoded renders as absent rather
+// than failing the read: the booking is still a fact, and a member looking at their
+// reservation should not get a 500 because of a document shape.
+func policySnapshotView(raw []byte) *kapsorav1.LodgingPolicySnapshot {
+	if len(raw) == 0 {
+		return nil
+	}
+	var policy kapsorav1.LodgingPolicySnapshot
+	if err := json.Unmarshal(raw, &policy); err != nil || policy.PenaltyKind == "" {
+		return nil
+	}
+	return &policy
 }
 
 // quoteSnapshotView renders the frozen quote. A snapshot that cannot be decoded renders as

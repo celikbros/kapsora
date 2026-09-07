@@ -128,7 +128,8 @@ func (Bookings) CreateBooking(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID
 		PolicySnapshot: row.PolicySnapshot, Channel: row.Channel, ConfirmedAt: row.ConfirmedAt,
 		CheckedInAt: row.CheckedInAt, CheckedOutAt: row.CheckedOutAt,
 		CancelledAt: row.CancelledAt, CancelReasonCode: row.CancelReasonCode,
-		ActualNights: row.ActualNights, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
+		ActualNights: row.ActualNights, OverBooking: row.OverBooking,
+		CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
 		RowVersion: row.RowVersion,
 	}), nil
 }

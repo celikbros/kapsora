@@ -48,3 +48,27 @@ func AccommodationBookingReminder(svc *accommodationapp.Service) Job {
 		},
 	}
 }
+
+// AccommodationWaitlistOffer hands a freed room to whoever is at the front of the queue
+// (WP-I6-03 section 2.5).
+//
+// Every five minutes, and on nothing else. No command triggers it and no release calls it,
+// because a sweep that some paths ran and others did not would be a queue that worked for
+// cancellations and quietly did not for expiries -- and a member on a waiting list would
+// never learn which kind of freed room theirs was.
+//
+// Two properties make it safe on more than one scheduler. The queue is read FOR UPDATE SKIP
+// LOCKED, so two sweeps that both believe they lead take different entries and neither
+// waits. And the offer is placed by WP-I6-02's own hold, with the same stay-date lock order
+// and the same counters, so a room offered to a waiting member and a room taken at the
+// search screen cannot oversell each other.
+func AccommodationWaitlistOffer(svc *accommodationapp.Service) Job {
+	return Job{
+		Code:  "accommodation.waitlist_offer",
+		Every: 5 * time.Minute,
+		Run: func(ctx context.Context) (Metrics, error) {
+			offered, err := svc.OfferWaitlistRooms(ctx, time.Now().UTC())
+			return Metrics{"offered": offered}, err
+		},
+	}
+}

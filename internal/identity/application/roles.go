@@ -46,7 +46,7 @@ func RoleTemplates() []RoleTemplate {
 				"entitlement.read", "entitlement.mapping.manage",
 				"catalog.read", "catalog.manage", "pricing.quote", "authorization.manage", "fulfilment.record",
 				"voucher.redeem", "claim.read", "report.read", "worklist.read", "worklist.claim",
-				"accommodation.property.read",
+				"accommodation.property.read", "accommodation.waitlist.manage",
 				"notification.read"}},
 		{Code: "PLAN_PUBLISHER", Name: "Plan Onaylayıcı", Scope: ScopeTenant,
 			Description: "Plan sürümü yayınlar ve hak düzeltmelerini onaylar (checker).",
@@ -108,7 +108,8 @@ func RoleTemplates() []RoleTemplate {
 		{Code: "PROVIDER_RESERVATION", Name: "Sağlayıcı Rezervasyon", Scope: ScopeOrganization,
 			Description: "Konaklama kontenjanı, rezervasyon, check-in/out; sağlık verisine erişemez.",
 			Permissions: []string{"accommodation.property.read", "accommodation.inventory.manage",
-				"accommodation.booking.manage", "member.read", "eligibility.check"}},
+				"accommodation.booking.manage", "accommodation.waitlist.manage",
+				"member.read", "eligibility.check"}},
 		// The sponsor's own HR user. It exists so the acceptance criterion of WP-I5-01 has a
 		// subject: this is the role that may see that a member has an open health case, and
 		// may never see what the case is about. health.clinical.read is absent on purpose,

@@ -18,6 +18,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -70,6 +71,49 @@ const (
 	lastNight = "2026-06-17"
 )
 
+// testClock is the one moment every service in the fixture reads.
+//
+// It exists because the stay this fixture is built around is in June 2026 and the tests that
+// follow it -- a cancellation inside a free window, a check-in inside its own hours, a
+// no-show after they close -- are all decided by comparing *now* against that stay. A test
+// that used the wall clock would answer differently in June than it does in September, which
+// is not a test of anything.
+//
+// It is shared by the accommodation service, the authorization service and the contract
+// service on purpose: a voucher's validity window is the authorization module's to judge, and
+// a fixture whose desk believed it was June while its voucher store believed it was September
+// would refuse every check-in for a reason no test wrote.
+type testClock struct {
+	mu  sync.Mutex
+	now time.Time
+}
+
+func newTestClock() *testClock { return &testClock{now: time.Now().UTC()} }
+
+func (c *testClock) Now() time.Time {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.now
+}
+
+// Set moves the fixture's clock. Every service reading it moves together.
+func (c *testClock) Set(t time.Time) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.now = t.UTC()
+}
+
+// At parses a moment written the way a test reads best -- "2026-06-13T09:00:00Z" -- and moves
+// the clock to it.
+func (c *testClock) At(t *testing.T, moment string) {
+	t.Helper()
+	parsed, err := time.Parse(time.RFC3339, moment)
+	if err != nil {
+		t.Fatalf("parse %q: %v", moment, err)
+	}
+	c.Set(parsed)
+}
+
 type denyRecorder struct{}
 
 func (denyRecorder) Deny(w http.ResponseWriter, r *http.Request, err error, _ string) {
@@ -91,6 +135,9 @@ type server struct {
 	requests *servicerequestapp.Service
 	// crowd is the five hundred separate members the oversell test holds with.
 	crowd []uuid.UUID
+	// clock is the moment every service in this fixture reads. Tests that are about *when*
+	// something happened move it; the rest never touch it and run at the wall clock.
+	clock *testClock
 
 	tenant     uuid.UUID
 	actor      uuid.UUID
@@ -142,10 +189,11 @@ func newServer(t *testing.T) *server {
 	if err != nil {
 		t.Fatal(err)
 	}
-	movements := benefitledger.NewLedger(time.Now)
+	clock := newTestClock()
+	movements := benefitledger.NewLedger(clock.Now)
 	authorizationSvc, err := authorizationapp.New(authorizationapp.Deps{
 		Pool: h.App, Repo: authorizationpg.New(), Ledger: movements,
-		Audit: auditpg.New(), Cursors: cursors, Logger: logger,
+		Audit: auditpg.New(), Cursors: cursors, Logger: logger, Now: clock.Now,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -159,6 +207,7 @@ func newServer(t *testing.T) *server {
 	}
 	contractSvc, err := contractapp.New(contractapp.Deps{
 		Pool: h.App, Repo: contractpg.New(), Audit: auditpg.New(), Cursors: cursors,
+		Now: clock.Now,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -173,13 +222,14 @@ func newServer(t *testing.T) *server {
 		Requests:       accommodationgw.NewRequests(requestSvc),
 		Authorizations: accommodationgw.NewAuthorizations(authorizationSvc),
 		Policies:       accommodationgw.NewPolicies(contractSvc),
-		Audit:          auditpg.New(), Cursors: cursors, Logger: logger,
+		WorkItems:      accommodationpg.NewWorkItems(logger),
+		Audit:          auditpg.New(), Cursors: cursors, Logger: logger, Now: clock.Now,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	s := &server{h: h, svc: svc, requests: requestSvc}
+	s := &server{h: h, svc: svc, requests: requestSvc, clock: clock}
 	s.tenant = h.CreateTenant("HTTP_ACC")
 	s.actor = h.CreateActor("acc-http-clerk", "Accommodation Clerk")
 	s.membership = h.CreateMembership(s.tenant, s.actor)

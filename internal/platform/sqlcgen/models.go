@@ -46,6 +46,7 @@ type AccommodationBooking struct {
 	UpdatedAt                time.Time
 	UpdatedBy                uuid.NullUUID
 	RowVersion               int64
+	OverBooking              bool
 }
 
 type AccommodationBookingGuest struct {
@@ -72,6 +73,24 @@ type AccommodationBookingNight struct {
 	CreatedAt    time.Time
 }
 
+type AccommodationCancellation struct {
+	ID             uuid.UUID
+	TenantID       uuid.UUID
+	BookingID      uuid.UUID
+	CancelledAt    time.Time
+	CancelledBy    uuid.NullUUID
+	ReasonCode     string
+	PolicySnapshot []byte
+	Free           bool
+	PenaltyNights  int32
+	ReleasedNights int32
+	FeeAmount      pgtype.Numeric
+	PayerFee       pgtype.Numeric
+	MemberFee      pgtype.Numeric
+	CurrencyCode   string
+	CreatedAt      time.Time
+}
+
 type AccommodationInventoryDay struct {
 	TenantID   uuid.UUID
 	RoomTypeID uuid.UUID
@@ -82,6 +101,29 @@ type AccommodationInventoryDay struct {
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 	RowVersion int64
+}
+
+type AccommodationNoShow struct {
+	ID                 uuid.UUID
+	TenantID           uuid.UUID
+	BookingID          uuid.UUID
+	ReportedByActorID  uuid.NullUUID
+	ReportedAt         time.Time
+	EvidenceDocumentID uuid.NullUUID
+	AssessedFeeAmount  pgtype.Numeric
+	PayerAmount        pgtype.Numeric
+	MemberAmount       pgtype.Numeric
+	CurrencyCode       string
+	Status             string
+	ReviewedBy         uuid.NullUUID
+	ReviewedAt         *time.Time
+	ReviewComment      *string
+	ConsumedNights     int32
+	CreatedAt          time.Time
+	CreatedBy          uuid.NullUUID
+	UpdatedAt          time.Time
+	UpdatedBy          uuid.NullUUID
+	RowVersion         int64
 }
 
 type AccommodationProperty struct {
@@ -122,6 +164,28 @@ type AccommodationRoomType struct {
 	UpdatedAt           time.Time
 	UpdatedBy           uuid.NullUUID
 	RowVersion          int64
+}
+
+type AccommodationWaitlistEntry struct {
+	ID               uuid.UUID
+	TenantID         uuid.UUID
+	PersonID         uuid.UUID
+	EnrollmentID     uuid.UUID
+	PropertyID       uuid.UUID
+	RoomTypeID       uuid.NullUUID
+	CheckIn          pgtype.Date
+	CheckOut         pgtype.Date
+	Adults           int32
+	Children         int32
+	Priority         int32
+	Status           string
+	OfferedBookingID uuid.NullUUID
+	OfferExpiresAt   *time.Time
+	CreatedAt        time.Time
+	CreatedBy        uuid.NullUUID
+	UpdatedAt        time.Time
+	UpdatedBy        uuid.NullUUID
+	RowVersion       int64
 }
 
 type AuditAccessEvent struct {
