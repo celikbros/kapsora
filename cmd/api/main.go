@@ -15,6 +15,9 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	accommodationapp "github.com/celikbros/kapsora/internal/accommodation/application"
+	accommodationpg "github.com/celikbros/kapsora/internal/accommodation/infrastructure/postgres"
+	accommodationhttp "github.com/celikbros/kapsora/internal/accommodation/transport/http"
 	auditpg "github.com/celikbros/kapsora/internal/audit/postgres"
 	audithttp "github.com/celikbros/kapsora/internal/audit/transport/http"
 	authorizationapp "github.com/celikbros/kapsora/internal/authorization/application"
@@ -328,6 +331,19 @@ func run() error {
 		return err
 	}
 
+	// The accommodation vertical. It leans on the eligibility service rather than
+	// re-deriving what a member is entitled to: every availability search runs one check
+	// and keeps its evaluation id, so months later "what did the system show them" is a
+	// row somebody can read rather than a guess. The prices go through the same contract
+	// selection and the same calculator a counter quote uses, per night, summed once.
+	accommodationSvc, err := accommodationapp.New(accommodationapp.Deps{
+		Pool: pool, Repo: accommodationpg.New(), Eligibility: eligibilitySvc,
+		Audit: auditpg.New(), Cursors: cursors, Logger: logger,
+	})
+	if err != nil {
+		return err
+	}
+
 	checker := health.NewChecker(2 * time.Second)
 	checker.Add("postgresql", health.PostgresCheck(pool))
 
@@ -351,6 +367,7 @@ func run() error {
 		documents:      documentSvc,
 		health:         healthSvc,
 		claims:         claimSvc,
+		accommodation:  accommodationSvc,
 		notifications:  notificationSvc,
 		entitlements:   entitlementSvc,
 		eligibility:    eligibilitySvc,
@@ -472,6 +489,7 @@ type routerDeps struct {
 	documents      *documentapp.Service
 	health         *healthapp.Service
 	claims         *claimapp.Service
+	accommodation  *accommodationapp.Service
 	notifications  *notificationapp.Service
 	entitlements   *benefitledger.Service
 	eligibility    *benefiteligibility.Service
@@ -809,6 +827,34 @@ func newRouter(d routerDeps) http.Handler {
 				claimHandler.Routes(r, claimMW)
 			})
 
+			// The accommodation vertical: the buildings, the room types, the daily
+			// allotment and the availability search. The three prefixes sit side by side
+			// because a provider clerk opening a season walks all of them in one sitting.
+			//
+			// The search is a POST because it carries a body, and it changes nothing: it
+			// reserves no room and moves no balance. It does write one thing — the
+			// immutable eligibility evaluation that records what the member was shown —
+			// and that is why it takes an idempotency key: a search replayed by a flaky
+			// network should leave one record of one answer, not two.
+			accommodationHandler := accommodationhttp.NewHandler(d.accommodation, sessions, d.logger)
+			accommodationMW := accommodationhttp.Middlewares{
+				CreateProperty: d.idempotent("accommodation.property.create"),
+				PatchProperty:  d.idempotent("accommodation.property.update"),
+				CreateRoomType: d.idempotent("accommodation.room_type.create"),
+				PatchRoomType:  d.idempotent("accommodation.room_type.update"),
+				PutInventory:   d.idempotentOptional("accommodation.inventory.put"),
+				Search:         d.idempotentOptional("accommodation.availability.search"),
+			}
+			tenant.Route("/accommodation/properties", func(r chi.Router) {
+				accommodationHandler.PropertyRoutes(r, accommodationMW)
+			})
+			tenant.Route("/accommodation/room-types", func(r chi.Router) {
+				accommodationHandler.RoomTypeRoutes(r, accommodationMW)
+			})
+			tenant.Route("/accommodation/availability", func(r chi.Router) {
+				accommodationHandler.AvailabilityRoutes(r, accommodationMW)
+			})
+
 			// Notifications. Templates are configuration, the message log is a record of
 			// what members were actually told, and preferences are what they asked for;
 			// the three sit side by side because an operator answering "was this member
@@ -857,6 +903,20 @@ func (d routerDeps) idempotent(commandCode string) func(http.Handler) http.Handl
 	return idempotency.Middleware(d.pool, idempotency.Options{
 		CommandCode: commandCode,
 		Scope:       idempotencyScope,
+		Logger:      d.logger,
+	})
+}
+
+// idempotentOptional honours an Idempotency-Key when one is sent and does not demand one.
+// It is for the two commands whose repetition is harmless by construction: a PUT that sets
+// a range of nights to a capacity, and the availability search, which is a query written as
+// a POST because it carries a body. Demanding a key from a search would be demanding one
+// from a GET.
+func (d routerDeps) idempotentOptional(commandCode string) func(http.Handler) http.Handler {
+	return idempotency.Middleware(d.pool, idempotency.Options{
+		CommandCode: commandCode,
+		Scope:       idempotencyScope,
+		Optional:    true,
 		Logger:      d.logger,
 	})
 }

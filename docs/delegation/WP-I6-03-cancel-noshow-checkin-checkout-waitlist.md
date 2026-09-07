@@ -6,7 +6,7 @@
 | Size                       | L                                                                                                                                                                                                                                                                 |
 | Depends on                 | WP-I6-02 (booking, voucher, reservation adoption), WP-I6-04 (cancellation terms, the policy snapshot), WP-I4-02 (`redeemVoucher`, `Consume`, `ReleaseUnused`, fulfilment), WP-I4-04 (documents, for no-show evidence), WP-I4-03 (queues, maker-checker)          |
 | Runs in parallel with      | WP-I6-05 (mock first)                                                                                                                                                                                                                                             |
-| Migration numbers assigned | `000038_accommodation_cancellation_noshow_waitlist.up.sql`                                                                                                                                                                                                        |
+| Migration numbers assigned | `000042_accommodation_cancellation_noshow_waitlist.up.sql` (renumbered from 000038; the number must exceed 000041)                                                                                                                                                                                                        |
 | OpenAPI operations owned   | `cancelBooking`, `previewCancellation`, `checkInBooking`, `checkOutBooking`, `reportNoShow`, `reviewNoShow`, `listWaitlist`, `joinWaitlist`, `cancelWaitlistEntry`, `acceptWaitlistOffer`                                                                        |
 | Read first                 | v1.2 10.6 step 8, 10.7 (verbatim), 12.3, 16.7 (`waitlist_entry`, `no_show`), 35.2; WP-I5-03 §2.4 (release at discharge, across every hold), `internal/health/application/inpatientstay.go` `releaseUnusedDays`; WP-I4-02 fulfilment; WP-I4-03 §2.4 approval policy |
 
@@ -21,7 +21,7 @@ provider's claim with evidence, reviewed before it costs the member anything.**
 
 ## 2. Scope
 
-### 2.1 Schema (migration 000038)
+### 2.1 Schema (migration 000042)
 
 `accommodation.no_show`: id, tenant_id, `booking_id` (unique), `reported_by_actor_id`,
 `reported_at`, `evidence_document_id` NULL (WP-I4-04 link, `aggregate_type = 'BOOKING'`),
@@ -145,4 +145,4 @@ entry.
 - [ ] A no-show never costs the member anything before a second person confirms it.
 - [ ] A freed room reaches the waitlist in queue order without anybody watching.
 - [ ] OpenAPI (additive), generated code, Spectral and `oasdiff` clean; Turkish for every
-      problem code; schema version 38.
+      problem code; schema version 42.

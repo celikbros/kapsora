@@ -4,6 +4,234 @@
  */
 
 export interface paths {
+    "/api/v1/accommodation/availability/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description What is free between two dates, and what it would cost this member.
+         *
+         *     **Whose stay.** A member account is bound to one person, and the person is taken from
+         *     that binding and never from the body: a body naming somebody else is refused with
+         *     PERSON_SCOPE, which is what stops a member searching — and later holding — a room for
+         *     their neighbour. A desk that is not bound to a person must name one in `personId`.
+         *
+         *     **What is shown.** ACTIVE properties of ACTIVE providers holding an ACTIVE contract,
+         *     published over the stay, with one of the payer organizations behind the programs this
+         *     person is enrolled in on the first night. A person with no active enrollment sees
+         *     nothing rather than everything.
+         *
+         *     **What `available` means.** The server's minimum daily availability over the whole
+         *     range. A room type with an allotment on every night but one is not "mostly
+         *     available": the guest would have nowhere to sleep on the missing night, so the answer
+         *     for the stay is none.
+         *
+         *     **What the quote is.** The pricing ladder's answer for the room type's service, on
+         *     each stay date, under this person's enrollment and this provider's contract, summed
+         *     once on the server. Every figure is an exact decimal string; `payerAmount` plus
+         *     `memberAmount` is exactly `totalAmount`, on every room type and every night. Where a
+         *     night cannot be priced the room type carries `quote: null` and a reason code rather
+         *     than a guess.
+         *
+         *     **The eligibility half.** `entitlement` is what the plan has left, in the NIGHT unit
+         *     of the service-to-entitlement mapping, and `eligible` says whether that covers every
+         *     night of this stay. Nights beyond the remaining entitlement are priced with the plan
+         *     carrying nothing, so a member with two nights left and a three-night stay is shown
+         *     the third night as their own.
+         *
+         *     Every search is recorded as an immutable eligibility evaluation, named in
+         *     `evaluationId`, so "what did the system show them" is answerable months later.
+         *     Nothing is reserved: an availability answer is an answer, and the hold is a separate
+         *     command.
+         */
+        post: operations["searchAvailability"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accommodation/properties": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The properties of the tenant, newest first. A caller whose grants are scoped to
+         *     provider organizations sees its own buildings and no others — not a filtered view of
+         *     everybody's, but a list in which another provider's hotel does not exist.
+         *
+         *     This is the back-office and provider list, so it shows INACTIVE properties too. The
+         *     member's view is `searchAvailability`, which shows only what is ACTIVE, contracted
+         *     for their program, and actually free.
+         */
+        get: operations["listProperties"];
+        put?: never;
+        /**
+         * @description Opens a building. The provider organization is the relationship the tenant contracts
+         *     with, and it is what an ORGANIZATION-scoped caller is compared against: a provider
+         *     clerk naming somebody else's organization is refused with PROPERTY_SCOPE rather than
+         *     told the organization does not exist, because it plainly does.
+         *
+         *     `locationId` is optional and points at an existing provider location of the same
+         *     provider, so a hotel already in the network reuses its address and coordinates. An
+         *     internal social facility has no provider location and bills a `costCenter` instead
+         *     (v1.2 9.13); both are null for the ordinary case and neither is required.
+         *
+         *     `timezone` is the property's own IANA zone. It is not decoration: a night begins and
+         *     ends where the building is, and every stay booked here is counted against that
+         *     calendar.
+         */
+        post: operations["createProperty"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accommodation/properties/{propertyId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One property. Another provider's property is 404 rather than 403: that a hotel exists
+         *     at all is not this caller's business.
+         */
+        get: operations["getProperty"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Rewrites the editable half of a property. Every field is sent every time: a merge
+         *     would make "this hotel no longer has a location" and "it no longer bills a cost
+         *     centre" inexpressible, and a field that cannot be cleared is a field somebody edits
+         *     by hand in the database.
+         *
+         *     `code` and `providerOrganizationId` are not editable. A code is what the provider's
+         *     own systems call the building, and moving a building to another provider would move
+         *     every booking ever taken in it.
+         */
+        patch: operations["patchProperty"];
+        trace?: never;
+    };
+    "/api/v1/accommodation/properties/{propertyId}/room-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The room types of one property, by code. The property is read first, so a building
+         *     this caller may not see answers 404 rather than an empty list — an empty list would
+         *     say the building exists and has no rooms.
+         */
+        get: operations["listRoomTypes"];
+        put?: never;
+        /**
+         * @description Adds a sellable kind of room.
+         *
+         *     `serviceDefinitionId` is the joint with the rest of the platform and the reason this
+         *     vertical needs almost no machinery of its own: the room type *is* a catalogue
+         *     service, so it is priced by the contract prices of the pricing ladder, entitled
+         *     through the service-to-entitlement mapping, and claimed like anything else. One room
+         *     type, one service — a room type priced as two services would be a room with two
+         *     answers to "what does a night cost".
+         *
+         *     The service has to exist in this tenant, be active, and carry the NIGHT unit. A
+         *     service measured in anything else would produce a quote in the wrong unit and draw an
+         *     entitlement down in the wrong currency of counting, so it is refused on the field
+         *     rather than accepted and discovered later.
+         */
+        post: operations["createRoomType"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accommodation/room-types/{roomTypeId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Rewrites the editable half of a room type. Every field is sent every time, as on the
+         *     property.
+         *
+         *     `serviceDefinitionId` is not among them and never will be: a room type re-pointed at
+         *     another service would silently change what every booking already taken against it was
+         *     priced and entitled as.
+         */
+        patch: operations["patchRoomType"];
+        trace?: never;
+    };
+    "/api/v1/accommodation/room-types/{roomTypeId}/inventory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The daily allotment of one room type over a range of nights, one entry per date
+         *     whether or not there is a row behind it.
+         *
+         *     `available` is capacity minus held minus confirmed, computed on the server, so no
+         *     screen subtracts and two screens cannot disagree. `allotted` is false for a night
+         *     this provider has opened nothing on: that is not the same statement as "zero free",
+         *     and the availability search treats it as unavailable rather than as free.
+         *
+         *     It takes the same read grant the search does, so the provider's desk and the payer's
+         *     back office both see it, and a provider-scoped caller sees only its own room types.
+         *     A member's route to what is free is `searchAvailability`, which answers what they
+         *     can have rather than how the allotment behind it is composed.
+         */
+        get: operations["getRoomTypeInventory"];
+        /**
+         * @description Opens a season's allotment in one call: `capacity` on every night of the range, in
+         *     one transaction. `held` and `confirmed` are never touched here — they belong to the
+         *     holds and bookings of the booking package, and an allotment that could edit them
+         *     would be an allotment that could make a confirmed booking disappear.
+         *
+         *     A night whose held plus confirmed exceeds the new capacity is refused with 409
+         *     `INVENTORY_BELOW_COMMITMENT`, naming the first offending date in the `stayDate`
+         *     extension member — a provider opening ninety nights needs to know which night to look
+         *     at, not that something somewhere failed. The whole range is refused with it: an
+         *     allotment meant to apply to a season is not half applied.
+         *
+         *     The refusal is not this endpoint's alone. `held + confirmed <= capacity` is a CHECK
+         *     on the row, so a hold that landed between the lock and the write fails the statement
+         *     and takes the range with it.
+         */
+        put: operations["putRoomTypeInventory"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/approval-policies": {
         parameters: {
             query?: never;
@@ -4702,6 +4930,107 @@ export interface components {
          * @enum {string}
          */
         AuthorizationStatus: "ACTIVE" | "PARTIALLY_USED" | "USED" | "EXPIRED" | "CANCELLED";
+        AvailabilityEntitlement: {
+            entitlementCode: string;
+            /** @description Exact decimal as a string, never a JSON number. */
+            remaining: string;
+            /** @description NIGHT for the ordinary mapping; MONEY for a plan that carries a budget. */
+            unit: string;
+        };
+        AvailabilityNightAmount: {
+            /** @description What the contract says the night costs. Exact decimal as a string. */
+            amount: string;
+            /** @description payerAmount plus memberAmount is exactly amount, on every night. */
+            memberAmount: string;
+            payerAmount: string;
+            /** Format: date */
+            stayDate: string;
+        };
+        AvailabilityQuote: {
+            currencyCode: string;
+            /** @description payerAmount plus memberAmount is exactly totalAmount. */
+            memberAmount: string;
+            nightlyAmounts: components["schemas"]["AvailabilityNightAmount"][];
+            payerAmount: string;
+            /**
+             * @description The nights summed once, on the server, from figures each rounded once to the
+             *     currency. Exact decimal as a string, never a total a frontend added up.
+             */
+            totalAmount: string;
+        };
+        AvailabilityRoomTypeResult: {
+            /**
+             * @description The server's minimum daily availability over the whole range, and zero for a room
+             *     type without an allotment on even one night of it.
+             */
+            available: number;
+            property: components["schemas"]["Property"];
+            quote: components["schemas"]["AvailabilityQuote"] | null;
+            /** @description Set exactly when quote is null. */
+            quoteUnavailableReason: components["schemas"]["QuoteUnavailableReason"] | null;
+            roomType: components["schemas"]["RoomType"];
+        };
+        AvailabilitySearchRequest: {
+            adults: number;
+            /** Format: date */
+            checkIn: string;
+            /**
+             * Format: date
+             * @description The morning the guest leaves, and never a night. It must be after checkIn, and the
+             *     stay may not exceed the tenant's accommodation.max_nights.
+             */
+            checkOut: string;
+            children?: number;
+            /**
+             * Format: uuid
+             * @description Whose stay. A member account bound to a person may omit it or echo its own; a body
+             *     naming anybody else is refused with PERSON_SCOPE. A desk that is bound to no
+             *     person must name one.
+             */
+            personId?: string | null;
+            /**
+             * Format: uuid
+             * @description Narrows a member enrolled in two programmes to one of them. It is honoured, never
+             *     trusted: a programme the person is not enrolled in on the first night selects
+             *     nothing.
+             */
+            programId?: string | null;
+            /**
+             * Format: uuid
+             * @description Exactly one of propertyId and regionCode.
+             */
+            propertyId?: string | null;
+            regionCode?: string | null;
+        };
+        AvailabilitySearchResult: {
+            /** Format: date */
+            checkIn: string;
+            /** Format: date */
+            checkOut: string;
+            /**
+             * @description Whether the plan covers every night of this stay. Two nights left and a
+             *     three-night stay is false: the third night is the member's to pay, and the figures
+             *     say so too.
+             */
+            eligible: boolean;
+            entitlement?: components["schemas"]["AvailabilityEntitlement"] | null;
+            /**
+             * Format: uuid
+             * @description The immutable eligibility evaluation this search was recorded as, so "what did the
+             *     system show them" is answerable later. Null only when the search matched no room
+             *     type and there was therefore no service to evaluate.
+             */
+            evaluationId?: string | null;
+            /**
+             * @description The server's own count of the nights in [checkIn, checkOut), on the calendar and
+             *     never on elapsed hours — a stay over a summer-time change is still the number of
+             *     nights somebody slept.
+             */
+            nights: number;
+            /** Format: uuid */
+            personId: string;
+            results: components["schemas"]["AvailabilityRoomTypeResult"][];
+        };
         CancelInpatientStay: {
             reasonCode: string;
             reasonText?: string | null;
@@ -5573,6 +5902,22 @@ export interface components {
             /** Format: date */
             validTo?: string;
         };
+        CreateProperty: {
+            amenities?: components["schemas"]["PropertyAmenity"][];
+            city?: string | null;
+            code: string;
+            costCenter?: string | null;
+            /** Format: uuid */
+            locationId?: string | null;
+            name: string;
+            propertyType: components["schemas"]["PropertyType"];
+            /** Format: uuid */
+            providerOrganizationId: string;
+            regionCode?: string | null;
+            /** @description Defaults to ACTIVE. */
+            status?: components["schemas"]["PropertyStatus"] | null;
+            timezone: string;
+        };
         CreateProviderLocationRequest: {
             addressLine?: string;
             city?: string;
@@ -5609,6 +5954,20 @@ export interface components {
             validFrom: string;
             /** Format: date */
             validTo?: string;
+        };
+        CreateRoomType: {
+            attributes?: {
+                [key: string]: unknown;
+            };
+            code: string;
+            maxAdults: number;
+            maxChildren?: number;
+            maxOccupancy: number;
+            name: string;
+            /** Format: uuid */
+            serviceDefinitionId: string;
+            /** @description Defaults to ACTIVE. */
+            status?: components["schemas"]["PropertyStatus"] | null;
         };
         CreateRuleSetRequest: {
             code: string;
@@ -6496,6 +6855,28 @@ export interface components {
          * @enum {string}
          */
         InpatientStayStatus: "REQUESTED" | "AUTHORIZED" | "ADMITTED" | "DISCHARGED" | "CANCELLED" | "REJECTED";
+        InventoryDay: {
+            /**
+             * @description False for a night this provider has opened nothing on. It is not the same
+             *     statement as "zero free", and the availability search treats a night with no
+             *     allotment as unavailable rather than as free.
+             */
+            allotted: boolean;
+            /**
+             * @description capacity minus held minus confirmed, computed on the server so no screen
+             *     subtracts.
+             */
+            available: number;
+            capacity: number;
+            confirmed: number;
+            held: number;
+            /** Format: int64 */
+            rowVersion?: number;
+            /** Format: date */
+            stayDate: string;
+            /** Format: date-time */
+            updatedAt?: string | null;
+        };
         /**
          * @description The one response that carries the plaintext. Show it to the member, print it or let
          *     them save it now: the server keeps only its digest and cannot produce it again.
@@ -7236,6 +7617,33 @@ export interface components {
             validTo: string;
         };
         /**
+         * @description Every field is sent every time: a merge would make "this hotel no longer has a
+         *     location" inexpressible.
+         */
+        PatchProperty: {
+            amenities?: components["schemas"]["PropertyAmenity"][];
+            city?: string | null;
+            costCenter?: string | null;
+            /** Format: uuid */
+            locationId?: string | null;
+            name: string;
+            propertyType: components["schemas"]["PropertyType"];
+            regionCode?: string | null;
+            status: components["schemas"]["PropertyStatus"];
+            timezone: string;
+        };
+        /** @description Every field is sent every time; serviceDefinitionId is never among them. */
+        PatchRoomType: {
+            attributes?: {
+                [key: string]: unknown;
+            };
+            maxAdults: number;
+            maxChildren?: number;
+            maxOccupancy: number;
+            name: string;
+            status: components["schemas"]["PropertyStatus"];
+        };
+        /**
          * @description Merge patch: a field that is absent is left alone, and an explicit null clears the
          *     two fields that may be cleared. The code and the domain are absent from this schema
          *     because they are immutable; sending either answers 422 with field code UNKNOWN_FIELD.
@@ -7778,6 +8186,62 @@ export interface components {
             items: components["schemas"]["Program"][];
             nextCursor?: string | null;
         };
+        Property: {
+            amenities: components["schemas"]["PropertyAmenity"][];
+            city?: string | null;
+            code: string;
+            /**
+             * @description The internal cost centre a facility the tenant runs itself charges instead of
+             *     invoicing (v1.2 9.13). Null for every commercial hotel.
+             */
+            costCenter?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: uuid */
+            id: string;
+            /**
+             * Format: uuid
+             * @description The provider location this building already is in the network, when it is one. An
+             *     internal social facility has none.
+             */
+            locationId?: string | null;
+            name: string;
+            propertyType: components["schemas"]["PropertyType"];
+            /** Format: uuid */
+            providerOrganizationId: string;
+            regionCode?: string | null;
+            /** Format: int64 */
+            rowVersion: number;
+            status: components["schemas"]["PropertyStatus"];
+            /**
+             * @description The property's own IANA zone. A night begins and ends where the building is, so a
+             *     stay in Berlin booked by a Turkish payer is counted in Berlin nights.
+             */
+            timezone: string;
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        /**
+         * @description The closed list of things a building has. Every key is a fact about the building and
+         *     none of them is, or may become, a fact about a guest: there is no dietary and no
+         *     medical key, because an amenities array is written by a provider clerk and read by
+         *     everybody, and a slot a health need could be typed into is a slot it eventually would
+         *     be.
+         * @enum {string}
+         */
+        PropertyAmenity: "WIFI" | "PARKING" | "BREAKFAST" | "HALF_BOARD" | "FULL_BOARD" | "ALL_INCLUSIVE" | "POOL" | "SPA" | "GYM" | "AIR_CONDITIONING" | "RESTAURANT" | "BEACH" | "STEP_FREE_ACCESS" | "PET_FRIENDLY" | "FAMILY_ROOM" | "SHUTTLE" | "LAUNDRY" | "MEETING_ROOM" | "KITCHENETTE" | "THERMAL";
+        PropertyPage: {
+            items: components["schemas"]["Property"][];
+            nextCursor: string | null;
+        };
+        /** @enum {string} */
+        PropertyStatus: "ACTIVE" | "INACTIVE";
+        /**
+         * @description SOCIAL_FACILITY is the tenant's own guest house rather than a commercial hotel; it is
+         *     the type that ordinarily carries a `costCenter` and no provider location.
+         * @enum {string}
+         */
+        PropertyType: "HOTEL" | "RESORT" | "GUESTHOUSE" | "SOCIAL_FACILITY" | "OTHER";
         Provider: {
             /** Format: date */
             contractedFrom?: string | null;
@@ -7980,6 +8444,20 @@ export interface components {
             taxBehaviour: components["schemas"]["TaxBehaviour"];
             vatRate?: components["schemas"]["DecimalRate"];
         };
+        PutRoomTypeInventory: {
+            /**
+             * @description How many rooms of this type the provider gives this payer on each night of the
+             *     range. It is an allotment, not a count of the rooms the hotel owns.
+             */
+            capacity: number;
+            /** Format: date */
+            from: string;
+            /**
+             * Format: date
+             * @description Inclusive last night of the allotment.
+             */
+            to: string;
+        };
         PutStaySegments: {
             /** @description The whole set. An empty array clears the stay's segments. */
             items: components["schemas"]["StaySegmentInput"][];
@@ -7989,6 +8467,13 @@ export interface components {
          * @enum {string}
          */
         QuotaPeriodType: "DAY" | "WEEK" | "MONTH" | "YEAR" | "CONTRACT";
+        /**
+         * @description Why a room type carries no quote. PRICE_AMBIGUOUS is the one that matters most: two
+         *     equally specific contracted prices tied, and the system does not choose between them,
+         *     because a random winner is a silent financial error nobody would ever see.
+         * @enum {string}
+         */
+        QuoteUnavailableReason: "PRICE_NOT_FOUND" | "PRICE_AMBIGUOUS" | "PRICE_FORMULA_UNKNOWN" | "PRICE_CURRENCY_MISMATCH";
         ReasonCommand: {
             reasonCode: string;
             reasonText?: string;
@@ -8122,6 +8607,55 @@ export interface components {
         };
         ReviewComment: {
             comment?: string;
+        };
+        RoomType: {
+            /**
+             * @description The provider's own free-form facts about the room — bed layout, floor, view. It
+             *     carries nothing about a guest.
+             */
+            attributes: {
+                [key: string]: unknown;
+            };
+            code: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: uuid */
+            id: string;
+            maxAdults: number;
+            maxChildren: number;
+            /** @description At least maxAdults; the database keeps that as a CHECK. */
+            maxOccupancy: number;
+            name: string;
+            /** Format: uuid */
+            propertyId: string;
+            /** Format: int64 */
+            rowVersion: number;
+            /**
+             * Format: uuid
+             * @description The NIGHT-unit catalogue service this room is priced and entitled as. One room
+             *     type, one service, and it is never edited.
+             */
+            serviceDefinitionId: string;
+            status: components["schemas"]["PropertyStatus"];
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        RoomTypeInventoryRange: {
+            /** @description One entry per date of the range, in order, gaps included. */
+            days: components["schemas"]["InventoryDay"][];
+            /** Format: date */
+            from: string;
+            /** Format: uuid */
+            roomTypeId: string;
+            /** Format: date */
+            to: string;
+        };
+        /**
+         * @description Not a page. A property has a handful of room types, and paging a list of four would
+         *     cost a cursor to say nothing.
+         */
+        RoomTypeList: {
+            items: components["schemas"]["RoomType"][];
         };
         Rule: {
             actions: components["schemas"]["RuleAction"][];
@@ -9327,11 +9861,13 @@ export interface components {
         PriceListId: string;
         PriceQuoteId: string;
         ProgramId: string;
+        PropertyId: string;
         ProviderId: string;
         ProviderLocationId: string;
         RelationshipId: string;
         ReportId: string;
         RequestId: string;
+        RoomTypeId: string;
         RuleEvaluationId: string;
         RuleSetId: string;
         RuleSetVersionId: string;
@@ -9367,6 +9903,12 @@ export type SchemaAuthorizationItem = components['schemas']['AuthorizationItem']
 export type SchemaAuthorizationItemInput = components['schemas']['AuthorizationItemInput'];
 export type SchemaAuthorizationPage = components['schemas']['AuthorizationPage'];
 export type SchemaAuthorizationStatus = components['schemas']['AuthorizationStatus'];
+export type SchemaAvailabilityEntitlement = components['schemas']['AvailabilityEntitlement'];
+export type SchemaAvailabilityNightAmount = components['schemas']['AvailabilityNightAmount'];
+export type SchemaAvailabilityQuote = components['schemas']['AvailabilityQuote'];
+export type SchemaAvailabilityRoomTypeResult = components['schemas']['AvailabilityRoomTypeResult'];
+export type SchemaAvailabilitySearchRequest = components['schemas']['AvailabilitySearchRequest'];
+export type SchemaAvailabilitySearchResult = components['schemas']['AvailabilitySearchResult'];
 export type SchemaCancelInpatientStay = components['schemas']['CancelInpatientStay'];
 export type SchemaClaim = components['schemas']['Claim'];
 export type SchemaClaimDecisionKind = components['schemas']['ClaimDecisionKind'];
@@ -9428,9 +9970,11 @@ export type SchemaCreatePlanVersionRequest = components['schemas']['CreatePlanVe
 export type SchemaCreatePractitionerRequest = components['schemas']['CreatePractitionerRequest'];
 export type SchemaCreatePriceQuoteRequest = components['schemas']['CreatePriceQuoteRequest'];
 export type SchemaCreateProgramRequest = components['schemas']['CreateProgramRequest'];
+export type SchemaCreateProperty = components['schemas']['CreateProperty'];
 export type SchemaCreateProviderLocationRequest = components['schemas']['CreateProviderLocationRequest'];
 export type SchemaCreateProviderRequest = components['schemas']['CreateProviderRequest'];
 export type SchemaCreateRelationshipRequest = components['schemas']['CreateRelationshipRequest'];
+export type SchemaCreateRoomType = components['schemas']['CreateRoomType'];
 export type SchemaCreateRuleSetRequest = components['schemas']['CreateRuleSetRequest'];
 export type SchemaCreateRuleSetVersionRequest = components['schemas']['CreateRuleSetVersionRequest'];
 export type SchemaCreateServiceCategoryRequest = components['schemas']['CreateServiceCategoryRequest'];
@@ -9493,6 +10037,7 @@ export type SchemaImportCodeValuesRequest = components['schemas']['ImportCodeVal
 export type SchemaInpatientStay = components['schemas']['InpatientStay'];
 export type SchemaInpatientStayPage = components['schemas']['InpatientStayPage'];
 export type SchemaInpatientStayStatus = components['schemas']['InpatientStayStatus'];
+export type SchemaInventoryDay = components['schemas']['InventoryDay'];
 export type SchemaIssuedVoucher = components['schemas']['IssuedVoucher'];
 export type SchemaIssueVoucher = components['schemas']['IssueVoucher'];
 export type SchemaLedgerEntry = components['schemas']['LedgerEntry'];
@@ -9548,6 +10093,8 @@ export type SchemaPartyCatalogEntry = components['schemas']['PartyCatalogEntry']
 export type SchemaPartyCatalogs = components['schemas']['PartyCatalogs'];
 export type SchemaPatchClaimDraft = components['schemas']['PatchClaimDraft'];
 export type SchemaPatchMedicalReportDraft = components['schemas']['PatchMedicalReportDraft'];
+export type SchemaPatchProperty = components['schemas']['PatchProperty'];
+export type SchemaPatchRoomType = components['schemas']['PatchRoomType'];
 export type SchemaPatchWorkQueue = components['schemas']['PatchWorkQueue'];
 export type SchemaPaymentTerm = components['schemas']['PaymentTerm'];
 export type SchemaPerson = components['schemas']['Person'];
@@ -9584,6 +10131,11 @@ export type SchemaPricingMethod = components['schemas']['PricingMethod'];
 export type SchemaProblem = components['schemas']['Problem'];
 export type SchemaProgram = components['schemas']['Program'];
 export type SchemaProgramPage = components['schemas']['ProgramPage'];
+export type SchemaProperty = components['schemas']['Property'];
+export type SchemaPropertyAmenity = components['schemas']['PropertyAmenity'];
+export type SchemaPropertyPage = components['schemas']['PropertyPage'];
+export type SchemaPropertyStatus = components['schemas']['PropertyStatus'];
+export type SchemaPropertyType = components['schemas']['PropertyType'];
 export type SchemaProvider = components['schemas']['Provider'];
 export type SchemaProviderCapability = components['schemas']['ProviderCapability'];
 export type SchemaProviderCapabilityInput = components['schemas']['ProviderCapabilityInput'];
@@ -9606,8 +10158,10 @@ export type SchemaPutLodgingTermsRequest = components['schemas']['PutLodgingTerm
 export type SchemaPutMedicalReportServices = components['schemas']['PutMedicalReportServices'];
 export type SchemaPutNotificationPreferences = components['schemas']['PutNotificationPreferences'];
 export type SchemaPutPaymentTermRequest = components['schemas']['PutPaymentTermRequest'];
+export type SchemaPutRoomTypeInventory = components['schemas']['PutRoomTypeInventory'];
 export type SchemaPutStaySegments = components['schemas']['PutStaySegments'];
 export type SchemaQuotaPeriodType = components['schemas']['QuotaPeriodType'];
+export type SchemaQuoteUnavailableReason = components['schemas']['QuoteUnavailableReason'];
 export type SchemaReasonCommand = components['schemas']['ReasonCommand'];
 export type SchemaReassignWorkItem = components['schemas']['ReassignWorkItem'];
 export type SchemaRedeemVoucher = components['schemas']['RedeemVoucher'];
@@ -9627,6 +10181,9 @@ export type SchemaResolvedPrice = components['schemas']['ResolvedPrice'];
 export type SchemaResolvePriceRequest = components['schemas']['ResolvePriceRequest'];
 export type SchemaResolvePriceResult = components['schemas']['ResolvePriceResult'];
 export type SchemaReviewComment = components['schemas']['ReviewComment'];
+export type SchemaRoomType = components['schemas']['RoomType'];
+export type SchemaRoomTypeInventoryRange = components['schemas']['RoomTypeInventoryRange'];
+export type SchemaRoomTypeList = components['schemas']['RoomTypeList'];
 export type SchemaRule = components['schemas']['Rule'];
 export type SchemaRuleAction = components['schemas']['RuleAction'];
 export type SchemaRuleActionType = components['schemas']['RuleActionType'];
@@ -9762,11 +10319,13 @@ export type ParameterPractitionerId = components['parameters']['PractitionerId']
 export type ParameterPriceListId = components['parameters']['PriceListId'];
 export type ParameterPriceQuoteId = components['parameters']['PriceQuoteId'];
 export type ParameterProgramId = components['parameters']['ProgramId'];
+export type ParameterPropertyId = components['parameters']['PropertyId'];
 export type ParameterProviderId = components['parameters']['ProviderId'];
 export type ParameterProviderLocationId = components['parameters']['ProviderLocationId'];
 export type ParameterRelationshipId = components['parameters']['RelationshipId'];
 export type ParameterReportId = components['parameters']['ReportId'];
 export type ParameterRequestId = components['parameters']['RequestId'];
+export type ParameterRoomTypeId = components['parameters']['RoomTypeId'];
 export type ParameterRuleEvaluationId = components['parameters']['RuleEvaluationId'];
 export type ParameterRuleSetId = components['parameters']['RuleSetId'];
 export type ParameterRuleSetVersionId = components['parameters']['RuleSetVersionId'];
@@ -9781,6 +10340,451 @@ export type ParameterWorkQueueId = components['parameters']['WorkQueueId'];
 export type HeaderETag = components['headers']['ETag'];
 export type $defs = Record<string, never>;
 export interface operations {
+    searchAvailability: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optional on query-style POSTs; honoured when present. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AvailabilitySearchRequest"];
+            };
+        };
+        responses: {
+            /** @description Availability and the contribution quote */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AvailabilitySearchResult"];
+                };
+            };
+            /**
+             * @description The caller named a person other than the one its account is bound to, or holds no
+             *     person binding at all. PERSON_SCOPE, PERSON_BINDING_MISSING, PERMISSION_DENIED.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /**
+             * @description The dates or the party are outside what a stay may be: `checkOut` on or before
+             *     `checkIn`, a stay longer than the tenant's `accommodation.max_nights`, or neither
+             *     of `propertyId` and `regionCode`. VALIDATION_FAILED.
+             */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listProperties: {
+        parameters: {
+            query?: {
+                city?: string;
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                propertyType?: components["schemas"]["PropertyType"];
+                providerOrganizationId?: string;
+                regionCode?: string;
+                status?: components["schemas"]["PropertyStatus"];
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Property page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PropertyPage"];
+                };
+            };
+            /** @description Cursor invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    createProperty: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateProperty"];
+            };
+        };
+        responses: {
+            /** @description Property created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Property"];
+                };
+            };
+            /** @description A provider-scoped caller named another organization. PROPERTY_SCOPE. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /** @description This provider already has a property with that code. PROPERTY_CODE_TAKEN. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getProperty: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                propertyId: components["parameters"]["PropertyId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Property */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Property"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    patchProperty: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                propertyId: components["parameters"]["PropertyId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PatchProperty"];
+            };
+        };
+        responses: {
+            /** @description Property updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Property"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The property changed since the caller read it */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match is missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listRoomTypes: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["PropertyStatus"];
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                propertyId: components["parameters"]["PropertyId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Room types */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomTypeList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    createRoomType: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                propertyId: components["parameters"]["PropertyId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRoomType"];
+            };
+        };
+        responses: {
+            /** @description Room type created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomType"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description This property already has a room type with that code. ROOM_TYPE_CODE_TAKEN. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    patchRoomType: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                roomTypeId: components["parameters"]["RoomTypeId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PatchRoomType"];
+            };
+        };
+        responses: {
+            /** @description Room type updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomType"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The room type changed since the caller read it */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match is missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getRoomTypeInventory: {
+        parameters: {
+            query: {
+                from: string;
+                /** @description Inclusive last night of the range. */
+                to: string;
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                roomTypeId: components["parameters"]["RoomTypeId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Inventory range */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomTypeInventoryRange"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    putRoomTypeInventory: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optional on query-style POSTs; honoured when present. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                roomTypeId: components["parameters"]["RoomTypeId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PutRoomTypeInventory"];
+            };
+        };
+        responses: {
+            /** @description Inventory range after the allotment */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomTypeInventoryRange"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /**
+             * @description The capacity is below what is already held or confirmed on at least one night.
+             *     INVENTORY_BELOW_COMMITMENT, with the first offending date in the `stayDate`
+             *     extension member.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
     listApprovalPolicies: {
         parameters: {
             query?: {

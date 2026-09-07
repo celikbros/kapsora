@@ -5,6 +5,7 @@
  */
 import { HttpResponse, http, type HttpHandler, type PathParams } from 'msw';
 
+import { accommodationHandlers } from './accommodation-handlers';
 import { benefitHandlers } from './benefit-handlers';
 import { catalogHandlers } from './catalog-handlers';
 import { claimHandlers } from './claim-handlers';
@@ -1485,6 +1486,8 @@ export function createHandlers(api: MockApi): HttpHandler[] {
     ...medicalReportHandlers(api),
     ...inpatientHandlers(api),
     ...claimHandlers(api),
+    // M6: the properties, their room types, the allotment and the availability search.
+    ...accommodationHandlers(api),
   ];
 }
 

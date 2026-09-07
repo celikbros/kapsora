@@ -12,6 +12,58 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type AccommodationInventoryDay struct {
+	TenantID   uuid.UUID
+	RoomTypeID uuid.UUID
+	StayDate   pgtype.Date
+	Capacity   int32
+	Held       int32
+	Confirmed  int32
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	RowVersion int64
+}
+
+type AccommodationProperty struct {
+	ID                     uuid.UUID
+	TenantID               uuid.UUID
+	ProviderOrganizationID uuid.UUID
+	LocationID             uuid.NullUUID
+	Code                   string
+	Name                   string
+	PropertyType           string
+	Timezone               string
+	City                   *string
+	RegionCode             *string
+	Amenities              []byte
+	CostCenter             *string
+	Status                 string
+	CreatedAt              time.Time
+	CreatedBy              uuid.NullUUID
+	UpdatedAt              time.Time
+	UpdatedBy              uuid.NullUUID
+	RowVersion             int64
+}
+
+type AccommodationRoomType struct {
+	ID                  uuid.UUID
+	TenantID            uuid.UUID
+	PropertyID          uuid.UUID
+	Code                string
+	Name                string
+	MaxAdults           int32
+	MaxChildren         int32
+	MaxOccupancy        int32
+	Attributes          []byte
+	ServiceDefinitionID uuid.UUID
+	Status              string
+	CreatedAt           time.Time
+	CreatedBy           uuid.NullUUID
+	UpdatedAt           time.Time
+	UpdatedBy           uuid.NullUUID
+	RowVersion          int64
+}
+
 type AuditAccessEvent struct {
 	ID                 uuid.UUID
 	OccurredAt         time.Time

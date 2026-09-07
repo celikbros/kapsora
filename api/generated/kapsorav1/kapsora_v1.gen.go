@@ -2458,6 +2458,123 @@ func (e ProgramStatus) Valid() bool {
 	}
 }
 
+// Defines values for PropertyAmenity.
+const (
+	AIRCONDITIONING PropertyAmenity = "AIR_CONDITIONING"
+	ALLINCLUSIVE    PropertyAmenity = "ALL_INCLUSIVE"
+	BEACH           PropertyAmenity = "BEACH"
+	BREAKFAST       PropertyAmenity = "BREAKFAST"
+	FAMILYROOM      PropertyAmenity = "FAMILY_ROOM"
+	FULLBOARD       PropertyAmenity = "FULL_BOARD"
+	GYM             PropertyAmenity = "GYM"
+	HALFBOARD       PropertyAmenity = "HALF_BOARD"
+	KITCHENETTE     PropertyAmenity = "KITCHENETTE"
+	LAUNDRY         PropertyAmenity = "LAUNDRY"
+	MEETINGROOM     PropertyAmenity = "MEETING_ROOM"
+	PARKING         PropertyAmenity = "PARKING"
+	PETFRIENDLY     PropertyAmenity = "PET_FRIENDLY"
+	POOL            PropertyAmenity = "POOL"
+	RESTAURANT      PropertyAmenity = "RESTAURANT"
+	SHUTTLE         PropertyAmenity = "SHUTTLE"
+	SPA             PropertyAmenity = "SPA"
+	STEPFREEACCESS  PropertyAmenity = "STEP_FREE_ACCESS"
+	THERMAL         PropertyAmenity = "THERMAL"
+	WIFI            PropertyAmenity = "WIFI"
+)
+
+// Valid indicates whether the value is a known member of the PropertyAmenity enum.
+func (e PropertyAmenity) Valid() bool {
+	switch e {
+	case AIRCONDITIONING:
+		return true
+	case ALLINCLUSIVE:
+		return true
+	case BEACH:
+		return true
+	case BREAKFAST:
+		return true
+	case FAMILYROOM:
+		return true
+	case FULLBOARD:
+		return true
+	case GYM:
+		return true
+	case HALFBOARD:
+		return true
+	case KITCHENETTE:
+		return true
+	case LAUNDRY:
+		return true
+	case MEETINGROOM:
+		return true
+	case PARKING:
+		return true
+	case PETFRIENDLY:
+		return true
+	case POOL:
+		return true
+	case RESTAURANT:
+		return true
+	case SHUTTLE:
+		return true
+	case SPA:
+		return true
+	case STEPFREEACCESS:
+		return true
+	case THERMAL:
+		return true
+	case WIFI:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PropertyStatus.
+const (
+	PropertyStatusACTIVE   PropertyStatus = "ACTIVE"
+	PropertyStatusINACTIVE PropertyStatus = "INACTIVE"
+)
+
+// Valid indicates whether the value is a known member of the PropertyStatus enum.
+func (e PropertyStatus) Valid() bool {
+	switch e {
+	case PropertyStatusACTIVE:
+		return true
+	case PropertyStatusINACTIVE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PropertyType.
+const (
+	PropertyTypeGUESTHOUSE     PropertyType = "GUESTHOUSE"
+	PropertyTypeHOTEL          PropertyType = "HOTEL"
+	PropertyTypeOTHER          PropertyType = "OTHER"
+	PropertyTypeRESORT         PropertyType = "RESORT"
+	PropertyTypeSOCIALFACILITY PropertyType = "SOCIAL_FACILITY"
+)
+
+// Valid indicates whether the value is a known member of the PropertyType enum.
+func (e PropertyType) Valid() bool {
+	switch e {
+	case PropertyTypeGUESTHOUSE:
+		return true
+	case PropertyTypeHOTEL:
+		return true
+	case PropertyTypeOTHER:
+		return true
+	case PropertyTypeRESORT:
+		return true
+	case PropertyTypeSOCIALFACILITY:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ProviderLocationStatus.
 const (
 	ProviderLocationStatusACTIVE    ProviderLocationStatus = "ACTIVE"
@@ -2587,6 +2704,30 @@ func (e QuotaPeriodType) Valid() bool {
 	case WEEK:
 		return true
 	case YEAR:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for QuoteUnavailableReason.
+const (
+	PRICEAMBIGUOUS        QuoteUnavailableReason = "PRICE_AMBIGUOUS"
+	PRICECURRENCYMISMATCH QuoteUnavailableReason = "PRICE_CURRENCY_MISMATCH"
+	PRICEFORMULAUNKNOWN   QuoteUnavailableReason = "PRICE_FORMULA_UNKNOWN"
+	PRICENOTFOUND         QuoteUnavailableReason = "PRICE_NOT_FOUND"
+)
+
+// Valid indicates whether the value is a known member of the QuoteUnavailableReason enum.
+func (e QuoteUnavailableReason) Valid() bool {
+	switch e {
+	case PRICEAMBIGUOUS:
+		return true
+	case PRICECURRENCYMISMATCH:
+		return true
+	case PRICEFORMULAUNKNOWN:
+		return true
+	case PRICENOTFOUND:
 		return true
 	default:
 		return false
@@ -4832,6 +4973,104 @@ type AuthorizationPage struct {
 // entitlement moves, and there is no field a caller can set to change it.
 type AuthorizationStatus string
 
+// AvailabilityEntitlement defines model for AvailabilityEntitlement.
+type AvailabilityEntitlement struct {
+	EntitlementCode string `json:"entitlementCode"`
+
+	// Remaining Exact decimal as a string, never a JSON number.
+	Remaining string `json:"remaining"`
+
+	// Unit NIGHT for the ordinary mapping; MONEY for a plan that carries a budget.
+	Unit string `json:"unit"`
+}
+
+// AvailabilityNightAmount defines model for AvailabilityNightAmount.
+type AvailabilityNightAmount struct {
+	// Amount What the contract says the night costs. Exact decimal as a string.
+	Amount string `json:"amount"`
+
+	// MemberAmount payerAmount plus memberAmount is exactly amount, on every night.
+	MemberAmount string             `json:"memberAmount"`
+	PayerAmount  string             `json:"payerAmount"`
+	StayDate     openapi_types.Date `json:"stayDate"`
+}
+
+// AvailabilityQuote defines model for AvailabilityQuote.
+type AvailabilityQuote struct {
+	CurrencyCode string `json:"currencyCode"`
+
+	// MemberAmount payerAmount plus memberAmount is exactly totalAmount.
+	MemberAmount   string                    `json:"memberAmount"`
+	NightlyAmounts []AvailabilityNightAmount `json:"nightlyAmounts"`
+	PayerAmount    string                    `json:"payerAmount"`
+
+	// TotalAmount The nights summed once, on the server, from figures each rounded once to the
+	// currency. Exact decimal as a string, never a total a frontend added up.
+	TotalAmount string `json:"totalAmount"`
+}
+
+// AvailabilityRoomTypeResult defines model for AvailabilityRoomTypeResult.
+type AvailabilityRoomTypeResult struct {
+	// Available The server's minimum daily availability over the whole range, and zero for a room
+	// type without an allotment on even one night of it.
+	Available int                `json:"available"`
+	Property  Property           `json:"property"`
+	Quote     *AvailabilityQuote `json:"quote"`
+
+	// QuoteUnavailableReason Set exactly when quote is null.
+	QuoteUnavailableReason *QuoteUnavailableReason `json:"quoteUnavailableReason"`
+	RoomType               RoomType                `json:"roomType"`
+}
+
+// AvailabilitySearchRequest defines model for AvailabilitySearchRequest.
+type AvailabilitySearchRequest struct {
+	Adults  int                `json:"adults"`
+	CheckIn openapi_types.Date `json:"checkIn"`
+
+	// CheckOut The morning the guest leaves, and never a night. It must be after checkIn, and the
+	// stay may not exceed the tenant's accommodation.max_nights.
+	CheckOut openapi_types.Date `json:"checkOut"`
+	Children *int               `json:"children,omitempty"`
+
+	// PersonId Whose stay. A member account bound to a person may omit it or echo its own; a body
+	// naming anybody else is refused with PERSON_SCOPE. A desk that is bound to no
+	// person must name one.
+	PersonId *openapi_types.UUID `json:"personId,omitempty"`
+
+	// ProgramId Narrows a member enrolled in two programmes to one of them. It is honoured, never
+	// trusted: a programme the person is not enrolled in on the first night selects
+	// nothing.
+	ProgramId *openapi_types.UUID `json:"programId,omitempty"`
+
+	// PropertyId Exactly one of propertyId and regionCode.
+	PropertyId *openapi_types.UUID `json:"propertyId,omitempty"`
+	RegionCode *string             `json:"regionCode,omitempty"`
+}
+
+// AvailabilitySearchResult defines model for AvailabilitySearchResult.
+type AvailabilitySearchResult struct {
+	CheckIn  openapi_types.Date `json:"checkIn"`
+	CheckOut openapi_types.Date `json:"checkOut"`
+
+	// Eligible Whether the plan covers every night of this stay. Two nights left and a
+	// three-night stay is false: the third night is the member's to pay, and the figures
+	// say so too.
+	Eligible    bool                     `json:"eligible"`
+	Entitlement *AvailabilityEntitlement `json:"entitlement,omitempty"`
+
+	// EvaluationId The immutable eligibility evaluation this search was recorded as, so "what did the
+	// system show them" is answerable later. Null only when the search matched no room
+	// type and there was therefore no service to evaluate.
+	EvaluationId *openapi_types.UUID `json:"evaluationId,omitempty"`
+
+	// Nights The server's own count of the nights in [checkIn, checkOut), on the calendar and
+	// never on elapsed hours — a stay over a summer-time change is still the number of
+	// nights somebody slept.
+	Nights   int                          `json:"nights"`
+	PersonId openapi_types.UUID           `json:"personId"`
+	Results  []AvailabilityRoomTypeResult `json:"results"`
+}
+
 // CancelInpatientStay defines model for CancelInpatientStay.
 type CancelInpatientStay struct {
 	ReasonCode string  `json:"reasonCode"`
@@ -5659,6 +5898,26 @@ type CreateProgramRequest struct {
 	ValidTo               *openapi_types.Date `json:"validTo,omitempty"`
 }
 
+// CreateProperty defines model for CreateProperty.
+type CreateProperty struct {
+	Amenities  *[]PropertyAmenity  `json:"amenities,omitempty"`
+	City       *string             `json:"city,omitempty"`
+	Code       string              `json:"code"`
+	CostCenter *string             `json:"costCenter,omitempty"`
+	LocationId *openapi_types.UUID `json:"locationId,omitempty"`
+	Name       string              `json:"name"`
+
+	// PropertyType SOCIAL_FACILITY is the tenant's own guest house rather than a commercial hotel; it is
+	// the type that ordinarily carries a `costCenter` and no provider location.
+	PropertyType           PropertyType       `json:"propertyType"`
+	ProviderOrganizationId openapi_types.UUID `json:"providerOrganizationId"`
+	RegionCode             *string            `json:"regionCode,omitempty"`
+
+	// Status Defaults to ACTIVE.
+	Status   *PropertyStatus `json:"status,omitempty"`
+	Timezone string          `json:"timezone"`
+}
+
 // CreateProviderLocationRequest defines model for CreateProviderLocationRequest.
 type CreateProviderLocationRequest struct {
 	AddressLine *string  `json:"addressLine,omitempty"`
@@ -5692,6 +5951,20 @@ type CreateRelationshipRequest struct {
 	TargetPersonId   openapi_types.UUID  `json:"targetPersonId"`
 	ValidFrom        openapi_types.Date  `json:"validFrom"`
 	ValidTo          *openapi_types.Date `json:"validTo,omitempty"`
+}
+
+// CreateRoomType defines model for CreateRoomType.
+type CreateRoomType struct {
+	Attributes          *map[string]interface{} `json:"attributes,omitempty"`
+	Code                string                  `json:"code"`
+	MaxAdults           int                     `json:"maxAdults"`
+	MaxChildren         *int                    `json:"maxChildren,omitempty"`
+	MaxOccupancy        int                     `json:"maxOccupancy"`
+	Name                string                  `json:"name"`
+	ServiceDefinitionId openapi_types.UUID      `json:"serviceDefinitionId"`
+
+	// Status Defaults to ACTIVE.
+	Status *PropertyStatus `json:"status,omitempty"`
 }
 
 // CreateRuleSetRequest defines model for CreateRuleSetRequest.
@@ -6618,6 +6891,24 @@ type InpatientStayPage struct {
 // when the reviewer decides its preauthorization request.
 type InpatientStayStatus string
 
+// InventoryDay defines model for InventoryDay.
+type InventoryDay struct {
+	// Allotted False for a night this provider has opened nothing on. It is not the same
+	// statement as "zero free", and the availability search treats a night with no
+	// allotment as unavailable rather than as free.
+	Allotted bool `json:"allotted"`
+
+	// Available capacity minus held minus confirmed, computed on the server so no screen
+	// subtracts.
+	Available  int                `json:"available"`
+	Capacity   int                `json:"capacity"`
+	Confirmed  int                `json:"confirmed"`
+	Held       int                `json:"held"`
+	RowVersion *int64             `json:"rowVersion,omitempty"`
+	StayDate   openapi_types.Date `json:"stayDate"`
+	UpdatedAt  *time.Time         `json:"updatedAt,omitempty"`
+}
+
 // IssueVoucher defines model for IssueVoucher.
 type IssueVoucher struct {
 	// ValidFrom Defaults to the authorization's own start.
@@ -7469,6 +7760,33 @@ type PatchMedicalReportDraft struct {
 	ValidTo                       openapi_types.Date  `json:"validTo"`
 }
 
+// PatchProperty Every field is sent every time: a merge would make "this hotel no longer has a
+// location" inexpressible.
+type PatchProperty struct {
+	Amenities  *[]PropertyAmenity  `json:"amenities,omitempty"`
+	City       *string             `json:"city,omitempty"`
+	CostCenter *string             `json:"costCenter,omitempty"`
+	LocationId *openapi_types.UUID `json:"locationId,omitempty"`
+	Name       string              `json:"name"`
+
+	// PropertyType SOCIAL_FACILITY is the tenant's own guest house rather than a commercial hotel; it is
+	// the type that ordinarily carries a `costCenter` and no provider location.
+	PropertyType PropertyType   `json:"propertyType"`
+	RegionCode   *string        `json:"regionCode,omitempty"`
+	Status       PropertyStatus `json:"status"`
+	Timezone     string         `json:"timezone"`
+}
+
+// PatchRoomType Every field is sent every time; serviceDefinitionId is never among them.
+type PatchRoomType struct {
+	Attributes   *map[string]interface{} `json:"attributes,omitempty"`
+	MaxAdults    int                     `json:"maxAdults"`
+	MaxChildren  *int                    `json:"maxChildren,omitempty"`
+	MaxOccupancy int                     `json:"maxOccupancy"`
+	Name         string                  `json:"name"`
+	Status       PropertyStatus          `json:"status"`
+}
+
 // PatchWorkQueue Merge patch: a field that is absent is left alone, and an explicit null clears the
 // two fields that may be cleared. The code and the domain are absent from this schema
 // because they are immutable; sending either answers 422 with field code UNKNOWN_FIELD.
@@ -8058,6 +8376,57 @@ type ProgramPage struct {
 	NextCursor *string   `json:"nextCursor,omitempty"`
 }
 
+// Property defines model for Property.
+type Property struct {
+	Amenities []PropertyAmenity `json:"amenities"`
+	City      *string           `json:"city,omitempty"`
+	Code      string            `json:"code"`
+
+	// CostCenter The internal cost centre a facility the tenant runs itself charges instead of
+	// invoicing (v1.2 9.13). Null for every commercial hotel.
+	CostCenter *string            `json:"costCenter,omitempty"`
+	CreatedAt  time.Time          `json:"createdAt"`
+	Id         openapi_types.UUID `json:"id"`
+
+	// LocationId The provider location this building already is in the network, when it is one. An
+	// internal social facility has none.
+	LocationId *openapi_types.UUID `json:"locationId,omitempty"`
+	Name       string              `json:"name"`
+
+	// PropertyType SOCIAL_FACILITY is the tenant's own guest house rather than a commercial hotel; it is
+	// the type that ordinarily carries a `costCenter` and no provider location.
+	PropertyType           PropertyType       `json:"propertyType"`
+	ProviderOrganizationId openapi_types.UUID `json:"providerOrganizationId"`
+	RegionCode             *string            `json:"regionCode,omitempty"`
+	RowVersion             int64              `json:"rowVersion"`
+	Status                 PropertyStatus     `json:"status"`
+
+	// Timezone The property's own IANA zone. A night begins and ends where the building is, so a
+	// stay in Berlin booked by a Turkish payer is counted in Berlin nights.
+	Timezone  string     `json:"timezone"`
+	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
+}
+
+// PropertyAmenity The closed list of things a building has. Every key is a fact about the building and
+// none of them is, or may become, a fact about a guest: there is no dietary and no
+// medical key, because an amenities array is written by a provider clerk and read by
+// everybody, and a slot a health need could be typed into is a slot it eventually would
+// be.
+type PropertyAmenity string
+
+// PropertyPage defines model for PropertyPage.
+type PropertyPage struct {
+	Items      []Property `json:"items"`
+	NextCursor *string    `json:"nextCursor"`
+}
+
+// PropertyStatus defines model for PropertyStatus.
+type PropertyStatus string
+
+// PropertyType SOCIAL_FACILITY is the tenant's own guest house rather than a commercial hotel; it is
+// the type that ordinarily carries a `costCenter` and no provider location.
+type PropertyType string
+
 // Provider defines model for Provider.
 type Provider struct {
 	ContractedFrom *openapi_types.Date `json:"contractedFrom,omitempty"`
@@ -8313,6 +8682,17 @@ type PutPaymentTermRequest struct {
 	VatRate *DecimalRate `json:"vatRate,omitempty"`
 }
 
+// PutRoomTypeInventory defines model for PutRoomTypeInventory.
+type PutRoomTypeInventory struct {
+	// Capacity How many rooms of this type the provider gives this payer on each night of the
+	// range. It is an allotment, not a count of the rooms the hotel owns.
+	Capacity int                `json:"capacity"`
+	From     openapi_types.Date `json:"from"`
+
+	// To Inclusive last night of the allotment.
+	To openapi_types.Date `json:"to"`
+}
+
 // PutStaySegments defines model for PutStaySegments.
 type PutStaySegments struct {
 	// Items The whole set. An empty array clears the stay's segments.
@@ -8321,6 +8701,11 @@ type PutStaySegments struct {
 
 // QuotaPeriodType The period a provider quota is counted over; CONTRACT means the whole version.
 type QuotaPeriodType string
+
+// QuoteUnavailableReason Why a room type carries no quote. PRICE_AMBIGUOUS is the one that matters most: two
+// equally specific contracted prices tied, and the system does not choose between them,
+// because a random winner is a silent financial error nobody would ever see.
+type QuoteUnavailableReason string
 
 // ReasonCommand defines model for ReasonCommand.
 type ReasonCommand struct {
@@ -8480,6 +8865,45 @@ type ResolvedPrice struct {
 // ReviewComment defines model for ReviewComment.
 type ReviewComment struct {
 	Comment *string `json:"comment,omitempty"`
+}
+
+// RoomType defines model for RoomType.
+type RoomType struct {
+	// Attributes The provider's own free-form facts about the room — bed layout, floor, view. It
+	// carries nothing about a guest.
+	Attributes  map[string]interface{} `json:"attributes"`
+	Code        string                 `json:"code"`
+	CreatedAt   time.Time              `json:"createdAt"`
+	Id          openapi_types.UUID     `json:"id"`
+	MaxAdults   int                    `json:"maxAdults"`
+	MaxChildren int                    `json:"maxChildren"`
+
+	// MaxOccupancy At least maxAdults; the database keeps that as a CHECK.
+	MaxOccupancy int                `json:"maxOccupancy"`
+	Name         string             `json:"name"`
+	PropertyId   openapi_types.UUID `json:"propertyId"`
+	RowVersion   int64              `json:"rowVersion"`
+
+	// ServiceDefinitionId The NIGHT-unit catalogue service this room is priced and entitled as. One room
+	// type, one service, and it is never edited.
+	ServiceDefinitionId openapi_types.UUID `json:"serviceDefinitionId"`
+	Status              PropertyStatus     `json:"status"`
+	UpdatedAt           *time.Time         `json:"updatedAt,omitempty"`
+}
+
+// RoomTypeInventoryRange defines model for RoomTypeInventoryRange.
+type RoomTypeInventoryRange struct {
+	// Days One entry per date of the range, in order, gaps included.
+	Days       []InventoryDay     `json:"days"`
+	From       openapi_types.Date `json:"from"`
+	RoomTypeId openapi_types.UUID `json:"roomTypeId"`
+	To         openapi_types.Date `json:"to"`
+}
+
+// RoomTypeList Not a page. A property has a handful of room types, and paging a list of four would
+// cost a cursor to say nothing.
+type RoomTypeList struct {
+	Items []RoomType `json:"items"`
 }
 
 // Rule defines model for Rule.
@@ -9737,6 +10161,9 @@ type PriceQuoteId = openapi_types.UUID
 // ProgramId defines model for ProgramId.
 type ProgramId = openapi_types.UUID
 
+// PropertyId defines model for PropertyId.
+type PropertyId = openapi_types.UUID
+
 // ProviderId defines model for ProviderId.
 type ProviderId = openapi_types.UUID
 
@@ -9751,6 +10178,9 @@ type ReportId = openapi_types.UUID
 
 // RequestId defines model for RequestId.
 type RequestId = openapi_types.UUID
+
+// RoomTypeId defines model for RoomTypeId.
+type RoomTypeId = openapi_types.UUID
 
 // RuleEvaluationId defines model for RuleEvaluationId.
 type RuleEvaluationId = openapi_types.UUID
@@ -9832,6 +10262,106 @@ type Unauthorized = Problem
 // known, `assigneeDisplayName` (string). A client must ignore members it does not
 // recognise.
 type ValidationError = Problem
+
+// SearchAvailabilityParams defines parameters for SearchAvailability.
+type SearchAvailabilityParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Optional on query-style POSTs; honoured when present.
+	IdempotencyKey *IdempotencyKeyOptional `json:"Idempotency-Key,omitempty"`
+}
+
+// ListPropertiesParams defines parameters for ListProperties.
+type ListPropertiesParams struct {
+	// Cursor Opaque cursor from the previous response.
+	Cursor                 *Cursor             `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit                  *Limit              `form:"limit,omitempty" json:"limit,omitempty"`
+	ProviderOrganizationId *openapi_types.UUID `form:"providerOrganizationId,omitempty" json:"providerOrganizationId,omitempty"`
+	Status                 *PropertyStatus     `form:"status,omitempty" json:"status,omitempty"`
+	PropertyType           *PropertyType       `form:"propertyType,omitempty" json:"propertyType,omitempty"`
+	RegionCode             *string             `form:"regionCode,omitempty" json:"regionCode,omitempty"`
+	City                   *string             `form:"city,omitempty" json:"city,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// CreatePropertyParams defines parameters for CreateProperty.
+type CreatePropertyParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// GetPropertyParams defines parameters for GetProperty.
+type GetPropertyParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// PatchPropertyParams defines parameters for PatchProperty.
+type PatchPropertyParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ListRoomTypesParams defines parameters for ListRoomTypes.
+type ListRoomTypesParams struct {
+	Status *PropertyStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// CreateRoomTypeParams defines parameters for CreateRoomType.
+type CreateRoomTypeParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// PatchRoomTypeParams defines parameters for PatchRoomType.
+type PatchRoomTypeParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// GetRoomTypeInventoryParams defines parameters for GetRoomTypeInventory.
+type GetRoomTypeInventoryParams struct {
+	From openapi_types.Date `form:"from" json:"from"`
+
+	// To Inclusive last night of the range.
+	To openapi_types.Date `form:"to" json:"to"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// PutRoomTypeInventoryParams defines parameters for PutRoomTypeInventory.
+type PutRoomTypeInventoryParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Optional on query-style POSTs; honoured when present.
+	IdempotencyKey *IdempotencyKeyOptional `json:"Idempotency-Key,omitempty"`
+}
 
 // ListApprovalPoliciesParams defines parameters for ListApprovalPolicies.
 type ListApprovalPoliciesParams struct {
@@ -13010,6 +13540,24 @@ type PatchWorkQueueParams struct {
 	IfMatch IfMatch `json:"If-Match"`
 }
 
+// SearchAvailabilityJSONRequestBody defines body for SearchAvailability for application/json ContentType.
+type SearchAvailabilityJSONRequestBody = AvailabilitySearchRequest
+
+// CreatePropertyJSONRequestBody defines body for CreateProperty for application/json ContentType.
+type CreatePropertyJSONRequestBody = CreateProperty
+
+// PatchPropertyJSONRequestBody defines body for PatchProperty for application/json ContentType.
+type PatchPropertyJSONRequestBody = PatchProperty
+
+// CreateRoomTypeJSONRequestBody defines body for CreateRoomType for application/json ContentType.
+type CreateRoomTypeJSONRequestBody = CreateRoomType
+
+// PatchRoomTypeJSONRequestBody defines body for PatchRoomType for application/json ContentType.
+type PatchRoomTypeJSONRequestBody = PatchRoomType
+
+// PutRoomTypeInventoryJSONRequestBody defines body for PutRoomTypeInventory for application/json ContentType.
+type PutRoomTypeInventoryJSONRequestBody = PutRoomTypeInventory
+
 // PutApprovalPoliciesJSONRequestBody defines body for PutApprovalPolicies for application/json ContentType.
 type PutApprovalPoliciesJSONRequestBody = PutApprovalPolicies
 
@@ -13565,6 +14113,36 @@ func (a Problem) MarshalJSON() ([]byte, error) {
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+
+	// (POST /api/v1/accommodation/availability/search)
+	SearchAvailability(w http.ResponseWriter, r *http.Request, params SearchAvailabilityParams)
+
+	// (GET /api/v1/accommodation/properties)
+	ListProperties(w http.ResponseWriter, r *http.Request, params ListPropertiesParams)
+
+	// (POST /api/v1/accommodation/properties)
+	CreateProperty(w http.ResponseWriter, r *http.Request, params CreatePropertyParams)
+
+	// (GET /api/v1/accommodation/properties/{propertyId})
+	GetProperty(w http.ResponseWriter, r *http.Request, propertyId PropertyId, params GetPropertyParams)
+
+	// (PATCH /api/v1/accommodation/properties/{propertyId})
+	PatchProperty(w http.ResponseWriter, r *http.Request, propertyId PropertyId, params PatchPropertyParams)
+
+	// (GET /api/v1/accommodation/properties/{propertyId}/room-types)
+	ListRoomTypes(w http.ResponseWriter, r *http.Request, propertyId PropertyId, params ListRoomTypesParams)
+
+	// (POST /api/v1/accommodation/properties/{propertyId}/room-types)
+	CreateRoomType(w http.ResponseWriter, r *http.Request, propertyId PropertyId, params CreateRoomTypeParams)
+
+	// (PATCH /api/v1/accommodation/room-types/{roomTypeId})
+	PatchRoomType(w http.ResponseWriter, r *http.Request, roomTypeId RoomTypeId, params PatchRoomTypeParams)
+
+	// (GET /api/v1/accommodation/room-types/{roomTypeId}/inventory)
+	GetRoomTypeInventory(w http.ResponseWriter, r *http.Request, roomTypeId RoomTypeId, params GetRoomTypeInventoryParams)
+
+	// (PUT /api/v1/accommodation/room-types/{roomTypeId}/inventory)
+	PutRoomTypeInventory(w http.ResponseWriter, r *http.Request, roomTypeId RoomTypeId, params PutRoomTypeInventoryParams)
 
 	// (GET /api/v1/approval-policies)
 	ListApprovalPolicies(w http.ResponseWriter, r *http.Request, params ListApprovalPoliciesParams)
@@ -14302,6 +14880,56 @@ type ServerInterface interface {
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
+
+// (POST /api/v1/accommodation/availability/search)
+func (_ Unimplemented) SearchAvailability(w http.ResponseWriter, r *http.Request, params SearchAvailabilityParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/accommodation/properties)
+func (_ Unimplemented) ListProperties(w http.ResponseWriter, r *http.Request, params ListPropertiesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/accommodation/properties)
+func (_ Unimplemented) CreateProperty(w http.ResponseWriter, r *http.Request, params CreatePropertyParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/accommodation/properties/{propertyId})
+func (_ Unimplemented) GetProperty(w http.ResponseWriter, r *http.Request, propertyId PropertyId, params GetPropertyParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PATCH /api/v1/accommodation/properties/{propertyId})
+func (_ Unimplemented) PatchProperty(w http.ResponseWriter, r *http.Request, propertyId PropertyId, params PatchPropertyParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/accommodation/properties/{propertyId}/room-types)
+func (_ Unimplemented) ListRoomTypes(w http.ResponseWriter, r *http.Request, propertyId PropertyId, params ListRoomTypesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/accommodation/properties/{propertyId}/room-types)
+func (_ Unimplemented) CreateRoomType(w http.ResponseWriter, r *http.Request, propertyId PropertyId, params CreateRoomTypeParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PATCH /api/v1/accommodation/room-types/{roomTypeId})
+func (_ Unimplemented) PatchRoomType(w http.ResponseWriter, r *http.Request, roomTypeId RoomTypeId, params PatchRoomTypeParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/accommodation/room-types/{roomTypeId}/inventory)
+func (_ Unimplemented) GetRoomTypeInventory(w http.ResponseWriter, r *http.Request, roomTypeId RoomTypeId, params GetRoomTypeInventoryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PUT /api/v1/accommodation/room-types/{roomTypeId}/inventory)
+func (_ Unimplemented) PutRoomTypeInventory(w http.ResponseWriter, r *http.Request, roomTypeId RoomTypeId, params PutRoomTypeInventoryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // (GET /api/v1/approval-policies)
 func (_ Unimplemented) ListApprovalPolicies(w http.ResponseWriter, r *http.Request, params ListApprovalPoliciesParams) {
@@ -15531,6 +16159,825 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// SearchAvailability operation middleware
+func (siw *ServerInterfaceWrapper) SearchAvailability(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SearchAvailabilityParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKeyOptional
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SearchAvailability(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListProperties operation middleware
+func (siw *ServerInterfaceWrapper) ListProperties(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListPropertiesParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "providerOrganizationId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "providerOrganizationId", r.URL.Query(), &params.ProviderOrganizationId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "providerOrganizationId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "providerOrganizationId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "propertyType" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "propertyType", r.URL.Query(), &params.PropertyType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "propertyType"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "propertyType", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "regionCode" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "regionCode", r.URL.Query(), &params.RegionCode, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "regionCode"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "regionCode", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "city" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "city", r.URL.Query(), &params.City, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "city"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "city", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListProperties(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateProperty operation middleware
+func (siw *ServerInterfaceWrapper) CreateProperty(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreatePropertyParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateProperty(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetProperty operation middleware
+func (siw *ServerInterfaceWrapper) GetProperty(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "propertyId" -------------
+	var propertyId PropertyId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "propertyId", chi.URLParam(r, "propertyId"), &propertyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "propertyId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetPropertyParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProperty(w, r, propertyId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PatchProperty operation middleware
+func (siw *ServerInterfaceWrapper) PatchProperty(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "propertyId" -------------
+	var propertyId PropertyId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "propertyId", chi.URLParam(r, "propertyId"), &propertyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "propertyId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PatchPropertyParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PatchProperty(w, r, propertyId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListRoomTypes operation middleware
+func (siw *ServerInterfaceWrapper) ListRoomTypes(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "propertyId" -------------
+	var propertyId PropertyId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "propertyId", chi.URLParam(r, "propertyId"), &propertyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "propertyId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListRoomTypesParams
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListRoomTypes(w, r, propertyId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateRoomType operation middleware
+func (siw *ServerInterfaceWrapper) CreateRoomType(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "propertyId" -------------
+	var propertyId PropertyId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "propertyId", chi.URLParam(r, "propertyId"), &propertyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "propertyId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateRoomTypeParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateRoomType(w, r, propertyId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PatchRoomType operation middleware
+func (siw *ServerInterfaceWrapper) PatchRoomType(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "roomTypeId" -------------
+	var roomTypeId RoomTypeId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "roomTypeId", chi.URLParam(r, "roomTypeId"), &roomTypeId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "roomTypeId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PatchRoomTypeParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PatchRoomType(w, r, roomTypeId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetRoomTypeInventory operation middleware
+func (siw *ServerInterfaceWrapper) GetRoomTypeInventory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "roomTypeId" -------------
+	var roomTypeId RoomTypeId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "roomTypeId", chi.URLParam(r, "roomTypeId"), &roomTypeId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "roomTypeId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetRoomTypeInventoryParams
+
+	// ------------- Required query parameter "from" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "from", r.URL.Query(), &params.From, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "from"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "from", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "to" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "to", r.URL.Query(), &params.To, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "to"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "to", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetRoomTypeInventory(w, r, roomTypeId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutRoomTypeInventory operation middleware
+func (siw *ServerInterfaceWrapper) PutRoomTypeInventory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "roomTypeId" -------------
+	var roomTypeId RoomTypeId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "roomTypeId", chi.URLParam(r, "roomTypeId"), &roomTypeId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "roomTypeId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PutRoomTypeInventoryParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKeyOptional
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutRoomTypeInventory(w, r, roomTypeId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // ListApprovalPolicies operation middleware
 func (siw *ServerInterfaceWrapper) ListApprovalPolicies(w http.ResponseWriter, r *http.Request) {
@@ -37088,6 +38535,36 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/claims/{claimId}/invoice-readiness", wrapper.GetClaimInvoiceReadiness)
 	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/accommodation/properties", wrapper.ListProperties)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/accommodation/properties", wrapper.CreateProperty)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/accommodation/properties/{propertyId}", wrapper.GetProperty)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/api/v1/accommodation/properties/{propertyId}", wrapper.PatchProperty)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/accommodation/properties/{propertyId}/room-types", wrapper.ListRoomTypes)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/accommodation/properties/{propertyId}/room-types", wrapper.CreateRoomType)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/api/v1/accommodation/room-types/{roomTypeId}", wrapper.PatchRoomType)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/accommodation/room-types/{roomTypeId}/inventory", wrapper.GetRoomTypeInventory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/v1/accommodation/room-types/{roomTypeId}/inventory", wrapper.PutRoomTypeInventory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/accommodation/availability/search", wrapper.SearchAvailability)
+	})
 
 	return r
 }
@@ -37110,6 +38587,927 @@ type TooManyRequestsApplicationProblemPlusJSONResponse struct {
 type UnauthorizedApplicationProblemPlusJSONResponse Problem
 
 type ValidationErrorApplicationProblemPlusJSONResponse Problem
+
+type SearchAvailabilityRequestObject struct {
+	Params SearchAvailabilityParams
+	Body   *SearchAvailabilityJSONRequestBody
+}
+
+type SearchAvailabilityResponseObject interface {
+	VisitSearchAvailabilityResponse(w http.ResponseWriter) error
+}
+
+type SearchAvailability200JSONResponse AvailabilitySearchResult
+
+func (response SearchAvailability200JSONResponse) VisitSearchAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SearchAvailability403ApplicationProblemPlusJSONResponse Problem
+
+func (response SearchAvailability403ApplicationProblemPlusJSONResponse) VisitSearchAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SearchAvailability404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response SearchAvailability404ApplicationProblemPlusJSONResponse) VisitSearchAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SearchAvailability422ApplicationProblemPlusJSONResponse Problem
+
+func (response SearchAvailability422ApplicationProblemPlusJSONResponse) VisitSearchAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SearchAvailability429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response SearchAvailability429ApplicationProblemPlusJSONResponse) VisitSearchAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPropertiesRequestObject struct {
+	Params ListPropertiesParams
+}
+
+type ListPropertiesResponseObject interface {
+	VisitListPropertiesResponse(w http.ResponseWriter) error
+}
+
+type ListProperties200JSONResponse PropertyPage
+
+func (response ListProperties200JSONResponse) VisitListPropertiesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListProperties400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListProperties400ApplicationProblemPlusJSONResponse) VisitListPropertiesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListProperties403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListProperties403ApplicationProblemPlusJSONResponse) VisitListPropertiesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListProperties422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListProperties422ApplicationProblemPlusJSONResponse) VisitListPropertiesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePropertyRequestObject struct {
+	Params CreatePropertyParams
+	Body   *CreatePropertyJSONRequestBody
+}
+
+type CreatePropertyResponseObject interface {
+	VisitCreatePropertyResponse(w http.ResponseWriter) error
+}
+
+type CreateProperty201ResponseHeaders struct {
+	ETag     *string
+	Location *string
+}
+
+type CreateProperty201JSONResponse struct {
+	Body    Property
+	Headers CreateProperty201ResponseHeaders
+}
+
+func (response CreateProperty201JSONResponse) VisitCreatePropertyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	if response.Headers.Location != nil {
+		w.Header().Set("Location", fmt.Sprint(*response.Headers.Location))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProperty403ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateProperty403ApplicationProblemPlusJSONResponse) VisitCreatePropertyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProperty404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CreateProperty404ApplicationProblemPlusJSONResponse) VisitCreatePropertyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProperty409ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateProperty409ApplicationProblemPlusJSONResponse) VisitCreatePropertyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProperty422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CreateProperty422ApplicationProblemPlusJSONResponse) VisitCreatePropertyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProperty429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response CreateProperty429ApplicationProblemPlusJSONResponse) VisitCreatePropertyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPropertyRequestObject struct {
+	PropertyId PropertyId `json:"propertyId"`
+	Params     GetPropertyParams
+}
+
+type GetPropertyResponseObject interface {
+	VisitGetPropertyResponse(w http.ResponseWriter) error
+}
+
+type GetProperty200ResponseHeaders struct {
+	ETag *string
+}
+
+type GetProperty200JSONResponse struct {
+	Body    Property
+	Headers GetProperty200ResponseHeaders
+}
+
+func (response GetProperty200JSONResponse) VisitGetPropertyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProperty403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetProperty403ApplicationProblemPlusJSONResponse) VisitGetPropertyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProperty404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetProperty404ApplicationProblemPlusJSONResponse) VisitGetPropertyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchPropertyRequestObject struct {
+	PropertyId PropertyId `json:"propertyId"`
+	Params     PatchPropertyParams
+	Body       *PatchPropertyJSONRequestBody
+}
+
+type PatchPropertyResponseObject interface {
+	VisitPatchPropertyResponse(w http.ResponseWriter) error
+}
+
+type PatchProperty200ResponseHeaders struct {
+	ETag *string
+}
+
+type PatchProperty200JSONResponse struct {
+	Body    Property
+	Headers PatchProperty200ResponseHeaders
+}
+
+func (response PatchProperty200JSONResponse) VisitPatchPropertyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchProperty403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response PatchProperty403ApplicationProblemPlusJSONResponse) VisitPatchPropertyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchProperty404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response PatchProperty404ApplicationProblemPlusJSONResponse) VisitPatchPropertyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchProperty412ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchProperty412ApplicationProblemPlusJSONResponse) VisitPatchPropertyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchProperty422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response PatchProperty422ApplicationProblemPlusJSONResponse) VisitPatchPropertyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchProperty428ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchProperty428ApplicationProblemPlusJSONResponse) VisitPatchPropertyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRoomTypesRequestObject struct {
+	PropertyId PropertyId `json:"propertyId"`
+	Params     ListRoomTypesParams
+}
+
+type ListRoomTypesResponseObject interface {
+	VisitListRoomTypesResponse(w http.ResponseWriter) error
+}
+
+type ListRoomTypes200JSONResponse RoomTypeList
+
+func (response ListRoomTypes200JSONResponse) VisitListRoomTypesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRoomTypes403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListRoomTypes403ApplicationProblemPlusJSONResponse) VisitListRoomTypesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRoomTypes404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ListRoomTypes404ApplicationProblemPlusJSONResponse) VisitListRoomTypesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRoomTypes422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListRoomTypes422ApplicationProblemPlusJSONResponse) VisitListRoomTypesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRoomTypeRequestObject struct {
+	PropertyId PropertyId `json:"propertyId"`
+	Params     CreateRoomTypeParams
+	Body       *CreateRoomTypeJSONRequestBody
+}
+
+type CreateRoomTypeResponseObject interface {
+	VisitCreateRoomTypeResponse(w http.ResponseWriter) error
+}
+
+type CreateRoomType201ResponseHeaders struct {
+	ETag     *string
+	Location *string
+}
+
+type CreateRoomType201JSONResponse struct {
+	Body    RoomType
+	Headers CreateRoomType201ResponseHeaders
+}
+
+func (response CreateRoomType201JSONResponse) VisitCreateRoomTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	if response.Headers.Location != nil {
+		w.Header().Set("Location", fmt.Sprint(*response.Headers.Location))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRoomType403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CreateRoomType403ApplicationProblemPlusJSONResponse) VisitCreateRoomTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRoomType404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CreateRoomType404ApplicationProblemPlusJSONResponse) VisitCreateRoomTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRoomType409ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateRoomType409ApplicationProblemPlusJSONResponse) VisitCreateRoomTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRoomType422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CreateRoomType422ApplicationProblemPlusJSONResponse) VisitCreateRoomTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRoomType429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response CreateRoomType429ApplicationProblemPlusJSONResponse) VisitCreateRoomTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchRoomTypeRequestObject struct {
+	RoomTypeId RoomTypeId `json:"roomTypeId"`
+	Params     PatchRoomTypeParams
+	Body       *PatchRoomTypeJSONRequestBody
+}
+
+type PatchRoomTypeResponseObject interface {
+	VisitPatchRoomTypeResponse(w http.ResponseWriter) error
+}
+
+type PatchRoomType200ResponseHeaders struct {
+	ETag *string
+}
+
+type PatchRoomType200JSONResponse struct {
+	Body    RoomType
+	Headers PatchRoomType200ResponseHeaders
+}
+
+func (response PatchRoomType200JSONResponse) VisitPatchRoomTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchRoomType403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response PatchRoomType403ApplicationProblemPlusJSONResponse) VisitPatchRoomTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchRoomType404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response PatchRoomType404ApplicationProblemPlusJSONResponse) VisitPatchRoomTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchRoomType412ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchRoomType412ApplicationProblemPlusJSONResponse) VisitPatchRoomTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchRoomType422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response PatchRoomType422ApplicationProblemPlusJSONResponse) VisitPatchRoomTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchRoomType428ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchRoomType428ApplicationProblemPlusJSONResponse) VisitPatchRoomTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetRoomTypeInventoryRequestObject struct {
+	RoomTypeId RoomTypeId `json:"roomTypeId"`
+	Params     GetRoomTypeInventoryParams
+}
+
+type GetRoomTypeInventoryResponseObject interface {
+	VisitGetRoomTypeInventoryResponse(w http.ResponseWriter) error
+}
+
+type GetRoomTypeInventory200JSONResponse RoomTypeInventoryRange
+
+func (response GetRoomTypeInventory200JSONResponse) VisitGetRoomTypeInventoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetRoomTypeInventory403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetRoomTypeInventory403ApplicationProblemPlusJSONResponse) VisitGetRoomTypeInventoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetRoomTypeInventory404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetRoomTypeInventory404ApplicationProblemPlusJSONResponse) VisitGetRoomTypeInventoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetRoomTypeInventory422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response GetRoomTypeInventory422ApplicationProblemPlusJSONResponse) VisitGetRoomTypeInventoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutRoomTypeInventoryRequestObject struct {
+	RoomTypeId RoomTypeId `json:"roomTypeId"`
+	Params     PutRoomTypeInventoryParams
+	Body       *PutRoomTypeInventoryJSONRequestBody
+}
+
+type PutRoomTypeInventoryResponseObject interface {
+	VisitPutRoomTypeInventoryResponse(w http.ResponseWriter) error
+}
+
+type PutRoomTypeInventory200JSONResponse RoomTypeInventoryRange
+
+func (response PutRoomTypeInventory200JSONResponse) VisitPutRoomTypeInventoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutRoomTypeInventory403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response PutRoomTypeInventory403ApplicationProblemPlusJSONResponse) VisitPutRoomTypeInventoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutRoomTypeInventory404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response PutRoomTypeInventory404ApplicationProblemPlusJSONResponse) VisitPutRoomTypeInventoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutRoomTypeInventory409ApplicationProblemPlusJSONResponse Problem
+
+func (response PutRoomTypeInventory409ApplicationProblemPlusJSONResponse) VisitPutRoomTypeInventoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutRoomTypeInventory422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response PutRoomTypeInventory422ApplicationProblemPlusJSONResponse) VisitPutRoomTypeInventoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutRoomTypeInventory429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response PutRoomTypeInventory429ApplicationProblemPlusJSONResponse) VisitPutRoomTypeInventoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
 
 type ListApprovalPoliciesRequestObject struct {
 	Params ListApprovalPoliciesParams
@@ -59298,6 +61696,36 @@ func (response GetReadiness503ApplicationProblemPlusJSONResponse) VisitGetReadin
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 
+	// (POST /api/v1/accommodation/availability/search)
+	SearchAvailability(ctx context.Context, request SearchAvailabilityRequestObject) (SearchAvailabilityResponseObject, error)
+
+	// (GET /api/v1/accommodation/properties)
+	ListProperties(ctx context.Context, request ListPropertiesRequestObject) (ListPropertiesResponseObject, error)
+
+	// (POST /api/v1/accommodation/properties)
+	CreateProperty(ctx context.Context, request CreatePropertyRequestObject) (CreatePropertyResponseObject, error)
+
+	// (GET /api/v1/accommodation/properties/{propertyId})
+	GetProperty(ctx context.Context, request GetPropertyRequestObject) (GetPropertyResponseObject, error)
+
+	// (PATCH /api/v1/accommodation/properties/{propertyId})
+	PatchProperty(ctx context.Context, request PatchPropertyRequestObject) (PatchPropertyResponseObject, error)
+
+	// (GET /api/v1/accommodation/properties/{propertyId}/room-types)
+	ListRoomTypes(ctx context.Context, request ListRoomTypesRequestObject) (ListRoomTypesResponseObject, error)
+
+	// (POST /api/v1/accommodation/properties/{propertyId}/room-types)
+	CreateRoomType(ctx context.Context, request CreateRoomTypeRequestObject) (CreateRoomTypeResponseObject, error)
+
+	// (PATCH /api/v1/accommodation/room-types/{roomTypeId})
+	PatchRoomType(ctx context.Context, request PatchRoomTypeRequestObject) (PatchRoomTypeResponseObject, error)
+
+	// (GET /api/v1/accommodation/room-types/{roomTypeId}/inventory)
+	GetRoomTypeInventory(ctx context.Context, request GetRoomTypeInventoryRequestObject) (GetRoomTypeInventoryResponseObject, error)
+
+	// (PUT /api/v1/accommodation/room-types/{roomTypeId}/inventory)
+	PutRoomTypeInventory(ctx context.Context, request PutRoomTypeInventoryRequestObject) (PutRoomTypeInventoryResponseObject, error)
+
 	// (GET /api/v1/approval-policies)
 	ListApprovalPolicies(ctx context.Context, request ListApprovalPoliciesRequestObject) (ListApprovalPoliciesResponseObject, error)
 
@@ -60068,6 +62496,315 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// SearchAvailability operation middleware
+func (sh *strictHandler) SearchAvailability(w http.ResponseWriter, r *http.Request, params SearchAvailabilityParams) {
+	var request SearchAvailabilityRequestObject
+
+	request.Params = params
+
+	var body SearchAvailabilityJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SearchAvailability(ctx, request.(SearchAvailabilityRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SearchAvailability")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SearchAvailabilityResponseObject); ok {
+		if err := validResponse.VisitSearchAvailabilityResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListProperties operation middleware
+func (sh *strictHandler) ListProperties(w http.ResponseWriter, r *http.Request, params ListPropertiesParams) {
+	var request ListPropertiesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListProperties(ctx, request.(ListPropertiesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListProperties")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListPropertiesResponseObject); ok {
+		if err := validResponse.VisitListPropertiesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateProperty operation middleware
+func (sh *strictHandler) CreateProperty(w http.ResponseWriter, r *http.Request, params CreatePropertyParams) {
+	var request CreatePropertyRequestObject
+
+	request.Params = params
+
+	var body CreatePropertyJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateProperty(ctx, request.(CreatePropertyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateProperty")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreatePropertyResponseObject); ok {
+		if err := validResponse.VisitCreatePropertyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetProperty operation middleware
+func (sh *strictHandler) GetProperty(w http.ResponseWriter, r *http.Request, propertyId PropertyId, params GetPropertyParams) {
+	var request GetPropertyRequestObject
+
+	request.PropertyId = propertyId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetProperty(ctx, request.(GetPropertyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetProperty")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetPropertyResponseObject); ok {
+		if err := validResponse.VisitGetPropertyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PatchProperty operation middleware
+func (sh *strictHandler) PatchProperty(w http.ResponseWriter, r *http.Request, propertyId PropertyId, params PatchPropertyParams) {
+	var request PatchPropertyRequestObject
+
+	request.PropertyId = propertyId
+	request.Params = params
+
+	var body PatchPropertyJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PatchProperty(ctx, request.(PatchPropertyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PatchProperty")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PatchPropertyResponseObject); ok {
+		if err := validResponse.VisitPatchPropertyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListRoomTypes operation middleware
+func (sh *strictHandler) ListRoomTypes(w http.ResponseWriter, r *http.Request, propertyId PropertyId, params ListRoomTypesParams) {
+	var request ListRoomTypesRequestObject
+
+	request.PropertyId = propertyId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListRoomTypes(ctx, request.(ListRoomTypesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListRoomTypes")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListRoomTypesResponseObject); ok {
+		if err := validResponse.VisitListRoomTypesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateRoomType operation middleware
+func (sh *strictHandler) CreateRoomType(w http.ResponseWriter, r *http.Request, propertyId PropertyId, params CreateRoomTypeParams) {
+	var request CreateRoomTypeRequestObject
+
+	request.PropertyId = propertyId
+	request.Params = params
+
+	var body CreateRoomTypeJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateRoomType(ctx, request.(CreateRoomTypeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateRoomType")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateRoomTypeResponseObject); ok {
+		if err := validResponse.VisitCreateRoomTypeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PatchRoomType operation middleware
+func (sh *strictHandler) PatchRoomType(w http.ResponseWriter, r *http.Request, roomTypeId RoomTypeId, params PatchRoomTypeParams) {
+	var request PatchRoomTypeRequestObject
+
+	request.RoomTypeId = roomTypeId
+	request.Params = params
+
+	var body PatchRoomTypeJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PatchRoomType(ctx, request.(PatchRoomTypeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PatchRoomType")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PatchRoomTypeResponseObject); ok {
+		if err := validResponse.VisitPatchRoomTypeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetRoomTypeInventory operation middleware
+func (sh *strictHandler) GetRoomTypeInventory(w http.ResponseWriter, r *http.Request, roomTypeId RoomTypeId, params GetRoomTypeInventoryParams) {
+	var request GetRoomTypeInventoryRequestObject
+
+	request.RoomTypeId = roomTypeId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetRoomTypeInventory(ctx, request.(GetRoomTypeInventoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetRoomTypeInventory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetRoomTypeInventoryResponseObject); ok {
+		if err := validResponse.VisitGetRoomTypeInventoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutRoomTypeInventory operation middleware
+func (sh *strictHandler) PutRoomTypeInventory(w http.ResponseWriter, r *http.Request, roomTypeId RoomTypeId, params PutRoomTypeInventoryParams) {
+	var request PutRoomTypeInventoryRequestObject
+
+	request.RoomTypeId = roomTypeId
+	request.Params = params
+
+	var body PutRoomTypeInventoryJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutRoomTypeInventory(ctx, request.(PutRoomTypeInventoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutRoomTypeInventory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutRoomTypeInventoryResponseObject); ok {
+		if err := validResponse.VisitPutRoomTypeInventoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // ListApprovalPolicies operation middleware

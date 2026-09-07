@@ -6,7 +6,7 @@
 | Size                       | M                                                                                                                                                                                                            |
 | Depends on                 | M2 (eligibility, entitlement units incl. `NIGHT`), M3 (catalog, provider network, contracts and price items, pricing quote), WP-I5-05 (service→entitlement mapping)                                          |
 | Runs in parallel with      | WP-I6-04                                                                                                                                                                                                     |
-| Migration numbers assigned | `000036_accommodation_property_inventory.up.sql`                                                                                                                                                             |
+| Migration numbers assigned | `000040_accommodation_property_inventory.up.sql` (renumbered from 000036 on 2026-09-06: WP-I6-04 landed first as 000039, and golang-migrate never applies a lower number to a database already past it)                                                                                                                                                             |
 | OpenAPI operations owned   | `listProperties`, `createProperty`, `getProperty`, `patchProperty`, `listRoomTypes`, `createRoomType`, `patchRoomType`, `getRoomTypeInventory`, `putRoomTypeInventory`, `searchAvailability`                 |
 | Read first                 | v1.2 9.13, 10.6 steps 1–3 and 5, 11.11, 16.7 (`accommodation.property`, `room_type`, `inventory_day`), 35.2, 36.3; WP-I3-02 (provider, location), WP-I3-03 (price items with validity), WP-I3-05 (`Calculate`, the one rounding), WP-I5-05 §2.1 (mapping) |
 
@@ -21,7 +21,7 @@ before anybody commits to anything.
 
 ## 2. Scope
 
-### 2.1 Schema (migration 000036, `accommodation` schema)
+### 2.1 Schema (migration 000040, `accommodation` schema)
 
 `accommodation.property`: id, tenant_id, `provider_organization_id` (composite FK into
 `directory.tenant_organization`), `location_id` NULL (composite FK into `provider.location`),
@@ -103,4 +103,4 @@ the search and the quote through the mock's own pricing helpers.
       capacity below what is already held or confirmed.
 - [ ] A member sees, before holding anything, what is free and what they would pay.
 - [ ] OpenAPI (additive), generated code, Spectral and `oasdiff` clean; Turkish for every
-      problem code; schema version 36.
+      problem code; schema version 40.

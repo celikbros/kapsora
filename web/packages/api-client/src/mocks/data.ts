@@ -1060,6 +1060,83 @@ export interface StoredStaySegment {
 
 export type ScanVerdict = 'CLEAN' | 'INFECTED' | 'FAILED';
 
+// --- M6: the accommodation vertical -----------------------------------------------------
+
+/**
+ * One row of accommodation.property (WP-I6-01). `providerOrganizationId` is the tenant's
+ * organization *relationship* carrying the PROVIDER role — the same id every provider
+ * boundary in this mock is read from — and never the bare organization, so a property and a
+ * claim are narrowed by exactly the same grant.
+ *
+ * `timezone` is not decoration: a night begins and ends where the building is, and a stay
+ * in a Berlin hotel booked by a Turkish payer is counted in Berlin nights.
+ */
+export interface StoredProperty {
+  id: string;
+  tenantId: string;
+  providerOrganizationId: string;
+  /** The provider location this building already is in the network; null for a facility. */
+  locationId: string | null;
+  code: string;
+  name: string;
+  propertyType: Schemas['PropertyType'];
+  timezone: string;
+  city: string | null;
+  regionCode: string | null;
+  amenities: Schemas['PropertyAmenity'][];
+  /** The internal cost centre a facility the tenant runs itself charges (v1.2 9.13). */
+  costCenter: string | null;
+  status: Schemas['PropertyStatus'];
+  createdAt: string;
+  updatedAt: string | null;
+  rowVersion: number;
+}
+
+/**
+ * One sellable kind of room. `serviceDefinitionId` is the joint with the rest of the
+ * platform: the room type *is* a catalogue service, so it is priced by the contract prices
+ * of the pricing ladder and entitled through the service-to-entitlement mapping. It names a
+ * NIGHT-unit service and is never re-pointed at another one.
+ */
+export interface StoredRoomType {
+  id: string;
+  tenantId: string;
+  propertyId: string;
+  code: string;
+  name: string;
+  maxAdults: number;
+  maxChildren: number;
+  maxOccupancy: number;
+  /** The provider's own free-form facts about the room. It carries nothing about a guest. */
+  attributes: Record<string, unknown>;
+  serviceDefinitionId: string;
+  status: Schemas['PropertyStatus'];
+  createdAt: string;
+  updatedAt: string | null;
+  rowVersion: number;
+}
+
+/**
+ * One night of one room type's allotment, and only for a night the provider has actually
+ * opened: a date with no row is "no allotment" and not "zero free", which is why `available`
+ * is computed rather than stored and why the search treats a missing night as unavailable.
+ *
+ * `held` and `confirmed` belong to the holds and bookings of WP-I6-02 and nothing in this
+ * package writes them. `held + confirmed <= capacity` is a CHECK on the row on the server,
+ * and no fixture or handler here is allowed to break it either.
+ */
+export interface StoredInventoryDay {
+  id: string;
+  tenantId: string;
+  roomTypeId: string;
+  stayDate: string;
+  capacity: number;
+  held: number;
+  confirmed: number;
+  updatedAt: string;
+  rowVersion: number;
+}
+
 /** Reference catalogs; tenant-independent so every tenant sees the same options. */
 export const IDENTIFIER_TYPE_CATALOG: Schemas['PartyCatalogEntry'][] = [
   {
@@ -1180,6 +1257,12 @@ const ADMIN_PERMISSIONS = [
   'audit.read',
   'report.read',
   'integration.manage',
+  // M6 (migration 000040). The back-office administrator of the mock is a composite of
+  // several Go roles, and reading a hotel and opening its allotment are two grants on
+  // purpose: `accommodation.property.read` is what a member holds too, and
+  // `accommodation.inventory.manage` is what it deliberately does not.
+  'accommodation.property.read',
+  'accommodation.inventory.manage',
 ];
 const REVIEWER_PERMISSIONS = [
   'organization.read',
@@ -1330,6 +1413,20 @@ const PROVIDER_BILLING_PERMISSIONS = [
   'fiscal.edocument.read',
   'document.read',
   'document.link',
+];
+
+/**
+ * PROVIDER_RESERVATION exactly as internal/identity/application/roles.go grants it, in the
+ * same order. It is the provider's reservation desk: it maintains the hotel and its
+ * allotment and holds no clinical grant at all — a room is a building, not a person, and
+ * the desk that opens ninety nights of it has no business reading a diagnosis.
+ */
+const PROVIDER_RESERVATION_PERMISSIONS = [
+  'accommodation.property.read',
+  'accommodation.inventory.manage',
+  'accommodation.booking.manage',
+  'member.read',
+  'eligibility.check',
 ];
 
 const ORG_PREFIXES = [
@@ -1646,6 +1743,21 @@ export interface MockWorld {
   claimLineDecisions: StoredClaimLineDecision[];
   claimAdjustments: StoredClaimAdjustment[];
   claimAuthorizations: StoredClaimAuthorization[];
+  // M6.
+  /**
+   * The accommodation vertical (WP-I6-01): the buildings, the kinds of room in them and the
+   * nights a provider has opened on each. Three arrays rather than one nested shape because
+   * that is what the schema is — and because `inventoryDays` is ninety rows per room type,
+   * which no property read should ever have to carry.
+   *
+   * `inventoryDays` holds only the nights that exist. The gaps are the point: a screen and
+   * the availability search both have to tell "this provider opened nothing here" apart from
+   * "this is full", and a fixture that pre-filled every date with zeroes would hide the
+   * difference the whole search turns on.
+   */
+  properties: StoredProperty[];
+  roomTypes: StoredRoomType[];
+  inventoryDays: StoredInventoryDay[];
   /**
    * Moves a document on from SCANNING the way the scan worker does. It is the mock's
    * stand-in for the worker, so a screen can show "taranıyor" and then a verdict without
@@ -4788,6 +4900,368 @@ export function buildWorld(
     },
   ];
 
+  // --- M6 accommodation (WP-I6-01 section 2.4): two properties of one contracted provider,
+  // four room types, ninety nights of allotment with one full weekend, and a season with two
+  // price levels.
+  //
+  // Appended last, like the M5 mappings and accounts above and for the same reason:
+  // `buildWorld` runs off one seeded random stream, and an id drawn earlier would change
+  // which organizations a small world gets and break tests that have nothing to do with
+  // hotels.
+
+  // The catalogue side comes first, because a room type *is* a catalogue service: it is
+  // priced by the contract prices of the pricing ladder and entitled through the
+  // service-to-entitlement mapping, so a NIGHT-unit definition has to exist before a room
+  // type can name one.
+  const catAccommodation: StoredServiceCategory = {
+    id: nextId(),
+    tenantId: demoA.id,
+    parentId: null,
+    code: 'ACCOMMODATION',
+    name: 'Konaklama',
+    domain: 'ACCOMMODATION',
+    active: true,
+    rowVersion: 1,
+  };
+  serviceCategories.push(catAccommodation);
+
+  const nightService = (code: string, name: string): StoredServiceDefinition => ({
+    id: nextId(),
+    tenantId: demoA.id,
+    categoryId: catAccommodation.id,
+    code,
+    name,
+    description: null,
+    fulfillmentMode: 'RESERVATION',
+    // NIGHT and nothing else: `createRoomType` refuses a service measured in anything else,
+    // because a quote in the wrong unit draws an entitlement down in the wrong currency of
+    // counting and nobody would see it until a member was billed for it.
+    defaultUnitType: 'NIGHT',
+    requiresProvider: true,
+    active: true,
+    rowVersion: 1,
+  });
+  const defRoomNight = nightService('ROOM_NIGHT', 'Standart Oda Gecelemesi');
+  const defSuiteNight = nightService('SUITE_NIGHT', 'Suit Oda Gecelemesi');
+  serviceDefinitions.push(defRoomNight, defSuiteNight);
+
+  // The season, as two price lists on the contract version that is already published. The
+  // dearer one wins inside its window on list priority alone and is rejected outside it with
+  // SEASON_MISMATCH, so one service carries two price levels across the year and nothing
+  // downstream has to know there is a season at all.
+  const lowSeasonList: StoredPriceList = {
+    id: nextId(),
+    tenantId: demoA.id,
+    contractVersionId: publishedContractVersion.id,
+    code: 'ACC_STD',
+    name: 'Konaklama Standart Tarifesi',
+    priority: 100,
+    seasonFrom: null,
+    seasonTo: null,
+    weekdayMask: null,
+    rowVersion: 1,
+  };
+  const highSeasonList: StoredPriceList = {
+    id: nextId(),
+    tenantId: demoA.id,
+    contractVersionId: publishedContractVersion.id,
+    code: 'ACC_HIGH',
+    name: 'Konaklama Yüksek Sezon Tarifesi',
+    priority: 200,
+    seasonFrom: '2026-06-01',
+    seasonTo: '2026-10-01',
+    weekdayMask: null,
+    rowVersion: 1,
+  };
+  priceLists.push(lowSeasonList, highSeasonList);
+
+  const nightPrice = (listId: string, definitionId: string, amount: Decimal): StoredPriceItem =>
+    priceItem(
+      listId,
+      { serviceDefinitionId: definitionId },
+      {
+        unitType: 'NIGHT',
+        pricingMethod: 'UNIT',
+        amount,
+        // The member's own contribution, as a percentage rather than a round sum: a split
+        // that has to be computed is a split a mock adding the nights up before rounding
+        // would get visibly wrong.
+        memberShareMethod: 'PERCENT',
+        memberSharePercent: '15.000000',
+      },
+    );
+  priceItems.push(
+    nightPrice(lowSeasonList.id, defRoomNight.id, '2400.000000'),
+    nightPrice(lowSeasonList.id, defSuiteNight.id, '3800.000000'),
+    nightPrice(highSeasonList.id, defRoomNight.id, '4250.000000'),
+    nightPrice(highSeasonList.id, defSuiteNight.id, '6900.000000'),
+  );
+
+  // The plan side: a NIGHT entitlement mapped to both room services on the published version
+  // of each health plan. A room night draws down a count of nights and never a sum of money,
+  // which is the whole reason the search caps how many nights the plan carries rather than
+  // capping the lira — a member with two nights left has two nights left, not two lira.
+  const nightDefinitions = new Map<string, StoredEntitlementDefinition>();
+  for (const plan of [planFamilyHealth, planIndividualHealth]) {
+    const version = planVersions.find((v) => v.planId === plan.id && v.status === 'PUBLISHED')!;
+    const definition: StoredEntitlementDefinition = {
+      id: nextId(),
+      code: 'ACCOMMODATION_NIGHT',
+      name: 'Konaklama Gecesi',
+      unitType: 'NIGHT',
+      currencyCode: null,
+      // Not family-shared on purpose: the spouse's two nights below are hers, and a shared
+      // pool would quietly hand her the principal's ten and hide the partial-cover case.
+      familyShared: false,
+      allowOverdraft: false,
+      initialQuantity: 10,
+      periodType: 'PLAN_YEAR',
+      periodLength: null,
+      rolloverPolicy: 'NONE',
+      rolloverCap: null,
+      status: 'ACTIVE',
+    };
+    version.definitions.push(definition);
+    nightDefinitions.set(plan.id, definition);
+    for (const service of [defRoomNight, defSuiteNight]) {
+      entitlementMappings.push({
+        id: nextId(),
+        tenantId: demoA.id,
+        planVersionId: version.id,
+        serviceDefinitionId: service.id,
+        entitlementDefinitionId: definition.id,
+        unitFactor: '1.000000',
+        validFrom: null,
+        validTo: null,
+        rowVersion: 1,
+      });
+    }
+  }
+
+  // Two balances, so both answers to "does the plan cover this stay" are drawable: the
+  // principal has ten nights left and the spouse two. A three-night stay is carried whole for
+  // one of them and for exactly two nights for the other, and the third night is hers.
+  entitlementAccounts.push(
+    {
+      id: nextId(),
+      tenantId: demoA.id,
+      enrollmentId: familyEnrollment.id,
+      personId: familyPrincipal.id,
+      definition: toAccountDefinition(nightDefinitions.get(planFamilyHealth.id)!),
+      benefitPeriodFrom: isoDaysAgo(base, 190).slice(0, 10),
+      benefitPeriodTo: null,
+      totalGranted: '10.000000',
+      available: '10.000000',
+      consumed: '0.000000',
+      reserved: '0.000000',
+      expired: '0.000000',
+      status: 'OPEN',
+      rowVersion: 1,
+    },
+    {
+      id: nextId(),
+      tenantId: demoA.id,
+      enrollmentId: spouseEnrollment.id,
+      personId: familySpouse.id,
+      definition: toAccountDefinition(nightDefinitions.get(planIndividualHealth.id)!),
+      benefitPeriodFrom: isoDaysAgo(base, 180).slice(0, 10),
+      benefitPeriodTo: null,
+      totalGranted: '10.000000',
+      available: '2.000000',
+      consumed: '8.000000',
+      reserved: '0.000000',
+      expired: '0.000000',
+      status: 'OPEN',
+      rowVersion: 1,
+    },
+  );
+
+  // The two reservation desks. Each holds PROVIDER_RESERVATION and exactly one ORGANIZATION
+  // grant, and that single row decides everything either of them may see: there is no second,
+  // client-side filter here that could disagree with the server.
+  //
+  // There are two of them because the provider boundary has two sides. One desk belongs to
+  // the organization that runs the hotels below; the other belongs to `otherProviderRel`, the
+  // second provider the M4 fixtures already needed, and it runs no hotel here at all — which
+  // is what lets a test show that another provider's room type is 404 and never 403.
+  accounts.push(
+    {
+      actorId: nextId(),
+      username: 'reservation.a',
+      displayName: 'Rezan Rezervasyon',
+      email: 'reservation.a@example.invalid',
+      memberships: [
+        {
+          tenantCode: 'DEMO_A',
+          permissions: PROVIDER_RESERVATION_PERMISSIONS,
+          scopes: [{ type: 'ORGANIZATION', id: providerRel.id }],
+        },
+      ],
+    },
+    {
+      actorId: nextId(),
+      username: 'reservation.other',
+      displayName: 'Ozan Öteki',
+      email: 'reservation.other@example.invalid',
+      memberships: [
+        {
+          tenantCode: 'DEMO_A',
+          permissions: PROVIDER_RESERVATION_PERMISSIONS,
+          scopes: [{ type: 'ORGANIZATION', id: otherProviderRel.id }],
+        },
+      ],
+    },
+  );
+
+  const property = (
+    code: string,
+    name: string,
+    propertyType: Schemas['PropertyType'],
+    amenities: Schemas['PropertyAmenity'][],
+    extra: Partial<StoredProperty> = {},
+  ): StoredProperty => ({
+    id: nextId(),
+    tenantId: demoA.id,
+    providerOrganizationId: providerRel.id,
+    // Neither building is one of the provider's health locations: a Kadıköy medical centre
+    // is not a hotel, and a property with no provider location is the ordinary case.
+    locationId: null,
+    code,
+    name,
+    propertyType,
+    timezone: 'Europe/Istanbul',
+    city: 'Antalya',
+    regionCode: 'ANTALYA',
+    amenities,
+    costCenter: null,
+    status: 'ACTIVE',
+    createdAt: isoDaysAgo(base, 120),
+    updatedAt: null,
+    rowVersion: 1,
+    ...extra,
+  });
+  const resort = property('KEMER_RESORT', 'Kapsora Kemer Tatil Köyü', 'RESORT', [
+    'WIFI',
+    'PARKING',
+    'ALL_INCLUSIVE',
+    'POOL',
+    'BEACH',
+    'FAMILY_ROOM',
+  ]);
+  // The tenant's own guest house rather than a commercial hotel: it charges an internal cost
+  // centre instead of invoicing (v1.2 9.13), which is what SOCIAL_FACILITY means.
+  const guestHouse = property(
+    'SIDE_MISAFIREVI',
+    'Kapsora Side Misafirevi',
+    'SOCIAL_FACILITY',
+    ['WIFI', 'PARKING', 'BREAKFAST', 'STEP_FREE_ACCESS'],
+    { costCenter: 'CC.KONAKLAMA.01' },
+  );
+  const properties: StoredProperty[] = [resort, guestHouse];
+
+  const roomType = (
+    ofProperty: StoredProperty,
+    service: StoredServiceDefinition,
+    code: string,
+    name: string,
+    party: { maxAdults: number; maxChildren: number; maxOccupancy: number },
+    attributes: Record<string, unknown>,
+  ): StoredRoomType => ({
+    id: nextId(),
+    tenantId: demoA.id,
+    propertyId: ofProperty.id,
+    code,
+    name,
+    ...party,
+    // Bed layout and view, and nothing that could ever be a fact about a guest: the
+    // attributes bag is written by a provider clerk and read by everybody.
+    attributes,
+    serviceDefinitionId: service.id,
+    status: 'ACTIVE',
+    createdAt: ofProperty.createdAt,
+    updatedAt: null,
+    rowVersion: 1,
+  });
+  const roomTypes: StoredRoomType[] = [
+    roomType(
+      resort,
+      defRoomNight,
+      'STD_DBL',
+      'Standart Çift Kişilik Oda',
+      { maxAdults: 2, maxChildren: 2, maxOccupancy: 4 },
+      { beds: '1 çift kişilik', view: 'BAHCE' },
+    ),
+    roomType(
+      resort,
+      defSuiteNight,
+      'FAM_SUITE',
+      'Aile Suiti',
+      { maxAdults: 4, maxChildren: 3, maxOccupancy: 6 },
+      { beds: '1 çift kişilik + 2 tek kişilik', view: 'DENIZ' },
+    ),
+    roomType(
+      guestHouse,
+      defRoomNight,
+      'GUEST_SGL',
+      'Tek Kişilik Misafir Odası',
+      { maxAdults: 1, maxChildren: 0, maxOccupancy: 1 },
+      { beds: '1 tek kişilik' },
+    ),
+    roomType(
+      guestHouse,
+      defRoomNight,
+      'GUEST_DBL',
+      'Çift Kişilik Misafir Odası',
+      { maxAdults: 2, maxChildren: 1, maxOccupancy: 3 },
+      { beds: '2 tek kişilik' },
+    ),
+  ];
+
+  // Ninety consecutive nights from the world's base date, one row per room type per night.
+  //
+  // The capacity differs by room type because an allotment is how many rooms this provider
+  // gives this payer on a night, not how many rooms the hotel owns. On the first Saturday
+  // three weeks in and the Sunday after it every room type is sold out — held plus confirmed
+  // is exactly the capacity — so a screen has a genuinely full date to draw and the
+  // `held + confirmed <= capacity` invariant is exercised at its edge rather than only well
+  // inside it. On every other night the two counters together never exceed three, so an
+  // allotment cut low enough is refused by the weekend and by nothing else.
+  //
+  // The ninetieth night is the last one with a row at all. That is deliberate too: a stay
+  // reaching past it is a stay with an allotment on every night but one, which the search
+  // has to answer with no availability rather than with "mostly available".
+  const ACCOMMODATION_NIGHTS = 90;
+  const nightOf = (offset: number): string =>
+    new Date(base + offset * 86_400_000).toISOString().slice(0, 10);
+  let fullWeekend = 21;
+  while (new Date(base + fullWeekend * 86_400_000).getUTCDay() !== 6) {
+    fullWeekend += 1;
+  }
+  const allotmentOf: Record<string, number> = {
+    STD_DBL: 12,
+    FAM_SUITE: 5,
+    GUEST_SGL: 8,
+    GUEST_DBL: 6,
+  };
+  const inventoryDays: StoredInventoryDay[] = [];
+  for (const room of roomTypes) {
+    const capacity = allotmentOf[room.code]!;
+    for (let offset = 0; offset < ACCOMMODATION_NIGHTS; offset += 1) {
+      const full = offset === fullWeekend || offset === fullWeekend + 1;
+      inventoryDays.push({
+        id: nextId(),
+        tenantId: demoA.id,
+        roomTypeId: room.id,
+        stayDate: nightOf(offset),
+        capacity,
+        held: full ? 2 : offset % 2,
+        confirmed: full ? capacity - 2 : offset % 3,
+        updatedAt: isoDaysAgo(base, 30),
+        rowVersion: 1,
+      });
+    }
+  }
+
   return {
     tenants,
     accounts,
@@ -4857,6 +5331,9 @@ export function buildWorld(
     claimLineDecisions,
     claimAdjustments,
     claimAuthorizations,
+    properties,
+    roomTypes,
+    inventoryDays,
     advanceScan,
     nextId,
     random,

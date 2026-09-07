@@ -46,6 +46,7 @@ func RoleTemplates() []RoleTemplate {
 				"entitlement.read", "entitlement.mapping.manage",
 				"catalog.read", "catalog.manage", "pricing.quote", "authorization.manage", "fulfilment.record",
 				"voucher.redeem", "claim.read", "report.read", "worklist.read", "worklist.claim",
+				"accommodation.property.read",
 				"notification.read"}},
 		{Code: "PLAN_PUBLISHER", Name: "Plan Onaylayıcı", Scope: ScopeTenant,
 			Description: "Plan sürümü yayınlar ve hak düzeltmelerini onaylar (checker).",
@@ -98,9 +99,16 @@ func RoleTemplates() []RoleTemplate {
 			Permissions: []string{"claim.read", "claim.create", "claim.submit", "claim.cancel",
 				"invoice.read", "invoice.manage", "batch.create",
 				"batch.submit", "settlement.read", "fiscal.edocument.read", "document.read", "document.link"}},
+		// accommodation.property.read is the grant migration 000040 adds, and it is held by
+		// the four roles that have a reason to look at a hotel: the member who will stay in
+		// it, the provider clerk who maintains it, the programme manager who negotiated it
+		// and the sponsor's HR user who is asked about it. It is a read of a building, not
+		// of a person, which is why it is NORMAL and why holding it alone lets nobody book,
+		// hold or change anything.
 		{Code: "PROVIDER_RESERVATION", Name: "Sağlayıcı Rezervasyon", Scope: ScopeOrganization,
 			Description: "Konaklama kontenjanı, rezervasyon, check-in/out; sağlık verisine erişemez.",
-			Permissions: []string{"accommodation.inventory.manage", "accommodation.booking.manage", "member.read", "eligibility.check"}},
+			Permissions: []string{"accommodation.property.read", "accommodation.inventory.manage",
+				"accommodation.booking.manage", "member.read", "eligibility.check"}},
 		// The sponsor's own HR user. It exists so the acceptance criterion of WP-I5-01 has a
 		// subject: this is the role that may see that a member has an open health case, and
 		// may never see what the case is about. health.clinical.read is absent on purpose,
@@ -109,11 +117,12 @@ func RoleTemplates() []RoleTemplate {
 		{Code: "SPONSOR_HR", Name: "Sponsor İK", Scope: ScopeTenant,
 			Description: "Sponsor kurumun İK kullanıcısı: üye, talep ve hak durumu görür; klinik detaya asla erişemez.",
 			Permissions: []string{"member.read", "service_request.read", "health.case.read",
-				"claim.read", "entitlement.read", "report.read"}},
+				"claim.read", "entitlement.read", "report.read", "accommodation.property.read"}},
 		{Code: "MEMBER", Name: "Hak Sahibi", Scope: ScopeTenant,
 			Description: "Kendi hakları, başvuruları, rezervasyonları ve belgeleri.",
 			Permissions: []string{"eligibility.check", "service_request.read", "service_request.create", "service_request.submit",
-				"service_request.cancel", "accommodation.booking.create", "document.upload", "document.read", "entitlement.read"}},
+				"service_request.cancel", "accommodation.property.read", "accommodation.booking.create",
+				"document.upload", "document.read", "entitlement.read"}},
 	}
 }
 

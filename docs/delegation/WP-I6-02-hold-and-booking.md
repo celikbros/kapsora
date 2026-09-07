@@ -6,7 +6,7 @@
 | Size                       | L                                                                                                                                                                                                                                                                                      |
 | Depends on                 | WP-I6-01 (inventory, quote), WP-I2-03 (entitlement reservation with expiry), WP-I4-01 (RESERVATION requests and the submit gate), WP-I4-02 (authorization, voucher), WP-I5-03 as delivered (the outbox subscription to `service_request.decided`, `stayports`/gateway shape)          |
 | Runs in parallel with      | WP-I6-04 (contract terms; a booking carries its policy snapshot from the moment 04 lands, `null` before)                                                                                                                                                                              |
-| Migration numbers assigned | `000037_accommodation_booking.up.sql`                                                                                                                                                                                                                                                  |
+| Migration numbers assigned | `000041_accommodation_booking.up.sql` (renumbered from 000037; the number must exceed 000040)                                                                                                                                                                                                                                                  |
 | OpenAPI operations owned   | `createHold`, `getBooking`, `listBookings`, `confirmBooking`, `releaseHold`, `reissueBookingVoucher`                                                                                                                                                                                   |
 | Read first                 | v1.2 10.6 steps 4–7, 11.11, 11.13, 12.3, 13.5 (the booking confirmation transaction, verbatim), 16.7 (`booking`, `booking_night`, `booking_guest`), 35.2; WP-I2-03 (`Reserve`, expiry), WP-I4-02 (`CreateForRequest`, `issueVoucher`, the digest-only token), WP-I5-03 §2.2–2.3 and `internal/health/application/staydecision.go` |
 
@@ -22,7 +22,7 @@ rather than taking a second one.**
 
 ## 2. Scope
 
-### 2.1 Schema (migration 000037)
+### 2.1 Schema (migration 000041)
 
 `accommodation.booking`: id, tenant_id, `reference` (`BK-YYYYMMDD-XXXXXXXX`, unique per
 tenant), person_id, enrollment_id, program_id, `property_id`, `room_type_id`, `check_in`,
@@ -136,4 +136,4 @@ with a hold, a confirmed booking with a voucher, a checked-in and a completed on
 - [ ] A confirmed booking has one authorization, one reservation and one voucher, and the
       member saw the exact amounts before confirming.
 - [ ] OpenAPI (additive), generated code, Spectral and `oasdiff` clean; Turkish for every
-      problem code; schema version 37.
+      problem code; schema version 41.

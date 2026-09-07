@@ -63,6 +63,8 @@ tags:
     description: Sağlık vakası, encounter, tanı ve klinik erişim kaydı
   - name: Claims
     description: Hasar dosyası sürümleri, satır kararları, tıbbi ve mali inceleme
+  - name: Accommodation
+    description: Konaklama tesisleri, oda tipleri, günlük kontenjan ve müsaitlik sorgusu
 paths:
   /health/live:
     get:
@@ -10229,6 +10231,503 @@ paths:
                 $ref: '#/components/schemas/Problem'
         '422':
           $ref: '#/components/responses/ValidationError'
+  /api/v1/accommodation/properties:
+    get:
+      tags: [Accommodation]
+      operationId: listProperties
+      description: |
+        The properties of the tenant, newest first. A caller whose grants are scoped to
+        provider organizations sees its own buildings and no others — not a filtered view of
+        everybody's, but a list in which another provider's hotel does not exist.
+
+        This is the back-office and provider list, so it shows INACTIVE properties too. The
+        member's view is `searchAvailability`, which shows only what is ACTIVE, contracted
+        for their program, and actually free.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: providerOrganizationId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/PropertyStatus'
+        - name: propertyType
+          in: query
+          schema:
+            $ref: '#/components/schemas/PropertyType'
+        - name: regionCode
+          in: query
+          schema:
+            type: string
+            pattern: '^[A-Z0-9][A-Z0-9_-]{0,15}$'
+        - name: city
+          in: query
+          schema:
+            type: string
+            maxLength: 100
+      responses:
+        '200':
+          description: Property page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertyPage'
+        '400':
+          description: Cursor invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags: [Accommodation]
+      operationId: createProperty
+      description: |
+        Opens a building. The provider organization is the relationship the tenant contracts
+        with, and it is what an ORGANIZATION-scoped caller is compared against: a provider
+        clerk naming somebody else's organization is refused with PROPERTY_SCOPE rather than
+        told the organization does not exist, because it plainly does.
+
+        `locationId` is optional and points at an existing provider location of the same
+        provider, so a hotel already in the network reuses its address and coordinates. An
+        internal social facility has no provider location and bills a `costCenter` instead
+        (v1.2 9.13); both are null for the ordinary case and neither is required.
+
+        `timezone` is the property's own IANA zone. It is not decoration: a night begins and
+        ends where the building is, and every stay booked here is counted against that
+        calendar.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProperty'
+      responses:
+        '201':
+          description: Property created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            Location:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Property'
+        '403':
+          description: |
+            A provider-scoped caller named another organization. PROPERTY_SCOPE.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            This provider already has a property with that code. PROPERTY_CODE_TAKEN.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/accommodation/properties/{propertyId}:
+    get:
+      tags: [Accommodation]
+      operationId: getProperty
+      description: |
+        One property. Another provider's property is 404 rather than 403: that a hotel exists
+        at all is not this caller's business.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PropertyId'
+      responses:
+        '200':
+          description: Property
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Property'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Accommodation]
+      operationId: patchProperty
+      description: |
+        Rewrites the editable half of a property. Every field is sent every time: a merge
+        would make "this hotel no longer has a location" and "it no longer bills a cost
+        centre" inexpressible, and a field that cannot be cleared is a field somebody edits
+        by hand in the database.
+
+        `code` and `providerOrganizationId` are not editable. A code is what the provider's
+        own systems call the building, and moving a building to another provider would move
+        every booking ever taken in it.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PropertyId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchProperty'
+      responses:
+        '200':
+          description: Property updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Property'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          description: The property changed since the caller read it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match is missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/accommodation/properties/{propertyId}/room-types:
+    get:
+      tags: [Accommodation]
+      operationId: listRoomTypes
+      description: |
+        The room types of one property, by code. The property is read first, so a building
+        this caller may not see answers 404 rather than an empty list — an empty list would
+        say the building exists and has no rooms.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PropertyId'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/PropertyStatus'
+      responses:
+        '200':
+          description: Room types
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomTypeList'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags: [Accommodation]
+      operationId: createRoomType
+      description: |
+        Adds a sellable kind of room.
+
+        `serviceDefinitionId` is the joint with the rest of the platform and the reason this
+        vertical needs almost no machinery of its own: the room type *is* a catalogue
+        service, so it is priced by the contract prices of the pricing ladder, entitled
+        through the service-to-entitlement mapping, and claimed like anything else. One room
+        type, one service — a room type priced as two services would be a room with two
+        answers to "what does a night cost".
+
+        The service has to exist in this tenant, be active, and carry the NIGHT unit. A
+        service measured in anything else would produce a quote in the wrong unit and draw an
+        entitlement down in the wrong currency of counting, so it is refused on the field
+        rather than accepted and discovered later.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/PropertyId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoomType'
+      responses:
+        '201':
+          description: Room type created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            Location:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomType'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            This property already has a room type with that code. ROOM_TYPE_CODE_TAKEN.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/accommodation/room-types/{roomTypeId}:
+    patch:
+      tags: [Accommodation]
+      operationId: patchRoomType
+      description: |
+        Rewrites the editable half of a room type. Every field is sent every time, as on the
+        property.
+
+        `serviceDefinitionId` is not among them and never will be: a room type re-pointed at
+        another service would silently change what every booking already taken against it was
+        priced and entitled as.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RoomTypeId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchRoomType'
+      responses:
+        '200':
+          description: Room type updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomType'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          description: The room type changed since the caller read it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match is missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/accommodation/room-types/{roomTypeId}/inventory:
+    get:
+      tags: [Accommodation]
+      operationId: getRoomTypeInventory
+      description: |
+        The daily allotment of one room type over a range of nights, one entry per date
+        whether or not there is a row behind it.
+
+        `available` is capacity minus held minus confirmed, computed on the server, so no
+        screen subtracts and two screens cannot disagree. `allotted` is false for a night
+        this provider has opened nothing on: that is not the same statement as "zero free",
+        and the availability search treats it as unavailable rather than as free.
+
+        It takes the same read grant the search does, so the provider's desk and the payer's
+        back office both see it, and a provider-scoped caller sees only its own room types.
+        A member's route to what is free is `searchAvailability`, which answers what they
+        can have rather than how the allotment behind it is composed.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RoomTypeId'
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          description: Inclusive last night of the range.
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Inventory range
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomTypeInventoryRange'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    put:
+      tags: [Accommodation]
+      operationId: putRoomTypeInventory
+      description: |
+        Opens a season's allotment in one call: `capacity` on every night of the range, in
+        one transaction. `held` and `confirmed` are never touched here — they belong to the
+        holds and bookings of the booking package, and an allotment that could edit them
+        would be an allotment that could make a confirmed booking disappear.
+
+        A night whose held plus confirmed exceeds the new capacity is refused with 409
+        `INVENTORY_BELOW_COMMITMENT`, naming the first offending date in the `stayDate`
+        extension member — a provider opening ninety nights needs to know which night to look
+        at, not that something somewhere failed. The whole range is refused with it: an
+        allotment meant to apply to a season is not half applied.
+
+        The refusal is not this endpoint's alone. `held + confirmed <= capacity` is a CHECK
+        on the row, so a hold that landed between the lock and the write fails the statement
+        and takes the range with it.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RoomTypeId'
+        - $ref: '#/components/parameters/IdempotencyKeyOptional'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutRoomTypeInventory'
+      responses:
+        '200':
+          description: Inventory range after the allotment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomTypeInventoryRange'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            The capacity is below what is already held or confirmed on at least one night.
+            INVENTORY_BELOW_COMMITMENT, with the first offending date in the `stayDate`
+            extension member.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/accommodation/availability/search:
+    post:
+      tags: [Accommodation]
+      operationId: searchAvailability
+      description: |
+        What is free between two dates, and what it would cost this member.
+
+        **Whose stay.** A member account is bound to one person, and the person is taken from
+        that binding and never from the body: a body naming somebody else is refused with
+        PERSON_SCOPE, which is what stops a member searching — and later holding — a room for
+        their neighbour. A desk that is not bound to a person must name one in `personId`.
+
+        **What is shown.** ACTIVE properties of ACTIVE providers holding an ACTIVE contract,
+        published over the stay, with one of the payer organizations behind the programs this
+        person is enrolled in on the first night. A person with no active enrollment sees
+        nothing rather than everything.
+
+        **What `available` means.** The server's minimum daily availability over the whole
+        range. A room type with an allotment on every night but one is not "mostly
+        available": the guest would have nowhere to sleep on the missing night, so the answer
+        for the stay is none.
+
+        **What the quote is.** The pricing ladder's answer for the room type's service, on
+        each stay date, under this person's enrollment and this provider's contract, summed
+        once on the server. Every figure is an exact decimal string; `payerAmount` plus
+        `memberAmount` is exactly `totalAmount`, on every room type and every night. Where a
+        night cannot be priced the room type carries `quote: null` and a reason code rather
+        than a guess.
+
+        **The eligibility half.** `entitlement` is what the plan has left, in the NIGHT unit
+        of the service-to-entitlement mapping, and `eligible` says whether that covers every
+        night of this stay. Nights beyond the remaining entitlement are priced with the plan
+        carrying nothing, so a member with two nights left and a three-night stay is shown
+        the third night as their own.
+
+        Every search is recorded as an immutable eligibility evaluation, named in
+        `evaluationId`, so "what did the system show them" is answerable months later.
+        Nothing is reserved: an availability answer is an answer, and the hold is a separate
+        command.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKeyOptional'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AvailabilitySearchRequest'
+      responses:
+        '200':
+          description: Availability and the contribution quote
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilitySearchResult'
+        '403':
+          description: |
+            The caller named a person other than the one its account is bound to, or holds no
+            person binding at all. PERSON_SCOPE, PERSON_BINDING_MISSING, PERMISSION_DENIED.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: |
+            The dates or the party are outside what a stay may be: `checkOut` on or before
+            `checkIn`, a stay longer than the tenant's `accommodation.max_nights`, or neither
+            of `propertyId` and `regionCode`. VALIDATION_FAILED.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
 
 components:
   securitySchemes:
@@ -10650,6 +11149,20 @@ components:
       schema:
         type: string
         enum: [FINANCIAL]
+    PropertyId:
+      name: propertyId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    RoomTypeId:
+      name: roomTypeId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
   headers:
     ETag:
       description: Strong optimistic concurrency tag based on row_version.
@@ -18748,3 +19261,545 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ClaimInvoiceBlocker'
+    PropertyType:
+      type: string
+      enum: [HOTEL, RESORT, GUESTHOUSE, SOCIAL_FACILITY, OTHER]
+      description: |
+        SOCIAL_FACILITY is the tenant's own guest house rather than a commercial hotel; it is
+        the type that ordinarily carries a `costCenter` and no provider location.
+    PropertyStatus:
+      type: string
+      enum: [ACTIVE, INACTIVE]
+    PropertyAmenity:
+      type: string
+      enum:
+        [WIFI, PARKING, BREAKFAST, HALF_BOARD, FULL_BOARD, ALL_INCLUSIVE, POOL, SPA, GYM,
+         AIR_CONDITIONING, RESTAURANT, BEACH, STEP_FREE_ACCESS, PET_FRIENDLY, FAMILY_ROOM,
+         SHUTTLE, LAUNDRY, MEETING_ROOM, KITCHENETTE, THERMAL]
+      description: |
+        The closed list of things a building has. Every key is a fact about the building and
+        none of them is, or may become, a fact about a guest: there is no dietary and no
+        medical key, because an amenities array is written by a provider clerk and read by
+        everybody, and a slot a health need could be typed into is a slot it eventually would
+        be.
+    Property:
+      type: object
+      additionalProperties: false
+      required:
+        [id, providerOrganizationId, code, name, propertyType, timezone, amenities, status,
+         createdAt, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        providerOrganizationId:
+          type: string
+          format: uuid
+        locationId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            The provider location this building already is in the network, when it is one. An
+            internal social facility has none.
+        code:
+          type: string
+          pattern: '^[A-Z0-9][A-Z0-9_-]{0,39}$'
+        name:
+          type: string
+          maxLength: 200
+        propertyType:
+          $ref: '#/components/schemas/PropertyType'
+        timezone:
+          type: string
+          maxLength: 64
+          description: |
+            The property's own IANA zone. A night begins and ends where the building is, so a
+            stay in Berlin booked by a Turkish payer is counted in Berlin nights.
+        city:
+          type: [string, 'null']
+          maxLength: 100
+        regionCode:
+          type: [string, 'null']
+          pattern: '^[A-Z0-9][A-Z0-9_-]{0,15}$'
+        amenities:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/PropertyAmenity'
+        costCenter:
+          type: [string, 'null']
+          pattern: '^[A-Z0-9][A-Z0-9_.-]{0,31}$'
+          description: |
+            The internal cost centre a facility the tenant runs itself charges instead of
+            invoicing (v1.2 9.13). Null for every commercial hotel.
+        status:
+          $ref: '#/components/schemas/PropertyStatus'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        rowVersion:
+          type: integer
+          format: int64
+    PropertyPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Property'
+        nextCursor:
+          type: [string, 'null']
+    CreateProperty:
+      type: object
+      additionalProperties: false
+      required: [providerOrganizationId, code, name, propertyType, timezone]
+      properties:
+        providerOrganizationId:
+          type: string
+          format: uuid
+        locationId:
+          type: [string, 'null']
+          format: uuid
+        code:
+          type: string
+          pattern: '^[A-Z0-9][A-Z0-9_-]{0,39}$'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        propertyType:
+          $ref: '#/components/schemas/PropertyType'
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 64
+        city:
+          type: [string, 'null']
+          maxLength: 100
+        regionCode:
+          type: [string, 'null']
+          pattern: '^[A-Z0-9][A-Z0-9_-]{0,15}$'
+        amenities:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/PropertyAmenity'
+        costCenter:
+          type: [string, 'null']
+          pattern: '^[A-Z0-9][A-Z0-9_.-]{0,31}$'
+        status:
+          oneOf:
+            - $ref: '#/components/schemas/PropertyStatus'
+            - type: 'null'
+          description: Defaults to ACTIVE.
+    PatchProperty:
+      type: object
+      additionalProperties: false
+      required: [name, propertyType, timezone, status]
+      description: |
+        Every field is sent every time: a merge would make "this hotel no longer has a
+        location" inexpressible.
+      properties:
+        locationId:
+          type: [string, 'null']
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        propertyType:
+          $ref: '#/components/schemas/PropertyType'
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 64
+        city:
+          type: [string, 'null']
+          maxLength: 100
+        regionCode:
+          type: [string, 'null']
+          pattern: '^[A-Z0-9][A-Z0-9_-]{0,15}$'
+        amenities:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/PropertyAmenity'
+        costCenter:
+          type: [string, 'null']
+          pattern: '^[A-Z0-9][A-Z0-9_.-]{0,31}$'
+        status:
+          $ref: '#/components/schemas/PropertyStatus'
+    RoomType:
+      type: object
+      additionalProperties: false
+      required:
+        [id, propertyId, code, name, maxAdults, maxChildren, maxOccupancy, attributes,
+         serviceDefinitionId, status, createdAt, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        propertyId:
+          type: string
+          format: uuid
+        code:
+          type: string
+          pattern: '^[A-Z0-9][A-Z0-9_-]{0,39}$'
+        name:
+          type: string
+          maxLength: 200
+        maxAdults:
+          type: integer
+          minimum: 1
+          maximum: 20
+        maxChildren:
+          type: integer
+          minimum: 0
+          maximum: 20
+        maxOccupancy:
+          type: integer
+          minimum: 1
+          maximum: 40
+          description: At least maxAdults; the database keeps that as a CHECK.
+        attributes:
+          type: object
+          additionalProperties: true
+          description: |
+            The provider's own free-form facts about the room — bed layout, floor, view. It
+            carries nothing about a guest.
+        serviceDefinitionId:
+          type: string
+          format: uuid
+          description: |
+            The NIGHT-unit catalogue service this room is priced and entitled as. One room
+            type, one service, and it is never edited.
+        status:
+          $ref: '#/components/schemas/PropertyStatus'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        rowVersion:
+          type: integer
+          format: int64
+    RoomTypeList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      description: |
+        Not a page. A property has a handful of room types, and paging a list of four would
+        cost a cursor to say nothing.
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoomType'
+    CreateRoomType:
+      type: object
+      additionalProperties: false
+      required: [code, name, maxAdults, maxOccupancy, serviceDefinitionId]
+      properties:
+        code:
+          type: string
+          pattern: '^[A-Z0-9][A-Z0-9_-]{0,39}$'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        maxAdults:
+          type: integer
+          minimum: 1
+          maximum: 20
+        maxChildren:
+          type: integer
+          minimum: 0
+          maximum: 20
+        maxOccupancy:
+          type: integer
+          minimum: 1
+          maximum: 40
+        attributes:
+          type: object
+          additionalProperties: true
+        serviceDefinitionId:
+          type: string
+          format: uuid
+        status:
+          oneOf:
+            - $ref: '#/components/schemas/PropertyStatus'
+            - type: 'null'
+          description: Defaults to ACTIVE.
+    PatchRoomType:
+      type: object
+      additionalProperties: false
+      required: [name, maxAdults, maxOccupancy, status]
+      description: Every field is sent every time; serviceDefinitionId is never among them.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        maxAdults:
+          type: integer
+          minimum: 1
+          maximum: 20
+        maxChildren:
+          type: integer
+          minimum: 0
+          maximum: 20
+        maxOccupancy:
+          type: integer
+          minimum: 1
+          maximum: 40
+        attributes:
+          type: object
+          additionalProperties: true
+        status:
+          $ref: '#/components/schemas/PropertyStatus'
+    InventoryDay:
+      type: object
+      additionalProperties: false
+      required: [stayDate, allotted, capacity, held, confirmed, available]
+      properties:
+        stayDate:
+          type: string
+          format: date
+        allotted:
+          type: boolean
+          description: |
+            False for a night this provider has opened nothing on. It is not the same
+            statement as "zero free", and the availability search treats a night with no
+            allotment as unavailable rather than as free.
+        capacity:
+          type: integer
+          minimum: 0
+        held:
+          type: integer
+          minimum: 0
+        confirmed:
+          type: integer
+          minimum: 0
+        available:
+          type: integer
+          minimum: 0
+          description: |
+            capacity minus held minus confirmed, computed on the server so no screen
+            subtracts.
+        updatedAt:
+          type: [string, 'null']
+          format: date-time
+        rowVersion:
+          type: integer
+          format: int64
+    RoomTypeInventoryRange:
+      type: object
+      additionalProperties: false
+      required: [roomTypeId, from, to, days]
+      properties:
+        roomTypeId:
+          type: string
+          format: uuid
+        from:
+          type: string
+          format: date
+        to:
+          type: string
+          format: date
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventoryDay'
+          description: One entry per date of the range, in order, gaps included.
+    PutRoomTypeInventory:
+      type: object
+      additionalProperties: false
+      required: [from, to, capacity]
+      properties:
+        from:
+          type: string
+          format: date
+        to:
+          type: string
+          format: date
+          description: Inclusive last night of the allotment.
+        capacity:
+          type: integer
+          minimum: 0
+          maximum: 10000
+          description: |
+            How many rooms of this type the provider gives this payer on each night of the
+            range. It is an allotment, not a count of the rooms the hotel owns.
+    AvailabilitySearchRequest:
+      type: object
+      additionalProperties: false
+      required: [checkIn, checkOut, adults]
+      properties:
+        personId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            Whose stay. A member account bound to a person may omit it or echo its own; a body
+            naming anybody else is refused with PERSON_SCOPE. A desk that is bound to no
+            person must name one.
+        programId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            Narrows a member enrolled in two programmes to one of them. It is honoured, never
+            trusted: a programme the person is not enrolled in on the first night selects
+            nothing.
+        checkIn:
+          type: string
+          format: date
+        checkOut:
+          type: string
+          format: date
+          description: |
+            The morning the guest leaves, and never a night. It must be after checkIn, and the
+            stay may not exceed the tenant's accommodation.max_nights.
+        adults:
+          type: integer
+          minimum: 1
+          maximum: 20
+        children:
+          type: integer
+          minimum: 0
+          maximum: 20
+        propertyId:
+          type: [string, 'null']
+          format: uuid
+          description: Exactly one of propertyId and regionCode.
+        regionCode:
+          type: [string, 'null']
+          pattern: '^[A-Z0-9][A-Z0-9_-]{0,15}$'
+    AvailabilityEntitlement:
+      type: object
+      additionalProperties: false
+      required: [entitlementCode, unit, remaining]
+      properties:
+        entitlementCode:
+          type: string
+        unit:
+          type: string
+          description: NIGHT for the ordinary mapping; MONEY for a plan that carries a budget.
+        remaining:
+          type: string
+          description: Exact decimal as a string, never a JSON number.
+    AvailabilityNightAmount:
+      type: object
+      additionalProperties: false
+      required: [stayDate, amount, payerAmount, memberAmount]
+      properties:
+        stayDate:
+          type: string
+          format: date
+        amount:
+          type: string
+          description: What the contract says the night costs. Exact decimal as a string.
+        payerAmount:
+          type: string
+        memberAmount:
+          type: string
+          description: payerAmount plus memberAmount is exactly amount, on every night.
+    AvailabilityQuote:
+      type: object
+      additionalProperties: false
+      required: [currencyCode, nightlyAmounts, totalAmount, payerAmount, memberAmount]
+      properties:
+        currencyCode:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        nightlyAmounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/AvailabilityNightAmount'
+        totalAmount:
+          type: string
+          description: |
+            The nights summed once, on the server, from figures each rounded once to the
+            currency. Exact decimal as a string, never a total a frontend added up.
+        payerAmount:
+          type: string
+        memberAmount:
+          type: string
+          description: payerAmount plus memberAmount is exactly totalAmount.
+    QuoteUnavailableReason:
+      type: string
+      enum: [PRICE_NOT_FOUND, PRICE_AMBIGUOUS, PRICE_FORMULA_UNKNOWN, PRICE_CURRENCY_MISMATCH]
+      description: |
+        Why a room type carries no quote. PRICE_AMBIGUOUS is the one that matters most: two
+        equally specific contracted prices tied, and the system does not choose between them,
+        because a random winner is a silent financial error nobody would ever see.
+    AvailabilityRoomTypeResult:
+      type: object
+      additionalProperties: false
+      required: [property, roomType, available, quote, quoteUnavailableReason]
+      properties:
+        property:
+          $ref: '#/components/schemas/Property'
+        roomType:
+          $ref: '#/components/schemas/RoomType'
+        available:
+          type: integer
+          minimum: 0
+          description: |
+            The server's minimum daily availability over the whole range, and zero for a room
+            type without an allotment on even one night of it.
+        quote:
+          oneOf:
+            - $ref: '#/components/schemas/AvailabilityQuote'
+            - type: 'null'
+        quoteUnavailableReason:
+          oneOf:
+            - $ref: '#/components/schemas/QuoteUnavailableReason'
+            - type: 'null'
+          description: Set exactly when quote is null.
+    AvailabilitySearchResult:
+      type: object
+      additionalProperties: false
+      required: [personId, checkIn, checkOut, nights, eligible, results]
+      properties:
+        personId:
+          type: string
+          format: uuid
+        checkIn:
+          type: string
+          format: date
+        checkOut:
+          type: string
+          format: date
+        nights:
+          type: integer
+          minimum: 1
+          description: |
+            The server's own count of the nights in [checkIn, checkOut), on the calendar and
+            never on elapsed hours — a stay over a summer-time change is still the number of
+            nights somebody slept.
+        evaluationId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            The immutable eligibility evaluation this search was recorded as, so "what did the
+            system show them" is answerable later. Null only when the search matched no room
+            type and there was therefore no service to evaluate.
+        eligible:
+          type: boolean
+          description: |
+            Whether the plan covers every night of this stay. Two nights left and a
+            three-night stay is false: the third night is the member's to pay, and the figures
+            say so too.
+        entitlement:
+          oneOf:
+            - $ref: '#/components/schemas/AvailabilityEntitlement'
+            - type: 'null'
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AvailabilityRoomTypeResult'
