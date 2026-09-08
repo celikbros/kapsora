@@ -64,7 +64,7 @@ func (h *Handler) CreateClaimAdjustment(w http.ResponseWriter, r *http.Request) 
 		ReasonCode: body.ReasonCode, ReasonText: body.ReasonText, LineNo: body.LineNo,
 	}
 	if body.ReversesAdjustmentId != nil {
-		reversed := uuid.UUID(*body.ReversesAdjustmentId)
+		reversed := *body.ReversesAdjustmentId
 		in.ReversesAdjustmentID = &reversed
 	}
 	if body.AdjustmentType != nil {
