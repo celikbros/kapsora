@@ -280,6 +280,14 @@ func (s *Service) checkOut(ctx context.Context, tx pgx.Tx, rc identity.RequestCo
 	}); err != nil {
 		return BookingView{}, err
 	}
+	// The billing side is told, and is told through the outbox rather than called. The
+	// status write above names CHECKED_IN, so a second attempt never reaches here; the
+	// event's own key is the booking, so a redelivery of this transaction publishes once;
+	// and WP-I7-01's subscriber finds the claim a first delivery made rather than raising a
+	// second one for the same stay.
+	if err := s.publishCheckedOut(ctx, tx, rc.TenantID, record, actual); err != nil {
+		return BookingView{}, err
+	}
 	record.Status = domain.BookingCompleted
 	record.CheckedOutAt = &at
 	record.ActualNights = &actual

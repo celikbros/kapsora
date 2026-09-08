@@ -61,6 +61,28 @@ func (q *Queries) ClaimProviderOrganizationExists(ctx context.Context, arg Claim
 	return is_provider, err
 }
 
+const claimProviderOrganizationName = `-- name: ClaimProviderOrganizationName :one
+SELECT o.display_name
+  FROM directory.tenant_organization t
+  JOIN directory.organization o ON o.id = t.organization_id
+ WHERE t.tenant_id = $1
+   AND t.id = $2
+`
+
+type ClaimProviderOrganizationNameParams struct {
+	TenantID uuid.UUID
+	ID       uuid.UUID
+}
+
+// The provider's own display name for the earnings header. It is a read of an organization,
+// not of a person, and it carries no identifier or contact value.
+func (q *Queries) ClaimProviderOrganizationName(ctx context.Context, arg ClaimProviderOrganizationNameParams) (string, error) {
+	row := q.db.QueryRow(ctx, claimProviderOrganizationName, arg.TenantID, arg.ID)
+	var display_name string
+	err := row.Scan(&display_name)
+	return display_name, err
+}
+
 const countClaimLineDecisionHistory = `-- name: CountClaimLineDecisionHistory :one
 SELECT count(*) AS decision_count
   FROM claim.line_decision d
@@ -87,16 +109,18 @@ const createClaim = `-- name: CreateClaim :one
 
 INSERT INTO claim.claim (
     tenant_id, reference, person_id, program_id, enrollment_id, provider_organization_id,
-    domain_code, case_id, fulfilment_id, authorization_id, service_date_from,
-    service_date_to, channel, created_by, updated_by)
+    domain_code, source_type, source_id, case_id, fulfilment_id, authorization_id,
+    service_date_from, service_date_to, channel, created_by, updated_by)
 VALUES ($1, $2, $3,
         $4, $5,
         $6, $7,
-        $8, $9, $10,
-        $11, $12, $13,
-        $14, $14)
+        $8, $9,
+        $10, $11, $12,
+        $13, $14, $15,
+        $16, $16)
 RETURNING id, reference, person_id, program_id, enrollment_id, provider_organization_id,
-          domain_code, case_id, fulfilment_id, authorization_id, current_version_no, status,
+          domain_code, source_type, source_id, case_id, fulfilment_id, authorization_id,
+          current_version_no, status,
           service_date_from, service_date_to, channel, reject_reason_code, return_reason_code,
           review_comment_medical, review_comment_financial, closed_at, created_at, row_version
 `
@@ -109,6 +133,8 @@ type CreateClaimParams struct {
 	EnrollmentID           uuid.UUID
 	ProviderOrganizationID uuid.UUID
 	DomainCode             string
+	SourceType             *string
+	SourceID               uuid.NullUUID
 	CaseID                 uuid.NullUUID
 	FulfilmentID           uuid.NullUUID
 	AuthorizationID        uuid.NullUUID
@@ -126,6 +152,8 @@ type CreateClaimRow struct {
 	EnrollmentID           uuid.UUID
 	ProviderOrganizationID uuid.UUID
 	DomainCode             string
+	SourceType             *string
+	SourceID               uuid.NullUUID
 	CaseID                 uuid.NullUUID
 	FulfilmentID           uuid.NullUUID
 	AuthorizationID        uuid.NullUUID
@@ -175,6 +203,8 @@ func (q *Queries) CreateClaim(ctx context.Context, arg CreateClaimParams) (Creat
 		arg.EnrollmentID,
 		arg.ProviderOrganizationID,
 		arg.DomainCode,
+		arg.SourceType,
+		arg.SourceID,
 		arg.CaseID,
 		arg.FulfilmentID,
 		arg.AuthorizationID,
@@ -192,6 +222,8 @@ func (q *Queries) CreateClaim(ctx context.Context, arg CreateClaimParams) (Creat
 		&i.EnrollmentID,
 		&i.ProviderOrganizationID,
 		&i.DomainCode,
+		&i.SourceType,
+		&i.SourceID,
 		&i.CaseID,
 		&i.FulfilmentID,
 		&i.AuthorizationID,
@@ -214,53 +246,83 @@ func (q *Queries) CreateClaim(ctx context.Context, arg CreateClaimParams) (Creat
 const createClaimAdjustment = `-- name: CreateClaimAdjustment :one
 
 INSERT INTO claim.adjustment (
-    tenant_id, claim_id, version_no, adjustment_type, amount, currency_code, reason_code,
-    reason_text, created_by)
+    tenant_id, claim_id, version_no, claim_line_id, adjustment_type, amount, payer_amount,
+    member_amount, currency_code, reason_code, reason_text, source_type, source_id,
+    reverses_adjustment_id, created_by)
 VALUES ($1, $2, $3,
-        $4, $5::text::numeric, $6,
-        $7, $8, $9)
-RETURNING id, claim_id, version_no, adjustment_type, trim_scale(amount)::text AS amount, currency_code,
-          reason_code, reason_text, created_by, created_at
+        $4,
+        $5, $6::text::numeric,
+        $7::text::numeric, $8::text::numeric,
+        $9, $10, $11,
+        $12, $13,
+        $14, $15)
+RETURNING id, claim_id, version_no, claim_line_id, adjustment_type,
+          trim_scale(amount)::text AS amount,
+          trim_scale(payer_amount)::text AS payer_amount,
+          trim_scale(member_amount)::text AS member_amount,
+          currency_code, reason_code, reason_text, source_type, source_id,
+          reverses_adjustment_id, created_by, created_at
 `
 
 type CreateClaimAdjustmentParams struct {
-	TenantID       uuid.UUID
-	ClaimID        uuid.UUID
-	VersionNo      int32
-	AdjustmentType string
-	Amount         string
-	CurrencyCode   string
-	ReasonCode     string
-	ReasonText     *string
-	ActorID        uuid.NullUUID
+	TenantID             uuid.UUID
+	ClaimID              uuid.UUID
+	VersionNo            int32
+	ClaimLineID          uuid.NullUUID
+	AdjustmentType       string
+	Amount               string
+	PayerAmount          string
+	MemberAmount         string
+	CurrencyCode         string
+	ReasonCode           string
+	ReasonText           *string
+	SourceType           string
+	SourceID             uuid.NullUUID
+	ReversesAdjustmentID uuid.NullUUID
+	ActorID              uuid.NullUUID
 }
 
 type CreateClaimAdjustmentRow struct {
-	ID             uuid.UUID
-	ClaimID        uuid.UUID
-	VersionNo      int32
-	AdjustmentType string
-	Amount         string
-	CurrencyCode   string
-	ReasonCode     string
-	ReasonText     *string
-	CreatedBy      uuid.NullUUID
-	CreatedAt      time.Time
+	ID                   uuid.UUID
+	ClaimID              uuid.UUID
+	VersionNo            int32
+	ClaimLineID          uuid.NullUUID
+	AdjustmentType       string
+	Amount               string
+	PayerAmount          string
+	MemberAmount         string
+	CurrencyCode         string
+	ReasonCode           string
+	ReasonText           *string
+	SourceType           string
+	SourceID             uuid.NullUUID
+	ReversesAdjustmentID uuid.NullUUID
+	CreatedBy            uuid.NullUUID
+	CreatedAt            time.Time
 }
 
 // ---------------------------------------------------------------------------
 // claim.adjustment
 // ---------------------------------------------------------------------------
+// Every money column arrives and leaves as exact decimal text. The split is the database's
+// (ck_claim_adjustment_split), so a service that rounded the two halves independently is
+// refused here rather than publishing an invoice nobody can reconcile.
 func (q *Queries) CreateClaimAdjustment(ctx context.Context, arg CreateClaimAdjustmentParams) (CreateClaimAdjustmentRow, error) {
 	row := q.db.QueryRow(ctx, createClaimAdjustment,
 		arg.TenantID,
 		arg.ClaimID,
 		arg.VersionNo,
+		arg.ClaimLineID,
 		arg.AdjustmentType,
 		arg.Amount,
+		arg.PayerAmount,
+		arg.MemberAmount,
 		arg.CurrencyCode,
 		arg.ReasonCode,
 		arg.ReasonText,
+		arg.SourceType,
+		arg.SourceID,
+		arg.ReversesAdjustmentID,
 		arg.ActorID,
 	)
 	var i CreateClaimAdjustmentRow
@@ -268,11 +330,17 @@ func (q *Queries) CreateClaimAdjustment(ctx context.Context, arg CreateClaimAdju
 		&i.ID,
 		&i.ClaimID,
 		&i.VersionNo,
+		&i.ClaimLineID,
 		&i.AdjustmentType,
 		&i.Amount,
+		&i.PayerAmount,
+		&i.MemberAmount,
 		&i.CurrencyCode,
 		&i.ReasonCode,
 		&i.ReasonText,
+		&i.SourceType,
+		&i.SourceID,
+		&i.ReversesAdjustmentID,
 		&i.CreatedBy,
 		&i.CreatedAt,
 	)
@@ -549,6 +617,40 @@ func (q *Queries) DeleteClaimLines(ctx context.Context, arg DeleteClaimLinesPara
 	return err
 }
 
+const findClaimBySource = `-- name: FindClaimBySource :one
+SELECT c.id, c.reference, c.status
+  FROM claim.claim c
+ WHERE c.tenant_id = $1
+   AND c.source_type = $2
+   AND c.source_id = $3
+   AND c.status NOT IN ('CANCELLED', 'REJECTED')
+ ORDER BY c.created_at, c.id
+ LIMIT 1
+`
+
+type FindClaimBySourceParams struct {
+	TenantID   uuid.UUID
+	SourceType *string
+	SourceID   uuid.NullUUID
+}
+
+type FindClaimBySourceRow struct {
+	ID        uuid.UUID
+	Reference string
+	Status    string
+}
+
+// The read every source-driven handler makes before it writes: is there already a live claim
+// for this stay. The outbox delivers at least once, so this is the first half of the
+// idempotency and `uq_claim_live_booking` is the second -- the half that holds when two
+// deliveries look at the same moment.
+func (q *Queries) FindClaimBySource(ctx context.Context, arg FindClaimBySourceParams) (FindClaimBySourceRow, error) {
+	row := q.db.QueryRow(ctx, findClaimBySource, arg.TenantID, arg.SourceType, arg.SourceID)
+	var i FindClaimBySourceRow
+	err := row.Scan(&i.ID, &i.Reference, &i.Status)
+	return i, err
+}
+
 const findDuplicateClaim = `-- name: FindDuplicateClaim :one
 SELECT o.id, o.reference
   FROM claim.claim o
@@ -639,9 +741,174 @@ func (q *Queries) FreezeClaimVersion(ctx context.Context, arg FreezeClaimVersion
 	return result.RowsAffected(), nil
 }
 
+const getBookingCancellationForClaim = `-- name: GetBookingCancellationForClaim :one
+SELECT c.id, c.free, trim_scale(c.fee_amount)::text AS fee_amount,
+       trim_scale(c.payer_fee)::text AS payer_fee,
+       trim_scale(c.member_fee)::text AS member_fee, c.currency_code
+  FROM accommodation.cancellation c
+ WHERE c.tenant_id = $1
+   AND c.booking_id = $2
+`
+
+type GetBookingCancellationForClaimParams struct {
+	TenantID  uuid.UUID
+	BookingID uuid.UUID
+}
+
+type GetBookingCancellationForClaimRow struct {
+	ID           uuid.UUID
+	Free         bool
+	FeeAmount    string
+	PayerFee     string
+	MemberFee    string
+	CurrencyCode string
+}
+
+// The fee a cancellation charged. `free` is returned because a free cancellation produces no
+// claim at all, and the handler has to be able to tell "nothing to bill" from "no row yet".
+func (q *Queries) GetBookingCancellationForClaim(ctx context.Context, arg GetBookingCancellationForClaimParams) (GetBookingCancellationForClaimRow, error) {
+	row := q.db.QueryRow(ctx, getBookingCancellationForClaim, arg.TenantID, arg.BookingID)
+	var i GetBookingCancellationForClaimRow
+	err := row.Scan(
+		&i.ID,
+		&i.Free,
+		&i.FeeAmount,
+		&i.PayerFee,
+		&i.MemberFee,
+		&i.CurrencyCode,
+	)
+	return i, err
+}
+
+const getBookingForClaim = `-- name: GetBookingForClaim :one
+
+SELECT b.id, b.reference, b.person_id, b.program_id, b.enrollment_id, b.property_id,
+       b.room_type_id, b.status, b.check_in, b.check_out, b.nights, b.actual_nights,
+       b.over_booking, b.authorization_id, b.checked_out_at, b.cancelled_at,
+       b.quote_snapshot,
+       p.provider_organization_id, rt.service_definition_id
+  FROM accommodation.booking b
+  JOIN accommodation.property p ON p.tenant_id = b.tenant_id AND p.id = b.property_id
+  JOIN accommodation.room_type rt ON rt.tenant_id = b.tenant_id AND rt.id = b.room_type_id
+ WHERE b.tenant_id = $1
+   AND b.id = $2
+`
+
+type GetBookingForClaimParams struct {
+	TenantID uuid.UUID
+	ID       uuid.UUID
+}
+
+type GetBookingForClaimRow struct {
+	ID                     uuid.UUID
+	Reference              string
+	PersonID               uuid.UUID
+	ProgramID              uuid.UUID
+	EnrollmentID           uuid.UUID
+	PropertyID             uuid.UUID
+	RoomTypeID             uuid.UUID
+	Status                 string
+	CheckIn                pgtype.Date
+	CheckOut               pgtype.Date
+	Nights                 int32
+	ActualNights           *int32
+	OverBooking            bool
+	AuthorizationID        uuid.NullUUID
+	CheckedOutAt           *time.Time
+	CancelledAt            *time.Time
+	QuoteSnapshot          []byte
+	ProviderOrganizationID uuid.UUID
+	ServiceDefinitionID    uuid.UUID
+}
+
+// ---------------------------------------------------------------------------
+// The booking a lodging claim is raised from (WP-I7-01)
+// ---------------------------------------------------------------------------
+//
+// These four reads cross into the accommodation schema, exactly as the reads above cross
+// into health, benefit, directory and catalog. The alternative would be a port back into the
+// accommodation service, and a port would mean the claim's own transaction waiting on
+// another module's transaction to answer a question about three columns.
+//
+// **Nothing here re-prices anything.** Every amount comes out of `accommodation.booking_night`
+// and the two fee rows, which are the figures the booking froze when the member agreed to
+// them. A claim that recomputed a night from the contract would be a claim that charged the
+// member a price they were never shown.
+// The header of the lodging claim: who stayed, under which plan, in whose building, and what
+// the room type is in the catalogue. `actual_nights` is what the check-out counted on the
+// property's own clock and is the number of lines the claim gets; it is NULL until a stay is
+// checked out, which is why the handler reads it rather than the booked nights.
+func (q *Queries) GetBookingForClaim(ctx context.Context, arg GetBookingForClaimParams) (GetBookingForClaimRow, error) {
+	row := q.db.QueryRow(ctx, getBookingForClaim, arg.TenantID, arg.ID)
+	var i GetBookingForClaimRow
+	err := row.Scan(
+		&i.ID,
+		&i.Reference,
+		&i.PersonID,
+		&i.ProgramID,
+		&i.EnrollmentID,
+		&i.PropertyID,
+		&i.RoomTypeID,
+		&i.Status,
+		&i.CheckIn,
+		&i.CheckOut,
+		&i.Nights,
+		&i.ActualNights,
+		&i.OverBooking,
+		&i.AuthorizationID,
+		&i.CheckedOutAt,
+		&i.CancelledAt,
+		&i.QuoteSnapshot,
+		&i.ProviderOrganizationID,
+		&i.ServiceDefinitionID,
+	)
+	return i, err
+}
+
+const getBookingNoShowForClaim = `-- name: GetBookingNoShowForClaim :one
+SELECT s.id, s.status, trim_scale(s.assessed_fee_amount)::text AS assessed_fee_amount,
+       trim_scale(s.payer_amount)::text AS payer_amount,
+       trim_scale(s.member_amount)::text AS member_amount, s.currency_code
+  FROM accommodation.no_show s
+ WHERE s.tenant_id = $1
+   AND s.booking_id = $2
+`
+
+type GetBookingNoShowForClaimParams struct {
+	TenantID  uuid.UUID
+	BookingID uuid.UUID
+}
+
+type GetBookingNoShowForClaimRow struct {
+	ID                uuid.UUID
+	Status            string
+	AssessedFeeAmount string
+	PayerAmount       string
+	MemberAmount      string
+	CurrencyCode      string
+}
+
+// The fee a confirmed no-show assessed, with the split the row already carries. The status is
+// returned rather than filtered on, so a handler reaching a report somebody rejected while
+// the event sat in a queue can say so instead of quietly writing nothing.
+func (q *Queries) GetBookingNoShowForClaim(ctx context.Context, arg GetBookingNoShowForClaimParams) (GetBookingNoShowForClaimRow, error) {
+	row := q.db.QueryRow(ctx, getBookingNoShowForClaim, arg.TenantID, arg.BookingID)
+	var i GetBookingNoShowForClaimRow
+	err := row.Scan(
+		&i.ID,
+		&i.Status,
+		&i.AssessedFeeAmount,
+		&i.PayerAmount,
+		&i.MemberAmount,
+		&i.CurrencyCode,
+	)
+	return i, err
+}
+
 const getClaim = `-- name: GetClaim :one
 SELECT c.id, c.reference, c.person_id, c.program_id, c.enrollment_id,
-       c.provider_organization_id, c.domain_code, c.case_id, c.fulfilment_id,
+       c.provider_organization_id, c.domain_code, c.source_type, c.source_id, c.case_id,
+       c.fulfilment_id,
        c.authorization_id, c.current_version_no, c.status, c.service_date_from,
        c.service_date_to, c.channel, c.reject_reason_code, c.return_reason_code,
        c.review_comment_medical, c.review_comment_financial, c.closed_at, c.created_at,
@@ -667,6 +934,8 @@ type GetClaimRow struct {
 	EnrollmentID           uuid.UUID
 	ProviderOrganizationID uuid.UUID
 	DomainCode             string
+	SourceType             *string
+	SourceID               uuid.NullUUID
 	CaseID                 uuid.NullUUID
 	FulfilmentID           uuid.NullUUID
 	AuthorizationID        uuid.NullUUID
@@ -695,6 +964,8 @@ func (q *Queries) GetClaim(ctx context.Context, arg GetClaimParams) (GetClaimRow
 		&i.EnrollmentID,
 		&i.ProviderOrganizationID,
 		&i.DomainCode,
+		&i.SourceType,
+		&i.SourceID,
 		&i.CaseID,
 		&i.FulfilmentID,
 		&i.AuthorizationID,
@@ -710,6 +981,66 @@ func (q *Queries) GetClaim(ctx context.Context, arg GetClaimParams) (GetClaimRow
 		&i.ClosedAt,
 		&i.CreatedAt,
 		&i.RowVersion,
+	)
+	return i, err
+}
+
+const getClaimAdjustment = `-- name: GetClaimAdjustment :one
+SELECT a.id, a.claim_id, a.version_no, a.claim_line_id, a.adjustment_type,
+       trim_scale(a.amount)::text AS amount,
+       trim_scale(a.payer_amount)::text AS payer_amount,
+       trim_scale(a.member_amount)::text AS member_amount,
+       a.currency_code, a.reason_code, a.reason_text, a.source_type, a.source_id,
+       a.reverses_adjustment_id, a.created_by, a.created_at
+  FROM claim.adjustment a
+ WHERE a.tenant_id = $1
+   AND a.id = $2
+`
+
+type GetClaimAdjustmentParams struct {
+	TenantID uuid.UUID
+	ID       uuid.UUID
+}
+
+type GetClaimAdjustmentRow struct {
+	ID                   uuid.UUID
+	ClaimID              uuid.UUID
+	VersionNo            int32
+	ClaimLineID          uuid.NullUUID
+	AdjustmentType       string
+	Amount               string
+	PayerAmount          string
+	MemberAmount         string
+	CurrencyCode         string
+	ReasonCode           string
+	ReasonText           *string
+	SourceType           string
+	SourceID             uuid.NullUUID
+	ReversesAdjustmentID uuid.NullUUID
+	CreatedBy            uuid.NullUUID
+	CreatedAt            time.Time
+}
+
+func (q *Queries) GetClaimAdjustment(ctx context.Context, arg GetClaimAdjustmentParams) (GetClaimAdjustmentRow, error) {
+	row := q.db.QueryRow(ctx, getClaimAdjustment, arg.TenantID, arg.ID)
+	var i GetClaimAdjustmentRow
+	err := row.Scan(
+		&i.ID,
+		&i.ClaimID,
+		&i.VersionNo,
+		&i.ClaimLineID,
+		&i.AdjustmentType,
+		&i.Amount,
+		&i.PayerAmount,
+		&i.MemberAmount,
+		&i.CurrencyCode,
+		&i.ReasonCode,
+		&i.ReasonText,
+		&i.SourceType,
+		&i.SourceID,
+		&i.ReversesAdjustmentID,
+		&i.CreatedBy,
+		&i.CreatedAt,
 	)
 	return i, err
 }
@@ -908,9 +1239,65 @@ func (q *Queries) GetClaimVersionByNo(ctx context.Context, arg GetClaimVersionBy
 	return i, err
 }
 
+const listBookingNightsForClaim = `-- name: ListBookingNightsForClaim :many
+SELECT n.stay_date, trim_scale(n.unit_amount)::text AS unit_amount,
+       trim_scale(n.payer_amount)::text AS payer_amount,
+       trim_scale(n.member_amount)::text AS member_amount, n.currency_code
+  FROM accommodation.booking_night n
+ WHERE n.tenant_id = $1
+   AND n.booking_id = $2
+ ORDER BY n.stay_date
+`
+
+type ListBookingNightsForClaimParams struct {
+	TenantID  uuid.UUID
+	BookingID uuid.UUID
+}
+
+type ListBookingNightsForClaimRow struct {
+	StayDate     pgtype.Date
+	UnitAmount   string
+	PayerAmount  string
+	MemberAmount string
+	CurrencyCode string
+}
+
+// One row per night the member agreed to, in stay order, with the split the booking froze.
+// `unit_amount` is what the claim line asks for and `payer_amount` is what the plan already
+// decided it carries; the two are copied and never recomputed.
+func (q *Queries) ListBookingNightsForClaim(ctx context.Context, arg ListBookingNightsForClaimParams) ([]ListBookingNightsForClaimRow, error) {
+	rows, err := q.db.Query(ctx, listBookingNightsForClaim, arg.TenantID, arg.BookingID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListBookingNightsForClaimRow
+	for rows.Next() {
+		var i ListBookingNightsForClaimRow
+		if err := rows.Scan(
+			&i.StayDate,
+			&i.UnitAmount,
+			&i.PayerAmount,
+			&i.MemberAmount,
+			&i.CurrencyCode,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listClaimAdjustments = `-- name: ListClaimAdjustments :many
-SELECT a.id, a.claim_id, a.version_no, a.adjustment_type, trim_scale(a.amount)::text AS amount,
-       a.currency_code, a.reason_code, a.reason_text, a.created_by, a.created_at
+SELECT a.id, a.claim_id, a.version_no, a.claim_line_id, a.adjustment_type,
+       trim_scale(a.amount)::text AS amount,
+       trim_scale(a.payer_amount)::text AS payer_amount,
+       trim_scale(a.member_amount)::text AS member_amount,
+       a.currency_code, a.reason_code, a.reason_text, a.source_type, a.source_id,
+       a.reverses_adjustment_id, a.created_by, a.created_at
   FROM claim.adjustment a
  WHERE a.tenant_id = $1
    AND a.claim_id = $2
@@ -923,18 +1310,27 @@ type ListClaimAdjustmentsParams struct {
 }
 
 type ListClaimAdjustmentsRow struct {
-	ID             uuid.UUID
-	ClaimID        uuid.UUID
-	VersionNo      int32
-	AdjustmentType string
-	Amount         string
-	CurrencyCode   string
-	ReasonCode     string
-	ReasonText     *string
-	CreatedBy      uuid.NullUUID
-	CreatedAt      time.Time
+	ID                   uuid.UUID
+	ClaimID              uuid.UUID
+	VersionNo            int32
+	ClaimLineID          uuid.NullUUID
+	AdjustmentType       string
+	Amount               string
+	PayerAmount          string
+	MemberAmount         string
+	CurrencyCode         string
+	ReasonCode           string
+	ReasonText           *string
+	SourceType           string
+	SourceID             uuid.NullUUID
+	ReversesAdjustmentID uuid.NullUUID
+	CreatedBy            uuid.NullUUID
+	CreatedAt            time.Time
 }
 
+// Oldest first, which is the order the reversal chain reads in: a reversal always comes after
+// the row it reverses, so a screen rendering this list top to bottom shows the cut and then
+// the row that took it back.
 func (q *Queries) ListClaimAdjustments(ctx context.Context, arg ListClaimAdjustmentsParams) ([]ListClaimAdjustmentsRow, error) {
 	rows, err := q.db.Query(ctx, listClaimAdjustments, arg.TenantID, arg.ClaimID)
 	if err != nil {
@@ -948,11 +1344,17 @@ func (q *Queries) ListClaimAdjustments(ctx context.Context, arg ListClaimAdjustm
 			&i.ID,
 			&i.ClaimID,
 			&i.VersionNo,
+			&i.ClaimLineID,
 			&i.AdjustmentType,
 			&i.Amount,
+			&i.PayerAmount,
+			&i.MemberAmount,
 			&i.CurrencyCode,
 			&i.ReasonCode,
 			&i.ReasonText,
+			&i.SourceType,
+			&i.SourceID,
+			&i.ReversesAdjustmentID,
 			&i.CreatedBy,
 			&i.CreatedAt,
 		); err != nil {
@@ -1110,7 +1512,8 @@ func (q *Queries) ListClaimVersions(ctx context.Context, arg ListClaimVersionsPa
 
 const listClaims = `-- name: ListClaims :many
 SELECT c.id, c.reference, c.person_id, c.program_id, c.enrollment_id,
-       c.provider_organization_id, c.domain_code, c.case_id, c.fulfilment_id,
+       c.provider_organization_id, c.domain_code, c.source_type, c.source_id, c.case_id,
+       c.fulfilment_id,
        c.authorization_id, c.current_version_no, c.status, c.service_date_from,
        c.service_date_to, c.channel, c.reject_reason_code, c.return_reason_code,
        c.review_comment_medical, c.review_comment_financial, c.closed_at, c.created_at,
@@ -1156,6 +1559,8 @@ type ListClaimsRow struct {
 	EnrollmentID           uuid.UUID
 	ProviderOrganizationID uuid.UUID
 	DomainCode             string
+	SourceType             *string
+	SourceID               uuid.NullUUID
 	CaseID                 uuid.NullUUID
 	FulfilmentID           uuid.NullUUID
 	AuthorizationID        uuid.NullUUID
@@ -1204,6 +1609,8 @@ func (q *Queries) ListClaims(ctx context.Context, arg ListClaimsParams) ([]ListC
 			&i.EnrollmentID,
 			&i.ProviderOrganizationID,
 			&i.DomainCode,
+			&i.SourceType,
+			&i.SourceID,
 			&i.CaseID,
 			&i.FulfilmentID,
 			&i.AuthorizationID,
@@ -1305,9 +1712,140 @@ func (q *Queries) ListLatestClaimLineDecisions(ctx context.Context, arg ListLate
 	return items, nil
 }
 
+const listProviderEarningClaims = `-- name: ListProviderEarningClaims :many
+
+WITH latest AS (
+    SELECT DISTINCT ON (d.line_id)
+           d.line_id, d.approved_amount, d.payer_amount, d.member_amount, d.decided_at,
+           l.version_id, l.currency_code
+      FROM claim.line_decision d
+      JOIN claim.claim_line l ON l.tenant_id = d.tenant_id AND l.id = d.line_id
+     WHERE d.tenant_id = $4
+     ORDER BY d.line_id, d.decided_at DESC, d.id DESC
+), per_claim AS (
+    SELECT c.id AS claim_id, c.reference, c.status, c.domain_code,
+           min(latest.currency_code) AS currency_code,
+           max(latest.decided_at)::timestamptz AS decided_at,
+           sum(latest.approved_amount) AS line_total,
+           sum(latest.payer_amount) AS line_payer_total,
+           sum(latest.member_amount) AS line_member_total
+      FROM claim.claim c
+      JOIN claim.claim_version v ON v.tenant_id = c.tenant_id AND v.claim_id = c.id
+                                AND v.version_no = c.current_version_no
+      JOIN latest ON latest.version_id = v.id
+     WHERE c.tenant_id = $4
+       AND c.provider_organization_id = $5
+       AND c.status IN ('APPROVED', 'PARTIALLY_APPROVED', 'INVOICED', 'BATCHED', 'SETTLED')
+     GROUP BY c.id, c.reference, c.status, c.domain_code
+), adjusted AS (
+    SELECT a.claim_id,
+           sum(a.amount) AS adjustment_total,
+           sum(a.payer_amount) AS adjustment_payer_total,
+           sum(a.member_amount) AS adjustment_member_total
+      FROM claim.adjustment a
+     WHERE a.tenant_id = $4
+     GROUP BY a.claim_id
+)
+SELECT p.claim_id, p.reference, p.status, p.domain_code,
+       COALESCE(p.currency_code, 'TRY')::text AS currency_code, p.decided_at,
+       trim_scale(p.line_total)::text AS line_total,
+       trim_scale(p.line_payer_total)::text AS line_payer_total,
+       trim_scale(p.line_member_total)::text AS line_member_total,
+       trim_scale(COALESCE(adjusted.adjustment_total, 0))::text AS adjustment_total,
+       trim_scale(COALESCE(adjusted.adjustment_payer_total, 0))::text AS adjustment_payer_total,
+       trim_scale(COALESCE(adjusted.adjustment_member_total, 0))::text AS adjustment_member_total
+  FROM per_claim p
+  LEFT JOIN adjusted ON adjusted.claim_id = p.claim_id
+ WHERE ($1::timestamptz IS NULL
+        OR p.decided_at >= $1::timestamptz)
+   AND ($2::timestamptz IS NULL
+        OR p.decided_at < $2::timestamptz)
+   AND ($3::text IS NULL
+        OR p.currency_code = $3::text)
+ ORDER BY p.decided_at, p.claim_id
+`
+
+type ListProviderEarningClaimsParams struct {
+	DecidedFrom            *time.Time
+	DecidedTo              *time.Time
+	CurrencyCode           *string
+	TenantID               uuid.UUID
+	ProviderOrganizationID uuid.UUID
+}
+
+type ListProviderEarningClaimsRow struct {
+	ClaimID               uuid.UUID
+	Reference             string
+	Status                string
+	DomainCode            string
+	CurrencyCode          string
+	DecidedAt             time.Time
+	LineTotal             string
+	LinePayerTotal        string
+	LineMemberTotal       string
+	AdjustmentTotal       string
+	AdjustmentPayerTotal  string
+	AdjustmentMemberTotal string
+}
+
+// ---------------------------------------------------------------------------
+// The provider's earnings (WP-I7-01 section 2.4)
+// ---------------------------------------------------------------------------
+// One row per decided claim of one provider, with everything the earnings view has to add up:
+// the currency, the moment the last line of the current version was decided, the line totals
+// and the adjustment totals.
+//
+// It answers per claim rather than per currency because the sums belong in Go. Every figure
+// below is exact decimal text, `benefitdomain.Quantity` adds them, and a `sum()` grouped in
+// SQL would hand the same arithmetic to a numeric cast on the way out — one more place for a
+// total to be produced, which is one more place for two totals to disagree.
+//
+// The period is measured against the decision, not against the service date: what a provider
+// earned in March is what was decided in March, and a stay in February decided in March is
+// money that arrives in March.
+func (q *Queries) ListProviderEarningClaims(ctx context.Context, arg ListProviderEarningClaimsParams) ([]ListProviderEarningClaimsRow, error) {
+	rows, err := q.db.Query(ctx, listProviderEarningClaims,
+		arg.DecidedFrom,
+		arg.DecidedTo,
+		arg.CurrencyCode,
+		arg.TenantID,
+		arg.ProviderOrganizationID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListProviderEarningClaimsRow
+	for rows.Next() {
+		var i ListProviderEarningClaimsRow
+		if err := rows.Scan(
+			&i.ClaimID,
+			&i.Reference,
+			&i.Status,
+			&i.DomainCode,
+			&i.CurrencyCode,
+			&i.DecidedAt,
+			&i.LineTotal,
+			&i.LinePayerTotal,
+			&i.LineMemberTotal,
+			&i.AdjustmentTotal,
+			&i.AdjustmentPayerTotal,
+			&i.AdjustmentMemberTotal,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const lockClaim = `-- name: LockClaim :one
 SELECT c.id, c.reference, c.person_id, c.program_id, c.enrollment_id,
-       c.provider_organization_id, c.domain_code, c.case_id, c.fulfilment_id,
+       c.provider_organization_id, c.domain_code, c.source_type, c.source_id, c.case_id,
+       c.fulfilment_id,
        c.authorization_id, c.current_version_no, c.status, c.service_date_from,
        c.service_date_to, c.channel, c.reject_reason_code, c.return_reason_code,
        c.review_comment_medical, c.review_comment_financial, c.closed_at, c.created_at,
@@ -1334,6 +1872,8 @@ type LockClaimRow struct {
 	EnrollmentID           uuid.UUID
 	ProviderOrganizationID uuid.UUID
 	DomainCode             string
+	SourceType             *string
+	SourceID               uuid.NullUUID
 	CaseID                 uuid.NullUUID
 	FulfilmentID           uuid.NullUUID
 	AuthorizationID        uuid.NullUUID
@@ -1363,6 +1903,8 @@ func (q *Queries) LockClaim(ctx context.Context, arg LockClaimParams) (LockClaim
 		&i.EnrollmentID,
 		&i.ProviderOrganizationID,
 		&i.DomainCode,
+		&i.SourceType,
+		&i.SourceID,
 		&i.CaseID,
 		&i.FulfilmentID,
 		&i.AuthorizationID,
@@ -1684,6 +2226,20 @@ UPDATE claim.claim
        service_date_to   = $2,
        channel           = $3,
        case_id           = $4,
+       -- The source pair follows the case rather than being patched beside it. Naming a
+       -- case names the source; clearing it clears a source that was the case's and leaves
+       -- a BOOKING or REIMBURSEMENT source exactly where it was, because a header patch on
+       -- a lodging claim has nothing to say about where that claim came from.
+       source_type       = CASE
+                               WHEN $4::uuid IS NOT NULL THEN 'HEALTH_CASE'
+                               WHEN source_type = 'HEALTH_CASE' THEN NULL
+                               ELSE source_type
+                           END,
+       source_id         = CASE
+                               WHEN $4::uuid IS NOT NULL THEN $4::uuid
+                               WHEN source_type = 'HEALTH_CASE' THEN NULL
+                               ELSE source_id
+                           END,
        fulfilment_id     = $5,
        authorization_id  = $6,
        updated_by        = $7

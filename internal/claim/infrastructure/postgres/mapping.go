@@ -22,6 +22,8 @@ type claimRow struct {
 	EnrollmentID           uuid.UUID
 	ProviderOrganizationID uuid.UUID
 	DomainCode             string
+	SourceType             *string
+	SourceID               uuid.NullUUID
 	CaseID                 uuid.NullUUID
 	FulfilmentID           uuid.NullUUID
 	AuthorizationID        uuid.NullUUID
@@ -51,7 +53,8 @@ func claimOf(r claimRow) application.ClaimRecord {
 	return application.ClaimRecord{
 		ID: r.ID, Reference: r.Reference, PersonID: r.PersonID, ProgramID: r.ProgramID,
 		EnrollmentID: r.EnrollmentID, ProviderOrganizationID: r.ProviderOrganizationID,
-		DomainCode: r.DomainCode, CaseID: uuidPtr(r.CaseID),
+		DomainCode: r.DomainCode, SourceType: r.SourceType, SourceID: uuidPtr(r.SourceID),
+		CaseID:       uuidPtr(r.CaseID),
 		FulfilmentID: uuidPtr(r.FulfilmentID), AuthorizationID: uuidPtr(r.AuthorizationID),
 		CurrentVersionNo: int(r.CurrentVersionNo), Status: r.Status,
 		ServiceDateFrom: dateValue(r.ServiceDateFrom), ServiceDateTo: dateValue(r.ServiceDateTo),
@@ -154,4 +157,46 @@ func pageSize(n int) int32 {
 		return 1
 	}
 	return int32(n) //nolint:gosec // clamped by httpx.ClampLimit before it reaches here
+}
+
+// adjustmentRow is the one shape the three adjustment reads share. Same story as the claim
+// and the version above: sqlc gives each query its own struct, and one mapper over one shape
+// is what keeps a column from being forgotten in the third copy of it.
+type adjustmentRow struct {
+	ID                   uuid.UUID
+	ClaimID              uuid.UUID
+	VersionNo            int32
+	ClaimLineID          uuid.NullUUID
+	AdjustmentType       string
+	Amount               string
+	PayerAmount          string
+	MemberAmount         string
+	CurrencyCode         string
+	ReasonCode           string
+	ReasonText           *string
+	SourceType           string
+	SourceID             uuid.NullUUID
+	ReversesAdjustmentID uuid.NullUUID
+	CreatedBy            uuid.NullUUID
+	CreatedAt            time.Time
+}
+
+func createdAdjustmentRow(r sqlcgen.CreateClaimAdjustmentRow) adjustmentRow {
+	return adjustmentRow(r)
+}
+func gotAdjustmentRow(r sqlcgen.GetClaimAdjustmentRow) adjustmentRow { return adjustmentRow(r) }
+func listedAdjustmentRow(r sqlcgen.ListClaimAdjustmentsRow) adjustmentRow {
+	return adjustmentRow(r)
+}
+
+func adjustmentOf(r adjustmentRow) application.AdjustmentRecord {
+	return application.AdjustmentRecord{
+		ID: r.ID, ClaimID: r.ClaimID, VersionNo: int(r.VersionNo),
+		ClaimLineID: uuidPtr(r.ClaimLineID), AdjustmentType: r.AdjustmentType,
+		Amount: r.Amount, PayerAmount: r.PayerAmount, MemberAmount: r.MemberAmount,
+		CurrencyCode: r.CurrencyCode, ReasonCode: r.ReasonCode, ReasonText: r.ReasonText,
+		SourceType: r.SourceType, SourceID: uuidPtr(r.SourceID),
+		ReversesAdjustmentID: uuidPtr(r.ReversesAdjustmentID),
+		CreatedBy:            uuidPtr(r.CreatedBy), CreatedAt: r.CreatedAt,
+	}
 }

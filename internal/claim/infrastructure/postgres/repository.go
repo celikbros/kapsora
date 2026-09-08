@@ -15,6 +15,7 @@ package claimpg
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -31,7 +32,13 @@ import (
 // rather than a PostgreSQL string.
 const (
 	constraintReference = "uq_claim_reference"
-	sqlStateUnique      = "23505"
+	// constraintLiveBooking is "one live claim per booking": the second delivery of a
+	// check-out event, or a second handler racing the first, is refused here rather than
+	// producing a stay somebody could be billed for twice.
+	constraintLiveBooking = "uq_claim_live_booking"
+	// constraintReversal is "one reversal per adjustment".
+	constraintReversal = "uq_claim_adjustment_reversal"
+	sqlStateUnique     = "23505"
 )
 
 // Repository implements application.Repository.
@@ -50,6 +57,7 @@ func (Repository) CreateClaim(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID
 		TenantID: tenantID, Reference: in.Reference, PersonID: in.PersonID,
 		ProgramID: in.ProgramID, EnrollmentID: in.EnrollmentID,
 		ProviderOrganizationID: in.ProviderOrganizationID, DomainCode: in.DomainCode,
+		SourceType: in.SourceType, SourceID: optUUID(in.SourceID),
 		CaseID: optUUID(in.CaseID), FulfilmentID: optUUID(in.FulfilmentID),
 		AuthorizationID: optUUID(in.AuthorizationID),
 		ServiceDateFrom: dateParam(in.ServiceDateFrom), ServiceDateTo: dateParam(in.ServiceDateTo),
@@ -57,6 +65,12 @@ func (Repository) CreateClaim(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID
 	})
 	if isUniqueViolation(err, constraintReference) {
 		return application.ClaimRecord{}, application.ErrReferenceCollision
+	}
+	if isUniqueViolation(err, constraintLiveBooking) {
+		// One live claim per booking. The handler looked first and found none; this is the
+		// other delivery having written one in between, and the honest answer is that the
+		// claim exists rather than that the write failed.
+		return application.ClaimRecord{}, application.ErrClaimAlreadyRaised
 	}
 	if err != nil {
 		return application.ClaimRecord{}, fmt.Errorf("claim: create claim: %w", err)
@@ -394,18 +408,37 @@ func (Repository) CreateAdjustment(ctx context.Context, tx pgx.Tx, tenantID uuid
 	row, err := sqlcgen.New(tx).CreateClaimAdjustment(ctx, sqlcgen.CreateClaimAdjustmentParams{
 		TenantID: tenantID, ClaimID: in.ClaimID,
 		VersionNo:      int32(in.VersionNo), //nolint:gosec // a version number is bounded by the versions somebody made
-		AdjustmentType: in.AdjustmentType, Amount: in.Amount, CurrencyCode: in.CurrencyCode,
-		ReasonCode: in.ReasonCode, ReasonText: in.ReasonText, ActorID: optUUID(in.ActorID),
+		ClaimLineID:    optUUID(in.ClaimLineID),
+		AdjustmentType: in.AdjustmentType, Amount: in.Amount,
+		PayerAmount: in.PayerAmount, MemberAmount: in.MemberAmount,
+		CurrencyCode: in.CurrencyCode, ReasonCode: in.ReasonCode, ReasonText: in.ReasonText,
+		SourceType: in.SourceType, SourceID: optUUID(in.SourceID),
+		ReversesAdjustmentID: optUUID(in.ReversesAdjustmentID), ActorID: optUUID(in.ActorID),
 	})
+	if isUniqueViolation(err, constraintReversal) {
+		// Two reversals of one adjustment would give the money back twice. The index is what
+		// makes the service's read-then-write safe under two concurrent commands.
+		return application.AdjustmentRecord{}, application.ErrAdjustmentReversed
+	}
 	if err != nil {
 		return application.AdjustmentRecord{}, fmt.Errorf("claim: create adjustment: %w", err)
 	}
-	return application.AdjustmentRecord{
-		ID: row.ID, ClaimID: row.ClaimID, VersionNo: int(row.VersionNo),
-		AdjustmentType: row.AdjustmentType, Amount: row.Amount, CurrencyCode: row.CurrencyCode,
-		ReasonCode: row.ReasonCode, ReasonText: row.ReasonText,
-		CreatedBy: uuidPtr(row.CreatedBy), CreatedAt: row.CreatedAt,
-	}, nil
+	return adjustmentOf(createdAdjustmentRow(row)), nil
+}
+
+// GetAdjustment implements application.Repository.
+func (Repository) GetAdjustment(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID,
+) (application.AdjustmentRecord, error) {
+	row, err := sqlcgen.New(tx).GetClaimAdjustment(ctx, sqlcgen.GetClaimAdjustmentParams{
+		TenantID: tenantID, ID: id,
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return application.AdjustmentRecord{}, application.ErrAdjustmentNotFound
+	}
+	if err != nil {
+		return application.AdjustmentRecord{}, fmt.Errorf("claim: get adjustment: %w", err)
+	}
+	return adjustmentOf(gotAdjustmentRow(row)), nil
 }
 
 // ListAdjustments implements application.Repository.
@@ -419,13 +452,7 @@ func (Repository) ListAdjustments(ctx context.Context, tx pgx.Tx, tenantID, clai
 	}
 	out := make([]application.AdjustmentRecord, 0, len(rows))
 	for _, row := range rows {
-		out = append(out, application.AdjustmentRecord{
-			ID: row.ID, ClaimID: row.ClaimID, VersionNo: int(row.VersionNo),
-			AdjustmentType: row.AdjustmentType, Amount: row.Amount,
-			CurrencyCode: row.CurrencyCode, ReasonCode: row.ReasonCode,
-			ReasonText: row.ReasonText, CreatedBy: uuidPtr(row.CreatedBy),
-			CreatedAt: row.CreatedAt,
-		})
+		out = append(out, adjustmentOf(listedAdjustmentRow(row)))
 	}
 	return out, nil
 }
@@ -587,4 +614,169 @@ func (Repository) EntitlementCodes(ctx context.Context, tx pgx.Tx, tenantID, enr
 		out[row.ServiceDefinitionID] = row.EntitlementCode
 	}
 	return out, nil
+}
+
+// FindLiveClaimBySource implements application.Repository.
+func (Repository) FindLiveClaimBySource(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
+	sourceType string, sourceID uuid.UUID,
+) (uuid.UUID, bool, error) {
+	row, err := sqlcgen.New(tx).FindClaimBySource(ctx, sqlcgen.FindClaimBySourceParams{
+		TenantID: tenantID, SourceType: &sourceType,
+		SourceID: uuid.NullUUID{UUID: sourceID, Valid: true},
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return uuid.Nil, false, nil
+	}
+	if err != nil {
+		return uuid.Nil, false, fmt.Errorf("claim: find claim by source: %w", err)
+	}
+	return row.ID, true, nil
+}
+
+// BookingForClaim implements application.Repository.
+func (Repository) BookingForClaim(ctx context.Context, tx pgx.Tx, tenantID, bookingID uuid.UUID,
+) (application.BookingRecord, error) {
+	row, err := sqlcgen.New(tx).GetBookingForClaim(ctx, sqlcgen.GetBookingForClaimParams{
+		TenantID: tenantID, ID: bookingID,
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return application.BookingRecord{}, application.ErrBookingNotFound
+	}
+	if err != nil {
+		return application.BookingRecord{}, fmt.Errorf("claim: get booking: %w", err)
+	}
+	out := application.BookingRecord{
+		ID: row.ID, Reference: row.Reference, PersonID: row.PersonID,
+		ProgramID: row.ProgramID, EnrollmentID: row.EnrollmentID, RoomTypeID: row.RoomTypeID,
+		ServiceDefinitionID:    row.ServiceDefinitionID,
+		ProviderOrganizationID: row.ProviderOrganizationID, Status: row.Status,
+		CheckIn: dateValue(row.CheckIn), CheckOut: dateValue(row.CheckOut),
+		Nights: int(row.Nights), OverBooking: row.OverBooking,
+		AuthorizationID: uuidPtr(row.AuthorizationID),
+		CheckedOutAt:    row.CheckedOutAt, CancelledAt: row.CancelledAt,
+		CoveredNights: coveredNights(row.QuoteSnapshot),
+	}
+	if row.ActualNights != nil {
+		nights := int(*row.ActualNights)
+		out.ActualNights = &nights
+	}
+	return out, nil
+}
+
+// coveredNights reads back the one number of the booking's frozen quote the claim needs: how
+// many nights the plan carries. It is read rather than recomputed for the same reason the
+// amounts are copied — the quote is what the member agreed to, and a second arithmetic would
+// be a second answer.
+//
+// A quote this package cannot read is nought covered nights, which sends every line of the
+// stay to the financial reviewer at payer zero rather than approving one nobody promised.
+func coveredNights(snapshot []byte) int {
+	if len(snapshot) == 0 {
+		return 0
+	}
+	var doc struct {
+		CoveredNights int `json:"coveredNights"`
+	}
+	if err := json.Unmarshal(snapshot, &doc); err != nil || doc.CoveredNights < 0 {
+		return 0
+	}
+	return doc.CoveredNights
+}
+
+// BookingNights implements application.Repository.
+func (Repository) BookingNights(ctx context.Context, tx pgx.Tx, tenantID, bookingID uuid.UUID,
+) ([]application.BookingNightRecord, error) {
+	rows, err := sqlcgen.New(tx).ListBookingNightsForClaim(ctx,
+		sqlcgen.ListBookingNightsForClaimParams{TenantID: tenantID, BookingID: bookingID})
+	if err != nil {
+		return nil, fmt.Errorf("claim: list booking nights: %w", err)
+	}
+	out := make([]application.BookingNightRecord, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, application.BookingNightRecord{
+			StayDate: dateValue(row.StayDate), UnitAmount: row.UnitAmount,
+			PayerAmount: row.PayerAmount, MemberAmount: row.MemberAmount,
+			CurrencyCode: row.CurrencyCode,
+		})
+	}
+	return out, nil
+}
+
+// BookingNoShow implements application.Repository.
+func (Repository) BookingNoShow(ctx context.Context, tx pgx.Tx, tenantID, bookingID uuid.UUID,
+) (application.BookingFeeRecord, bool, error) {
+	row, err := sqlcgen.New(tx).GetBookingNoShowForClaim(ctx,
+		sqlcgen.GetBookingNoShowForClaimParams{TenantID: tenantID, BookingID: bookingID})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return application.BookingFeeRecord{}, false, nil
+	}
+	if err != nil {
+		return application.BookingFeeRecord{}, false, fmt.Errorf("claim: get no-show: %w", err)
+	}
+	return application.BookingFeeRecord{
+		ID: row.ID, Status: row.Status, Amount: row.AssessedFeeAmount,
+		PayerAmount: row.PayerAmount, MemberAmount: row.MemberAmount,
+		CurrencyCode: row.CurrencyCode,
+	}, true, nil
+}
+
+// BookingCancellation implements application.Repository.
+func (Repository) BookingCancellation(ctx context.Context, tx pgx.Tx, tenantID, bookingID uuid.UUID,
+) (application.BookingFeeRecord, bool, error) {
+	row, err := sqlcgen.New(tx).GetBookingCancellationForClaim(ctx,
+		sqlcgen.GetBookingCancellationForClaimParams{TenantID: tenantID, BookingID: bookingID})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return application.BookingFeeRecord{}, false, nil
+	}
+	if err != nil {
+		return application.BookingFeeRecord{}, false, fmt.Errorf("claim: get cancellation: %w", err)
+	}
+	return application.BookingFeeRecord{
+		ID: row.ID, Free: row.Free, Amount: row.FeeAmount,
+		PayerAmount: row.PayerFee, MemberAmount: row.MemberFee,
+		CurrencyCode: row.CurrencyCode,
+	}, true, nil
+}
+
+// ProviderEarningClaims implements application.Repository.
+func (Repository) ProviderEarningClaims(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
+	q application.EarningsQuery,
+) ([]application.EarningClaimRecord, error) {
+	rows, err := sqlcgen.New(tx).ListProviderEarningClaims(ctx,
+		sqlcgen.ListProviderEarningClaimsParams{
+			TenantID: tenantID, ProviderOrganizationID: q.ProviderOrganizationID,
+			DecidedFrom: q.From, DecidedTo: q.To,
+			CurrencyCode: optionalString(q.CurrencyCode),
+		})
+	if err != nil {
+		return nil, fmt.Errorf("claim: list provider earnings: %w", err)
+	}
+	out := make([]application.EarningClaimRecord, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, application.EarningClaimRecord{
+			ClaimID: row.ClaimID, Reference: row.Reference, Status: row.Status,
+			DomainCode: row.DomainCode, CurrencyCode: row.CurrencyCode,
+			DecidedAt: row.DecidedAt, LineTotal: row.LineTotal,
+			LinePayerTotal: row.LinePayerTotal, LineMemberTotal: row.LineMemberTotal,
+			AdjustmentTotal:       row.AdjustmentTotal,
+			AdjustmentPayerTotal:  row.AdjustmentPayerTotal,
+			AdjustmentMemberTotal: row.AdjustmentMemberTotal,
+		})
+	}
+	return out, nil
+}
+
+// ProviderDisplayName implements application.Repository.
+func (Repository) ProviderDisplayName(ctx context.Context, tx pgx.Tx, tenantID,
+	organizationID uuid.UUID,
+) (string, error) {
+	name, err := sqlcgen.New(tx).ClaimProviderOrganizationName(ctx,
+		sqlcgen.ClaimProviderOrganizationNameParams{TenantID: tenantID, ID: organizationID})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", application.ErrProviderUnknown
+	}
+	if err != nil {
+		return "", fmt.Errorf("claim: provider name: %w", err)
+	}
+	return name, nil
 }

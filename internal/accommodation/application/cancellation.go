@@ -267,6 +267,13 @@ func (s *Service) cancel(ctx context.Context, tx pgx.Tx, rc identity.RequestCont
 		quote.FeeAmount); err != nil {
 		return CancellationView{}, err
 	}
+	// The billing side hears about every cancellation, free or not. `free` travels in the
+	// payload because "this one cost nothing" is a fact a subscriber has to be able to
+	// observe: an event that simply never arrived is indistinguishable from an event that
+	// was lost.
+	if err := s.publishCancelled(ctx, tx, rc.TenantID, record, reasonCode, quote.Free); err != nil {
+		return CancellationView{}, err
+	}
 
 	cancelled := record
 	cancelled.Status = domain.BookingCancelled

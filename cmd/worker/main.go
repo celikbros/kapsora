@@ -22,6 +22,9 @@ import (
 	authorizationpg "github.com/celikbros/kapsora/internal/authorization/infrastructure/postgres"
 	benefitapp "github.com/celikbros/kapsora/internal/benefit/application"
 	"github.com/celikbros/kapsora/internal/benefit/ledger"
+	claimapp "github.com/celikbros/kapsora/internal/claim/application"
+	claimgw "github.com/celikbros/kapsora/internal/claim/infrastructure/gateway"
+	claimpg "github.com/celikbros/kapsora/internal/claim/infrastructure/postgres"
 	contractapp "github.com/celikbros/kapsora/internal/contract/application"
 	contractpg "github.com/celikbros/kapsora/internal/contract/infrastructure/postgres"
 	documentapp "github.com/celikbros/kapsora/internal/document/application"
@@ -144,6 +147,16 @@ func run() error {
 		return err
 	}
 
+	// The billing side of a stay (WP-I7-01). It is given the claim tables and the work item
+	// port and nothing else it does not need: it never prices a line — every amount it writes
+	// was frozen by the booking — so the pricing, rules and authorization ports are left at
+	// their refusing defaults, and a bug that tried to price something here would say so
+	// rather than quietly working.
+	claims, err := newClaims(pool, cursors, logger)
+	if err != nil {
+		return err
+	}
+
 	dispatcher := outbox.New(pool, outbox.Options{Logger: logger})
 	// A new enrollment opens its entitlement accounts here rather than in the request
 	// that created it: the accounts follow the plan configuration, and the handler is
@@ -176,6 +189,19 @@ func run() error {
 	// The same event, the other subscriber: an approved RESERVATION request turns its hold
 	// into a confirmed stay, and a refused one gives the room and the nights back.
 	dispatcher.Handle(servicerequestapp.DecidedEvent, bookings.HandleServiceRequestDecided)
+	// A stay that ended. Each of the three is a claim the provider may invoice, and each is
+	// raised here rather than inside the command that ended the stay: a desk clerk closing a
+	// stay at eleven at night must not be told that the billing side is down.
+	//
+	// All three are idempotent, and not by trying to be. Each looks for the claim a first
+	// delivery made, and `uq_claim_live_booking` is underneath that read for the case where
+	// two deliveries look at the same moment — so a redelivered check-out event creates
+	// nothing, not a second version and not a second work item.
+	dispatcher.Handle(accommodationapp.CheckedOutEvent, claims.HandleBookingCheckedOut)
+	dispatcher.Handle(accommodationapp.NoShowConfirmedEvent, claims.HandleBookingNoShowConfirmed)
+	// A free cancellation reaches this handler and produces nothing: it is the ordinary case
+	// of a member who called off a stay inside the window they were promised.
+	dispatcher.Handle(accommodationapp.CancelledEvent, claims.HandleBookingCancelled)
 
 	go reportBacklog(ctx, logger, dispatcher)
 
@@ -218,6 +244,24 @@ func newBookings(pool *pgxpool.Pool, movements *ledger.Ledger,
 		Authorizations: accommodationgw.NewAuthorizations(authorizations),
 		Policies:       accommodationgw.NewPolicies(contracts),
 		Audit:          auditpg.New(), Cursors: cursors, Logger: logger,
+	})
+}
+
+// newClaims builds the claim service the three booking subscriptions need.
+//
+// A lodging claim copies the amounts the booking froze and decides nothing on the merits, so
+// this service is deliberately given no pricing ladder, no rule engine and no authorization
+// gateway. Those ports refuse by default, which is the honest behaviour of a process that has
+// no business asking any of them: a claim raised here that tried to price a night would be
+// re-pricing a stay somebody already agreed to.
+func newClaims(pool *pgxpool.Pool, cursors *httpx.CursorCodec, logger *slog.Logger,
+) (*claimapp.Service, error) {
+	return claimapp.New(claimapp.Deps{
+		Pool: pool, Repo: claimpg.New(),
+		// The work item is what puts the claim in front of the financial reviewer. Without
+		// it a completed stay would become a claim nobody was watching.
+		WorkItems: claimgw.NewWorkItems(logger),
+		Audit:     auditpg.New(), Cursors: cursors, Logger: logger,
 	})
 }
 

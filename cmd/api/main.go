@@ -641,7 +641,16 @@ func newRouter(d routerDeps) http.Handler {
 				SearchRegistration: ratelimit.Middleware(d.limiter,
 					ratelimit.ScopedKey("provider.practitioner.search", tenantScope), identifierSearchRateLimit, d.logger),
 			}
-			tenant.Route("/providers", func(r chi.Router) { providerHandler.ProviderRoutes(r, providerMW) })
+			// The claim handler is built here rather than beside the claim routes because
+			// one of its endpoints lives under /providers: a provider's earnings are summed
+			// from claims and asked about a provider, and both halves of that sentence are
+			// true. chi mounts one subrouter per prefix, so the route has to be registered
+			// inside this closure.
+			claimHandler := claimhttp.NewHandler(d.claims, sessions, d.logger)
+			tenant.Route("/providers", func(r chi.Router) {
+				providerHandler.ProviderRoutes(r, providerMW)
+				claimHandler.EarningsRoutes(r)
+			})
 			tenant.Route("/provider-locations", providerHandler.LocationRoutes)
 			tenant.Route("/practitioners", func(r chi.Router) { providerHandler.PractitionerRoutes(r, providerMW) })
 
@@ -827,7 +836,6 @@ func newRouter(d routerDeps) http.Handler {
 			// have to explain. Every read is served in the projection the caller has earned,
 			// chosen in the application service — so a sponsor's HR user reading a claim
 			// never receives a line description, whatever the screen asks for.
-			claimHandler := claimhttp.NewHandler(d.claims, sessions, d.logger)
 			claimMW := claimhttp.Middlewares{
 				CreateClaim:  d.idempotent("claim.create"),
 				PatchClaim:   d.idempotent("claim.update"),
@@ -838,6 +846,9 @@ func newRouter(d routerDeps) http.Handler {
 				RejectClaim:  d.idempotent("claim.reject"),
 				ReturnClaim:  d.idempotent("claim.return"),
 				CancelClaim:  d.idempotent("claim.cancel"),
+				// An adjustment replayed by a flaky network must be one row: two would take
+				// the same money off the same claim twice.
+				CreateAdjustment: d.idempotent("claim.adjust"),
 			}
 			tenant.Route("/claims", func(r chi.Router) {
 				claimHandler.Routes(r, claimMW)

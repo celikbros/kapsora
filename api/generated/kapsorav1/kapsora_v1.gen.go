@@ -124,6 +124,57 @@ func (e BookingStatus) Valid() bool {
 	}
 }
 
+// Defines values for ClaimAdjustmentSource.
+const (
+	ClaimAdjustmentSourceCANCELLATION ClaimAdjustmentSource = "CANCELLATION"
+	ClaimAdjustmentSourceMANUAL       ClaimAdjustmentSource = "MANUAL"
+	ClaimAdjustmentSourceNOSHOW       ClaimAdjustmentSource = "NO_SHOW"
+	ClaimAdjustmentSourceRECOVERY     ClaimAdjustmentSource = "RECOVERY"
+	ClaimAdjustmentSourceREVIEW       ClaimAdjustmentSource = "REVIEW"
+)
+
+// Valid indicates whether the value is a known member of the ClaimAdjustmentSource enum.
+func (e ClaimAdjustmentSource) Valid() bool {
+	switch e {
+	case ClaimAdjustmentSourceCANCELLATION:
+		return true
+	case ClaimAdjustmentSourceMANUAL:
+		return true
+	case ClaimAdjustmentSourceNOSHOW:
+		return true
+	case ClaimAdjustmentSourceRECOVERY:
+		return true
+	case ClaimAdjustmentSourceREVIEW:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ClaimAdjustmentType.
+const (
+	ClaimAdjustmentTypeCORRECTION ClaimAdjustmentType = "CORRECTION"
+	ClaimAdjustmentTypeCUT        ClaimAdjustmentType = "CUT"
+	ClaimAdjustmentTypeRECOVERY   ClaimAdjustmentType = "RECOVERY"
+	ClaimAdjustmentTypeREVERSAL   ClaimAdjustmentType = "REVERSAL"
+)
+
+// Valid indicates whether the value is a known member of the ClaimAdjustmentType enum.
+func (e ClaimAdjustmentType) Valid() bool {
+	switch e {
+	case ClaimAdjustmentTypeCORRECTION:
+		return true
+	case ClaimAdjustmentTypeCUT:
+		return true
+	case ClaimAdjustmentTypeRECOVERY:
+		return true
+	case ClaimAdjustmentTypeREVERSAL:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ClaimDecisionKind.
 const (
 	ClaimDecisionKindAPPROVED          ClaimDecisionKind = "APPROVED"
@@ -184,6 +235,27 @@ func (e ClaimInvoiceBlocker) Valid() bool {
 	case LINENOTDECIDED:
 		return true
 	case PROVIDERTAXIDENTITYMISSING:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ClaimSourceType.
+const (
+	ClaimSourceTypeBOOKING       ClaimSourceType = "BOOKING"
+	ClaimSourceTypeHEALTHCASE    ClaimSourceType = "HEALTH_CASE"
+	ClaimSourceTypeREIMBURSEMENT ClaimSourceType = "REIMBURSEMENT"
+)
+
+// Valid indicates whether the value is a known member of the ClaimSourceType enum.
+func (e ClaimSourceType) Valid() bool {
+	switch e {
+	case ClaimSourceTypeBOOKING:
+		return true
+	case ClaimSourceTypeHEALTHCASE:
+		return true
+	case ClaimSourceTypeREIMBURSEMENT:
 		return true
 	default:
 		return false
@@ -5578,11 +5650,89 @@ type Claim struct {
 	ServiceDateFrom      openapi_types.Date `json:"serviceDateFrom"`
 	ServiceDateTo        openapi_types.Date `json:"serviceDateTo"`
 
+	// SourceId The case, booking or reimbursement request the claim was raised from.
+	SourceId *openapi_types.UUID `json:"sourceId,omitempty"`
+
+	// SourceType What the claim came from. Null together with `sourceId` on a claim raised by hand
+	// against nothing, which is an ordinary claim.
+	SourceType *ClaimSourceType `json:"sourceType,omitempty"`
+
 	// Status The claim lifecycle of v1.2 12.5. INVOICED, BATCHED and SETTLED are declared because
 	// the lifecycle is one list; the commands that reach them belong to M7 and nothing in
 	// this contract puts a claim into one of them.
 	Status ClaimStatus `json:"status"`
 }
+
+// ClaimAdjustment One ledger line: money that moved on a claim for a reason that is not a line decision.
+// Append-only — nothing here is ever edited, and an adjustment taken back is a `REVERSAL`
+// naming it while both rows stay on the record.
+type ClaimAdjustment struct {
+	// AdjustmentType `CUT` is money the payer took off an otherwise valid claim, `RECOVERY` is money already
+	// paid coming back, `CORRECTION` is an arithmetic or pricing mistake either way.
+	// `REVERSAL` is not a fourth kind of money — it is the negative of one of the three, and
+	// it is the only way an adjustment is ever undone.
+	AdjustmentType ClaimAdjustmentType `json:"adjustmentType"`
+
+	// Amount Exact decimal. Negative on a REVERSAL and on a CORRECTION that gives back.
+	Amount  string             `json:"amount"`
+	ClaimId openapi_types.UUID `json:"claimId"`
+
+	// ClaimLineId The line a line-level adjustment names. Null is the claim-level case and is
+	// ordinary: a recovery of an overpayment is about the claim, not one of its lines.
+	ClaimLineId *openapi_types.UUID `json:"claimLineId,omitempty"`
+	CreatedAt   time.Time           `json:"createdAt"`
+
+	// CreatedBy Null for exactly the two system sources: a fee adjustment is written by an outbox
+	// handler and no person is behind it.
+	CreatedBy    *openapi_types.UUID `json:"createdBy,omitempty"`
+	CurrencyCode string              `json:"currencyCode"`
+	Id           openapi_types.UUID  `json:"id"`
+
+	// MemberAmount payerAmount plus memberAmount is exactly amount. It is a database CHECK.
+	MemberAmount string  `json:"memberAmount"`
+	PayerAmount  string  `json:"payerAmount"`
+	ReasonCode   string  `json:"reasonCode"`
+	ReasonText   *string `json:"reasonText,omitempty"`
+
+	// ReversesAdjustmentId What this row takes back. Set on exactly a REVERSAL.
+	ReversesAdjustmentId *openapi_types.UUID `json:"reversesAdjustmentId,omitempty"`
+
+	// SourceId The cancellation or no-show row a system-written fee adjustment came from.
+	SourceId *openapi_types.UUID `json:"sourceId,omitempty"`
+
+	// SourceType Where the adjustment came from. `CANCELLATION` and `NO_SHOW` are written by the outbox
+	// handler of a booking event against the fee row that assessed the fee, and are the only
+	// two a caller may not name.
+	SourceType ClaimAdjustmentSource `json:"sourceType"`
+	VersionNo  int                   `json:"versionNo"`
+}
+
+// ClaimAdjustmentList defines model for ClaimAdjustmentList.
+type ClaimAdjustmentList struct {
+	Items []ClaimAdjustment `json:"items"`
+}
+
+// ClaimAdjustmentResult The row that was written and the claim's totals as they stand after it, recomputed on
+// the server by the same code `getClaimInvoiceReadiness` runs. Two sums would be two
+// answers.
+type ClaimAdjustmentResult struct {
+	// Adjustment One ledger line: money that moved on a claim for a reason that is not a line decision.
+	// Append-only — nothing here is ever edited, and an adjustment taken back is a `REVERSAL`
+	// naming it while both rows stay on the record.
+	Adjustment ClaimAdjustment       `json:"adjustment"`
+	Readiness  ClaimInvoiceReadiness `json:"readiness"`
+}
+
+// ClaimAdjustmentSource Where the adjustment came from. `CANCELLATION` and `NO_SHOW` are written by the outbox
+// handler of a booking event against the fee row that assessed the fee, and are the only
+// two a caller may not name.
+type ClaimAdjustmentSource string
+
+// ClaimAdjustmentType `CUT` is money the payer took off an otherwise valid claim, `RECOVERY` is money already
+// paid coming back, `CORRECTION` is an arithmetic or pricing mistake either way.
+// `REVERSAL` is not a fourth kind of money — it is the negative of one of the three, and
+// it is the only way an adjustment is ever undone.
+type ClaimAdjustmentType string
 
 // ClaimDecisionKind What was decided about one line. CUT is a reduction the payer applied to an otherwise
 // valid line; PARTIALLY_APPROVED is a smaller quantity than was claimed. They are two
@@ -5629,14 +5779,25 @@ type ClaimInvoiceBlocker string
 
 // ClaimInvoiceReadiness defines model for ClaimInvoiceReadiness.
 type ClaimInvoiceReadiness struct {
-	// ApprovedTotal The sum of every line's approved amount, summed on the server once. Exact decimal
-	// as a string, never a JSON number and never a total a frontend added up.
+	AdjustmentCount int `json:"adjustmentCount"`
+
+	// AdjustmentTotal The signed sum of the claim's adjustments. A cut and a recovery add to it, a
+	// correction may go either way, and a reversal subtracts exactly what the row it
+	// reverses added — so a cut followed by its reversal leaves this at zero.
+	AdjustmentTotal string `json:"adjustmentTotal"`
+
+	// ApprovedTotal `lineTotal` minus `adjustmentTotal`. It is the figure an invoice is checked
+	// against, computed on the server once.
 	ApprovedTotal    string                `json:"approvedTotal"`
 	Blockers         []ClaimInvoiceBlocker `json:"blockers"`
 	ClaimId          openapi_types.UUID    `json:"claimId"`
 	CurrencyCode     string                `json:"currencyCode"`
 	DecidedLineCount int                   `json:"decidedLineCount"`
 	LineCount        int                   `json:"lineCount"`
+
+	// LineTotal The sum of every line's approved amount, before any adjustment. Exact decimal as a
+	// string, never a JSON number and never a total a frontend added up.
+	LineTotal string `json:"lineTotal"`
 
 	// MemberTotal payerTotal plus memberTotal is exactly approvedTotal.
 	MemberTotal string `json:"memberTotal"`
@@ -5762,6 +5923,10 @@ type ClaimReturnReason struct {
 	// to the claim as a whole.
 	ReasonText *string `json:"reasonText,omitempty"`
 }
+
+// ClaimSourceType What a claim was raised from. It is one vocabulary for every vertical, so a settlement
+// never has to know which module wrote a claim.
+type ClaimSourceType string
 
 // ClaimStatus The claim lifecycle of v1.2 12.5. INVOICED, BATCHED and SETTLED are declared because
 // the lifecycle is one list; the commands that reach them belong to M7 and nothing in
@@ -6044,7 +6209,15 @@ type CreateBookingGuest struct {
 
 // CreateClaim defines model for CreateClaim.
 type CreateClaim struct {
-	AuthorizationId        *openapi_types.UUID    `json:"authorizationId,omitempty"`
+	AuthorizationId *openapi_types.UUID `json:"authorizationId,omitempty"`
+
+	// BookingId The stay this claim bills, for a lodging claim raised by hand. It sets the claim's
+	// source to `BOOKING` and its domain to `ACCOMMODATION`, and one booking may have
+	// only one live claim — a second is refused. A completed stay ordinarily needs none
+	// of this: the claim is raised by the outbox handler of `booking.checked_out`.
+	//
+	// It may not be sent together with `caseId`: a claim comes from one thing.
+	BookingId              *openapi_types.UUID    `json:"bookingId,omitempty"`
 	CaseId                 *openapi_types.UUID    `json:"caseId,omitempty"`
 	Channel                *ServiceRequestChannel `json:"channel,omitempty"`
 	EnrollmentId           openapi_types.UUID     `json:"enrollmentId"`
@@ -6055,6 +6228,37 @@ type CreateClaim struct {
 	ProviderOrganizationId openapi_types.UUID     `json:"providerOrganizationId"`
 	ServiceDateFrom        openapi_types.Date     `json:"serviceDateFrom"`
 	ServiceDateTo          openapi_types.Date     `json:"serviceDateTo"`
+}
+
+// CreateClaimAdjustment Either an adjustment or a reversal of one.
+//
+// A reversal sends `reversesAdjustmentId` and `reasonCode` and nothing else: the amount
+// and the split are read off the row being reversed, which is what makes "a reversal
+// restores the approved total exactly" a property of the server rather than of whoever
+// typed the figures. Sending an amount with a reversal is a validation error.
+//
+// Everything else sends `adjustmentType`, `amount`, `payerAmount` and `memberAmount`,
+// and the three amounts must satisfy `payerAmount + memberAmount = amount` exactly.
+type CreateClaimAdjustment struct {
+	// AdjustmentType Required unless this is a reversal. REVERSAL may not be named directly.
+	AdjustmentType *ClaimAdjustmentType `json:"adjustmentType,omitempty"`
+	Amount         *string              `json:"amount,omitempty"`
+
+	// CurrencyCode Optional, and checked against the claim's own currency when it is sent. One claim
+	// is denominated once.
+	CurrencyCode *string `json:"currencyCode,omitempty"`
+
+	// LineNo The line of the claim's current version this adjustment belongs to.
+	LineNo       *int    `json:"lineNo,omitempty"`
+	MemberAmount *string `json:"memberAmount,omitempty"`
+	PayerAmount  *string `json:"payerAmount,omitempty"`
+
+	// ReasonCode From the closed list; an unknown code is 422.
+	ReasonCode string  `json:"reasonCode"`
+	ReasonText *string `json:"reasonText,omitempty"`
+
+	// ReversesAdjustmentId Makes this a REVERSAL of that adjustment and nothing else.
+	ReversesAdjustmentId *openapi_types.UUID `json:"reversesAdjustmentId,omitempty"`
 }
 
 // CreateCodeSystemRequest defines model for CreateCodeSystemRequest.
@@ -9047,6 +9251,44 @@ type ProviderCapabilityList struct {
 	Items []ProviderCapability `json:"items"`
 }
 
+// ProviderEarnings defines model for ProviderEarnings.
+type ProviderEarnings struct {
+	Currencies             []ProviderEarningsCurrency `json:"currencies"`
+	From                   *openapi_types.Date        `json:"from,omitempty"`
+	ProviderName           string                     `json:"providerName"`
+	ProviderOrganizationId openapi_types.UUID         `json:"providerOrganizationId"`
+	To                     *openapi_types.Date        `json:"to,omitempty"`
+}
+
+// ProviderEarningsCurrency defines model for ProviderEarningsCurrency.
+type ProviderEarningsCurrency struct {
+	AdjustmentTotal string `json:"adjustmentTotal"`
+
+	// ApprovedTotal Lines minus adjustments, across every decided claim in this currency.
+	ApprovedTotal       string                        `json:"approvedTotal"`
+	ByStatus            []ProviderEarningsStatusTotal `json:"byStatus"`
+	ClaimCount          int                           `json:"claimCount"`
+	CurrencyCode        string                        `json:"currencyCode"`
+	InvoiceableClaimIds []openapi_types.UUID          `json:"invoiceableClaimIds"`
+
+	// InvoiceableTotal The part of `approvedTotal` that is not yet on an invoice. A claim that has reached
+	// INVOICED, BATCHED or SETTLED is money somebody is already collecting.
+	InvoiceableTotal string `json:"invoiceableTotal"`
+	MemberTotal      string `json:"memberTotal"`
+	PayerTotal       string `json:"payerTotal"`
+}
+
+// ProviderEarningsStatusTotal defines model for ProviderEarningsStatusTotal.
+type ProviderEarningsStatusTotal struct {
+	ApprovedTotal string `json:"approvedTotal"`
+	ClaimCount    int    `json:"claimCount"`
+
+	// Status The claim lifecycle of v1.2 12.5. INVOICED, BATCHED and SETTLED are declared because
+	// the lifecycle is one list; the commands that reach them belong to M7 and nothing in
+	// this contract puts a claim into one of them.
+	Status ClaimStatus `json:"status"`
+}
+
 // ProviderLocation defines model for ProviderLocation.
 type ProviderLocation struct {
 	AddressLine *string            `json:"addressLine,omitempty"`
@@ -11369,6 +11611,21 @@ type PatchClaimDraftParams struct {
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
+// ListClaimAdjustmentsParams defines parameters for ListClaimAdjustments.
+type ListClaimAdjustmentsParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// CreateClaimAdjustmentParams defines parameters for CreateClaimAdjustment.
+type CreateClaimAdjustmentParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
 // ApproveClaimParams defines parameters for ApproveClaim.
 type ApproveClaimParams struct {
 	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
@@ -13612,6 +13869,16 @@ type ActivateProviderParams struct {
 	XCSRFToken *CsrfHeader `json:"X-CSRF-Token,omitempty"`
 }
 
+// GetProviderEarningsParams defines parameters for GetProviderEarnings.
+type GetProviderEarningsParams struct {
+	From     *openapi_types.Date `form:"from,omitempty" json:"from,omitempty"`
+	To       *openapi_types.Date `form:"to,omitempty" json:"to,omitempty"`
+	Currency *string             `form:"currency,omitempty" json:"currency,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
 // ListProviderLocationsParams defines parameters for ListProviderLocations.
 type ListProviderLocationsParams struct {
 	// Cursor Opaque cursor from the previous response.
@@ -14382,6 +14649,9 @@ type CreateClaimJSONRequestBody = CreateClaim
 // PatchClaimDraftJSONRequestBody defines body for PatchClaimDraft for application/json ContentType.
 type PatchClaimDraftJSONRequestBody = PatchClaimDraft
 
+// CreateClaimAdjustmentJSONRequestBody defines body for CreateClaimAdjustment for application/json ContentType.
+type CreateClaimAdjustmentJSONRequestBody = CreateClaimAdjustment
+
 // ApproveClaimJSONRequestBody defines body for ApproveClaim for application/json ContentType.
 type ApproveClaimJSONRequestBody = ClaimDecisionReason
 
@@ -15034,6 +15304,12 @@ type ServerInterface interface {
 	// (PATCH /api/v1/claims/{claimId})
 	PatchClaimDraft(w http.ResponseWriter, r *http.Request, claimId ClaimId, params PatchClaimDraftParams)
 
+	// (GET /api/v1/claims/{claimId}/adjustments)
+	ListClaimAdjustments(w http.ResponseWriter, r *http.Request, claimId ClaimId, params ListClaimAdjustmentsParams)
+
+	// (POST /api/v1/claims/{claimId}/adjustments)
+	CreateClaimAdjustment(w http.ResponseWriter, r *http.Request, claimId ClaimId, params CreateClaimAdjustmentParams)
+
 	// (POST /api/v1/claims/{claimId}/approve)
 	ApproveClaim(w http.ResponseWriter, r *http.Request, claimId ClaimId, params ApproveClaimParams)
 
@@ -15532,6 +15808,9 @@ type ServerInterface interface {
 	// (POST /api/v1/providers/{providerId}/activate)
 	ActivateProvider(w http.ResponseWriter, r *http.Request, providerId ProviderId, params ActivateProviderParams)
 
+	// (GET /api/v1/providers/{providerId}/earnings)
+	GetProviderEarnings(w http.ResponseWriter, r *http.Request, providerId ProviderId, params GetProviderEarningsParams)
+
 	// (GET /api/v1/providers/{providerId}/locations)
 	ListProviderLocations(w http.ResponseWriter, r *http.Request, providerId ProviderId, params ListProviderLocationsParams)
 
@@ -15927,6 +16206,16 @@ func (_ Unimplemented) GetClaim(w http.ResponseWriter, r *http.Request, claimId 
 
 // (PATCH /api/v1/claims/{claimId})
 func (_ Unimplemented) PatchClaimDraft(w http.ResponseWriter, r *http.Request, claimId ClaimId, params PatchClaimDraftParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/claims/{claimId}/adjustments)
+func (_ Unimplemented) ListClaimAdjustments(w http.ResponseWriter, r *http.Request, claimId ClaimId, params ListClaimAdjustmentsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/claims/{claimId}/adjustments)
+func (_ Unimplemented) CreateClaimAdjustment(w http.ResponseWriter, r *http.Request, claimId ClaimId, params CreateClaimAdjustmentParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -16757,6 +17046,11 @@ func (_ Unimplemented) PatchProvider(w http.ResponseWriter, r *http.Request, pro
 
 // (POST /api/v1/providers/{providerId}/activate)
 func (_ Unimplemented) ActivateProvider(w http.ResponseWriter, r *http.Request, providerId ProviderId, params ActivateProviderParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/providers/{providerId}/earnings)
+func (_ Unimplemented) GetProviderEarnings(w http.ResponseWriter, r *http.Request, providerId ProviderId, params GetProviderEarningsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -20370,6 +20664,137 @@ func (siw *ServerInterfaceWrapper) PatchClaimDraft(w http.ResponseWriter, r *htt
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PatchClaimDraft(w, r, claimId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListClaimAdjustments operation middleware
+func (siw *ServerInterfaceWrapper) ListClaimAdjustments(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "claimId" -------------
+	var claimId ClaimId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "claimId", chi.URLParam(r, "claimId"), &claimId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "claimId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListClaimAdjustmentsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListClaimAdjustments(w, r, claimId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateClaimAdjustment operation middleware
+func (siw *ServerInterfaceWrapper) CreateClaimAdjustment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "claimId" -------------
+	var claimId ClaimId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "claimId", chi.URLParam(r, "claimId"), &claimId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "claimId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateClaimAdjustmentParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateClaimAdjustment(w, r, claimId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -34675,6 +35100,99 @@ func (siw *ServerInterfaceWrapper) ActivateProvider(w http.ResponseWriter, r *ht
 	handler.ServeHTTP(w, r)
 }
 
+// GetProviderEarnings operation middleware
+func (siw *ServerInterfaceWrapper) GetProviderEarnings(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "providerId" -------------
+	var providerId ProviderId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "providerId", chi.URLParam(r, "providerId"), &providerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "providerId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetProviderEarningsParams
+
+	// ------------- Optional query parameter "from" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "from", r.URL.Query(), &params.From, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "from"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "from", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "to" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "to", r.URL.Query(), &params.To, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "to"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "to", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "currency" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "currency", r.URL.Query(), &params.Currency, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "currency"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "currency", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProviderEarnings(w, r, providerId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListProviderLocations operation middleware
 func (siw *ServerInterfaceWrapper) ListProviderLocations(w http.ResponseWriter, r *http.Request) {
 
@@ -40730,6 +41248,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/v1/claims/{claimId}/invoice-readiness", wrapper.GetClaimInvoiceReadiness)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/claims/{claimId}/adjustments", wrapper.ListClaimAdjustments)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/claims/{claimId}/adjustments", wrapper.CreateClaimAdjustment)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/providers/{providerId}/earnings", wrapper.GetProviderEarnings)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/accommodation/properties", wrapper.ListProperties)
 	})
 	r.Group(func(r chi.Router) {
@@ -44308,6 +44835,164 @@ func (response PatchClaimDraft428ApplicationProblemPlusJSONResponse) VisitPatchC
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListClaimAdjustmentsRequestObject struct {
+	ClaimId ClaimId `json:"claimId"`
+	Params  ListClaimAdjustmentsParams
+}
+
+type ListClaimAdjustmentsResponseObject interface {
+	VisitListClaimAdjustmentsResponse(w http.ResponseWriter) error
+}
+
+type ListClaimAdjustments200JSONResponse ClaimAdjustmentList
+
+func (response ListClaimAdjustments200JSONResponse) VisitListClaimAdjustmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListClaimAdjustments403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListClaimAdjustments403ApplicationProblemPlusJSONResponse) VisitListClaimAdjustmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListClaimAdjustments404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ListClaimAdjustments404ApplicationProblemPlusJSONResponse) VisitListClaimAdjustmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateClaimAdjustmentRequestObject struct {
+	ClaimId ClaimId `json:"claimId"`
+	Params  CreateClaimAdjustmentParams
+	Body    *CreateClaimAdjustmentJSONRequestBody
+}
+
+type CreateClaimAdjustmentResponseObject interface {
+	VisitCreateClaimAdjustmentResponse(w http.ResponseWriter) error
+}
+
+type CreateClaimAdjustment201JSONResponse ClaimAdjustmentResult
+
+func (response CreateClaimAdjustment201JSONResponse) VisitCreateClaimAdjustmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateClaimAdjustment403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CreateClaimAdjustment403ApplicationProblemPlusJSONResponse) VisitCreateClaimAdjustmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateClaimAdjustment404ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateClaimAdjustment404ApplicationProblemPlusJSONResponse) VisitCreateClaimAdjustmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateClaimAdjustment409ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateClaimAdjustment409ApplicationProblemPlusJSONResponse) VisitCreateClaimAdjustmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateClaimAdjustment422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CreateClaimAdjustment422ApplicationProblemPlusJSONResponse) VisitCreateClaimAdjustmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateClaimAdjustment429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response CreateClaimAdjustment429ApplicationProblemPlusJSONResponse) VisitCreateClaimAdjustmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -59088,6 +59773,75 @@ func (response ActivateProvider428ApplicationProblemPlusJSONResponse) VisitActiv
 	return err
 }
 
+type GetProviderEarningsRequestObject struct {
+	ProviderId ProviderId `json:"providerId"`
+	Params     GetProviderEarningsParams
+}
+
+type GetProviderEarningsResponseObject interface {
+	VisitGetProviderEarningsResponse(w http.ResponseWriter) error
+}
+
+type GetProviderEarnings200JSONResponse ProviderEarnings
+
+func (response GetProviderEarnings200JSONResponse) VisitGetProviderEarningsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProviderEarnings403ApplicationProblemPlusJSONResponse Problem
+
+func (response GetProviderEarnings403ApplicationProblemPlusJSONResponse) VisitGetProviderEarningsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProviderEarnings404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetProviderEarnings404ApplicationProblemPlusJSONResponse) VisitGetProviderEarningsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProviderEarnings422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response GetProviderEarnings422ApplicationProblemPlusJSONResponse) VisitGetProviderEarningsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListProviderLocationsRequestObject struct {
 	ProviderId ProviderId `json:"providerId"`
 	Params     ListProviderLocationsParams
@@ -65445,6 +66199,12 @@ type StrictServerInterface interface {
 	// (PATCH /api/v1/claims/{claimId})
 	PatchClaimDraft(ctx context.Context, request PatchClaimDraftRequestObject) (PatchClaimDraftResponseObject, error)
 
+	// (GET /api/v1/claims/{claimId}/adjustments)
+	ListClaimAdjustments(ctx context.Context, request ListClaimAdjustmentsRequestObject) (ListClaimAdjustmentsResponseObject, error)
+
+	// (POST /api/v1/claims/{claimId}/adjustments)
+	CreateClaimAdjustment(ctx context.Context, request CreateClaimAdjustmentRequestObject) (CreateClaimAdjustmentResponseObject, error)
+
 	// (POST /api/v1/claims/{claimId}/approve)
 	ApproveClaim(ctx context.Context, request ApproveClaimRequestObject) (ApproveClaimResponseObject, error)
 
@@ -65942,6 +66702,9 @@ type StrictServerInterface interface {
 
 	// (POST /api/v1/providers/{providerId}/activate)
 	ActivateProvider(ctx context.Context, request ActivateProviderRequestObject) (ActivateProviderResponseObject, error)
+
+	// (GET /api/v1/providers/{providerId}/earnings)
+	GetProviderEarnings(ctx context.Context, request GetProviderEarningsRequestObject) (GetProviderEarningsResponseObject, error)
 
 	// (GET /api/v1/providers/{providerId}/locations)
 	ListProviderLocations(ctx context.Context, request ListProviderLocationsRequestObject) (ListProviderLocationsResponseObject, error)
@@ -67366,6 +68129,67 @@ func (sh *strictHandler) PatchClaimDraft(w http.ResponseWriter, r *http.Request,
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PatchClaimDraftResponseObject); ok {
 		if err := validResponse.VisitPatchClaimDraftResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListClaimAdjustments operation middleware
+func (sh *strictHandler) ListClaimAdjustments(w http.ResponseWriter, r *http.Request, claimId ClaimId, params ListClaimAdjustmentsParams) {
+	var request ListClaimAdjustmentsRequestObject
+
+	request.ClaimId = claimId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListClaimAdjustments(ctx, request.(ListClaimAdjustmentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListClaimAdjustments")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListClaimAdjustmentsResponseObject); ok {
+		if err := validResponse.VisitListClaimAdjustmentsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateClaimAdjustment operation middleware
+func (sh *strictHandler) CreateClaimAdjustment(w http.ResponseWriter, r *http.Request, claimId ClaimId, params CreateClaimAdjustmentParams) {
+	var request CreateClaimAdjustmentRequestObject
+
+	request.ClaimId = claimId
+	request.Params = params
+
+	var body CreateClaimAdjustmentJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateClaimAdjustment(ctx, request.(CreateClaimAdjustmentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateClaimAdjustment")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateClaimAdjustmentResponseObject); ok {
+		if err := validResponse.VisitCreateClaimAdjustmentResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -72424,6 +73248,33 @@ func (sh *strictHandler) ActivateProvider(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ActivateProviderResponseObject); ok {
 		if err := validResponse.VisitActivateProviderResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetProviderEarnings operation middleware
+func (sh *strictHandler) GetProviderEarnings(w http.ResponseWriter, r *http.Request, providerId ProviderId, params GetProviderEarningsParams) {
+	var request GetProviderEarningsRequestObject
+
+	request.ProviderId = providerId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetProviderEarnings(ctx, request.(GetProviderEarningsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetProviderEarnings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetProviderEarningsResponseObject); ok {
+		if err := validResponse.VisitGetProviderEarningsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

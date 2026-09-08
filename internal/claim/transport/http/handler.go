@@ -71,6 +71,10 @@ type Middlewares struct {
 	RejectClaim  func(http.Handler) http.Handler
 	ReturnClaim  func(http.Handler) http.Handler
 	CancelClaim  func(http.Handler) http.Handler
+	// CreateAdjustment is the Idempotency-Key wrapper of the ledger command. An adjustment
+	// replayed by a flaky network must be one row: two would take the same money off the
+	// same claim twice, and the provider would be paid the difference of a retry.
+	CreateAdjustment func(http.Handler) http.Handler
 }
 
 // Handler serves the claim operations.
@@ -104,6 +108,18 @@ func (h *Handler) Routes(r chi.Router, mw Middlewares) {
 	r.Get("/{claimId}/versions", h.ListClaimVersions)
 	r.Get("/{claimId}/versions/{versionNo}", h.GetClaimVersion)
 	r.Get("/{claimId}/invoice-readiness", h.GetClaimInvoiceReadiness)
+	r.Get("/{claimId}/adjustments", h.ListClaimAdjustments)
+	r.With(wrap(mw.CreateAdjustment)).Post("/{claimId}/adjustments", h.CreateClaimAdjustment)
+}
+
+// EarningsRoutes mounts the provider's earnings view under /providers.
+//
+// It lives on the claim handler and under the provider prefix because both are true: the
+// figure is summed from claims, and the question is about a provider. Putting it under
+// /claims would make a provider ask for their own money by a path named after somebody
+// else's document.
+func (h *Handler) EarningsRoutes(r chi.Router) {
+	r.Get("/{providerId}/earnings", h.GetProviderEarnings)
 }
 
 func wrap(mw func(http.Handler) http.Handler) func(http.Handler) http.Handler {
@@ -228,6 +244,30 @@ func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) 
 		problem(w, r, http.StatusConflict, "claims/not-decided", "CLAIM_NOT_DECIDED",
 			"Dosya henüz sonuçlanmadı",
 			"Fatura hazırlığı yalnızca onaylanmış ya da kısmen onaylanmış dosya için sorulur.")
+	case errors.Is(err, application.ErrAdjustmentNotFound):
+		problem(w, r, http.StatusNotFound, "claims/adjustment-not-found",
+			"CLAIM_ADJUSTMENT_NOT_FOUND", "Düzeltme kaydı bulunamadı", "")
+	case errors.Is(err, application.ErrAdjustmentReversed):
+		problem(w, r, http.StatusConflict, "claims/adjustment-reversed",
+			"CLAIM_ADJUSTMENT_REVERSED", "Bu düzeltme zaten iptal edilmiş",
+			"Bir düzeltme yalnızca bir kez iptal edilir; yeni bir düzeltme kaydı açın.")
+	case errors.Is(err, application.ErrAdjustmentNotReversible):
+		problem(w, r, http.StatusConflict, "claims/adjustment-not-reversible",
+			"CLAIM_ADJUSTMENT_NOT_REVERSIBLE", "İptal kaydı iptal edilemez",
+			"Kararınızı yeniden değiştirmek için yeni bir düzeltme kaydı açın.")
+	case errors.Is(err, application.ErrAdjustmentCurrency):
+		problem(w, r, http.StatusUnprocessableEntity, "claims/adjustment-currency",
+			"CLAIM_ADJUSTMENT_CURRENCY", "Düzeltme dosyanın para biriminde olmalı", "")
+	case errors.Is(err, application.ErrAdjustmentLine):
+		problem(w, r, http.StatusUnprocessableEntity, "claims/adjustment-line",
+			"CLAIM_ADJUSTMENT_LINE_NOT_FOUND", "Bu sürümde böyle bir satır yok", "")
+	case errors.Is(err, application.ErrClaimAlreadyRaised):
+		problem(w, r, http.StatusConflict, "claims/source-already-claimed",
+			"CLAIM_SOURCE_ALREADY_CLAIMED", "Bu rezervasyon için açık bir dosya zaten var",
+			"Bir rezervasyonun aynı anda yalnızca bir açık hasar dosyası olur.")
+	case errors.Is(err, application.ErrBookingNotFound):
+		problem(w, r, http.StatusUnprocessableEntity, "claims/booking-unknown",
+			"CLAIM_BOOKING_UNKNOWN", "Rezervasyon bulunamadı", "")
 	case errors.Is(err, application.ErrTransitionInvalid):
 		problem(w, r, http.StatusConflict, "claims/transition-invalid", "CLAIM_TRANSITION_INVALID",
 			"Dosya bu durumda bu işleme uygun değil", "")

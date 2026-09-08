@@ -32,13 +32,23 @@ const (
 // claim lines, which are what the provider asked for rather than what the payer answered, and
 // never in a frontend, which would be a second sum that could disagree with this one.
 type InvoiceReadiness struct {
-	ClaimID          uuid.UUID
-	Status           string
-	CurrencyCode     string
+	ClaimID      uuid.UUID
+	Status       string
+	CurrencyCode string
+	// LineTotal is what the line decisions approved, before any adjustment.
+	LineTotal string
+	// AdjustmentTotal is the signed sum of the claim's adjustments: a cut and a recovery add
+	// to it, a correction may go either way, and a reversal subtracts exactly what the row
+	// it reverses added. It is the second half of the sentence below.
+	AdjustmentTotal string
+	// ApprovedTotal is lines minus adjustments. It is the figure an invoice is checked
+	// against, and it is computed here, once, in exact decimals — never in a frontend, and
+	// never twice from two tables that could disagree.
 	ApprovedTotal    string
 	PayerTotal       string
 	MemberTotal      string
 	LineCount        int
+	AdjustmentCount  int
 	DecidedLineCount int
 	Ready            bool
 	Blockers         []string
@@ -78,13 +88,22 @@ func (s *Service) InvoiceReadiness(ctx context.Context, rc identity.RequestConte
 			return err
 		}
 
-		totals := sumDecisions(decisions)
+		adjustments, err := s.repo.ListAdjustments(ctx, tx, rc.TenantID, id)
+		if err != nil {
+			return err
+		}
+
+		lineTotals := sumDecisions(decisions)
+		adjusted := sumAdjustments(adjustments)
+		net := lineTotals.Sub(adjusted)
 		out = InvoiceReadiness{
 			ClaimID: record.ID, Status: record.Status, CurrencyCode: currencyOf(lines),
-			ApprovedTotal: totals.Approved.String(), PayerTotal: totals.Payer.String(),
-			MemberTotal: totals.Member.String(),
-			LineCount:   len(lines), DecidedLineCount: len(decisions),
-			Blockers: []string{},
+			LineTotal: lineTotals.Approved.String(), AdjustmentTotal: adjusted.Approved.String(),
+			ApprovedTotal: net.Approved.String(), PayerTotal: net.Payer.String(),
+			MemberTotal: net.Member.String(),
+			LineCount:   len(lines), AdjustmentCount: len(adjustments),
+			DecidedLineCount: len(decisions),
+			Blockers:         []string{},
 		}
 		if !hasTaxIdentity {
 			out.Blockers = append(out.Blockers, BlockerProviderTaxIdentity)
@@ -120,4 +139,29 @@ func singleCurrency(lines []LineRecord) bool {
 		}
 	}
 	return true
+}
+
+// sumAdjustments totals the adjustment ledger, signed. A reversal carries the negative of
+// what it reverses, so a cut of a hundred followed by its reversal sums to nothing and the
+// approved total goes back to exactly where it was — not to within a kuruş of it, exactly,
+// because every figure here is an exact decimal that never became a float.
+func sumAdjustments(rows []AdjustmentRecord) pipelineTotals {
+	out := pipelineTotals{Approved: zero(), Payer: zero(), Member: zero()}
+	for _, row := range rows {
+		out.Approved = out.Approved.Add(quantityOrZero(row.Amount))
+		out.Payer = out.Payer.Add(quantityOrZero(row.PayerAmount))
+		out.Member = out.Member.Add(quantityOrZero(row.MemberAmount))
+	}
+	return out
+}
+
+// Sub is "lines minus adjustments", on all three figures at once. The three are subtracted
+// together rather than one at a time because the split has to survive the arithmetic: an
+// adjustment whose halves add up to its amount leaves a net whose halves add up to the net.
+func (p pipelineTotals) Sub(other pipelineTotals) pipelineTotals {
+	return pipelineTotals{
+		Approved: p.Approved.Sub(other.Approved),
+		Payer:    p.Payer.Sub(other.Payer),
+		Member:   p.Member.Sub(other.Member),
+	}
 }

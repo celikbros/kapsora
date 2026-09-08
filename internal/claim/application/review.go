@@ -108,14 +108,14 @@ func (s *Service) DecideLines(ctx context.Context, rc identity.RequestContext, i
 			}); err != nil {
 				return err
 			}
-			// A cut is money the payer took off a line it accepted, and M7's settlement
-			// reads it from `claim.adjustment` rather than by re-deriving it from the
-			// decision history.
-			if decision.Decision == domain.DecisionCut {
-				if err := s.writeCut(ctx, tx, rc, current, version.VersionNo, line, decision); err != nil {
-					return err
-				}
-			}
+			// A CUT is not written to `claim.adjustment` here, and that is a decision
+			// WP-I7-01 made rather than a step somebody forgot. The line decision *is* the
+			// cut: it records the reduced approved amount with the reviewer, the stage and
+			// the reason. `claim.adjustment` is the ledger of money that moved **outside**
+			// a line decision, which is exactly what makes "approved total = lines minus
+			// adjustments" a sum nobody counts twice. Writing both would subtract the same
+			// hundred lira from the same claim in two places, and the provider would be
+			// paid the difference of a bug.
 		}
 		if in.ReviewComment != nil {
 			if err := s.repo.SetReviewComment(ctx, tx, rc.TenantID, id, stage,
@@ -185,32 +185,6 @@ func (s *Service) advanceStage(ctx context.Context, tx pgx.Tx, rc identity.Reque
 		AggregateID: record.ID, Title: "Hasar dosyası " + record.Reference,
 		ActorID: actorPtr(rc.Principal.ActorID),
 	})
-}
-
-// writeCut records the money a cut took off a line. The amount is what the ladder said the
-// payer would carry less what the reviewer approved, and it is never negative: a reviewer who
-// approved more than was claimed has not cut anything.
-func (s *Service) writeCut(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
-	record ClaimRecord, versionNo int, line LineRecord, decision DecisionInput,
-) error {
-	claimed, err := quantityOf(line.LineAmount, "lineAmount")
-	if err != nil {
-		return err
-	}
-	approved, err := quantityOf(decision.ApprovedAmount, "approvedAmount")
-	if err != nil {
-		return err
-	}
-	amount := claimed.Sub(approved)
-	if !amount.IsPositive() {
-		return nil
-	}
-	_, err = s.repo.CreateAdjustment(ctx, tx, rc.TenantID, NewAdjustmentRow{
-		ClaimID: record.ID, VersionNo: versionNo, AdjustmentType: "CUT",
-		Amount: amount.String(), CurrencyCode: line.CurrencyCode,
-		ReasonCode: decision.ReasonCode, ActorID: actorPtr(rc.Principal.ActorID),
-	})
-	return err
 }
 
 // Approve finishes the claim. The status it lands in is what its line decisions say, never

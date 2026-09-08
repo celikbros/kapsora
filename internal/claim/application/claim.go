@@ -303,7 +303,12 @@ func (s *Service) createWithReference(ctx context.Context, tx pgx.Tx, rc identit
 		record, err := s.repo.CreateClaim(ctx, tx, rc.TenantID, NewClaimRow{
 			Reference: reference, PersonID: in.PersonID, ProgramID: in.ProgramID,
 			EnrollmentID: in.EnrollmentID, ProviderOrganizationID: in.ProviderOrganizationID,
-			DomainCode: domain.DomainHealth, CaseID: in.CaseID, FulfilmentID: in.FulfilmentID,
+			DomainCode: domain.DomainHealth,
+			// The pair follows the case. A claim raised by hand against an episode of care
+			// names it once and the two columns say the same thing, which is what
+			// `ck_claim_case_matches_source` asserts.
+			SourceType: caseSource(in.CaseID), SourceID: in.CaseID,
+			CaseID: in.CaseID, FulfilmentID: in.FulfilmentID,
 			AuthorizationID: in.AuthorizationID,
 			ServiceDateFrom: domain.DateOnly(in.ServiceDateFrom),
 			ServiceDateTo:   domain.DateOnly(in.ServiceDateTo), Channel: channel,
@@ -689,4 +694,14 @@ func copyLines(versionID uuid.UUID, lines []LineRecord, actorID *uuid.UUID) []Ne
 		})
 	}
 	return out
+}
+
+// caseSource is the source type of a claim raised against an episode of care, and nothing at
+// all for one raised against nothing.
+func caseSource(caseID *uuid.UUID) *string {
+	if caseID == nil {
+		return nil
+	}
+	source := domain.SourceHealthCase
+	return &source
 }

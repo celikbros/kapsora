@@ -240,6 +240,9 @@ const (
 // so the generator is tested rather than trusted.
 func ValidReference(reference string) bool { return referencePattern.MatchString(reference) }
 
+// ValidCurrency reports whether a currency filter matches the column CHECK.
+func ValidCurrency(code string) bool { return currencyPattern.MatchString(code) }
+
 // NewLine is one line as it arrives, before anything has been looked up.
 type NewLine struct {
 	LineNo              int

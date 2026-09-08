@@ -977,6 +977,49 @@ export interface paths {
         patch: operations["patchClaimDraft"];
         trace?: never;
     };
+    "/api/v1/claims/{claimId}/adjustments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The claim's adjustment ledger, oldest first, which is the order the reversal chain
+         *     reads in: a reversal always comes after the row it takes back, so a screen rendering
+         *     this list top to bottom shows the cut and then the row that undid it.
+         *
+         *     Every row carries its split, its reason, where it came from and who wrote it.
+         *     `createdBy` is null for exactly the two system sources — a cancellation or no-show fee
+         *     is written by the outbox handler of a booking event, and no person is behind it.
+         */
+        get: operations["listClaimAdjustments"];
+        put?: never;
+        /**
+         * @description Records money that moved on a decided claim: a `CUT`, a `RECOVERY` or a `CORRECTION`
+         *     with its payer/member split, a reason code from the closed list, and optionally the
+         *     line it belongs to.
+         *
+         *     **Nothing is ever edited or deleted.** An adjustment is undone by a `REVERSAL`, which
+         *     is raised by sending `reversesAdjustmentId` and a reason and nothing else: the amount
+         *     and the split are read off the row being reversed, so the approved total goes back to
+         *     exactly where it was rather than to whatever somebody typed. One reversal per
+         *     adjustment, and a reversal may not itself be reversed.
+         *
+         *     `payerAmount + memberAmount` must equal `amount` exactly. It is a database CHECK as
+         *     well; this is the copy that tells the caller which field.
+         *
+         *     The claim's approved total is recomputed on the server — lines minus adjustments — and
+         *     is returned with the row, so the figure a caller reads back is the figure the invoice
+         *     will be checked against.
+         */
+        post: operations["createClaimAdjustment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/claims/{claimId}/approve": {
         parameters: {
             query?: never;
@@ -4067,6 +4110,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/providers/{providerId}/earnings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description What a provider earned in a period, per currency: the claims decided in it grouped by
+         *     status, the approved total (lines minus adjustments), the adjustment total, and the
+         *     part of the approved total that is not yet on an invoice — with the ids of the claims
+         *     that part is made of.
+         *
+         *     **`invoiceableTotal` is the figure the provider's invoice is checked against.** It is
+         *     summed here, once, in exact decimals, from the same line decisions and the same
+         *     adjustment ledger `getClaimInvoiceReadiness` reads. A claim that has already reached
+         *     INVOICED, BATCHED or SETTLED is money somebody is already collecting and is counted in
+         *     `approvedTotal` and not in `invoiceableTotal`.
+         *
+         *     Per currency, always. A total across currencies is not a total, and a claim is
+         *     denominated once — a mixed line set is refused when the claim is created.
+         *
+         *     `from` and `to` bound the day the claim was decided rather than the day the service was
+         *     delivered, and both are inclusive.
+         */
+        get: operations["getProviderEarnings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/providers/{providerId}/locations": {
         parameters: {
             query?: never;
@@ -5927,8 +6004,91 @@ export interface components {
             serviceDateFrom: string;
             /** Format: date */
             serviceDateTo: string;
+            /**
+             * Format: uuid
+             * @description The case, booking or reimbursement request the claim was raised from.
+             */
+            sourceId?: string | null;
+            /**
+             * @description What the claim came from. Null together with `sourceId` on a claim raised by hand
+             *     against nothing, which is an ordinary claim.
+             */
+            sourceType?: components["schemas"]["ClaimSourceType"] | null;
             status: components["schemas"]["ClaimStatus"];
         };
+        /**
+         * @description One ledger line: money that moved on a claim for a reason that is not a line decision.
+         *     Append-only — nothing here is ever edited, and an adjustment taken back is a `REVERSAL`
+         *     naming it while both rows stay on the record.
+         */
+        ClaimAdjustment: {
+            adjustmentType: components["schemas"]["ClaimAdjustmentType"];
+            /** @description Exact decimal. Negative on a REVERSAL and on a CORRECTION that gives back. */
+            amount: string;
+            /** Format: uuid */
+            claimId: string;
+            /**
+             * Format: uuid
+             * @description The line a line-level adjustment names. Null is the claim-level case and is
+             *     ordinary: a recovery of an overpayment is about the claim, not one of its lines.
+             */
+            claimLineId?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /**
+             * Format: uuid
+             * @description Null for exactly the two system sources: a fee adjustment is written by an outbox
+             *     handler and no person is behind it.
+             */
+            createdBy?: string | null;
+            currencyCode: string;
+            /** Format: uuid */
+            id: string;
+            /** @description payerAmount plus memberAmount is exactly amount. It is a database CHECK. */
+            memberAmount: string;
+            payerAmount: string;
+            reasonCode: string;
+            reasonText?: string | null;
+            /**
+             * Format: uuid
+             * @description What this row takes back. Set on exactly a REVERSAL.
+             */
+            reversesAdjustmentId?: string | null;
+            /**
+             * Format: uuid
+             * @description The cancellation or no-show row a system-written fee adjustment came from.
+             */
+            sourceId?: string | null;
+            sourceType: components["schemas"]["ClaimAdjustmentSource"];
+            versionNo: number;
+        };
+        ClaimAdjustmentList: {
+            items: components["schemas"]["ClaimAdjustment"][];
+        };
+        /**
+         * @description The row that was written and the claim's totals as they stand after it, recomputed on
+         *     the server by the same code `getClaimInvoiceReadiness` runs. Two sums would be two
+         *     answers.
+         */
+        ClaimAdjustmentResult: {
+            adjustment: components["schemas"]["ClaimAdjustment"];
+            readiness: components["schemas"]["ClaimInvoiceReadiness"];
+        };
+        /**
+         * @description Where the adjustment came from. `CANCELLATION` and `NO_SHOW` are written by the outbox
+         *     handler of a booking event against the fee row that assessed the fee, and are the only
+         *     two a caller may not name.
+         * @enum {string}
+         */
+        ClaimAdjustmentSource: "CANCELLATION" | "NO_SHOW" | "REVIEW" | "MANUAL" | "RECOVERY";
+        /**
+         * @description `CUT` is money the payer took off an otherwise valid claim, `RECOVERY` is money already
+         *     paid coming back, `CORRECTION` is an arithmetic or pricing mistake either way.
+         *     `REVERSAL` is not a fourth kind of money — it is the negative of one of the three, and
+         *     it is the only way an adjustment is ever undone.
+         * @enum {string}
+         */
+        ClaimAdjustmentType: "CUT" | "RECOVERY" | "CORRECTION" | "REVERSAL";
         /**
          * @description What was decided about one line. CUT is a reduction the payer applied to an otherwise
          *     valid line; PARTIALLY_APPROVED is a smaller quantity than was claimed. They are two
@@ -5974,9 +6134,16 @@ export interface components {
          */
         ClaimInvoiceBlocker: "PROVIDER_TAX_IDENTITY_MISSING" | "CURRENCY_NOT_SINGLE" | "LINE_NOT_DECIDED";
         ClaimInvoiceReadiness: {
+            adjustmentCount: number;
             /**
-             * @description The sum of every line's approved amount, summed on the server once. Exact decimal
-             *     as a string, never a JSON number and never a total a frontend added up.
+             * @description The signed sum of the claim's adjustments. A cut and a recovery add to it, a
+             *     correction may go either way, and a reversal subtracts exactly what the row it
+             *     reverses added — so a cut followed by its reversal leaves this at zero.
+             */
+            adjustmentTotal: string;
+            /**
+             * @description `lineTotal` minus `adjustmentTotal`. It is the figure an invoice is checked
+             *     against, computed on the server once.
              */
             approvedTotal: string;
             blockers: components["schemas"]["ClaimInvoiceBlocker"][];
@@ -5985,6 +6152,11 @@ export interface components {
             currencyCode: string;
             decidedLineCount: number;
             lineCount: number;
+            /**
+             * @description The sum of every line's approved amount, before any adjustment. Exact decimal as a
+             *     string, never a JSON number and never a total a frontend added up.
+             */
+            lineTotal: string;
             /** @description payerTotal plus memberTotal is exactly approvedTotal. */
             memberTotal: string;
             payerTotal: string;
@@ -6101,6 +6273,12 @@ export interface components {
              */
             reasonText?: string | null;
         };
+        /**
+         * @description What a claim was raised from. It is one vocabulary for every vertical, so a settlement
+         *     never has to know which module wrote a claim.
+         * @enum {string}
+         */
+        ClaimSourceType: "HEALTH_CASE" | "BOOKING" | "REIMBURSEMENT";
         /**
          * @description The claim lifecycle of v1.2 12.5. INVOICED, BATCHED and SETTLED are declared because
          *     the lifecycle is one list; the commands that reach them belong to M7 and nothing in
@@ -6383,6 +6561,16 @@ export interface components {
         CreateClaim: {
             /** Format: uuid */
             authorizationId?: string | null;
+            /**
+             * Format: uuid
+             * @description The stay this claim bills, for a lodging claim raised by hand. It sets the claim's
+             *     source to `BOOKING` and its domain to `ACCOMMODATION`, and one booking may have
+             *     only one live claim — a second is refused. A completed stay ordinarily needs none
+             *     of this: the claim is raised by the outbox handler of `booking.checked_out`.
+             *
+             *     It may not be sent together with `caseId`: a claim comes from one thing.
+             */
+            bookingId?: string | null;
             /** Format: uuid */
             caseId?: string | null;
             channel?: components["schemas"]["ServiceRequestChannel"] | null;
@@ -6401,6 +6589,39 @@ export interface components {
             serviceDateFrom: string;
             /** Format: date */
             serviceDateTo: string;
+        };
+        /**
+         * @description Either an adjustment or a reversal of one.
+         *
+         *     A reversal sends `reversesAdjustmentId` and `reasonCode` and nothing else: the amount
+         *     and the split are read off the row being reversed, which is what makes "a reversal
+         *     restores the approved total exactly" a property of the server rather than of whoever
+         *     typed the figures. Sending an amount with a reversal is a validation error.
+         *
+         *     Everything else sends `adjustmentType`, `amount`, `payerAmount` and `memberAmount`,
+         *     and the three amounts must satisfy `payerAmount + memberAmount = amount` exactly.
+         */
+        CreateClaimAdjustment: {
+            /** @description Required unless this is a reversal. REVERSAL may not be named directly. */
+            adjustmentType?: components["schemas"]["ClaimAdjustmentType"] | null;
+            amount?: string | null;
+            /**
+             * @description Optional, and checked against the claim's own currency when it is sent. One claim
+             *     is denominated once.
+             */
+            currencyCode?: string | null;
+            /** @description The line of the claim's current version this adjustment belongs to. */
+            lineNo?: number | null;
+            memberAmount?: string | null;
+            payerAmount?: string | null;
+            /** @description From the closed list; an unknown code is 422. */
+            reasonCode: string;
+            reasonText?: string | null;
+            /**
+             * Format: uuid
+             * @description Makes this a REVERSAL of that adjustment and nothing else.
+             */
+            reversesAdjustmentId?: string | null;
         };
         CreateCodeSystemRequest: {
             authority: components["schemas"]["CodeSystemAuthority"];
@@ -9257,6 +9478,37 @@ export interface components {
         ProviderCapabilityList: {
             items: components["schemas"]["ProviderCapability"][];
         };
+        ProviderEarnings: {
+            currencies: components["schemas"]["ProviderEarningsCurrency"][];
+            /** Format: date */
+            from?: string | null;
+            providerName: string;
+            /** Format: uuid */
+            providerOrganizationId: string;
+            /** Format: date */
+            to?: string | null;
+        };
+        ProviderEarningsCurrency: {
+            adjustmentTotal: string;
+            /** @description Lines minus adjustments, across every decided claim in this currency. */
+            approvedTotal: string;
+            byStatus: components["schemas"]["ProviderEarningsStatusTotal"][];
+            claimCount: number;
+            currencyCode: string;
+            invoiceableClaimIds: string[];
+            /**
+             * @description The part of `approvedTotal` that is not yet on an invoice. A claim that has reached
+             *     INVOICED, BATCHED or SETTLED is money somebody is already collecting.
+             */
+            invoiceableTotal: string;
+            memberTotal: string;
+            payerTotal: string;
+        };
+        ProviderEarningsStatusTotal: {
+            approvedTotal: string;
+            claimCount: number;
+            status: components["schemas"]["ClaimStatus"];
+        };
         ProviderLocation: {
             addressLine?: string | null;
             city?: string | null;
@@ -10979,6 +11231,11 @@ export type SchemaCancellationResult = components['schemas']['CancellationResult
 export type SchemaCheckInBookingRequest = components['schemas']['CheckInBookingRequest'];
 export type SchemaCheckOutBookingRequest = components['schemas']['CheckOutBookingRequest'];
 export type SchemaClaim = components['schemas']['Claim'];
+export type SchemaClaimAdjustment = components['schemas']['ClaimAdjustment'];
+export type SchemaClaimAdjustmentList = components['schemas']['ClaimAdjustmentList'];
+export type SchemaClaimAdjustmentResult = components['schemas']['ClaimAdjustmentResult'];
+export type SchemaClaimAdjustmentSource = components['schemas']['ClaimAdjustmentSource'];
+export type SchemaClaimAdjustmentType = components['schemas']['ClaimAdjustmentType'];
 export type SchemaClaimDecisionKind = components['schemas']['ClaimDecisionKind'];
 export type SchemaClaimDecisionReason = components['schemas']['ClaimDecisionReason'];
 export type SchemaClaimDecisionStage = components['schemas']['ClaimDecisionStage'];
@@ -10991,6 +11248,7 @@ export type SchemaClaimLineDecisionInput = components['schemas']['ClaimLineDecis
 export type SchemaClaimPage = components['schemas']['ClaimPage'];
 export type SchemaClaimReason = components['schemas']['ClaimReason'];
 export type SchemaClaimReturnReason = components['schemas']['ClaimReturnReason'];
+export type SchemaClaimSourceType = components['schemas']['ClaimSourceType'];
 export type SchemaClaimStatus = components['schemas']['ClaimStatus'];
 export type SchemaClaimVersion = components['schemas']['ClaimVersion'];
 export type SchemaClaimVersionList = components['schemas']['ClaimVersionList'];
@@ -11019,6 +11277,7 @@ export type SchemaCreateAdjustmentRequest = components['schemas']['CreateAdjustm
 export type SchemaCreateAuthorization = components['schemas']['CreateAuthorization'];
 export type SchemaCreateBookingGuest = components['schemas']['CreateBookingGuest'];
 export type SchemaCreateClaim = components['schemas']['CreateClaim'];
+export type SchemaCreateClaimAdjustment = components['schemas']['CreateClaimAdjustment'];
 export type SchemaCreateCodeSystemRequest = components['schemas']['CreateCodeSystemRequest'];
 export type SchemaCreateContractRequest = components['schemas']['CreateContractRequest'];
 export type SchemaCreateContractVersionRequest = components['schemas']['CreateContractVersionRequest'];
@@ -11214,6 +11473,9 @@ export type SchemaProvider = components['schemas']['Provider'];
 export type SchemaProviderCapability = components['schemas']['ProviderCapability'];
 export type SchemaProviderCapabilityInput = components['schemas']['ProviderCapabilityInput'];
 export type SchemaProviderCapabilityList = components['schemas']['ProviderCapabilityList'];
+export type SchemaProviderEarnings = components['schemas']['ProviderEarnings'];
+export type SchemaProviderEarningsCurrency = components['schemas']['ProviderEarningsCurrency'];
+export type SchemaProviderEarningsStatusTotal = components['schemas']['ProviderEarningsStatusTotal'];
 export type SchemaProviderLocation = components['schemas']['ProviderLocation'];
 export type SchemaProviderLocationPage = components['schemas']['ProviderLocationPage'];
 export type SchemaProviderLocationStatus = components['schemas']['ProviderLocationStatus'];
@@ -13244,6 +13506,92 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+        };
+    };
+    listClaimAdjustments: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                claimId: components["parameters"]["ClaimId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Claim adjustments */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimAdjustmentList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createClaimAdjustment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                claimId: components["parameters"]["ClaimId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateClaimAdjustment"];
+            };
+        };
+        responses: {
+            /** @description Adjustment recorded */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimAdjustmentResult"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            /**
+             * @description The claim, or the adjustment a reversal names, is not there.
+             *     CLAIM_NOT_FOUND, CLAIM_ADJUSTMENT_NOT_FOUND.
+             */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /**
+             * @description The claim has not been decided, the adjustment has already been reversed, or the
+             *     caller is trying to reverse a reversal. CLAIM_NOT_DECIDED,
+             *     CLAIM_ADJUSTMENT_REVERSED, CLAIM_ADJUSTMENT_NOT_REVERSIBLE.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     approveClaim: {
@@ -20841,6 +21189,49 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+        };
+    };
+    getProviderEarnings: {
+        parameters: {
+            query?: {
+                currency?: string;
+                from?: string;
+                to?: string;
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                providerId: components["parameters"]["ProviderId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Provider earnings */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderEarnings"];
+                };
+            };
+            /**
+             * @description A provider-scoped caller asking about somebody else's provider.
+             *     CLAIM_PROVIDER_SCOPE.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
         };
     };
     listProviderLocations: {

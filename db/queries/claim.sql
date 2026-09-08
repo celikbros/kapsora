@@ -26,22 +26,25 @@
 -- name: CreateClaim :one
 INSERT INTO claim.claim (
     tenant_id, reference, person_id, program_id, enrollment_id, provider_organization_id,
-    domain_code, case_id, fulfilment_id, authorization_id, service_date_from,
-    service_date_to, channel, created_by, updated_by)
+    domain_code, source_type, source_id, case_id, fulfilment_id, authorization_id,
+    service_date_from, service_date_to, channel, created_by, updated_by)
 VALUES (sqlc.arg('tenant_id'), sqlc.arg('reference'), sqlc.arg('person_id'),
         sqlc.arg('program_id'), sqlc.arg('enrollment_id'),
         sqlc.arg('provider_organization_id'), sqlc.arg('domain_code'),
+        sqlc.narg('source_type'), sqlc.narg('source_id'),
         sqlc.narg('case_id'), sqlc.narg('fulfilment_id'), sqlc.narg('authorization_id'),
         sqlc.arg('service_date_from'), sqlc.arg('service_date_to'), sqlc.arg('channel'),
         sqlc.narg('actor_id'), sqlc.narg('actor_id'))
 RETURNING id, reference, person_id, program_id, enrollment_id, provider_organization_id,
-          domain_code, case_id, fulfilment_id, authorization_id, current_version_no, status,
+          domain_code, source_type, source_id, case_id, fulfilment_id, authorization_id,
+          current_version_no, status,
           service_date_from, service_date_to, channel, reject_reason_code, return_reason_code,
           review_comment_medical, review_comment_financial, closed_at, created_at, row_version;
 
 -- name: GetClaim :one
 SELECT c.id, c.reference, c.person_id, c.program_id, c.enrollment_id,
-       c.provider_organization_id, c.domain_code, c.case_id, c.fulfilment_id,
+       c.provider_organization_id, c.domain_code, c.source_type, c.source_id, c.case_id,
+       c.fulfilment_id,
        c.authorization_id, c.current_version_no, c.status, c.service_date_from,
        c.service_date_to, c.channel, c.reject_reason_code, c.return_reason_code,
        c.review_comment_medical, c.review_comment_financial, c.closed_at, c.created_at,
@@ -55,7 +58,8 @@ SELECT c.id, c.reference, c.person_id, c.program_id, c.enrollment_id,
 -- name: LockClaim :one
 -- The read every command makes before it writes, so two commands on one claim serialise.
 SELECT c.id, c.reference, c.person_id, c.program_id, c.enrollment_id,
-       c.provider_organization_id, c.domain_code, c.case_id, c.fulfilment_id,
+       c.provider_organization_id, c.domain_code, c.source_type, c.source_id, c.case_id,
+       c.fulfilment_id,
        c.authorization_id, c.current_version_no, c.status, c.service_date_from,
        c.service_date_to, c.channel, c.reject_reason_code, c.return_reason_code,
        c.review_comment_medical, c.review_comment_financial, c.closed_at, c.created_at,
@@ -71,7 +75,8 @@ SELECT c.id, c.reference, c.person_id, c.program_id, c.enrollment_id,
 -- Keyset pagination on (created_at DESC, id DESC); the caller asks for limit+1 rows to learn
 -- whether a next page exists.
 SELECT c.id, c.reference, c.person_id, c.program_id, c.enrollment_id,
-       c.provider_organization_id, c.domain_code, c.case_id, c.fulfilment_id,
+       c.provider_organization_id, c.domain_code, c.source_type, c.source_id, c.case_id,
+       c.fulfilment_id,
        c.authorization_id, c.current_version_no, c.status, c.service_date_from,
        c.service_date_to, c.channel, c.reject_reason_code, c.return_reason_code,
        c.review_comment_medical, c.review_comment_financial, c.closed_at, c.created_at,
@@ -103,6 +108,20 @@ UPDATE claim.claim
        service_date_to   = sqlc.arg('service_date_to'),
        channel           = sqlc.arg('channel'),
        case_id           = sqlc.narg('case_id'),
+       -- The source pair follows the case rather than being patched beside it. Naming a
+       -- case names the source; clearing it clears a source that was the case's and leaves
+       -- a BOOKING or REIMBURSEMENT source exactly where it was, because a header patch on
+       -- a lodging claim has nothing to say about where that claim came from.
+       source_type       = CASE
+                               WHEN sqlc.narg('case_id')::uuid IS NOT NULL THEN 'HEALTH_CASE'
+                               WHEN source_type = 'HEALTH_CASE' THEN NULL
+                               ELSE source_type
+                           END,
+       source_id         = CASE
+                               WHEN sqlc.narg('case_id')::uuid IS NOT NULL THEN sqlc.narg('case_id')::uuid
+                               WHEN source_type = 'HEALTH_CASE' THEN NULL
+                               ELSE source_id
+                           END,
        fulfilment_id     = sqlc.narg('fulfilment_id'),
        authorization_id  = sqlc.narg('authorization_id'),
        updated_by        = sqlc.narg('actor_id')
@@ -403,22 +422,66 @@ SELECT count(*) AS decision_count
 -- ---------------------------------------------------------------------------
 
 -- name: CreateClaimAdjustment :one
+-- Every money column arrives and leaves as exact decimal text. The split is the database's
+-- (ck_claim_adjustment_split), so a service that rounded the two halves independently is
+-- refused here rather than publishing an invoice nobody can reconcile.
 INSERT INTO claim.adjustment (
-    tenant_id, claim_id, version_no, adjustment_type, amount, currency_code, reason_code,
-    reason_text, created_by)
+    tenant_id, claim_id, version_no, claim_line_id, adjustment_type, amount, payer_amount,
+    member_amount, currency_code, reason_code, reason_text, source_type, source_id,
+    reverses_adjustment_id, created_by)
 VALUES (sqlc.arg('tenant_id'), sqlc.arg('claim_id'), sqlc.arg('version_no'),
-        sqlc.arg('adjustment_type'), sqlc.arg('amount')::text::numeric, sqlc.arg('currency_code'),
-        sqlc.arg('reason_code'), sqlc.narg('reason_text'), sqlc.narg('actor_id'))
-RETURNING id, claim_id, version_no, adjustment_type, trim_scale(amount)::text AS amount, currency_code,
-          reason_code, reason_text, created_by, created_at;
+        sqlc.narg('claim_line_id'),
+        sqlc.arg('adjustment_type'), sqlc.arg('amount')::text::numeric,
+        sqlc.arg('payer_amount')::text::numeric, sqlc.arg('member_amount')::text::numeric,
+        sqlc.arg('currency_code'), sqlc.arg('reason_code'), sqlc.narg('reason_text'),
+        sqlc.arg('source_type'), sqlc.narg('source_id'),
+        sqlc.narg('reverses_adjustment_id'), sqlc.narg('actor_id'))
+RETURNING id, claim_id, version_no, claim_line_id, adjustment_type,
+          trim_scale(amount)::text AS amount,
+          trim_scale(payer_amount)::text AS payer_amount,
+          trim_scale(member_amount)::text AS member_amount,
+          currency_code, reason_code, reason_text, source_type, source_id,
+          reverses_adjustment_id, created_by, created_at;
 
 -- name: ListClaimAdjustments :many
-SELECT a.id, a.claim_id, a.version_no, a.adjustment_type, trim_scale(a.amount)::text AS amount,
-       a.currency_code, a.reason_code, a.reason_text, a.created_by, a.created_at
+-- Oldest first, which is the order the reversal chain reads in: a reversal always comes after
+-- the row it reverses, so a screen rendering this list top to bottom shows the cut and then
+-- the row that took it back.
+SELECT a.id, a.claim_id, a.version_no, a.claim_line_id, a.adjustment_type,
+       trim_scale(a.amount)::text AS amount,
+       trim_scale(a.payer_amount)::text AS payer_amount,
+       trim_scale(a.member_amount)::text AS member_amount,
+       a.currency_code, a.reason_code, a.reason_text, a.source_type, a.source_id,
+       a.reverses_adjustment_id, a.created_by, a.created_at
   FROM claim.adjustment a
  WHERE a.tenant_id = sqlc.arg('tenant_id')
    AND a.claim_id = sqlc.arg('claim_id')
  ORDER BY a.created_at, a.id;
+
+-- name: GetClaimAdjustment :one
+SELECT a.id, a.claim_id, a.version_no, a.claim_line_id, a.adjustment_type,
+       trim_scale(a.amount)::text AS amount,
+       trim_scale(a.payer_amount)::text AS payer_amount,
+       trim_scale(a.member_amount)::text AS member_amount,
+       a.currency_code, a.reason_code, a.reason_text, a.source_type, a.source_id,
+       a.reverses_adjustment_id, a.created_by, a.created_at
+  FROM claim.adjustment a
+ WHERE a.tenant_id = sqlc.arg('tenant_id')
+   AND a.id = sqlc.arg('id');
+
+-- name: FindClaimBySource :one
+-- The read every source-driven handler makes before it writes: is there already a live claim
+-- for this stay. The outbox delivers at least once, so this is the first half of the
+-- idempotency and `uq_claim_live_booking` is the second -- the half that holds when two
+-- deliveries look at the same moment.
+SELECT c.id, c.reference, c.status
+  FROM claim.claim c
+ WHERE c.tenant_id = sqlc.arg('tenant_id')
+   AND c.source_type = sqlc.arg('source_type')
+   AND c.source_id = sqlc.arg('source_id')
+   AND c.status NOT IN ('CANCELLED', 'REJECTED')
+ ORDER BY c.created_at, c.id
+ LIMIT 1;
 
 -- name: GetClaimProviderProfile :one
 -- The provider profile behind the claim's provider organization. The pricing ladder is
@@ -455,3 +518,142 @@ SELECT m.service_definition_id, d.code AS entitlement_code
    AND m.service_definition_id = ANY(sqlc.arg('service_definition_ids')::uuid[])
    AND (m.valid_from IS NULL OR m.valid_from <= sqlc.arg('service_date')::date)
    AND (m.valid_to IS NULL OR m.valid_to > sqlc.arg('service_date')::date);
+
+-- ---------------------------------------------------------------------------
+-- The booking a lodging claim is raised from (WP-I7-01)
+-- ---------------------------------------------------------------------------
+--
+-- These four reads cross into the accommodation schema, exactly as the reads above cross
+-- into health, benefit, directory and catalog. The alternative would be a port back into the
+-- accommodation service, and a port would mean the claim's own transaction waiting on
+-- another module's transaction to answer a question about three columns.
+--
+-- **Nothing here re-prices anything.** Every amount comes out of `accommodation.booking_night`
+-- and the two fee rows, which are the figures the booking froze when the member agreed to
+-- them. A claim that recomputed a night from the contract would be a claim that charged the
+-- member a price they were never shown.
+
+-- name: GetBookingForClaim :one
+-- The header of the lodging claim: who stayed, under which plan, in whose building, and what
+-- the room type is in the catalogue. `actual_nights` is what the check-out counted on the
+-- property's own clock and is the number of lines the claim gets; it is NULL until a stay is
+-- checked out, which is why the handler reads it rather than the booked nights.
+SELECT b.id, b.reference, b.person_id, b.program_id, b.enrollment_id, b.property_id,
+       b.room_type_id, b.status, b.check_in, b.check_out, b.nights, b.actual_nights,
+       b.over_booking, b.authorization_id, b.checked_out_at, b.cancelled_at,
+       b.quote_snapshot,
+       p.provider_organization_id, rt.service_definition_id
+  FROM accommodation.booking b
+  JOIN accommodation.property p ON p.tenant_id = b.tenant_id AND p.id = b.property_id
+  JOIN accommodation.room_type rt ON rt.tenant_id = b.tenant_id AND rt.id = b.room_type_id
+ WHERE b.tenant_id = sqlc.arg('tenant_id')
+   AND b.id = sqlc.arg('id');
+
+-- name: ListBookingNightsForClaim :many
+-- One row per night the member agreed to, in stay order, with the split the booking froze.
+-- `unit_amount` is what the claim line asks for and `payer_amount` is what the plan already
+-- decided it carries; the two are copied and never recomputed.
+SELECT n.stay_date, trim_scale(n.unit_amount)::text AS unit_amount,
+       trim_scale(n.payer_amount)::text AS payer_amount,
+       trim_scale(n.member_amount)::text AS member_amount, n.currency_code
+  FROM accommodation.booking_night n
+ WHERE n.tenant_id = sqlc.arg('tenant_id')
+   AND n.booking_id = sqlc.arg('booking_id')
+ ORDER BY n.stay_date;
+
+-- name: GetBookingNoShowForClaim :one
+-- The fee a confirmed no-show assessed, with the split the row already carries. The status is
+-- returned rather than filtered on, so a handler reaching a report somebody rejected while
+-- the event sat in a queue can say so instead of quietly writing nothing.
+SELECT s.id, s.status, trim_scale(s.assessed_fee_amount)::text AS assessed_fee_amount,
+       trim_scale(s.payer_amount)::text AS payer_amount,
+       trim_scale(s.member_amount)::text AS member_amount, s.currency_code
+  FROM accommodation.no_show s
+ WHERE s.tenant_id = sqlc.arg('tenant_id')
+   AND s.booking_id = sqlc.arg('booking_id');
+
+-- name: GetBookingCancellationForClaim :one
+-- The fee a cancellation charged. `free` is returned because a free cancellation produces no
+-- claim at all, and the handler has to be able to tell "nothing to bill" from "no row yet".
+SELECT c.id, c.free, trim_scale(c.fee_amount)::text AS fee_amount,
+       trim_scale(c.payer_fee)::text AS payer_fee,
+       trim_scale(c.member_fee)::text AS member_fee, c.currency_code
+  FROM accommodation.cancellation c
+ WHERE c.tenant_id = sqlc.arg('tenant_id')
+   AND c.booking_id = sqlc.arg('booking_id');
+
+-- ---------------------------------------------------------------------------
+-- The provider's earnings (WP-I7-01 section 2.4)
+-- ---------------------------------------------------------------------------
+
+-- name: ListProviderEarningClaims :many
+-- One row per decided claim of one provider, with everything the earnings view has to add up:
+-- the currency, the moment the last line of the current version was decided, the line totals
+-- and the adjustment totals.
+--
+-- It answers per claim rather than per currency because the sums belong in Go. Every figure
+-- below is exact decimal text, `benefitdomain.Quantity` adds them, and a `sum()` grouped in
+-- SQL would hand the same arithmetic to a numeric cast on the way out — one more place for a
+-- total to be produced, which is one more place for two totals to disagree.
+--
+-- The period is measured against the decision, not against the service date: what a provider
+-- earned in March is what was decided in March, and a stay in February decided in March is
+-- money that arrives in March.
+WITH latest AS (
+    SELECT DISTINCT ON (d.line_id)
+           d.line_id, d.approved_amount, d.payer_amount, d.member_amount, d.decided_at,
+           l.version_id, l.currency_code
+      FROM claim.line_decision d
+      JOIN claim.claim_line l ON l.tenant_id = d.tenant_id AND l.id = d.line_id
+     WHERE d.tenant_id = sqlc.arg('tenant_id')
+     ORDER BY d.line_id, d.decided_at DESC, d.id DESC
+), per_claim AS (
+    SELECT c.id AS claim_id, c.reference, c.status, c.domain_code,
+           min(latest.currency_code) AS currency_code,
+           max(latest.decided_at)::timestamptz AS decided_at,
+           sum(latest.approved_amount) AS line_total,
+           sum(latest.payer_amount) AS line_payer_total,
+           sum(latest.member_amount) AS line_member_total
+      FROM claim.claim c
+      JOIN claim.claim_version v ON v.tenant_id = c.tenant_id AND v.claim_id = c.id
+                                AND v.version_no = c.current_version_no
+      JOIN latest ON latest.version_id = v.id
+     WHERE c.tenant_id = sqlc.arg('tenant_id')
+       AND c.provider_organization_id = sqlc.arg('provider_organization_id')
+       AND c.status IN ('APPROVED', 'PARTIALLY_APPROVED', 'INVOICED', 'BATCHED', 'SETTLED')
+     GROUP BY c.id, c.reference, c.status, c.domain_code
+), adjusted AS (
+    SELECT a.claim_id,
+           sum(a.amount) AS adjustment_total,
+           sum(a.payer_amount) AS adjustment_payer_total,
+           sum(a.member_amount) AS adjustment_member_total
+      FROM claim.adjustment a
+     WHERE a.tenant_id = sqlc.arg('tenant_id')
+     GROUP BY a.claim_id
+)
+SELECT p.claim_id, p.reference, p.status, p.domain_code,
+       COALESCE(p.currency_code, 'TRY')::text AS currency_code, p.decided_at,
+       trim_scale(p.line_total)::text AS line_total,
+       trim_scale(p.line_payer_total)::text AS line_payer_total,
+       trim_scale(p.line_member_total)::text AS line_member_total,
+       trim_scale(COALESCE(adjusted.adjustment_total, 0))::text AS adjustment_total,
+       trim_scale(COALESCE(adjusted.adjustment_payer_total, 0))::text AS adjustment_payer_total,
+       trim_scale(COALESCE(adjusted.adjustment_member_total, 0))::text AS adjustment_member_total
+  FROM per_claim p
+  LEFT JOIN adjusted ON adjusted.claim_id = p.claim_id
+ WHERE (sqlc.narg('decided_from')::timestamptz IS NULL
+        OR p.decided_at >= sqlc.narg('decided_from')::timestamptz)
+   AND (sqlc.narg('decided_to')::timestamptz IS NULL
+        OR p.decided_at < sqlc.narg('decided_to')::timestamptz)
+   AND (sqlc.narg('currency_code')::text IS NULL
+        OR p.currency_code = sqlc.narg('currency_code')::text)
+ ORDER BY p.decided_at, p.claim_id;
+
+-- name: ClaimProviderOrganizationName :one
+-- The provider's own display name for the earnings header. It is a read of an organization,
+-- not of a person, and it carries no identifier or contact value.
+SELECT o.display_name
+  FROM directory.tenant_organization t
+  JOIN directory.organization o ON o.id = t.organization_id
+ WHERE t.tenant_id = sqlc.arg('tenant_id')
+   AND t.id = sqlc.arg('id');

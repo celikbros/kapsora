@@ -318,6 +318,14 @@ func (s *Service) reviewNoShow(ctx context.Context, tx pgx.Tx, rc identity.Reque
 		}); err != nil {
 		return NoShowView{}, err
 	}
+	// Only a confirmation is announced. A rejected report cost nobody anything and a
+	// disputed one is still a question, and publishing either would tell the billing side
+	// that a fee exists when it does not.
+	if in.Status == NoShowConfirmed {
+		if err := s.publishNoShowConfirmed(ctx, tx, rc.TenantID, record, report.ID); err != nil {
+			return NoShowView{}, err
+		}
+	}
 
 	updated := report
 	updated.Status = in.Status

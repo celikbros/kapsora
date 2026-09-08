@@ -43,6 +43,7 @@ import {
   toMicros,
   type MockWorld,
   type StoredClaim,
+  type StoredClaimAdjustment,
   type StoredClaimLine,
   type StoredClaimLineDecision,
   type StoredClaimVersion,
@@ -108,6 +109,42 @@ const CLAIM_STATUSES = new Set<string>([
 ]);
 
 const DECISION_KINDS = new Set<string>(['APPROVED', 'PARTIALLY_APPROVED', 'REJECTED', 'CUT']);
+
+/**
+ * The adjustment types a caller may name. REVERSAL is absent on purpose: a reversal is raised
+ * by naming what it reverses, not by asking for one.
+ */
+const CALLER_ADJUSTMENT_TYPES = new Set<string>(['CUT', 'RECOVERY', 'CORRECTION']);
+
+/**
+ * The closed list of adjustment reasons, transcribed from the Go domain. It is closed because
+ * an adjustment is what a provider disputes, and a dispute is answerable only if the reason is
+ * a code somebody can count rather than a sentence one reviewer typed.
+ */
+const ADJUSTMENT_REASONS = new Set<string>([
+  'TARIFF_EXCEEDED',
+  'CONTRACT_TERMS',
+  'NOT_COVERED',
+  'DUPLICATE_SERVICE',
+  'DOCUMENT_MISSING',
+  'OVERPAYMENT',
+  'DUPLICATE_PAYMENT',
+  'MEMBER_LIABILITY',
+  'ARITHMETIC_ERROR',
+  'PRICE_CORRECTION',
+  'CURRENCY_CORRECTION',
+  'REVIEW_REVERSED',
+  'ENTERED_IN_ERROR',
+]);
+
+/** The statuses a claim counts towards a provider's earnings in. */
+const EARNING_STATUSES = new Set<string>([
+  'APPROVED',
+  'PARTIALLY_APPROVED',
+  'INVOICED',
+  'BATCHED',
+  'SETTLED',
+]);
 const CHANNELS = new Set<string>([
   'BACKOFFICE',
   'PROVIDER_PORTAL',
@@ -357,6 +394,8 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
       enrollmentId: row.enrollmentId,
       providerOrganizationId: row.providerOrganizationId,
       domainCode: row.domainCode,
+      sourceType: row.sourceType,
+      sourceId: row.sourceId,
       caseId: row.caseId,
       fulfilmentId: row.fulfilmentId,
       authorizationId: row.authorizationId,
@@ -871,6 +910,85 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
     return { approved, payer, member };
   };
 
+  const adjustmentsOf = (claimId: string): StoredClaimAdjustment[] =>
+    world().claimAdjustments.filter((a) => a.claimId === claimId);
+
+  /**
+   * The signed sum of a claim's adjustment ledger. A reversal carries the negative of what it
+   * reverses, so a cut and its reversal sum to nothing and the approved total goes back to
+   * exactly where it was.
+   */
+  const adjustmentTotalsOf = (claimId: string) => {
+    let amountMicros = ZERO;
+    let payer = ZERO;
+    let member = ZERO;
+    for (const row of adjustmentsOf(claimId)) {
+      amountMicros += toMicros(row.amount);
+      payer += toMicros(row.payerAmount);
+      member += toMicros(row.memberAmount);
+    }
+    return { approved: amountMicros, payer, member };
+  };
+
+  /** One ledger row as the contract renders it. */
+  const adjustmentView = (row: StoredClaimAdjustment): Schemas['ClaimAdjustment'] => ({
+    id: row.id,
+    claimId: row.claimId,
+    versionNo: row.versionNo,
+    claimLineId: row.claimLineId,
+    adjustmentType: row.adjustmentType,
+    amount: amount(toMicros(row.amount)),
+    payerAmount: amount(toMicros(row.payerAmount)),
+    memberAmount: amount(toMicros(row.memberAmount)),
+    currencyCode: row.currencyCode,
+    reasonCode: row.reasonCode,
+    reasonText: row.reasonText,
+    sourceType: row.sourceType,
+    sourceId: row.sourceId,
+    reversesAdjustmentId: row.reversesAdjustmentId,
+    createdBy: row.createdBy,
+    createdAt: row.createdAt,
+  });
+
+  /**
+   * What an invoice would need, answered the way the server answers it: the line decisions
+   * summed once, the adjustment ledger summed once, and the approved total the difference.
+   */
+  const readinessOf = (row: StoredClaim): Schemas['ClaimInvoiceReadiness'] => {
+    const version = versionOf(row.id, row.currentVersionNo);
+    const lines = version ? linesOf(version.id) : [];
+    const decisions = version ? latestDecisions(version.id) : [];
+    const lineTotals = version
+      ? totalsOf(version.id)
+      : { approved: ZERO, payer: ZERO, member: ZERO };
+    const adjusted = adjustmentTotalsOf(row.id);
+
+    const blockers: Schemas['ClaimInvoiceBlocker'][] = [];
+    const relationship = world().relationships.find((r) => r.id === row.providerOrganizationId);
+    const organization = relationship
+      ? world().organizations.get(relationship.organizationId)
+      : undefined;
+    if (!organization?.taxNumber) blockers.push('PROVIDER_TAX_IDENTITY_MISSING');
+    if (new Set(lines.map((l) => l.currencyCode)).size > 1) blockers.push('CURRENCY_NOT_SINGLE');
+    if (decisions.length !== lines.length) blockers.push('LINE_NOT_DECIDED');
+
+    return {
+      claimId: row.id,
+      status: row.status,
+      currencyCode: lines[0]?.currencyCode ?? 'TRY',
+      lineTotal: amount(lineTotals.approved),
+      adjustmentTotal: amount(adjusted.approved),
+      approvedTotal: amount(lineTotals.approved - adjusted.approved),
+      payerTotal: amount(lineTotals.payer - adjusted.payer),
+      memberTotal: amount(lineTotals.member - adjusted.member),
+      lineCount: lines.length,
+      adjustmentCount: adjustmentsOf(row.id).length,
+      decidedLineCount: decisions.length,
+      ready: blockers.length === 0,
+      blockers,
+    };
+  };
+
   const touch = (row: StoredClaim): void => {
     row.rowVersion += 1;
   };
@@ -956,7 +1074,33 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
       if (body.channel && !CHANNELS.has(body.channel)) {
         errors.push({ field: 'channel', code: 'ENUM' });
       }
+      if (body.bookingId && body.caseId) {
+        errors.push({ field: 'bookingId', code: 'CONFLICT' });
+      }
       if (errors.length > 0) return validationFailed(api, errors);
+
+      // One live claim per booking, as `uq_claim_live_booking` says it on the server.
+      if (body.bookingId) {
+        const live = world().claims.find(
+          (c) =>
+            c.tenantId === g.tenantId &&
+            c.sourceType === 'BOOKING' &&
+            c.sourceId === body.bookingId &&
+            c.status !== 'CANCELLED' &&
+            c.status !== 'REJECTED',
+        );
+        if (live) {
+          return problem(
+            api,
+            409,
+            'CLAIM_SOURCE_ALREADY_CLAIMED',
+            'Bu rezervasyon için açık bir dosya zaten var',
+            {
+              detail: 'Bir rezervasyonun aynı anda yalnızca bir açık hasar dosyası olur.',
+            },
+          );
+        }
+      }
 
       const scope = organizationScope(api, g.session, g.tenantId);
       if (scope !== null && !withinScope(scope, body.providerOrganizationId)) {
@@ -981,7 +1125,11 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
         programId: body.programId,
         enrollmentId: body.enrollmentId,
         providerOrganizationId: body.providerOrganizationId,
-        domainCode: 'HEALTH',
+        // A claim comes from one thing. `bookingId` makes it a lodging claim and `caseId`
+        // makes it a health one; the two together are refused above.
+        domainCode: body.bookingId ? 'ACCOMMODATION' : 'HEALTH',
+        sourceType: body.bookingId ? 'BOOKING' : body.caseId ? 'HEALTH_CASE' : null,
+        sourceId: body.bookingId ?? body.caseId ?? null,
         caseId: body.caseId ?? null,
         fulfilmentId: body.fulfilmentId ?? null,
         authorizationId: body.authorizationId ?? null,
@@ -1261,24 +1409,10 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
             decidedBy: gg.session.account.actorId,
           },
         );
-        if (d.decision === 'CUT') {
-          const cut = toMicros(line.lineAmount) - toMicros(d.approvedAmount);
-          if (cut > ZERO) {
-            world().claimAdjustments.push({
-              id: world().nextId(),
-              tenantId: gg.tenantId,
-              claimId: claim.id,
-              versionNo: version.versionNo,
-              adjustmentType: 'CUT',
-              amount: amount(cut),
-              currencyCode: line.currencyCode,
-              reasonCode: d.reasonCode,
-              reasonText: null,
-              createdBy: gg.session.account.actorId,
-              createdAt: new Date().toISOString(),
-            });
-          }
-        }
+        // A CUT is not also an adjustment row. The line decision *is* the cut — it records
+        // the reduced approved amount with the reviewer, the stage and the reason — and
+        // `claim.adjustment` is the ledger of money that moved **outside** a line decision.
+        // Writing both would subtract the same hundred lira twice from `lines - adjustments`.
       }
       if (body.reviewComment !== undefined && body.reviewComment !== null) {
         if (stage === 'MEDICAL') claim.reviewCommentMedical = body.reviewComment;
@@ -1534,31 +1668,258 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
             'Fatura hazırlığı yalnızca onaylanmış ya da kısmen onaylanmış dosya için sorulur.',
         });
       }
+      return HttpResponse.json(readinessOf(row), { headers: NO_STORE });
+    }),
+
+    http.get(`${ANY}/api/v1/claims/:claimId/adjustments`, async ({ request, params }) => {
+      await wait(api);
+      const g = guardTenant(api, request, PERMISSION_READ, false);
+      if ('error' in g) return g.error;
+      const row = findClaim(g.session, g.tenantId, pathParam(params, 'claimId'));
+      if (!row) return claimNotFound(api);
+      const body: Schemas['ClaimAdjustmentList'] = {
+        // Oldest first, which is the order the reversal chain reads in.
+        items: adjustmentsOf(row.id).map(adjustmentView),
+      };
+      return HttpResponse.json(body, { headers: NO_STORE });
+    }),
+
+    http.post(`${ANY}/api/v1/claims/:claimId/adjustments`, async ({ request, params }) => {
+      await wait(api);
+      const g = guardTenant(api, request, PERMISSION_FINANCIAL_REVIEW, true);
+      if ('error' in g) return g.error;
+      const row = findClaim(g.session, g.tenantId, pathParam(params, 'claimId'));
+      if (!row) return claimNotFound(api);
+      const body = await readJson<Schemas['CreateClaimAdjustment']>(request);
+      if (!body) return problem(api, 400, 'INVALID_REQUEST_BODY', 'İstek gövdesi geçersiz');
+      if (row.status !== 'APPROVED' && row.status !== 'PARTIALLY_APPROVED') {
+        return problem(api, 409, 'CLAIM_NOT_DECIDED', 'Dosya henüz sonuçlanmadı');
+      }
       const version = versionOf(row.id, row.currentVersionNo);
       const lines = version ? linesOf(version.id) : [];
-      const decisions = version ? latestDecisions(version.id) : [];
-      const totals = version ? totalsOf(version.id) : { approved: ZERO, payer: ZERO, member: ZERO };
+      const currency = lines[0]?.currencyCode ?? 'TRY';
 
-      const blockers: Schemas['ClaimInvoiceBlocker'][] = [];
-      const relationship = world().relationships.find((r) => r.id === row.providerOrganizationId);
-      const organization = relationship
-        ? world().organizations.get(relationship.organizationId)
-        : undefined;
-      if (!organization?.taxNumber) blockers.push('PROVIDER_TAX_IDENTITY_MISSING');
-      if (new Set(lines.map((l) => l.currencyCode)).size > 1) blockers.push('CURRENCY_NOT_SINGLE');
-      if (decisions.length !== lines.length) blockers.push('LINE_NOT_DECIDED');
+      let written: StoredClaimAdjustment;
+      if (body.reversesAdjustmentId) {
+        // A reversal carries no figures of its own; they are read off the row it takes back.
+        if (
+          body.amount !== undefined ||
+          body.payerAmount !== undefined ||
+          body.memberAmount !== undefined ||
+          body.adjustmentType !== undefined
+        ) {
+          return validationFailed(api, [{ field: 'amount', code: 'CONFLICT' }]);
+        }
+        const original = adjustmentsOf(row.id).find((a) => a.id === body.reversesAdjustmentId);
+        if (!original) {
+          return problem(api, 404, 'CLAIM_ADJUSTMENT_NOT_FOUND', 'Düzeltme kaydı bulunamadı');
+        }
+        if (original.adjustmentType === 'REVERSAL') {
+          return problem(api, 409, 'CLAIM_ADJUSTMENT_NOT_REVERSIBLE', 'İptal kaydı iptal edilemez');
+        }
+        if (adjustmentsOf(row.id).some((a) => a.reversesAdjustmentId === original.id)) {
+          return problem(api, 409, 'CLAIM_ADJUSTMENT_REVERSED', 'Bu düzeltme zaten iptal edilmiş');
+        }
+        if (!ADJUSTMENT_REASONS.has(body.reasonCode)) {
+          return validationFailed(api, [{ field: 'reasonCode', code: 'ENUM' }]);
+        }
+        written = {
+          id: world().nextId(),
+          tenantId: g.tenantId,
+          claimId: row.id,
+          versionNo: row.currentVersionNo,
+          claimLineId: original.claimLineId,
+          adjustmentType: 'REVERSAL',
+          amount: amount(-toMicros(original.amount)),
+          payerAmount: amount(-toMicros(original.payerAmount)),
+          memberAmount: amount(-toMicros(original.memberAmount)),
+          currencyCode: original.currencyCode,
+          reasonCode: body.reasonCode,
+          reasonText: body.reasonText ?? null,
+          sourceType: 'MANUAL',
+          sourceId: null,
+          reversesAdjustmentId: original.id,
+          createdBy: g.session.account.actorId,
+          createdAt: new Date().toISOString(),
+        };
+      } else {
+        const errors: FieldError[] = [];
+        if (!body.adjustmentType || !CALLER_ADJUSTMENT_TYPES.has(body.adjustmentType)) {
+          errors.push({ field: 'adjustmentType', code: 'ENUM' });
+        }
+        if (!ADJUSTMENT_REASONS.has(body.reasonCode)) {
+          errors.push({ field: 'reasonCode', code: 'ENUM' });
+        }
+        const amountMicros = toMicros(body.amount ?? '');
+        const payerMicros = toMicros(body.payerAmount ?? '');
+        const memberMicros = toMicros(body.memberAmount ?? '');
+        // The split, the same rule the column CHECKs: the two halves are the whole, exactly.
+        if (payerMicros + memberMicros !== amountMicros) {
+          errors.push({ field: 'memberAmount', code: 'SPLIT' });
+        }
+        if (amountMicros === ZERO) errors.push({ field: 'amount', code: 'RANGE' });
+        if (body.adjustmentType !== 'CORRECTION' && amountMicros < ZERO) {
+          errors.push({ field: 'amount', code: 'RANGE' });
+        }
+        let lineId: string | null = null;
+        if (body.lineNo !== undefined && body.lineNo !== null) {
+          const line = lines.find((l) => l.lineNo === body.lineNo);
+          if (!line) {
+            return problem(
+              api,
+              422,
+              'CLAIM_ADJUSTMENT_LINE_NOT_FOUND',
+              'Bu sürümde böyle bir satır yok',
+            );
+          }
+          lineId = line.id;
+        }
+        if (body.currencyCode && body.currencyCode !== currency) {
+          return problem(
+            api,
+            422,
+            'CLAIM_ADJUSTMENT_CURRENCY',
+            'Düzeltme dosyanın para biriminde olmalı',
+          );
+        }
+        if (errors.length > 0) return validationFailed(api, errors);
+        written = {
+          id: world().nextId(),
+          tenantId: g.tenantId,
+          claimId: row.id,
+          versionNo: row.currentVersionNo,
+          claimLineId: lineId,
+          adjustmentType: body.adjustmentType!,
+          amount: amount(amountMicros),
+          payerAmount: amount(payerMicros),
+          memberAmount: amount(memberMicros),
+          currencyCode: currency,
+          reasonCode: body.reasonCode,
+          reasonText: body.reasonText ?? null,
+          sourceType: body.adjustmentType === 'RECOVERY' ? 'RECOVERY' : 'REVIEW',
+          sourceId: null,
+          reversesAdjustmentId: null,
+          createdBy: g.session.account.actorId,
+          createdAt: new Date().toISOString(),
+        };
+      }
+      world().claimAdjustments.push(written);
+      const result: Schemas['ClaimAdjustmentResult'] = {
+        adjustment: adjustmentView(written),
+        readiness: readinessOf(row),
+      };
+      return HttpResponse.json(result, { status: 201, headers: NO_STORE });
+    }),
 
-      const body: Schemas['ClaimInvoiceReadiness'] = {
-        claimId: row.id,
-        status: row.status,
-        currencyCode: lines[0]?.currencyCode ?? 'TRY',
-        approvedTotal: amount(totals.approved),
-        payerTotal: amount(totals.payer),
-        memberTotal: amount(totals.member),
-        lineCount: lines.length,
-        decidedLineCount: decisions.length,
-        ready: blockers.length === 0,
-        blockers,
+    http.get(`${ANY}/api/v1/providers/:providerId/earnings`, async ({ request, params }) => {
+      await wait(api);
+      const g = guardTenant(api, request, PERMISSION_READ, false);
+      if ('error' in g) return g.error;
+      const providerId = pathParam(params, 'providerId');
+      const scope = organizationScope(api, g.session, g.tenantId);
+      if (scope !== null && !withinScope(scope, providerId)) {
+        return problem(api, 403, 'CLAIM_PROVIDER_SCOPE', 'Bu sağlayıcı adına işlem yapamazsınız');
+      }
+      const relationship = world().relationships.find(
+        (r) => r.id === providerId && r.tenantId === g.tenantId,
+      );
+      if (!relationship) return problem(api, 404, 'CLAIM_NOT_FOUND', 'Sağlayıcı bulunamadı');
+      const organization = world().organizations.get(relationship.organizationId);
+
+      const url = new URL(request.url);
+      const from = url.searchParams.get('from');
+      const to = url.searchParams.get('to');
+      const currencyFilter = url.searchParams.get('currency');
+
+      const buckets = new Map<
+        string,
+        {
+          claimCount: number;
+          approved: bigint;
+          payer: bigint;
+          member: bigint;
+          adjusted: bigint;
+          billable: bigint;
+          ids: string[];
+          byStatus: Map<string, { count: number; total: bigint }>;
+        }
+      >();
+      for (const claim of world().claims) {
+        if (claim.tenantId !== g.tenantId) continue;
+        if (claim.providerOrganizationId !== providerId) continue;
+        if (!EARNING_STATUSES.has(claim.status)) continue;
+        const version = versionOf(claim.id, claim.currentVersionNo);
+        if (!version) continue;
+        const decisions = latestDecisions(version.id);
+        if (decisions.length === 0) continue;
+        // The period bounds the decision, not the service date: what a provider earned in
+        // March is what was decided in March.
+        const decidedAt = decisions
+          .map((d) => d.decidedAt)
+          .sort()
+          .at(-1)!;
+        if (from && decidedAt.slice(0, 10) < from) continue;
+        if (to && decidedAt.slice(0, 10) > to) continue;
+        const lines = linesOf(version.id);
+        const currency = lines[0]?.currencyCode ?? 'TRY';
+        if (currencyFilter && currency !== currencyFilter) continue;
+
+        const lineTotals = totalsOf(version.id);
+        const adjusted = adjustmentTotalsOf(claim.id);
+        const approved = lineTotals.approved - adjusted.approved;
+        let bucket = buckets.get(currency);
+        if (!bucket) {
+          bucket = {
+            claimCount: 0,
+            approved: ZERO,
+            payer: ZERO,
+            member: ZERO,
+            adjusted: ZERO,
+            billable: ZERO,
+            ids: [],
+            byStatus: new Map(),
+          };
+          buckets.set(currency, bucket);
+        }
+        bucket.claimCount += 1;
+        bucket.approved += approved;
+        bucket.payer += lineTotals.payer - adjusted.payer;
+        bucket.member += lineTotals.member - adjusted.member;
+        bucket.adjusted += adjusted.approved;
+        if (claim.status === 'APPROVED' || claim.status === 'PARTIALLY_APPROVED') {
+          bucket.billable += approved;
+          bucket.ids.push(claim.id);
+        }
+        const status = bucket.byStatus.get(claim.status) ?? { count: 0, total: ZERO };
+        status.count += 1;
+        status.total += approved;
+        bucket.byStatus.set(claim.status, status);
+      }
+
+      const body: Schemas['ProviderEarnings'] = {
+        providerOrganizationId: providerId,
+        providerName: organization?.displayName ?? '',
+        from: from ?? null,
+        to: to ?? null,
+        currencies: [...buckets.entries()]
+          .sort((a, b) => a[0].localeCompare(b[0]))
+          .map(([currencyCode, bucket]) => ({
+            currencyCode,
+            claimCount: bucket.claimCount,
+            approvedTotal: amount(bucket.approved),
+            payerTotal: amount(bucket.payer),
+            memberTotal: amount(bucket.member),
+            adjustmentTotal: amount(bucket.adjusted),
+            invoiceableTotal: amount(bucket.billable),
+            invoiceableClaimIds: bucket.ids,
+            byStatus: [...bucket.byStatus.entries()]
+              .sort((a, b) => a[0].localeCompare(b[0]))
+              .map(([status, row]) => ({
+                status: status as Schemas['ClaimStatus'],
+                claimCount: row.count,
+                approvedTotal: amount(row.total),
+              })),
+          })),
       };
       return HttpResponse.json(body, { headers: NO_STORE });
     }),

@@ -10231,6 +10231,150 @@ paths:
                 $ref: '#/components/schemas/Problem'
         '422':
           $ref: '#/components/responses/ValidationError'
+  /api/v1/claims/{claimId}/adjustments:
+    get:
+      tags: [Claims]
+      operationId: listClaimAdjustments
+      description: |
+        The claim's adjustment ledger, oldest first, which is the order the reversal chain
+        reads in: a reversal always comes after the row it takes back, so a screen rendering
+        this list top to bottom shows the cut and then the row that undid it.
+
+        Every row carries its split, its reason, where it came from and who wrote it.
+        `createdBy` is null for exactly the two system sources — a cancellation or no-show fee
+        is written by the outbox handler of a booking event, and no person is behind it.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ClaimId'
+      responses:
+        '200':
+          description: Claim adjustments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimAdjustmentList'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Claims]
+      operationId: createClaimAdjustment
+      description: |
+        Records money that moved on a decided claim: a `CUT`, a `RECOVERY` or a `CORRECTION`
+        with its payer/member split, a reason code from the closed list, and optionally the
+        line it belongs to.
+
+        **Nothing is ever edited or deleted.** An adjustment is undone by a `REVERSAL`, which
+        is raised by sending `reversesAdjustmentId` and a reason and nothing else: the amount
+        and the split are read off the row being reversed, so the approved total goes back to
+        exactly where it was rather than to whatever somebody typed. One reversal per
+        adjustment, and a reversal may not itself be reversed.
+
+        `payerAmount + memberAmount` must equal `amount` exactly. It is a database CHECK as
+        well; this is the copy that tells the caller which field.
+
+        The claim's approved total is recomputed on the server — lines minus adjustments — and
+        is returned with the row, so the figure a caller reads back is the figure the invoice
+        will be checked against.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ClaimId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateClaimAdjustment'
+      responses:
+        '201':
+          description: Adjustment recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimAdjustmentResult'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: |
+            The claim, or the adjustment a reversal names, is not there.
+            CLAIM_NOT_FOUND, CLAIM_ADJUSTMENT_NOT_FOUND.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: |
+            The claim has not been decided, the adjustment has already been reversed, or the
+            caller is trying to reverse a reversal. CLAIM_NOT_DECIDED,
+            CLAIM_ADJUSTMENT_REVERSED, CLAIM_ADJUSTMENT_NOT_REVERSIBLE.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/providers/{providerId}/earnings:
+    get:
+      tags: [Claims]
+      operationId: getProviderEarnings
+      description: |
+        What a provider earned in a period, per currency: the claims decided in it grouped by
+        status, the approved total (lines minus adjustments), the adjustment total, and the
+        part of the approved total that is not yet on an invoice — with the ids of the claims
+        that part is made of.
+
+        **`invoiceableTotal` is the figure the provider's invoice is checked against.** It is
+        summed here, once, in exact decimals, from the same line decisions and the same
+        adjustment ledger `getClaimInvoiceReadiness` reads. A claim that has already reached
+        INVOICED, BATCHED or SETTLED is money somebody is already collecting and is counted in
+        `approvedTotal` and not in `invoiceableTotal`.
+
+        Per currency, always. A total across currencies is not a total, and a claim is
+        denominated once — a mixed line set is refused when the claim is created.
+
+        `from` and `to` bound the day the claim was decided rather than the day the service was
+        delivered, and both are inclusive.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ProviderId'
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: currency
+          in: query
+          schema:
+            type: string
+            pattern: '^[A-Z]{3}$'
+      responses:
+        '200':
+          description: Provider earnings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderEarnings'
+        '403':
+          description: |
+            A provider-scoped caller asking about somebody else's provider.
+            CLAIM_PROVIDER_SCOPE.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
   /api/v1/accommodation/properties:
     get:
       tags: [Accommodation]
@@ -19743,6 +19887,17 @@ components:
         domainCode:
           type: string
           pattern: '^[A-Z][A-Z0-9_]{1,31}$'
+        sourceType:
+          oneOf:
+            - $ref: '#/components/schemas/ClaimSourceType'
+            - type: 'null'
+          description: |
+            What the claim came from. Null together with `sourceId` on a claim raised by hand
+            against nothing, which is an ordinary claim.
+        sourceId:
+          type: [string, 'null']
+          format: uuid
+          description: The case, booking or reimbursement request the claim was raised from.
         caseId:
           type: [string, 'null']
           format: uuid
@@ -19939,6 +20094,16 @@ components:
         caseId:
           type: [string, 'null']
           format: uuid
+        bookingId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            The stay this claim bills, for a lodging claim raised by hand. It sets the claim's
+            source to `BOOKING` and its domain to `ACCOMMODATION`, and one booking may have
+            only one live claim — a second is refused. A completed stay ordinarily needs none
+            of this: the claim is raised by the outbox handler of `booking.checked_out`.
+
+            It may not be sent together with `caseId`: a claim comes from one thing.
         fulfilmentId:
           type: [string, 'null']
           format: uuid
@@ -20097,8 +20262,8 @@ components:
       type: object
       additionalProperties: false
       required:
-        [claimId, status, currencyCode, approvedTotal, payerTotal, memberTotal, lineCount,
-         decidedLineCount, ready, blockers]
+        [claimId, status, currencyCode, lineTotal, adjustmentTotal, approvedTotal, payerTotal,
+         memberTotal, lineCount, adjustmentCount, decidedLineCount, ready, blockers]
       properties:
         claimId:
           type: string
@@ -20108,17 +20273,31 @@ components:
         currencyCode:
           type: string
           pattern: '^[A-Z]{3}$'
+        lineTotal:
+          type: string
+          description: |
+            The sum of every line's approved amount, before any adjustment. Exact decimal as a
+            string, never a JSON number and never a total a frontend added up.
+        adjustmentTotal:
+          type: string
+          description: |
+            The signed sum of the claim's adjustments. A cut and a recovery add to it, a
+            correction may go either way, and a reversal subtracts exactly what the row it
+            reverses added — so a cut followed by its reversal leaves this at zero.
         approvedTotal:
           type: string
           description: |
-            The sum of every line's approved amount, summed on the server once. Exact decimal
-            as a string, never a JSON number and never a total a frontend added up.
+            `lineTotal` minus `adjustmentTotal`. It is the figure an invoice is checked
+            against, computed on the server once.
         payerTotal:
           type: string
         memberTotal:
           type: string
           description: payerTotal plus memberTotal is exactly approvedTotal.
         lineCount:
+          type: integer
+          minimum: 0
+        adjustmentCount:
           type: integer
           minimum: 0
         decidedLineCount:
@@ -20130,6 +20309,231 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ClaimInvoiceBlocker'
+    ClaimSourceType:
+      type: string
+      enum: [HEALTH_CASE, BOOKING, REIMBURSEMENT]
+      description: |
+        What a claim was raised from. It is one vocabulary for every vertical, so a settlement
+        never has to know which module wrote a claim.
+    ClaimAdjustmentType:
+      type: string
+      enum: [CUT, RECOVERY, CORRECTION, REVERSAL]
+      description: |
+        `CUT` is money the payer took off an otherwise valid claim, `RECOVERY` is money already
+        paid coming back, `CORRECTION` is an arithmetic or pricing mistake either way.
+        `REVERSAL` is not a fourth kind of money — it is the negative of one of the three, and
+        it is the only way an adjustment is ever undone.
+    ClaimAdjustmentSource:
+      type: string
+      enum: [CANCELLATION, NO_SHOW, REVIEW, MANUAL, RECOVERY]
+      description: |
+        Where the adjustment came from. `CANCELLATION` and `NO_SHOW` are written by the outbox
+        handler of a booking event against the fee row that assessed the fee, and are the only
+        two a caller may not name.
+    ClaimAdjustment:
+      type: object
+      additionalProperties: false
+      required:
+        [id, claimId, versionNo, adjustmentType, amount, payerAmount, memberAmount,
+         currencyCode, reasonCode, sourceType, createdAt]
+      description: |
+        One ledger line: money that moved on a claim for a reason that is not a line decision.
+        Append-only — nothing here is ever edited, and an adjustment taken back is a `REVERSAL`
+        naming it while both rows stay on the record.
+      properties:
+        id:
+          type: string
+          format: uuid
+        claimId:
+          type: string
+          format: uuid
+        versionNo:
+          type: integer
+          minimum: 1
+        claimLineId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            The line a line-level adjustment names. Null is the claim-level case and is
+            ordinary: a recovery of an overpayment is about the claim, not one of its lines.
+        adjustmentType:
+          $ref: '#/components/schemas/ClaimAdjustmentType'
+        amount:
+          type: string
+          description: Exact decimal. Negative on a REVERSAL and on a CORRECTION that gives back.
+        payerAmount:
+          type: string
+        memberAmount:
+          type: string
+          description: payerAmount plus memberAmount is exactly amount. It is a database CHECK.
+        currencyCode:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        reasonCode:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_.:-]{1,79}$'
+        reasonText:
+          type: [string, 'null']
+          maxLength: 1000
+        sourceType:
+          $ref: '#/components/schemas/ClaimAdjustmentSource'
+        sourceId:
+          type: [string, 'null']
+          format: uuid
+          description: The cancellation or no-show row a system-written fee adjustment came from.
+        reversesAdjustmentId:
+          type: [string, 'null']
+          format: uuid
+          description: What this row takes back. Set on exactly a REVERSAL.
+        createdBy:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            Null for exactly the two system sources: a fee adjustment is written by an outbox
+            handler and no person is behind it.
+        createdAt:
+          type: string
+          format: date-time
+    ClaimAdjustmentList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClaimAdjustment'
+    CreateClaimAdjustment:
+      type: object
+      additionalProperties: false
+      required: [reasonCode]
+      description: |
+        Either an adjustment or a reversal of one.
+
+        A reversal sends `reversesAdjustmentId` and `reasonCode` and nothing else: the amount
+        and the split are read off the row being reversed, which is what makes "a reversal
+        restores the approved total exactly" a property of the server rather than of whoever
+        typed the figures. Sending an amount with a reversal is a validation error.
+
+        Everything else sends `adjustmentType`, `amount`, `payerAmount` and `memberAmount`,
+        and the three amounts must satisfy `payerAmount + memberAmount = amount` exactly.
+      properties:
+        adjustmentType:
+          oneOf:
+            - $ref: '#/components/schemas/ClaimAdjustmentType'
+            - type: 'null'
+          description: Required unless this is a reversal. REVERSAL may not be named directly.
+        amount:
+          type: [string, 'null']
+          pattern: '^-?[0-9]{1,14}(\.[0-9]{1,6})?$'
+        payerAmount:
+          type: [string, 'null']
+          pattern: '^-?[0-9]{1,14}(\.[0-9]{1,6})?$'
+        memberAmount:
+          type: [string, 'null']
+          pattern: '^-?[0-9]{1,14}(\.[0-9]{1,6})?$'
+        currencyCode:
+          type: [string, 'null']
+          pattern: '^[A-Z]{3}$'
+          description: |
+            Optional, and checked against the claim's own currency when it is sent. One claim
+            is denominated once.
+        reasonCode:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_.:-]{1,79}$'
+          description: From the closed list; an unknown code is 422.
+        reasonText:
+          type: [string, 'null']
+          maxLength: 1000
+        lineNo:
+          type: [integer, 'null']
+          minimum: 1
+          description: The line of the claim's current version this adjustment belongs to.
+        reversesAdjustmentId:
+          type: [string, 'null']
+          format: uuid
+          description: Makes this a REVERSAL of that adjustment and nothing else.
+    ClaimAdjustmentResult:
+      type: object
+      additionalProperties: false
+      required: [adjustment, readiness]
+      description: |
+        The row that was written and the claim's totals as they stand after it, recomputed on
+        the server by the same code `getClaimInvoiceReadiness` runs. Two sums would be two
+        answers.
+      properties:
+        adjustment:
+          $ref: '#/components/schemas/ClaimAdjustment'
+        readiness:
+          $ref: '#/components/schemas/ClaimInvoiceReadiness'
+    ProviderEarningsStatusTotal:
+      type: object
+      additionalProperties: false
+      required: [status, claimCount, approvedTotal]
+      properties:
+        status:
+          $ref: '#/components/schemas/ClaimStatus'
+        claimCount:
+          type: integer
+          minimum: 0
+        approvedTotal:
+          type: string
+    ProviderEarningsCurrency:
+      type: object
+      additionalProperties: false
+      required:
+        [currencyCode, claimCount, approvedTotal, payerTotal, memberTotal, adjustmentTotal,
+         invoiceableTotal, invoiceableClaimIds, byStatus]
+      properties:
+        currencyCode:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        claimCount:
+          type: integer
+          minimum: 0
+        approvedTotal:
+          type: string
+          description: Lines minus adjustments, across every decided claim in this currency.
+        payerTotal:
+          type: string
+        memberTotal:
+          type: string
+        adjustmentTotal:
+          type: string
+        invoiceableTotal:
+          type: string
+          description: |
+            The part of `approvedTotal` that is not yet on an invoice. A claim that has reached
+            INVOICED, BATCHED or SETTLED is money somebody is already collecting.
+        invoiceableClaimIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        byStatus:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProviderEarningsStatusTotal'
+    ProviderEarnings:
+      type: object
+      additionalProperties: false
+      required: [providerOrganizationId, providerName, currencies]
+      properties:
+        providerOrganizationId:
+          type: string
+          format: uuid
+        providerName:
+          type: string
+        from:
+          type: [string, 'null']
+          format: date
+        to:
+          type: [string, 'null']
+          format: date
+        currencies:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProviderEarningsCurrency'
     PropertyType:
       type: string
       enum: [HOTEL, RESORT, GUESTHOUSE, SOCIAL_FACILITY, OTHER]

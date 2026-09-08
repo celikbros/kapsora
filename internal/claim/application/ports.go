@@ -99,8 +99,27 @@ var (
 	// ErrApprovalNotPermitted is the approval policy refusing this caller's stage.
 	ErrApprovalNotPermitted = errors.New("claim: the approval policy does not admit this reviewer")
 	// ErrNotDecided refuses an invoice readiness question about a claim nobody has answered.
-	ErrNotDecided         = errors.New("claim: the claim has not been decided")
-	ErrProviderScope      = errors.New("claim: the caller is not scoped to this provider")
+	ErrNotDecided = errors.New("claim: the claim has not been decided")
+	// ErrAdjustmentNotFound is a reversal naming an adjustment this claim does not have.
+	ErrAdjustmentNotFound = errors.New("claim: adjustment not found")
+	// ErrAdjustmentReversed refuses a second reversal of one adjustment. Two reversals would
+	// give the money back twice, and the approved total would depend on how many times
+	// somebody pressed the button.
+	ErrAdjustmentReversed = errors.New("claim: the adjustment has already been reversed")
+	// ErrAdjustmentNotReversible refuses a reversal of a reversal. It is not a redo: it is a
+	// reader having to walk a chain of unknown length to find out what a claim is worth.
+	ErrAdjustmentNotReversible = errors.New("claim: a reversal cannot itself be reversed")
+	// ErrAdjustmentCurrency refuses an adjustment denominated differently from the claim.
+	ErrAdjustmentCurrency = errors.New("claim: the adjustment is not in the claim's currency")
+	// ErrAdjustmentLine is an adjustment naming a line of another claim, or of a version this
+	// claim is no longer on.
+	ErrAdjustmentLine = errors.New("claim: the line does not belong to this claim's current version")
+	ErrProviderScope  = errors.New("claim: the caller is not scoped to this provider")
+	// ErrBookingNotFound is a lodging event naming a stay this tenant does not have.
+	ErrBookingNotFound = errors.New("claim: booking not found")
+	// ErrClaimAlreadyRaised is the second delivery of a source event finding the claim the
+	// first delivery made. It is not a failure — it is the guarantee working.
+	ErrClaimAlreadyRaised = errors.New("claim: a live claim already exists for this source")
 	ErrProviderUnknown    = errors.New("claim: the organization is not a provider of this tenant")
 	ErrProviderNoProfile  = errors.New("claim: the provider organization has no provider profile")
 	ErrEnrollmentMismatch = errors.New("claim: the enrollment does not belong to this person or program")
@@ -149,16 +168,21 @@ type ClaimRecord struct {
 	EnrollmentID           uuid.UUID
 	ProviderOrganizationID uuid.UUID
 	DomainCode             string
-	CaseID                 *uuid.UUID
-	FulfilmentID           *uuid.UUID
-	AuthorizationID        *uuid.UUID
-	CurrentVersionNo       int
-	Status                 string
-	ServiceDateFrom        time.Time
-	ServiceDateTo          time.Time
-	Channel                string
-	RejectReasonCode       *string
-	ReturnReasonCode       *string
+	// SourceType and SourceID are what the claim came from: a health case, a booking or a
+	// reimbursement request (migration 000043). They are nil together on a claim raised by
+	// hand against nothing, which is an ordinary claim.
+	SourceType       *string
+	SourceID         *uuid.UUID
+	CaseID           *uuid.UUID
+	FulfilmentID     *uuid.UUID
+	AuthorizationID  *uuid.UUID
+	CurrentVersionNo int
+	Status           string
+	ServiceDateFrom  time.Time
+	ServiceDateTo    time.Time
+	Channel          string
+	RejectReasonCode *string
+	ReturnReasonCode *string
 	// ReviewCommentMedical is nil once the financial projection has been applied.
 	ReviewCommentMedical   *string
 	ReviewCommentFinancial *string
@@ -227,17 +251,31 @@ type DecisionRecord struct {
 }
 
 // AdjustmentRecord is one claim.adjustment row.
+//
+// It is a ledger line: money that moved for a reason that is not a line decision, with the
+// split it moved in, the line it belongs to when it belongs to one, and the row it came from
+// when the system wrote it. Nothing here is ever edited — an adjustment taken back is a
+// REVERSAL naming it, and both rows stay.
 type AdjustmentRecord struct {
 	ID             uuid.UUID
 	ClaimID        uuid.UUID
 	VersionNo      int
+	ClaimLineID    *uuid.UUID
 	AdjustmentType string
 	Amount         string
+	PayerAmount    string
+	MemberAmount   string
 	CurrencyCode   string
 	ReasonCode     string
 	ReasonText     *string
-	CreatedBy      *uuid.UUID
-	CreatedAt      time.Time
+	SourceType     string
+	SourceID       *uuid.UUID
+	// ReversesAdjustmentID is what this row takes back. It is set exactly on a REVERSAL.
+	ReversesAdjustmentID *uuid.UUID
+	// CreatedBy is nil exactly for the two system sources: a cancellation or no-show fee is
+	// written by an outbox handler and no person is behind it.
+	CreatedBy *uuid.UUID
+	CreatedAt time.Time
 }
 
 // NewClaimRow is the insert payload of a claim header.
@@ -248,6 +286,8 @@ type NewClaimRow struct {
 	EnrollmentID           uuid.UUID
 	ProviderOrganizationID uuid.UUID
 	DomainCode             string
+	SourceType             *string
+	SourceID               *uuid.UUID
 	CaseID                 *uuid.UUID
 	FulfilmentID           *uuid.UUID
 	AuthorizationID        *uuid.UUID
@@ -316,14 +356,20 @@ type NewDecisionRow struct {
 
 // NewAdjustmentRow is the insert payload of one adjustment.
 type NewAdjustmentRow struct {
-	ClaimID        uuid.UUID
-	VersionNo      int
-	AdjustmentType string
-	Amount         string
-	CurrencyCode   string
-	ReasonCode     string
-	ReasonText     *string
-	ActorID        *uuid.UUID
+	ClaimID              uuid.UUID
+	VersionNo            int
+	ClaimLineID          *uuid.UUID
+	AdjustmentType       string
+	Amount               string
+	PayerAmount          string
+	MemberAmount         string
+	CurrencyCode         string
+	ReasonCode           string
+	ReasonText           *string
+	SourceType           string
+	SourceID             *uuid.UUID
+	ReversesAdjustmentID *uuid.UUID
+	ActorID              *uuid.UUID
 }
 
 // FreezeRow is the snapshot a submit writes onto the version it froze.
@@ -389,6 +435,84 @@ type DuplicateRecord struct {
 	Reference string
 }
 
+// BookingRecord is the stay a lodging claim is raised from, as much of it as the claim needs.
+// It carries no guest name, no room number and no voucher: a claim is a bill, and the only
+// person on it is the member the plan already names.
+type BookingRecord struct {
+	ID                     uuid.UUID
+	Reference              string
+	PersonID               uuid.UUID
+	ProgramID              uuid.UUID
+	EnrollmentID           uuid.UUID
+	RoomTypeID             uuid.UUID
+	ServiceDefinitionID    uuid.UUID
+	ProviderOrganizationID uuid.UUID
+	Status                 string
+	CheckIn                time.Time
+	CheckOut               time.Time
+	Nights                 int
+	// ActualNights is what the check-out counted on the property's own clock. It is nil
+	// until a stay is checked out, which is the honest answer for a booking nobody has left
+	// yet.
+	ActualNights    *int
+	OverBooking     bool
+	AuthorizationID *uuid.UUID
+	CheckedOutAt    *time.Time
+	CancelledAt     *time.Time
+	// CoveredNights is how many of the stay's nights the plan carries, read back from the
+	// booking's own frozen quote. It is what decides which lines are already approved.
+	CoveredNights int
+}
+
+// BookingNightRecord is one night of the stay at the amounts the booking froze. The claim
+// copies all three and computes none of them.
+type BookingNightRecord struct {
+	StayDate     time.Time
+	UnitAmount   string
+	PayerAmount  string
+	MemberAmount string
+	CurrencyCode string
+}
+
+// BookingFeeRecord is a cancellation or no-show fee as its own row already carries it: the
+// assessed amount and the split, which the claim line and the adjustment both copy.
+type BookingFeeRecord struct {
+	ID           uuid.UUID
+	Status       string
+	Free         bool
+	Amount       string
+	PayerAmount  string
+	MemberAmount string
+	CurrencyCode string
+}
+
+// EarningsQuery is the provider's earnings question at the repository level.
+type EarningsQuery struct {
+	ProviderOrganizationID uuid.UUID
+	// From and To bound the moment the claim was decided, not the day the service was
+	// delivered: what a provider earned in March is what was decided in March.
+	From         *time.Time
+	To           *time.Time
+	CurrencyCode string
+}
+
+// EarningClaimRecord is one decided claim of a provider, with everything the earnings view
+// adds up. Every figure is exact decimal text and is summed once, in the service.
+type EarningClaimRecord struct {
+	ClaimID               uuid.UUID
+	Reference             string
+	Status                string
+	DomainCode            string
+	CurrencyCode          string
+	DecidedAt             time.Time
+	LineTotal             string
+	LinePayerTotal        string
+	LineMemberTotal       string
+	AdjustmentTotal       string
+	AdjustmentPayerTotal  string
+	AdjustmentMemberTotal string
+}
+
 // Repository is the persistence port; every method runs inside the caller's transaction,
 // which db.WithTenantTx has already bound to the tenant so RLS is active. The provider
 // boundary is a repository concern too: the scope is passed down rather than checked above,
@@ -427,6 +551,25 @@ type Repository interface {
 
 	CreateAdjustment(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, in NewAdjustmentRow) (AdjustmentRecord, error)
 	ListAdjustments(ctx context.Context, tx pgx.Tx, tenantID, claimID uuid.UUID) ([]AdjustmentRecord, error)
+	GetAdjustment(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID) (AdjustmentRecord, error)
+
+	// FindLiveClaimBySource is the first half of every source-driven handler's idempotency:
+	// a claim already raised for this stay is the answer, and `uq_claim_live_booking` is the
+	// half that holds when two deliveries look at the same moment.
+	FindLiveClaimBySource(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, sourceType string,
+		sourceID uuid.UUID) (uuid.UUID, bool, error)
+	// BookingForClaim reads the stay a lodging claim is raised from. Every amount it brings
+	// back was frozen by the booking; nothing in this package re-prices a night.
+	BookingForClaim(ctx context.Context, tx pgx.Tx, tenantID, bookingID uuid.UUID) (BookingRecord, error)
+	BookingNights(ctx context.Context, tx pgx.Tx, tenantID, bookingID uuid.UUID) ([]BookingNightRecord, error)
+	BookingNoShow(ctx context.Context, tx pgx.Tx, tenantID, bookingID uuid.UUID) (BookingFeeRecord, bool, error)
+	BookingCancellation(ctx context.Context, tx pgx.Tx, tenantID, bookingID uuid.UUID) (BookingFeeRecord, bool, error)
+
+	// ProviderEarningClaims answers one row per decided claim of a provider, with the line
+	// totals and the adjustment totals the earnings view adds up per currency.
+	ProviderEarningClaims(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
+		q EarningsQuery) ([]EarningClaimRecord, error)
+	ProviderDisplayName(ctx context.Context, tx pgx.Tx, tenantID, organizationID uuid.UUID) (string, error)
 
 	// FindDuplicate is the cross-check of section 2.2 step 3.
 	FindDuplicate(ctx context.Context, tx pgx.Tx, tenantID, claimID, personID,

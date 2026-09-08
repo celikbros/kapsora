@@ -385,18 +385,7 @@ func (h *Handler) GetClaimInvoiceReadiness(w http.ResponseWriter, r *http.Reques
 		h.writeError(w, r, err)
 		return
 	}
-	body := kapsorav1.ClaimInvoiceReadiness{
-		ClaimId: readiness.ClaimID, Status: kapsorav1.ClaimStatus(readiness.Status),
-		CurrencyCode: readiness.CurrencyCode, ApprovedTotal: readiness.ApprovedTotal,
-		PayerTotal: readiness.PayerTotal, MemberTotal: readiness.MemberTotal,
-		LineCount: readiness.LineCount, DecidedLineCount: readiness.DecidedLineCount,
-		Ready:    readiness.Ready,
-		Blockers: make([]kapsorav1.ClaimInvoiceBlocker, 0, len(readiness.Blockers)),
-	}
-	for _, blocker := range readiness.Blockers {
-		body.Blockers = append(body.Blockers, kapsorav1.ClaimInvoiceBlocker(blocker))
-	}
-	writeJSON(w, http.StatusOK, body)
+	writeJSON(w, http.StatusOK, readinessView(readiness))
 }
 
 // decide is the shared body of approve and reject: both read the same reason payload, both
@@ -458,6 +447,7 @@ func claimView(view application.ClaimView) kapsorav1.Claim {
 		ProgramId: record.ProgramID, EnrollmentId: record.EnrollmentID,
 		ProviderOrganizationId: record.ProviderOrganizationID, DomainCode: record.DomainCode,
 		CaseId: record.CaseID, FulfilmentId: record.FulfilmentID,
+		SourceId:         record.SourceID,
 		AuthorizationId:  record.AuthorizationID,
 		CurrentVersionNo: record.CurrentVersionNo,
 		Status:           kapsorav1.ClaimStatus(record.Status),
@@ -472,6 +462,10 @@ func claimView(view application.ClaimView) kapsorav1.Claim {
 		Lines:                  lineViews(view.Lines),
 		Exceptions:             exceptionViews(view.Exceptions),
 		CreatedAt:              record.CreatedAt, RowVersion: record.RowVersion,
+	}
+	if record.SourceType != nil {
+		source := kapsorav1.ClaimSourceType(*record.SourceType)
+		out.SourceType = &source
 	}
 	return out
 }

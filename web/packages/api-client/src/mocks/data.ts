@@ -1762,6 +1762,12 @@ export interface StoredClaim {
   enrollmentId: string;
   providerOrganizationId: string;
   domainCode: string;
+  /**
+   * What the claim came from (migration 000043). Null together with `sourceId` on a claim
+   * raised by hand against nothing, which is an ordinary claim.
+   */
+  sourceType: Schemas['ClaimSourceType'] | null;
+  sourceId: string | null;
   caseId: string | null;
   fulfilmentId: string | null;
   authorizationId: string | null;
@@ -1840,16 +1846,33 @@ export interface StoredClaimLineDecision {
   stage: Schemas['ClaimDecisionStage'];
 }
 
+/**
+ * One ledger line: money that moved on a claim for a reason that is not a line decision.
+ *
+ * Append-only, as it is on the server. Nothing here is ever edited, and an adjustment taken
+ * back is a `REVERSAL` naming it while both rows stay — which is what makes "approved total =
+ * lines minus adjustments" a sum a reader can check rather than a figure they have to trust.
+ */
 export interface StoredClaimAdjustment {
   id: string;
   tenantId: string;
   claimId: string;
   versionNo: number;
-  adjustmentType: 'CUT' | 'RECOVERY' | 'CORRECTION';
+  /** The line a line-level adjustment names; null is the claim-level case. */
+  claimLineId: string | null;
+  adjustmentType: Schemas['ClaimAdjustmentType'];
   amount: string;
+  /** payerAmount + memberAmount is exactly amount. It is a CHECK on the server's row. */
+  payerAmount: string;
+  memberAmount: string;
   currencyCode: string;
   reasonCode: string;
   reasonText: string | null;
+  sourceType: Schemas['ClaimAdjustmentSource'];
+  /** The cancellation or no-show row a system-written fee adjustment came from. */
+  sourceId: string | null;
+  reversesAdjustmentId: string | null;
+  /** Null for exactly the two system sources: no person is behind a fee adjustment. */
   createdBy: string | null;
   createdAt: string;
 }
@@ -4814,6 +4837,8 @@ export function buildWorld(
       enrollmentId: familyEnrollment.id,
       providerOrganizationId: providerRel.id,
       domainCode: 'HEALTH',
+      sourceType: 'HEALTH_CASE',
+      sourceId: caseStandard.id,
       caseId: caseStandard.id,
       fulfilmentId: null,
       authorizationId: null,
@@ -4982,20 +5007,11 @@ export function buildWorld(
     physioDescription,
     seededDiagnosisId,
   );
+  // The cut is the decision: the line was claimed at 500 and approved at 400, and that is
+  // where the hundred lira went. It is deliberately *not* also an adjustment row — WP-I7-01
+  // makes `claim.adjustment` the ledger of money that moved **outside** a line decision, so
+  // that "approved total = lines minus adjustments" is a sum nobody counts twice.
   seedDecision(partialCutLine, 1, 'CUT', '400', '400', '0', 'TARIFF_EXCEEDED', 'FINANCIAL');
-  claimAdjustments.push({
-    id: nextId(),
-    tenantId: demoA.id,
-    claimId: claimPartial.id,
-    versionNo: 1,
-    adjustmentType: 'CUT',
-    amount: '100',
-    currencyCode: 'TRY',
-    reasonCode: 'TARIFF_EXCEEDED',
-    reasonText: null,
-    createdBy: doctorActorId,
-    createdAt: claimPartial.createdAt,
-  });
 
   // PENDING_MEDICAL, carrying the exception that sent it there and the financial review it
   // still owes: this is the claim a screen draws the "why is this in front of me" list from.
@@ -5704,7 +5720,7 @@ export function buildWorld(
   seedBooking(stdRoom, 40, 3, 'HOLD', '2400.000000');
   seedBooking(suite, 45, 4, 'CONFIRMED', '3800.000000');
   seedBooking(stdRoom, 50, 2, 'CHECKED_IN', '2400.000000');
-  seedBooking(suite, 55, 5, 'COMPLETED', '3800.000000');
+  const completedStay = seedBooking(suite, 55, 5, 'COMPLETED', '3800.000000');
 
   // -------------------------------------------------------------------------------------
   // WP-I6-03: the bound member, and what happens after the promise
@@ -5848,6 +5864,193 @@ export function buildWorld(
     rowVersion: 1,
   });
   void memberConfirmed;
+
+  // -------------------------------------------------------------------------------------
+  // WP-I7-01: the claim as the one billable unit, and the adjustment ledger
+  // -------------------------------------------------------------------------------------
+  //
+  // Appended last for the reason everything above it is: `buildWorld` runs off one seeded
+  // random stream, and an id drawn earlier would shift every id after it.
+
+  // The lodging claim of the seeded COMPLETED stay. One line per night slept, at the
+  // booking's own frozen `unitAmount` — never re-priced — and the nights the plan carried
+  // already decided at the payer amount, by the system, with the reason the confirmation
+  // gave. It waits in PENDING_FINANCIAL exactly as a health claim does after its medical
+  // stage.
+  const stayNights = bookingNights.filter((n) => n.bookingId === completedStay.id);
+  const lodgingClaim = seedClaim('PENDING_FINANCIAL', 2, {
+    personId: completedStay.personId,
+    programId: completedStay.programId,
+    enrollmentId: completedStay.enrollmentId,
+    domainCode: 'ACCOMMODATION',
+    sourceType: 'BOOKING',
+    sourceId: completedStay.id,
+    caseId: null,
+    authorizationId: completedStay.authorizationId,
+    serviceDateFrom: completedStay.checkIn,
+    serviceDateTo: stayNights[stayNights.length - 1]?.stayDate ?? completedStay.checkIn,
+  });
+  const lodgingVersion = seedVersion(lodgingClaim, 1, 'SUBMITTED');
+  const lodgingService = serviceDefinitions.find((d) => d.id === suite.serviceDefinitionId);
+  stayNights.forEach((night, index) => {
+    if (!lodgingService) return;
+    const line = seedLine(
+      lodgingVersion,
+      index + 1,
+      lodgingService,
+      '1',
+      night.unitAmount,
+      null,
+      null,
+    );
+    line.unitType = 'NIGHT';
+    line.unitAmount = night.unitAmount;
+    if (toMicros(night.payerAmount) > 0n) {
+      seedDecision(
+        line,
+        1,
+        'APPROVED',
+        night.payerAmount,
+        night.payerAmount,
+        '0.000000',
+        'BOOKING_CONFIRMED',
+        'AUTO',
+      );
+    }
+  });
+
+  // A confirmed no-show and the claim it produced: one line carrying the fee, at the split
+  // the report's own row assessed, and no ledger row at all. The provenance is the claim's
+  // own source — `sourceType: 'BOOKING'` with `sourceId` reaching the stay, and the line's
+  // unit type saying which of the two fees assessed it — so `claim.adjustment` stays a table
+  // that only ever holds money that moved.
+  const confirmedNoShowStay = seedBooking(
+    suite,
+    86,
+    2,
+    'CONFIRMED',
+    '3800.000000',
+    familyPrincipal,
+    familyEnrollment,
+  );
+  confirmedNoShowStay.status = 'NO_SHOW';
+  confirmedNoShowStay.cancelReasonCode = 'NO_SHOW';
+  const confirmedNoShow: StoredNoShow = {
+    id: nextId(),
+    tenantId: demoA.id,
+    bookingId: confirmedNoShowStay.id,
+    reportedByActorId: providerActorId,
+    reportedAt: isoDaysAgo(base, 4),
+    evidenceDocumentId: null,
+    assessedFeeAmount: '1140.000000',
+    payerAmount: '900.000000',
+    memberAmount: '240.000000',
+    currencyCode: 'TRY',
+    status: 'CONFIRMED',
+    reviewedBy: doctorActorId,
+    reviewedAt: isoDaysAgo(base, 3),
+    reviewComment: 'Kayıt ve kamera görüntüsü ile doğrulandı.',
+    consumedNights: 1,
+    rowVersion: 2,
+  };
+  noShows.push(confirmedNoShow);
+  const noShowClaim = seedClaim('PENDING_FINANCIAL', 3, {
+    personId: confirmedNoShowStay.personId,
+    programId: confirmedNoShowStay.programId,
+    enrollmentId: confirmedNoShowStay.enrollmentId,
+    domainCode: 'ACCOMMODATION',
+    sourceType: 'BOOKING',
+    sourceId: confirmedNoShowStay.id,
+    caseId: null,
+    serviceDateFrom: confirmedNoShowStay.checkIn,
+    serviceDateTo: confirmedNoShowStay.checkIn,
+  });
+  const noShowVersion = seedVersion(noShowClaim, 1, 'SUBMITTED');
+  if (lodgingService) {
+    const feeLine = seedLine(
+      noShowVersion,
+      1,
+      lodgingService,
+      '1',
+      confirmedNoShow.assessedFeeAmount,
+      null,
+      null,
+    );
+    feeLine.unitType = 'NO_SHOW_FEE';
+    feeLine.unitAmount = confirmedNoShow.assessedFeeAmount;
+    seedDecision(
+      feeLine,
+      1,
+      'APPROVED',
+      confirmedNoShow.payerAmount,
+      confirmedNoShow.payerAmount,
+      '0.000000',
+      'BOOKING_CONFIRMED',
+      'AUTO',
+    );
+  }
+
+  // Adjustments on a health claim: a standing cut on the partially approved one, and — on
+  // the approved one — a recovery that was taken back, so a screen has a reversal chain to
+  // draw. The pair nets to nothing, which is the point of a reversal: the approved total goes
+  // back to exactly where it was.
+  const partialCut: StoredClaimAdjustment = {
+    id: nextId(),
+    tenantId: demoA.id,
+    claimId: claimPartial.id,
+    versionNo: 1,
+    claimLineId: null,
+    adjustmentType: 'CUT',
+    amount: '75',
+    payerAmount: '60',
+    memberAmount: '15',
+    currencyCode: 'TRY',
+    reasonCode: 'CONTRACT_TERMS',
+    reasonText: 'Sözleşme dışı malzeme bedeli.',
+    sourceType: 'REVIEW',
+    sourceId: null,
+    reversesAdjustmentId: null,
+    createdBy: doctorActorId,
+    createdAt: claimPartial.createdAt,
+  };
+  const recovery: StoredClaimAdjustment = {
+    id: nextId(),
+    tenantId: demoA.id,
+    claimId: claimApproved.id,
+    versionNo: 1,
+    claimLineId: null,
+    adjustmentType: 'RECOVERY',
+    amount: '120',
+    payerAmount: '120',
+    memberAmount: '0',
+    currencyCode: 'TRY',
+    reasonCode: 'OVERPAYMENT',
+    reasonText: null,
+    sourceType: 'RECOVERY',
+    sourceId: null,
+    reversesAdjustmentId: null,
+    createdBy: doctorActorId,
+    createdAt: claimApproved.createdAt,
+  };
+  claimAdjustments.push(partialCut, recovery, {
+    id: nextId(),
+    tenantId: demoA.id,
+    claimId: claimApproved.id,
+    versionNo: 1,
+    claimLineId: null,
+    adjustmentType: 'REVERSAL',
+    amount: '-120',
+    payerAmount: '-120',
+    memberAmount: '0',
+    currencyCode: 'TRY',
+    reasonCode: 'ENTERED_IN_ERROR',
+    reasonText: 'Tahsilat başka dosyaya aitmiş.',
+    sourceType: 'MANUAL',
+    sourceId: null,
+    reversesAdjustmentId: recovery.id,
+    createdBy: doctorActorId,
+    createdAt: claimApproved.createdAt,
+  });
 
   return {
     tenants,

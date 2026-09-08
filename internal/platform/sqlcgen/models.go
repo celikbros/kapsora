@@ -552,17 +552,23 @@ type CatalogServiceDefinition struct {
 }
 
 type ClaimAdjustment struct {
-	ID             uuid.UUID
-	TenantID       uuid.UUID
-	ClaimID        uuid.UUID
-	VersionNo      int32
-	AdjustmentType string
-	Amount         pgtype.Numeric
-	CurrencyCode   string
-	ReasonCode     string
-	ReasonText     *string
-	CreatedAt      time.Time
-	CreatedBy      uuid.NullUUID
+	ID                   uuid.UUID
+	TenantID             uuid.UUID
+	ClaimID              uuid.UUID
+	VersionNo            int32
+	AdjustmentType       string
+	Amount               pgtype.Numeric
+	CurrencyCode         string
+	ReasonCode           string
+	ReasonText           *string
+	CreatedAt            time.Time
+	CreatedBy            uuid.NullUUID
+	PayerAmount          pgtype.Numeric
+	MemberAmount         pgtype.Numeric
+	ClaimLineID          uuid.NullUUID
+	SourceType           string
+	SourceID             uuid.NullUUID
+	ReversesAdjustmentID uuid.NullUUID
 }
 
 type ClaimClaim struct {
@@ -592,6 +598,8 @@ type ClaimClaim struct {
 	UpdatedAt              time.Time
 	UpdatedBy              uuid.NullUUID
 	RowVersion             int64
+	SourceType             *string
+	SourceID               uuid.NullUUID
 }
 
 type ClaimClaimLine struct {
