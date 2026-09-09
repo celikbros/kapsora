@@ -170,7 +170,17 @@ jobs:
       - name: design anti-pattern detector (impeccable)
         run: pnpm design
       - name: playwright browsers
-        run: pnpm exec playwright install --with-deps chromium
+        # Playwright installs its own Chromium; the runner's Google Chrome apt source is
+        # not needed and has failed `apt-get update` with hash mismatches. Drop it, then
+        # retry the install, because the OS package mirrors flake too.
+        run: |
+          sudo rm -f /etc/apt/sources.list.d/google-chrome.list /etc/apt/sources.list.d/google-chrome*.sources
+          for attempt in 1 2 3; do
+            pnpm exec playwright install --with-deps chromium && exit 0
+            echo "playwright install failed (attempt $attempt); retrying in 20s"
+            sleep 20
+          done
+          exit 1
       - name: smoke tests (mock API)
         run: pnpm e2e
       - name: playwright report
