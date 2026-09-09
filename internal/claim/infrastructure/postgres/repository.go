@@ -184,6 +184,20 @@ func (Repository) SetStatus(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UU
 	return affected == 1, nil
 }
 
+// SetInvoiceStatus implements application.Repository.
+func (Repository) SetInvoiceStatus(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID,
+	status string, fromStatuses []string, actorID *uuid.UUID,
+) (bool, error) {
+	affected, err := sqlcgen.New(tx).SetClaimInvoiceStatus(ctx, sqlcgen.SetClaimInvoiceStatusParams{
+		TenantID: tenantID, ID: id, Status: status, FromStatuses: fromStatuses,
+		ActorID: optUUID(actorID),
+	})
+	if err != nil {
+		return false, fmt.Errorf("claim: set invoice status: %w", err)
+	}
+	return affected == 1, nil
+}
+
 // SetReviewComment implements application.Repository.
 func (Repository) SetReviewComment(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID,
 	stage string, comment *string, actorID *uuid.UUID,
@@ -761,6 +775,7 @@ func (Repository) ProviderEarningClaims(ctx context.Context, tx pgx.Tx, tenantID
 			AdjustmentTotal:       row.AdjustmentTotal,
 			AdjustmentPayerTotal:  row.AdjustmentPayerTotal,
 			AdjustmentMemberTotal: row.AdjustmentMemberTotal,
+			OnLiveInvoice:         row.OnLiveInvoice,
 		})
 	}
 	return out, nil

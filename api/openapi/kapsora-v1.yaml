@@ -65,6 +65,8 @@ tags:
     description: Hasar dosyası sürümleri, satır kararları, tıbbi ve mali inceleme
   - name: Accommodation
     description: Konaklama tesisleri, oda tipleri, günlük kontenjan ve müsaitlik sorgusu
+  - name: Billing
+    description: Sağlayıcı faturaları, hasar dosyası tahsisleri ve düzeltme zinciri
 paths:
   /health/live:
     get:
@@ -11726,6 +11728,482 @@ paths:
                 $ref: '#/components/schemas/Problem'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+  /api/v1/invoices:
+    get:
+      tags: [Billing]
+      operationId: listInvoices
+      description: |
+        The invoices of this tenant, newest first, each with the sum of what it allocates to
+        claims and the batch it sits in.
+
+        A provider-scoped caller reads its own invoices and nothing else; the boundary is
+        applied in SQL rather than after the read, so an invoice outside it is genuinely not
+        returned and 404 is the honest answer to asking for one by id.
+
+        `allocationTotal` is summed on the server, in exact decimals, from the same rows the
+        submit gate checks — so the figure a screen shows beside a draft is the figure that
+        draft will be refused for.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: providerOrganizationId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/InvoiceStatus'
+        - name: fiscalYear
+          in: query
+          schema:
+            type: integer
+            minimum: 2000
+            maximum: 2100
+        - name: from
+          in: query
+          description: Invoice date, inclusive.
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          description: Invoice date, inclusive.
+          schema:
+            type: string
+            format: date
+        - name: batchId
+          in: query
+          description: |
+            The WP-I7-03 icmal an invoice was put into. Nothing in this milestone writes it,
+            so it matches nothing until the batch exists.
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Invoices
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoicePage'
+        '400':
+          description: |
+            The paging cursor could not be read. CURSOR_INVALID.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags: [Billing]
+      operationId: createInvoice
+      description: |
+        Records an invoice the provider raised somewhere else. KAPSORA issues no fiscal
+        document here: this is the header as the provider entered it, held against the claims
+        the payer has already approved.
+
+        `lineExtensionAmount + taxAmount` must equal `payableAmount` exactly. It is a database
+        CHECK as well; this is the copy that tells the caller which field.
+
+        The provider's VKN is read from the directory and stored as its blind index, never as
+        the number. A provider organization carrying no tax identity is refused with
+        `PROVIDER_TAX_ID_MISSING` rather than having an invoice raised against a taxpayer
+        nobody can name.
+
+        **The number is unique in the provider's fiscal year** (v1.2 11.12), and a cancelled
+        invoice frees the number it was using. Two different providers billing the same number
+        is ordinary and is not refused.
+
+        Sending `supersedesInvoiceId` opens the correction of a RETURNED or SUBMITTED invoice:
+        the new draft starts with that invoice's header and its allocations, and the invoice it
+        supersedes is cancelled only when this one is actually submitted. A correction that was
+        abandoned leaves the document it was going to replace exactly where it was.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInvoice'
+      responses:
+        '201':
+          description: Invoice draft opened
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+        '403':
+          description: |
+            A provider-scoped caller raising an invoice for somebody else's provider.
+            INVOICE_PROVIDER_SCOPE.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: |
+            The invoice a correction says it supersedes is not there. INVOICE_NOT_FOUND.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: |
+            The number is already used by a live invoice of this provider in this fiscal year,
+            or the invoice named by `supersedesInvoiceId` is not in a state a correction may
+            replace. INVOICE_NUMBER_TAKEN, INVOICE_NOT_SUPERSEDABLE.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: |
+            The provider is not a provider of this tenant, carries no tax identity, or the
+            image names a document that is not a clean one of this tenant.
+            INVOICE_PROVIDER_UNKNOWN, PROVIDER_TAX_ID_MISSING, INVOICE_DOCUMENT_UNUSABLE,
+            VALIDATION_FAILED.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/invoices/{invoiceId}:
+    get:
+      tags: [Billing]
+      operationId: getInvoice
+      description: |
+        One invoice with its allocations, in the projection the caller has earned.
+
+        A line description of a health claim may carry clinical text, so the allocation's
+        `claimDescription` is served only in the clinical projection — the same rule WP-I5-01
+        applies to a claim line, applied here to the invoice's claim links. The sponsor's HR
+        user reads the header, the totals and which claims are covered, and never what the
+        provider wrote on a line.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/InvoiceId'
+      responses:
+        '200':
+          description: Invoice
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Billing]
+      operationId: patchInvoiceDraft
+      description: |
+        Edits the header of a DRAFT. Anything else is 409 `INVOICE_FROZEN`: a submitted
+        invoice's figures never change, and a correction is a new invoice in a chain.
+
+        The three amounts travel together — sending one of them without the other two is a
+        validation error, because `lineExtension + tax = payable` has to hold on the row that
+        results rather than on the row somebody meant.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/InvoiceId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: '#/components/schemas/PatchInvoiceDraft'
+      responses:
+        '200':
+          description: Invoice updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            The invoice has left DRAFT, or the new number is already used in this fiscal year.
+            INVOICE_FROZEN, INVOICE_NUMBER_TAKEN.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '415':
+          description: Body is not application/merge-patch+json
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/invoices/{invoiceId}/allocations:
+    put:
+      tags: [Billing]
+      operationId: putInvoiceAllocations
+      description: |
+        Replaces the whole set of claim allocations of a DRAFT. The pick list is
+        `getProviderEarnings`: `invoiceableClaimIds` is exactly the claims this provider may
+        put on an invoice, and a claim already sitting on a live invoice is not among them.
+
+        Two rules the database holds and this endpoint only reports:
+
+        * an allocation may not exceed what the payer approved for the claim —
+          `ALLOCATION_EXCEEDS_APPROVED`, naming the claim and both figures. Billing *less* than
+          was approved is ordinary and is allowed;
+        * one claim sits on one live invoice — `CLAIM_ALREADY_INVOICED`, naming the claim and
+          the invoice it is already on.
+
+        A claim that is not APPROVED or PARTIALLY_APPROVED is `CLAIM_NOT_INVOICEABLE`, and an
+        allocation denominated differently from the invoice is `ALLOCATION_CURRENCY`.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/InvoiceId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutInvoiceAllocations'
+      responses:
+        '200':
+          description: Allocations replaced
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            The invoice has left DRAFT, or one of the claims is already on a live invoice.
+            INVOICE_FROZEN, CLAIM_ALREADY_INVOICED.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: |
+            An allocation exceeds the claim's approved total, names a claim nobody approved,
+            names a claim of another provider, or is in another currency.
+            ALLOCATION_EXCEEDS_APPROVED, CLAIM_NOT_INVOICEABLE, ALLOCATION_CURRENCY,
+            VALIDATION_FAILED.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/invoices/{invoiceId}/submit:
+    post:
+      tags: [Billing]
+      operationId: submitInvoice
+      description: |
+        Submits a DRAFT to the payer. Three gates, in this order:
+
+        * **the sum of the allocations equals `payableAmount` within the tenant's tolerance.**
+          Otherwise `ALLOCATION_MISMATCH`, carrying `payableAmount`, `allocationTotal`,
+          `difference` and the `tolerance` that was applied, so a screen can say by how much
+          rather than that something is wrong. The tolerance is
+          `billing.allocation_tolerance`, an exact decimal amount defaulting to `0.01`;
+        * **the image is attached when the tenant requires one** — `billing.invoice_requires_image`,
+          true by default. Otherwise `INVOICE_IMAGE_REQUIRED`;
+        * **every allocated claim is still invoiceable.** A claim decided differently while the
+          draft sat open is `CLAIM_NOT_INVOICEABLE`.
+
+        Then the invoice becomes SUBMITTED, its claims move to INVOICED, its links and figures
+        freeze in the database, and `invoice.submitted` goes to the outbox. When the invoice
+        supersedes another, that other invoice becomes CANCELLED at this moment and not before.
+
+        Replaying the command with the same `Idempotency-Key` answers the same body.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/InvoiceId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Invoice submitted
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            The invoice is not a draft, the allocations do not add up to the payable amount
+            within the tolerance, or the image the tenant requires is missing.
+            INVOICE_TRANSITION_INVALID, ALLOCATION_MISMATCH, INVOICE_IMAGE_REQUIRED.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: |
+            An allocated claim has stopped being invoiceable, or the invoice allocates nothing
+            at all. CLAIM_NOT_INVOICEABLE, VALIDATION_FAILED.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/invoices/{invoiceId}/cancel:
+    post:
+      tags: [Billing]
+      operationId: cancelInvoice
+      description: |
+        Withdraws a DRAFT or a RETURNED invoice and releases the claims it was holding: they go
+        back to the status they had when they were allocated, and the invoice's rows stay on
+        the record marked inactive, because "which claims did this cancelled invoice cover" is
+        a question a dispute asks.
+
+        Nothing is deleted. A cancelled invoice also stops occupying its number, which is how a
+        provider whose own books already carry it can reuse it on the correction.
+
+        Anything already submitted and accepted is refused: a SUBMITTED, IN_BATCH, APPROVED,
+        PARTIALLY_APPROVED, REJECTED or SETTLED invoice is the payer's business now.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/InvoiceId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Invoice cancelled
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            The invoice is not in a state it can be withdrawn from.
+            INVOICE_TRANSITION_INVALID.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/invoices/{invoiceId}/versions:
+    get:
+      tags: [Billing]
+      operationId: listInvoiceVersions
+      description: |
+        The supersede chain this invoice belongs to, oldest first: the invoice that was
+        returned, the correction that replaced it, and the correction of that correction if
+        there was one.
+
+        It answers from either end — asking about the newest invoice or about the oldest gives
+        the same chain in the same order — because "which document is the live one" is the
+        question a payer's finance user actually has, and answering it from a link that only
+        points one way would mean walking the chain in a client.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/InvoiceId'
+      responses:
+        '200':
+          description: The supersede chain, oldest first
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceChain'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
 components:
   securitySchemes:
     sessionCookie:
@@ -12169,6 +12647,13 @@ components:
         format: uuid
     WaitlistEntryId:
       name: waitlistEntryId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    InvoiceId:
+      name: invoiceId
       in: path
       required: true
       schema:
@@ -21862,3 +22347,394 @@ components:
         programId:
           type: string
           format: uuid
+    InvoiceStatus:
+      type: string
+      enum:
+        [DRAFT, SUBMITTED, IN_BATCH, RETURNED, APPROVED, PARTIALLY_APPROVED, REJECTED,
+         SETTLED, CANCELLED]
+      description: |
+        The invoice lifecycle of v1.2 10.9. WP-I7-02 owns DRAFT, SUBMITTED and CANCELLED; the
+        reviewer's RETURNED, APPROVED, PARTIALLY_APPROVED and REJECTED are WP-I7-03's,
+        IN_BATCH is the icmal's and SETTLED is the settlement's. They are declared here
+        because the lifecycle is one list and a list with a hole in it is a list nobody can
+        read.
+    InvoiceSource:
+      type: string
+      enum: [MANUAL, EDOCUMENT]
+      description: |
+        Where the document came from. Only MANUAL is reachable now: KAPSORA produces no fiscal
+        document, and the e-document arriving from GİB through the integrator is M8's.
+    InvoiceAllocation:
+      type: object
+      additionalProperties: false
+      required:
+        [claimId, claimReference, claimVersionNo, allocatedAmount, currencyCode, approvedTotal,
+         claimStatus, active]
+      description: |
+        How much of one approved claim this invoice is collecting, and what that claim was
+        worth when the allocation was made.
+      properties:
+        claimId:
+          type: string
+          format: uuid
+        claimReference:
+          type: string
+          description: The reference the provider quotes on the telephone.
+        claimVersionNo:
+          type: integer
+          minimum: 1
+          description: |
+            The version the allocation was made against. A claim corrected afterwards is a
+            different set of figures, and an invoice that silently followed the correction
+            would be an invoice whose total stopped matching the sum of its parts.
+        allocatedAmount:
+          type: string
+          description: Exact decimal. Never more than `approvedTotal`; less is ordinary.
+        currencyCode:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        approvedTotal:
+          type: string
+          description: |
+            What the payer approved for this claim — lines minus adjustments — recomputed on
+            the server by the same arithmetic `getClaimInvoiceReadiness` runs.
+        claimStatus:
+          $ref: '#/components/schemas/ClaimStatus'
+        active:
+          type: boolean
+          description: |
+            False once the invoice was cancelled or returned. The row stays on the record and
+            the claim is free to be put on the correction.
+        claimDescription:
+          type: [string, 'null']
+          description: |
+            The provider's own words on the claim's lines. Present only in the clinical
+            projection: v1.2 §2.11 marks a line description of a health invoice as possibly
+            clinical, and possibly clinical is clinical. The sponsor's HR user never receives
+            it.
+    Invoice:
+      type: object
+      additionalProperties: false
+      required:
+        [id, providerOrganizationId, source, invoiceNumber, invoiceDate, fiscalYear,
+         currencyCode, lineExtensionAmount, taxAmount, payableAmount, domainCode, status,
+         allocations, allocationTotal, allocationDifference, projection, createdAt, rowVersion]
+      description: |
+        An invoice the provider raised elsewhere, as KAPSORA records it, with the claims it
+        covers.
+
+        The provider's VKN is not here in any form a reader could resolve: it is stored as a
+        blind index and never leaves the database.
+      properties:
+        id:
+          type: string
+          format: uuid
+        providerOrganizationId:
+          type: string
+          format: uuid
+        providerName:
+          type: string
+        payerOrganizationId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            The sponsor the contract names. Null means the tenant itself is the payer, which
+            is the ordinary case.
+        source:
+          $ref: '#/components/schemas/InvoiceSource'
+        edocumentId:
+          type: [string, 'null']
+          format: uuid
+          description: The GİB e-document of M8. Always null in this milestone.
+        invoiceNumber:
+          type: string
+          pattern: '^[A-Za-z0-9][A-Za-z0-9._/-]{0,63}$'
+        invoiceDate:
+          type: string
+          format: date
+        fiscalYear:
+          type: integer
+          description: The year of `invoiceDate`, stored, and half of the uniqueness rule.
+        currencyCode:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        lineExtensionAmount:
+          type: string
+          description: Exact decimal, as the provider entered it.
+        taxAmount:
+          type: string
+        payableAmount:
+          type: string
+          description: |
+            `lineExtensionAmount + taxAmount`, exactly. It is a database CHECK rather than an
+            assertion in a service.
+        vatRate:
+          type: [string, 'null']
+          description: As entered, never computed from the amounts.
+        domainCode:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]{1,31}$'
+        status:
+          $ref: '#/components/schemas/InvoiceStatus'
+        supersedesInvoiceId:
+          type: [string, 'null']
+          format: uuid
+          description: What this invoice was raised to correct.
+        supersededByInvoiceId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            The correction that replaced this invoice. Set when that correction was submitted,
+            not when it was drafted.
+        submittedAt:
+          type: [string, 'null']
+          format: date-time
+        documentId:
+          type: [string, 'null']
+          format: uuid
+          description: The scanned image, a clean document object linked with aggregate type INVOICE.
+        batchId:
+          type: [string, 'null']
+          format: uuid
+          description: The WP-I7-03 icmal this invoice sits in. Always null in this milestone.
+        notes:
+          type: [string, 'null']
+          maxLength: 2000
+        allocations:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceAllocation'
+        allocationTotal:
+          type: string
+          description: |
+            The sum of the active allocations, in exact decimals. It is what the submit gate
+            compares against `payableAmount`.
+        allocationDifference:
+          type: string
+          description: |
+            `payableAmount` minus `allocationTotal`, signed. Zero on an invoice that adds up;
+            a draft screen shows it so the gap is visible before the submit is refused.
+        projection:
+          $ref: '#/components/schemas/HealthProjection'
+        createdAt:
+          type: string
+          format: date-time
+        rowVersion:
+          type: integer
+          format: int64
+    InvoiceSummary:
+      type: object
+      additionalProperties: false
+      required:
+        [id, providerOrganizationId, invoiceNumber, invoiceDate, fiscalYear, currencyCode,
+         payableAmount, status, allocationTotal, allocationCount, createdAt, rowVersion]
+      description: |
+        One row of a list: the header, what it allocates in total, how many claims that is
+        spread over, and the batch it sits in. The allocations themselves are on the detail,
+        because a page of fifty invoices is not a place to read four hundred claim links.
+      properties:
+        id:
+          type: string
+          format: uuid
+        providerOrganizationId:
+          type: string
+          format: uuid
+        providerName:
+          type: string
+        payerOrganizationId:
+          type: [string, 'null']
+          format: uuid
+        invoiceNumber:
+          type: string
+        invoiceDate:
+          type: string
+          format: date
+        fiscalYear:
+          type: integer
+        currencyCode:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        lineExtensionAmount:
+          type: string
+        taxAmount:
+          type: string
+        payableAmount:
+          type: string
+        status:
+          $ref: '#/components/schemas/InvoiceStatus'
+        source:
+          $ref: '#/components/schemas/InvoiceSource'
+        supersedesInvoiceId:
+          type: [string, 'null']
+          format: uuid
+        supersededByInvoiceId:
+          type: [string, 'null']
+          format: uuid
+        submittedAt:
+          type: [string, 'null']
+          format: date-time
+        documentId:
+          type: [string, 'null']
+          format: uuid
+        batchId:
+          type: [string, 'null']
+          format: uuid
+        allocationTotal:
+          type: string
+        allocationCount:
+          type: integer
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        rowVersion:
+          type: integer
+          format: int64
+    InvoicePage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceSummary'
+        nextCursor:
+          type: [string, 'null']
+    InvoiceChain:
+      type: object
+      additionalProperties: false
+      required: [items]
+      description: |
+        A supersede chain, oldest first. An invoice that has never been corrected answers a
+        chain of one, which is the truthful answer rather than an empty list.
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceSummary'
+    CreateInvoice:
+      type: object
+      additionalProperties: false
+      required:
+        [providerOrganizationId, invoiceNumber, invoiceDate, lineExtensionAmount, taxAmount,
+         payableAmount]
+      description: |
+        The header as the provider entered it. Nothing here is computed: the tax and the rate
+        are what the provider's own document says, and a figure this platform derived would be
+        this platform's opinion about somebody else's fiscal document.
+      properties:
+        providerOrganizationId:
+          type: string
+          format: uuid
+        payerOrganizationId:
+          type: [string, 'null']
+          format: uuid
+        invoiceNumber:
+          type: string
+          pattern: '^[A-Za-z0-9][A-Za-z0-9._/-]{0,63}$'
+        invoiceDate:
+          type: string
+          format: date
+        currencyCode:
+          type: [string, 'null']
+          pattern: '^[A-Z]{3}$'
+          description: Defaults to TRY.
+        lineExtensionAmount:
+          $ref: '#/components/schemas/DecimalAmount'
+        taxAmount:
+          $ref: '#/components/schemas/DecimalAmount'
+        payableAmount:
+          $ref: '#/components/schemas/DecimalAmount'
+        vatRate:
+          oneOf:
+            - $ref: '#/components/schemas/DecimalPercent'
+            - type: 'null'
+        domainCode:
+          type: [string, 'null']
+          pattern: '^[A-Z][A-Z0-9_]{1,31}$'
+          description: Defaults to GENERIC.
+        documentId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            The scanned image. It has to be a document object of this tenant the scanner has
+            cleared; a file still in quarantine is not evidence a reviewer can open.
+        notes:
+          type: [string, 'null']
+          maxLength: 2000
+        supersedesInvoiceId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            Opens this draft as the correction of that invoice, copying its header fields that
+            were not sent and all of its allocations.
+    PatchInvoiceDraft:
+      type: object
+      additionalProperties: false
+      description: |
+        A merge patch over the header of a DRAFT. The three amounts travel together: sending
+        one without the other two is refused, because the sum has to hold on the row that
+        results.
+      properties:
+        payerOrganizationId:
+          type: [string, 'null']
+          format: uuid
+        invoiceNumber:
+          type: [string, 'null']
+          pattern: '^[A-Za-z0-9][A-Za-z0-9._/-]{0,63}$'
+        invoiceDate:
+          type: [string, 'null']
+          format: date
+        currencyCode:
+          type: [string, 'null']
+          pattern: '^[A-Z]{3}$'
+        lineExtensionAmount:
+          oneOf:
+            - $ref: '#/components/schemas/DecimalAmount'
+            - type: 'null'
+        taxAmount:
+          oneOf:
+            - $ref: '#/components/schemas/DecimalAmount'
+            - type: 'null'
+        payableAmount:
+          oneOf:
+            - $ref: '#/components/schemas/DecimalAmount'
+            - type: 'null'
+        vatRate:
+          oneOf:
+            - $ref: '#/components/schemas/DecimalPercent'
+            - type: 'null'
+        domainCode:
+          type: [string, 'null']
+          pattern: '^[A-Z][A-Z0-9_]{1,31}$'
+        documentId:
+          type: [string, 'null']
+          format: uuid
+        notes:
+          type: [string, 'null']
+          maxLength: 2000
+    InvoiceAllocationInput:
+      type: object
+      additionalProperties: false
+      required: [claimId, allocatedAmount]
+      properties:
+        claimId:
+          type: string
+          format: uuid
+        allocatedAmount:
+          $ref: '#/components/schemas/DecimalAmount'
+    PutInvoiceAllocations:
+      type: object
+      additionalProperties: false
+      required: [allocations]
+      description: |
+        The whole set, replacing whatever the draft carried. An empty list clears the
+        allocations, which is how a provider starts over; it is not a state the invoice can be
+        submitted from.
+      properties:
+        allocations:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/InvoiceAllocationInput'

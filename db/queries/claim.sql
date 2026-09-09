@@ -638,7 +638,18 @@ SELECT p.claim_id, p.reference, p.status, p.domain_code,
        trim_scale(p.line_member_total)::text AS line_member_total,
        trim_scale(COALESCE(adjusted.adjustment_total, 0))::text AS adjustment_total,
        trim_scale(COALESCE(adjusted.adjustment_payer_total, 0))::text AS adjustment_payer_total,
-       trim_scale(COALESCE(adjusted.adjustment_member_total, 0))::text AS adjustment_member_total
+       trim_scale(COALESCE(adjusted.adjustment_member_total, 0))::text AS adjustment_member_total,
+       -- Whether the claim already sits on a live invoice (WP-I7-02). Until that package
+       -- landed, "not yet invoiced" was read off the status alone; a claim allocated to a
+       -- *draft* invoice is still APPROVED, and offering it again as invoiceable is how the
+       -- same money ends up on two documents. The status is still checked in Go -- this is
+       -- the half a status cannot answer.
+       EXISTS (
+           SELECT 1 FROM billing.invoice_claim ic
+            WHERE ic.tenant_id = sqlc.arg('tenant_id')
+              AND ic.claim_id = p.claim_id
+              AND ic.active
+       ) AS on_live_invoice
   FROM per_claim p
   LEFT JOIN adjusted ON adjusted.claim_id = p.claim_id
  WHERE (sqlc.narg('decided_from')::timestamptz IS NULL
@@ -657,3 +668,20 @@ SELECT o.display_name
   JOIN directory.organization o ON o.id = t.organization_id
  WHERE t.tenant_id = sqlc.arg('tenant_id')
    AND t.id = sqlc.arg('id');
+
+-- name: SetClaimInvoiceStatus :execrows
+-- The claim moving onto an invoice (WP-I7-02), and back off one. The billing module owns
+-- *when* it happens and this module owns *whether* it may, which is why the statement lives
+-- here and is reached through the claim service's own command rather than from billing's
+-- repository.
+--
+-- `from_statuses` is the whole precondition and there is no row_version: the concurrency
+-- control of this transition is the invoice's If-Match and the row lock the invoice command
+-- already holds, and demanding a claim's ETag as well would make an invoice covering fifty
+-- claims unsubmittable whenever a reviewer had touched any one of them.
+UPDATE claim.claim
+   SET status     = sqlc.arg('status'),
+       updated_by = sqlc.narg('actor_id')
+ WHERE tenant_id = sqlc.arg('tenant_id')
+   AND id = sqlc.arg('id')
+   AND status = ANY(sqlc.arg('from_statuses')::text[]);

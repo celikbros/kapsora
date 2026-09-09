@@ -1720,7 +1720,7 @@ WITH latest AS (
            l.version_id, l.currency_code
       FROM claim.line_decision d
       JOIN claim.claim_line l ON l.tenant_id = d.tenant_id AND l.id = d.line_id
-     WHERE d.tenant_id = $4
+     WHERE d.tenant_id = $1
      ORDER BY d.line_id, d.decided_at DESC, d.id DESC
 ), per_claim AS (
     SELECT c.id AS claim_id, c.reference, c.status, c.domain_code,
@@ -1733,7 +1733,7 @@ WITH latest AS (
       JOIN claim.claim_version v ON v.tenant_id = c.tenant_id AND v.claim_id = c.id
                                 AND v.version_no = c.current_version_no
       JOIN latest ON latest.version_id = v.id
-     WHERE c.tenant_id = $4
+     WHERE c.tenant_id = $1
        AND c.provider_organization_id = $5
        AND c.status IN ('APPROVED', 'PARTIALLY_APPROVED', 'INVOICED', 'BATCHED', 'SETTLED')
      GROUP BY c.id, c.reference, c.status, c.domain_code
@@ -1743,7 +1743,7 @@ WITH latest AS (
            sum(a.payer_amount) AS adjustment_payer_total,
            sum(a.member_amount) AS adjustment_member_total
       FROM claim.adjustment a
-     WHERE a.tenant_id = $4
+     WHERE a.tenant_id = $1
      GROUP BY a.claim_id
 )
 SELECT p.claim_id, p.reference, p.status, p.domain_code,
@@ -1753,23 +1753,34 @@ SELECT p.claim_id, p.reference, p.status, p.domain_code,
        trim_scale(p.line_member_total)::text AS line_member_total,
        trim_scale(COALESCE(adjusted.adjustment_total, 0))::text AS adjustment_total,
        trim_scale(COALESCE(adjusted.adjustment_payer_total, 0))::text AS adjustment_payer_total,
-       trim_scale(COALESCE(adjusted.adjustment_member_total, 0))::text AS adjustment_member_total
+       trim_scale(COALESCE(adjusted.adjustment_member_total, 0))::text AS adjustment_member_total,
+       -- Whether the claim already sits on a live invoice (WP-I7-02). Until that package
+       -- landed, "not yet invoiced" was read off the status alone; a claim allocated to a
+       -- *draft* invoice is still APPROVED, and offering it again as invoiceable is how the
+       -- same money ends up on two documents. The status is still checked in Go -- this is
+       -- the half a status cannot answer.
+       EXISTS (
+           SELECT 1 FROM billing.invoice_claim ic
+            WHERE ic.tenant_id = $1
+              AND ic.claim_id = p.claim_id
+              AND ic.active
+       ) AS on_live_invoice
   FROM per_claim p
   LEFT JOIN adjusted ON adjusted.claim_id = p.claim_id
- WHERE ($1::timestamptz IS NULL
-        OR p.decided_at >= $1::timestamptz)
-   AND ($2::timestamptz IS NULL
-        OR p.decided_at < $2::timestamptz)
-   AND ($3::text IS NULL
-        OR p.currency_code = $3::text)
+ WHERE ($2::timestamptz IS NULL
+        OR p.decided_at >= $2::timestamptz)
+   AND ($3::timestamptz IS NULL
+        OR p.decided_at < $3::timestamptz)
+   AND ($4::text IS NULL
+        OR p.currency_code = $4::text)
  ORDER BY p.decided_at, p.claim_id
 `
 
 type ListProviderEarningClaimsParams struct {
+	TenantID               uuid.UUID
 	DecidedFrom            *time.Time
 	DecidedTo              *time.Time
 	CurrencyCode           *string
-	TenantID               uuid.UUID
 	ProviderOrganizationID uuid.UUID
 }
 
@@ -1786,6 +1797,7 @@ type ListProviderEarningClaimsRow struct {
 	AdjustmentTotal       string
 	AdjustmentPayerTotal  string
 	AdjustmentMemberTotal string
+	OnLiveInvoice         bool
 }
 
 // ---------------------------------------------------------------------------
@@ -1805,10 +1817,10 @@ type ListProviderEarningClaimsRow struct {
 // money that arrives in March.
 func (q *Queries) ListProviderEarningClaims(ctx context.Context, arg ListProviderEarningClaimsParams) ([]ListProviderEarningClaimsRow, error) {
 	rows, err := q.db.Query(ctx, listProviderEarningClaims,
+		arg.TenantID,
 		arg.DecidedFrom,
 		arg.DecidedTo,
 		arg.CurrencyCode,
-		arg.TenantID,
 		arg.ProviderOrganizationID,
 	)
 	if err != nil {
@@ -1831,6 +1843,7 @@ func (q *Queries) ListProviderEarningClaims(ctx context.Context, arg ListProvide
 			&i.AdjustmentTotal,
 			&i.AdjustmentPayerTotal,
 			&i.AdjustmentMemberTotal,
+			&i.OnLiveInvoice,
 		); err != nil {
 			return nil, err
 		}
@@ -2061,6 +2074,46 @@ func (q *Queries) ResolveClaimServiceDefinitions(ctx context.Context, arg Resolv
 		return nil, err
 	}
 	return items, nil
+}
+
+const setClaimInvoiceStatus = `-- name: SetClaimInvoiceStatus :execrows
+UPDATE claim.claim
+   SET status     = $1,
+       updated_by = $2
+ WHERE tenant_id = $3
+   AND id = $4
+   AND status = ANY($5::text[])
+`
+
+type SetClaimInvoiceStatusParams struct {
+	Status       string
+	ActorID      uuid.NullUUID
+	TenantID     uuid.UUID
+	ID           uuid.UUID
+	FromStatuses []string
+}
+
+// The claim moving onto an invoice (WP-I7-02), and back off one. The billing module owns
+// *when* it happens and this module owns *whether* it may, which is why the statement lives
+// here and is reached through the claim service's own command rather than from billing's
+// repository.
+//
+// `from_statuses` is the whole precondition and there is no row_version: the concurrency
+// control of this transition is the invoice's If-Match and the row lock the invoice command
+// already holds, and demanding a claim's ETag as well would make an invoice covering fifty
+// claims unsubmittable whenever a reviewer had touched any one of them.
+func (q *Queries) SetClaimInvoiceStatus(ctx context.Context, arg SetClaimInvoiceStatusParams) (int64, error) {
+	result, err := q.db.Exec(ctx, setClaimInvoiceStatus,
+		arg.Status,
+		arg.ActorID,
+		arg.TenantID,
+		arg.ID,
+		arg.FromStatuses,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const setClaimReviewComment = `-- name: SetClaimReviewComment :execrows

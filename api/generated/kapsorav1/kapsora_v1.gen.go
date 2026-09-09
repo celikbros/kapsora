@@ -1441,6 +1441,63 @@ func (e InpatientStayStatus) Valid() bool {
 	}
 }
 
+// Defines values for InvoiceSource.
+const (
+	InvoiceSourceEDOCUMENT InvoiceSource = "EDOCUMENT"
+	InvoiceSourceMANUAL    InvoiceSource = "MANUAL"
+)
+
+// Valid indicates whether the value is a known member of the InvoiceSource enum.
+func (e InvoiceSource) Valid() bool {
+	switch e {
+	case InvoiceSourceEDOCUMENT:
+		return true
+	case InvoiceSourceMANUAL:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InvoiceStatus.
+const (
+	InvoiceStatusAPPROVED          InvoiceStatus = "APPROVED"
+	InvoiceStatusCANCELLED         InvoiceStatus = "CANCELLED"
+	InvoiceStatusDRAFT             InvoiceStatus = "DRAFT"
+	InvoiceStatusINBATCH           InvoiceStatus = "IN_BATCH"
+	InvoiceStatusPARTIALLYAPPROVED InvoiceStatus = "PARTIALLY_APPROVED"
+	InvoiceStatusREJECTED          InvoiceStatus = "REJECTED"
+	InvoiceStatusRETURNED          InvoiceStatus = "RETURNED"
+	InvoiceStatusSETTLED           InvoiceStatus = "SETTLED"
+	InvoiceStatusSUBMITTED         InvoiceStatus = "SUBMITTED"
+)
+
+// Valid indicates whether the value is a known member of the InvoiceStatus enum.
+func (e InvoiceStatus) Valid() bool {
+	switch e {
+	case InvoiceStatusAPPROVED:
+		return true
+	case InvoiceStatusCANCELLED:
+		return true
+	case InvoiceStatusDRAFT:
+		return true
+	case InvoiceStatusINBATCH:
+		return true
+	case InvoiceStatusPARTIALLYAPPROVED:
+		return true
+	case InvoiceStatusREJECTED:
+		return true
+	case InvoiceStatusRETURNED:
+		return true
+	case InvoiceStatusSETTLED:
+		return true
+	case InvoiceStatusSUBMITTED:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for LedgerEntryMovementType.
 const (
 	ADJUST  LedgerEntryMovementType = "ADJUST"
@@ -6405,6 +6462,46 @@ type CreateInpatientStay struct {
 	ProviderOrganizationId openapi_types.UUID  `json:"providerOrganizationId"`
 }
 
+// CreateInvoice The header as the provider entered it. Nothing here is computed: the tax and the rate
+// are what the provider's own document says, and a figure this platform derived would be
+// this platform's opinion about somebody else's fiscal document.
+type CreateInvoice struct {
+	// CurrencyCode Defaults to TRY.
+	CurrencyCode *string `json:"currencyCode,omitempty"`
+
+	// DocumentId The scanned image. It has to be a document object of this tenant the scanner has
+	// cleared; a file still in quarantine is not evidence a reviewer can open.
+	DocumentId *openapi_types.UUID `json:"documentId,omitempty"`
+
+	// DomainCode Defaults to GENERIC.
+	DomainCode    *string            `json:"domainCode,omitempty"`
+	InvoiceDate   openapi_types.Date `json:"invoiceDate"`
+	InvoiceNumber string             `json:"invoiceNumber"`
+
+	// LineExtensionAmount An exact numeric(20,6) money or quantity value as a decimal string. It is a string
+	// and not a JSON number on purpose: a tariff row is what somebody is invoiced, and a
+	// float would round it silently somewhere between the browser and the ledger.
+	LineExtensionAmount DecimalAmount `json:"lineExtensionAmount"`
+	Notes               *string       `json:"notes,omitempty"`
+
+	// PayableAmount An exact numeric(20,6) money or quantity value as a decimal string. It is a string
+	// and not a JSON number on purpose: a tariff row is what somebody is invoiced, and a
+	// float would round it silently somewhere between the browser and the ledger.
+	PayableAmount          DecimalAmount       `json:"payableAmount"`
+	PayerOrganizationId    *openapi_types.UUID `json:"payerOrganizationId,omitempty"`
+	ProviderOrganizationId openapi_types.UUID  `json:"providerOrganizationId"`
+
+	// SupersedesInvoiceId Opens this draft as the correction of that invoice, copying its header fields that
+	// were not sent and all of its allocations.
+	SupersedesInvoiceId *openapi_types.UUID `json:"supersedesInvoiceId,omitempty"`
+
+	// TaxAmount An exact numeric(20,6) money or quantity value as a decimal string. It is a string
+	// and not a JSON number on purpose: a tariff row is what somebody is invoiced, and a
+	// float would round it silently somewhere between the browser and the ledger.
+	TaxAmount DecimalAmount   `json:"taxAmount"`
+	VatRate   *DecimalPercent `json:"vatRate,omitempty"`
+}
+
 // CreateLegalHold defines model for CreateLegalHold.
 type CreateLegalHold struct {
 	AggregateId   *openapi_types.UUID `json:"aggregateId,omitempty"`
@@ -7604,6 +7701,189 @@ type InventoryDay struct {
 	UpdatedAt  *time.Time         `json:"updatedAt,omitempty"`
 }
 
+// Invoice An invoice the provider raised elsewhere, as KAPSORA records it, with the claims it
+// covers.
+//
+// The provider's VKN is not here in any form a reader could resolve: it is stored as a
+// blind index and never leaves the database.
+type Invoice struct {
+	// AllocationDifference `payableAmount` minus `allocationTotal`, signed. Zero on an invoice that adds up;
+	// a draft screen shows it so the gap is visible before the submit is refused.
+	AllocationDifference string `json:"allocationDifference"`
+
+	// AllocationTotal The sum of the active allocations, in exact decimals. It is what the submit gate
+	// compares against `payableAmount`.
+	AllocationTotal string              `json:"allocationTotal"`
+	Allocations     []InvoiceAllocation `json:"allocations"`
+
+	// BatchId The WP-I7-03 icmal this invoice sits in. Always null in this milestone.
+	BatchId      *openapi_types.UUID `json:"batchId,omitempty"`
+	CreatedAt    time.Time           `json:"createdAt"`
+	CurrencyCode string              `json:"currencyCode"`
+
+	// DocumentId The scanned image, a clean document object linked with aggregate type INVOICE.
+	DocumentId *openapi_types.UUID `json:"documentId,omitempty"`
+	DomainCode string              `json:"domainCode"`
+
+	// EdocumentId The GİB e-document of M8. Always null in this milestone.
+	EdocumentId *openapi_types.UUID `json:"edocumentId,omitempty"`
+
+	// FiscalYear The year of `invoiceDate`, stored, and half of the uniqueness rule.
+	FiscalYear    int                `json:"fiscalYear"`
+	Id            openapi_types.UUID `json:"id"`
+	InvoiceDate   openapi_types.Date `json:"invoiceDate"`
+	InvoiceNumber string             `json:"invoiceNumber"`
+
+	// LineExtensionAmount Exact decimal, as the provider entered it.
+	LineExtensionAmount string  `json:"lineExtensionAmount"`
+	Notes               *string `json:"notes,omitempty"`
+
+	// PayableAmount `lineExtensionAmount + taxAmount`, exactly. It is a database CHECK rather than an
+	// assertion in a service.
+	PayableAmount string `json:"payableAmount"`
+
+	// PayerOrganizationId The sponsor the contract names. Null means the tenant itself is the payer, which
+	// is the ordinary case.
+	PayerOrganizationId *openapi_types.UUID `json:"payerOrganizationId,omitempty"`
+
+	// Projection Which half of the record was served. It reports what the caller holds, which the
+	// caller already knows, so it reveals nothing about the patient — and it is what lets
+	// a screen say "you may not see clinical detail" instead of showing a record with
+	// holes in it.
+	Projection             HealthProjection   `json:"projection"`
+	ProviderName           *string            `json:"providerName,omitempty"`
+	ProviderOrganizationId openapi_types.UUID `json:"providerOrganizationId"`
+	RowVersion             int64              `json:"rowVersion"`
+
+	// Source Where the document came from. Only MANUAL is reachable now: KAPSORA produces no fiscal
+	// document, and the e-document arriving from GİB through the integrator is M8's.
+	Source InvoiceSource `json:"source"`
+
+	// Status The invoice lifecycle of v1.2 10.9. WP-I7-02 owns DRAFT, SUBMITTED and CANCELLED; the
+	// reviewer's RETURNED, APPROVED, PARTIALLY_APPROVED and REJECTED are WP-I7-03's,
+	// IN_BATCH is the icmal's and SETTLED is the settlement's. They are declared here
+	// because the lifecycle is one list and a list with a hole in it is a list nobody can
+	// read.
+	Status      InvoiceStatus `json:"status"`
+	SubmittedAt *time.Time    `json:"submittedAt,omitempty"`
+
+	// SupersededByInvoiceId The correction that replaced this invoice. Set when that correction was submitted,
+	// not when it was drafted.
+	SupersededByInvoiceId *openapi_types.UUID `json:"supersededByInvoiceId,omitempty"`
+
+	// SupersedesInvoiceId What this invoice was raised to correct.
+	SupersedesInvoiceId *openapi_types.UUID `json:"supersedesInvoiceId,omitempty"`
+	TaxAmount           string              `json:"taxAmount"`
+
+	// VatRate As entered, never computed from the amounts.
+	VatRate *string `json:"vatRate,omitempty"`
+}
+
+// InvoiceAllocation How much of one approved claim this invoice is collecting, and what that claim was
+// worth when the allocation was made.
+type InvoiceAllocation struct {
+	// Active False once the invoice was cancelled or returned. The row stays on the record and
+	// the claim is free to be put on the correction.
+	Active bool `json:"active"`
+
+	// AllocatedAmount Exact decimal. Never more than `approvedTotal`; less is ordinary.
+	AllocatedAmount string `json:"allocatedAmount"`
+
+	// ApprovedTotal What the payer approved for this claim — lines minus adjustments — recomputed on
+	// the server by the same arithmetic `getClaimInvoiceReadiness` runs.
+	ApprovedTotal string `json:"approvedTotal"`
+
+	// ClaimDescription The provider's own words on the claim's lines. Present only in the clinical
+	// projection: v1.2 §2.11 marks a line description of a health invoice as possibly
+	// clinical, and possibly clinical is clinical. The sponsor's HR user never receives
+	// it.
+	ClaimDescription *string            `json:"claimDescription,omitempty"`
+	ClaimId          openapi_types.UUID `json:"claimId"`
+
+	// ClaimReference The reference the provider quotes on the telephone.
+	ClaimReference string `json:"claimReference"`
+
+	// ClaimStatus The claim lifecycle of v1.2 12.5. INVOICED, BATCHED and SETTLED are declared because
+	// the lifecycle is one list; the commands that reach them belong to M7 and nothing in
+	// this contract puts a claim into one of them.
+	ClaimStatus ClaimStatus `json:"claimStatus"`
+
+	// ClaimVersionNo The version the allocation was made against. A claim corrected afterwards is a
+	// different set of figures, and an invoice that silently followed the correction
+	// would be an invoice whose total stopped matching the sum of its parts.
+	ClaimVersionNo int    `json:"claimVersionNo"`
+	CurrencyCode   string `json:"currencyCode"`
+}
+
+// InvoiceAllocationInput defines model for InvoiceAllocationInput.
+type InvoiceAllocationInput struct {
+	// AllocatedAmount An exact numeric(20,6) money or quantity value as a decimal string. It is a string
+	// and not a JSON number on purpose: a tariff row is what somebody is invoiced, and a
+	// float would round it silently somewhere between the browser and the ledger.
+	AllocatedAmount DecimalAmount      `json:"allocatedAmount"`
+	ClaimId         openapi_types.UUID `json:"claimId"`
+}
+
+// InvoiceChain A supersede chain, oldest first. An invoice that has never been corrected answers a
+// chain of one, which is the truthful answer rather than an empty list.
+type InvoiceChain struct {
+	Items []InvoiceSummary `json:"items"`
+}
+
+// InvoicePage defines model for InvoicePage.
+type InvoicePage struct {
+	Items      []InvoiceSummary `json:"items"`
+	NextCursor *string          `json:"nextCursor"`
+}
+
+// InvoiceSource Where the document came from. Only MANUAL is reachable now: KAPSORA produces no fiscal
+// document, and the e-document arriving from GİB through the integrator is M8's.
+type InvoiceSource string
+
+// InvoiceStatus The invoice lifecycle of v1.2 10.9. WP-I7-02 owns DRAFT, SUBMITTED and CANCELLED; the
+// reviewer's RETURNED, APPROVED, PARTIALLY_APPROVED and REJECTED are WP-I7-03's,
+// IN_BATCH is the icmal's and SETTLED is the settlement's. They are declared here
+// because the lifecycle is one list and a list with a hole in it is a list nobody can
+// read.
+type InvoiceStatus string
+
+// InvoiceSummary One row of a list: the header, what it allocates in total, how many claims that is
+// spread over, and the batch it sits in. The allocations themselves are on the detail,
+// because a page of fifty invoices is not a place to read four hundred claim links.
+type InvoiceSummary struct {
+	AllocationCount        int                 `json:"allocationCount"`
+	AllocationTotal        string              `json:"allocationTotal"`
+	BatchId                *openapi_types.UUID `json:"batchId,omitempty"`
+	CreatedAt              time.Time           `json:"createdAt"`
+	CurrencyCode           string              `json:"currencyCode"`
+	DocumentId             *openapi_types.UUID `json:"documentId,omitempty"`
+	FiscalYear             int                 `json:"fiscalYear"`
+	Id                     openapi_types.UUID  `json:"id"`
+	InvoiceDate            openapi_types.Date  `json:"invoiceDate"`
+	InvoiceNumber          string              `json:"invoiceNumber"`
+	LineExtensionAmount    *string             `json:"lineExtensionAmount,omitempty"`
+	PayableAmount          string              `json:"payableAmount"`
+	PayerOrganizationId    *openapi_types.UUID `json:"payerOrganizationId,omitempty"`
+	ProviderName           *string             `json:"providerName,omitempty"`
+	ProviderOrganizationId openapi_types.UUID  `json:"providerOrganizationId"`
+	RowVersion             int64               `json:"rowVersion"`
+
+	// Source Where the document came from. Only MANUAL is reachable now: KAPSORA produces no fiscal
+	// document, and the e-document arriving from GİB through the integrator is M8's.
+	Source *InvoiceSource `json:"source,omitempty"`
+
+	// Status The invoice lifecycle of v1.2 10.9. WP-I7-02 owns DRAFT, SUBMITTED and CANCELLED; the
+	// reviewer's RETURNED, APPROVED, PARTIALLY_APPROVED and REJECTED are WP-I7-03's,
+	// IN_BATCH is the icmal's and SETTLED is the settlement's. They are declared here
+	// because the lifecycle is one list and a list with a hole in it is a list nobody can
+	// read.
+	Status                InvoiceStatus       `json:"status"`
+	SubmittedAt           *time.Time          `json:"submittedAt,omitempty"`
+	SupersededByInvoiceId *openapi_types.UUID `json:"supersededByInvoiceId,omitempty"`
+	SupersedesInvoiceId   *openapi_types.UUID `json:"supersedesInvoiceId,omitempty"`
+	TaxAmount             *string             `json:"taxAmount,omitempty"`
+}
+
 // IssueVoucher defines model for IssueVoucher.
 type IssueVoucher struct {
 	// ValidFrom Defaults to the authorization's own start.
@@ -8521,6 +8801,23 @@ type PatchClaimDraft struct {
 	ServiceDateTo   openapi_types.Date     `json:"serviceDateTo"`
 }
 
+// PatchInvoiceDraft A merge patch over the header of a DRAFT. The three amounts travel together: sending
+// one without the other two is refused, because the sum has to hold on the row that
+// results.
+type PatchInvoiceDraft struct {
+	CurrencyCode        *string             `json:"currencyCode,omitempty"`
+	DocumentId          *openapi_types.UUID `json:"documentId,omitempty"`
+	DomainCode          *string             `json:"domainCode,omitempty"`
+	InvoiceDate         *openapi_types.Date `json:"invoiceDate,omitempty"`
+	InvoiceNumber       *string             `json:"invoiceNumber,omitempty"`
+	LineExtensionAmount *DecimalAmount      `json:"lineExtensionAmount,omitempty"`
+	Notes               *string             `json:"notes,omitempty"`
+	PayableAmount       *DecimalAmount      `json:"payableAmount,omitempty"`
+	PayerOrganizationId *openapi_types.UUID `json:"payerOrganizationId,omitempty"`
+	TaxAmount           *DecimalAmount      `json:"taxAmount,omitempty"`
+	VatRate             *DecimalPercent     `json:"vatRate,omitempty"`
+}
+
 // PatchMedicalReportDraft defines model for PatchMedicalReportDraft.
 type PatchMedicalReportDraft struct {
 	CaseId                        *openapi_types.UUID `json:"caseId,omitempty"`
@@ -9426,6 +9723,13 @@ type PutClaimLines struct {
 type PutEncounterDiagnoses struct {
 	// Items The whole set. An empty array clears the encounter's diagnoses.
 	Items []DiagnosisInput `json:"items"`
+}
+
+// PutInvoiceAllocations The whole set, replacing whatever the draft carried. An empty list clears the
+// allocations, which is how a provider starts over; it is not a state the invoice can be
+// submitted from.
+type PutInvoiceAllocations struct {
+	Allocations []InvoiceAllocationInput `json:"allocations"`
 }
 
 // PutLodgingTermsRequest The terms to write on a DRAFT version, whole. It is the policy and nothing else; a
@@ -10980,6 +11284,9 @@ type ImportId = openapi_types.UUID
 
 // ImportRowId defines model for ImportRowId.
 type ImportRowId = openapi_types.UUID
+
+// InvoiceId defines model for InvoiceId.
+type InvoiceId = openapi_types.UUID
 
 // LegalHoldId defines model for LegalHoldId.
 type LegalHoldId = openapi_types.UUID
@@ -12970,6 +13277,99 @@ type PutStaySegmentsParamsXAccessPurpose string
 // PutStaySegmentsParamsXAccessProjection defines parameters for PutStaySegments.
 type PutStaySegmentsParamsXAccessProjection string
 
+// ListInvoicesParams defines parameters for ListInvoices.
+type ListInvoicesParams struct {
+	ProviderOrganizationId *openapi_types.UUID `form:"providerOrganizationId,omitempty" json:"providerOrganizationId,omitempty"`
+	Status                 *InvoiceStatus      `form:"status,omitempty" json:"status,omitempty"`
+	FiscalYear             *int                `form:"fiscalYear,omitempty" json:"fiscalYear,omitempty"`
+
+	// From Invoice date, inclusive.
+	From *openapi_types.Date `form:"from,omitempty" json:"from,omitempty"`
+
+	// To Invoice date, inclusive.
+	To *openapi_types.Date `form:"to,omitempty" json:"to,omitempty"`
+
+	// BatchId The WP-I7-03 icmal an invoice was put into. Nothing in this milestone writes it,
+	// so it matches nothing until the batch exists.
+	BatchId *openapi_types.UUID `form:"batchId,omitempty" json:"batchId,omitempty"`
+
+	// Cursor Opaque cursor from the previous response.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// CreateInvoiceParams defines parameters for CreateInvoice.
+type CreateInvoiceParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// GetInvoiceParams defines parameters for GetInvoice.
+type GetInvoiceParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// PatchInvoiceDraftParams defines parameters for PatchInvoiceDraft.
+type PatchInvoiceDraftParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// PutInvoiceAllocationsParams defines parameters for PutInvoiceAllocations.
+type PutInvoiceAllocationsParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// CancelInvoiceParams defines parameters for CancelInvoice.
+type CancelInvoiceParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// SubmitInvoiceParams defines parameters for SubmitInvoice.
+type SubmitInvoiceParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ListInvoiceVersionsParams defines parameters for ListInvoiceVersions.
+type ListInvoiceVersionsParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
 // PutLegalHoldParams defines parameters for PutLegalHold.
 type PutLegalHoldParams struct {
 	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
@@ -14784,6 +15184,15 @@ type ExtendInpatientStayJSONRequestBody = ExtendInpatientStay
 // PutStaySegmentsJSONRequestBody defines body for PutStaySegments for application/json ContentType.
 type PutStaySegmentsJSONRequestBody = PutStaySegments
 
+// CreateInvoiceJSONRequestBody defines body for CreateInvoice for application/json ContentType.
+type CreateInvoiceJSONRequestBody = CreateInvoice
+
+// PatchInvoiceDraftApplicationMergePatchPlusJSONRequestBody defines body for PatchInvoiceDraft for application/merge-patch+json ContentType.
+type PatchInvoiceDraftApplicationMergePatchPlusJSONRequestBody = PatchInvoiceDraft
+
+// PutInvoiceAllocationsJSONRequestBody defines body for PutInvoiceAllocations for application/json ContentType.
+type PutInvoiceAllocationsJSONRequestBody = PutInvoiceAllocations
+
 // PutLegalHoldJSONRequestBody defines body for PutLegalHold for application/json ContentType.
 type PutLegalHoldJSONRequestBody = CreateLegalHold
 
@@ -15561,6 +15970,30 @@ type ServerInterface interface {
 
 	// (PUT /api/v1/inpatient-stays/{stayId}/segments)
 	PutStaySegments(w http.ResponseWriter, r *http.Request, stayId StayId, params PutStaySegmentsParams)
+
+	// (GET /api/v1/invoices)
+	ListInvoices(w http.ResponseWriter, r *http.Request, params ListInvoicesParams)
+
+	// (POST /api/v1/invoices)
+	CreateInvoice(w http.ResponseWriter, r *http.Request, params CreateInvoiceParams)
+
+	// (GET /api/v1/invoices/{invoiceId})
+	GetInvoice(w http.ResponseWriter, r *http.Request, invoiceId InvoiceId, params GetInvoiceParams)
+
+	// (PATCH /api/v1/invoices/{invoiceId})
+	PatchInvoiceDraft(w http.ResponseWriter, r *http.Request, invoiceId InvoiceId, params PatchInvoiceDraftParams)
+
+	// (PUT /api/v1/invoices/{invoiceId}/allocations)
+	PutInvoiceAllocations(w http.ResponseWriter, r *http.Request, invoiceId InvoiceId, params PutInvoiceAllocationsParams)
+
+	// (POST /api/v1/invoices/{invoiceId}/cancel)
+	CancelInvoice(w http.ResponseWriter, r *http.Request, invoiceId InvoiceId, params CancelInvoiceParams)
+
+	// (POST /api/v1/invoices/{invoiceId}/submit)
+	SubmitInvoice(w http.ResponseWriter, r *http.Request, invoiceId InvoiceId, params SubmitInvoiceParams)
+
+	// (GET /api/v1/invoices/{invoiceId}/versions)
+	ListInvoiceVersions(w http.ResponseWriter, r *http.Request, invoiceId InvoiceId, params ListInvoiceVersionsParams)
 
 	// (POST /api/v1/legal-holds)
 	PutLegalHold(w http.ResponseWriter, r *http.Request, params PutLegalHoldParams)
@@ -16636,6 +17069,46 @@ func (_ Unimplemented) GetInpatientStayReconciliation(w http.ResponseWriter, r *
 
 // (PUT /api/v1/inpatient-stays/{stayId}/segments)
 func (_ Unimplemented) PutStaySegments(w http.ResponseWriter, r *http.Request, stayId StayId, params PutStaySegmentsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/invoices)
+func (_ Unimplemented) ListInvoices(w http.ResponseWriter, r *http.Request, params ListInvoicesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/invoices)
+func (_ Unimplemented) CreateInvoice(w http.ResponseWriter, r *http.Request, params CreateInvoiceParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/invoices/{invoiceId})
+func (_ Unimplemented) GetInvoice(w http.ResponseWriter, r *http.Request, invoiceId InvoiceId, params GetInvoiceParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PATCH /api/v1/invoices/{invoiceId})
+func (_ Unimplemented) PatchInvoiceDraft(w http.ResponseWriter, r *http.Request, invoiceId InvoiceId, params PatchInvoiceDraftParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PUT /api/v1/invoices/{invoiceId}/allocations)
+func (_ Unimplemented) PutInvoiceAllocations(w http.ResponseWriter, r *http.Request, invoiceId InvoiceId, params PutInvoiceAllocationsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/invoices/{invoiceId}/cancel)
+func (_ Unimplemented) CancelInvoice(w http.ResponseWriter, r *http.Request, invoiceId InvoiceId, params CancelInvoiceParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/invoices/{invoiceId}/submit)
+func (_ Unimplemented) SubmitInvoice(w http.ResponseWriter, r *http.Request, invoiceId InvoiceId, params SubmitInvoiceParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/invoices/{invoiceId}/versions)
+func (_ Unimplemented) ListInvoiceVersions(w http.ResponseWriter, r *http.Request, invoiceId InvoiceId, params ListInvoiceVersionsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -28595,6 +29068,731 @@ func (siw *ServerInterfaceWrapper) PutStaySegments(w http.ResponseWriter, r *htt
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PutStaySegments(w, r, stayId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListInvoices operation middleware
+func (siw *ServerInterfaceWrapper) ListInvoices(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListInvoicesParams
+
+	// ------------- Optional query parameter "providerOrganizationId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "providerOrganizationId", r.URL.Query(), &params.ProviderOrganizationId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "providerOrganizationId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "providerOrganizationId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "fiscalYear" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "fiscalYear", r.URL.Query(), &params.FiscalYear, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "fiscalYear"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "fiscalYear", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "from" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "from", r.URL.Query(), &params.From, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "from"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "from", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "to" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "to", r.URL.Query(), &params.To, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "to"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "to", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "batchId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "batchId", r.URL.Query(), &params.BatchId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "batchId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "batchId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListInvoices(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateInvoice operation middleware
+func (siw *ServerInterfaceWrapper) CreateInvoice(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateInvoiceParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateInvoice(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetInvoice operation middleware
+func (siw *ServerInterfaceWrapper) GetInvoice(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "invoiceId" -------------
+	var invoiceId InvoiceId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "invoiceId", chi.URLParam(r, "invoiceId"), &invoiceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "invoiceId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetInvoiceParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetInvoice(w, r, invoiceId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PatchInvoiceDraft operation middleware
+func (siw *ServerInterfaceWrapper) PatchInvoiceDraft(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "invoiceId" -------------
+	var invoiceId InvoiceId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "invoiceId", chi.URLParam(r, "invoiceId"), &invoiceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "invoiceId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PatchInvoiceDraftParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PatchInvoiceDraft(w, r, invoiceId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutInvoiceAllocations operation middleware
+func (siw *ServerInterfaceWrapper) PutInvoiceAllocations(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "invoiceId" -------------
+	var invoiceId InvoiceId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "invoiceId", chi.URLParam(r, "invoiceId"), &invoiceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "invoiceId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PutInvoiceAllocationsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutInvoiceAllocations(w, r, invoiceId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CancelInvoice operation middleware
+func (siw *ServerInterfaceWrapper) CancelInvoice(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "invoiceId" -------------
+	var invoiceId InvoiceId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "invoiceId", chi.URLParam(r, "invoiceId"), &invoiceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "invoiceId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CancelInvoiceParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CancelInvoice(w, r, invoiceId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SubmitInvoice operation middleware
+func (siw *ServerInterfaceWrapper) SubmitInvoice(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "invoiceId" -------------
+	var invoiceId InvoiceId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "invoiceId", chi.URLParam(r, "invoiceId"), &invoiceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "invoiceId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SubmitInvoiceParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SubmitInvoice(w, r, invoiceId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListInvoiceVersions operation middleware
+func (siw *ServerInterfaceWrapper) ListInvoiceVersions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "invoiceId" -------------
+	var invoiceId InvoiceId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "invoiceId", chi.URLParam(r, "invoiceId"), &invoiceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "invoiceId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListInvoiceVersionsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListInvoiceVersions(w, r, invoiceId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -41337,6 +42535,30 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/accommodation/waitlist/{waitlistEntryId}/accept", wrapper.AcceptWaitlistOffer)
 	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/invoices", wrapper.ListInvoices)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/invoices", wrapper.CreateInvoice)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/invoices/{invoiceId}", wrapper.GetInvoice)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/api/v1/invoices/{invoiceId}", wrapper.PatchInvoiceDraft)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/v1/invoices/{invoiceId}/allocations", wrapper.PutInvoiceAllocations)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/invoices/{invoiceId}/submit", wrapper.SubmitInvoice)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/invoices/{invoiceId}/cancel", wrapper.CancelInvoice)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/invoices/{invoiceId}/versions", wrapper.ListInvoiceVersions)
+	})
 
 	return r
 }
@@ -52860,6 +54082,866 @@ func (response PutStaySegments428ApplicationProblemPlusJSONResponse) VisitPutSta
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListInvoicesRequestObject struct {
+	Params ListInvoicesParams
+}
+
+type ListInvoicesResponseObject interface {
+	VisitListInvoicesResponse(w http.ResponseWriter) error
+}
+
+type ListInvoices200JSONResponse InvoicePage
+
+func (response ListInvoices200JSONResponse) VisitListInvoicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListInvoices400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListInvoices400ApplicationProblemPlusJSONResponse) VisitListInvoicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListInvoices403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListInvoices403ApplicationProblemPlusJSONResponse) VisitListInvoicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListInvoices422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListInvoices422ApplicationProblemPlusJSONResponse) VisitListInvoicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateInvoiceRequestObject struct {
+	Params CreateInvoiceParams
+	Body   *CreateInvoiceJSONRequestBody
+}
+
+type CreateInvoiceResponseObject interface {
+	VisitCreateInvoiceResponse(w http.ResponseWriter) error
+}
+
+type CreateInvoice201ResponseHeaders struct {
+	ETag *string
+}
+
+type CreateInvoice201JSONResponse struct {
+	Body    Invoice
+	Headers CreateInvoice201ResponseHeaders
+}
+
+func (response CreateInvoice201JSONResponse) VisitCreateInvoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateInvoice403ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateInvoice403ApplicationProblemPlusJSONResponse) VisitCreateInvoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateInvoice404ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateInvoice404ApplicationProblemPlusJSONResponse) VisitCreateInvoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateInvoice409ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateInvoice409ApplicationProblemPlusJSONResponse) VisitCreateInvoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateInvoice422ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateInvoice422ApplicationProblemPlusJSONResponse) VisitCreateInvoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateInvoice429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response CreateInvoice429ApplicationProblemPlusJSONResponse) VisitCreateInvoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetInvoiceRequestObject struct {
+	InvoiceId InvoiceId `json:"invoiceId"`
+	Params    GetInvoiceParams
+}
+
+type GetInvoiceResponseObject interface {
+	VisitGetInvoiceResponse(w http.ResponseWriter) error
+}
+
+type GetInvoice200ResponseHeaders struct {
+	ETag *string
+}
+
+type GetInvoice200JSONResponse struct {
+	Body    Invoice
+	Headers GetInvoice200ResponseHeaders
+}
+
+func (response GetInvoice200JSONResponse) VisitGetInvoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetInvoice403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetInvoice403ApplicationProblemPlusJSONResponse) VisitGetInvoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetInvoice404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetInvoice404ApplicationProblemPlusJSONResponse) VisitGetInvoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchInvoiceDraftRequestObject struct {
+	InvoiceId InvoiceId `json:"invoiceId"`
+	Params    PatchInvoiceDraftParams
+	Body      *PatchInvoiceDraftApplicationMergePatchPlusJSONRequestBody
+}
+
+type PatchInvoiceDraftResponseObject interface {
+	VisitPatchInvoiceDraftResponse(w http.ResponseWriter) error
+}
+
+type PatchInvoiceDraft200ResponseHeaders struct {
+	ETag *string
+}
+
+type PatchInvoiceDraft200JSONResponse struct {
+	Body    Invoice
+	Headers PatchInvoiceDraft200ResponseHeaders
+}
+
+func (response PatchInvoiceDraft200JSONResponse) VisitPatchInvoiceDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchInvoiceDraft403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response PatchInvoiceDraft403ApplicationProblemPlusJSONResponse) VisitPatchInvoiceDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchInvoiceDraft404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response PatchInvoiceDraft404ApplicationProblemPlusJSONResponse) VisitPatchInvoiceDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchInvoiceDraft409ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchInvoiceDraft409ApplicationProblemPlusJSONResponse) VisitPatchInvoiceDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchInvoiceDraft412ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchInvoiceDraft412ApplicationProblemPlusJSONResponse) VisitPatchInvoiceDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchInvoiceDraft415ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchInvoiceDraft415ApplicationProblemPlusJSONResponse) VisitPatchInvoiceDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(415)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchInvoiceDraft422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response PatchInvoiceDraft422ApplicationProblemPlusJSONResponse) VisitPatchInvoiceDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchInvoiceDraft428ApplicationProblemPlusJSONResponse Problem
+
+func (response PatchInvoiceDraft428ApplicationProblemPlusJSONResponse) VisitPatchInvoiceDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PatchInvoiceDraft429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response PatchInvoiceDraft429ApplicationProblemPlusJSONResponse) VisitPatchInvoiceDraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutInvoiceAllocationsRequestObject struct {
+	InvoiceId InvoiceId `json:"invoiceId"`
+	Params    PutInvoiceAllocationsParams
+	Body      *PutInvoiceAllocationsJSONRequestBody
+}
+
+type PutInvoiceAllocationsResponseObject interface {
+	VisitPutInvoiceAllocationsResponse(w http.ResponseWriter) error
+}
+
+type PutInvoiceAllocations200ResponseHeaders struct {
+	ETag *string
+}
+
+type PutInvoiceAllocations200JSONResponse struct {
+	Body    Invoice
+	Headers PutInvoiceAllocations200ResponseHeaders
+}
+
+func (response PutInvoiceAllocations200JSONResponse) VisitPutInvoiceAllocationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutInvoiceAllocations403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response PutInvoiceAllocations403ApplicationProblemPlusJSONResponse) VisitPutInvoiceAllocationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutInvoiceAllocations404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response PutInvoiceAllocations404ApplicationProblemPlusJSONResponse) VisitPutInvoiceAllocationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutInvoiceAllocations409ApplicationProblemPlusJSONResponse Problem
+
+func (response PutInvoiceAllocations409ApplicationProblemPlusJSONResponse) VisitPutInvoiceAllocationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutInvoiceAllocations412ApplicationProblemPlusJSONResponse Problem
+
+func (response PutInvoiceAllocations412ApplicationProblemPlusJSONResponse) VisitPutInvoiceAllocationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutInvoiceAllocations422ApplicationProblemPlusJSONResponse Problem
+
+func (response PutInvoiceAllocations422ApplicationProblemPlusJSONResponse) VisitPutInvoiceAllocationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutInvoiceAllocations428ApplicationProblemPlusJSONResponse Problem
+
+func (response PutInvoiceAllocations428ApplicationProblemPlusJSONResponse) VisitPutInvoiceAllocationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutInvoiceAllocations429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response PutInvoiceAllocations429ApplicationProblemPlusJSONResponse) VisitPutInvoiceAllocationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelInvoiceRequestObject struct {
+	InvoiceId InvoiceId `json:"invoiceId"`
+	Params    CancelInvoiceParams
+}
+
+type CancelInvoiceResponseObject interface {
+	VisitCancelInvoiceResponse(w http.ResponseWriter) error
+}
+
+type CancelInvoice200ResponseHeaders struct {
+	ETag *string
+}
+
+type CancelInvoice200JSONResponse struct {
+	Body    Invoice
+	Headers CancelInvoice200ResponseHeaders
+}
+
+func (response CancelInvoice200JSONResponse) VisitCancelInvoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelInvoice403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CancelInvoice403ApplicationProblemPlusJSONResponse) VisitCancelInvoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelInvoice404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CancelInvoice404ApplicationProblemPlusJSONResponse) VisitCancelInvoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelInvoice409ApplicationProblemPlusJSONResponse Problem
+
+func (response CancelInvoice409ApplicationProblemPlusJSONResponse) VisitCancelInvoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelInvoice412ApplicationProblemPlusJSONResponse Problem
+
+func (response CancelInvoice412ApplicationProblemPlusJSONResponse) VisitCancelInvoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelInvoice428ApplicationProblemPlusJSONResponse Problem
+
+func (response CancelInvoice428ApplicationProblemPlusJSONResponse) VisitCancelInvoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelInvoice429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response CancelInvoice429ApplicationProblemPlusJSONResponse) VisitCancelInvoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitInvoiceRequestObject struct {
+	InvoiceId InvoiceId `json:"invoiceId"`
+	Params    SubmitInvoiceParams
+}
+
+type SubmitInvoiceResponseObject interface {
+	VisitSubmitInvoiceResponse(w http.ResponseWriter) error
+}
+
+type SubmitInvoice200ResponseHeaders struct {
+	ETag *string
+}
+
+type SubmitInvoice200JSONResponse struct {
+	Body    Invoice
+	Headers SubmitInvoice200ResponseHeaders
+}
+
+func (response SubmitInvoice200JSONResponse) VisitSubmitInvoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitInvoice403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response SubmitInvoice403ApplicationProblemPlusJSONResponse) VisitSubmitInvoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitInvoice404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response SubmitInvoice404ApplicationProblemPlusJSONResponse) VisitSubmitInvoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitInvoice409ApplicationProblemPlusJSONResponse Problem
+
+func (response SubmitInvoice409ApplicationProblemPlusJSONResponse) VisitSubmitInvoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitInvoice412ApplicationProblemPlusJSONResponse Problem
+
+func (response SubmitInvoice412ApplicationProblemPlusJSONResponse) VisitSubmitInvoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitInvoice422ApplicationProblemPlusJSONResponse Problem
+
+func (response SubmitInvoice422ApplicationProblemPlusJSONResponse) VisitSubmitInvoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitInvoice428ApplicationProblemPlusJSONResponse Problem
+
+func (response SubmitInvoice428ApplicationProblemPlusJSONResponse) VisitSubmitInvoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitInvoice429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response SubmitInvoice429ApplicationProblemPlusJSONResponse) VisitSubmitInvoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListInvoiceVersionsRequestObject struct {
+	InvoiceId InvoiceId `json:"invoiceId"`
+	Params    ListInvoiceVersionsParams
+}
+
+type ListInvoiceVersionsResponseObject interface {
+	VisitListInvoiceVersionsResponse(w http.ResponseWriter) error
+}
+
+type ListInvoiceVersions200JSONResponse InvoiceChain
+
+func (response ListInvoiceVersions200JSONResponse) VisitListInvoiceVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListInvoiceVersions403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListInvoiceVersions403ApplicationProblemPlusJSONResponse) VisitListInvoiceVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListInvoiceVersions404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ListInvoiceVersions404ApplicationProblemPlusJSONResponse) VisitListInvoiceVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -66457,6 +68539,30 @@ type StrictServerInterface interface {
 	// (PUT /api/v1/inpatient-stays/{stayId}/segments)
 	PutStaySegments(ctx context.Context, request PutStaySegmentsRequestObject) (PutStaySegmentsResponseObject, error)
 
+	// (GET /api/v1/invoices)
+	ListInvoices(ctx context.Context, request ListInvoicesRequestObject) (ListInvoicesResponseObject, error)
+
+	// (POST /api/v1/invoices)
+	CreateInvoice(ctx context.Context, request CreateInvoiceRequestObject) (CreateInvoiceResponseObject, error)
+
+	// (GET /api/v1/invoices/{invoiceId})
+	GetInvoice(ctx context.Context, request GetInvoiceRequestObject) (GetInvoiceResponseObject, error)
+
+	// (PATCH /api/v1/invoices/{invoiceId})
+	PatchInvoiceDraft(ctx context.Context, request PatchInvoiceDraftRequestObject) (PatchInvoiceDraftResponseObject, error)
+
+	// (PUT /api/v1/invoices/{invoiceId}/allocations)
+	PutInvoiceAllocations(ctx context.Context, request PutInvoiceAllocationsRequestObject) (PutInvoiceAllocationsResponseObject, error)
+
+	// (POST /api/v1/invoices/{invoiceId}/cancel)
+	CancelInvoice(ctx context.Context, request CancelInvoiceRequestObject) (CancelInvoiceResponseObject, error)
+
+	// (POST /api/v1/invoices/{invoiceId}/submit)
+	SubmitInvoice(ctx context.Context, request SubmitInvoiceRequestObject) (SubmitInvoiceResponseObject, error)
+
+	// (GET /api/v1/invoices/{invoiceId}/versions)
+	ListInvoiceVersions(ctx context.Context, request ListInvoiceVersionsRequestObject) (ListInvoiceVersionsResponseObject, error)
+
 	// (POST /api/v1/legal-holds)
 	PutLegalHold(ctx context.Context, request PutLegalHoldRequestObject) (PutLegalHoldResponseObject, error)
 
@@ -70769,6 +72875,241 @@ func (sh *strictHandler) PutStaySegments(w http.ResponseWriter, r *http.Request,
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PutStaySegmentsResponseObject); ok {
 		if err := validResponse.VisitPutStaySegmentsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListInvoices operation middleware
+func (sh *strictHandler) ListInvoices(w http.ResponseWriter, r *http.Request, params ListInvoicesParams) {
+	var request ListInvoicesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListInvoices(ctx, request.(ListInvoicesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListInvoices")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListInvoicesResponseObject); ok {
+		if err := validResponse.VisitListInvoicesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateInvoice operation middleware
+func (sh *strictHandler) CreateInvoice(w http.ResponseWriter, r *http.Request, params CreateInvoiceParams) {
+	var request CreateInvoiceRequestObject
+
+	request.Params = params
+
+	var body CreateInvoiceJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateInvoice(ctx, request.(CreateInvoiceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateInvoice")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateInvoiceResponseObject); ok {
+		if err := validResponse.VisitCreateInvoiceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetInvoice operation middleware
+func (sh *strictHandler) GetInvoice(w http.ResponseWriter, r *http.Request, invoiceId InvoiceId, params GetInvoiceParams) {
+	var request GetInvoiceRequestObject
+
+	request.InvoiceId = invoiceId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetInvoice(ctx, request.(GetInvoiceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetInvoice")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetInvoiceResponseObject); ok {
+		if err := validResponse.VisitGetInvoiceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PatchInvoiceDraft operation middleware
+func (sh *strictHandler) PatchInvoiceDraft(w http.ResponseWriter, r *http.Request, invoiceId InvoiceId, params PatchInvoiceDraftParams) {
+	var request PatchInvoiceDraftRequestObject
+
+	request.InvoiceId = invoiceId
+	request.Params = params
+
+	var body PatchInvoiceDraftApplicationMergePatchPlusJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PatchInvoiceDraft(ctx, request.(PatchInvoiceDraftRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PatchInvoiceDraft")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PatchInvoiceDraftResponseObject); ok {
+		if err := validResponse.VisitPatchInvoiceDraftResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutInvoiceAllocations operation middleware
+func (sh *strictHandler) PutInvoiceAllocations(w http.ResponseWriter, r *http.Request, invoiceId InvoiceId, params PutInvoiceAllocationsParams) {
+	var request PutInvoiceAllocationsRequestObject
+
+	request.InvoiceId = invoiceId
+	request.Params = params
+
+	var body PutInvoiceAllocationsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutInvoiceAllocations(ctx, request.(PutInvoiceAllocationsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutInvoiceAllocations")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutInvoiceAllocationsResponseObject); ok {
+		if err := validResponse.VisitPutInvoiceAllocationsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CancelInvoice operation middleware
+func (sh *strictHandler) CancelInvoice(w http.ResponseWriter, r *http.Request, invoiceId InvoiceId, params CancelInvoiceParams) {
+	var request CancelInvoiceRequestObject
+
+	request.InvoiceId = invoiceId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CancelInvoice(ctx, request.(CancelInvoiceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CancelInvoice")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CancelInvoiceResponseObject); ok {
+		if err := validResponse.VisitCancelInvoiceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SubmitInvoice operation middleware
+func (sh *strictHandler) SubmitInvoice(w http.ResponseWriter, r *http.Request, invoiceId InvoiceId, params SubmitInvoiceParams) {
+	var request SubmitInvoiceRequestObject
+
+	request.InvoiceId = invoiceId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SubmitInvoice(ctx, request.(SubmitInvoiceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SubmitInvoice")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SubmitInvoiceResponseObject); ok {
+		if err := validResponse.VisitSubmitInvoiceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListInvoiceVersions operation middleware
+func (sh *strictHandler) ListInvoiceVersions(w http.ResponseWriter, r *http.Request, invoiceId InvoiceId, params ListInvoiceVersionsParams) {
+	var request ListInvoiceVersionsRequestObject
+
+	request.InvoiceId = invoiceId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListInvoiceVersions(ctx, request.(ListInvoiceVersionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListInvoiceVersions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListInvoiceVersionsResponseObject); ok {
+		if err := validResponse.VisitListInvoiceVersionsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -2705,6 +2705,210 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/invoices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The invoices of this tenant, newest first, each with the sum of what it allocates to
+         *     claims and the batch it sits in.
+         *
+         *     A provider-scoped caller reads its own invoices and nothing else; the boundary is
+         *     applied in SQL rather than after the read, so an invoice outside it is genuinely not
+         *     returned and 404 is the honest answer to asking for one by id.
+         *
+         *     `allocationTotal` is summed on the server, in exact decimals, from the same rows the
+         *     submit gate checks — so the figure a screen shows beside a draft is the figure that
+         *     draft will be refused for.
+         */
+        get: operations["listInvoices"];
+        put?: never;
+        /**
+         * @description Records an invoice the provider raised somewhere else. KAPSORA issues no fiscal
+         *     document here: this is the header as the provider entered it, held against the claims
+         *     the payer has already approved.
+         *
+         *     `lineExtensionAmount + taxAmount` must equal `payableAmount` exactly. It is a database
+         *     CHECK as well; this is the copy that tells the caller which field.
+         *
+         *     The provider's VKN is read from the directory and stored as its blind index, never as
+         *     the number. A provider organization carrying no tax identity is refused with
+         *     `PROVIDER_TAX_ID_MISSING` rather than having an invoice raised against a taxpayer
+         *     nobody can name.
+         *
+         *     **The number is unique in the provider's fiscal year** (v1.2 11.12), and a cancelled
+         *     invoice frees the number it was using. Two different providers billing the same number
+         *     is ordinary and is not refused.
+         *
+         *     Sending `supersedesInvoiceId` opens the correction of a RETURNED or SUBMITTED invoice:
+         *     the new draft starts with that invoice's header and its allocations, and the invoice it
+         *     supersedes is cancelled only when this one is actually submitted. A correction that was
+         *     abandoned leaves the document it was going to replace exactly where it was.
+         */
+        post: operations["createInvoice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/invoices/{invoiceId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One invoice with its allocations, in the projection the caller has earned.
+         *
+         *     A line description of a health claim may carry clinical text, so the allocation's
+         *     `claimDescription` is served only in the clinical projection — the same rule WP-I5-01
+         *     applies to a claim line, applied here to the invoice's claim links. The sponsor's HR
+         *     user reads the header, the totals and which claims are covered, and never what the
+         *     provider wrote on a line.
+         */
+        get: operations["getInvoice"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Edits the header of a DRAFT. Anything else is 409 `INVOICE_FROZEN`: a submitted
+         *     invoice's figures never change, and a correction is a new invoice in a chain.
+         *
+         *     The three amounts travel together — sending one of them without the other two is a
+         *     validation error, because `lineExtension + tax = payable` has to hold on the row that
+         *     results rather than on the row somebody meant.
+         */
+        patch: operations["patchInvoiceDraft"];
+        trace?: never;
+    };
+    "/api/v1/invoices/{invoiceId}/allocations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * @description Replaces the whole set of claim allocations of a DRAFT. The pick list is
+         *     `getProviderEarnings`: `invoiceableClaimIds` is exactly the claims this provider may
+         *     put on an invoice, and a claim already sitting on a live invoice is not among them.
+         *
+         *     Two rules the database holds and this endpoint only reports:
+         *
+         *     * an allocation may not exceed what the payer approved for the claim —
+         *       `ALLOCATION_EXCEEDS_APPROVED`, naming the claim and both figures. Billing *less* than
+         *       was approved is ordinary and is allowed;
+         *     * one claim sits on one live invoice — `CLAIM_ALREADY_INVOICED`, naming the claim and
+         *       the invoice it is already on.
+         *
+         *     A claim that is not APPROVED or PARTIALLY_APPROVED is `CLAIM_NOT_INVOICEABLE`, and an
+         *     allocation denominated differently from the invoice is `ALLOCATION_CURRENCY`.
+         */
+        put: operations["putInvoiceAllocations"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/invoices/{invoiceId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Withdraws a DRAFT or a RETURNED invoice and releases the claims it was holding: they go
+         *     back to the status they had when they were allocated, and the invoice's rows stay on
+         *     the record marked inactive, because "which claims did this cancelled invoice cover" is
+         *     a question a dispute asks.
+         *
+         *     Nothing is deleted. A cancelled invoice also stops occupying its number, which is how a
+         *     provider whose own books already carry it can reuse it on the correction.
+         *
+         *     Anything already submitted and accepted is refused: a SUBMITTED, IN_BATCH, APPROVED,
+         *     PARTIALLY_APPROVED, REJECTED or SETTLED invoice is the payer's business now.
+         */
+        post: operations["cancelInvoice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/invoices/{invoiceId}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Submits a DRAFT to the payer. Three gates, in this order:
+         *
+         *     * **the sum of the allocations equals `payableAmount` within the tenant's tolerance.**
+         *       Otherwise `ALLOCATION_MISMATCH`, carrying `payableAmount`, `allocationTotal`,
+         *       `difference` and the `tolerance` that was applied, so a screen can say by how much
+         *       rather than that something is wrong. The tolerance is
+         *       `billing.allocation_tolerance`, an exact decimal amount defaulting to `0.01`;
+         *     * **the image is attached when the tenant requires one** — `billing.invoice_requires_image`,
+         *       true by default. Otherwise `INVOICE_IMAGE_REQUIRED`;
+         *     * **every allocated claim is still invoiceable.** A claim decided differently while the
+         *       draft sat open is `CLAIM_NOT_INVOICEABLE`.
+         *
+         *     Then the invoice becomes SUBMITTED, its claims move to INVOICED, its links and figures
+         *     freeze in the database, and `invoice.submitted` goes to the outbox. When the invoice
+         *     supersedes another, that other invoice becomes CANCELLED at this moment and not before.
+         *
+         *     Replaying the command with the same `Idempotency-Key` answers the same body.
+         */
+        post: operations["submitInvoice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/invoices/{invoiceId}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The supersede chain this invoice belongs to, oldest first: the invoice that was
+         *     returned, the correction that replaced it, and the correction of that correction if
+         *     there was one.
+         *
+         *     It answers from either end — asking about the newest invoice or about the oldest gives
+         *     the same chain in the same order — because "which document is the live one" is the
+         *     question a payer's finance user actually has, and answering it from a link that only
+         *     points one way would mean walking the chain in a client.
+         */
+        get: operations["listInvoiceVersions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/legal-holds": {
         parameters: {
             query?: never;
@@ -6799,6 +7003,41 @@ export interface components {
             /** Format: uuid */
             providerOrganizationId: string;
         };
+        /**
+         * @description The header as the provider entered it. Nothing here is computed: the tax and the rate
+         *     are what the provider's own document says, and a figure this platform derived would be
+         *     this platform's opinion about somebody else's fiscal document.
+         */
+        CreateInvoice: {
+            /** @description Defaults to TRY. */
+            currencyCode?: string | null;
+            /**
+             * Format: uuid
+             * @description The scanned image. It has to be a document object of this tenant the scanner has
+             *     cleared; a file still in quarantine is not evidence a reviewer can open.
+             */
+            documentId?: string | null;
+            /** @description Defaults to GENERIC. */
+            domainCode?: string | null;
+            /** Format: date */
+            invoiceDate: string;
+            invoiceNumber: string;
+            lineExtensionAmount: components["schemas"]["DecimalAmount"];
+            notes?: string | null;
+            payableAmount: components["schemas"]["DecimalAmount"];
+            /** Format: uuid */
+            payerOrganizationId?: string | null;
+            /** Format: uuid */
+            providerOrganizationId: string;
+            /**
+             * Format: uuid
+             * @description Opens this draft as the correction of that invoice, copying its header fields that
+             *     were not sent and all of its allocations.
+             */
+            supersedesInvoiceId?: string | null;
+            taxAmount: components["schemas"]["DecimalAmount"];
+            vatRate?: components["schemas"]["DecimalPercent"] | null;
+        };
         CreateLegalHold: {
             /** Format: uuid */
             aggregateId?: string | null;
@@ -7978,6 +8217,198 @@ export interface components {
             updatedAt?: string | null;
         };
         /**
+         * @description An invoice the provider raised elsewhere, as KAPSORA records it, with the claims it
+         *     covers.
+         *
+         *     The provider's VKN is not here in any form a reader could resolve: it is stored as a
+         *     blind index and never leaves the database.
+         */
+        Invoice: {
+            /**
+             * @description `payableAmount` minus `allocationTotal`, signed. Zero on an invoice that adds up;
+             *     a draft screen shows it so the gap is visible before the submit is refused.
+             */
+            allocationDifference: string;
+            allocations: components["schemas"]["InvoiceAllocation"][];
+            /**
+             * @description The sum of the active allocations, in exact decimals. It is what the submit gate
+             *     compares against `payableAmount`.
+             */
+            allocationTotal: string;
+            /**
+             * Format: uuid
+             * @description The WP-I7-03 icmal this invoice sits in. Always null in this milestone.
+             */
+            batchId?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            currencyCode: string;
+            /**
+             * Format: uuid
+             * @description The scanned image, a clean document object linked with aggregate type INVOICE.
+             */
+            documentId?: string | null;
+            domainCode: string;
+            /**
+             * Format: uuid
+             * @description The GİB e-document of M8. Always null in this milestone.
+             */
+            edocumentId?: string | null;
+            /** @description The year of `invoiceDate`, stored, and half of the uniqueness rule. */
+            fiscalYear: number;
+            /** Format: uuid */
+            id: string;
+            /** Format: date */
+            invoiceDate: string;
+            invoiceNumber: string;
+            /** @description Exact decimal, as the provider entered it. */
+            lineExtensionAmount: string;
+            notes?: string | null;
+            /**
+             * @description `lineExtensionAmount + taxAmount`, exactly. It is a database CHECK rather than an
+             *     assertion in a service.
+             */
+            payableAmount: string;
+            /**
+             * Format: uuid
+             * @description The sponsor the contract names. Null means the tenant itself is the payer, which
+             *     is the ordinary case.
+             */
+            payerOrganizationId?: string | null;
+            projection: components["schemas"]["HealthProjection"];
+            providerName?: string;
+            /** Format: uuid */
+            providerOrganizationId: string;
+            /** Format: int64 */
+            rowVersion: number;
+            source: components["schemas"]["InvoiceSource"];
+            status: components["schemas"]["InvoiceStatus"];
+            /** Format: date-time */
+            submittedAt?: string | null;
+            /**
+             * Format: uuid
+             * @description The correction that replaced this invoice. Set when that correction was submitted,
+             *     not when it was drafted.
+             */
+            supersededByInvoiceId?: string | null;
+            /**
+             * Format: uuid
+             * @description What this invoice was raised to correct.
+             */
+            supersedesInvoiceId?: string | null;
+            taxAmount: string;
+            /** @description As entered, never computed from the amounts. */
+            vatRate?: string | null;
+        };
+        /**
+         * @description How much of one approved claim this invoice is collecting, and what that claim was
+         *     worth when the allocation was made.
+         */
+        InvoiceAllocation: {
+            /**
+             * @description False once the invoice was cancelled or returned. The row stays on the record and
+             *     the claim is free to be put on the correction.
+             */
+            active: boolean;
+            /** @description Exact decimal. Never more than `approvedTotal`; less is ordinary. */
+            allocatedAmount: string;
+            /**
+             * @description What the payer approved for this claim — lines minus adjustments — recomputed on
+             *     the server by the same arithmetic `getClaimInvoiceReadiness` runs.
+             */
+            approvedTotal: string;
+            /**
+             * @description The provider's own words on the claim's lines. Present only in the clinical
+             *     projection: v1.2 §2.11 marks a line description of a health invoice as possibly
+             *     clinical, and possibly clinical is clinical. The sponsor's HR user never receives
+             *     it.
+             */
+            claimDescription?: string | null;
+            /** Format: uuid */
+            claimId: string;
+            /** @description The reference the provider quotes on the telephone. */
+            claimReference: string;
+            claimStatus: components["schemas"]["ClaimStatus"];
+            /**
+             * @description The version the allocation was made against. A claim corrected afterwards is a
+             *     different set of figures, and an invoice that silently followed the correction
+             *     would be an invoice whose total stopped matching the sum of its parts.
+             */
+            claimVersionNo: number;
+            currencyCode: string;
+        };
+        InvoiceAllocationInput: {
+            allocatedAmount: components["schemas"]["DecimalAmount"];
+            /** Format: uuid */
+            claimId: string;
+        };
+        /**
+         * @description A supersede chain, oldest first. An invoice that has never been corrected answers a
+         *     chain of one, which is the truthful answer rather than an empty list.
+         */
+        InvoiceChain: {
+            items: components["schemas"]["InvoiceSummary"][];
+        };
+        InvoicePage: {
+            items: components["schemas"]["InvoiceSummary"][];
+            nextCursor: string | null;
+        };
+        /**
+         * @description Where the document came from. Only MANUAL is reachable now: KAPSORA produces no fiscal
+         *     document, and the e-document arriving from GİB through the integrator is M8's.
+         * @enum {string}
+         */
+        InvoiceSource: "MANUAL" | "EDOCUMENT";
+        /**
+         * @description The invoice lifecycle of v1.2 10.9. WP-I7-02 owns DRAFT, SUBMITTED and CANCELLED; the
+         *     reviewer's RETURNED, APPROVED, PARTIALLY_APPROVED and REJECTED are WP-I7-03's,
+         *     IN_BATCH is the icmal's and SETTLED is the settlement's. They are declared here
+         *     because the lifecycle is one list and a list with a hole in it is a list nobody can
+         *     read.
+         * @enum {string}
+         */
+        InvoiceStatus: "DRAFT" | "SUBMITTED" | "IN_BATCH" | "RETURNED" | "APPROVED" | "PARTIALLY_APPROVED" | "REJECTED" | "SETTLED" | "CANCELLED";
+        /**
+         * @description One row of a list: the header, what it allocates in total, how many claims that is
+         *     spread over, and the batch it sits in. The allocations themselves are on the detail,
+         *     because a page of fifty invoices is not a place to read four hundred claim links.
+         */
+        InvoiceSummary: {
+            allocationCount: number;
+            allocationTotal: string;
+            /** Format: uuid */
+            batchId?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            currencyCode: string;
+            /** Format: uuid */
+            documentId?: string | null;
+            fiscalYear: number;
+            /** Format: uuid */
+            id: string;
+            /** Format: date */
+            invoiceDate: string;
+            invoiceNumber: string;
+            lineExtensionAmount?: string;
+            payableAmount: string;
+            /** Format: uuid */
+            payerOrganizationId?: string | null;
+            providerName?: string;
+            /** Format: uuid */
+            providerOrganizationId: string;
+            /** Format: int64 */
+            rowVersion: number;
+            source?: components["schemas"]["InvoiceSource"];
+            status: components["schemas"]["InvoiceStatus"];
+            /** Format: date-time */
+            submittedAt?: string | null;
+            /** Format: uuid */
+            supersededByInvoiceId?: string | null;
+            /** Format: uuid */
+            supersedesInvoiceId?: string | null;
+            taxAmount?: string;
+        };
+        /**
          * @description The one response that carries the plaintext. Show it to the member, print it or let
          *     them save it now: the server keeps only its digest and cannot produce it again.
          */
@@ -8779,6 +9210,27 @@ export interface components {
             serviceDateFrom: string;
             /** Format: date */
             serviceDateTo: string;
+        };
+        /**
+         * @description A merge patch over the header of a DRAFT. The three amounts travel together: sending
+         *     one without the other two is refused, because the sum has to hold on the row that
+         *     results.
+         */
+        PatchInvoiceDraft: {
+            currencyCode?: string | null;
+            /** Format: uuid */
+            documentId?: string | null;
+            domainCode?: string | null;
+            /** Format: date */
+            invoiceDate?: string | null;
+            invoiceNumber?: string | null;
+            lineExtensionAmount?: components["schemas"]["DecimalAmount"] | null;
+            notes?: string | null;
+            payableAmount?: components["schemas"]["DecimalAmount"] | null;
+            /** Format: uuid */
+            payerOrganizationId?: string | null;
+            taxAmount?: components["schemas"]["DecimalAmount"] | null;
+            vatRate?: components["schemas"]["DecimalPercent"] | null;
         };
         PatchMedicalReportDraft: {
             /** Format: uuid */
@@ -9637,6 +10089,14 @@ export interface components {
         PutEncounterDiagnoses: {
             /** @description The whole set. An empty array clears the encounter's diagnoses. */
             items: components["schemas"]["DiagnosisInput"][];
+        };
+        /**
+         * @description The whole set, replacing whatever the draft carried. An empty list clears the
+         *     allocations, which is how a provider starts over; it is not a state the invoice can be
+         *     submitted from.
+         */
+        PutInvoiceAllocations: {
+            allocations: components["schemas"]["InvoiceAllocationInput"][];
         };
         /**
          * @description The terms to write on a DRAFT version, whole. It is the policy and nothing else; a
@@ -11151,6 +11611,7 @@ export interface components {
         IfMatch: string;
         ImportId: string;
         ImportRowId: string;
+        InvoiceId: string;
         LegalHoldId: string;
         Limit: number;
         MembershipId: string;
@@ -11288,6 +11749,7 @@ export type SchemaCreateFulfilment = components['schemas']['CreateFulfilment'];
 export type SchemaCreateHealthCase = components['schemas']['CreateHealthCase'];
 export type SchemaCreateHoldRequest = components['schemas']['CreateHoldRequest'];
 export type SchemaCreateInpatientStay = components['schemas']['CreateInpatientStay'];
+export type SchemaCreateInvoice = components['schemas']['CreateInvoice'];
 export type SchemaCreateLegalHold = components['schemas']['CreateLegalHold'];
 export type SchemaCreateMedicalReport = components['schemas']['CreateMedicalReport'];
 export type SchemaCreateMembershipRequest = components['schemas']['CreateMembershipRequest'];
@@ -11367,6 +11829,14 @@ export type SchemaInpatientStay = components['schemas']['InpatientStay'];
 export type SchemaInpatientStayPage = components['schemas']['InpatientStayPage'];
 export type SchemaInpatientStayStatus = components['schemas']['InpatientStayStatus'];
 export type SchemaInventoryDay = components['schemas']['InventoryDay'];
+export type SchemaInvoice = components['schemas']['Invoice'];
+export type SchemaInvoiceAllocation = components['schemas']['InvoiceAllocation'];
+export type SchemaInvoiceAllocationInput = components['schemas']['InvoiceAllocationInput'];
+export type SchemaInvoiceChain = components['schemas']['InvoiceChain'];
+export type SchemaInvoicePage = components['schemas']['InvoicePage'];
+export type SchemaInvoiceSource = components['schemas']['InvoiceSource'];
+export type SchemaInvoiceStatus = components['schemas']['InvoiceStatus'];
+export type SchemaInvoiceSummary = components['schemas']['InvoiceSummary'];
 export type SchemaIssuedVoucher = components['schemas']['IssuedVoucher'];
 export type SchemaIssueVoucher = components['schemas']['IssueVoucher'];
 export type SchemaJoinWaitlistRequest = components['schemas']['JoinWaitlistRequest'];
@@ -11425,6 +11895,7 @@ export type SchemaPackageLineInput = components['schemas']['PackageLineInput'];
 export type SchemaPartyCatalogEntry = components['schemas']['PartyCatalogEntry'];
 export type SchemaPartyCatalogs = components['schemas']['PartyCatalogs'];
 export type SchemaPatchClaimDraft = components['schemas']['PatchClaimDraft'];
+export type SchemaPatchInvoiceDraft = components['schemas']['PatchInvoiceDraft'];
 export type SchemaPatchMedicalReportDraft = components['schemas']['PatchMedicalReportDraft'];
 export type SchemaPatchProperty = components['schemas']['PatchProperty'];
 export type SchemaPatchRoomType = components['schemas']['PatchRoomType'];
@@ -11490,6 +11961,7 @@ export type SchemaProviderType = components['schemas']['ProviderType'];
 export type SchemaPutApprovalPolicies = components['schemas']['PutApprovalPolicies'];
 export type SchemaPutClaimLines = components['schemas']['PutClaimLines'];
 export type SchemaPutEncounterDiagnoses = components['schemas']['PutEncounterDiagnoses'];
+export type SchemaPutInvoiceAllocations = components['schemas']['PutInvoiceAllocations'];
 export type SchemaPutLodgingTermsRequest = components['schemas']['PutLodgingTermsRequest'];
 export type SchemaPutMedicalReportServices = components['schemas']['PutMedicalReportServices'];
 export type SchemaPutNotificationPreferences = components['schemas']['PutNotificationPreferences'];
@@ -11648,6 +12120,7 @@ export type ParameterIdempotencyKeyOptional = components['parameters']['Idempote
 export type ParameterIfMatch = components['parameters']['IfMatch'];
 export type ParameterImportId = components['parameters']['ImportId'];
 export type ParameterImportRowId = components['parameters']['ImportRowId'];
+export type ParameterInvoiceId = components['parameters']['InvoiceId'];
 export type ParameterLegalHoldId = components['parameters']['LegalHoldId'];
 export type ParameterLimit = components['parameters']['Limit'];
 export type ParameterMembershipId = components['parameters']['MembershipId'];
@@ -17851,6 +18324,487 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+        };
+    };
+    listInvoices: {
+        parameters: {
+            query?: {
+                /**
+                 * @description The WP-I7-03 icmal an invoice was put into. Nothing in this milestone writes it,
+                 *     so it matches nothing until the batch exists.
+                 */
+                batchId?: string;
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                fiscalYear?: number;
+                /** @description Invoice date, inclusive. */
+                from?: string;
+                limit?: components["parameters"]["Limit"];
+                providerOrganizationId?: string;
+                status?: components["schemas"]["InvoiceStatus"];
+                /** @description Invoice date, inclusive. */
+                to?: string;
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Invoices */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoicePage"];
+                };
+            };
+            /** @description The paging cursor could not be read. CURSOR_INVALID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    createInvoice: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateInvoice"];
+            };
+        };
+        responses: {
+            /** @description Invoice draft opened */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Invoice"];
+                };
+            };
+            /**
+             * @description A provider-scoped caller raising an invoice for somebody else's provider.
+             *     INVOICE_PROVIDER_SCOPE.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The invoice a correction says it supersedes is not there. INVOICE_NOT_FOUND. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /**
+             * @description The number is already used by a live invoice of this provider in this fiscal year,
+             *     or the invoice named by `supersedesInvoiceId` is not in a state a correction may
+             *     replace. INVOICE_NUMBER_TAKEN, INVOICE_NOT_SUPERSEDABLE.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /**
+             * @description The provider is not a provider of this tenant, carries no tax identity, or the
+             *     image names a document that is not a clean one of this tenant.
+             *     INVOICE_PROVIDER_UNKNOWN, PROVIDER_TAX_ID_MISSING, INVOICE_DOCUMENT_UNUSABLE,
+             *     VALIDATION_FAILED.
+             */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getInvoice: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                invoiceId: components["parameters"]["InvoiceId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Invoice */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Invoice"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    patchInvoiceDraft: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                invoiceId: components["parameters"]["InvoiceId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/merge-patch+json": components["schemas"]["PatchInvoiceDraft"];
+            };
+        };
+        responses: {
+            /** @description Invoice updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Invoice"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /**
+             * @description The invoice has left DRAFT, or the new number is already used in this fiscal year.
+             *     INVOICE_FROZEN, INVOICE_NUMBER_TAKEN.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Body is not application/merge-patch+json */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    putInvoiceAllocations: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                invoiceId: components["parameters"]["InvoiceId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PutInvoiceAllocations"];
+            };
+        };
+        responses: {
+            /** @description Allocations replaced */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Invoice"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /**
+             * @description The invoice has left DRAFT, or one of the claims is already on a live invoice.
+             *     INVOICE_FROZEN, CLAIM_ALREADY_INVOICED.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /**
+             * @description An allocation exceeds the claim's approved total, names a claim nobody approved,
+             *     names a claim of another provider, or is in another currency.
+             *     ALLOCATION_EXCEEDS_APPROVED, CLAIM_NOT_INVOICEABLE, ALLOCATION_CURRENCY,
+             *     VALIDATION_FAILED.
+             */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    cancelInvoice: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                invoiceId: components["parameters"]["InvoiceId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Invoice cancelled */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Invoice"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /**
+             * @description The invoice is not in a state it can be withdrawn from.
+             *     INVOICE_TRANSITION_INVALID.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    submitInvoice: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                invoiceId: components["parameters"]["InvoiceId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Invoice submitted */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Invoice"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /**
+             * @description The invoice is not a draft, the allocations do not add up to the payable amount
+             *     within the tolerance, or the image the tenant requires is missing.
+             *     INVOICE_TRANSITION_INVALID, ALLOCATION_MISMATCH, INVOICE_IMAGE_REQUIRED.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /**
+             * @description An allocated claim has stopped being invoiceable, or the invoice allocates nothing
+             *     at all. CLAIM_NOT_INVOICEABLE, VALIDATION_FAILED.
+             */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listInvoiceVersions: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                invoiceId: components["parameters"]["InvoiceId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The supersede chain, oldest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceChain"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     putLegalHold: {

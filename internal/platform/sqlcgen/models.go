@@ -476,6 +476,51 @@ type BenefitServiceEntitlementMapping struct {
 	RowVersion              int64
 }
 
+type BillingInvoice struct {
+	ID                     uuid.UUID
+	TenantID               uuid.UUID
+	ProviderOrganizationID uuid.UUID
+	PayerOrganizationID    uuid.NullUUID
+	Source                 string
+	EdocumentID            uuid.NullUUID
+	InvoiceNumber          string
+	InvoiceDate            pgtype.Date
+	FiscalYear             int32
+	ProviderTaxIDHash      []byte
+	CurrencyCode           string
+	LineExtensionAmount    pgtype.Numeric
+	TaxAmount              pgtype.Numeric
+	PayableAmount          pgtype.Numeric
+	VatRate                pgtype.Numeric
+	DomainCode             string
+	Status                 string
+	SupersedesInvoiceID    uuid.NullUUID
+	SupersededByInvoiceID  uuid.NullUUID
+	BatchID                uuid.NullUUID
+	SubmittedAt            *time.Time
+	DocumentID             uuid.NullUUID
+	Notes                  *string
+	CreatedAt              time.Time
+	CreatedBy              uuid.NullUUID
+	UpdatedAt              time.Time
+	UpdatedBy              uuid.NullUUID
+	RowVersion             int64
+}
+
+type BillingInvoiceClaim struct {
+	ID                uuid.UUID
+	TenantID          uuid.UUID
+	InvoiceID         uuid.UUID
+	ClaimID           uuid.UUID
+	ClaimVersionNo    int32
+	AllocatedAmount   pgtype.Numeric
+	CurrencyCode      string
+	ClaimStatusBefore string
+	Active            bool
+	CreatedAt         time.Time
+	CreatedBy         uuid.NullUUID
+}
+
 type CatalogCodeSystem struct {
 	ID         uuid.UUID
 	TenantID   uuid.UUID

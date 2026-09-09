@@ -350,18 +350,33 @@ describe("the provider's earnings", () => {
     expect(earnings.providerOrganizationId).toBe(claim.providerOrganizationId);
     expect(earnings.currencies.length).toBeGreaterThan(0);
     const bucket = earnings.currencies[0]!;
-    // The invoiceable total is exactly the approved total of the claims nobody has invoiced,
-    // which is the two decided statuses and no other.
-    const billable = bucket.byStatus.filter(
-      (row) => row.status === 'APPROVED' || row.status === 'PARTIALLY_APPROVED',
+    // The invoiceable total is the approved total of the claims nobody is already collecting.
+    // **Both halves matter, and WP-I7-02 added the second one**: the status keeps out a draft
+    // and a rejection, and the invoice link keeps out a claim already sitting on a live
+    // document — which is still APPROVED, and which a provider offered it twice would put on
+    // two invoices.
+    const onLiveInvoice = new Set(
+      api.world.invoiceAllocations
+        .filter((link) => link.tenantId === reviewer.tenantId && link.active)
+        .map((link) => link.claimId),
     );
+    const billableClaims = api.world.claims.filter(
+      (c) =>
+        c.tenantId === reviewer.tenantId &&
+        c.providerOrganizationId === claim.providerOrganizationId &&
+        (c.status === 'APPROVED' || c.status === 'PARTIALLY_APPROVED'),
+    );
+    expect(billableClaims.length).toBeGreaterThan(0);
     expect(bucket.invoiceableClaimIds).toHaveLength(
-      billable.reduce((sum, row) => sum + row.claimCount, 0),
+      billableClaims.filter((c) => !onLiveInvoice.has(c.id)).length,
     );
-    expect(Number(bucket.invoiceableTotal)).toBe(
-      billable.reduce((sum, row) => sum + Number(row.approvedTotal), 0),
-    );
-    expect(Number(bucket.invoiceableTotal)).toBeLessThanOrEqual(Number(bucket.approvedTotal));
+    for (const id of bucket.invoiceableClaimIds) {
+      expect(onLiveInvoice.has(id)).toBe(false);
+    }
+    // And the world actually exercises the rule: at least one decided claim is held by a live
+    // invoice, so a mock that ignored the link would answer a different figure here.
+    expect(billableClaims.some((c) => onLiveInvoice.has(c.id))).toBe(true);
+    expect(Number(bucket.invoiceableTotal)).toBeLessThan(Number(bucket.approvedTotal));
 
     // An adjustment moves the invoiceable total by exactly what it took off.
     await unwrap(

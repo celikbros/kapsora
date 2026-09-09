@@ -117,10 +117,16 @@ func RoleTemplates() []RoleTemplate {
 		// may never see what the case is about. health.clinical.read is absent on purpose,
 		// and a test asserts its absence — a permission quietly added here would defeat the
 		// whole package without a single line of it changing.
+		// invoice.read is WP-I7-02's §2.3: the sponsor's HR user reads the headers and the
+		// totals of the invoices raised against its members' claims, and never a claim line
+		// description -- which is the same projection rule, applied to the invoice's claim
+		// links. It reads money, not medicine, which is why it sits here beside claim.read
+		// and why health.clinical.read still does not.
 		{Code: "SPONSOR_HR", Name: "Sponsor İK", Scope: ScopeTenant,
 			Description: "Sponsor kurumun İK kullanıcısı: üye, talep ve hak durumu görür; klinik detaya asla erişemez.",
 			Permissions: []string{"member.read", "service_request.read", "health.case.read",
-				"claim.read", "entitlement.read", "report.read", "accommodation.property.read"}},
+				"claim.read", "invoice.read", "entitlement.read", "report.read",
+				"accommodation.property.read"}},
 		{Code: "MEMBER", Name: "Hak Sahibi", Scope: ScopeTenant,
 			Description: "Kendi hakları, başvuruları, rezervasyonları ve belgeleri.",
 			Permissions: []string{"eligibility.check", "service_request.read", "service_request.create", "service_request.submit",

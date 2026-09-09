@@ -29,6 +29,10 @@ import (
 	benefitpg "github.com/celikbros/kapsora/internal/benefit/infrastructure/postgres"
 	benefitledger "github.com/celikbros/kapsora/internal/benefit/ledger"
 	benefithttp "github.com/celikbros/kapsora/internal/benefit/transport/http"
+	billingapp "github.com/celikbros/kapsora/internal/billing/application"
+	billinggw "github.com/celikbros/kapsora/internal/billing/infrastructure/gateway"
+	billingpg "github.com/celikbros/kapsora/internal/billing/infrastructure/postgres"
+	billinghttp "github.com/celikbros/kapsora/internal/billing/transport/http"
 	catalogapp "github.com/celikbros/kapsora/internal/catalog/application"
 	catalogpg "github.com/celikbros/kapsora/internal/catalog/infrastructure/postgres"
 	cataloghttp "github.com/celikbros/kapsora/internal/catalog/transport/http"
@@ -296,6 +300,22 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	// The invoice. It knows about exactly one other module, through one port: the claim's
+	// INVOICED transition and the way back. Everything else an invoice needs -- the
+	// provider's tax identity, the approved total of a claim, whether the image was scanned
+	// clean -- it reads for itself, because those are three halves of one screen and asking
+	// three services for them would be three round trips that could disagree.
+	//
+	// The port runs inside the invoice's own transaction, so an invoice that is SUBMITTED
+	// and claims that never moved is a state no reader observes.
+	billingSvc, err := billingapp.New(billingapp.Deps{
+		Pool: pool, Repo: billingpg.New(),
+		Claims: billinggw.NewClaims(claimSvc),
+		Audit:  auditpg.New(), Cursors: cursors, Logger: logger,
+	})
+	if err != nil {
+		return err
+	}
 	memberImports, err := memberimport.New(memberimport.Deps{
 		Pool: pool, Cipher: keys, Index: keys, Audit: auditpg.New(), Cursors: cursors, Logger: logger,
 	})
@@ -383,6 +403,7 @@ func run() error {
 		documents:      documentSvc,
 		health:         healthSvc,
 		claims:         claimSvc,
+		billing:        billingSvc,
 		accommodation:  accommodationSvc,
 		notifications:  notificationSvc,
 		entitlements:   entitlementSvc,
@@ -505,6 +526,7 @@ type routerDeps struct {
 	documents      *documentapp.Service
 	health         *healthapp.Service
 	claims         *claimapp.Service
+	billing        *billingapp.Service
 	accommodation  *accommodationapp.Service
 	notifications  *notificationapp.Service
 	entitlements   *benefitledger.Service
@@ -852,6 +874,24 @@ func newRouter(d routerDeps) http.Handler {
 			}
 			tenant.Route("/claims", func(r chi.Router) {
 				claimHandler.Routes(r, claimMW)
+			})
+
+			// The invoice a provider raised elsewhere, and the claims it collects. Every
+			// command takes If-Match and an idempotency key, and both matter more here than
+			// almost anywhere else in the platform: a submit replayed by a flaky network
+			// must move one invoice, move its claims once and publish one event, and a
+			// cancel replayed must release one set of claims rather than dragging a claim
+			// that has meanwhile gone onto the correction back off it.
+			invoiceHandler := billinghttp.NewHandler(d.billing, sessions, d.logger)
+			invoiceMW := billinghttp.Middlewares{
+				CreateInvoice:  d.idempotent("invoice.create"),
+				PatchInvoice:   d.idempotent("invoice.update"),
+				PutAllocations: d.idempotent("invoice.allocations.put"),
+				SubmitInvoice:  d.idempotent("invoice.submit"),
+				CancelInvoice:  d.idempotent("invoice.cancel"),
+			}
+			tenant.Route("/invoices", func(r chi.Router) {
+				invoiceHandler.Routes(r, invoiceMW)
 			})
 
 			// The accommodation vertical: the buildings, the room types, the daily

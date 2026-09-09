@@ -511,6 +511,11 @@ type EarningClaimRecord struct {
 	AdjustmentTotal       string
 	AdjustmentPayerTotal  string
 	AdjustmentMemberTotal string
+	// OnLiveInvoice is whether the claim already sits on an invoice that is still live
+	// (WP-I7-02). It is the half a status cannot answer: a claim allocated to a *draft*
+	// invoice is still APPROVED, and offering it again as invoiceable is how the same money
+	// ends up on two documents.
+	OnLiveInvoice bool
 }
 
 // Repository is the persistence port; every method runs inside the caller's transaction,
@@ -530,6 +535,13 @@ type Repository interface {
 	// hands the caller a fresh ETag.
 	TouchClaim(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID, actorID *uuid.UUID, expected int64) (bool, error)
 	SetStatus(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID, in StatusRow, expected int64) (bool, error)
+	// SetInvoiceStatus is the transition WP-I7-02 causes: onto an invoice and back off one.
+	// It carries no expected row version because the concurrency control of that move is the
+	// invoice's If-Match and the row lock the invoice command already holds -- demanding a
+	// claim's ETag as well would make an invoice covering fifty claims unsubmittable whenever
+	// a reviewer had touched any one of them. `fromStatuses` is the whole precondition.
+	SetInvoiceStatus(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID, status string,
+		fromStatuses []string, actorID *uuid.UUID) (bool, error)
 	SetReviewComment(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID, stage string,
 		comment *string, actorID *uuid.UUID) error
 

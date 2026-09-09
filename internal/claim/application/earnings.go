@@ -72,11 +72,20 @@ type ProviderEarnings struct {
 	Currencies             []EarningsCurrency
 }
 
-// invoiceableStatuses are the two a claim is invoiceable in. INVOICED, BATCHED and SETTLED are
-// deliberately absent: WP-I7-02 moves a claim into the first of them when it links it to an
-// invoice, and from that moment the money is on a document somebody is collecting.
-func invoiceable(status string) bool {
-	return status == domain.StatusApproved || status == domain.StatusPartiallyApproved
+// invoiceable is "the payer has answered this claim and nobody is already collecting it".
+//
+// Both halves are needed and neither is enough. The status half keeps out a draft, a rejection
+// and a claim already settled. The link half is the one a status cannot answer: a claim
+// allocated to a *draft* invoice is still APPROVED, and a provider who was offered it a second
+// time would put the same money on two documents — which is exactly what
+// `uq_billing_invoice_claim_live` then refuses, at the end of a form they have already filled
+// in. WP-I7-02's link table is read in the same query as the totals, so this is one row's own
+// answer rather than a second read that could disagree with it.
+func invoiceable(row EarningClaimRecord) bool {
+	if row.OnLiveInvoice {
+		return false
+	}
+	return row.Status == domain.StatusApproved || row.Status == domain.StatusPartiallyApproved
 }
 
 // ProviderEarnings answers what a provider earned in a period, per currency.
@@ -185,7 +194,7 @@ func groupEarnings(rows []EarningClaimRecord) []EarningsCurrency {
 		b.payer = b.payer.Add(payer)
 		b.member = b.member.Add(member)
 		b.adjusted = b.adjusted.Add(quantityOrZero(row.AdjustmentTotal))
-		if invoiceable(row.Status) {
+		if invoiceable(row) {
 			b.billable = b.billable.Add(approved)
 			b.out.InvoiceableClaimIDs = append(b.out.InvoiceableClaimIDs, row.ClaimID)
 		}

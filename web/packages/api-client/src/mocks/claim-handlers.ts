@@ -204,6 +204,76 @@ function amount(micros: bigint): string {
   return trimmed === '' || trimmed === '-' ? '0' : trimmed;
 }
 
+/**
+ * What a claim is worth, summed once, for every reader that needs the figure: the readiness
+ * endpoint, the provider's earnings view and — from WP-I7-02 — the invoice's allocation
+ * ceiling. It is a module-level function rather than a closure precisely so the invoice
+ * handlers can call *this* one: a second implementation would be a second answer to "what did
+ * the payer approve", and the second answer is the one a provider would be refused against.
+ *
+ * Lines minus adjustments, in integer micro-units, exactly as `billing.claim_approved_total`
+ * computes it on the server.
+ */
+export function claimTotals(
+  world: MockWorld,
+  claimId: string,
+): { lineTotal: bigint; adjustmentTotal: bigint; approved: bigint; payer: bigint; member: bigint } {
+  const claim = world.claims.find((c) => c.id === claimId);
+  const empty = {
+    lineTotal: 0n,
+    adjustmentTotal: 0n,
+    approved: 0n,
+    payer: 0n,
+    member: 0n,
+  };
+  if (!claim) return empty;
+  const version = world.claimVersions.find(
+    (v) => v.claimId === claimId && v.versionNo === claim.currentVersionNo,
+  );
+  if (!version) return empty;
+  let lineTotal = 0n;
+  let payer = 0n;
+  let member = 0n;
+  for (const line of world.claimLines.filter((l) => l.versionId === version.id)) {
+    const decisions = world.claimLineDecisions.filter((d) => d.lineId === line.id);
+    const decision = decisions[decisions.length - 1];
+    if (!decision) continue;
+    lineTotal += toMicros(decision.approvedAmount);
+    payer += toMicros(decision.payerAmount);
+    member += toMicros(decision.memberAmount);
+  }
+  let adjustmentTotal = 0n;
+  let adjustedPayer = 0n;
+  let adjustedMember = 0n;
+  for (const row of world.claimAdjustments.filter((a) => a.claimId === claimId)) {
+    adjustmentTotal += toMicros(row.amount);
+    adjustedPayer += toMicros(row.payerAmount);
+    adjustedMember += toMicros(row.memberAmount);
+  }
+  return {
+    lineTotal,
+    adjustmentTotal,
+    approved: lineTotal - adjustmentTotal,
+    payer: payer - adjustedPayer,
+    member: member - adjustedMember,
+  };
+}
+
+/**
+ * The claims sitting on a live invoice of this tenant (WP-I7-02).
+ *
+ * It is the half a claim's *status* cannot answer: a claim allocated to a **draft** invoice is
+ * still APPROVED, and offering it again in the earnings view is exactly how the same money ends
+ * up on two documents.
+ */
+export function claimsOnLiveInvoice(world: MockWorld, tenantId: string): Set<string> {
+  const out = new Set<string>();
+  for (const link of world.invoiceAllocations) {
+    if (link.tenantId === tenantId && link.active) out.add(link.claimId);
+  }
+  return out;
+}
+
 /** Rounds micro-units to the currency's minor unit, half away from zero. Two decimals for TRY. */
 function roundToMinor(micros: bigint): bigint {
   const factor = 10_000n; // 10^(6-2)
@@ -898,37 +968,8 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
     return out;
   };
 
-  const totalsOf = (versionId: string) => {
-    let approved = ZERO;
-    let payer = ZERO;
-    let member = ZERO;
-    for (const decision of latestDecisions(versionId)) {
-      approved += toMicros(decision.approvedAmount);
-      payer += toMicros(decision.payerAmount);
-      member += toMicros(decision.memberAmount);
-    }
-    return { approved, payer, member };
-  };
-
   const adjustmentsOf = (claimId: string): StoredClaimAdjustment[] =>
     world().claimAdjustments.filter((a) => a.claimId === claimId);
-
-  /**
-   * The signed sum of a claim's adjustment ledger. A reversal carries the negative of what it
-   * reverses, so a cut and its reversal sum to nothing and the approved total goes back to
-   * exactly where it was.
-   */
-  const adjustmentTotalsOf = (claimId: string) => {
-    let amountMicros = ZERO;
-    let payer = ZERO;
-    let member = ZERO;
-    for (const row of adjustmentsOf(claimId)) {
-      amountMicros += toMicros(row.amount);
-      payer += toMicros(row.payerAmount);
-      member += toMicros(row.memberAmount);
-    }
-    return { approved: amountMicros, payer, member };
-  };
 
   /** One ledger row as the contract renders it. */
   const adjustmentView = (row: StoredClaimAdjustment): Schemas['ClaimAdjustment'] => ({
@@ -958,10 +999,9 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
     const version = versionOf(row.id, row.currentVersionNo);
     const lines = version ? linesOf(version.id) : [];
     const decisions = version ? latestDecisions(version.id) : [];
-    const lineTotals = version
-      ? totalsOf(version.id)
-      : { approved: ZERO, payer: ZERO, member: ZERO };
-    const adjusted = adjustmentTotalsOf(row.id);
+    // One implementation of "what did the payer approve", shared with the earnings view and
+    // with WP-I7-02's allocation ceiling.
+    const totals = claimTotals(world(), row.id);
 
     const blockers: Schemas['ClaimInvoiceBlocker'][] = [];
     const relationship = world().relationships.find((r) => r.id === row.providerOrganizationId);
@@ -976,11 +1016,11 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
       claimId: row.id,
       status: row.status,
       currencyCode: lines[0]?.currencyCode ?? 'TRY',
-      lineTotal: amount(lineTotals.approved),
-      adjustmentTotal: amount(adjusted.approved),
-      approvedTotal: amount(lineTotals.approved - adjusted.approved),
-      payerTotal: amount(lineTotals.payer - adjusted.payer),
-      memberTotal: amount(lineTotals.member - adjusted.member),
+      lineTotal: amount(totals.lineTotal),
+      adjustmentTotal: amount(totals.adjustmentTotal),
+      approvedTotal: amount(totals.approved),
+      payerTotal: amount(totals.payer),
+      memberTotal: amount(totals.member),
       lineCount: lines.length,
       adjustmentCount: adjustmentsOf(row.id).length,
       decidedLineCount: decisions.length,
@@ -1844,6 +1884,7 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
           byStatus: Map<string, { count: number; total: bigint }>;
         }
       >();
+      const onLiveInvoice = claimsOnLiveInvoice(world(), g.tenantId);
       for (const claim of world().claims) {
         if (claim.tenantId !== g.tenantId) continue;
         if (claim.providerOrganizationId !== providerId) continue;
@@ -1864,9 +1905,8 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
         const currency = lines[0]?.currencyCode ?? 'TRY';
         if (currencyFilter && currency !== currencyFilter) continue;
 
-        const lineTotals = totalsOf(version.id);
-        const adjusted = adjustmentTotalsOf(claim.id);
-        const approved = lineTotals.approved - adjusted.approved;
+        const totals = claimTotals(world(), claim.id);
+        const approved = totals.approved;
         let bucket = buckets.get(currency);
         if (!bucket) {
           bucket = {
@@ -1883,10 +1923,17 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
         }
         bucket.claimCount += 1;
         bucket.approved += approved;
-        bucket.payer += lineTotals.payer - adjusted.payer;
-        bucket.member += lineTotals.member - adjusted.member;
-        bucket.adjusted += adjusted.approved;
-        if (claim.status === 'APPROVED' || claim.status === 'PARTIALLY_APPROVED') {
+        bucket.payer += totals.payer;
+        bucket.member += totals.member;
+        bucket.adjusted += totals.adjustmentTotal;
+        // Invoiceable is "the payer has answered it and nobody is already collecting it".
+        // Both halves are needed: the status keeps out a draft and a rejection, and the link
+        // keeps out a claim already sitting on a live invoice -- which is still APPROVED, and
+        // which a provider offered it twice would put on two documents.
+        if (
+          (claim.status === 'APPROVED' || claim.status === 'PARTIALLY_APPROVED') &&
+          !onLiveInvoice.has(claim.id)
+        ) {
           bucket.billable += approved;
           bucket.ids.push(claim.id);
         }

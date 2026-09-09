@@ -1534,6 +1534,10 @@ const SPONSOR_HR_PERMISSIONS = [
   // It reads claims and is served the financial projection of every one of them: the money
   // and the process, and never a description, a diagnosis or a reviewer's clinical sentence.
   'claim.read',
+  // WP-I7-02 §2.3: it reads the headers and the totals of the invoices raised against its
+  // members' claims, and never a claim line description — the same projection rule, applied
+  // to the invoice's claim links.
+  'invoice.read',
   'entitlement.read',
   'report.read',
 ];
@@ -1892,6 +1896,74 @@ export interface StoredClaimAuthorization {
   items: { serviceDefinitionId: string; approvedQuantity: string; consumedQuantity: string }[];
 }
 
+/**
+ * An invoice the provider raised somewhere else (WP-I7-02), as KAPSORA records it.
+ *
+ * KAPSORA issues no fiscal document: every figure here is what the provider typed on their own
+ * document, and `source`/`edocumentId` are M8's — declared, nullable and written by nothing.
+ *
+ * The provider's VKN is deliberately absent in every form. On the server it is a blind index in
+ * a column no response reads; a mock that carried the number would be a mock a screen could be
+ * built against wrongly.
+ */
+export interface StoredInvoice {
+  id: string;
+  tenantId: string;
+  providerOrganizationId: string;
+  /** The sponsor the contract names. Null means the tenant itself is the payer. */
+  payerOrganizationId: string | null;
+  source: Schemas['InvoiceSource'];
+  edocumentId: string | null;
+  invoiceNumber: string;
+  invoiceDate: string;
+  /** The year of `invoiceDate`, stored, and half of the uniqueness rule of v1.2 11.12. */
+  fiscalYear: number;
+  currencyCode: string;
+  lineExtensionAmount: string;
+  taxAmount: string;
+  /** lineExtensionAmount + taxAmount, exactly. It is a CHECK on the server's row. */
+  payableAmount: string;
+  vatRate: string | null;
+  domainCode: string;
+  status: Schemas['InvoiceStatus'];
+  supersedesInvoiceId: string | null;
+  /** Set when the correction is *submitted*, never when it is drafted. */
+  supersededByInvoiceId: string | null;
+  submittedAt: string | null;
+  documentId: string | null;
+  /** WP-I7-03's icmal. Always null in this milestone. */
+  batchId: string | null;
+  notes: string | null;
+  createdAt: string;
+  rowVersion: number;
+}
+
+/**
+ * How much of one approved claim an invoice is collecting.
+ *
+ * `active` is "the invoice this row sits on is still live". A cancelled or returned invoice
+ * keeps its rows — "which claims did this cancelled invoice cover" is a question a dispute asks
+ * — and they stop being live, which is what frees the claim for the correction. One claim sits
+ * on one live invoice, and that is a partial unique index on the server.
+ */
+export interface StoredInvoiceClaim {
+  id: string;
+  tenantId: string;
+  invoiceId: string;
+  claimId: string;
+  claimVersionNo: number;
+  allocatedAmount: string;
+  currencyCode: string;
+  /**
+   * What the claim was when it was allocated. It is stored because releasing a claim has to put
+   * it back where it came from, and recomputing "fully or partly approved" would be a second
+   * implementation of a question the claim module already answered.
+   */
+  claimStatusBefore: Schemas['ClaimStatus'];
+  active: boolean;
+  createdAt: string;
+}
+
 export interface MockWorld {
   tenants: MockTenant[];
   accounts: MockAccount[];
@@ -2017,6 +2089,15 @@ export interface MockWorld {
   cancellations: StoredCancellation[];
   noShows: StoredNoShow[];
   waitlistEntries: StoredWaitlistEntry[];
+  // M7.
+  /**
+   * The invoice a provider raised elsewhere and the claims it collects (WP-I7-02). Two arrays
+   * rather than one nested shape because that is what the schema is, and because the link is
+   * read from both ends: an invoice asks which claims it covers, and the earnings view asks
+   * which claims are already on a live document.
+   */
+  invoices: StoredInvoice[];
+  invoiceAllocations: StoredInvoiceClaim[];
   /**
    * Moves a document on from SCANNING the way the scan worker does. It is the mock's
    * stand-in for the worker, so a screen can show "taranıyor" and then a verdict without
@@ -6052,6 +6133,141 @@ export function buildWorld(
     createdAt: claimApproved.createdAt,
   });
 
+  // --- M7: the invoice as the provider entered it (WP-I7-02) -------------------------
+  //
+  // Appended at the very end, like every fixture since M5 and for the same reason: buildWorld
+  // runs off one seeded random stream, and an id drawn earlier would change which organizations
+  // a small world gets and break tests that have nothing to do with invoices.
+  //
+  // Four documents, because those are the four states a screen has to be able to draw: one
+  // submitted invoice covering two claims, one draft whose allocations do not add up to what it
+  // bills, and a returned invoice with the correction that supersedes it. The claims underneath
+  // them are seeded here too rather than borrowed from M5's, so that putting a claim on an
+  // invoice does not silently change what the claim tests are about.
+  const invoices: StoredInvoice[] = [];
+  const invoiceAllocations: StoredInvoiceClaim[] = [];
+
+  const invoiceImage = documentOf('fatura-2026-000041.pdf', 'INTERNAL', 'CLEAN');
+
+  let invoiceSequence = 0;
+  const seedInvoice = (
+    status: Schemas['InvoiceStatus'],
+    daysAgo: number,
+    lineExtension: string,
+    tax: string,
+    payable: string,
+    over: Partial<StoredInvoice> = {},
+  ): StoredInvoice => {
+    invoiceSequence += 1;
+    const submitted = status !== 'DRAFT' && status !== 'CANCELLED';
+    const row: StoredInvoice = {
+      id: nextId(daysAgo * -86_400_000),
+      tenantId: demoA.id,
+      providerOrganizationId: providerRel.id,
+      payerOrganizationId: null,
+      source: 'MANUAL',
+      edocumentId: null,
+      invoiceNumber: `KPS2026${String(40 + invoiceSequence).padStart(6, '0')}`,
+      invoiceDate: isoDaysAgo(base, daysAgo).slice(0, 10),
+      fiscalYear: Number(isoDaysAgo(base, daysAgo).slice(0, 4)),
+      currencyCode: 'TRY',
+      lineExtensionAmount: lineExtension,
+      taxAmount: tax,
+      payableAmount: payable,
+      vatRate: '18',
+      domainCode: 'HEALTH',
+      status,
+      supersedesInvoiceId: null,
+      supersededByInvoiceId: null,
+      submittedAt: submitted ? isoDaysAgo(base, daysAgo) : null,
+      documentId: invoiceImage.id,
+      batchId: null,
+      notes: null,
+      createdAt: isoDaysAgo(base, daysAgo),
+      rowVersion: submitted ? 3 : 2,
+      ...over,
+    };
+    invoices.push(row);
+    documentLinks.push({
+      tenantId: demoA.id,
+      id: nextId(),
+      documentId: invoiceImage.id,
+      aggregateType: 'INVOICE',
+      aggregateId: row.id,
+      documentTypeCode: 'INVOICE',
+      purpose: null,
+      requiredPermission: 'invoice.read',
+      createdBy: providerActorId,
+      createdAt: row.createdAt,
+    });
+    return row;
+  };
+
+  const seedAllocation = (
+    invoice: StoredInvoice,
+    claim: StoredClaim,
+    allocated: string,
+    active = true,
+  ): StoredInvoiceClaim => {
+    const row: StoredInvoiceClaim = {
+      id: nextId(),
+      tenantId: demoA.id,
+      invoiceId: invoice.id,
+      claimId: claim.id,
+      claimVersionNo: claim.currentVersionNo,
+      allocatedAmount: allocated,
+      currencyCode: invoice.currencyCode,
+      claimStatusBefore: 'APPROVED',
+      active,
+      createdAt: invoice.createdAt,
+    };
+    invoiceAllocations.push(row);
+    return row;
+  };
+
+  /** One decided claim of the provider, at exactly the amount an invoice will allocate. */
+  const seedInvoiceableClaim = (
+    status: Schemas['ClaimStatus'],
+    daysAgo: number,
+    approved: string,
+  ): StoredClaim => {
+    const claim = seedClaim(status, daysAgo);
+    const version = seedVersion(claim, 1, 'SUBMITTED');
+    seedDecision(
+      seedLine(version, 1, defGpVisit, '1', approved, visitDescription, seededDiagnosisId),
+      1,
+      'APPROVED',
+      approved,
+      approved,
+      '0',
+      'AUTO_APPROVED',
+      'AUTO',
+    );
+    return claim;
+  };
+
+  // The submitted invoice, on two claims that add up to it exactly. Both claims are INVOICED:
+  // from the moment the invoice was submitted the money is on a document somebody is collecting.
+  const invoiceSubmitted = seedInvoice('SUBMITTED', 6, '1694.92', '305.08', '2000');
+  seedAllocation(invoiceSubmitted, seedInvoiceableClaim('INVOICED', 12, '1200'), '1200');
+  seedAllocation(invoiceSubmitted, seedInvoiceableClaim('INVOICED', 11, '800'), '800');
+
+  // The draft that does not add up: it bills 900 and covers 750, so a screen has 150 of
+  // difference to show and a submit to be refused for.
+  const invoiceMismatch = seedInvoice('DRAFT', 2, '762.71', '137.29', '900');
+  seedAllocation(invoiceMismatch, seedInvoiceableClaim('APPROVED', 10, '750'), '750');
+
+  // The returned invoice and its correction. The returned one keeps its link and the link is
+  // inactive — nothing is deleted, and the claim is free to go onto the correction — and the
+  // correction is a *draft*: the old invoice becomes CANCELLED only when it is submitted.
+  const correctedClaim = seedInvoiceableClaim('APPROVED', 9, '500');
+  const invoiceReturned = seedInvoice('RETURNED', 5, '466.10', '83.90', '550');
+  seedAllocation(invoiceReturned, correctedClaim, '550', false);
+  const invoiceCorrection = seedInvoice('DRAFT', 1, '423.73', '76.27', '500', {
+    supersedesInvoiceId: invoiceReturned.id,
+  });
+  seedAllocation(invoiceCorrection, correctedClaim, '500');
+
   return {
     tenants,
     accounts,
@@ -6132,6 +6348,8 @@ export function buildWorld(
     cancellations,
     noShows,
     waitlistEntries,
+    invoices,
+    invoiceAllocations,
     advanceScan,
     nextId,
     random,

@@ -16,6 +16,7 @@ import { eligibilityHandlers } from './eligibility-handlers';
 import { entitlementHandlers } from './entitlement-handlers';
 import { healthHandlers } from './health-handlers';
 import { importHandlers } from './import-handlers';
+import { invoiceHandlers } from './invoice-handlers';
 import { inpatientHandlers } from './inpatient-handlers';
 import { medicalReportHandlers } from './medical-report-handlers';
 import { notificationHandlers } from './notification-handlers';
@@ -1545,6 +1546,8 @@ export function createHandlers(api: MockApi): HttpHandler[] {
     // M6: the properties, their room types, the allotment and the availability search.
     ...accommodationHandlers(api),
     ...lodgingTermsHandlers(api),
+    // M7: the invoice a provider raised elsewhere, and the claims it collects.
+    ...invoiceHandlers(api),
   ];
 }
 
