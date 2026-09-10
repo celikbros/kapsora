@@ -1,6 +1,7 @@
 package objectstore
 
 import (
+	"bytes"
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
@@ -131,6 +132,67 @@ func (s *S3) Open(ctx context.Context, bucket, key string) (io.ReadCloser, error
 		return nil, err
 	}
 	return resp.Body, nil
+}
+
+// Write implements Store: one signed PUT carrying a body.
+//
+// It does not go through `do`, and the reason is the whole of SigV4: every other request this
+// client makes has an empty body and signs the hash of the empty string, while this one has to
+// sign the hash of what it is sending. A request that signed the wrong payload hash would be
+// refused by the store with a message about credentials, which is the least useful place to
+// spend an afternoon.
+func (s *S3) Write(ctx context.Context, bucket, key string, body []byte, contentType string) error {
+	if bucket == "" || key == "" {
+		return errors.New("objectstore: bucket and key are required")
+	}
+	digest := sha256.Sum256(body)
+	payloadHash := hex.EncodeToString(digest[:])
+
+	path := "/" + bucket + "/" + escapePath(key)
+	target := *s.endpoint
+	target.Path = "/" + bucket + "/" + key
+	target.RawPath = path
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, target.String(),
+		bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("objectstore: build request: %w", err)
+	}
+	req.ContentLength = int64(len(body))
+
+	now := s.now().UTC()
+	amzDate := now.Format(isoLayout)
+	scope := now.Format(dateLayout) + "/" + s.region + "/" + signService + "/aws4_request"
+	signable := map[string]string{
+		"x-amz-date": amzDate, "x-amz-content-sha256": payloadHash,
+		"content-length": strconv.Itoa(len(body)),
+	}
+	if contentType != "" {
+		signable["content-type"] = contentType
+	}
+	canonicalHeaders, signedHeaders := canonicalizeHeaders(s.endpoint.Host, signable)
+	canonical := strings.Join([]string{
+		http.MethodPut, path, "", canonicalHeaders, signedHeaders, payloadHash,
+	}, "\n")
+	signature := s.sign(now, canonical, amzDate, scope)
+
+	for name, value := range signable {
+		req.Header.Set(name, value)
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("%s Credential=%s/%s, SignedHeaders=%s, Signature=%s",
+		signAlgorithm, s.accessKey, scope, signedHeaders, signature))
+
+	resp, err := s.http.Do(req)
+	if err != nil {
+		return fmt.Errorf("objectstore: PUT %s/%s: %w", bucket, key, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		detail, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<16))
+		return fmt.Errorf("objectstore: PUT %s/%s: status %d: %s",
+			bucket, key, resp.StatusCode, summarize(detail))
+	}
+	return nil
 }
 
 // Copy implements Store. It is a server-side copy: the promotion of a clean file from

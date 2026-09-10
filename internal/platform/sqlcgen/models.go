@@ -598,6 +598,34 @@ type BillingPaymentRecord struct {
 	RowVersion             int64
 }
 
+type BillingReconciliationRun struct {
+	ID                     uuid.UUID
+	TenantID               uuid.UUID
+	Scope                  string
+	ProviderOrganizationID uuid.NullUUID
+	PeriodFrom             pgtype.Date
+	PeriodTo               pgtype.Date
+	RunNo                  int32
+	CurrencyCode           string
+	InvoicedTotal          pgtype.Numeric
+	ApprovedTotal          pgtype.Numeric
+	CutTotal               pgtype.Numeric
+	ReturnedTotal          pgtype.Numeric
+	RejectedTotal          pgtype.Numeric
+	SettledTotal           pgtype.Numeric
+	PaidTotal              pgtype.Numeric
+	OpenTotal              pgtype.Numeric
+	ErpTotal               pgtype.Numeric
+	Difference             pgtype.Numeric
+	DifferenceCount        int32
+	Differences            []byte
+	Status                 string
+	FailureCode            *string
+	RanAt                  time.Time
+	CreatedAt              time.Time
+	CreatedBy              uuid.NullUUID
+}
+
 type BillingReimbursement struct {
 	ID                     uuid.UUID
 	TenantID               uuid.UUID
@@ -1802,6 +1830,32 @@ type ProviderProviderProfile struct {
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
 	RowVersion           int64
+}
+
+type ReportExport struct {
+	ID                     uuid.UUID
+	TenantID               uuid.UUID
+	Kind                   string
+	Parameters             []byte
+	Format                 string
+	Status                 string
+	ProviderOrganizationID uuid.NullUUID
+	PeriodFrom             pgtype.Date
+	PeriodTo               pgtype.Date
+	CurrencyCode           *string
+	DocumentID             uuid.NullUUID
+	RowCount               int32
+	RequestedBy            uuid.UUID
+	RequestedAt            time.Time
+	ExpiresAt              time.Time
+	Watermark              string
+	DownloadCount          int32
+	FailureCode            *string
+	CreatedAt              time.Time
+	CreatedBy              uuid.NullUUID
+	UpdatedAt              time.Time
+	UpdatedBy              uuid.NullUUID
+	RowVersion             int64
 }
 
 type RulesEvaluation struct {

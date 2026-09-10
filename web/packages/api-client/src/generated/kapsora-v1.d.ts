@@ -2361,6 +2361,93 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The exports, newest first, with keyset paging. `mine=false` widens the list to the whole
+         *     tenant for a caller that holds `report.read`; the default is the caller's own, because an
+         *     export is a file with somebody's name stamped on every row of it.
+         */
+        get: operations["listExports"];
+        put?: never;
+        /**
+         * @description Queues one export. Nothing is rendered here: the worker writes the file, so a request that
+         *     produced one would be a request whose duration is a function of how much data the tenant
+         *     has. The answer is QUEUED, and the caller polls `getExport`.
+         *
+         *     **`parameters` may not carry an identifier.** Which provider, which period and which
+         *     currency an export covers are fields of their own; `parameters` is the remainder a screen
+         *     sent — statuses, buckets, a free-text search — and a uuid or a key called `...Id` in it is
+         *     refused by the database as well as by this endpoint.
+         *
+         *     **`format` is CSV.** XLSX is a value of the column and is refused here: nothing in this
+         *     release can write a spreadsheet, and an export that answered READY with a CSV inside a
+         *     file called .xlsx would be worse than a refusal.
+         *
+         *     `report.export` is required. `CLAIMS` additionally requires `report.export.sensitive`,
+         *     because its rows carry claim line descriptions — what a member was treated for, written in
+         *     words.
+         */
+        post: operations["createExport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exports/{exportId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One export: what was asked for, what the worker produced, the watermark stamped on every
+         *     row of the file, when it stops being downloadable and how many times it was downloaded.
+         */
+        get: operations["getExport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exports/{exportId}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description A short-lived link to the file, through the document store's own download path.
+         *
+         *     **The download is the access that is audited.** Two rows are written and each answers a
+         *     question the other cannot: one naming the export, its kind and the requester, and the
+         *     document store's own naming the file. The download is counted before the link is handed
+         *     out, because a link that was issued and not counted is a download nobody knows happened.
+         *
+         *     **After `expiresAt` it is refused** — `EXPORT_EXPIRED` — whether or not the nightly sweep
+         *     has removed the bytes yet. "May I have this" and "is it still on disk" are different
+         *     questions, and the first one is answered by the clock.
+         */
+        post: operations["downloadExport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/fulfilments": {
         parameters: {
             query?: never;
@@ -3716,6 +3803,36 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/operations/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The counts and sums an operator reads every morning: claims by status and by how long they
+         *     have waited, icmals awaiting a decision with the oldest SLA, settlements due this week and
+         *     already overdue, reimbursements awaiting a decision, and work past its SLA.
+         *
+         *     **Each figure is one server query and each carries the filter that reproduces it.** The
+         *     filter is not decoration: a count a person cannot click through to a list of is a number
+         *     they have to take on trust. There is no percentage on this page and no total across
+         *     figures, because a ratio is a number two screens round differently and a total assembled
+         *     from six queries is wrong for the moment between the first and the sixth.
+         *
+         *     Read under `report.read`. A provider-scoped caller sees its own rows; the reimbursement
+         *     figure is the payer's business with its own member and is zero for a provider.
+         */
+        get: operations["getOperationsDashboard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/organizations": {
         parameters: {
             query?: never;
@@ -4650,6 +4767,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/providers/{providerId}/statement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The numbers both sides argue about, on one page: what the provider billed in the period,
+         *     what the payer decided, what was settled, what was actually paid, and what is still open.
+         *
+         *     **Every figure in `totals` is a server sum of exact decimals, computed in one query.** It
+         *     is not the invoice rows added up and it is not the settlement rows added up: `invoices`
+         *     and `settlements` are capped at five thousand rows each and the totals are not, so a
+         *     client that added the rows would get a different — and wrong — answer for a busy provider.
+         *     Nothing on this page may be recomputed on the client.
+         *
+         *     Each figure has its own window, and each window is one a list endpoint can reproduce:
+         *     `invoicedTotal` is the invoices dated in the period, the four decision columns are the
+         *     icmals decided in it, and the settlement columns are the settlements *due* in it.
+         *
+         *     Read under `report.read` on the payer side. A provider reads its own and gets 403 for
+         *     anybody else's, because it named an organization on purpose and is entitled to know its
+         *     grants do not reach it.
+         */
+        get: operations["getProviderStatement"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/providers/{providerId}/suspend": {
         parameters: {
             query?: never;
@@ -4710,6 +4861,60 @@ export interface paths {
          *     cursor.
          */
         get: operations["searchProviders"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reconciliation-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The daily comparisons, newest first, with keyset paging.
+         *
+         *     A run is written by the `billing.reconcile` job and by nothing else — there is no endpoint
+         *     that creates one — and it is **append-only**: a second look at the same day is run number
+         *     two and both stay, because "we looked again and it balanced" is part of the record.
+         *
+         *     A `DIFFERENCES` run raised exactly one work item in the finance queue when it was written.
+         *
+         *     A provider-scoped caller reads its own PROVIDER runs and never the tenant-wide ones: a
+         *     TENANT run is every provider's figures added together.
+         */
+        get: operations["listReconciliationRuns"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reconciliation-runs/{runId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One run with the settlements it disagreed with.
+         *
+         *     `differences` carries references rather than ids, because the column is read by a person
+         *     looking for the row on their own screen. `difference` is `settledTotal` minus the ERP's
+         *     figure when there is one and minus `paidTotal` when there is not — which is a database
+         *     CHECK rather than an arithmetic the job is trusted to have got right.
+         *
+         *     `erpTotal` is null until M9.
+         */
+        get: operations["getReconciliationRun"];
         put?: never;
         post?: never;
         delete?: never;
@@ -7598,6 +7803,27 @@ export interface components {
             /** Format: date */
             validTo?: string;
         };
+        CreateExport: {
+            currencyCode?: string | null;
+            format?: components["schemas"]["ExportFormat"];
+            kind: components["schemas"]["ExportKind"];
+            /**
+             * @description The remaining filters. **No identifier may appear here** — not as a value and not as a
+             *     key name. A provider, a period and a currency have fields of their own above.
+             */
+            parameters?: {
+                [key: string]: unknown;
+            };
+            /** Format: date */
+            periodFrom?: string | null;
+            /** Format: date */
+            periodTo?: string | null;
+            /**
+             * Format: uuid
+             * @description Required for PROVIDER_STATEMENT.
+             */
+            providerOrganizationId?: string | null;
+        };
         CreateFulfilment: {
             /** Format: uuid */
             authorizationId: string;
@@ -8151,6 +8377,73 @@ export interface components {
             name: string;
             slaMinutes?: number | null;
         };
+        DashboardAgingFigure: {
+            approvedTotal: string;
+            /** @enum {string} */
+            bucket: "D0_1" | "D2_7" | "D8_30" | "D31_PLUS";
+            claimCount: number;
+            filter: components["schemas"]["DashboardFilter"];
+        };
+        DashboardBatchFigure: {
+            batchCount: number;
+            filter: components["schemas"]["DashboardFilter"];
+            /**
+             * Format: date-time
+             * @description The earliest SLA deadline of an open item in the icmal review queue. It is the work
+             *     queue's own clock, so "past SLA" is the same number here and in the worklist.
+             */
+            oldestSlaDueAt?: string | null;
+            /** Format: date-time */
+            oldestSubmittedAt?: string | null;
+            submittedTotal: string;
+        };
+        DashboardClaimStatusFigure: {
+            approvedTotal: string;
+            claimCount: number;
+            filter: components["schemas"]["DashboardFilter"];
+            status: string;
+        };
+        /**
+         * @description The filter that reproduces the figure beside it. A count a person cannot click through to a
+         *     list of is a number they have to take on trust — and the first time it disagrees with the
+         *     list they will stop trusting the whole screen.
+         */
+        DashboardFilter: {
+            /** @enum {string|null} */
+            agingBucket?: "D0_1" | "D2_7" | "D8_30" | "D31_PLUS" | null;
+            /** Format: date */
+            dueBefore?: string | null;
+            /** Format: date */
+            dueFrom?: string | null;
+            /** Format: date */
+            dueTo?: string | null;
+            /** Format: date-time */
+            overdueAt?: string | null;
+            /** @enum {string} */
+            resource: "claims" | "batches" | "settlements" | "reimbursements" | "workItems";
+            statuses?: string[];
+        };
+        DashboardReimbursementFigure: {
+            filter: components["schemas"]["DashboardFilter"];
+            /** Format: date-time */
+            oldestSubmittedAt?: string | null;
+            reimbursementCount: number;
+            requestedTotal: string;
+        };
+        DashboardSettlementFigure: {
+            dueSoonCount: number;
+            dueSoonFilter: components["schemas"]["DashboardFilter"];
+            dueSoonTotal: string;
+            overdueCount: number;
+            overdueFilter: components["schemas"]["DashboardFilter"];
+            overdueTotal: string;
+        };
+        DashboardWorkItemFigure: {
+            filter: components["schemas"]["DashboardFilter"];
+            itemCount: number;
+            /** Format: date-time */
+            oldestDueAt?: string | null;
+        };
         DecideClaimLines: {
             decisions: components["schemas"]["ClaimLineDecisionInput"][];
             /**
@@ -8689,6 +8982,103 @@ export interface components {
             /** @enum {string} */
             status: "HELD" | "PARTIALLY_CONSUMED" | "CONSUMED" | "RELEASED" | "EXPIRED";
         };
+        Export: {
+            /** Format: date-time */
+            createdAt: string;
+            currencyCode?: string | null;
+            /**
+             * Format: uuid
+             * @description The file, once the worker has written it. It is a document like any other.
+             */
+            documentId?: string | null;
+            downloadCount: number;
+            /**
+             * Format: date-time
+             * @description The tenant's `report.export_ttl_hours` applied when the export was asked for. It is a
+             *     stored moment rather than a duration read at download time, so the answer to "may I
+             *     still open this" does not change because somebody edited a setting this afternoon.
+             */
+            expiresAt: string;
+            failureCode?: string | null;
+            format: components["schemas"]["ExportFormat"];
+            /** Format: uuid */
+            id: string;
+            kind: components["schemas"]["ExportKind"];
+            /**
+             * @description The filters as they were given, **with no identifier in them**. The database refuses a
+             *     uuid or a key called `...Id` here; the scope an export covers is in the typed fields
+             *     below.
+             */
+            parameters: {
+                [key: string]: unknown;
+            };
+            /** Format: date */
+            periodFrom?: string | null;
+            /** Format: date */
+            periodTo?: string | null;
+            /** Format: uuid */
+            providerOrganizationId?: string | null;
+            /** Format: date-time */
+            requestedAt: string;
+            /** Format: uuid */
+            requestedBy: string;
+            rowCount: number;
+            /** Format: int64 */
+            rowVersion: number;
+            status: components["schemas"]["ExportStatus"];
+            /**
+             * @description The requester, the tenant, the moment and this export's id, in one line — the string
+             *     stamped on the header **and on every row** of the file.
+             */
+            watermark: string;
+        };
+        ExportDownload: {
+            /** @description How many times this export has now been downloaded, counting this one. */
+            downloadCount: number;
+            /**
+             * Format: date-time
+             * @description When the link stops working, which is sooner than when the export expires.
+             */
+            expiresAt: string;
+            /** @enum {string} */
+            method: "GET";
+            /**
+             * Format: uri
+             * @description Where to GET the file. It is a bearer credential with a short life; it is never logged
+             *     and never shared.
+             */
+            url: string;
+            /** @description The string stamped on the header and on every row of the file being fetched. */
+            watermark: string;
+        };
+        /**
+         * @description Why the file is being opened. Both fields travel into the access event: "who took this out"
+         *     without "why" is not an answer a data protection review can use.
+         */
+        ExportDownloadRequest: {
+            purposeCode?: string | null;
+            reasonText?: string | null;
+        };
+        /**
+         * @description **Only CSV is produced.** XLSX is a value of the column so that the schema does not have to
+         *     change when a spreadsheet writer lands; asking for it today is refused with a field error
+         *     rather than answered with a CSV under another name. A CSV carries a UTF-8 byte order mark,
+         *     because the people who open these files open them in Excel.
+         * @enum {string}
+         */
+        ExportFormat: "CSV" | "XLSX";
+        /**
+         * @description `CLAIMS` is the one whose rows carry prose — claim line descriptions — and the one that
+         *     needs `report.export.sensitive`.
+         * @enum {string}
+         */
+        ExportKind: "PROVIDER_STATEMENT" | "BATCH" | "SETTLEMENTS" | "CLAIMS" | "RECONCILIATION";
+        ExportPage: {
+            items: components["schemas"]["Export"][];
+            nextCursor: string | null;
+        };
+        /** @enum {string} */
+        ExportStatus: "QUEUED" | "RUNNING" | "READY" | "FAILED" | "EXPIRED";
         ExtendAuthorization: {
             reasonCode?: string;
             reasonText?: string;
@@ -9834,6 +10224,21 @@ export interface components {
          * @enum {string}
          */
         NotificationTemplateStatus: "DRAFT" | "PUBLISHED" | "RETIRED";
+        OperationsDashboard: {
+            /**
+             * Format: date-time
+             * @description The moment every figure was computed against. The aging buckets and the "due this week"
+             *     window are both measured from it, so a page read at midnight and one read at noon can
+             *     be told apart.
+             */
+            asOf: string;
+            batchesAwaitingReview: components["schemas"]["DashboardBatchFigure"];
+            claimAging: components["schemas"]["DashboardAgingFigure"][];
+            claimsByStatus: components["schemas"]["DashboardClaimStatusFigure"][];
+            reimbursements: components["schemas"]["DashboardReimbursementFigure"];
+            settlements: components["schemas"]["DashboardSettlementFigure"];
+            workItemsPastSla: components["schemas"]["DashboardWorkItemFigure"];
+        };
         /**
          * @description Tenant relationship with a global organization. `id` identifies the relationship
          *     (tenant_organization); `organizationId` identifies the shared legal entity.
@@ -10866,6 +11271,19 @@ export interface components {
             providerId: string;
             providerType: components["schemas"]["ProviderType"];
         };
+        ProviderStatement: {
+            currencyCode: string;
+            invoices: components["schemas"]["StatementInvoice"][];
+            /** Format: date */
+            periodFrom: string;
+            /** Format: date */
+            periodTo: string;
+            providerName: string;
+            /** Format: uuid */
+            providerOrganizationId: string;
+            settlements: components["schemas"]["StatementSettlement"][];
+            totals: components["schemas"]["StatementTotals"];
+        };
         /**
          * @description Lifecycle of a provider profile; only ACTIVE providers are offered by the search.
          * @enum {string}
@@ -10973,6 +11391,89 @@ export interface components {
             reasonCode?: string;
             reasonText?: string;
         };
+        /**
+         * @description One settlement the run disagreed with. It carries the reference a person finds on their own
+         *     screen and **no identifier**: the run's own column is read by somebody looking for the row,
+         *     and a uuid is not how they will find it.
+         */
+        ReconciliationDifference: {
+            /** @description What was paid, in exact decimals. */
+            actual: string;
+            difference: string;
+            /** Format: date */
+            dueDate: string;
+            /** @description What was payable, in exact decimals. */
+            expected: string;
+            kind: components["schemas"]["ReconciliationDifferenceKind"];
+            reference: string;
+            status: string;
+        };
+        /**
+         * @description `UNDERPAID` is the ordinary one: the due date has passed and the settlement is short.
+         *     `PAID_SUM_MISMATCH` is KAPSORA disagreeing with itself — the settlement's stored paid
+         *     amount is not the sum of its live payment records — and should never appear.
+         *     `ERP_MISMATCH` is M9's and is never written today.
+         * @enum {string}
+         */
+        ReconciliationDifferenceKind: "UNDERPAID" | "PAID_SUM_MISMATCH" | "ERP_MISMATCH";
+        /**
+         * @description An immutable record of what was compared and what differed. The row is append-only in the
+         *     database: a second look at the same day is run number two and both stay.
+         */
+        ReconciliationRun: {
+            approvedTotal: string;
+            /** Format: date-time */
+            createdAt: string;
+            currencyCode: string;
+            cutTotal: string;
+            /**
+             * @description `settledTotal` minus `erpTotal` when there is one and minus `paidTotal` when there is
+             *     not. It is a database CHECK rather than an arithmetic the job is trusted with.
+             */
+            difference: string;
+            differenceCount: number;
+            differences: components["schemas"]["ReconciliationDifference"][];
+            /** @description What the accounting system said it posted. Null until M9. */
+            erpTotal?: string | null;
+            failureCode?: string | null;
+            /** Format: uuid */
+            id: string;
+            invoicedTotal: string;
+            /** @description `settledTotal - paidTotal`, subtracted by the database and checked by a constraint. */
+            openTotal: string;
+            paidTotal: string;
+            /** Format: date */
+            periodFrom: string;
+            /** Format: date */
+            periodTo: string;
+            providerName?: string | null;
+            /**
+             * Format: uuid
+             * @description Set on a PROVIDER run and null on a TENANT one, which is a database CHECK.
+             */
+            providerOrganizationId?: string | null;
+            /** Format: date-time */
+            ranAt: string;
+            rejectedTotal: string;
+            returnedTotal: string;
+            runNo: number;
+            scope: components["schemas"]["ReconciliationScope"];
+            settledTotal: string;
+            status: components["schemas"]["ReconciliationRunStatus"];
+        };
+        ReconciliationRunPage: {
+            items: components["schemas"]["ReconciliationRun"][];
+            nextCursor: string | null;
+        };
+        /** @enum {string} */
+        ReconciliationRunStatus: "BALANCED" | "DIFFERENCES" | "FAILED";
+        /**
+         * @description TENANT is the payer's own daily total; PROVIDER is one provider's. Both exist because they
+         *     answer different questions: the first is "did yesterday balance", the second is "which
+         *     provider is the reason it did not".
+         * @enum {string}
+         */
+        ReconciliationScope: "TENANT" | "PROVIDER";
         /**
          * @description The reference the bank gave back. KAPSORA moved nothing; this is the note that it was
          *     moved.
@@ -11998,6 +12499,66 @@ export interface components {
             /** Format: date */
             validTo?: string | null;
         };
+        StatementInvoice: {
+            approvedAmount: string;
+            batchDecision?: string | null;
+            /** Format: uuid */
+            batchId?: string | null;
+            batchReference?: string | null;
+            batchStatus?: string | null;
+            currencyCode: string;
+            /** Format: date */
+            dueDate?: string | null;
+            /** Format: uuid */
+            id: string;
+            /** Format: date */
+            invoiceDate: string;
+            invoiceNumber: string;
+            payableAmount: string;
+            /** Format: uuid */
+            settlementId?: string | null;
+            settlementPaidAmount: string;
+            settlementReference?: string | null;
+            status: components["schemas"]["InvoiceStatus"];
+            taxAmount: string;
+        };
+        StatementSettlement: {
+            approvedAmount: string;
+            /** Format: uuid */
+            batchId: string;
+            batchReference: string;
+            currencyCode: string;
+            /** Format: date */
+            dueDate: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            lastPaidAt?: string | null;
+            openAmount: string;
+            paidAmount: string;
+            payableAmount: string;
+            paymentCount: number;
+            reference: string;
+            status: components["schemas"]["SettlementStatus"];
+            withheldAmount: string;
+        };
+        /**
+         * @description Every figure summed by the server in one query, in exact decimals. None of these may be
+         *     recomputed from `invoices` or `settlements`: those lists are capped and these are not.
+         */
+        StatementTotals: {
+            approvedTotal: string;
+            cutTotal: string;
+            invoiceCount: number;
+            invoicedTotal: string;
+            /** @description What is still owed: settled minus paid over the settlements due in the period. */
+            openBalance: string;
+            paidTotal: string;
+            rejectedTotal: string;
+            returnedTotal: string;
+            settledTotal: string;
+            settlementCount: number;
+        };
         StayExtension: {
             additionalDays: number;
             /**
@@ -12619,6 +13180,7 @@ export interface components {
         EncounterId: string;
         EnrollmentId: string;
         EvaluationId: string;
+        ExportId: string;
         FulfilmentId: string;
         /** @description Client-generated unique key retained for at least 24 hours. */
         IdempotencyKey: string;
@@ -12653,6 +13215,7 @@ export interface components {
         RuleEvaluationId: string;
         RuleSetId: string;
         RuleSetVersionId: string;
+        RunId: string;
         ServiceCategoryId: string;
         ServiceDefinitionId: string;
         /**
@@ -12773,6 +13336,7 @@ export type SchemaCreateContractVersionRequest = components['schemas']['CreateCo
 export type SchemaCreateDocumentLink = components['schemas']['CreateDocumentLink'];
 export type SchemaCreateEncounter = components['schemas']['CreateEncounter'];
 export type SchemaCreateEnrollmentRequest = components['schemas']['CreateEnrollmentRequest'];
+export type SchemaCreateExport = components['schemas']['CreateExport'];
 export type SchemaCreateFulfilment = components['schemas']['CreateFulfilment'];
 export type SchemaCreateHealthCase = components['schemas']['CreateHealthCase'];
 export type SchemaCreateHoldRequest = components['schemas']['CreateHoldRequest'];
@@ -12803,6 +13367,13 @@ export type SchemaCreateServiceDefinitionRequest = components['schemas']['Create
 export type SchemaCreateServiceRequest = components['schemas']['CreateServiceRequest'];
 export type SchemaCreateUpload = components['schemas']['CreateUpload'];
 export type SchemaCreateWorkQueue = components['schemas']['CreateWorkQueue'];
+export type SchemaDashboardAgingFigure = components['schemas']['DashboardAgingFigure'];
+export type SchemaDashboardBatchFigure = components['schemas']['DashboardBatchFigure'];
+export type SchemaDashboardClaimStatusFigure = components['schemas']['DashboardClaimStatusFigure'];
+export type SchemaDashboardFilter = components['schemas']['DashboardFilter'];
+export type SchemaDashboardReimbursementFigure = components['schemas']['DashboardReimbursementFigure'];
+export type SchemaDashboardSettlementFigure = components['schemas']['DashboardSettlementFigure'];
+export type SchemaDashboardWorkItemFigure = components['schemas']['DashboardWorkItemFigure'];
 export type SchemaDecideClaimLines = components['schemas']['DecideClaimLines'];
 export type SchemaDecideMedicalReport = components['schemas']['DecideMedicalReport'];
 export type SchemaDecideReimbursement = components['schemas']['DecideReimbursement'];
@@ -12837,6 +13408,13 @@ export type SchemaEntitlementDefinitionInput = components['schemas']['Entitlemen
 export type SchemaEntitlementMapping = components['schemas']['EntitlementMapping'];
 export type SchemaEntitlementMappingInput = components['schemas']['EntitlementMappingInput'];
 export type SchemaEntitlementReservation = components['schemas']['EntitlementReservation'];
+export type SchemaExport = components['schemas']['Export'];
+export type SchemaExportDownload = components['schemas']['ExportDownload'];
+export type SchemaExportDownloadRequest = components['schemas']['ExportDownloadRequest'];
+export type SchemaExportFormat = components['schemas']['ExportFormat'];
+export type SchemaExportKind = components['schemas']['ExportKind'];
+export type SchemaExportPage = components['schemas']['ExportPage'];
+export type SchemaExportStatus = components['schemas']['ExportStatus'];
 export type SchemaExtendAuthorization = components['schemas']['ExtendAuthorization'];
 export type SchemaExtendInpatientStay = components['schemas']['ExtendInpatientStay'];
 export type SchemaFulfillmentMode = components['schemas']['FulfillmentMode'];
@@ -12913,6 +13491,7 @@ export type SchemaNotificationSuppressionReason = components['schemas']['Notific
 export type SchemaNotificationTemplate = components['schemas']['NotificationTemplate'];
 export type SchemaNotificationTemplatePage = components['schemas']['NotificationTemplatePage'];
 export type SchemaNotificationTemplateStatus = components['schemas']['NotificationTemplateStatus'];
+export type SchemaOperationsDashboard = components['schemas']['OperationsDashboard'];
 export type SchemaOrganization = components['schemas']['Organization'];
 export type SchemaOrganizationIdentifier = components['schemas']['OrganizationIdentifier'];
 export type SchemaOrganizationPage = components['schemas']['OrganizationPage'];
@@ -12991,6 +13570,7 @@ export type SchemaProviderQuotaInput = components['schemas']['ProviderQuotaInput
 export type SchemaProviderQuotaList = components['schemas']['ProviderQuotaList'];
 export type SchemaProviderSearchPage = components['schemas']['ProviderSearchPage'];
 export type SchemaProviderSearchResult = components['schemas']['ProviderSearchResult'];
+export type SchemaProviderStatement = components['schemas']['ProviderStatement'];
 export type SchemaProviderStatus = components['schemas']['ProviderStatus'];
 export type SchemaProviderType = components['schemas']['ProviderType'];
 export type SchemaPutApprovalPolicies = components['schemas']['PutApprovalPolicies'];
@@ -13008,6 +13588,12 @@ export type SchemaQuotaPeriodType = components['schemas']['QuotaPeriodType'];
 export type SchemaQuoteUnavailableReason = components['schemas']['QuoteUnavailableReason'];
 export type SchemaReasonCommand = components['schemas']['ReasonCommand'];
 export type SchemaReassignWorkItem = components['schemas']['ReassignWorkItem'];
+export type SchemaReconciliationDifference = components['schemas']['ReconciliationDifference'];
+export type SchemaReconciliationDifferenceKind = components['schemas']['ReconciliationDifferenceKind'];
+export type SchemaReconciliationRun = components['schemas']['ReconciliationRun'];
+export type SchemaReconciliationRunPage = components['schemas']['ReconciliationRunPage'];
+export type SchemaReconciliationRunStatus = components['schemas']['ReconciliationRunStatus'];
+export type SchemaReconciliationScope = components['schemas']['ReconciliationScope'];
 export type SchemaRecordReimbursementPayment = components['schemas']['RecordReimbursementPayment'];
 export type SchemaRedeemVoucher = components['schemas']['RedeemVoucher'];
 export type SchemaRegistrationAuthority = components['schemas']['RegistrationAuthority'];
@@ -13094,6 +13680,9 @@ export type SchemaSettlementRecovery = components['schemas']['SettlementRecovery
 export type SchemaSettlementStatus = components['schemas']['SettlementStatus'];
 export type SchemaSimulateRuleSetVersionRequest = components['schemas']['SimulateRuleSetVersionRequest'];
 export type SchemaSponsorMembership = components['schemas']['SponsorMembership'];
+export type SchemaStatementInvoice = components['schemas']['StatementInvoice'];
+export type SchemaStatementSettlement = components['schemas']['StatementSettlement'];
+export type SchemaStatementTotals = components['schemas']['StatementTotals'];
 export type SchemaStayExtension = components['schemas']['StayExtension'];
 export type SchemaStayExtensionStatus = components['schemas']['StayExtensionStatus'];
 export type SchemaStayReconciliation = components['schemas']['StayReconciliation'];
@@ -13161,6 +13750,7 @@ export type ParameterDocumentLinkId = components['parameters']['DocumentLinkId']
 export type ParameterEncounterId = components['parameters']['EncounterId'];
 export type ParameterEnrollmentId = components['parameters']['EnrollmentId'];
 export type ParameterEvaluationId = components['parameters']['EvaluationId'];
+export type ParameterExportId = components['parameters']['ExportId'];
 export type ParameterFulfilmentId = components['parameters']['FulfilmentId'];
 export type ParameterIdempotencyKey = components['parameters']['IdempotencyKey'];
 export type ParameterIdempotencyKeyOptional = components['parameters']['IdempotencyKeyOptional'];
@@ -13192,6 +13782,7 @@ export type ParameterRoomTypeId = components['parameters']['RoomTypeId'];
 export type ParameterRuleEvaluationId = components['parameters']['RuleEvaluationId'];
 export type ParameterRuleSetId = components['parameters']['RuleSetId'];
 export type ParameterRuleSetVersionId = components['parameters']['RuleSetVersionId'];
+export type ParameterRunId = components['parameters']['RunId'];
 export type ParameterServiceCategoryId = components['parameters']['ServiceCategoryId'];
 export type ParameterServiceDefinitionId = components['parameters']['ServiceDefinitionId'];
 export type ParameterServiceRequestVersionNo = components['parameters']['ServiceRequestVersionNo'];
@@ -18327,6 +18918,176 @@ export interface operations {
             };
         };
     };
+    listExports: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                kind?: components["schemas"]["ExportKind"];
+                limit?: components["parameters"]["Limit"];
+                /** @description Defaults to true. */
+                mine?: boolean;
+                status?: components["schemas"]["ExportStatus"];
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Exports */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportPage"];
+                };
+            };
+            /** @description A filter or the cursor is not readable. CURSOR_INVALID, VALIDATION_FAILED. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    createExport: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateExport"];
+            };
+        };
+        responses: {
+            /** @description Export queued */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Export"];
+                };
+            };
+            /** @description The request body could not be read. INVALID_REQUEST_BODY. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /**
+             * @description The caller does not hold `report.export`, asked for `CLAIMS` without
+             *     `report.export.sensitive`, or named a provider outside its own scope.
+             *     EXPORT_SENSITIVE_REQUIRED, REPORT_PROVIDER_SCOPE.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getExport: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                exportId: components["parameters"]["ExportId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Export */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Export"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    downloadExport: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Optional on query-style POSTs; honoured when present. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                exportId: components["parameters"]["ExportId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ExportDownloadRequest"];
+            };
+        };
+        responses: {
+            /** @description Download link */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportDownload"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The export is not downloadable. EXPORT_EXPIRED, EXPORT_NOT_READY, EXPORT_FAILED. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
     listFulfilments: {
         parameters: {
             query?: {
@@ -21462,6 +22223,32 @@ export interface operations {
             };
         };
     };
+    getOperationsDashboard: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Operations dashboard */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperationsDashboard"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
     listOrganizations: {
         parameters: {
             query?: {
@@ -23926,6 +24713,53 @@ export interface operations {
             422: components["responses"]["ValidationError"];
         };
     };
+    getProviderStatement: {
+        parameters: {
+            query: {
+                /**
+                 * @description Defaults to TRY. A statement is per currency: two currencies added together is not a
+                 *     total.
+                 */
+                currencyCode?: string;
+                /** @description Inclusive. */
+                periodFrom: string;
+                /** @description Inclusive. */
+                periodTo: string;
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                providerId: components["parameters"]["ProviderId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Provider statement */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderStatement"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description A provider-scoped caller asking about somebody else's provider. REPORT_PROVIDER_SCOPE. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
     suspendProvider: {
         parameters: {
             query?: never;
@@ -24082,6 +24916,81 @@ export interface operations {
             };
             403: components["responses"]["Forbidden"];
             422: components["responses"]["ValidationError"];
+        };
+    };
+    listReconciliationRuns: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                /** @description Runs whose period starts on or after this day. */
+                periodFrom?: string;
+                /** @description Runs whose period ends on or before this day. */
+                periodTo?: string;
+                providerOrganizationId?: string;
+                scope?: components["schemas"]["ReconciliationScope"];
+                status?: components["schemas"]["ReconciliationRunStatus"];
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reconciliation runs */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReconciliationRunPage"];
+                };
+            };
+            /** @description A filter or the cursor is not readable. CURSOR_INVALID, VALIDATION_FAILED. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getReconciliationRun: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                runId: components["parameters"]["RunId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reconciliation run */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReconciliationRun"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listReimbursements: {

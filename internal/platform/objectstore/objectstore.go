@@ -55,6 +55,15 @@ type Store interface {
 	// Open streams an object. The worker uses it to feed the scanner; nothing else in the
 	// platform reads a file body.
 	Open(ctx context.Context, bucket, key string) (io.ReadCloser, error)
+	// Write stores bytes the platform itself produced. It is the one way into this store
+	// that does not go through a client's presigned URL, and it exists for exactly one kind
+	// of file: the ones nobody uploaded. WP-I7-05's exports are rendered by the worker, so
+	// there is no browser to hand a URL to and no untrusted bytes to quarantine — the
+	// process that wrote them is the process that stores them.
+	//
+	// It is deliberately not a way to accept an upload. Nothing in the API layer may call
+	// it, because the API never holds a file body (v1.2 39.14).
+	Write(ctx context.Context, bucket, key string, body []byte, contentType string) error
 	// Copy is a server-side copy: the promotion from quarantine to secure never pulls the
 	// bytes through this process.
 	Copy(ctx context.Context, srcBucket, srcKey, dstBucket, dstKey string) error

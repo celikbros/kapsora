@@ -67,6 +67,8 @@ tags:
     description: Konaklama tesisleri, oda tipleri, günlük kontenjan ve müsaitlik sorgusu
   - name: Billing
     description: Sağlayıcı faturaları, hasar dosyası tahsisleri ve düzeltme zinciri
+  - name: Reports
+    description: Cari ekstre, günlük mutabakat, operasyon panosu ve filigranlı dışa aktarma
 paths:
   /health/live:
     get:
@@ -13396,6 +13398,374 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+  /api/v1/providers/{providerId}/statement:
+    get:
+      tags: [Reports]
+      operationId: getProviderStatement
+      description: |
+        The numbers both sides argue about, on one page: what the provider billed in the period,
+        what the payer decided, what was settled, what was actually paid, and what is still open.
+
+        **Every figure in `totals` is a server sum of exact decimals, computed in one query.** It
+        is not the invoice rows added up and it is not the settlement rows added up: `invoices`
+        and `settlements` are capped at five thousand rows each and the totals are not, so a
+        client that added the rows would get a different — and wrong — answer for a busy provider.
+        Nothing on this page may be recomputed on the client.
+
+        Each figure has its own window, and each window is one a list endpoint can reproduce:
+        `invoicedTotal` is the invoices dated in the period, the four decision columns are the
+        icmals decided in it, and the settlement columns are the settlements *due* in it.
+
+        Read under `report.read` on the payer side. A provider reads its own and gets 403 for
+        anybody else's, because it named an organization on purpose and is entitled to know its
+        grants do not reach it.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ProviderId'
+        - name: periodFrom
+          in: query
+          required: true
+          description: Inclusive.
+          schema:
+            type: string
+            format: date
+        - name: periodTo
+          in: query
+          required: true
+          description: Inclusive.
+          schema:
+            type: string
+            format: date
+        - name: currencyCode
+          in: query
+          description: |
+            Defaults to TRY. A statement is per currency: two currencies added together is not a
+            total.
+          schema:
+            type: string
+            pattern: '^[A-Z]{3}$'
+      responses:
+        '200':
+          description: Provider statement
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderStatement'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: |
+            A provider-scoped caller asking about somebody else's provider. REPORT_PROVIDER_SCOPE.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/reconciliation-runs:
+    get:
+      tags: [Reports]
+      operationId: listReconciliationRuns
+      description: |
+        The daily comparisons, newest first, with keyset paging.
+
+        A run is written by the `billing.reconcile` job and by nothing else — there is no endpoint
+        that creates one — and it is **append-only**: a second look at the same day is run number
+        two and both stay, because "we looked again and it balanced" is part of the record.
+
+        A `DIFFERENCES` run raised exactly one work item in the finance queue when it was written.
+
+        A provider-scoped caller reads its own PROVIDER runs and never the tenant-wide ones: a
+        TENANT run is every provider's figures added together.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: scope
+          in: query
+          schema:
+            $ref: '#/components/schemas/ReconciliationScope'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/ReconciliationRunStatus'
+        - name: providerOrganizationId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: periodFrom
+          in: query
+          description: Runs whose period starts on or after this day.
+          schema:
+            type: string
+            format: date
+        - name: periodTo
+          in: query
+          description: Runs whose period ends on or before this day.
+          schema:
+            type: string
+            format: date
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Reconciliation runs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReconciliationRunPage'
+        '400':
+          description: |
+            A filter or the cursor is not readable. CURSOR_INVALID, VALIDATION_FAILED.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/reconciliation-runs/{runId}:
+    get:
+      tags: [Reports]
+      operationId: getReconciliationRun
+      description: |
+        One run with the settlements it disagreed with.
+
+        `differences` carries references rather than ids, because the column is read by a person
+        looking for the row on their own screen. `difference` is `settledTotal` minus the ERP's
+        figure when there is one and minus `paidTotal` when there is not — which is a database
+        CHECK rather than an arithmetic the job is trusted to have got right.
+
+        `erpTotal` is null until M9.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/RunId'
+      responses:
+        '200':
+          description: Reconciliation run
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReconciliationRun'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/operations/dashboard:
+    get:
+      tags: [Reports]
+      operationId: getOperationsDashboard
+      description: |
+        The counts and sums an operator reads every morning: claims by status and by how long they
+        have waited, icmals awaiting a decision with the oldest SLA, settlements due this week and
+        already overdue, reimbursements awaiting a decision, and work past its SLA.
+
+        **Each figure is one server query and each carries the filter that reproduces it.** The
+        filter is not decoration: a count a person cannot click through to a list of is a number
+        they have to take on trust. There is no percentage on this page and no total across
+        figures, because a ratio is a number two screens round differently and a total assembled
+        from six queries is wrong for the moment between the first and the sixth.
+
+        Read under `report.read`. A provider-scoped caller sees its own rows; the reimbursement
+        figure is the payer's business with its own member and is zero for a provider.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+      responses:
+        '200':
+          description: Operations dashboard
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationsDashboard'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/exports:
+    get:
+      tags: [Reports]
+      operationId: listExports
+      description: |
+        The exports, newest first, with keyset paging. `mine=false` widens the list to the whole
+        tenant for a caller that holds `report.read`; the default is the caller's own, because an
+        export is a file with somebody's name stamped on every row of it.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: kind
+          in: query
+          schema:
+            $ref: '#/components/schemas/ExportKind'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/ExportStatus'
+        - name: mine
+          in: query
+          description: Defaults to true.
+          schema:
+            type: boolean
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Exports
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportPage'
+        '400':
+          description: |
+            A filter or the cursor is not readable. CURSOR_INVALID, VALIDATION_FAILED.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    post:
+      tags: [Reports]
+      operationId: createExport
+      description: |
+        Queues one export. Nothing is rendered here: the worker writes the file, so a request that
+        produced one would be a request whose duration is a function of how much data the tenant
+        has. The answer is QUEUED, and the caller polls `getExport`.
+
+        **`parameters` may not carry an identifier.** Which provider, which period and which
+        currency an export covers are fields of their own; `parameters` is the remainder a screen
+        sent — statuses, buckets, a free-text search — and a uuid or a key called `...Id` in it is
+        refused by the database as well as by this endpoint.
+
+        **`format` is CSV.** XLSX is a value of the column and is refused here: nothing in this
+        release can write a spreadsheet, and an export that answered READY with a CSV inside a
+        file called .xlsx would be worse than a refusal.
+
+        `report.export` is required. `CLAIMS` additionally requires `report.export.sensitive`,
+        because its rows carry claim line descriptions — what a member was treated for, written in
+        words.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateExport'
+      responses:
+        '202':
+          description: Export queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Export'
+        '400':
+          description: |
+            The request body could not be read. INVALID_REQUEST_BODY.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: |
+            The caller does not hold `report.export`, asked for `CLAIMS` without
+            `report.export.sensitive`, or named a provider outside its own scope.
+            EXPORT_SENSITIVE_REQUIRED, REPORT_PROVIDER_SCOPE.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/exports/{exportId}:
+    get:
+      tags: [Reports]
+      operationId: getExport
+      description: |
+        One export: what was asked for, what the worker produced, the watermark stamped on every
+        row of the file, when it stops being downloadable and how many times it was downloaded.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ExportId'
+      responses:
+        '200':
+          description: Export
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Export'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/exports/{exportId}/download:
+    post:
+      tags: [Reports]
+      operationId: downloadExport
+      description: |
+        A short-lived link to the file, through the document store's own download path.
+
+        **The download is the access that is audited.** Two rows are written and each answers a
+        question the other cannot: one naming the export, its kind and the requester, and the
+        document store's own naming the file. The download is counted before the link is handed
+        out, because a link that was issued and not counted is a download nobody knows happened.
+
+        **After `expiresAt` it is refused** — `EXPORT_EXPIRED` — whether or not the nightly sweep
+        has removed the bytes yet. "May I have this" and "is it still on disk" are different
+        questions, and the first one is answered by the clock.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/ExportId'
+        - $ref: '#/components/parameters/IdempotencyKeyOptional'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportDownloadRequest'
+      responses:
+        '200':
+          description: Download link
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportDownload'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            The export is not downloadable. EXPORT_EXPIRED, EXPORT_NOT_READY, EXPORT_FAILED.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
 components:
   securitySchemes:
     sessionCookie:
@@ -13853,6 +14223,20 @@ components:
         format: uuid
     BatchId:
       name: batchId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    RunId:
+      name: runId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ExportId:
+      name: exportId
       in: path
       required: true
       schema:
@@ -24693,3 +25077,610 @@ components:
           type: [string, 'null']
           format: date-time
           description: Defaults to now.
+    ReconciliationScope:
+      type: string
+      enum: [TENANT, PROVIDER]
+      description: |
+        TENANT is the payer's own daily total; PROVIDER is one provider's. Both exist because they
+        answer different questions: the first is "did yesterday balance", the second is "which
+        provider is the reason it did not".
+    ReconciliationRunStatus:
+      type: string
+      enum: [BALANCED, DIFFERENCES, FAILED]
+    ReconciliationDifferenceKind:
+      type: string
+      enum: [UNDERPAID, PAID_SUM_MISMATCH, ERP_MISMATCH]
+      description: |
+        `UNDERPAID` is the ordinary one: the due date has passed and the settlement is short.
+        `PAID_SUM_MISMATCH` is KAPSORA disagreeing with itself — the settlement's stored paid
+        amount is not the sum of its live payment records — and should never appear.
+        `ERP_MISMATCH` is M9's and is never written today.
+    ReconciliationDifference:
+      type: object
+      additionalProperties: false
+      required: [reference, dueDate, status, expected, actual, difference, kind]
+      description: |
+        One settlement the run disagreed with. It carries the reference a person finds on their own
+        screen and **no identifier**: the run's own column is read by somebody looking for the row,
+        and a uuid is not how they will find it.
+      properties:
+        reference:
+          type: string
+        dueDate:
+          type: string
+          format: date
+        status:
+          type: string
+        expected:
+          type: string
+          description: What was payable, in exact decimals.
+        actual:
+          type: string
+          description: What was paid, in exact decimals.
+        difference:
+          type: string
+        kind:
+          $ref: '#/components/schemas/ReconciliationDifferenceKind'
+    ReconciliationRun:
+      type: object
+      additionalProperties: false
+      required:
+        [id, scope, periodFrom, periodTo, runNo, currencyCode, invoicedTotal, approvedTotal,
+         cutTotal, returnedTotal, rejectedTotal, settledTotal, paidTotal, openTotal, difference,
+         differenceCount, differences, status, ranAt, createdAt]
+      description: |
+        An immutable record of what was compared and what differed. The row is append-only in the
+        database: a second look at the same day is run number two and both stay.
+      properties:
+        id:
+          type: string
+          format: uuid
+        scope:
+          $ref: '#/components/schemas/ReconciliationScope'
+        providerOrganizationId:
+          type: [string, 'null']
+          format: uuid
+          description: Set on a PROVIDER run and null on a TENANT one, which is a database CHECK.
+        providerName:
+          type: [string, 'null']
+        periodFrom:
+          type: string
+          format: date
+        periodTo:
+          type: string
+          format: date
+        runNo:
+          type: integer
+          minimum: 1
+        currencyCode:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        invoicedTotal:
+          type: string
+        approvedTotal:
+          type: string
+        cutTotal:
+          type: string
+        returnedTotal:
+          type: string
+        rejectedTotal:
+          type: string
+        settledTotal:
+          type: string
+        paidTotal:
+          type: string
+        openTotal:
+          type: string
+          description: |
+            `settledTotal - paidTotal`, subtracted by the database and checked by a constraint.
+        erpTotal:
+          type: [string, 'null']
+          description: What the accounting system said it posted. Null until M9.
+        difference:
+          type: string
+          description: |
+            `settledTotal` minus `erpTotal` when there is one and minus `paidTotal` when there is
+            not. It is a database CHECK rather than an arithmetic the job is trusted with.
+        differenceCount:
+          type: integer
+          minimum: 0
+        differences:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReconciliationDifference'
+        status:
+          $ref: '#/components/schemas/ReconciliationRunStatus'
+        failureCode:
+          type: [string, 'null']
+        ranAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    ReconciliationRunPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReconciliationRun'
+        nextCursor:
+          type: [string, 'null']
+    StatementTotals:
+      type: object
+      additionalProperties: false
+      required:
+        [invoicedTotal, approvedTotal, cutTotal, returnedTotal, rejectedTotal, settledTotal,
+         paidTotal, openBalance, invoiceCount, settlementCount]
+      description: |
+        Every figure summed by the server in one query, in exact decimals. None of these may be
+        recomputed from `invoices` or `settlements`: those lists are capped and these are not.
+      properties:
+        invoicedTotal:
+          type: string
+        approvedTotal:
+          type: string
+        cutTotal:
+          type: string
+        returnedTotal:
+          type: string
+        rejectedTotal:
+          type: string
+        settledTotal:
+          type: string
+        paidTotal:
+          type: string
+        openBalance:
+          type: string
+          description: |
+            What is still owed: settled minus paid over the settlements due in the period.
+        invoiceCount:
+          type: integer
+          minimum: 0
+        settlementCount:
+          type: integer
+          minimum: 0
+    StatementInvoice:
+      type: object
+      additionalProperties: false
+      required:
+        [id, invoiceNumber, invoiceDate, status, currencyCode, payableAmount, taxAmount,
+         approvedAmount, settlementPaidAmount]
+      properties:
+        id:
+          type: string
+          format: uuid
+        invoiceNumber:
+          type: string
+        invoiceDate:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/InvoiceStatus'
+        currencyCode:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        payableAmount:
+          type: string
+        taxAmount:
+          type: string
+        batchId:
+          type: [string, 'null']
+          format: uuid
+        batchReference:
+          type: [string, 'null']
+        batchStatus:
+          type: [string, 'null']
+        batchDecision:
+          type: [string, 'null']
+        approvedAmount:
+          type: string
+        settlementId:
+          type: [string, 'null']
+          format: uuid
+        settlementReference:
+          type: [string, 'null']
+        dueDate:
+          type: [string, 'null']
+          format: date
+        settlementPaidAmount:
+          type: string
+    StatementSettlement:
+      type: object
+      additionalProperties: false
+      required:
+        [id, reference, batchId, batchReference, dueDate, status, currencyCode, approvedAmount,
+         withheldAmount, payableAmount, paidAmount, openAmount, paymentCount]
+      properties:
+        id:
+          type: string
+          format: uuid
+        reference:
+          type: string
+        batchId:
+          type: string
+          format: uuid
+        batchReference:
+          type: string
+        dueDate:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/SettlementStatus'
+        currencyCode:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        approvedAmount:
+          type: string
+        withheldAmount:
+          type: string
+        payableAmount:
+          type: string
+        paidAmount:
+          type: string
+        openAmount:
+          type: string
+        paymentCount:
+          type: integer
+          minimum: 0
+        lastPaidAt:
+          type: [string, 'null']
+          format: date-time
+    ProviderStatement:
+      type: object
+      additionalProperties: false
+      required:
+        [providerOrganizationId, providerName, periodFrom, periodTo, currencyCode, totals,
+         invoices, settlements]
+      properties:
+        providerOrganizationId:
+          type: string
+          format: uuid
+        providerName:
+          type: string
+        periodFrom:
+          type: string
+          format: date
+        periodTo:
+          type: string
+          format: date
+        currencyCode:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        totals:
+          $ref: '#/components/schemas/StatementTotals'
+        invoices:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatementInvoice'
+        settlements:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatementSettlement'
+    DashboardFilter:
+      type: object
+      additionalProperties: false
+      required: [resource]
+      description: |
+        The filter that reproduces the figure beside it. A count a person cannot click through to a
+        list of is a number they have to take on trust — and the first time it disagrees with the
+        list they will stop trusting the whole screen.
+      properties:
+        resource:
+          type: string
+          enum: [claims, batches, settlements, reimbursements, workItems]
+        statuses:
+          type: array
+          items:
+            type: string
+        dueFrom:
+          type: [string, 'null']
+          format: date
+        dueTo:
+          type: [string, 'null']
+          format: date
+        dueBefore:
+          type: [string, 'null']
+          format: date
+        overdueAt:
+          type: [string, 'null']
+          format: date-time
+        agingBucket:
+          type: [string, 'null']
+          enum: [D0_1, D2_7, D8_30, D31_PLUS, null]
+    DashboardClaimStatusFigure:
+      type: object
+      additionalProperties: false
+      required: [status, claimCount, approvedTotal, filter]
+      properties:
+        status:
+          type: string
+        claimCount:
+          type: integer
+          minimum: 0
+        approvedTotal:
+          type: string
+        filter:
+          $ref: '#/components/schemas/DashboardFilter'
+    DashboardAgingFigure:
+      type: object
+      additionalProperties: false
+      required: [bucket, claimCount, approvedTotal, filter]
+      properties:
+        bucket:
+          type: string
+          enum: [D0_1, D2_7, D8_30, D31_PLUS]
+        claimCount:
+          type: integer
+          minimum: 0
+        approvedTotal:
+          type: string
+        filter:
+          $ref: '#/components/schemas/DashboardFilter'
+    DashboardBatchFigure:
+      type: object
+      additionalProperties: false
+      required: [batchCount, submittedTotal, filter]
+      properties:
+        batchCount:
+          type: integer
+          minimum: 0
+        submittedTotal:
+          type: string
+        oldestSubmittedAt:
+          type: [string, 'null']
+          format: date-time
+        oldestSlaDueAt:
+          type: [string, 'null']
+          format: date-time
+          description: |
+            The earliest SLA deadline of an open item in the icmal review queue. It is the work
+            queue's own clock, so "past SLA" is the same number here and in the worklist.
+        filter:
+          $ref: '#/components/schemas/DashboardFilter'
+    DashboardSettlementFigure:
+      type: object
+      additionalProperties: false
+      required:
+        [dueSoonCount, dueSoonTotal, overdueCount, overdueTotal, dueSoonFilter, overdueFilter]
+      properties:
+        dueSoonCount:
+          type: integer
+          minimum: 0
+        dueSoonTotal:
+          type: string
+        overdueCount:
+          type: integer
+          minimum: 0
+        overdueTotal:
+          type: string
+        dueSoonFilter:
+          $ref: '#/components/schemas/DashboardFilter'
+        overdueFilter:
+          $ref: '#/components/schemas/DashboardFilter'
+    DashboardReimbursementFigure:
+      type: object
+      additionalProperties: false
+      required: [reimbursementCount, requestedTotal, filter]
+      properties:
+        reimbursementCount:
+          type: integer
+          minimum: 0
+        requestedTotal:
+          type: string
+        oldestSubmittedAt:
+          type: [string, 'null']
+          format: date-time
+        filter:
+          $ref: '#/components/schemas/DashboardFilter'
+    DashboardWorkItemFigure:
+      type: object
+      additionalProperties: false
+      required: [itemCount, filter]
+      properties:
+        itemCount:
+          type: integer
+          minimum: 0
+        oldestDueAt:
+          type: [string, 'null']
+          format: date-time
+        filter:
+          $ref: '#/components/schemas/DashboardFilter'
+    OperationsDashboard:
+      type: object
+      additionalProperties: false
+      required:
+        [asOf, claimsByStatus, claimAging, batchesAwaitingReview, settlements, reimbursements,
+         workItemsPastSla]
+      properties:
+        asOf:
+          type: string
+          format: date-time
+          description: |
+            The moment every figure was computed against. The aging buckets and the "due this week"
+            window are both measured from it, so a page read at midnight and one read at noon can
+            be told apart.
+        claimsByStatus:
+          type: array
+          items:
+            $ref: '#/components/schemas/DashboardClaimStatusFigure'
+        claimAging:
+          type: array
+          items:
+            $ref: '#/components/schemas/DashboardAgingFigure'
+        batchesAwaitingReview:
+          $ref: '#/components/schemas/DashboardBatchFigure'
+        settlements:
+          $ref: '#/components/schemas/DashboardSettlementFigure'
+        reimbursements:
+          $ref: '#/components/schemas/DashboardReimbursementFigure'
+        workItemsPastSla:
+          $ref: '#/components/schemas/DashboardWorkItemFigure'
+    ExportKind:
+      type: string
+      enum: [PROVIDER_STATEMENT, BATCH, SETTLEMENTS, CLAIMS, RECONCILIATION]
+      description: |
+        `CLAIMS` is the one whose rows carry prose — claim line descriptions — and the one that
+        needs `report.export.sensitive`.
+    ExportFormat:
+      type: string
+      enum: [CSV, XLSX]
+      description: |
+        **Only CSV is produced.** XLSX is a value of the column so that the schema does not have to
+        change when a spreadsheet writer lands; asking for it today is refused with a field error
+        rather than answered with a CSV under another name. A CSV carries a UTF-8 byte order mark,
+        because the people who open these files open them in Excel.
+    ExportStatus:
+      type: string
+      enum: [QUEUED, RUNNING, READY, FAILED, EXPIRED]
+    Export:
+      type: object
+      additionalProperties: false
+      required:
+        [id, kind, format, status, parameters, rowCount, requestedBy, requestedAt, expiresAt,
+         watermark, downloadCount, createdAt, rowVersion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/ExportKind'
+        format:
+          $ref: '#/components/schemas/ExportFormat'
+        status:
+          $ref: '#/components/schemas/ExportStatus'
+        parameters:
+          type: object
+          additionalProperties: true
+          description: |
+            The filters as they were given, **with no identifier in them**. The database refuses a
+            uuid or a key called `...Id` here; the scope an export covers is in the typed fields
+            below.
+        providerOrganizationId:
+          type: [string, 'null']
+          format: uuid
+        periodFrom:
+          type: [string, 'null']
+          format: date
+        periodTo:
+          type: [string, 'null']
+          format: date
+        currencyCode:
+          type: [string, 'null']
+          pattern: '^[A-Z]{3}$'
+        documentId:
+          type: [string, 'null']
+          format: uuid
+          description: The file, once the worker has written it. It is a document like any other.
+        rowCount:
+          type: integer
+          minimum: 0
+        requestedBy:
+          type: string
+          format: uuid
+        requestedAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+          description: |
+            The tenant's `report.export_ttl_hours` applied when the export was asked for. It is a
+            stored moment rather than a duration read at download time, so the answer to "may I
+            still open this" does not change because somebody edited a setting this afternoon.
+        watermark:
+          type: string
+          description: |
+            The requester, the tenant, the moment and this export's id, in one line — the string
+            stamped on the header **and on every row** of the file.
+        downloadCount:
+          type: integer
+          minimum: 0
+        failureCode:
+          type: [string, 'null']
+        createdAt:
+          type: string
+          format: date-time
+        rowVersion:
+          type: integer
+          format: int64
+    ExportPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Export'
+        nextCursor:
+          type: [string, 'null']
+    CreateExport:
+      type: object
+      additionalProperties: false
+      required: [kind]
+      properties:
+        kind:
+          $ref: '#/components/schemas/ExportKind'
+        format:
+          $ref: '#/components/schemas/ExportFormat'
+        providerOrganizationId:
+          type: [string, 'null']
+          format: uuid
+          description: Required for PROVIDER_STATEMENT.
+        periodFrom:
+          type: [string, 'null']
+          format: date
+        periodTo:
+          type: [string, 'null']
+          format: date
+        currencyCode:
+          type: [string, 'null']
+          pattern: '^[A-Z]{3}$'
+        parameters:
+          type: object
+          additionalProperties: true
+          description: |
+            The remaining filters. **No identifier may appear here** — not as a value and not as a
+            key name. A provider, a period and a currency have fields of their own above.
+    ExportDownloadRequest:
+      type: object
+      additionalProperties: false
+      description: |
+        Why the file is being opened. Both fields travel into the access event: "who took this out"
+        without "why" is not an answer a data protection review can use.
+      properties:
+        purposeCode:
+          type: [string, 'null']
+          maxLength: 100
+        reasonText:
+          type: [string, 'null']
+          maxLength: 1000
+    ExportDownload:
+      type: object
+      additionalProperties: false
+      required: [url, method, expiresAt, watermark, downloadCount]
+      properties:
+        url:
+          type: string
+          format: uri
+          description: |
+            Where to GET the file. It is a bearer credential with a short life; it is never logged
+            and never shared.
+        method:
+          type: string
+          enum: [GET]
+        expiresAt:
+          type: string
+          format: date-time
+          description: When the link stops working, which is sooner than when the export expires.
+        watermark:
+          type: string
+          description: The string stamped on the header and on every row of the file being fetched.
+        downloadCount:
+          type: integer
+          minimum: 0
+          description: How many times this export has now been downloaded, counting this one.

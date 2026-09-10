@@ -1593,6 +1593,13 @@ const FINANCIAL_REVIEWER_PERMISSIONS = [
   'document.link',
   'pricing.quote',
   'report.read',
+  // WP-I7-05's two grants. The mali degerlendirici is the person who takes the numbers out of
+  // the building -- the cari ekstre a provider disputes, the settlement list a bank
+  // reconciliation is checked against -- so it holds report.export; and it holds
+  // report.export.sensitive because deciding a claim on its merits is exactly the work that
+  // needs the line descriptions.
+  'report.export',
+  'report.export.sensitive',
   'worklist.read',
   'worklist.claim',
 ];
@@ -1612,6 +1619,10 @@ const PAYER_APPROVER_PERMISSIONS = [
   'accounting.posting.send',
   'accounting.reconcile',
   'report.read',
+  // WP-I7-05: report.export and deliberately not report.export.sensitive. The approver
+  // releases money and reads the settlement and reconciliation figures that justify it, and
+  // has no reason to hold a spreadsheet of what members were treated for.
+  'report.export',
   'worklist.read',
   'worklist.claim',
 ];
@@ -1636,6 +1647,10 @@ const PROVIDER_BILLING_PERMISSIONS = [
   'settlement.read',
   'fiscal.edocument.read',
   'document.read',
+  // WP-I7-05 §2.2: the provider reads its own cari ekstre. It is report.read and deliberately
+  // not report.export — the figures are the provider's own to look at, and a file leaving the
+  // payer's tenant is the payer's decision.
+  'report.read',
   'document.link',
 ];
 
@@ -1657,7 +1672,10 @@ const MEMBER_PERMISSIONS = [
   'accommodation.booking.create',
   'document.upload',
   'document.read',
+  'document.link',
   'entitlement.read',
+  'catalog.read',
+  'provider.read',
   'notification.read',
 ];
 
@@ -2189,6 +2207,74 @@ export interface StoredReimbursement {
   rowVersion: number;
 }
 
+/**
+ * One reconciliation run (WP-I7-05). It is treated as append-only here exactly as the schema
+ * treats it: nothing below ever edits a row, and a second look at the same day is run number two.
+ *
+ * `erpTotal` is null until M9, and `difference` is settled minus paid while it is -- which is what
+ * the server's own CHECK says, and why the fixture never writes a figure that disagrees.
+ */
+export interface StoredReconciliationRun {
+  id: string;
+  tenantId: string;
+  scope: Schemas['ReconciliationScope'];
+  providerOrganizationId: string | null;
+  providerName: string | null;
+  periodFrom: string;
+  periodTo: string;
+  runNo: number;
+  currencyCode: string;
+  invoicedTotal: string;
+  approvedTotal: string;
+  cutTotal: string;
+  returnedTotal: string;
+  rejectedTotal: string;
+  settledTotal: string;
+  paidTotal: string;
+  openTotal: string;
+  erpTotal: string | null;
+  difference: string;
+  differenceCount: number;
+  differences: Schemas['ReconciliationDifference'][];
+  status: Schemas['ReconciliationRunStatus'];
+  failureCode: string | null;
+  ranAt: string;
+  createdAt: string;
+}
+
+/**
+ * One export (WP-I7-05). `parameters` deliberately carries no identifier: which provider, which
+ * period and which currency are fields of their own, and the server's own CHECK refuses a uuid or
+ * a key called `...Id` in the blob -- so a fixture that put one there would be a fixture the
+ * database would not accept.
+ *
+ * `body` is what the mock's worker rendered. It stands in for the object store: a screen that
+ * downloads gets a URL, and a test that wants to see the watermark on every row reads this.
+ */
+export interface StoredExport {
+  id: string;
+  tenantId: string;
+  kind: Schemas['ExportKind'];
+  format: Schemas['ExportFormat'];
+  status: Schemas['ExportStatus'];
+  parameters: Record<string, unknown>;
+  providerOrganizationId: string | null;
+  periodFrom: string | null;
+  periodTo: string | null;
+  currencyCode: string | null;
+  documentId: string | null;
+  rowCount: number;
+  requestedBy: string;
+  requestedAt: string;
+  expiresAt: string;
+  watermark: string;
+  downloadCount: number;
+  failureCode: string | null;
+  body: string | null;
+  createdAt: string;
+  rowVersion: number;
+}
+
 export interface MockWorld {
   tenants: MockTenant[];
   accounts: MockAccount[];
@@ -2342,6 +2428,14 @@ export interface MockWorld {
   settlementRecoveries: StoredSettlementRecovery[];
   paymentRecords: StoredPaymentRecord[];
   reimbursements: StoredReimbursement[];
+  /**
+   * The daily comparison and the files a person took out of the system (WP-I7-05). Two arrays
+   * because they are two schemas: a run is billing's and append-only, an export is report's and
+   * moves through a lifecycle. Neither is nested inside the other, because a run is never
+   * exported by being a run -- it is exported by the RECONCILIATION kind, like everything else.
+   */
+  reconciliationRuns: StoredReconciliationRun[];
+  exports: StoredExport[];
   /**
    * Moves a document on from SCANNING the way the scan worker does. It is the mock's
    * stand-in for the worker, so a screen can show "taranıyor" and then a verdict without
@@ -6981,6 +7075,19 @@ export function buildWorld(
       ...over,
     };
     reimbursements.push(row);
+    // The receipt is a document of the request, which is how the reviewer's screen finds it.
+    documentLinks.push({
+      tenantId: demoA.id,
+      id: nextId(),
+      documentId: receipt.id,
+      aggregateType: 'SERVICE_REQUEST',
+      aggregateId: request.id,
+      documentTypeCode: 'RECEIPT',
+      purpose: null,
+      requiredPermission: 'document.read',
+      createdBy: accounts.find((a) => a.username === 'member.a')!.actorId,
+      createdAt: row.createdAt,
+    });
     return row;
   };
 
@@ -7001,6 +7108,137 @@ export function buildWorld(
     rowVersion: 4,
   });
   seedReimbursement('CANCELLED', 52, '95');
+
+  // --- M7: the daily reconciliation and the exports (WP-I7-05) -------------------------------
+  //
+  // Appended at the very end of buildWorld, after the reimbursements, for the reason every fixture
+  // since M5 is appended: one seeded random stream, and an id drawn earlier would shift every id
+  // after it and break tests that have nothing to do with reports.
+  const reconciliationRuns: StoredReconciliationRun[] = [];
+  const exports: StoredExport[] = [];
+
+  const providerDisplayName = (relationshipId: string): string | null => {
+    const relationship = relationships.find((r) => r.id === relationshipId);
+    if (!relationship) return null;
+    return organizations.get(relationship.organizationId)?.displayName ?? null;
+  };
+
+  /**
+   * One run, with its arithmetic done in micro-units the way every figure in this fixture is.
+   * `openTotal` is settled minus paid and `difference` is the same figure while the ERP has not
+   * spoken -- both are CHECKs on the server, so a fixture that wrote anything else would be a
+   * fixture the database would refuse.
+   */
+  const seedRun = (
+    scope: Schemas['ReconciliationScope'],
+    providerOrganizationId: string | null,
+    daysAgo: number,
+    settled: string,
+    paid: string,
+    differences: Schemas['ReconciliationDifference'][],
+  ): StoredReconciliationRun => {
+    const open = trimmedAmount(toMicros(settled) - toMicros(paid));
+    const day = isoDaysAgo(base, daysAgo).slice(0, 10);
+    const row: StoredReconciliationRun = {
+      id: nextId(daysAgo * -86_400_000),
+      tenantId: demoA.id,
+      scope,
+      providerOrganizationId,
+      providerName: providerOrganizationId ? providerDisplayName(providerOrganizationId) : null,
+      periodFrom: day,
+      periodTo: day,
+      runNo: 1,
+      currencyCode: 'TRY',
+      invoicedTotal: settled,
+      approvedTotal: settled,
+      cutTotal: '0',
+      returnedTotal: '0',
+      rejectedTotal: '0',
+      settledTotal: settled,
+      paidTotal: paid,
+      openTotal: open,
+      erpTotal: null,
+      difference: open,
+      differenceCount: differences.length,
+      differences,
+      status: differences.length > 0 ? 'DIFFERENCES' : 'BALANCED',
+      failureCode: null,
+      ranAt: isoDaysAgo(base, daysAgo - 1),
+      createdAt: isoDaysAgo(base, daysAgo - 1),
+    };
+    reconciliationRuns.push(row);
+    return row;
+  };
+
+  // One balanced day and one that differs, which is the pair every screen has to be able to draw.
+  seedRun('TENANT', null, 4, '4800', '4800', []);
+  seedRun('PROVIDER', providerRel.id, 4, '4800', '4800', []);
+  const differingSettlement = settlements.find((s) => s.status === 'PARTIALLY_PAID')!;
+  const difference: Schemas['ReconciliationDifference'] = {
+    reference: differingSettlement.reference,
+    dueDate: differingSettlement.dueDate,
+    status: differingSettlement.status,
+    expected: differingSettlement.payableAmount,
+    actual: differingSettlement.paidAmount,
+    difference: trimmedAmount(
+      toMicros(differingSettlement.payableAmount) - toMicros(differingSettlement.paidAmount),
+    ),
+    kind: 'UNDERPAID',
+  };
+  seedRun('TENANT', null, 9, '6000', '2000', [difference]);
+  seedRun('PROVIDER', providerRel.id, 9, '6000', '2000', [difference]);
+
+  /**
+   * One export. `READY` carries a rendered body with the watermark on every row, because that is
+   * the property a screen is built against and the one a test reads back.
+   */
+  const seedExport = (
+    kind: Schemas['ExportKind'],
+    status: Schemas['ExportStatus'],
+    daysAgo: number,
+    over: Partial<StoredExport> = {},
+  ): StoredExport => {
+    const id = nextId(daysAgo * -86_400_000);
+    const requestedAt = isoDaysAgo(base, daysAgo);
+    const watermark = `KAPSORA ${demoA.code} · Mali Değerlendirici · ${requestedAt} · ${id}`;
+    const row: StoredExport = {
+      id,
+      tenantId: demoA.id,
+      kind,
+      format: 'CSV',
+      status,
+      parameters: { status: 'APPROVED' },
+      providerOrganizationId: null,
+      periodFrom: null,
+      periodTo: null,
+      currencyCode: 'TRY',
+      documentId: null,
+      rowCount: 0,
+      requestedBy: financeActorId,
+      requestedAt,
+      expiresAt: isoDaysAgo(base, daysAgo - 1),
+      watermark,
+      downloadCount: 0,
+      failureCode: null,
+      body: null,
+      createdAt: requestedAt,
+      rowVersion: status === 'QUEUED' ? 1 : 2,
+      ...over,
+    };
+    exports.push(row);
+    return row;
+  };
+
+  // One waiting for the worker, one finished, and one whose day has passed — the three states a
+  // screen has to tell apart, and the only three a person ever sees.
+  seedExport('SETTLEMENTS', 'QUEUED', 0);
+  const readyExport = seedExport('SETTLEMENTS', 'READY', 1, { rowCount: 3, documentId: null });
+  readyExport.body = renderExportBody(
+    readyExport.watermark,
+    ['Referans', 'Vade', 'Ödenecek', 'Ödenen'],
+    settlements.slice(0, 3).map((s) => [s.reference, s.dueDate, s.payableAmount, s.paidAmount]),
+  );
+  seedExport('CLAIMS', 'EXPIRED', 12, { rowCount: 42, downloadCount: 2 });
 
   return {
     tenants,
@@ -7091,6 +7329,8 @@ export function buildWorld(
     settlementRecoveries,
     paymentRecords,
     reimbursements,
+    reconciliationRuns,
+    exports,
     advanceScan,
     nextId,
     random,
@@ -8360,4 +8600,22 @@ export function toNotificationPreference(
 ): Schemas['NotificationPreference'] {
   const { tenantId: _tenantId, ...rest } = preference;
   return rest;
+}
+
+/**
+ * One rendered export file, exactly as the server's `RenderCSV` writes it: a UTF-8 byte order
+ * mark, the watermark on a line of its own, the column names behind a `Filigran` column, and
+ * every data row prefixed with the same watermark.
+ *
+ * It is one function because it is one file format. The mock's worker and this fixture both call
+ * it, so a screen built against a seeded export and one built against a rendered one are built
+ * against the same bytes.
+ */
+export function renderExportBody(watermark: string, columns: string[], rows: string[][]): string {
+  const cell = (value: string): string => JSON.stringify(value);
+  return [
+    '﻿' + cell(watermark),
+    ['Filigran', ...columns].map(cell).join(','),
+    ...rows.map((row) => [watermark, ...row].map(cell).join(',')),
+  ].join('\r\n');
 }

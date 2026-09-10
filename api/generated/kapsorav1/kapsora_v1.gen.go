@@ -655,6 +655,84 @@ func (e CreatePersonRequestSexAtBirth) Valid() bool {
 	}
 }
 
+// Defines values for DashboardAgingFigureBucket.
+const (
+	DashboardAgingFigureBucketD01     DashboardAgingFigureBucket = "D0_1"
+	DashboardAgingFigureBucketD27     DashboardAgingFigureBucket = "D2_7"
+	DashboardAgingFigureBucketD31PLUS DashboardAgingFigureBucket = "D31_PLUS"
+	DashboardAgingFigureBucketD830    DashboardAgingFigureBucket = "D8_30"
+)
+
+// Valid indicates whether the value is a known member of the DashboardAgingFigureBucket enum.
+func (e DashboardAgingFigureBucket) Valid() bool {
+	switch e {
+	case DashboardAgingFigureBucketD01:
+		return true
+	case DashboardAgingFigureBucketD27:
+		return true
+	case DashboardAgingFigureBucketD31PLUS:
+		return true
+	case DashboardAgingFigureBucketD830:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DashboardFilterAgingBucket.
+const (
+	DashboardFilterAgingBucketD01         DashboardFilterAgingBucket = "D0_1"
+	DashboardFilterAgingBucketD27         DashboardFilterAgingBucket = "D2_7"
+	DashboardFilterAgingBucketD31PLUS     DashboardFilterAgingBucket = "D31_PLUS"
+	DashboardFilterAgingBucketD830        DashboardFilterAgingBucket = "D8_30"
+	DashboardFilterAgingBucketLessThannil DashboardFilterAgingBucket = "<nil>"
+)
+
+// Valid indicates whether the value is a known member of the DashboardFilterAgingBucket enum.
+func (e DashboardFilterAgingBucket) Valid() bool {
+	switch e {
+	case DashboardFilterAgingBucketD01:
+		return true
+	case DashboardFilterAgingBucketD27:
+		return true
+	case DashboardFilterAgingBucketD31PLUS:
+		return true
+	case DashboardFilterAgingBucketD830:
+		return true
+	case DashboardFilterAgingBucketLessThannil:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DashboardFilterResource.
+const (
+	Batches        DashboardFilterResource = "batches"
+	Claims         DashboardFilterResource = "claims"
+	Reimbursements DashboardFilterResource = "reimbursements"
+	Settlements    DashboardFilterResource = "settlements"
+	WorkItems      DashboardFilterResource = "workItems"
+)
+
+// Valid indicates whether the value is a known member of the DashboardFilterResource enum.
+func (e DashboardFilterResource) Valid() bool {
+	switch e {
+	case Batches:
+		return true
+	case Claims:
+		return true
+	case Reimbursements:
+		return true
+	case Settlements:
+		return true
+	case WorkItems:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DiagnosisType.
 const (
 	PRIMARY   DiagnosisType = "PRIMARY"
@@ -720,13 +798,13 @@ func (e DocumentClassification) Valid() bool {
 
 // Defines values for DocumentDownloadMethod.
 const (
-	GET DocumentDownloadMethod = "GET"
+	DocumentDownloadMethodGET DocumentDownloadMethod = "GET"
 )
 
 // Valid indicates whether the value is a known member of the DocumentDownloadMethod enum.
 func (e DocumentDownloadMethod) Valid() bool {
 	switch e {
-	case GET:
+	case DocumentDownloadMethodGET:
 		return true
 	default:
 		return false
@@ -1258,6 +1336,93 @@ func (e EntitlementReservationStatus) Valid() bool {
 	case EntitlementReservationStatusPARTIALLYCONSUMED:
 		return true
 	case EntitlementReservationStatusRELEASED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ExportDownloadMethod.
+const (
+	ExportDownloadMethodGET ExportDownloadMethod = "GET"
+)
+
+// Valid indicates whether the value is a known member of the ExportDownloadMethod enum.
+func (e ExportDownloadMethod) Valid() bool {
+	switch e {
+	case ExportDownloadMethodGET:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ExportFormat.
+const (
+	CSV  ExportFormat = "CSV"
+	XLSX ExportFormat = "XLSX"
+)
+
+// Valid indicates whether the value is a known member of the ExportFormat enum.
+func (e ExportFormat) Valid() bool {
+	switch e {
+	case CSV:
+		return true
+	case XLSX:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ExportKind.
+const (
+	BATCH             ExportKind = "BATCH"
+	CLAIMS            ExportKind = "CLAIMS"
+	PROVIDERSTATEMENT ExportKind = "PROVIDER_STATEMENT"
+	RECONCILIATION    ExportKind = "RECONCILIATION"
+	SETTLEMENTS       ExportKind = "SETTLEMENTS"
+)
+
+// Valid indicates whether the value is a known member of the ExportKind enum.
+func (e ExportKind) Valid() bool {
+	switch e {
+	case BATCH:
+		return true
+	case CLAIMS:
+		return true
+	case PROVIDERSTATEMENT:
+		return true
+	case RECONCILIATION:
+		return true
+	case SETTLEMENTS:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ExportStatus.
+const (
+	ExportStatusEXPIRED ExportStatus = "EXPIRED"
+	ExportStatusFAILED  ExportStatus = "FAILED"
+	ExportStatusQUEUED  ExportStatus = "QUEUED"
+	ExportStatusREADY   ExportStatus = "READY"
+	ExportStatusRUNNING ExportStatus = "RUNNING"
+)
+
+// Valid indicates whether the value is a known member of the ExportStatus enum.
+func (e ExportStatus) Valid() bool {
+	switch e {
+	case ExportStatusEXPIRED:
+		return true
+	case ExportStatusFAILED:
+		return true
+	case ExportStatusQUEUED:
+		return true
+	case ExportStatusREADY:
+		return true
+	case ExportStatusRUNNING:
 		return true
 	default:
 		return false
@@ -3037,6 +3202,66 @@ func (e QuoteUnavailableReason) Valid() bool {
 	case PRICEFORMULAUNKNOWN:
 		return true
 	case PRICENOTFOUND:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ReconciliationDifferenceKind.
+const (
+	ERPMISMATCH     ReconciliationDifferenceKind = "ERP_MISMATCH"
+	PAIDSUMMISMATCH ReconciliationDifferenceKind = "PAID_SUM_MISMATCH"
+	UNDERPAID       ReconciliationDifferenceKind = "UNDERPAID"
+)
+
+// Valid indicates whether the value is a known member of the ReconciliationDifferenceKind enum.
+func (e ReconciliationDifferenceKind) Valid() bool {
+	switch e {
+	case ERPMISMATCH:
+		return true
+	case PAIDSUMMISMATCH:
+		return true
+	case UNDERPAID:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ReconciliationRunStatus.
+const (
+	ReconciliationRunStatusBALANCED    ReconciliationRunStatus = "BALANCED"
+	ReconciliationRunStatusDIFFERENCES ReconciliationRunStatus = "DIFFERENCES"
+	ReconciliationRunStatusFAILED      ReconciliationRunStatus = "FAILED"
+)
+
+// Valid indicates whether the value is a known member of the ReconciliationRunStatus enum.
+func (e ReconciliationRunStatus) Valid() bool {
+	switch e {
+	case ReconciliationRunStatusBALANCED:
+		return true
+	case ReconciliationRunStatusDIFFERENCES:
+		return true
+	case ReconciliationRunStatusFAILED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ReconciliationScope.
+const (
+	ReconciliationScopePROVIDER ReconciliationScope = "PROVIDER"
+	ReconciliationScopeTENANT   ReconciliationScope = "TENANT"
+)
+
+// Valid indicates whether the value is a known member of the ReconciliationScope enum.
+func (e ReconciliationScope) Valid() bool {
+	switch e {
+	case ReconciliationScopePROVIDER:
+		return true
+	case ReconciliationScopeTENANT:
 		return true
 	default:
 		return false
@@ -6773,6 +6998,30 @@ type CreateEnrollmentRequest struct {
 // CreateEnrollmentRequestStatus defines model for CreateEnrollmentRequest.Status.
 type CreateEnrollmentRequestStatus string
 
+// CreateExport defines model for CreateExport.
+type CreateExport struct {
+	CurrencyCode *string `json:"currencyCode,omitempty"`
+
+	// Format **Only CSV is produced.** XLSX is a value of the column so that the schema does not have to
+	// change when a spreadsheet writer lands; asking for it today is refused with a field error
+	// rather than answered with a CSV under another name. A CSV carries a UTF-8 byte order mark,
+	// because the people who open these files open them in Excel.
+	Format *ExportFormat `json:"format,omitempty"`
+
+	// Kind `CLAIMS` is the one whose rows carry prose — claim line descriptions — and the one that
+	// needs `report.export.sensitive`.
+	Kind ExportKind `json:"kind"`
+
+	// Parameters The remaining filters. **No identifier may appear here** — not as a value and not as a
+	// key name. A provider, a period and a currency have fields of their own above.
+	Parameters *map[string]interface{} `json:"parameters,omitempty"`
+	PeriodFrom *openapi_types.Date     `json:"periodFrom,omitempty"`
+	PeriodTo   *openapi_types.Date     `json:"periodTo,omitempty"`
+
+	// ProviderOrganizationId Required for PROVIDER_STATEMENT.
+	ProviderOrganizationId *openapi_types.UUID `json:"providerOrganizationId,omitempty"`
+}
+
 // CreateFulfilment defines model for CreateFulfilment.
 type CreateFulfilment struct {
 	AuthorizationId   openapi_types.UUID    `json:"authorizationId"`
@@ -7306,6 +7555,107 @@ type CreateWorkQueue struct {
 	EscalationQueueId *openapi_types.UUID `json:"escalationQueueId,omitempty"`
 	Name              string              `json:"name"`
 	SlaMinutes        *int                `json:"slaMinutes,omitempty"`
+}
+
+// DashboardAgingFigure defines model for DashboardAgingFigure.
+type DashboardAgingFigure struct {
+	ApprovedTotal string                     `json:"approvedTotal"`
+	Bucket        DashboardAgingFigureBucket `json:"bucket"`
+	ClaimCount    int                        `json:"claimCount"`
+
+	// Filter The filter that reproduces the figure beside it. A count a person cannot click through to a
+	// list of is a number they have to take on trust — and the first time it disagrees with the
+	// list they will stop trusting the whole screen.
+	Filter DashboardFilter `json:"filter"`
+}
+
+// DashboardAgingFigureBucket defines model for DashboardAgingFigure.Bucket.
+type DashboardAgingFigureBucket string
+
+// DashboardBatchFigure defines model for DashboardBatchFigure.
+type DashboardBatchFigure struct {
+	BatchCount int `json:"batchCount"`
+
+	// Filter The filter that reproduces the figure beside it. A count a person cannot click through to a
+	// list of is a number they have to take on trust — and the first time it disagrees with the
+	// list they will stop trusting the whole screen.
+	Filter DashboardFilter `json:"filter"`
+
+	// OldestSlaDueAt The earliest SLA deadline of an open item in the icmal review queue. It is the work
+	// queue's own clock, so "past SLA" is the same number here and in the worklist.
+	OldestSlaDueAt    *time.Time `json:"oldestSlaDueAt,omitempty"`
+	OldestSubmittedAt *time.Time `json:"oldestSubmittedAt,omitempty"`
+	SubmittedTotal    string     `json:"submittedTotal"`
+}
+
+// DashboardClaimStatusFigure defines model for DashboardClaimStatusFigure.
+type DashboardClaimStatusFigure struct {
+	ApprovedTotal string `json:"approvedTotal"`
+	ClaimCount    int    `json:"claimCount"`
+
+	// Filter The filter that reproduces the figure beside it. A count a person cannot click through to a
+	// list of is a number they have to take on trust — and the first time it disagrees with the
+	// list they will stop trusting the whole screen.
+	Filter DashboardFilter `json:"filter"`
+	Status string          `json:"status"`
+}
+
+// DashboardFilter The filter that reproduces the figure beside it. A count a person cannot click through to a
+// list of is a number they have to take on trust — and the first time it disagrees with the
+// list they will stop trusting the whole screen.
+type DashboardFilter struct {
+	AgingBucket *DashboardFilterAgingBucket `json:"agingBucket,omitempty"`
+	DueBefore   *openapi_types.Date         `json:"dueBefore,omitempty"`
+	DueFrom     *openapi_types.Date         `json:"dueFrom,omitempty"`
+	DueTo       *openapi_types.Date         `json:"dueTo,omitempty"`
+	OverdueAt   *time.Time                  `json:"overdueAt,omitempty"`
+	Resource    DashboardFilterResource     `json:"resource"`
+	Statuses    *[]string                   `json:"statuses,omitempty"`
+}
+
+// DashboardFilterAgingBucket defines model for DashboardFilter.AgingBucket.
+type DashboardFilterAgingBucket string
+
+// DashboardFilterResource defines model for DashboardFilter.Resource.
+type DashboardFilterResource string
+
+// DashboardReimbursementFigure defines model for DashboardReimbursementFigure.
+type DashboardReimbursementFigure struct {
+	// Filter The filter that reproduces the figure beside it. A count a person cannot click through to a
+	// list of is a number they have to take on trust — and the first time it disagrees with the
+	// list they will stop trusting the whole screen.
+	Filter             DashboardFilter `json:"filter"`
+	OldestSubmittedAt  *time.Time      `json:"oldestSubmittedAt,omitempty"`
+	ReimbursementCount int             `json:"reimbursementCount"`
+	RequestedTotal     string          `json:"requestedTotal"`
+}
+
+// DashboardSettlementFigure defines model for DashboardSettlementFigure.
+type DashboardSettlementFigure struct {
+	DueSoonCount int `json:"dueSoonCount"`
+
+	// DueSoonFilter The filter that reproduces the figure beside it. A count a person cannot click through to a
+	// list of is a number they have to take on trust — and the first time it disagrees with the
+	// list they will stop trusting the whole screen.
+	DueSoonFilter DashboardFilter `json:"dueSoonFilter"`
+	DueSoonTotal  string          `json:"dueSoonTotal"`
+	OverdueCount  int             `json:"overdueCount"`
+
+	// OverdueFilter The filter that reproduces the figure beside it. A count a person cannot click through to a
+	// list of is a number they have to take on trust — and the first time it disagrees with the
+	// list they will stop trusting the whole screen.
+	OverdueFilter DashboardFilter `json:"overdueFilter"`
+	OverdueTotal  string          `json:"overdueTotal"`
+}
+
+// DashboardWorkItemFigure defines model for DashboardWorkItemFigure.
+type DashboardWorkItemFigure struct {
+	// Filter The filter that reproduces the figure beside it. A count a person cannot click through to a
+	// list of is a number they have to take on trust — and the first time it disagrees with the
+	// list they will stop trusting the whole screen.
+	Filter      DashboardFilter `json:"filter"`
+	ItemCount   int             `json:"itemCount"`
+	OldestDueAt *time.Time      `json:"oldestDueAt,omitempty"`
 }
 
 // DecideClaimLines defines model for DecideClaimLines.
@@ -7871,6 +8221,96 @@ type EntitlementReservationReferenceType string
 
 // EntitlementReservationStatus defines model for EntitlementReservation.Status.
 type EntitlementReservationStatus string
+
+// Export defines model for Export.
+type Export struct {
+	CreatedAt    time.Time `json:"createdAt"`
+	CurrencyCode *string   `json:"currencyCode,omitempty"`
+
+	// DocumentId The file, once the worker has written it. It is a document like any other.
+	DocumentId    *openapi_types.UUID `json:"documentId,omitempty"`
+	DownloadCount int                 `json:"downloadCount"`
+
+	// ExpiresAt The tenant's `report.export_ttl_hours` applied when the export was asked for. It is a
+	// stored moment rather than a duration read at download time, so the answer to "may I
+	// still open this" does not change because somebody edited a setting this afternoon.
+	ExpiresAt   time.Time `json:"expiresAt"`
+	FailureCode *string   `json:"failureCode,omitempty"`
+
+	// Format **Only CSV is produced.** XLSX is a value of the column so that the schema does not have to
+	// change when a spreadsheet writer lands; asking for it today is refused with a field error
+	// rather than answered with a CSV under another name. A CSV carries a UTF-8 byte order mark,
+	// because the people who open these files open them in Excel.
+	Format ExportFormat       `json:"format"`
+	Id     openapi_types.UUID `json:"id"`
+
+	// Kind `CLAIMS` is the one whose rows carry prose — claim line descriptions — and the one that
+	// needs `report.export.sensitive`.
+	Kind ExportKind `json:"kind"`
+
+	// Parameters The filters as they were given, **with no identifier in them**. The database refuses a
+	// uuid or a key called `...Id` here; the scope an export covers is in the typed fields
+	// below.
+	Parameters             map[string]interface{} `json:"parameters"`
+	PeriodFrom             *openapi_types.Date    `json:"periodFrom,omitempty"`
+	PeriodTo               *openapi_types.Date    `json:"periodTo,omitempty"`
+	ProviderOrganizationId *openapi_types.UUID    `json:"providerOrganizationId,omitempty"`
+	RequestedAt            time.Time              `json:"requestedAt"`
+	RequestedBy            openapi_types.UUID     `json:"requestedBy"`
+	RowCount               int                    `json:"rowCount"`
+	RowVersion             int64                  `json:"rowVersion"`
+	Status                 ExportStatus           `json:"status"`
+
+	// Watermark The requester, the tenant, the moment and this export's id, in one line — the string
+	// stamped on the header **and on every row** of the file.
+	Watermark string `json:"watermark"`
+}
+
+// ExportDownload defines model for ExportDownload.
+type ExportDownload struct {
+	// DownloadCount How many times this export has now been downloaded, counting this one.
+	DownloadCount int `json:"downloadCount"`
+
+	// ExpiresAt When the link stops working, which is sooner than when the export expires.
+	ExpiresAt time.Time            `json:"expiresAt"`
+	Method    ExportDownloadMethod `json:"method"`
+
+	// Url Where to GET the file. It is a bearer credential with a short life; it is never logged
+	// and never shared.
+	Url string `json:"url"`
+
+	// Watermark The string stamped on the header and on every row of the file being fetched.
+	Watermark string `json:"watermark"`
+}
+
+// ExportDownloadMethod defines model for ExportDownload.Method.
+type ExportDownloadMethod string
+
+// ExportDownloadRequest Why the file is being opened. Both fields travel into the access event: "who took this out"
+// without "why" is not an answer a data protection review can use.
+type ExportDownloadRequest struct {
+	PurposeCode *string `json:"purposeCode,omitempty"`
+	ReasonText  *string `json:"reasonText,omitempty"`
+}
+
+// ExportFormat **Only CSV is produced.** XLSX is a value of the column so that the schema does not have to
+// change when a spreadsheet writer lands; asking for it today is refused with a field error
+// rather than answered with a CSV under another name. A CSV carries a UTF-8 byte order mark,
+// because the people who open these files open them in Excel.
+type ExportFormat string
+
+// ExportKind `CLAIMS` is the one whose rows carry prose — claim line descriptions — and the one that
+// needs `report.export.sensitive`.
+type ExportKind string
+
+// ExportPage defines model for ExportPage.
+type ExportPage struct {
+	Items      []Export `json:"items"`
+	NextCursor *string  `json:"nextCursor"`
+}
+
+// ExportStatus defines model for ExportStatus.
+type ExportStatus string
 
 // ExtendAuthorization defines model for ExtendAuthorization.
 type ExtendAuthorization struct {
@@ -9076,6 +9516,20 @@ type NotificationTemplatePage struct {
 // when a newer version replaces it; it never comes back.
 type NotificationTemplateStatus string
 
+// OperationsDashboard defines model for OperationsDashboard.
+type OperationsDashboard struct {
+	// AsOf The moment every figure was computed against. The aging buckets and the "due this week"
+	// window are both measured from it, so a page read at midnight and one read at noon can
+	// be told apart.
+	AsOf                  time.Time                    `json:"asOf"`
+	BatchesAwaitingReview DashboardBatchFigure         `json:"batchesAwaitingReview"`
+	ClaimAging            []DashboardAgingFigure       `json:"claimAging"`
+	ClaimsByStatus        []DashboardClaimStatusFigure `json:"claimsByStatus"`
+	Reimbursements        DashboardReimbursementFigure `json:"reimbursements"`
+	Settlements           DashboardSettlementFigure    `json:"settlements"`
+	WorkItemsPastSla      DashboardWorkItemFigure      `json:"workItemsPastSla"`
+}
+
 // Organization Tenant relationship with a global organization. `id` identifies the relationship
 // (tenant_organization); `organizationId` identifies the shared legal entity.
 type Organization struct {
@@ -10203,6 +10657,21 @@ type ProviderSearchResult struct {
 // when the coverage comes from a category above it in the tree.
 type ProviderSearchResultMatchedVia string
 
+// ProviderStatement defines model for ProviderStatement.
+type ProviderStatement struct {
+	CurrencyCode           string                `json:"currencyCode"`
+	Invoices               []StatementInvoice    `json:"invoices"`
+	PeriodFrom             openapi_types.Date    `json:"periodFrom"`
+	PeriodTo               openapi_types.Date    `json:"periodTo"`
+	ProviderName           string                `json:"providerName"`
+	ProviderOrganizationId openapi_types.UUID    `json:"providerOrganizationId"`
+	Settlements            []StatementSettlement `json:"settlements"`
+
+	// Totals Every figure summed by the server in one query, in exact decimals. None of these may be
+	// recomputed from `invoices` or `settlements`: those lists are capped and these are not.
+	Totals StatementTotals `json:"totals"`
+}
+
 // ProviderStatus Lifecycle of a provider profile; only ACTIVE providers are offered by the search.
 type ProviderStatus string
 
@@ -10316,6 +10785,89 @@ type ReassignWorkItem struct {
 	ReasonCode      *string            `json:"reasonCode,omitempty"`
 	ReasonText      *string            `json:"reasonText,omitempty"`
 }
+
+// ReconciliationDifference One settlement the run disagreed with. It carries the reference a person finds on their own
+// screen and **no identifier**: the run's own column is read by somebody looking for the row,
+// and a uuid is not how they will find it.
+type ReconciliationDifference struct {
+	// Actual What was paid, in exact decimals.
+	Actual     string             `json:"actual"`
+	Difference string             `json:"difference"`
+	DueDate    openapi_types.Date `json:"dueDate"`
+
+	// Expected What was payable, in exact decimals.
+	Expected string `json:"expected"`
+
+	// Kind `UNDERPAID` is the ordinary one: the due date has passed and the settlement is short.
+	// `PAID_SUM_MISMATCH` is KAPSORA disagreeing with itself — the settlement's stored paid
+	// amount is not the sum of its live payment records — and should never appear.
+	// `ERP_MISMATCH` is M9's and is never written today.
+	Kind      ReconciliationDifferenceKind `json:"kind"`
+	Reference string                       `json:"reference"`
+	Status    string                       `json:"status"`
+}
+
+// ReconciliationDifferenceKind `UNDERPAID` is the ordinary one: the due date has passed and the settlement is short.
+// `PAID_SUM_MISMATCH` is KAPSORA disagreeing with itself — the settlement's stored paid
+// amount is not the sum of its live payment records — and should never appear.
+// `ERP_MISMATCH` is M9's and is never written today.
+type ReconciliationDifferenceKind string
+
+// ReconciliationRun An immutable record of what was compared and what differed. The row is append-only in the
+// database: a second look at the same day is run number two and both stay.
+type ReconciliationRun struct {
+	ApprovedTotal string    `json:"approvedTotal"`
+	CreatedAt     time.Time `json:"createdAt"`
+	CurrencyCode  string    `json:"currencyCode"`
+	CutTotal      string    `json:"cutTotal"`
+
+	// Difference `settledTotal` minus `erpTotal` when there is one and minus `paidTotal` when there is
+	// not. It is a database CHECK rather than an arithmetic the job is trusted with.
+	Difference      string                     `json:"difference"`
+	DifferenceCount int                        `json:"differenceCount"`
+	Differences     []ReconciliationDifference `json:"differences"`
+
+	// ErpTotal What the accounting system said it posted. Null until M9.
+	ErpTotal      *string            `json:"erpTotal,omitempty"`
+	FailureCode   *string            `json:"failureCode,omitempty"`
+	Id            openapi_types.UUID `json:"id"`
+	InvoicedTotal string             `json:"invoicedTotal"`
+
+	// OpenTotal `settledTotal - paidTotal`, subtracted by the database and checked by a constraint.
+	OpenTotal    string             `json:"openTotal"`
+	PaidTotal    string             `json:"paidTotal"`
+	PeriodFrom   openapi_types.Date `json:"periodFrom"`
+	PeriodTo     openapi_types.Date `json:"periodTo"`
+	ProviderName *string            `json:"providerName,omitempty"`
+
+	// ProviderOrganizationId Set on a PROVIDER run and null on a TENANT one, which is a database CHECK.
+	ProviderOrganizationId *openapi_types.UUID `json:"providerOrganizationId,omitempty"`
+	RanAt                  time.Time           `json:"ranAt"`
+	RejectedTotal          string              `json:"rejectedTotal"`
+	ReturnedTotal          string              `json:"returnedTotal"`
+	RunNo                  int                 `json:"runNo"`
+
+	// Scope TENANT is the payer's own daily total; PROVIDER is one provider's. Both exist because they
+	// answer different questions: the first is "did yesterday balance", the second is "which
+	// provider is the reason it did not".
+	Scope        ReconciliationScope     `json:"scope"`
+	SettledTotal string                  `json:"settledTotal"`
+	Status       ReconciliationRunStatus `json:"status"`
+}
+
+// ReconciliationRunPage defines model for ReconciliationRunPage.
+type ReconciliationRunPage struct {
+	Items      []ReconciliationRun `json:"items"`
+	NextCursor *string             `json:"nextCursor"`
+}
+
+// ReconciliationRunStatus defines model for ReconciliationRunStatus.
+type ReconciliationRunStatus string
+
+// ReconciliationScope TENANT is the payer's own daily total; PROVIDER is one provider's. Both exist because they
+// answer different questions: the first is "did yesterday balance", the second is "which
+// provider is the reason it did not".
+type ReconciliationScope string
 
 // RecordReimbursementPayment The reference the bank gave back. KAPSORA moved nothing; this is the note that it was
 // moved.
@@ -11401,6 +11953,71 @@ type SponsorMembership struct {
 // SponsorMembershipStatus defines model for SponsorMembership.Status.
 type SponsorMembershipStatus string
 
+// StatementInvoice defines model for StatementInvoice.
+type StatementInvoice struct {
+	ApprovedAmount       string              `json:"approvedAmount"`
+	BatchDecision        *string             `json:"batchDecision,omitempty"`
+	BatchId              *openapi_types.UUID `json:"batchId,omitempty"`
+	BatchReference       *string             `json:"batchReference,omitempty"`
+	BatchStatus          *string             `json:"batchStatus,omitempty"`
+	CurrencyCode         string              `json:"currencyCode"`
+	DueDate              *openapi_types.Date `json:"dueDate,omitempty"`
+	Id                   openapi_types.UUID  `json:"id"`
+	InvoiceDate          openapi_types.Date  `json:"invoiceDate"`
+	InvoiceNumber        string              `json:"invoiceNumber"`
+	PayableAmount        string              `json:"payableAmount"`
+	SettlementId         *openapi_types.UUID `json:"settlementId,omitempty"`
+	SettlementPaidAmount string              `json:"settlementPaidAmount"`
+	SettlementReference  *string             `json:"settlementReference,omitempty"`
+
+	// Status The invoice lifecycle of v1.2 10.9. WP-I7-02 owns DRAFT, SUBMITTED and CANCELLED; the
+	// reviewer's RETURNED, APPROVED, PARTIALLY_APPROVED and REJECTED are WP-I7-03's,
+	// IN_BATCH is the icmal's and SETTLED is the settlement's. They are declared here
+	// because the lifecycle is one list and a list with a hole in it is a list nobody can
+	// read.
+	Status    InvoiceStatus `json:"status"`
+	TaxAmount string        `json:"taxAmount"`
+}
+
+// StatementSettlement defines model for StatementSettlement.
+type StatementSettlement struct {
+	ApprovedAmount string             `json:"approvedAmount"`
+	BatchId        openapi_types.UUID `json:"batchId"`
+	BatchReference string             `json:"batchReference"`
+	CurrencyCode   string             `json:"currencyCode"`
+	DueDate        openapi_types.Date `json:"dueDate"`
+	Id             openapi_types.UUID `json:"id"`
+	LastPaidAt     *time.Time         `json:"lastPaidAt,omitempty"`
+	OpenAmount     string             `json:"openAmount"`
+	PaidAmount     string             `json:"paidAmount"`
+	PayableAmount  string             `json:"payableAmount"`
+	PaymentCount   int                `json:"paymentCount"`
+	Reference      string             `json:"reference"`
+
+	// Status Where the settlement is. POSTED is M9's accounting posting and RECONCILED is
+	// WP-I7-05's; both are in the list because a filter that could not name them would be a
+	// filter that hid rows.
+	Status         SettlementStatus `json:"status"`
+	WithheldAmount string           `json:"withheldAmount"`
+}
+
+// StatementTotals Every figure summed by the server in one query, in exact decimals. None of these may be
+// recomputed from `invoices` or `settlements`: those lists are capped and these are not.
+type StatementTotals struct {
+	ApprovedTotal string `json:"approvedTotal"`
+	CutTotal      string `json:"cutTotal"`
+	InvoiceCount  int    `json:"invoiceCount"`
+	InvoicedTotal string `json:"invoicedTotal"`
+
+	// OpenBalance What is still owed: settled minus paid over the settlements due in the period.
+	OpenBalance     string `json:"openBalance"`
+	PaidTotal       string `json:"paidTotal"`
+	RejectedTotal   string `json:"rejectedTotal"`
+	ReturnedTotal   string `json:"returnedTotal"`
+	SettledTotal    string `json:"settledTotal"`
+	SettlementCount int    `json:"settlementCount"`
+}
+
 // StayExtension defines model for StayExtension.
 type StayExtension struct {
 	AdditionalDays int `json:"additionalDays"`
@@ -11972,6 +12589,9 @@ type EnrollmentId = openapi_types.UUID
 // EvaluationId defines model for EvaluationId.
 type EvaluationId = openapi_types.UUID
 
+// ExportId defines model for ExportId.
+type ExportId = openapi_types.UUID
+
 // FulfilmentId defines model for FulfilmentId.
 type FulfilmentId = openapi_types.UUID
 
@@ -12064,6 +12684,9 @@ type RuleSetId = openapi_types.UUID
 
 // RuleSetVersionId defines model for RuleSetVersionId.
 type RuleSetVersionId = openapi_types.UUID
+
+// RunId defines model for RunId.
+type RunId = openapi_types.UUID
 
 // ServiceCategoryId defines model for ServiceCategoryId.
 type ServiceCategoryId = openapi_types.UUID
@@ -13469,6 +14092,46 @@ type RejectEntitlementAdjustmentParams struct {
 	XCSRFToken *CsrfHeader `json:"X-CSRF-Token,omitempty"`
 }
 
+// ListExportsParams defines parameters for ListExports.
+type ListExportsParams struct {
+	Kind   *ExportKind   `form:"kind,omitempty" json:"kind,omitempty"`
+	Status *ExportStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// Mine Defaults to true.
+	Mine *bool `form:"mine,omitempty" json:"mine,omitempty"`
+
+	// Cursor Opaque cursor from the previous response.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// CreateExportParams defines parameters for CreateExport.
+type CreateExportParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// GetExportParams defines parameters for GetExport.
+type GetExportParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// DownloadExportParams defines parameters for DownloadExport.
+type DownloadExportParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Optional on query-style POSTs; honoured when present.
+	IdempotencyKey *IdempotencyKeyOptional `json:"Idempotency-Key,omitempty"`
+}
+
 // ListFulfilmentsParams defines parameters for ListFulfilments.
 type ListFulfilmentsParams struct {
 	// Cursor Opaque cursor from the previous response.
@@ -14512,6 +15175,12 @@ type PublishNotificationTemplateParams struct {
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
+// GetOperationsDashboardParams defines parameters for GetOperationsDashboard.
+type GetOperationsDashboardParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
 // ListOrganizationsParams defines parameters for ListOrganizations.
 type ListOrganizationsParams struct {
 	// Cursor Opaque cursor from the previous response.
@@ -15155,6 +15824,22 @@ type CreatePractitionerParams struct {
 	XCSRFToken *CsrfHeader `json:"X-CSRF-Token,omitempty"`
 }
 
+// GetProviderStatementParams defines parameters for GetProviderStatement.
+type GetProviderStatementParams struct {
+	// PeriodFrom Inclusive.
+	PeriodFrom openapi_types.Date `form:"periodFrom" json:"periodFrom"`
+
+	// PeriodTo Inclusive.
+	PeriodTo openapi_types.Date `form:"periodTo" json:"periodTo"`
+
+	// CurrencyCode Defaults to TRY. A statement is per currency: two currencies added together is not a
+	// total.
+	CurrencyCode *string `form:"currencyCode,omitempty" json:"currencyCode,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
 // SuspendProviderParams defines parameters for SuspendProvider.
 type SuspendProviderParams struct {
 	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
@@ -15177,6 +15862,32 @@ type TerminateProviderParams struct {
 
 	// XCSRFToken Required when the request is authenticated with the BFF session cookie.
 	XCSRFToken *CsrfHeader `json:"X-CSRF-Token,omitempty"`
+}
+
+// ListReconciliationRunsParams defines parameters for ListReconciliationRuns.
+type ListReconciliationRunsParams struct {
+	Scope                  *ReconciliationScope     `form:"scope,omitempty" json:"scope,omitempty"`
+	Status                 *ReconciliationRunStatus `form:"status,omitempty" json:"status,omitempty"`
+	ProviderOrganizationId *openapi_types.UUID      `form:"providerOrganizationId,omitempty" json:"providerOrganizationId,omitempty"`
+
+	// PeriodFrom Runs whose period starts on or after this day.
+	PeriodFrom *openapi_types.Date `form:"periodFrom,omitempty" json:"periodFrom,omitempty"`
+
+	// PeriodTo Runs whose period ends on or before this day.
+	PeriodTo *openapi_types.Date `form:"periodTo,omitempty" json:"periodTo,omitempty"`
+
+	// Cursor Opaque cursor from the previous response.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// GetReconciliationRunParams defines parameters for GetReconciliationRun.
+type GetReconciliationRunParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
 }
 
 // ListReimbursementsParams defines parameters for ListReimbursements.
@@ -16105,6 +16816,12 @@ type ApproveEntitlementAdjustmentJSONRequestBody = ReviewComment
 // RejectEntitlementAdjustmentJSONRequestBody defines body for RejectEntitlementAdjustment for application/json ContentType.
 type RejectEntitlementAdjustmentJSONRequestBody = ReasonCommand
 
+// CreateExportJSONRequestBody defines body for CreateExport for application/json ContentType.
+type CreateExportJSONRequestBody = CreateExport
+
+// DownloadExportJSONRequestBody defines body for DownloadExport for application/json ContentType.
+type DownloadExportJSONRequestBody = ExportDownloadRequest
+
 // CreateFulfilmentJSONRequestBody defines body for CreateFulfilment for application/json ContentType.
 type CreateFulfilmentJSONRequestBody = CreateFulfilment
 
@@ -16892,6 +17609,18 @@ type ServerInterface interface {
 	// (POST /api/v1/entitlement-adjustments/{adjustmentId}/reject)
 	RejectEntitlementAdjustment(w http.ResponseWriter, r *http.Request, adjustmentId AdjustmentId, params RejectEntitlementAdjustmentParams)
 
+	// (GET /api/v1/exports)
+	ListExports(w http.ResponseWriter, r *http.Request, params ListExportsParams)
+
+	// (POST /api/v1/exports)
+	CreateExport(w http.ResponseWriter, r *http.Request, params CreateExportParams)
+
+	// (GET /api/v1/exports/{exportId})
+	GetExport(w http.ResponseWriter, r *http.Request, exportId ExportId, params GetExportParams)
+
+	// (POST /api/v1/exports/{exportId}/download)
+	DownloadExport(w http.ResponseWriter, r *http.Request, exportId ExportId, params DownloadExportParams)
+
 	// (GET /api/v1/fulfilments)
 	ListFulfilments(w http.ResponseWriter, r *http.Request, params ListFulfilmentsParams)
 
@@ -17068,6 +17797,9 @@ type ServerInterface interface {
 
 	// (POST /api/v1/notification-templates/{templateId}/publish)
 	PublishNotificationTemplate(w http.ResponseWriter, r *http.Request, templateId NotificationTemplateId, params PublishNotificationTemplateParams)
+
+	// (GET /api/v1/operations/dashboard)
+	GetOperationsDashboard(w http.ResponseWriter, r *http.Request, params GetOperationsDashboardParams)
 
 	// (GET /api/v1/organizations)
 	ListOrganizations(w http.ResponseWriter, r *http.Request, params ListOrganizationsParams)
@@ -17258,11 +17990,20 @@ type ServerInterface interface {
 	// (POST /api/v1/providers/{providerId}/practitioners)
 	CreatePractitioner(w http.ResponseWriter, r *http.Request, providerId ProviderId, params CreatePractitionerParams)
 
+	// (GET /api/v1/providers/{providerId}/statement)
+	GetProviderStatement(w http.ResponseWriter, r *http.Request, providerId ProviderId, params GetProviderStatementParams)
+
 	// (POST /api/v1/providers/{providerId}/suspend)
 	SuspendProvider(w http.ResponseWriter, r *http.Request, providerId ProviderId, params SuspendProviderParams)
 
 	// (POST /api/v1/providers/{providerId}/terminate)
 	TerminateProvider(w http.ResponseWriter, r *http.Request, providerId ProviderId, params TerminateProviderParams)
+
+	// (GET /api/v1/reconciliation-runs)
+	ListReconciliationRuns(w http.ResponseWriter, r *http.Request, params ListReconciliationRunsParams)
+
+	// (GET /api/v1/reconciliation-runs/{runId})
+	GetReconciliationRun(w http.ResponseWriter, r *http.Request, runId RunId, params GetReconciliationRunParams)
 
 	// (GET /api/v1/reimbursements)
 	ListReimbursements(w http.ResponseWriter, r *http.Request, params ListReimbursementsParams)
@@ -18020,6 +18761,26 @@ func (_ Unimplemented) RejectEntitlementAdjustment(w http.ResponseWriter, r *htt
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// (GET /api/v1/exports)
+func (_ Unimplemented) ListExports(w http.ResponseWriter, r *http.Request, params ListExportsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/exports)
+func (_ Unimplemented) CreateExport(w http.ResponseWriter, r *http.Request, params CreateExportParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/exports/{exportId})
+func (_ Unimplemented) GetExport(w http.ResponseWriter, r *http.Request, exportId ExportId, params GetExportParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/exports/{exportId}/download)
+func (_ Unimplemented) DownloadExport(w http.ResponseWriter, r *http.Request, exportId ExportId, params DownloadExportParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // (GET /api/v1/fulfilments)
 func (_ Unimplemented) ListFulfilments(w http.ResponseWriter, r *http.Request, params ListFulfilmentsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -18312,6 +19073,11 @@ func (_ Unimplemented) GetNotificationTemplate(w http.ResponseWriter, r *http.Re
 
 // (POST /api/v1/notification-templates/{templateId}/publish)
 func (_ Unimplemented) PublishNotificationTemplate(w http.ResponseWriter, r *http.Request, templateId NotificationTemplateId, params PublishNotificationTemplateParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/operations/dashboard)
+func (_ Unimplemented) GetOperationsDashboard(w http.ResponseWriter, r *http.Request, params GetOperationsDashboardParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -18630,6 +19396,11 @@ func (_ Unimplemented) CreatePractitioner(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// (GET /api/v1/providers/{providerId}/statement)
+func (_ Unimplemented) GetProviderStatement(w http.ResponseWriter, r *http.Request, providerId ProviderId, params GetProviderStatementParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // (POST /api/v1/providers/{providerId}/suspend)
 func (_ Unimplemented) SuspendProvider(w http.ResponseWriter, r *http.Request, providerId ProviderId, params SuspendProviderParams) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -18637,6 +19408,16 @@ func (_ Unimplemented) SuspendProvider(w http.ResponseWriter, r *http.Request, p
 
 // (POST /api/v1/providers/{providerId}/terminate)
 func (_ Unimplemented) TerminateProvider(w http.ResponseWriter, r *http.Request, providerId ProviderId, params TerminateProviderParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/reconciliation-runs)
+func (_ Unimplemented) ListReconciliationRuns(w http.ResponseWriter, r *http.Request, params ListReconciliationRunsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/reconciliation-runs/{runId})
+func (_ Unimplemented) GetReconciliationRun(w http.ResponseWriter, r *http.Request, runId RunId, params GetReconciliationRunParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -28073,6 +28854,311 @@ func (siw *ServerInterfaceWrapper) RejectEntitlementAdjustment(w http.ResponseWr
 	handler.ServeHTTP(w, r)
 }
 
+// ListExports operation middleware
+func (siw *ServerInterfaceWrapper) ListExports(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListExportsParams
+
+	// ------------- Optional query parameter "kind" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "kind", r.URL.Query(), &params.Kind, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "kind"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "kind", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "mine" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "mine", r.URL.Query(), &params.Mine, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "mine"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "mine", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListExports(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateExport operation middleware
+func (siw *ServerInterfaceWrapper) CreateExport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateExportParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateExport(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetExport operation middleware
+func (siw *ServerInterfaceWrapper) GetExport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "exportId" -------------
+	var exportId ExportId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "exportId", chi.URLParam(r, "exportId"), &exportId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "exportId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetExportParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetExport(w, r, exportId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DownloadExport operation middleware
+func (siw *ServerInterfaceWrapper) DownloadExport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "exportId" -------------
+	var exportId ExportId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "exportId", chi.URLParam(r, "exportId"), &exportId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "exportId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DownloadExportParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKeyOptional
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DownloadExport(w, r, exportId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListFulfilments operation middleware
 func (siw *ServerInterfaceWrapper) ListFulfilments(w http.ResponseWriter, r *http.Request) {
 
@@ -33932,6 +35018,51 @@ func (siw *ServerInterfaceWrapper) PublishNotificationTemplate(w http.ResponseWr
 	handler.ServeHTTP(w, r)
 }
 
+// GetOperationsDashboard operation middleware
+func (siw *ServerInterfaceWrapper) GetOperationsDashboard(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetOperationsDashboardParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetOperationsDashboard(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListOrganizations operation middleware
 func (siw *ServerInterfaceWrapper) ListOrganizations(w http.ResponseWriter, r *http.Request) {
 
@@ -38795,6 +39926,99 @@ func (siw *ServerInterfaceWrapper) CreatePractitioner(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// GetProviderStatement operation middleware
+func (siw *ServerInterfaceWrapper) GetProviderStatement(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "providerId" -------------
+	var providerId ProviderId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "providerId", chi.URLParam(r, "providerId"), &providerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "providerId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetProviderStatementParams
+
+	// ------------- Required query parameter "periodFrom" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "periodFrom", r.URL.Query(), &params.PeriodFrom, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "periodFrom"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "periodFrom", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "periodTo" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "periodTo", r.URL.Query(), &params.PeriodTo, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "periodTo"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "periodTo", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "currencyCode" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "currencyCode", r.URL.Query(), &params.CurrencyCode, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "currencyCode"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "currencyCode", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProviderStatement(w, r, providerId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // SuspendProvider operation middleware
 func (siw *ServerInterfaceWrapper) SuspendProvider(w http.ResponseWriter, r *http.Request) {
 
@@ -38978,6 +40202,196 @@ func (siw *ServerInterfaceWrapper) TerminateProvider(w http.ResponseWriter, r *h
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.TerminateProvider(w, r, providerId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListReconciliationRuns operation middleware
+func (siw *ServerInterfaceWrapper) ListReconciliationRuns(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListReconciliationRunsParams
+
+	// ------------- Optional query parameter "scope" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "scope", r.URL.Query(), &params.Scope, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "scope"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "scope", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "providerOrganizationId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "providerOrganizationId", r.URL.Query(), &params.ProviderOrganizationId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "providerOrganizationId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "providerOrganizationId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "periodFrom" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "periodFrom", r.URL.Query(), &params.PeriodFrom, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "periodFrom"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "periodFrom", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "periodTo" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "periodTo", r.URL.Query(), &params.PeriodTo, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "periodTo"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "periodTo", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListReconciliationRuns(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetReconciliationRun operation middleware
+func (siw *ServerInterfaceWrapper) GetReconciliationRun(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "runId" -------------
+	var runId RunId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "runId", chi.URLParam(r, "runId"), &runId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "runId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetReconciliationRunParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetReconciliationRun(w, r, runId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -45687,6 +47101,30 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/me/reimbursements", wrapper.GetMyReimbursements)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/providers/{providerId}/statement", wrapper.GetProviderStatement)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/reconciliation-runs", wrapper.ListReconciliationRuns)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/reconciliation-runs/{runId}", wrapper.GetReconciliationRun)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/operations/dashboard", wrapper.GetOperationsDashboard)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/exports", wrapper.ListExports)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/exports", wrapper.CreateExport)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/exports/{exportId}", wrapper.GetExport)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/exports/{exportId}/download", wrapper.DownloadExport)
 	})
 
 	return r
@@ -55507,6 +56945,390 @@ func (response RejectEntitlementAdjustment412ApplicationProblemPlusJSONResponse)
 	return err
 }
 
+type ListExportsRequestObject struct {
+	Params ListExportsParams
+}
+
+type ListExportsResponseObject interface {
+	VisitListExportsResponse(w http.ResponseWriter) error
+}
+
+type ListExports200JSONResponse ExportPage
+
+func (response ListExports200JSONResponse) VisitListExportsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListExports400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListExports400ApplicationProblemPlusJSONResponse) VisitListExportsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListExports401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response ListExports401ApplicationProblemPlusJSONResponse) VisitListExportsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListExports403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListExports403ApplicationProblemPlusJSONResponse) VisitListExportsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListExports429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response ListExports429ApplicationProblemPlusJSONResponse) VisitListExportsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExportRequestObject struct {
+	Params CreateExportParams
+	Body   *CreateExportJSONRequestBody
+}
+
+type CreateExportResponseObject interface {
+	VisitCreateExportResponse(w http.ResponseWriter) error
+}
+
+type CreateExport202JSONResponse Export
+
+func (response CreateExport202JSONResponse) VisitCreateExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExport400ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateExport400ApplicationProblemPlusJSONResponse) VisitCreateExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExport401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response CreateExport401ApplicationProblemPlusJSONResponse) VisitCreateExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExport403ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateExport403ApplicationProblemPlusJSONResponse) VisitCreateExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExport422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CreateExport422ApplicationProblemPlusJSONResponse) VisitCreateExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExport429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response CreateExport429ApplicationProblemPlusJSONResponse) VisitCreateExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetExportRequestObject struct {
+	ExportId ExportId `json:"exportId"`
+	Params   GetExportParams
+}
+
+type GetExportResponseObject interface {
+	VisitGetExportResponse(w http.ResponseWriter) error
+}
+
+type GetExport200JSONResponse Export
+
+func (response GetExport200JSONResponse) VisitGetExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetExport401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GetExport401ApplicationProblemPlusJSONResponse) VisitGetExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetExport403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetExport403ApplicationProblemPlusJSONResponse) VisitGetExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetExport404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetExport404ApplicationProblemPlusJSONResponse) VisitGetExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetExport429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response GetExport429ApplicationProblemPlusJSONResponse) VisitGetExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadExportRequestObject struct {
+	ExportId ExportId `json:"exportId"`
+	Params   DownloadExportParams
+	Body     *DownloadExportJSONRequestBody
+}
+
+type DownloadExportResponseObject interface {
+	VisitDownloadExportResponse(w http.ResponseWriter) error
+}
+
+type DownloadExport200JSONResponse ExportDownload
+
+func (response DownloadExport200JSONResponse) VisitDownloadExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadExport401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DownloadExport401ApplicationProblemPlusJSONResponse) VisitDownloadExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadExport403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DownloadExport403ApplicationProblemPlusJSONResponse) VisitDownloadExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadExport404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response DownloadExport404ApplicationProblemPlusJSONResponse) VisitDownloadExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadExport409ApplicationProblemPlusJSONResponse Problem
+
+func (response DownloadExport409ApplicationProblemPlusJSONResponse) VisitDownloadExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadExport429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response DownloadExport429ApplicationProblemPlusJSONResponse) VisitDownloadExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListFulfilmentsRequestObject struct {
 	Params ListFulfilmentsParams
 }
@@ -61313,6 +63135,79 @@ func (response PublishNotificationTemplate428ApplicationProblemPlusJSONResponse)
 	return err
 }
 
+type GetOperationsDashboardRequestObject struct {
+	Params GetOperationsDashboardParams
+}
+
+type GetOperationsDashboardResponseObject interface {
+	VisitGetOperationsDashboardResponse(w http.ResponseWriter) error
+}
+
+type GetOperationsDashboard200JSONResponse OperationsDashboard
+
+func (response GetOperationsDashboard200JSONResponse) VisitGetOperationsDashboardResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOperationsDashboard401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GetOperationsDashboard401ApplicationProblemPlusJSONResponse) VisitGetOperationsDashboardResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOperationsDashboard403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetOperationsDashboard403ApplicationProblemPlusJSONResponse) VisitGetOperationsDashboardResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOperationsDashboard429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response GetOperationsDashboard429ApplicationProblemPlusJSONResponse) VisitGetOperationsDashboardResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListOrganizationsRequestObject struct {
 	Params ListOrganizationsParams
 }
@@ -66303,6 +68198,94 @@ func (response CreatePractitioner422ApplicationProblemPlusJSONResponse) VisitCre
 	return err
 }
 
+type GetProviderStatementRequestObject struct {
+	ProviderId ProviderId `json:"providerId"`
+	Params     GetProviderStatementParams
+}
+
+type GetProviderStatementResponseObject interface {
+	VisitGetProviderStatementResponse(w http.ResponseWriter) error
+}
+
+type GetProviderStatement200JSONResponse ProviderStatement
+
+func (response GetProviderStatement200JSONResponse) VisitGetProviderStatementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProviderStatement401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GetProviderStatement401ApplicationProblemPlusJSONResponse) VisitGetProviderStatementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProviderStatement403ApplicationProblemPlusJSONResponse Problem
+
+func (response GetProviderStatement403ApplicationProblemPlusJSONResponse) VisitGetProviderStatementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProviderStatement422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response GetProviderStatement422ApplicationProblemPlusJSONResponse) VisitGetProviderStatementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProviderStatement429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response GetProviderStatement429ApplicationProblemPlusJSONResponse) VisitGetProviderStatementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type SuspendProviderRequestObject struct {
 	ProviderId ProviderId `json:"providerId"`
 	Params     SuspendProviderParams
@@ -66551,6 +68534,183 @@ func (response TerminateProvider428ApplicationProblemPlusJSONResponse) VisitTerm
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListReconciliationRunsRequestObject struct {
+	Params ListReconciliationRunsParams
+}
+
+type ListReconciliationRunsResponseObject interface {
+	VisitListReconciliationRunsResponse(w http.ResponseWriter) error
+}
+
+type ListReconciliationRuns200JSONResponse ReconciliationRunPage
+
+func (response ListReconciliationRuns200JSONResponse) VisitListReconciliationRunsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListReconciliationRuns400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListReconciliationRuns400ApplicationProblemPlusJSONResponse) VisitListReconciliationRunsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListReconciliationRuns401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response ListReconciliationRuns401ApplicationProblemPlusJSONResponse) VisitListReconciliationRunsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListReconciliationRuns403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListReconciliationRuns403ApplicationProblemPlusJSONResponse) VisitListReconciliationRunsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListReconciliationRuns429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response ListReconciliationRuns429ApplicationProblemPlusJSONResponse) VisitListReconciliationRunsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetReconciliationRunRequestObject struct {
+	RunId  RunId `json:"runId"`
+	Params GetReconciliationRunParams
+}
+
+type GetReconciliationRunResponseObject interface {
+	VisitGetReconciliationRunResponse(w http.ResponseWriter) error
+}
+
+type GetReconciliationRun200JSONResponse ReconciliationRun
+
+func (response GetReconciliationRun200JSONResponse) VisitGetReconciliationRunResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetReconciliationRun401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GetReconciliationRun401ApplicationProblemPlusJSONResponse) VisitGetReconciliationRunResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetReconciliationRun403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetReconciliationRun403ApplicationProblemPlusJSONResponse) VisitGetReconciliationRunResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetReconciliationRun404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetReconciliationRun404ApplicationProblemPlusJSONResponse) VisitGetReconciliationRunResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetReconciliationRun429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response GetReconciliationRun429ApplicationProblemPlusJSONResponse) VisitGetReconciliationRunResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -73954,6 +76114,18 @@ type StrictServerInterface interface {
 	// (POST /api/v1/entitlement-adjustments/{adjustmentId}/reject)
 	RejectEntitlementAdjustment(ctx context.Context, request RejectEntitlementAdjustmentRequestObject) (RejectEntitlementAdjustmentResponseObject, error)
 
+	// (GET /api/v1/exports)
+	ListExports(ctx context.Context, request ListExportsRequestObject) (ListExportsResponseObject, error)
+
+	// (POST /api/v1/exports)
+	CreateExport(ctx context.Context, request CreateExportRequestObject) (CreateExportResponseObject, error)
+
+	// (GET /api/v1/exports/{exportId})
+	GetExport(ctx context.Context, request GetExportRequestObject) (GetExportResponseObject, error)
+
+	// (POST /api/v1/exports/{exportId}/download)
+	DownloadExport(ctx context.Context, request DownloadExportRequestObject) (DownloadExportResponseObject, error)
+
 	// (GET /api/v1/fulfilments)
 	ListFulfilments(ctx context.Context, request ListFulfilmentsRequestObject) (ListFulfilmentsResponseObject, error)
 
@@ -74130,6 +76302,9 @@ type StrictServerInterface interface {
 
 	// (POST /api/v1/notification-templates/{templateId}/publish)
 	PublishNotificationTemplate(ctx context.Context, request PublishNotificationTemplateRequestObject) (PublishNotificationTemplateResponseObject, error)
+
+	// (GET /api/v1/operations/dashboard)
+	GetOperationsDashboard(ctx context.Context, request GetOperationsDashboardRequestObject) (GetOperationsDashboardResponseObject, error)
 
 	// (GET /api/v1/organizations)
 	ListOrganizations(ctx context.Context, request ListOrganizationsRequestObject) (ListOrganizationsResponseObject, error)
@@ -74320,11 +76495,20 @@ type StrictServerInterface interface {
 	// (POST /api/v1/providers/{providerId}/practitioners)
 	CreatePractitioner(ctx context.Context, request CreatePractitionerRequestObject) (CreatePractitionerResponseObject, error)
 
+	// (GET /api/v1/providers/{providerId}/statement)
+	GetProviderStatement(ctx context.Context, request GetProviderStatementRequestObject) (GetProviderStatementResponseObject, error)
+
 	// (POST /api/v1/providers/{providerId}/suspend)
 	SuspendProvider(ctx context.Context, request SuspendProviderRequestObject) (SuspendProviderResponseObject, error)
 
 	// (POST /api/v1/providers/{providerId}/terminate)
 	TerminateProvider(ctx context.Context, request TerminateProviderRequestObject) (TerminateProviderResponseObject, error)
+
+	// (GET /api/v1/reconciliation-runs)
+	ListReconciliationRuns(ctx context.Context, request ListReconciliationRunsRequestObject) (ListReconciliationRunsResponseObject, error)
+
+	// (GET /api/v1/reconciliation-runs/{runId})
+	GetReconciliationRun(ctx context.Context, request GetReconciliationRunRequestObject) (GetReconciliationRunResponseObject, error)
 
 	// (GET /api/v1/reimbursements)
 	ListReimbursements(ctx context.Context, request ListReimbursementsRequestObject) (ListReimbursementsResponseObject, error)
@@ -77859,6 +80043,129 @@ func (sh *strictHandler) RejectEntitlementAdjustment(w http.ResponseWriter, r *h
 	}
 }
 
+// ListExports operation middleware
+func (sh *strictHandler) ListExports(w http.ResponseWriter, r *http.Request, params ListExportsParams) {
+	var request ListExportsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListExports(ctx, request.(ListExportsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListExports")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListExportsResponseObject); ok {
+		if err := validResponse.VisitListExportsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateExport operation middleware
+func (sh *strictHandler) CreateExport(w http.ResponseWriter, r *http.Request, params CreateExportParams) {
+	var request CreateExportRequestObject
+
+	request.Params = params
+
+	var body CreateExportJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateExport(ctx, request.(CreateExportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateExport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateExportResponseObject); ok {
+		if err := validResponse.VisitCreateExportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetExport operation middleware
+func (sh *strictHandler) GetExport(w http.ResponseWriter, r *http.Request, exportId ExportId, params GetExportParams) {
+	var request GetExportRequestObject
+
+	request.ExportId = exportId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetExport(ctx, request.(GetExportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetExport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetExportResponseObject); ok {
+		if err := validResponse.VisitGetExportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DownloadExport operation middleware
+func (sh *strictHandler) DownloadExport(w http.ResponseWriter, r *http.Request, exportId ExportId, params DownloadExportParams) {
+	var request DownloadExportRequestObject
+
+	request.ExportId = exportId
+	request.Params = params
+
+	var body DownloadExportJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DownloadExport(ctx, request.(DownloadExportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DownloadExport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DownloadExportResponseObject); ok {
+		if err := validResponse.VisitDownloadExportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListFulfilments operation middleware
 func (sh *strictHandler) ListFulfilments(w http.ResponseWriter, r *http.Request, params ListFulfilmentsParams) {
 	var request ListFulfilmentsRequestObject
@@ -79599,6 +81906,32 @@ func (sh *strictHandler) PublishNotificationTemplate(w http.ResponseWriter, r *h
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PublishNotificationTemplateResponseObject); ok {
 		if err := validResponse.VisitPublishNotificationTemplateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetOperationsDashboard operation middleware
+func (sh *strictHandler) GetOperationsDashboard(w http.ResponseWriter, r *http.Request, params GetOperationsDashboardParams) {
+	var request GetOperationsDashboardRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetOperationsDashboard(ctx, request.(GetOperationsDashboardRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetOperationsDashboard")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetOperationsDashboardResponseObject); ok {
+		if err := validResponse.VisitGetOperationsDashboardResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -81539,6 +83872,33 @@ func (sh *strictHandler) CreatePractitioner(w http.ResponseWriter, r *http.Reque
 	}
 }
 
+// GetProviderStatement operation middleware
+func (sh *strictHandler) GetProviderStatement(w http.ResponseWriter, r *http.Request, providerId ProviderId, params GetProviderStatementParams) {
+	var request GetProviderStatementRequestObject
+
+	request.ProviderId = providerId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetProviderStatement(ctx, request.(GetProviderStatementRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetProviderStatement")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetProviderStatementResponseObject); ok {
+		if err := validResponse.VisitGetProviderStatementResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // SuspendProvider operation middleware
 func (sh *strictHandler) SuspendProvider(w http.ResponseWriter, r *http.Request, providerId ProviderId, params SuspendProviderParams) {
 	var request SuspendProviderRequestObject
@@ -81600,6 +83960,59 @@ func (sh *strictHandler) TerminateProvider(w http.ResponseWriter, r *http.Reques
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(TerminateProviderResponseObject); ok {
 		if err := validResponse.VisitTerminateProviderResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListReconciliationRuns operation middleware
+func (sh *strictHandler) ListReconciliationRuns(w http.ResponseWriter, r *http.Request, params ListReconciliationRunsParams) {
+	var request ListReconciliationRunsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListReconciliationRuns(ctx, request.(ListReconciliationRunsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListReconciliationRuns")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListReconciliationRunsResponseObject); ok {
+		if err := validResponse.VisitListReconciliationRunsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetReconciliationRun operation middleware
+func (sh *strictHandler) GetReconciliationRun(w http.ResponseWriter, r *http.Request, runId RunId, params GetReconciliationRunParams) {
+	var request GetReconciliationRunRequestObject
+
+	request.RunId = runId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetReconciliationRun(ctx, request.(GetReconciliationRunRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetReconciliationRun")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetReconciliationRunResponseObject); ok {
+		if err := validResponse.VisitGetReconciliationRunResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

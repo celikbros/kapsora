@@ -32,6 +32,9 @@ import (
 	"github.com/celikbros/kapsora/internal/platform/outbox"
 	"github.com/celikbros/kapsora/internal/platform/ratelimit"
 	"github.com/celikbros/kapsora/internal/platform/scheduler"
+	reportapp "github.com/celikbros/kapsora/internal/report/application"
+	reportgw "github.com/celikbros/kapsora/internal/report/infrastructure/gateway"
+	reportpg "github.com/celikbros/kapsora/internal/report/infrastructure/postgres"
 	workflowapp "github.com/celikbros/kapsora/internal/workflow/application"
 	workflowpg "github.com/celikbros/kapsora/internal/workflow/infrastructure/postgres"
 )
@@ -135,6 +138,30 @@ func run() error {
 		return err
 	}
 
+	// The reporting sweeps (WP-I7-05). The reconciliation is given the work item port,
+	// because a run that found differences and raised nothing would be a difference nobody
+	// ever sees; the export expiry is given the document store when there is one, because it
+	// has bytes to delete. Neither is given a cursor codec: this process answers no list.
+	//
+	// The service is built once and registered twice. Two services over one database would be
+	// two clocks and two settings loaders for one tenant, which is exactly how a TTL comes to
+	// mean two different things in two jobs.
+	reportDeps := reportapp.Deps{
+		Pool: pool, Repo: reportpg.New(), WorkItems: reportpg.NewWorkItems(logger),
+		Audit: auditpg.New(), Logger: logger,
+	}
+	if cfg.Documents.Configured() {
+		exportDocuments, err := newDocuments(cfg, pool, logger)
+		if err != nil {
+			return err
+		}
+		reportDeps.Documents = reportgw.NewDocuments(exportDocuments)
+	}
+	reporting, err := reportapp.New(reportDeps)
+	if err != nil {
+		return err
+	}
+
 	registry := scheduler.NewRegistry()
 	registry.Register(scheduler.AuditEnsurePartitions(pool))
 	registry.Register(scheduler.OutboxRecoverStale(outbox.New(pool, outbox.Options{Logger: logger})))
@@ -149,6 +176,15 @@ func run() error {
 	registry.Register(scheduler.AccommodationHoldExpire(bookings))
 	registry.Register(scheduler.AccommodationBookingReminder(bookings))
 	registry.Register(scheduler.AccommodationWaitlistOffer(bookings))
+	registry.Register(scheduler.BillingReconcile(reporting))
+	// The export expiry runs only when there is an object store to delete from. Without one
+	// nothing was ever stored, and a sweep that marked rows EXPIRED beside files it could not
+	// reach would be a sweep that lied about what it had done.
+	if cfg.Documents.Configured() {
+		registry.Register(scheduler.ReportExportExpire(reporting))
+	} else {
+		logger.Info("export expiry disabled", "object_store_configured", false)
+	}
 	// Document retention runs only when an object store and a retention period are both
 	// configured. Purging real documents after a number nobody chose would be worse than
 	// keeping them, so keeping them is the default; when the sweep does run, every

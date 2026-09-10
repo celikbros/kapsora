@@ -3,6 +3,7 @@ package objectstore
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"slices"
@@ -38,6 +39,16 @@ func (m *Memory) Put(bucket, key string, body []byte) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.objects[memKey(bucket, key)] = bytes.Clone(body)
+}
+
+// Write implements Store. It is Put with a context, an error and a media type the in-memory
+// store has no use for: the interface carries all three because the S3 client needs them.
+func (m *Memory) Write(_ context.Context, bucket, key string, body []byte, _ string) error {
+	if bucket == "" || key == "" {
+		return errors.New("objectstore: bucket and key are required")
+	}
+	m.Put(bucket, key, body)
+	return nil
 }
 
 // Bytes returns the stored body and whether the key exists.

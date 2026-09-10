@@ -80,6 +80,10 @@ import (
 	providerapp "github.com/celikbros/kapsora/internal/provider/application"
 	providerpg "github.com/celikbros/kapsora/internal/provider/infrastructure/postgres"
 	providerhttp "github.com/celikbros/kapsora/internal/provider/transport/http"
+	reportapp "github.com/celikbros/kapsora/internal/report/application"
+	reportgw "github.com/celikbros/kapsora/internal/report/infrastructure/gateway"
+	reportpg "github.com/celikbros/kapsora/internal/report/infrastructure/postgres"
+	reporthttp "github.com/celikbros/kapsora/internal/report/transport/http"
 	rulesapp "github.com/celikbros/kapsora/internal/rules/application"
 	rulespg "github.com/celikbros/kapsora/internal/rules/infrastructure/postgres"
 	ruleshttp "github.com/celikbros/kapsora/internal/rules/transport/http"
@@ -356,6 +360,22 @@ func run() error {
 		return err
 	}
 
+	// Reporting (WP-I7-05): the cari ekstre, the reconciliation runs, the operations dashboard
+	// and the exports.
+	//
+	// It is given the document store so a finished export can be downloaded through WP-I4-04's
+	// own path -- which is what writes the file's access event and refuses a purged one -- and
+	// deliberately no work item port: the reconciliation runs in the scheduler, and an API
+	// process that could write a run would be an API process in which a request could quietly
+	// mark settlements RECONCILED.
+	reportSvc, err := reportapp.New(reportapp.Deps{
+		Pool: pool, Repo: reportpg.New(),
+		Documents: reportgw.NewDocuments(documentSvc),
+		Audit:     auditpg.New(), Cursors: cursors, Logger: logger,
+	})
+	if err != nil {
+		return err
+	}
 	// The eligibility service shares the entitlement movement engine, so a check that
 	// opens an account lazily and a reservation on the same account run the same code.
 	eligibilitySvc, err := benefiteligibility.New(benefiteligibility.Deps{
@@ -417,6 +437,7 @@ func run() error {
 		health:         healthSvc,
 		claims:         claimSvc,
 		billing:        billingSvc,
+		reports:        reportSvc,
 		accommodation:  accommodationSvc,
 		notifications:  notificationSvc,
 		entitlements:   entitlementSvc,
@@ -540,6 +561,7 @@ type routerDeps struct {
 	health         *healthapp.Service
 	claims         *claimapp.Service
 	billing        *billingapp.Service
+	reports        *reportapp.Service
 	accommodation  *accommodationapp.Service
 	notifications  *notificationapp.Service
 	entitlements   *benefitledger.Service
@@ -682,9 +704,30 @@ func newRouter(d routerDeps) http.Handler {
 			// true. chi mounts one subrouter per prefix, so the route has to be registered
 			// inside this closure.
 			claimHandler := claimhttp.NewHandler(d.claims, sessions, d.logger)
+			// The reporting endpoints (WP-I7-05). The statement hangs off the provider
+			// because that is whose statement it is; the runs, the dashboard and the exports
+			// have prefixes of their own.
+			//
+			// `createExport` takes a mandatory idempotency key: an export replayed by a flaky
+			// network must queue one job and produce one watermarked file. `downloadExport`
+			// takes the optional variant, because a download really repeated is a second
+			// download -- counted and audited twice on purpose -- while a client that sends a
+			// key gets its first answer back rather than a second access event for one click.
+			reportHandler := reporthttp.NewHandler(d.reports, sessions, d.logger)
+			reportingMW := reporthttp.Middlewares{
+				CreateExport:   d.idempotent("report.export.create"),
+				DownloadExport: d.idempotentOptional("report.export.download"),
+			}
+
 			tenant.Route("/providers", func(r chi.Router) {
 				providerHandler.ProviderRoutes(r, providerMW)
 				claimHandler.EarningsRoutes(r)
+				reportHandler.StatementRoutes(r)
+			})
+			tenant.Route("/reconciliation-runs", reportHandler.ReconciliationRoutes)
+			tenant.Route("/operations", reportHandler.DashboardRoutes)
+			tenant.Route("/exports", func(r chi.Router) {
+				reportHandler.ExportRoutes(r, reportingMW)
 			})
 			tenant.Route("/provider-locations", providerHandler.LocationRoutes)
 			tenant.Route("/practitioners", func(r chi.Router) { providerHandler.PractitionerRoutes(r, providerMW) })

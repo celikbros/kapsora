@@ -24,6 +24,7 @@ import { notificationHandlers } from './notification-handlers';
 import { pricingHandlers } from './pricing-handlers';
 import { providerHandlers } from './provider-handlers';
 import { reimbursementHandlers } from './reimbursement-handlers';
+import { reportHandlers } from './report-handlers';
 import { rulesHandlers } from './rules-handlers';
 import { serviceRequestHandlers } from './servicerequest-handlers';
 import { settlementHandlers } from './settlement-handlers';
@@ -1554,6 +1555,8 @@ export function createHandlers(api: MockApi): HttpHandler[] {
     ...batchHandlers(api),
     ...settlementHandlers(api),
     ...reimbursementHandlers(api),
+    // The cari ekstre, the daily reconciliation, the operations dashboard and the exports.
+    ...reportHandlers(api),
   ];
 }
 

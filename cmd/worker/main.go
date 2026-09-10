@@ -49,6 +49,9 @@ import (
 	"github.com/celikbros/kapsora/internal/platform/mail"
 	"github.com/celikbros/kapsora/internal/platform/objectstore"
 	"github.com/celikbros/kapsora/internal/platform/outbox"
+	reportapp "github.com/celikbros/kapsora/internal/report/application"
+	reportgw "github.com/celikbros/kapsora/internal/report/infrastructure/gateway"
+	reportpg "github.com/celikbros/kapsora/internal/report/infrastructure/postgres"
 	servicerequestapp "github.com/celikbros/kapsora/internal/servicerequest/application"
 )
 
@@ -173,6 +176,20 @@ func run() error {
 		return err
 	}
 
+	// The export renderer (WP-I7-05). This is the only process that writes an export file, for
+	// the same reason it is the only one that reads an uploaded one: the API carries no bytes.
+	// It is given the document store and nothing else it does not need -- it raises no work
+	// item and answers no list -- so a bug that tried to reconcile something here would refuse
+	// rather than quietly working.
+	exports, err := reportapp.New(reportapp.Deps{
+		Pool: pool, Repo: reportpg.New(),
+		Documents: reportgw.NewDocuments(documents),
+		Audit:     auditpg.New(), Logger: logger,
+	})
+	if err != nil {
+		return err
+	}
+
 	dispatcher := outbox.New(pool, outbox.Options{Logger: logger})
 	// A new enrollment opens its entitlement accounts here rather than in the request
 	// that created it: the accounts follow the plan configuration, and the handler is
@@ -229,6 +246,12 @@ func run() error {
 	// underneath that read for the case where two deliveries look at the same moment.
 	dispatcher.Handle(billingapp.BatchSubmittedEvent, settlements.HandleBatchSubmitted)
 	dispatcher.Handle(billingapp.BatchDecidedEvent, settlements.HandleBatchDecided)
+	// A queued export. The worker reads the rows, stamps the watermark on every one of them,
+	// stores the file through WP-I4-04 and marks the export READY. It is idempotent by
+	// predicate: the QUEUED-to-RUNNING move carries the status in its WHERE clause, so a
+	// redelivered event finds an export somebody is already rendering and stops rather than
+	// producing a second file with a second watermark for one request.
+	dispatcher.Handle(reportapp.ExportRequestedEvent, exports.HandleExportRequested)
 
 	go reportBacklog(ctx, logger, dispatcher)
 

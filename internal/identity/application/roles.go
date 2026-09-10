@@ -45,7 +45,8 @@ func RoleTemplates() []RoleTemplate {
 				"enrollment.manage", "eligibility.check", "program.read", "program.manage", "plan.manage",
 				"entitlement.read", "entitlement.mapping.manage",
 				"catalog.read", "catalog.manage", "pricing.quote", "authorization.manage", "fulfilment.record",
-				"voucher.redeem", "claim.read", "report.read", "worklist.read", "worklist.claim",
+				"voucher.redeem", "claim.read", "report.read", "report.export",
+				"worklist.read", "worklist.claim",
 				"accommodation.property.read", "accommodation.waitlist.manage",
 				"notification.read"}},
 		{Code: "PLAN_PUBLISHER", Name: "Plan Onaylayıcı", Scope: ScopeTenant,
@@ -76,6 +77,14 @@ func RoleTemplates() []RoleTemplate {
 				"invoice.manage", "batch.review", "settlement.read", "settlement.record_payment",
 				"fiscal.edocument.read", "fiscal.edocument.match",
 				"accounting.posting.read", "document.read", "document.link", "pricing.quote", "report.read",
+				// The two halves of migration 000047. The mali degerlendirici is the person who
+				// takes the numbers out of the building -- the cari ekstre a provider disputes, the
+				// settlement list a bank reconciliation is checked against -- so it holds
+				// report.export. It also holds report.export.sensitive, because deciding a claim on
+				// its merits is exactly the work that needs the line descriptions, and a reviewer
+				// who may read them one claim at a time and may not export a month of them would
+				// simply copy them out by hand.
+				"report.export", "report.export.sensitive",
 				"worklist.read", "worklist.claim"}},
 		{Code: "PAYER_APPROVER", Name: "Ödeyici Onaylayıcı", Scope: ScopeTenant,
 			Description: "Eşik bazlı ikinci onay: settlement, GİB yanıtı, muhasebe gönderimi.",
@@ -87,10 +96,18 @@ func RoleTemplates() []RoleTemplate {
 			// permission (WP-I7-04 §2.3).
 			Permissions: []string{"settlement.read", "settlement.approve", "settlement.record_payment",
 				"fiscal.response.send", "accounting.posting.send",
-				"accounting.reconcile", "report.read", "worklist.read", "worklist.claim"}},
+				// report.export and not report.export.sensitive: the approver releases money and
+				// reads the settlement and reconciliation figures that justify it, and has no
+				// reason to hold a spreadsheet of what members were treated for.
+				"accounting.reconcile", "report.read", "report.export",
+				"worklist.read", "worklist.claim"}},
 		{Code: "AUDITOR", Name: "Denetçi", Scope: ScopeTenant,
 			Description: "Salt okunur rapor ve audit erişimi.",
-			Permissions: []string{"report.read", "audit.read", "security.audit.read", "entitlement.read",
+			// report.export.sensitive without report.export would be a grant nobody could use, so
+			// the auditor holds both: an access review that could not take its own evidence out of
+			// the system would be an audit conducted by screenshot.
+			Permissions: []string{"report.read", "report.export", "report.export.sensitive",
+				"audit.read", "security.audit.read", "entitlement.read",
 				"notification.read"}},
 		{Code: "PROVIDER_ADMIN", Name: "Sağlayıcı Yöneticisi", Scope: ScopeOrganization,
 			Description: "Kendi kurumunun kullanıcı, lokasyon ve uygulayıcılarını yönetir.",
@@ -106,7 +123,13 @@ func RoleTemplates() []RoleTemplate {
 			Description: "Claim, dış fatura, icmal ve settlement takibi; klinik belgeye minimum erişim.",
 			Permissions: []string{"claim.read", "claim.create", "claim.submit", "claim.cancel",
 				"invoice.read", "invoice.manage", "batch.create",
-				"batch.submit", "settlement.read", "fiscal.edocument.read", "document.read", "document.link"}},
+				"batch.submit", "settlement.read", "fiscal.edocument.read", "document.read",
+				// WP-I7-05 §2.2: the provider reads its own cari ekstre -- what it billed, what the
+				// payer decided, what was settled and what is still open. It is `report.read` and
+				// deliberately not `report.export`: the figures are the provider's own to look at,
+				// and a file leaving the payer's tenant is the payer's decision.
+				"report.read",
+				"document.link"}},
 		// accommodation.property.read is the grant migration 000040 adds, and it is held by
 		// the four roles that have a reason to look at a hotel: the member who will stay in
 		// it, the provider clerk who maintains it, the programme manager who negotiated it
@@ -139,7 +162,11 @@ func RoleTemplates() []RoleTemplate {
 			Description: "Kendi hakları, başvuruları, rezervasyonları ve belgeleri.",
 			Permissions: []string{"eligibility.check", "service_request.read", "service_request.create", "service_request.submit",
 				"service_request.cancel", "accommodation.property.read", "accommodation.booking.create",
-				"document.upload", "document.read", "entitlement.read"}},
+				"document.upload", "document.read", "document.link", "entitlement.read",
+				// WP-I7-06: the reimbursement form names the service and the provider the member paid,
+				// and links the receipt to the member's own request. All three read only what the
+				// network already publishes; the PERSON grant on the membership bounds the rest.
+				"catalog.read", "provider.read"}},
 	}
 }
 
