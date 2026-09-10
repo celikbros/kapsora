@@ -174,7 +174,7 @@ var (
 	}
 )
 
-// The safe variable catalogue. These eleven names are everything a notification may carry.
+// The safe variable catalogue. These twelve names are everything a notification may carry.
 // Adding one costs a migration as well as an edit here, which is the right price for
 // widening what may leave the system in an e-mail nobody can recall.
 const (
@@ -194,13 +194,25 @@ const (
 	// sleeps in, and one operator may run several. Its shape is provider_name's exactly --
 	// a label, not a sentence.
 	VarPropertyName = "property_name"
-	VarDeepLink     = "deep_link"
+	// VarMaskedAccount is the last four characters of a bank account number (WP-I7-04,
+	// migration 000046). It joined the catalogue because `reimbursement.paid` has to be
+	// able to say which account the money went to, and folding four characters into
+	// `reference_no` would have made one slot mean two things.
+	//
+	// Its rule is the narrowest here: exactly four upper-case alphanumerics, which is what
+	// `billing.reimbursement.bank_account_masked` stores and what
+	// `billing/domain.MaskAccount` produces. There is no shape of a whole IBAN, a name or a
+	// sentence that fits in it, which is the point -- the catalogue is what makes "there is
+	// no slot an account number could be supplied under" a fact rather than a habit.
+	VarMaskedAccount = "masked_account"
+	VarDeepLink      = "deep_link"
 )
 
 // SafeVariableNames is the catalogue in a stable order, for the API and for tests.
 var SafeVariableNames = []string{
 	VarGivenName, VarReferenceNo, VarStatusCode, VarEventDate, VarExpiresAt,
-	VarAmount, VarCurrency, VarProviderName, VarProgramName, VarPropertyName, VarDeepLink,
+	VarAmount, VarCurrency, VarProviderName, VarProgramName, VarPropertyName,
+	VarMaskedAccount, VarDeepLink,
 }
 
 // Limits mirroring the column CHECKs and the OpenAPI schema.
@@ -212,8 +224,9 @@ const (
 	// MaxRenderedBody bounds what a render may produce.
 	MaxRenderedBody = 10000
 	// MaxDeclaredVariables is the size of the catalogue: a template may declare each of
-	// them at most once and nothing else. Migration 000039 repeats it as a CHECK.
-	MaxDeclaredVariables = 11
+	// them at most once and nothing else. Migration 000046 repeats it as a CHECK, as
+	// migration 000039 did before it.
+	MaxDeclaredVariables = 12
 	// MaxVariableValue is the longest value any slot accepts. A diagnosis sentence, a
 	// document body and an operator's comment are all longer than this; a name, a
 	// reference and a status word are all shorter.
@@ -249,9 +262,13 @@ var (
 	timezonePattern   = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9_+/-]{0,59}$`)
 	referencePattern  = regexp.MustCompile(`^[A-Z0-9][A-Z0-9._/-]{0,39}$`)
 	statusCodePattern = regexp.MustCompile(`^[A-Z][A-Z0-9_]{1,39}$`)
-	datePattern       = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
-	amountPattern     = regexp.MustCompile(`^-?(0|[1-9][0-9]{0,14})(\.[0-9]{1,6})?$`)
-	currencyPattern   = regexp.MustCompile(`^[A-Z]{3}$`)
+	// maskedAccountPattern is `ck_billing_reimbursement_bank_mask`, repeated. Four
+	// characters exactly: a rule that allowed five would be a rule that could one day allow
+	// the whole number.
+	maskedAccountPattern = regexp.MustCompile(`^[0-9A-Z]{4}$`)
+	datePattern          = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
+	amountPattern        = regexp.MustCompile(`^-?(0|[1-9][0-9]{0,14})(\.[0-9]{1,6})?$`)
+	currencyPattern      = regexp.MustCompile(`^[A-Z]{3}$`)
 	// deepLinkPattern is a path and nothing else: no scheme, no host, no query string and
 	// no fragment. That is what "no secret in a link" means here — there is nowhere in the
 	// value to put a token, so a link can only ever point at a screen the recipient has to
@@ -386,6 +403,10 @@ var variableRules = map[string]variableRule{
 	VarPropertyName: {
 		code:  "tesis adı kısa bir ad olmalı; cümle ya da liste taşıyamaz",
 		valid: validDisplayName,
+	},
+	VarMaskedAccount: {
+		code:  "hesap maskesi tam olarak dört karakter olmalı",
+		valid: func(v string) bool { return maskedAccountPattern.MatchString(v) },
 	},
 	VarDeepLink: {
 		code:  "bağlantı yalnızca uygulama içi bir yol olmalı; sorgu dizesi taşıyamaz",

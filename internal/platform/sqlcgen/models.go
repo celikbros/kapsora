@@ -578,6 +578,100 @@ type BillingInvoiceClaim struct {
 	CreatedBy         uuid.NullUUID
 }
 
+type BillingPaymentRecord struct {
+	ID                     uuid.UUID
+	TenantID               uuid.UUID
+	SettlementID           uuid.UUID
+	ProviderOrganizationID uuid.UUID
+	ExternalReference      string
+	Amount                 pgtype.Numeric
+	CurrencyCode           string
+	PaidAt                 time.Time
+	Source                 string
+	Status                 string
+	RecordedBy             uuid.NullUUID
+	Notes                  *string
+	CreatedAt              time.Time
+	CreatedBy              uuid.NullUUID
+	UpdatedAt              time.Time
+	UpdatedBy              uuid.NullUUID
+	RowVersion             int64
+}
+
+type BillingReimbursement struct {
+	ID                     uuid.UUID
+	TenantID               uuid.UUID
+	Reference              string
+	PersonID               uuid.UUID
+	EnrollmentID           uuid.UUID
+	ServiceRequestID       uuid.UUID
+	ClaimID                uuid.NullUUID
+	ReceiptDocumentID      uuid.UUID
+	ReceiptSha256          []byte
+	ServiceDefinitionID    uuid.UUID
+	ServiceDate            pgtype.Date
+	ProviderOrganizationID uuid.UUID
+	RequestedAmount        pgtype.Numeric
+	ApprovedAmount         pgtype.Numeric
+	CurrencyCode           string
+	BankAccountRefEnc      []byte
+	BankAccountMasked      string
+	Status                 string
+	DuplicateOfID          uuid.NullUUID
+	DecisionReasonCode     *string
+	DecisionReasonText     *string
+	DecidedBy              uuid.NullUUID
+	DecidedAt              *time.Time
+	SubmittedAt            *time.Time
+	PaymentReference       *string
+	PaidAt                 *time.Time
+	CreatedAt              time.Time
+	CreatedBy              uuid.NullUUID
+	UpdatedAt              time.Time
+	UpdatedBy              uuid.NullUUID
+	RowVersion             int64
+}
+
+type BillingSettlement struct {
+	ID                     uuid.UUID
+	TenantID               uuid.UUID
+	Reference              string
+	BatchID                uuid.UUID
+	VersionNo              int32
+	ProviderOrganizationID uuid.UUID
+	PayerOrganizationID    uuid.NullUUID
+	CurrencyCode           string
+	ApprovedAmount         pgtype.Numeric
+	WithheldAmount         pgtype.Numeric
+	PayableAmount          pgtype.Numeric
+	DueDate                pgtype.Date
+	SettlementMethod       string
+	Status                 string
+	ApprovedBy             uuid.NullUUID
+	ApprovedAt             *time.Time
+	CheckedBy              uuid.NullUUID
+	PostingID              uuid.NullUUID
+	PaidAmount             pgtype.Numeric
+	CancelReasonCode       *string
+	CancelReasonText       *string
+	CreatedAt              time.Time
+	CreatedBy              uuid.NullUUID
+	UpdatedAt              time.Time
+	UpdatedBy              uuid.NullUUID
+	RowVersion             int64
+}
+
+type BillingSettlementRecovery struct {
+	ID           uuid.UUID
+	TenantID     uuid.UUID
+	SettlementID uuid.UUID
+	ClaimID      uuid.UUID
+	AdjustmentID uuid.UUID
+	Amount       pgtype.Numeric
+	CreatedAt    time.Time
+	CreatedBy    uuid.NullUUID
+}
+
 type CatalogCodeSystem struct {
 	ID         uuid.UUID
 	TenantID   uuid.UUID

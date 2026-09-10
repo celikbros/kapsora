@@ -89,6 +89,32 @@ const (
 	EventBatchDecided = "batch.decided"
 )
 
+// The settlement, the payment and the member's reimbursement (WP-I7-04 section 2.5). They are
+// named here, with the rest, for the reason every other block is: an event code is written
+// once.
+//
+// Two of them reach an organization and two reach a person, and that split is the privacy
+// decision of this package rather than a detail of whichever command raises them. A provider
+// hears what it is owed and what has been paid; a member hears what was decided about their own
+// receipt and when the money went. Neither ever hears about the other's.
+const (
+	// EventSettlementApproved is what the payer owes, released: the reference, what will
+	// actually arrive, and the day it is due.
+	EventSettlementApproved = "settlement.approved"
+	// EventPaymentRecorded is a transfer somebody outside this system made, entered against a
+	// settlement. It carries the amount and the settlement's reference and deliberately not the
+	// bank's own transaction identifier -- that is behind a sign-in, where a value somebody
+	// could quote back as proof of legitimacy belongs.
+	EventPaymentRecorded = "payment.recorded"
+	// EventReimbursementDecided is the member's receipt answered: approved in full, in part or
+	// refused. It carries no bank detail at all.
+	EventReimbursementDecided = "reimbursement.decided"
+	// EventReimbursementPaid is the money actually gone, with the four characters of the
+	// account it went to. It is the only message in this product that carries anything about a
+	// bank account, and four characters is all it can carry.
+	EventReimbursementPaid = "reimbursement.paid"
+)
+
 // RecipientKind names a side of a booking without naming a row: who is told, decided once
 // per event rather than at each publisher.
 type RecipientKind string
@@ -133,6 +159,10 @@ var WiredEvents = []string{
 	EventBookingOffered,
 	EventBatchSubmitted,
 	EventBatchDecided,
+	EventSettlementApproved,
+	EventPaymentRecorded,
+	EventReimbursementDecided,
+	EventReimbursementPaid,
 }
 
 // BookingEvents is the accommodation subset, in the same order. WP-I6-02 and WP-I6-03 walk
@@ -327,6 +357,68 @@ func SeedTemplates() []SeedTemplate {
 	)...)
 	out = append(out, bookingSeedTemplates()...)
 	out = append(out, batchSeedTemplates()...)
+	out = append(out, settlementSeedTemplates()...)
+	return out
+}
+
+// settlementSeedTemplates is WP-I7-04's half of the catalogue: what the payer owes, what has
+// been paid, and the two messages the member gets about their own receipt.
+//
+// The one worth reading twice is `reimbursement.paid`. It carries `masked_account`, which is
+// four characters, and that is every word this product will ever say to anybody about a bank
+// account. The IBAN the member typed exists as one ciphertext in one column; it is not in this
+// template, not in the variables the command supplies, not in the rendered body and not in the
+// outbox payload beside it -- and the catalogue is what makes that a fact about the schema
+// rather than a promise about this file.
+//
+// What is deliberately not in `payment.recorded` is the bank's own transaction reference. It is
+// the kind of value that turns up in a phishing message quoted back at somebody as proof that
+// the sender is genuine; the settlement's reference is what a provider needs to find the row,
+// and the bank reference is on the screen behind a sign-in.
+func settlementSeedTemplates() []SeedTemplate {
+	var out []SeedTemplate
+	out = append(out, seedTemplatePair(
+		EventSettlementApproved,
+		"Ödeme mutabakatınız onaylandı: {{reference_no}}",
+		"{{reference_no}} numaralı mutabakat {{event_date}} tarihinde onaylandı.\n"+
+			"Durum: {{status_code}}\n"+
+			"Ödenecek tutar: {{amount}} {{currency}}\n"+
+			"Son ödeme tarihi: {{expires_at}}\n\n"+
+			"Kesintiler ve ayrıntılar için: {{deep_link}}",
+		domain.VarReferenceNo, domain.VarStatusCode, domain.VarEventDate,
+		domain.VarExpiresAt, domain.VarAmount, domain.VarCurrency, domain.VarDeepLink,
+	)...)
+	out = append(out, seedTemplatePair(
+		EventPaymentRecorded,
+		"Mutabakatınıza ödeme kaydedildi: {{reference_no}}",
+		"{{reference_no}} numaralı mutabakat için {{event_date}} tarihli bir ödeme kaydedildi.\n"+
+			"Kaydedilen tutar: {{amount}} {{currency}}\n"+
+			"Mutabakatın durumu: {{status_code}}\n\n"+
+			"Ödeme kayıtlarını ve banka referansını görmek için: {{deep_link}}",
+		domain.VarReferenceNo, domain.VarStatusCode, domain.VarEventDate,
+		domain.VarAmount, domain.VarCurrency, domain.VarDeepLink,
+	)...)
+	out = append(out, seedTemplatePair(
+		EventReimbursementDecided,
+		"Geri ödeme başvurunuz sonuçlandı: {{reference_no}}",
+		"{{reference_no}} numaralı geri ödeme başvurunuz {{event_date}} tarihinde sonuçlandı.\n"+
+			"Sonuç: {{status_code}}\n"+
+			"Onaylanan tutar: {{amount}} {{currency}}\n\n"+
+			"Gerekçeyi ve ayrıntıları görmek için: {{deep_link}}",
+		domain.VarReferenceNo, domain.VarStatusCode, domain.VarEventDate,
+		domain.VarAmount, domain.VarCurrency, domain.VarDeepLink,
+	)...)
+	out = append(out, seedTemplatePair(
+		EventReimbursementPaid,
+		"Geri ödemeniz gönderildi: {{reference_no}}",
+		"{{reference_no}} numaralı geri ödemeniz {{event_date}} tarihinde gönderildi.\n"+
+			"Tutar: {{amount}} {{currency}}\n"+
+			"Hesabınızın son dört hanesi: {{masked_account}}\n"+
+			"Durum: {{status_code}}\n\n"+
+			"Ayrıntılar için: {{deep_link}}",
+		domain.VarReferenceNo, domain.VarStatusCode, domain.VarEventDate,
+		domain.VarAmount, domain.VarCurrency, domain.VarMaskedAccount, domain.VarDeepLink,
+	)...)
 	return out
 }
 

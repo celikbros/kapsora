@@ -38,7 +38,10 @@ func safeValues() map[string]string {
 		domain.VarProviderName: "Demo Hastane",
 		domain.VarProgramName:  "Kurumsal Sağlık",
 		domain.VarPropertyName: "Demo Sahil Otel",
-		domain.VarDeepLink:     "/requests/0199bd4e-6a1e-7a9c-8f31-2b7c0d5e4a11",
+		// Four characters, which is the whole of what `masked_account` may ever carry
+		// (WP-I7-04). A longer sample here would be a sample the catalogue itself refuses.
+		domain.VarMaskedAccount: "1326",
+		domain.VarDeepLink:      "/requests/0199bd4e-6a1e-7a9c-8f31-2b7c0d5e4a11",
 	}
 }
 

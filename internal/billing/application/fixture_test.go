@@ -18,6 +18,7 @@ import (
 	"github.com/google/uuid"
 
 	auditpg "github.com/celikbros/kapsora/internal/audit/postgres"
+	"github.com/celikbros/kapsora/internal/benefit/ledger"
 	"github.com/celikbros/kapsora/internal/billing/application"
 	"github.com/celikbros/kapsora/internal/billing/domain"
 	billinggw "github.com/celikbros/kapsora/internal/billing/infrastructure/gateway"
@@ -26,6 +27,7 @@ import (
 	claimpg "github.com/celikbros/kapsora/internal/claim/infrastructure/postgres"
 	healthapp "github.com/celikbros/kapsora/internal/health/application"
 	"github.com/celikbros/kapsora/internal/identity"
+	"github.com/celikbros/kapsora/internal/platform/crypto/localkey"
 	"github.com/celikbros/kapsora/internal/platform/dbtest"
 	"github.com/celikbros/kapsora/internal/platform/httpx"
 )
@@ -36,6 +38,16 @@ var fixtureNow = time.Date(2026, 3, 20, 9, 0, 0, 0, time.UTC)
 // invoiceDay is the date every invoice in this file carries. It is a fixed day inside a fixed
 // fiscal year, so the uniqueness rule is exercised without depending on when the tests run.
 const invoiceDay = "2026-03-17"
+
+// fixtureMasterKey is the local cipher's key in these tests. It is a constant so that a test
+// that encrypts an IBAN and then sweeps the schema for it is comparing against a ciphertext
+// this process actually produced.
+var fixtureMasterKey = []byte{
+	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+	0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+	0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+	0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
+}
 
 type fixture struct {
 	h *dbtest.Harness
@@ -73,10 +85,25 @@ func newFixture(t *testing.T) *fixture { //nolint:funlen // one linear fixture r
 	if err != nil {
 		t.Fatalf("claim service: %v", err)
 	}
+	// The cipher the member's IBAN goes through (WP-I7-04). It is the real localkey provider
+	// under a fixed test key rather than a stub, because the one thing this package must never
+	// get wrong is that the number reaches the database as an envelope — and a stub cipher
+	// would prove that a stub encrypted something.
+	keys, err := localkey.New(fixtureMasterKey)
+	if err != nil {
+		t.Fatalf("cipher: %v", err)
+	}
 	invoices, err := application.New(application.Deps{
 		Pool: h.App, Repo: billingpg.New(), Batches: billingpg.NewBatchRepository(),
-		Claims: billinggw.NewClaims(claims), WorkItems: billingpg.NewWorkItems(logger),
-		Audit: auditpg.New(), Cursors: cursors, Logger: logger,
+		Settlements: billingpg.NewSettlementRepository(),
+		Claims:      billinggw.NewClaims(claims), WorkItems: billingpg.NewWorkItems(logger),
+		// The real ledger, for the same reason: a reimbursement that consumed a fake wallet
+		// would prove nothing about conservation.
+		Entitlements: billinggw.NewEntitlements(
+			ledger.NewLedger(func() time.Time { return fixtureNow })),
+		Payments: application.RecordingPaymentOrders{},
+		Cipher:   keys,
+		Audit:    auditpg.New(), Cursors: cursors, Logger: logger,
 		Now: func() time.Time { return fixtureNow },
 	})
 	if err != nil {

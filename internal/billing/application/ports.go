@@ -427,6 +427,15 @@ type ClaimsPort interface {
 	// rather than copied, so this package cannot end up offering a reviewer a code the claim
 	// ledger would refuse.
 	CutReasons() []string
+	// RaiseReimbursement creates WP-I7-01's REIMBURSEMENT claim, already decided, for an
+	// approved reimbursement (WP-I7-04 section 2.4). The claim is created at approval and
+	// never before: a claim raised at submission would be a claim the payer never agreed to.
+	//
+	// It is the claim module's command rather than an insert from here for the reason every
+	// other arm of this port is: whether a claim may exist against a request of that type is
+	// the claim module's rule, and `claim.tg_claim_source_exists` is what enforces it.
+	RaiseReimbursement(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, actorID *uuid.UUID,
+		in ReimbursementClaim) (uuid.UUID, error)
 }
 
 // ClaimRelease is one claim going back where it came from.
@@ -474,3 +483,10 @@ func (NoClaims) ReopenUnpaid(context.Context, pgx.Tx, uuid.UUID, *uuid.UUID, []u
 // CutReasons implements ClaimsPort. A process with no claim service offers no reason at all,
 // which is what refuses every cut before it is written.
 func (NoClaims) CutReasons() []string { return nil }
+
+// RaiseReimbursement implements ClaimsPort.
+func (NoClaims) RaiseReimbursement(context.Context, pgx.Tx, uuid.UUID, *uuid.UUID,
+	ReimbursementClaim,
+) (uuid.UUID, error) {
+	return uuid.Nil, errors.New("billing: no claim service is wired; a reimbursement cannot be approved")
+}

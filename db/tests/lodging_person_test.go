@@ -1,6 +1,7 @@
 package dbtests
 
 import (
+	"fmt"
 	"testing"
 
 	identityapp "github.com/celikbros/kapsora/internal/identity/application"
@@ -173,8 +174,10 @@ func TestPropertyNameIsInTheTemplateCatalogueCheck(t *testing.T) {
 			t.Errorf("the CHECK accepts %s, which is not a safe variable", name)
 		}
 	}
-	// The cardinality bound is the size of the catalogue, in both places.
-	if !contains(definition, "<= 11") {
+	// The cardinality bound is the size of the catalogue, in both places. It is read from the
+	// Go constant rather than written out, so a variable added by a later migration -- WP-I7-04
+	// added `masked_account` -- moves both halves or fails here.
+	if !contains(definition, fmt.Sprintf("<= %d", notificationdomain.MaxDeclaredVariables)) {
 		t.Errorf("the CHECK does not bound declared_variables at the catalogue size: %s", definition)
 	}
 	if notificationdomain.MaxDeclaredVariables != len(notificationdomain.SafeVariableNames) {

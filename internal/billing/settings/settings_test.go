@@ -90,6 +90,9 @@ func TestKeysAreTheOnesTheLoaderAsksFor(t *testing.T) {
 		settings.KeyBatchMinInvoices:       true,
 		settings.KeyBatchMaxInvoices:       true,
 		settings.KeyBatchDecisionThreshold: true,
+		// WP-I7-04's two.
+		settings.KeySettlementCheckerThreshold: true,
+		settings.KeyReimbursementWindowDays:    true,
 	}
 	if len(settings.Keys) != len(want) {
 		t.Fatalf("Keys has %d entries, want %d", len(settings.Keys), len(want))

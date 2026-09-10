@@ -119,3 +119,20 @@ func adjustmentsOf(rows []claimapp.AdjustmentRef) []billingapp.ClaimAdjustment {
 	}
 	return out
 }
+
+// RaiseReimbursement implements billingapp.ClaimsPort. It is WP-I7-04's half of the boundary:
+// the settlement module decides *when* an approved reimbursement becomes a claim — at the
+// approval, never before — and the claim module decides what that claim is.
+func (c *Claims) RaiseReimbursement(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
+	actorID *uuid.UUID, in billingapp.ReimbursementClaim,
+) (uuid.UUID, error) {
+	return c.svc.RaiseReimbursementClaim(ctx, tx, tenantID, actorID,
+		claimapp.ReimbursementClaimInput{
+			PersonID: in.PersonID, ProgramID: in.ProgramID, EnrollmentID: in.EnrollmentID,
+			ServiceRequestID:    in.ServiceRequestID,
+			ServiceDefinitionID: in.ServiceDefinitionID, ServiceDate: in.ServiceDate,
+			ApprovedAmount: in.ApprovedAmount, CurrencyCode: in.CurrencyCode,
+			ProviderOrganizationID: in.ProviderOrganizationID, ReasonCode: in.ReasonCode,
+			DecidedBy: actorID,
+		})
+}

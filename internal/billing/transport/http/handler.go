@@ -114,9 +114,13 @@ func (h *Handler) require(w http.ResponseWriter, r *http.Request, permission str
 // carry extension members rather than prose, because the fact is what makes them actionable:
 // a mismatch carries both figures and the difference, and a refused allocation names the claim.
 func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) {
-	// The icmal's own refusals first. They are a separate switch only so this one does not
-	// grow to thirty arms; nothing below can match an error it handled.
+	// The icmal's and the settlement's own refusals first. They are separate switches only so
+	// this one does not grow to fifty arms; nothing below can match an error one of them
+	// handled.
 	if writeBatchError(w, r, err) {
+		return
+	}
+	if writeSettlementError(w, r, err) {
 		return
 	}
 	var ve *domain.ValidationError

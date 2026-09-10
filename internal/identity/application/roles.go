@@ -73,12 +73,20 @@ func RoleTemplates() []RoleTemplate {
 		{Code: "FINANCIAL_REVIEWER", Name: "Mali Değerlendirici", Scope: ScopeTenant,
 			Description: "Fiyat, fatura, kesinti, icmal, e-Belge eşleştirme ve mutabakat; klinik belge görmez.",
 			Permissions: []string{"member.read", "service_request.read", "claim.read", "claim.financial.review", "invoice.read",
-				"invoice.manage", "batch.review", "settlement.read", "fiscal.edocument.read", "fiscal.edocument.match",
+				"invoice.manage", "batch.review", "settlement.read", "settlement.record_payment",
+				"fiscal.edocument.read", "fiscal.edocument.match",
 				"accounting.posting.read", "document.read", "document.link", "pricing.quote", "report.read",
 				"worklist.read", "worklist.claim"}},
 		{Code: "PAYER_APPROVER", Name: "Ödeyici Onaylayıcı", Scope: ScopeTenant,
 			Description: "Eşik bazlı ikinci onay: settlement, GİB yanıtı, muhasebe gönderimi.",
-			Permissions: []string{"settlement.read", "settlement.approve", "fiscal.response.send", "accounting.posting.send",
+			// settlement.record_payment is migration 000046's, and both finance roles hold it:
+			// entering the bank's reference against an approved settlement is an ordinary
+			// clerk's task rather than the second pair of eyes. It is a separate grant from
+			// settlement.approve so that a tenant that wants the approver never to touch the
+			// payment file can arrange that, which is impossible while the two are one
+			// permission (WP-I7-04 §2.3).
+			Permissions: []string{"settlement.read", "settlement.approve", "settlement.record_payment",
+				"fiscal.response.send", "accounting.posting.send",
 				"accounting.reconcile", "report.read", "worklist.read", "worklist.claim"}},
 		{Code: "AUDITOR", Name: "Denetçi", Scope: ScopeTenant,
 			Description: "Salt okunur rapor ve audit erişimi.",

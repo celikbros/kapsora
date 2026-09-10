@@ -1582,12 +1582,35 @@ const FINANCIAL_REVIEWER_PERMISSIONS = [
   'invoice.manage',
   'batch.review',
   'settlement.read',
+  // WP-I7-04's own grant: entering the bank's reference against an approved settlement is an
+  // ordinary clerk's task rather than the second pair of eyes, so it is separate from
+  // settlement.approve — which is what lets a tenant keep the approver off the payment file.
+  'settlement.record_payment',
   'fiscal.edocument.read',
   'fiscal.edocument.match',
   'accounting.posting.read',
   'document.read',
   'document.link',
   'pricing.quote',
+  'report.read',
+  'worklist.read',
+  'worklist.claim',
+];
+
+/**
+ * PAYER_APPROVER exactly as internal/identity/application/roles.go grants it, in the same
+ * order, asserted against the Go list by m5.test.ts. It is the payer's second pair of eyes:
+ * it releases a settlement above the tenant's threshold and it may enter a payment record, and
+ * it holds no clinical grant and no claim grant at all — approving money is not reviewing
+ * medicine.
+ */
+const PAYER_APPROVER_PERMISSIONS = [
+  'settlement.read',
+  'settlement.approve',
+  'settlement.record_payment',
+  'fiscal.response.send',
+  'accounting.posting.send',
+  'accounting.reconcile',
   'report.read',
   'worklist.read',
   'worklist.claim',
@@ -2042,6 +2065,130 @@ export interface StoredBatchAdjustment {
   reversedByAdjustmentId: string | null;
 }
 
+/**
+ * What the payer owes one provider for one decided icmal (WP-I7-04).
+ *
+ * The three money figures are the server's own. `approvedAmount` is the batch's total, frozen
+ * the moment the settlement left DRAFT; `withheldAmount` is the open recoveries this settlement
+ * netted; `payableAmount` is the difference and is never above the approved total, which is a
+ * CHECK on the server's row rather than an arithmetic a service is trusted to have got right.
+ */
+export interface StoredSettlement {
+  id: string;
+  tenantId: string;
+  /** `ST-YYYYMM-XXXXXXXX`, unique inside the tenant. */
+  reference: string;
+  batchId: string;
+  batchReference: string;
+  /** Which attempt at settling this batch. A wrong settlement is cancelled and versioned. */
+  versionNo: number;
+  providerOrganizationId: string;
+  payerOrganizationId: string | null;
+  currencyCode: string;
+  approvedAmount: string;
+  withheldAmount: string;
+  payableAmount: string;
+  /** Server-maintained: the sum of the live payment records. */
+  paidAmount: string;
+  dueDate: string;
+  settlementMethod: Schemas['Settlement']['settlementMethod'];
+  status: Schemas['SettlementStatus'];
+  approvedBy: string | null;
+  approvedAt: string | null;
+  /**
+   * The second pair of eyes above the tenant's threshold: the person who decided the batch,
+   * whose decision this approval countersigns. Null below it, where there is one person and
+   * recording them twice would say a check happened that did not.
+   */
+  checkedBy: string | null;
+  /** M9's accounting posting. Always null in this milestone. */
+  postingId: string | null;
+  cancelReasonCode: string | null;
+  createdAt: string;
+  rowVersion: number;
+}
+
+/** One RECOVERY adjustment a settlement took back, and for how much. */
+export interface StoredSettlementRecovery {
+  id: string;
+  tenantId: string;
+  settlementId: string;
+  claimId: string;
+  adjustmentId: string;
+  amount: string;
+  createdAt: string;
+}
+
+/**
+ * A finance fact with an external reference: somebody outside this system moved money, and this
+ * is what they said about it. KAPSORA transferred nothing (v1.2 §4.3).
+ *
+ * Append-only. A record entered wrongly becomes DISPUTED and stays with its reference, because
+ * "the bank says it sent this and we say it did not" is the conversation the row exists for.
+ */
+export interface StoredPaymentRecord {
+  id: string;
+  tenantId: string;
+  settlementId: string;
+  providerOrganizationId: string;
+  /** Unique per provider inside the tenant. */
+  externalReference: string;
+  amount: string;
+  currencyCode: string;
+  paidAt: string;
+  source: Schemas['PaymentRecordSource'];
+  status: Schemas['PaymentRecordStatus'];
+  recordedBy: string | null;
+  notes: string | null;
+  createdAt: string;
+  rowVersion: number;
+}
+
+/**
+ * A member paid for something themselves and wants the money back (WP-I7-04 §2.4).
+ *
+ * **There is no account number on this row and there never will be.** `bankAccountMasked` is
+ * four characters and `bankAccountRefEnc` stands for the ciphertext the server writes through
+ * the platform cipher — the mock stores an opaque token rather than the number, because a
+ * fixture that held the real thing would be a fixture somebody could copy into a screen.
+ */
+export interface StoredReimbursement {
+  id: string;
+  tenantId: string;
+  /** `RB-YYYYMM-XXXXXXXX`, unique inside the tenant. */
+  reference: string;
+  personId: string;
+  enrollmentId: string;
+  serviceRequestId: string;
+  /** WP-I7-01's REIMBURSEMENT claim, created at the approval and never before. */
+  claimId: string | null;
+  receiptDocumentId: string;
+  /** The receipt's digest, which is one half of the duplicate rule. */
+  receiptSha256: string;
+  serviceDefinitionId: string;
+  serviceDate: string;
+  providerOrganizationId: string;
+  requestedAmount: string;
+  /** Null until somebody decides; zero on a rejection, which is the honest figure. */
+  approvedAmount: string | null;
+  currencyCode: string;
+  /** Stands for the cipher's envelope. It is never rendered and never compared. */
+  bankAccountRefEnc: string;
+  /** The last four characters, and every word this platform says about an account. */
+  bankAccountMasked: string;
+  status: Schemas['ReimbursementStatus'];
+  duplicateOfId: string | null;
+  decisionReasonCode: string | null;
+  decisionReasonText: string | null;
+  decidedBy: string | null;
+  decidedAt: string | null;
+  submittedAt: string | null;
+  paymentReference: string | null;
+  paidAt: string | null;
+  createdAt: string;
+  rowVersion: number;
+}
+
 export interface MockWorld {
   tenants: MockTenant[];
   accounts: MockAccount[];
@@ -2185,6 +2332,16 @@ export interface MockWorld {
   batches: StoredBatch[];
   batchInvoices: StoredBatchInvoice[];
   batchAdjustments: StoredBatchAdjustment[];
+  /**
+   * What the payer owes, what it actually paid, and what it pays the member back (WP-I7-04).
+   * Four arrays for the same reason the invoice keeps two: the settlement is read from both
+   * ends -- a settlement asks which payments it carries, and a payment asks which settlement
+   * it belongs to -- and a reimbursement's recoveries and payments are separate facts.
+   */
+  settlements: StoredSettlement[];
+  settlementRecoveries: StoredSettlementRecovery[];
+  paymentRecords: StoredPaymentRecord[];
+  reimbursements: StoredReimbursement[];
   /**
    * Moves a document on from SCANNING the way the scan worker does. It is the mock's
    * stand-in for the worker, so a screen can show "taranıyor" and then a verdict without
@@ -4578,6 +4735,17 @@ export function buildWorld(
     },
     {
       actorId: nextId(),
+      username: 'payer.approver',
+      displayName: 'Pınar Ödeyici Onaylayıcı',
+      email: 'payer.approver@example.invalid',
+      // PAYER_APPROVER: the second pair of eyes above the tenant's thresholds. It is a
+      // separate account from the financial reviewer on purpose, because every maker-checker
+      // rule in the settlement is a rule about *which person* — a fixture where one account
+      // held both grants would make those rules untestable.
+      memberships: [{ tenantCode: 'DEMO_A', permissions: PAYER_APPROVER_PERMISSIONS }],
+    },
+    {
+      actorId: nextId(),
       username: 'billing.a',
       displayName: 'Burak Faturalama',
       email: 'billing.a@example.invalid',
@@ -6551,6 +6719,289 @@ export function buildWorld(
   batchDecided.returnedTotal = '0';
   batchDecided.rejectedTotal = '0';
 
+  // --- M7: the settlement, its payment records and the member's reimbursement (WP-I7-04) ----
+  //
+  // Appended at the very end of buildWorld, after the icmal, for the reason every fixture since
+  // M5 is appended: one seeded random stream, and an id drawn earlier would shift every id after
+  // it and break tests that have nothing to do with settlements.
+  const settlements: StoredSettlement[] = [];
+  const settlementRecoveries: StoredSettlementRecovery[] = [];
+  const paymentRecords: StoredPaymentRecord[] = [];
+  const reimbursements: StoredReimbursement[] = [];
+
+  // The payer's approver, who is the second pair of eyes on everything above the tenant's
+  // threshold. It is looked up rather than invented so a screen showing who released the money
+  // has a real account behind the id.
+  const payerApproverActorId = accounts.find((a) => a.username === 'payer.approver')!.actorId;
+
+  /** Renders micro-units the way the server's `trim_scale` does, with no trailing zeroes. */
+  const trimmedAmount = (micros: bigint): string => {
+    const text = fromMicros(micros);
+    if (!text.includes('.')) return text;
+    const trimmed = text.replace(/0+$/, '').replace(/\.$/, '');
+    return trimmed === '' || trimmed === '-' ? '0' : trimmed;
+  };
+
+  /** `ST-YYYYMM-XXXXXXXX` and `RB-YYYYMM-XXXXXXXX`, from the world's own stream. */
+  const nextPrefixedReference = (prefix: string): string => {
+    let tail = '';
+    for (let i = 0; i < 8; i += 1) {
+      tail += BATCH_REFERENCE_ALPHABET[Math.floor(random() * BATCH_REFERENCE_ALPHABET.length)];
+    }
+    return prefix + '-202603-' + tail;
+  };
+
+  /**
+   * One decided icmal with one approved invoice on it, which is what a settlement opens on.
+   * Every settlement in this fixture has a real batch behind it, because a settlement with no
+   * batch is a figure nobody can explain — and that is the first thing a screen shows.
+   */
+  const seedDecidedBatch = (daysAgo: number, total: string): StoredBatch => {
+    const batch = seedBatch('DECIDED', daysAgo, {
+      decidedAt: isoDaysAgo(base, daysAgo - 1),
+      decidedBy: financeActorId,
+      rowVersion: 3,
+    });
+    seedBatchInvoice(
+      batch,
+      seedBatchableInvoice('APPROVED', 'INVOICED', daysAgo + 6, total),
+      'APPROVE',
+      total,
+      null,
+    );
+    batch.approvedTotal = total;
+    return batch;
+  };
+
+  const seedSettlement = (
+    batch: StoredBatch,
+    status: Schemas['SettlementStatus'],
+    approved: string,
+    withheld: string,
+    daysAgo: number,
+    over: Partial<StoredSettlement> = {},
+  ): StoredSettlement => {
+    // Trimmed the way `trim_scale` renders it, so the fixture and the handlers agree digit
+    // for digit: a seeded '3750.000000' beside a computed '3750' is two answers to one figure.
+    const payable = trimmedAmount(toMicros(approved) - toMicros(withheld));
+    const decided = status !== 'DRAFT' && status !== 'PENDING_APPROVAL' && status !== 'CANCELLED';
+    const row: StoredSettlement = {
+      id: nextId(daysAgo * -86_400_000),
+      tenantId: demoA.id,
+      reference: nextPrefixedReference('ST'),
+      batchId: batch.id,
+      batchReference: batch.reference,
+      versionNo: 1,
+      providerOrganizationId: batch.providerOrganizationId,
+      payerOrganizationId: batch.payerOrganizationId,
+      currencyCode: batch.currencyCode,
+      approvedAmount: approved,
+      withheldAmount: withheld,
+      payableAmount: payable,
+      paidAmount: '0',
+      dueDate: isoDaysAgo(base, daysAgo - 30).slice(0, 10),
+      settlementMethod: 'BANK_TRANSFER',
+      status,
+      approvedBy: decided ? payerApproverActorId : null,
+      approvedAt: decided ? isoDaysAgo(base, daysAgo - 1) : null,
+      checkedBy: decided ? financeActorId : null,
+      postingId: null,
+      cancelReasonCode: null,
+      createdAt: isoDaysAgo(base, daysAgo),
+      rowVersion: decided ? 2 : 1,
+      ...over,
+    };
+    settlements.push(row);
+    return row;
+  };
+
+  // One waiting for approval: what the outbox handler leaves behind the moment a batch is
+  // decided, with a recovery already netted so the withheld column is not always zero.
+  const settlementPendingBatch = seedDecidedBatch(9, '4000');
+  const settlementPending = seedSettlement(
+    settlementPendingBatch,
+    'PENDING_APPROVAL',
+    '4000',
+    '250',
+    9,
+  );
+  const recoveredInvoiceId = batchInvoices.find(
+    (m) => m.batchId === settlementPendingBatch.id,
+  )!.invoiceId;
+  const recoveredClaimId = invoiceAllocations.find(
+    (a) => a.invoiceId === recoveredInvoiceId,
+  )!.claimId;
+  const recoveryAdjustment: StoredClaimAdjustment = {
+    id: nextId(),
+    tenantId: demoA.id,
+    claimId: recoveredClaimId,
+    versionNo: 1,
+    claimLineId: null,
+    adjustmentType: 'RECOVERY',
+    amount: '250',
+    payerAmount: '250',
+    memberAmount: '0',
+    currencyCode: 'TRY',
+    reasonCode: 'OVERPAYMENT',
+    reasonText: null,
+    sourceType: 'MANUAL',
+    sourceId: null,
+    reversesAdjustmentId: null,
+    createdBy: financeActorId,
+    createdAt: settlementPending.createdAt,
+  };
+  claimAdjustments.push(recoveryAdjustment);
+  settlementRecoveries.push({
+    id: nextId(),
+    tenantId: demoA.id,
+    settlementId: settlementPending.id,
+    claimId: recoveredClaimId,
+    adjustmentId: recoveryAdjustment.id,
+    amount: '250',
+    createdAt: settlementPending.createdAt,
+  });
+
+  // One approved and not yet paid: the state a finance clerk opens to enter a bank reference.
+  seedSettlement(seedDecidedBatch(16, '2500'), 'APPROVED', '2500', '0', 16);
+
+  // And one partially paid, which is the only state where the sum of the records and the
+  // payable amount visibly disagree — and therefore the one a screen gets wrong.
+  const settlementPartial = seedSettlement(
+    seedDecidedBatch(24, '6000'),
+    'PARTIALLY_PAID',
+    '6000',
+    '0',
+    24,
+    { paidAmount: '2000', rowVersion: 3 },
+  );
+  paymentRecords.push({
+    id: nextId(),
+    tenantId: demoA.id,
+    settlementId: settlementPartial.id,
+    providerOrganizationId: settlementPartial.providerOrganizationId,
+    externalReference: 'EFT-2026-03-0001',
+    amount: '2000',
+    currencyCode: 'TRY',
+    paidAt: isoDaysAgo(base, 21),
+    source: 'MANUAL',
+    status: 'RECORDED',
+    recordedBy: financeActorId,
+    notes: null,
+    createdAt: isoDaysAgo(base, 21),
+    rowVersion: 1,
+  });
+
+  // --- The member's reimbursements ---------------------------------------------------------
+  //
+  // The bound member has a NIGHT balance and a SESSION balance and, until now, no money one —
+  // so an approved reimbursement would have had nothing to draw on. It is opened here rather
+  // than beside the others for the reason the whole block is at the end: an id drawn earlier
+  // would shift every id after it.
+  const boundMemberMoneyAccount: StoredEntitlementAccount = {
+    id: nextId(),
+    tenantId: demoA.id,
+    enrollmentId: boundMemberEnrollment.id,
+    personId: boundMember.id,
+    definition: toAccountDefinition(individualMoneyDef),
+    benefitPeriodFrom: isoDaysAgo(base, 180).slice(0, 10),
+    benefitPeriodTo: null,
+    totalGranted: '5000.000000',
+    available: '3400.000000',
+    consumed: '1600.000000',
+    reserved: '0.000000',
+    expired: '0.000000',
+    status: 'OPEN',
+    rowVersion: 1,
+  };
+  entitlementAccounts.push(boundMemberMoneyAccount);
+
+  /**
+   * One REIMBURSEMENT request of the bound member, its receipt, and the reimbursement row that
+   * wraps them.
+   *
+   * The bank reference is an opaque token and the mask is four characters. The mock is a test
+   * double of a database it cannot encrypt, and it deliberately does not hold the number even
+   * so: a fixture carrying a real IBAN is a fixture somebody eventually copies into a screen.
+   */
+  const seedReimbursement = (
+    status: Schemas['ReimbursementStatus'],
+    daysAgo: number,
+    requested: string,
+    over: Partial<StoredReimbursement> = {},
+  ): StoredReimbursement => {
+    const request = seedRequest({
+      tenantId: demoA.id,
+      daysAgo,
+      personId: boundMember.id,
+      programId: boundMemberEnrollment.programId,
+      enrollmentId: boundMemberEnrollment.id,
+      providerOrganizationId: providerRel.id,
+      requestType: 'REIMBURSEMENT',
+      channel: 'MEMBER_PORTAL',
+      status: status === 'DRAFT' ? 'DRAFT' : 'PENDING_REVIEW',
+      lines: [line(defGpVisit.id, 'MONEY', 1, Number(requested) * 100)],
+    });
+    const receipt = documentOf('fis-' + String(daysAgo) + '.pdf', 'PERSONAL', 'CLEAN');
+    const submitted = status !== 'DRAFT' && status !== 'CANCELLED';
+    const decided =
+      status === 'APPROVED' ||
+      status === 'PARTIALLY_APPROVED' ||
+      status === 'REJECTED' ||
+      status === 'PAYMENT_ORDERED' ||
+      status === 'PAID';
+    const row: StoredReimbursement = {
+      id: nextId(daysAgo * -86_400_000),
+      tenantId: demoA.id,
+      reference: nextPrefixedReference('RB'),
+      personId: boundMember.id,
+      enrollmentId: boundMemberEnrollment.id,
+      serviceRequestId: request.id,
+      claimId: null,
+      receiptDocumentId: receipt.id,
+      receiptSha256: receipt.sha256 ?? pseudoHash(receipt.id),
+      serviceDefinitionId: defGpVisit.id,
+      serviceDate: request.serviceDate,
+      providerOrganizationId: providerRel.id,
+      requestedAmount: requested,
+      approvedAmount: decided ? (status === 'REJECTED' ? '0' : requested) : null,
+      currencyCode: 'TRY',
+      bankAccountRefEnc: 'enc:' + nextId(),
+      bankAccountMasked: '1326',
+      status,
+      duplicateOfId: null,
+      decisionReasonCode: status === 'REJECTED' ? 'NOT_COVERED' : null,
+      decisionReasonText: null,
+      decidedBy: decided ? financeActorId : null,
+      decidedAt: decided ? isoDaysAgo(base, daysAgo - 1) : null,
+      submittedAt: submitted ? isoDaysAgo(base, daysAgo) : null,
+      paymentReference: null,
+      paidAt: null,
+      createdAt: isoDaysAgo(base, daysAgo),
+      rowVersion: decided ? 3 : submitted ? 2 : 1,
+      ...over,
+    };
+    reimbursements.push(row);
+    return row;
+  };
+
+  // Every status a member's screen has to be able to draw, oldest last so the list reads
+  // newest first the way the endpoint answers it.
+  seedReimbursement('DRAFT', 2, '180');
+  seedReimbursement('SUBMITTED', 6, '240');
+  seedReimbursement('UNDER_REVIEW', 11, '320');
+  seedReimbursement('PARTIALLY_APPROVED', 19, '500', {
+    approvedAmount: '350',
+    decisionReasonCode: 'CONTRACT_LIMIT',
+  });
+  seedReimbursement('REJECTED', 27, '410');
+  seedReimbursement('PAYMENT_ORDERED', 34, '260');
+  seedReimbursement('PAID', 46, '150', {
+    paymentReference: 'EFT-2026-02-0044',
+    paidAt: isoDaysAgo(base, 43),
+    rowVersion: 4,
+  });
+  seedReimbursement('CANCELLED', 52, '95');
+
   return {
     tenants,
     accounts,
@@ -6636,6 +7087,10 @@ export function buildWorld(
     batches,
     batchInvoices,
     batchAdjustments,
+    settlements,
+    settlementRecoveries,
+    paymentRecords,
+    reimbursements,
     advanceScan,
     nextId,
     random,

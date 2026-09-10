@@ -366,7 +366,7 @@ func (s *Service) writeBookingClaim(ctx context.Context, tx pgx.Tx, rc identity.
 		approved++
 	}
 
-	snapshot, err := bookingSnapshot(record, version, lines, plan.Currency)
+	snapshot, err := sourceClaimSnapshot(record, version, lines, plan.Currency)
 	if err != nil {
 		return err
 	}
@@ -433,13 +433,14 @@ func (s *Service) createSourceClaim(ctx context.Context, tx pgx.Tx, rc identity.
 	return ClaimRecord{}, ErrReferenceCollision
 }
 
-// bookingSnapshot freezes the version the way a submitted health claim's is frozen: what was
-// sent, in the shape every reader of `claim.claim_version.snapshot` already knows.
+// sourceClaimSnapshot freezes the version the way a submitted health claim's is frozen: what
+// was sent, in the shape every reader of `claim.claim_version.snapshot` already knows.
 //
-// The routing says neither stage is still owed, which is the truth: the claim is already in
-// the financial stage, and `readRouting`'s flag exists only to carry "financial is still owed"
-// across a medical stage this claim never had.
-func bookingSnapshot(record ClaimRecord, version VersionRecord, lines []LineRecord,
+// The routing says neither stage is still owed, which is the truth for both claims that use
+// it: a lodging claim is already in the financial stage, a reimbursement claim has already
+// been decided in it, and `readRouting`'s flag exists only to carry "financial is still owed"
+// across a medical stage neither ever had.
+func sourceClaimSnapshot(record ClaimRecord, version VersionRecord, lines []LineRecord,
 	currency string,
 ) ([]byte, error) {
 	doc := claimSnapshot{

@@ -22,8 +22,15 @@ var SourceTypes = []string{SourceHealthCase, SourceBooking, SourceReimbursement}
 // The domain codes this package writes. HEALTH is WP-I5-04's; ACCOMMODATION is what a stay
 // bills under, and it is the same table and the same lifecycle — a settlement that had to
 // branch on the vertical would be a settlement with a vertical list in it.
+//
+// GENERIC is what a reimbursement bills under (WP-I7-04). It is deliberately not the vertical
+// of whatever the member bought: a member reimbursed for a night in a hotel, a physiotherapy
+// session and a pair of spectacles is one kind of thing to the payer's finance department —
+// money owed back to a person — and guessing the vertical from a service definition would be
+// this package inventing a fact the request never carried.
 const (
 	DomainAccommodation = "ACCOMMODATION"
+	DomainGeneric       = "GENERIC"
 )
 
 // The four kinds of adjustment. The first three are money that moved for a reason that is not

@@ -23,8 +23,10 @@ import { medicalReportHandlers } from './medical-report-handlers';
 import { notificationHandlers } from './notification-handlers';
 import { pricingHandlers } from './pricing-handlers';
 import { providerHandlers } from './provider-handlers';
+import { reimbursementHandlers } from './reimbursement-handlers';
 import { rulesHandlers } from './rules-handlers';
 import { serviceRequestHandlers } from './servicerequest-handlers';
+import { settlementHandlers } from './settlement-handlers';
 import { workflowHandlers } from './workflow-handlers';
 import type { components } from '../generated/kapsora-v1';
 import { isValidTCKN, isValidVKN, normalizeDigits } from '../identifiers';
@@ -1550,6 +1552,8 @@ export function createHandlers(api: MockApi): HttpHandler[] {
     // M7: the invoice a provider raised elsewhere, and the claims it collects.
     ...invoiceHandlers(api),
     ...batchHandlers(api),
+    ...settlementHandlers(api),
+    ...reimbursementHandlers(api),
   ];
 }
 

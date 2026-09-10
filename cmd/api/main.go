@@ -310,11 +310,21 @@ func run() error {
 	// and claims that never moved is a state no reader observes.
 	billingSvc, err := billingapp.New(billingapp.Deps{
 		Pool: pool, Repo: billingpg.New(), Batches: billingpg.NewBatchRepository(),
-		Claims: billinggw.NewClaims(claimSvc),
+		Settlements: billingpg.NewSettlementRepository(),
+		Claims:      billinggw.NewClaims(claimSvc),
 		// The icmal's review queue, written from the billing side of the boundary rather than
 		// through the worklist service, because that service opens a transaction of its own.
 		WorkItems: billingpg.NewWorkItems(logger),
-		Audit:     auditpg.New(), Cursors: cursors, Logger: logger,
+		// The member's wallet, for the reimbursement: an approval consumes exactly the
+		// approved amount inside the decision's own transaction (WP-I7-04 §2.4).
+		Entitlements: billinggw.NewEntitlements(entitlementSvc.Ledger()),
+		// The payment adapter of M9. This one records the order and does nothing, which is
+		// what a platform that transfers no money should do (v1.2 §4.3).
+		Payments: billingapp.RecordingPaymentOrders{},
+		// The platform cipher, the same one a person identifier is written through. The
+		// member's IBAN reaches the database as its envelope or it does not reach it at all.
+		Cipher: keys,
+		Audit:  auditpg.New(), Cursors: cursors, Logger: logger,
 	})
 	if err != nil {
 		return err
@@ -915,6 +925,35 @@ func newRouter(d routerDeps) http.Handler {
 			}
 			tenant.Route("/batches", func(r chi.Router) {
 				invoiceHandler.BatchRoutes(r, batchMW)
+			})
+
+			// The settlement, its payment records and the member's reimbursement. Served by
+			// the same handler as the invoice and the icmal for the same reason: the three are
+			// one module and one transaction boundary -- an approved reimbursement consumes a
+			// wallet and writes a claim, and neither half can commit without the other.
+			//
+			// Every command takes an idempotency key and every one that changes an existing
+			// row takes If-Match. An approval replayed must release one settlement once, a
+			// payment record replayed must record one transfer once, and a decision replayed
+			// must consume one member's wallet once.
+			settlementMW := billinghttp.SettlementMiddlewares{
+				ApproveSettlement:          d.idempotent("settlement.approve"),
+				CancelSettlement:           d.idempotent("settlement.cancel"),
+				CreatePaymentRecord:        d.idempotent("settlement.payment.record"),
+				CreateReimbursement:        d.idempotent("reimbursement.create"),
+				SubmitReimbursement:        d.idempotent("reimbursement.submit"),
+				DecideReimbursement:        d.idempotent("reimbursement.decide"),
+				RecordReimbursementPayment: d.idempotent("reimbursement.payment.record"),
+			}
+			tenant.Route("/settlements", func(r chi.Router) {
+				invoiceHandler.SettlementRoutes(r, settlementMW)
+			})
+			tenant.Route("/reimbursements", func(r chi.Router) {
+				invoiceHandler.ReimbursementRoutes(r, settlementMW)
+			})
+			// The member's own list, resolved through the PERSON scope and nowhere else.
+			tenant.Route("/me/reimbursements", func(r chi.Router) {
+				invoiceHandler.MyReimbursementRoutes(r)
 			})
 
 			// The accommodation vertical: the buildings, the room types, the daily

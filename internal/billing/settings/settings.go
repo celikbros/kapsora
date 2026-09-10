@@ -51,12 +51,24 @@ const (
 	// threshold that rounded would be a second pair of eyes that was asked for on some
 	// batches and not on others for no reason anybody could explain.
 	KeyBatchDecisionThreshold = "billing.batch_decision_threshold"
+	// KeySettlementCheckerThreshold is the payable amount above which `approveSettlement`
+	// needs a second person -- one who is not the batch's decider, which is WP-I4-03's rule
+	// applied to the settlement. It is separate from the batch's threshold because they are
+	// different questions: the batch's is about how much a reviewer may agree to, and this is
+	// about how much may leave the building on one person's word.
+	KeySettlementCheckerThreshold = "billing.settlement_checker_threshold"
+	// KeyReimbursementWindowDays is how far back the duplicate check looks. It is the
+	// tenant's because "the same receipt twice" and "the same receipt again next year" are
+	// different facts, and where the line falls is a policy of the payer's finance department
+	// rather than a fact about the software.
+	KeyReimbursementWindowDays = "billing.reimbursement_duplicate_window_days"
 )
 
 // Keys is every key this package reads, in a stable order. The loader asks for exactly these.
 var Keys = []string{
 	KeyAllocationTolerance, KeyInvoiceRequiresImage,
 	KeyBatchMinInvoices, KeyBatchMaxInvoices, KeyBatchDecisionThreshold,
+	KeySettlementCheckerThreshold, KeyReimbursementWindowDays,
 }
 
 // The documented defaults (WP-I7-02 section 2.1).
@@ -78,6 +90,16 @@ const (
 	// is deliberately a figure a tenant is expected to change: what counts as large is what
 	// their finance department says it is.
 	DefaultBatchDecisionThreshold = "100000"
+	// DefaultSettlementCheckerThreshold is fifty thousand, in the settlement's own currency.
+	// It is deliberately lower than the batch's: agreeing that an icmal is correct and
+	// authorising the money to leave are different acts, and the second one is the one a
+	// tenant will want two people on sooner.
+	DefaultSettlementCheckerThreshold = "50000"
+	// DefaultReimbursementWindowDays is one hundred and eighty. Long enough that a member
+	// resubmitting a receipt they were paid for in the spring is caught in the autumn, short
+	// enough that an annual repeat -- a yearly check-up billed the same way every year -- is
+	// not refused as a duplicate of itself.
+	DefaultReimbursementWindowDays = 180
 )
 
 // The bounds outside which a configured batch size is a typo rather than a policy. A tenant
@@ -90,6 +112,10 @@ const (
 	// maxBatchDecisionThreshold is the largest threshold that is a policy rather than a
 	// mistyped zero. Above it, nothing would ever need a second pair of eyes.
 	maxBatchDecisionThreshold = "100000000000"
+	// The bounds outside which a configured duplicate window is a typo. Zero would turn the
+	// check off silently, and more than five years is a window nobody typed on purpose.
+	minReimbursementWindowDays = 1
+	maxReimbursementWindowDays = 1825
 )
 
 // maxAllocationTolerance is the largest tolerance that is a policy rather than a typo. A
@@ -108,16 +134,21 @@ type Values struct {
 	BatchMaxInvoices     int
 	// BatchDecisionThreshold is an exact decimal string and never a float.
 	BatchDecisionThreshold string
+	// SettlementCheckerThreshold is an exact decimal string and never a float.
+	SettlementCheckerThreshold string
+	ReimbursementWindowDays    int
 }
 
 // Defaults returns the documented answer for a tenant that has configured nothing.
 func Defaults() Values {
 	return Values{
-		AllocationTolerance:    DefaultAllocationTolerance,
-		InvoiceRequiresImage:   DefaultInvoiceRequiresImage,
-		BatchMinInvoices:       DefaultBatchMinInvoices,
-		BatchMaxInvoices:       DefaultBatchMaxInvoices,
-		BatchDecisionThreshold: DefaultBatchDecisionThreshold,
+		AllocationTolerance:        DefaultAllocationTolerance,
+		InvoiceRequiresImage:       DefaultInvoiceRequiresImage,
+		BatchMinInvoices:           DefaultBatchMinInvoices,
+		BatchMaxInvoices:           DefaultBatchMaxInvoices,
+		BatchDecisionThreshold:     DefaultBatchDecisionThreshold,
+		SettlementCheckerThreshold: DefaultSettlementCheckerThreshold,
+		ReimbursementWindowDays:    DefaultReimbursementWindowDays,
 	}
 }
 
@@ -156,8 +187,23 @@ func FromMap(raw map[string]string) Values {
 		out.BatchMinInvoices = DefaultBatchMinInvoices
 		out.BatchMaxInvoices = DefaultBatchMaxInvoices
 	}
-	out.BatchDecisionThreshold = threshold(raw[KeyBatchDecisionThreshold])
+	out.BatchDecisionThreshold = threshold(raw[KeyBatchDecisionThreshold],
+		DefaultBatchDecisionThreshold)
+	out.SettlementCheckerThreshold = threshold(raw[KeySettlementCheckerThreshold],
+		DefaultSettlementCheckerThreshold)
+	out.ReimbursementWindowDays = windowDays(raw[KeyReimbursementWindowDays])
 	return out
+}
+
+// windowDays reads the configured duplicate window, falling back to the default for anything
+// that is not a whole number of days inside the bound. A setting nobody can interpret is a
+// setting nobody set.
+func windowDays(rawValue string) int {
+	n, err := strconv.Atoi(strings.TrimSpace(rawValue))
+	if err != nil || n < minReimbursementWindowDays || n > maxReimbursementWindowDays {
+		return DefaultReimbursementWindowDays
+	}
+	return n
 }
 
 // count reads a configured whole number, falling back to the default for anything that is not
@@ -170,15 +216,17 @@ func count(rawValue string, fallback int) int {
 	return n
 }
 
-// threshold reads the configured second-pair-of-eyes threshold as an exact decimal,
+// threshold reads a configured second-pair-of-eyes threshold as an exact decimal,
 // canonicalising it so two tenants who typed "100000" and "100000.00" get the same string
-// back. A negative threshold would ask for a second person on every batch including an empty
-// one, which is not a policy anybody typed on purpose.
-func threshold(rawValue string) string {
+// back. A negative threshold would ask for a second person on everything including an empty
+// batch, which is not a policy anybody typed on purpose. The two thresholds share this
+// function and share its upper bound: above it nothing would ever need a second pair of eyes,
+// and that is the same mistake whichever key it was typed under.
+func threshold(rawValue, fallback string) string {
 	q, err := benefit.ParseQuantity(strings.TrimSpace(rawValue))
 	if err != nil || q.IsNegative() ||
 		q.Cmp(benefit.MustQuantity(maxBatchDecisionThreshold)) > 0 {
-		return DefaultBatchDecisionThreshold
+		return fallback
 	}
 	return q.String()
 }

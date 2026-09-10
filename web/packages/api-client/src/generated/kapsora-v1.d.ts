@@ -3229,6 +3229,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/reimbursements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The signed-in member's own reimbursements, newest first.
+         *
+         *     There is no `personId` filter and there is nowhere in the request to name another
+         *     person: the answer comes from the caller's PERSON grant, exactly as `getMyPerson` does.
+         *     A caller whose grants carry no PERSON scope is 403 PERSON_BINDING_MISSING rather than an
+         *     empty list, because "you are not bound to anybody" and "you have claimed nothing" are
+         *     different facts.
+         */
+        get: operations["getMyReimbursements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/medical-reports": {
         parameters: {
             query?: never;
@@ -4693,6 +4718,145 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/reimbursements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The reimbursement requests the payer's finance side reviews, newest first.
+         *
+         *     No response in this API ever carries a bank account number. `bankAccountMasked` is four
+         *     characters and is every word this platform will say about an account; the number itself
+         *     exists as one ciphertext in one column and is read by nothing.
+         */
+        get: operations["listReimbursements"];
+        put?: never;
+        /**
+         * @description Opens the member's draft reimbursement against a REIMBURSEMENT service request of
+         *     WP-I4-01, and takes the account the money should go to.
+         *
+         *     Whose reimbursement this is, is the server's answer: it comes from the caller's PERSON
+         *     grant. A body that names the caller's own person is accepted; one that names anybody
+         *     else is 403.
+         *
+         *     **The account number is written once and read back never.** It goes through the platform
+         *     cipher into a single column, and four characters of it into `bankAccountMasked`. There
+         *     is no field in any response, audit row, notification or outbox payload that carries more
+         *     than those four characters.
+         *
+         *     Four checks refuse a draft, all of them here rather than at submission so a member who
+         *     has just typed an IBAN is told immediately: the enrollment covered them on the service
+         *     date, the receipt is a clean scanned document, the amount is inside the contract's
+         *     ceiling for the service when it sets one, and the receipt is not one already claimed —
+         *     by digest, or by the same provider, day and amount inside the tenant's window.
+         */
+        post: operations["createReimbursement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reimbursements/{reimbursementId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One reimbursement. A member reading their own goes through the same route and sees the
+         *     same shape; another member's is 404 rather than 403, because the two are the same answer
+         *     and telling them apart would confirm the row exists.
+         */
+        get: operations["getReimbursement"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reimbursements/{reimbursementId}/decide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Answers the member: approve in full, approve in part with a reason, or reject with a
+         *     reason.
+         *
+         *     **An approval consumes the member's money entitlement, on approval, for exactly the
+         *     approved amount.** Not the requested amount, not at submission, and never nothing at
+         *     all. In the same transaction it creates WP-I7-01's REIMBURSEMENT claim already decided,
+         *     moves the row to PAYMENT_ORDERED and publishes `reimbursement.approved` for the payment
+         *     adapter. A plan with no money entitlement the amount could come from is
+         *     `ENTITLEMENT_ACCOUNT_NOT_FOUND` and nothing is approved.
+         *
+         *     **A rejection consumes nothing at all.** The member's balance afterwards is the balance
+         *     before, exactly.
+         */
+        post: operations["decideReimbursement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reimbursements/{reimbursementId}/payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Marks the reimbursement PAID with the reference the bank gave back. It is somebody
+         *     typing what happened elsewhere, exactly like a settlement's payment record: KAPSORA
+         *     moved nothing (v1.2 §4.3) and this is the note that it was moved.
+         *
+         *     The member is then told the amount and the four characters of the account it went to.
+         */
+        post: operations["recordReimbursementPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reimbursements/{reimbursementId}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Sends the member's draft to the payer's finance and raises the review work item.
+         *
+         *     The duplicate check runs again here, and it is not a repeat of the one in the create:
+         *     between the two, somebody else's submission may have claimed the same receipt, and the
+         *     moment that matters is the moment it is actually claimed.
+         */
+        post: operations["submitReimbursement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/rule-evaluations/{ruleEvaluationId}": {
         parameters: {
             query?: never;
@@ -5514,6 +5678,151 @@ export interface paths {
          *     that does not exist both answer 403 TENANT_ACCESS_DENIED.
          */
         post: operations["switchTenant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/settlements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description What the payer owes each provider, newest first, with keyset paging.
+         *
+         *     A settlement is opened by the platform when a batch is decided — there is no endpoint
+         *     that creates one — so every row here has a decided icmal behind it and a figure that is
+         *     that icmal's arithmetic.
+         *
+         *     A provider-scoped caller reads its own settlements and nothing else; the boundary is
+         *     applied in SQL rather than after the read, so a settlement outside it is genuinely not
+         *     returned and 404 is the honest answer to asking for one by id.
+         */
+        get: operations["listSettlements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/settlements/{settlementId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One settlement with the recoveries it netted and the payments recorded against it.
+         *
+         *     `approvedAmount` is the batch's approved total, frozen at the moment the settlement
+         *     opened. `withheldAmount` is the open recoveries this settlement took back, each of them
+         *     listed. `payableAmount` is the difference and is never above the approved amount, which
+         *     is a database CHECK rather than an arithmetic this service is trusted to have got right.
+         */
+        get: operations["getSettlement"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/settlements/{settlementId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Releases what the batch owes.
+         *
+         *     **Step-up** above `billing.settlement_checker_threshold`: releasing more than that on
+         *     one person's word means re-entering a password.
+         *
+         *     **A second pair of eyes** above the same figure: the person who decided the batch may
+         *     not be the person who approves its settlement. That is WP-I4-03 §2.4's rule applied to
+         *     the money rather than to the document.
+         *
+         *     Then `settlement.approved` goes to the outbox — M9's accounting posting listens for it,
+         *     nothing is posted here — and the provider is told the reference, what will actually
+         *     arrive and the day it is due.
+         */
+        post: operations["approveSettlement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/settlements/{settlementId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Withdraws a wrong settlement with a reason. It is the only way a settlement's figures
+         *     ever change, and they change by not being that settlement's any more: the next
+         *     `batch.decided` replay opens version 2 on the same batch, and the recoveries this one
+         *     had netted are open again.
+         *
+         *     A settlement money has already moved against is not cancellable. The answer there is a
+         *     dispute on the payment record, because pretending the settlement never existed would
+         *     leave a payment pointing at a document nobody can explain.
+         */
+        post: operations["cancelSettlement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/settlements/{settlementId}/payment-records": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The payments entered against one settlement, oldest first, with the external reference
+         *     each of them quotes.
+         *
+         *     The settlement is read first, so a caller who may not see it is told it does not exist
+         *     rather than handed an empty list they might read as "nothing has been paid".
+         */
+        get: operations["listPaymentRecords"];
+        put?: never;
+        /**
+         * @description Records that somebody outside this system transferred money against this settlement.
+         *     KAPSORA transfers nothing (v1.2 §4.3); this is the note that it was transferred, with
+         *     the bank's or the ERP's own reference.
+         *
+         *     **The sum of the records never exceeds the settlement.** A record that would take it
+         *     past `payableAmount` is refused with `PAYMENT_EXCEEDS_SETTLEMENT` carrying the
+         *     remainder — what may still be entered — rather than only the fact that this one was too
+         *     much. The settlement row is locked first, so two clerks entering a record at the same
+         *     moment serialise rather than each seeing a stale sum.
+         *
+         *     The settlement's status follows the sum: PARTIALLY_PAID while short of the payable
+         *     amount, PAID when it is reached. Nothing here is ever deleted: a record entered wrongly
+         *     becomes DISPUTED and stays with its reference.
+         */
+        post: operations["createPaymentRecord"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6490,6 +6799,14 @@ export interface components {
             booking: components["schemas"]["Booking"];
             cancellation: components["schemas"]["Cancellation"];
             quote: components["schemas"]["CancellationQuote"];
+        };
+        /**
+         * @description Why this settlement is being withdrawn. The code is what a report counts; the text is
+         *     free prose for the person who reads the row afterwards.
+         */
+        CancelSettlement: {
+            reasonCode: string;
+            reasonText?: string | null;
         };
         /**
          * @description The voucher code the guest presented. It is in the body and nowhere else: a token in
@@ -7523,6 +7840,21 @@ export interface components {
             relationshipRole: "PAYER" | "SPONSOR" | "PROVIDER" | "VENDOR" | "PARTNER";
             tenantCode?: string;
         };
+        /**
+         * @description One transfer somebody else made. The currency is the settlement's and may be omitted; a
+         *     value that disagrees with it is refused, because a total across currencies is not a
+         *     total.
+         */
+        CreatePaymentRecord: {
+            amount: components["schemas"]["DecimalAmount"];
+            currencyCode?: string | null;
+            externalReference: string;
+            notes?: string | null;
+            /** Format: date-time */
+            paidAt: string;
+            /** @description Defaults to MANUAL. */
+            source?: components["schemas"]["PaymentRecordSource"] | null;
+        };
         CreatePersonRequest: {
             /** Format: date */
             birthDate?: string;
@@ -7661,6 +7993,34 @@ export interface components {
             providerType: components["schemas"]["ProviderType"];
             /** Format: uuid */
             tenantOrganizationId: string;
+        };
+        /**
+         * @description What the member is asking to be paid back, and where to send it.
+         *
+         *     `bankAccount` is the only field in this API that carries an account number. It is
+         *     normalised, encrypted and reduced to four characters in one transaction, and nothing
+         *     that comes back afterwards holds more than those four.
+         */
+        CreateReimbursement: {
+            /**
+             * @description The IBAN the money should go to. Spaces are stripped and the value is upper-cased
+             *     before anything else happens to it.
+             */
+            bankAccount: string;
+            /** @description Defaults to TRY. */
+            currencyCode?: string | null;
+            /**
+             * Format: uuid
+             * @description Optional and, when present, has to be the caller's own person: a client echoing back
+             *     what it read from `getMyPerson` is doing nothing wrong, and a body naming anybody
+             *     else is 403. The answer is the server's either way.
+             */
+            personId?: string | null;
+            /** Format: uuid */
+            receiptDocumentId: string;
+            requestedAmount: components["schemas"]["DecimalAmount"];
+            /** Format: uuid */
+            serviceRequestId: string;
         };
         CreateRelationshipRequest: {
             relationshipType: string;
@@ -7806,6 +8166,22 @@ export interface components {
              *     clinical projection, and never carried by the decision notification.
              */
             reviewComment?: string | null;
+        };
+        /**
+         * @description Approve in full, approve in part with a reason, or reject with a reason. An approval
+         *     with no `approvedAmount` approves the whole requested figure, which is what "approve"
+         *     means when nobody typed a number.
+         */
+        DecideReimbursement: {
+            /**
+             * @description Above zero and at most the requested amount. Below the requested amount it is a
+             *     partial approval and needs a reason code; to approve nothing, reject.
+             */
+            approvedAmount?: components["schemas"]["DecimalAmount"] | null;
+            decision: components["schemas"]["ReimbursementDecision"];
+            /** @description Required for a rejection and for a partial approval. */
+            reasonCode?: string | null;
+            reasonText?: string | null;
         };
         /**
          * @description An exact numeric(20,6) money or quantity value as a decimal string. It is a string
@@ -9668,6 +10044,53 @@ export interface components {
             /** @description Null stops new items being given a clock; existing items keep theirs. */
             slaMinutes?: number | null;
         };
+        /**
+         * @description A finance fact with an external reference: somebody outside this system moved money,
+         *     and this is what they said about it. KAPSORA transferred nothing (v1.2 §4.3).
+         */
+        PaymentRecord: {
+            amount: components["schemas"]["DecimalAmount"];
+            /** Format: date-time */
+            createdAt: string;
+            currencyCode: string;
+            /**
+             * @description The bank's or the ERP's own reference. It is unique per provider inside the tenant:
+             *     the same transfer entered twice is how a settlement comes to look paid when half of
+             *     it was not.
+             */
+            externalReference: string;
+            /** Format: uuid */
+            id: string;
+            notes?: string | null;
+            /** Format: date-time */
+            paidAt: string;
+            /** Format: uuid */
+            providerOrganizationId: string;
+            /** Format: uuid */
+            recordedBy?: string | null;
+            /** Format: int64 */
+            rowVersion: number;
+            /** Format: uuid */
+            settlementId: string;
+            source: components["schemas"]["PaymentRecordSource"];
+            status: components["schemas"]["PaymentRecordStatus"];
+        };
+        PaymentRecordList: {
+            items: components["schemas"]["PaymentRecord"][];
+        };
+        /**
+         * @description MANUAL is a person typing what the bank statement says. ERP is M9's payment
+         *     confirmation flowing back from the accounting system.
+         * @enum {string}
+         */
+        PaymentRecordSource: "MANUAL" | "ERP";
+        /**
+         * @description A record entered wrongly becomes DISPUTED and stays with its reference. Nothing here is
+         *     ever deleted: "the bank says it sent this and we say it did not" is exactly the
+         *     conversation the row exists to support.
+         * @enum {string}
+         */
+        PaymentRecordStatus: "RECORDED" | "RECONCILED" | "DISPUTED";
         PaymentTerm: {
             /** Format: uuid */
             contractVersionId: string;
@@ -10550,6 +10973,18 @@ export interface components {
             reasonCode?: string;
             reasonText?: string;
         };
+        /**
+         * @description The reference the bank gave back. KAPSORA moved nothing; this is the note that it was
+         *     moved.
+         */
+        RecordReimbursementPayment: {
+            /**
+             * Format: date-time
+             * @description Defaults to now.
+             */
+            paidAt?: string | null;
+            paymentReference: string;
+        };
         RedeemVoucher: {
             items: components["schemas"]["FulfilmentItemInput"][];
             /** Format: uuid */
@@ -10568,6 +11003,81 @@ export interface components {
          * @enum {string}
          */
         RegistrationAuthority: "TTB" | "SB" | "TDB" | "TEB" | "OTHER";
+        /**
+         * @description A member paid for something themselves and wants the money back.
+         *
+         *     **There is no account number in this schema and there will never be one.**
+         *     `bankAccountMasked` is four characters. The number the member typed exists as one
+         *     ciphertext in one column, is read back by nothing, and appears in no response, audit
+         *     row, notification, log line or outbox payload.
+         */
+        Reimbursement: {
+            /** @description Null until somebody decides. Zero on a rejection, which is the honest figure. */
+            approvedAmount?: components["schemas"]["DecimalAmount"] | null;
+            /**
+             * @description The last four characters of the account, and every word this platform will ever say
+             *     about it.
+             */
+            bankAccountMasked: string;
+            /**
+             * Format: uuid
+             * @description WP-I7-01's REIMBURSEMENT claim, created at the approval and never before: a claim
+             *     raised at submission would be a claim the payer never agreed to.
+             */
+            claimId?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            currencyCode: string;
+            /** Format: date-time */
+            decidedAt?: string | null;
+            /** Format: uuid */
+            decidedBy?: string | null;
+            decisionReasonCode?: string | null;
+            /** Format: uuid */
+            duplicateOfId?: string | null;
+            duplicateOfReference?: string | null;
+            /** Format: uuid */
+            enrollmentId: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            paidAt?: string | null;
+            paymentReference?: string | null;
+            /** Format: uuid */
+            personId: string;
+            /** Format: uuid */
+            providerOrganizationId: string;
+            /** Format: uuid */
+            receiptDocumentId: string;
+            reference: string;
+            requestedAmount: components["schemas"]["DecimalAmount"];
+            /** Format: int64 */
+            rowVersion: number;
+            /** Format: date */
+            serviceDate: string;
+            /** Format: uuid */
+            serviceDefinitionId: string;
+            /**
+             * Format: uuid
+             * @description WP-I4-01's REIMBURSEMENT request, which carries the service and the date.
+             */
+            serviceRequestId: string;
+            status: components["schemas"]["ReimbursementStatus"];
+            /** Format: date-time */
+            submittedAt?: string | null;
+        };
+        /**
+         * @description Two words rather than three: approving in part is APPROVE with a figure below the
+         *     requested one, because "how much" is a number and not a third kind of answer.
+         * @enum {string}
+         */
+        ReimbursementDecision: "APPROVE" | "REJECT";
+        ReimbursementPage: {
+            items: components["schemas"]["Reimbursement"][];
+            nextCursor: string | null;
+        };
+        /** @enum {string} */
+        ReimbursementStatus: "DRAFT" | "SUBMITTED" | "UNDER_REVIEW" | "APPROVED" | "PARTIALLY_APPROVED" | "REJECTED" | "PAYMENT_ORDERED" | "PAID" | "CANCELLED";
         RejectMedicalReport: {
             /** @description Why, as a code. A rejection nobody can count is a rejection nobody can improve on. */
             rejectReasonCode: string;
@@ -11354,10 +11864,110 @@ export interface components {
             stepUpExpiresAt: string | null;
         };
         /**
+         * @description What the payer owes one provider for one decided icmal.
+         *
+         *     The three money figures are the server's own, in exact decimals. `approvedAmount` is the
+         *     batch's total frozen at the moment the settlement opened; `withheldAmount` is the open
+         *     recoveries this settlement netted; `payableAmount` is the difference and is never above
+         *     the approved amount, which is a database CHECK.
+         */
+        Settlement: {
+            approvedAmount: components["schemas"]["DecimalAmount"];
+            /** Format: date-time */
+            approvedAt?: string | null;
+            /** Format: uuid */
+            approvedBy?: string | null;
+            /** Format: uuid */
+            batchId: string;
+            batchReference?: string;
+            cancelReasonCode?: string | null;
+            /**
+             * Format: uuid
+             * @description The second pair of eyes above the tenant's threshold: the person who decided the
+             *     batch, whose decision this approval is the countersignature on. Null below the
+             *     threshold, where there is one person and recording them twice would say a check
+             *     happened that did not.
+             */
+            checkedBy?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            currencyCode: string;
+            /**
+             * Format: date
+             * @description The contract's payment term applied to the day the batch was decided. A contract
+             *     with no term is refused rather than defaulted: a due date this platform invented
+             *     would be one nobody agreed to and everybody would be measured against.
+             */
+            dueDate: string;
+            /** Format: uuid */
+            id: string;
+            paidAmount: components["schemas"]["DecimalAmount"];
+            payableAmount: components["schemas"]["DecimalAmount"];
+            /**
+             * Format: uuid
+             * @description The sponsor the contract names. Null means the tenant itself is the payer, which is
+             *     the ordinary case.
+             */
+            payerOrganizationId?: string | null;
+            payments: components["schemas"]["PaymentRecord"][];
+            /**
+             * Format: uuid
+             * @description M9's accounting posting. Always null in this milestone.
+             */
+            postingId?: string | null;
+            providerName?: string;
+            /** Format: uuid */
+            providerOrganizationId: string;
+            recoveries: components["schemas"]["SettlementRecovery"][];
+            /**
+             * @description `ST-YYYYMM-XXXXXXXX`. The tail is forty random bits: a sequential reference tells a
+             *     competitor how much a tenant settled last month.
+             */
+            reference: string;
+            /** Format: int64 */
+            rowVersion: number;
+            /** @enum {string} */
+            settlementMethod: "BANK_TRANSFER" | "OFFSET" | "OTHER";
+            status: components["schemas"]["SettlementStatus"];
+            /**
+             * @description Which attempt at settling this batch. A settlement is never edited: a wrong one is
+             *     cancelled with a reason and the next version is opened on the same batch.
+             */
+            versionNo: number;
+            withheldAmount: components["schemas"]["DecimalAmount"];
+        };
+        /**
          * @description How the provider is paid.
          * @enum {string}
          */
         SettlementMethod: "BANK_TRANSFER" | "OFFSET" | "OTHER";
+        SettlementPage: {
+            items: components["schemas"]["Settlement"][];
+            nextCursor: string | null;
+        };
+        /**
+         * @description One RECOVERY adjustment this settlement took back, and for how much. It is listed rather
+         *     than only summed so that a provider disputing `withheldAmount` can see which claim each
+         *     kuruş came from.
+         */
+        SettlementRecovery: {
+            /** Format: uuid */
+            adjustmentId: string;
+            amount: components["schemas"]["DecimalAmount"];
+            /** Format: uuid */
+            claimId: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: uuid */
+            id: string;
+        };
+        /**
+         * @description Where the settlement is. POSTED is M9's accounting posting and RECONCILED is
+         *     WP-I7-05's; both are in the list because a filter that could not name them would be a
+         *     filter that hid rows.
+         * @enum {string}
+         */
+        SettlementStatus: "DRAFT" | "PENDING_APPROVAL" | "APPROVED" | "POSTED" | "PAID" | "PARTIALLY_PAID" | "RECONCILED" | "CANCELLED";
         SimulateRuleSetVersionRequest: {
             /** @description One whole input document, keyed by the variables the input schema declares. */
             input: {
@@ -12035,6 +12645,7 @@ export interface components {
         PropertyId: string;
         ProviderId: string;
         ProviderLocationId: string;
+        ReimbursementId: string;
         RelationshipId: string;
         ReportId: string;
         RequestId: string;
@@ -12049,6 +12660,7 @@ export interface components {
          *     than by id because the number is what the reviewer and the requester both see.
          */
         ServiceRequestVersionNo: number;
+        SettlementId: string;
         StayId: string;
         /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
         TenantHeader: string;
@@ -12103,6 +12715,7 @@ export type SchemaCancellation = components['schemas']['Cancellation'];
 export type SchemaCancellationPreview = components['schemas']['CancellationPreview'];
 export type SchemaCancellationQuote = components['schemas']['CancellationQuote'];
 export type SchemaCancellationResult = components['schemas']['CancellationResult'];
+export type SchemaCancelSettlement = components['schemas']['CancelSettlement'];
 export type SchemaCheckInBookingRequest = components['schemas']['CheckInBookingRequest'];
 export type SchemaCheckOutBookingRequest = components['schemas']['CheckOutBookingRequest'];
 export type SchemaClaim = components['schemas']['Claim'];
@@ -12170,6 +12783,7 @@ export type SchemaCreateMedicalReport = components['schemas']['CreateMedicalRepo
 export type SchemaCreateMembershipRequest = components['schemas']['CreateMembershipRequest'];
 export type SchemaCreateNotificationTemplate = components['schemas']['CreateNotificationTemplate'];
 export type SchemaCreateOrganizationRequest = components['schemas']['CreateOrganizationRequest'];
+export type SchemaCreatePaymentRecord = components['schemas']['CreatePaymentRecord'];
 export type SchemaCreatePersonRequest = components['schemas']['CreatePersonRequest'];
 export type SchemaCreatePlanRequest = components['schemas']['CreatePlanRequest'];
 export type SchemaCreatePlanVersionRequest = components['schemas']['CreatePlanVersionRequest'];
@@ -12179,6 +12793,7 @@ export type SchemaCreateProgramRequest = components['schemas']['CreateProgramReq
 export type SchemaCreateProperty = components['schemas']['CreateProperty'];
 export type SchemaCreateProviderLocationRequest = components['schemas']['CreateProviderLocationRequest'];
 export type SchemaCreateProviderRequest = components['schemas']['CreateProviderRequest'];
+export type SchemaCreateReimbursement = components['schemas']['CreateReimbursement'];
 export type SchemaCreateRelationshipRequest = components['schemas']['CreateRelationshipRequest'];
 export type SchemaCreateRoomType = components['schemas']['CreateRoomType'];
 export type SchemaCreateRuleSetRequest = components['schemas']['CreateRuleSetRequest'];
@@ -12190,6 +12805,7 @@ export type SchemaCreateUpload = components['schemas']['CreateUpload'];
 export type SchemaCreateWorkQueue = components['schemas']['CreateWorkQueue'];
 export type SchemaDecideClaimLines = components['schemas']['DecideClaimLines'];
 export type SchemaDecideMedicalReport = components['schemas']['DecideMedicalReport'];
+export type SchemaDecideReimbursement = components['schemas']['DecideReimbursement'];
 export type SchemaDecimalAmount = components['schemas']['DecimalAmount'];
 export type SchemaDecimalPercent = components['schemas']['DecimalPercent'];
 export type SchemaDecimalRate = components['schemas']['DecimalRate'];
@@ -12315,6 +12931,10 @@ export type SchemaPatchMedicalReportDraft = components['schemas']['PatchMedicalR
 export type SchemaPatchProperty = components['schemas']['PatchProperty'];
 export type SchemaPatchRoomType = components['schemas']['PatchRoomType'];
 export type SchemaPatchWorkQueue = components['schemas']['PatchWorkQueue'];
+export type SchemaPaymentRecord = components['schemas']['PaymentRecord'];
+export type SchemaPaymentRecordList = components['schemas']['PaymentRecordList'];
+export type SchemaPaymentRecordSource = components['schemas']['PaymentRecordSource'];
+export type SchemaPaymentRecordStatus = components['schemas']['PaymentRecordStatus'];
 export type SchemaPaymentTerm = components['schemas']['PaymentTerm'];
 export type SchemaPerson = components['schemas']['Person'];
 export type SchemaPersonContact = components['schemas']['PersonContact'];
@@ -12388,8 +13008,13 @@ export type SchemaQuotaPeriodType = components['schemas']['QuotaPeriodType'];
 export type SchemaQuoteUnavailableReason = components['schemas']['QuoteUnavailableReason'];
 export type SchemaReasonCommand = components['schemas']['ReasonCommand'];
 export type SchemaReassignWorkItem = components['schemas']['ReassignWorkItem'];
+export type SchemaRecordReimbursementPayment = components['schemas']['RecordReimbursementPayment'];
 export type SchemaRedeemVoucher = components['schemas']['RedeemVoucher'];
 export type SchemaRegistrationAuthority = components['schemas']['RegistrationAuthority'];
+export type SchemaReimbursement = components['schemas']['Reimbursement'];
+export type SchemaReimbursementDecision = components['schemas']['ReimbursementDecision'];
+export type SchemaReimbursementPage = components['schemas']['ReimbursementPage'];
+export type SchemaReimbursementStatus = components['schemas']['ReimbursementStatus'];
 export type SchemaRejectMedicalReport = components['schemas']['RejectMedicalReport'];
 export type SchemaReleaseWorkItem = components['schemas']['ReleaseWorkItem'];
 export type SchemaReplacePackageDefinitionsRequest = components['schemas']['ReplacePackageDefinitionsRequest'];
@@ -12462,7 +13087,11 @@ export type SchemaServiceRequestVersionStatus = components['schemas']['ServiceRe
 export type SchemaServiceRequestVersionSummary = components['schemas']['ServiceRequestVersionSummary'];
 export type SchemaServiceUnitType = components['schemas']['ServiceUnitType'];
 export type SchemaSessionInfo = components['schemas']['SessionInfo'];
+export type SchemaSettlement = components['schemas']['Settlement'];
 export type SchemaSettlementMethod = components['schemas']['SettlementMethod'];
+export type SchemaSettlementPage = components['schemas']['SettlementPage'];
+export type SchemaSettlementRecovery = components['schemas']['SettlementRecovery'];
+export type SchemaSettlementStatus = components['schemas']['SettlementStatus'];
 export type SchemaSimulateRuleSetVersionRequest = components['schemas']['SimulateRuleSetVersionRequest'];
 export type SchemaSponsorMembership = components['schemas']['SponsorMembership'];
 export type SchemaStayExtension = components['schemas']['StayExtension'];
@@ -12555,6 +13184,7 @@ export type ParameterProgramId = components['parameters']['ProgramId'];
 export type ParameterPropertyId = components['parameters']['PropertyId'];
 export type ParameterProviderId = components['parameters']['ProviderId'];
 export type ParameterProviderLocationId = components['parameters']['ProviderLocationId'];
+export type ParameterReimbursementId = components['parameters']['ReimbursementId'];
 export type ParameterRelationshipId = components['parameters']['RelationshipId'];
 export type ParameterReportId = components['parameters']['ReportId'];
 export type ParameterRequestId = components['parameters']['RequestId'];
@@ -12565,6 +13195,7 @@ export type ParameterRuleSetVersionId = components['parameters']['RuleSetVersion
 export type ParameterServiceCategoryId = components['parameters']['ServiceCategoryId'];
 export type ParameterServiceDefinitionId = components['parameters']['ServiceDefinitionId'];
 export type ParameterServiceRequestVersionNo = components['parameters']['ServiceRequestVersionNo'];
+export type ParameterSettlementId = components['parameters']['SettlementId'];
 export type ParameterStayId = components['parameters']['StayId'];
 export type ParameterTenantHeader = components['parameters']['TenantHeader'];
 export type ParameterVersionNo = components['parameters']['VersionNo'];
@@ -19833,6 +20464,49 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    getMyReimbursements: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                status?: components["schemas"]["ReimbursementStatus"];
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The caller's own reimbursements */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReimbursementPage"];
+                };
+            };
+            /**
+             * @description The cursor or the status filter is not readable. CURSOR_INVALID,
+             *     VALIDATION_FAILED.
+             */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
     listMedicalReports: {
         parameters: {
             query?: {
@@ -23410,6 +24084,373 @@ export interface operations {
             422: components["responses"]["ValidationError"];
         };
     };
+    listReimbursements: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description Service date, inclusive. */
+                from?: string;
+                limit?: components["parameters"]["Limit"];
+                personId?: string;
+                status?: components["schemas"]["ReimbursementStatus"];
+                /** @description Service date, inclusive. */
+                to?: string;
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reimbursements */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReimbursementPage"];
+                };
+            };
+            /** @description A filter or the cursor is not readable. CURSOR_INVALID, VALIDATION_FAILED. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    createReimbursement: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateReimbursement"];
+            };
+        };
+        responses: {
+            /** @description Reimbursement drafted */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reimbursement"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /**
+             * @description The caller is not bound to a person, or named somebody else's.
+             *     PERSON_BINDING_MISSING, PERSON_SCOPE.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /**
+             * @description The same receipt, or the same provider, day and amount, has already been claimed
+             *     inside the tenant's window. REIMBURSEMENT_DUPLICATE.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /**
+             * @description The request is not a live REIMBURSEMENT of this member, the receipt is not a clean
+             *     document, the member was not covered on the service date, or the amount is above the
+             *     contract's ceiling. REIMBURSEMENT_REQUEST_UNUSABLE, REIMBURSEMENT_RECEIPT_UNUSABLE,
+             *     REIMBURSEMENT_NOT_ELIGIBLE, REIMBURSEMENT_CEILING_EXCEEDED, VALIDATION_FAILED.
+             */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getReimbursement: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                reimbursementId: components["parameters"]["ReimbursementId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reimbursement */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reimbursement"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    decideReimbursement: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                reimbursementId: components["parameters"]["ReimbursementId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecideReimbursement"];
+            };
+        };
+        responses: {
+            /** @description Reimbursement decided */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reimbursement"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /**
+             * @description The reimbursement is not one waiting for a decision, or the member's balance is not
+             *     enough. REIMBURSEMENT_TRANSITION_INVALID, ENTITLEMENT_INSUFFICIENT.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /**
+             * @description The decision, its amount or its reason is not one the row can carry, or the member
+             *     has no money entitlement the amount could come from.
+             *     ENTITLEMENT_ACCOUNT_NOT_FOUND, VALIDATION_FAILED.
+             */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    recordReimbursementPayment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                reimbursementId: components["parameters"]["ReimbursementId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordReimbursementPayment"];
+            };
+        };
+        responses: {
+            /** @description Reimbursement paid */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reimbursement"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /**
+             * @description The reimbursement has not been approved, or has already been paid.
+             *     REIMBURSEMENT_TRANSITION_INVALID.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The payment reference is not one the row can carry. VALIDATION_FAILED. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    submitReimbursement: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                reimbursementId: components["parameters"]["ReimbursementId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reimbursement submitted */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reimbursement"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /**
+             * @description The reimbursement is not a draft, or the receipt has meanwhile been claimed.
+             *     REIMBURSEMENT_TRANSITION_INVALID, REIMBURSEMENT_DUPLICATE.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
     getRuleEvaluation: {
         parameters: {
             query?: never;
@@ -25348,6 +26389,323 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    listSettlements: {
+        parameters: {
+            query?: {
+                batchId?: string;
+                currencyCode?: string;
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description Due date, inclusive. */
+                dueFrom?: string;
+                /** @description Due date, inclusive. */
+                dueTo?: string;
+                limit?: components["parameters"]["Limit"];
+                payerOrganizationId?: string;
+                providerOrganizationId?: string;
+                status?: components["schemas"]["SettlementStatus"];
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Settlements */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettlementPage"];
+                };
+            };
+            /** @description A filter or the cursor is not readable. CURSOR_INVALID, VALIDATION_FAILED. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getSettlement: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                settlementId: components["parameters"]["SettlementId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Settlement */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Settlement"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    approveSettlement: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                settlementId: components["parameters"]["SettlementId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Settlement approved */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Settlement"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /**
+             * @description The caller decided the batch this settlement pays, above the tenant's threshold, or
+             *     the step-up window has closed. SETTLEMENT_DECIDER_CANNOT_APPROVE, STEP_UP_REQUIRED.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /** @description The settlement is not waiting for approval. SETTLEMENT_TRANSITION_INVALID. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    cancelSettlement: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                settlementId: components["parameters"]["SettlementId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelSettlement"];
+            };
+        };
+        responses: {
+            /** @description Settlement cancelled */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Settlement"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /**
+             * @description The settlement is already cancelled, or a payment has been recorded against it.
+             *     SETTLEMENT_TRANSITION_INVALID, SETTLEMENT_HAS_PAYMENTS.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The reason code or its text is not one the row can carry. VALIDATION_FAILED. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listPaymentRecords: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                settlementId: components["parameters"]["SettlementId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Payment records */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentRecordList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    createPaymentRecord: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                settlementId: components["parameters"]["SettlementId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePaymentRecord"];
+            };
+        };
+        responses: {
+            /** @description Payment recorded */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Settlement"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /**
+             * @description The settlement is not payable, the sum would exceed it, or this provider's external
+             *     reference has been entered before. PAYMENT_NOT_ALLOWED,
+             *     PAYMENT_EXCEEDS_SETTLEMENT, PAYMENT_REFERENCE_TAKEN.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /**
+             * @description The reference, the amount, the date or the source is not one the row can carry.
+             *     VALIDATION_FAILED.
+             */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listAccessibleTenants: {

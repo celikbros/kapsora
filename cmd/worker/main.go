@@ -22,6 +22,8 @@ import (
 	authorizationpg "github.com/celikbros/kapsora/internal/authorization/infrastructure/postgres"
 	benefitapp "github.com/celikbros/kapsora/internal/benefit/application"
 	"github.com/celikbros/kapsora/internal/benefit/ledger"
+	billingapp "github.com/celikbros/kapsora/internal/billing/application"
+	billingpg "github.com/celikbros/kapsora/internal/billing/infrastructure/postgres"
 	claimapp "github.com/celikbros/kapsora/internal/claim/application"
 	claimgw "github.com/celikbros/kapsora/internal/claim/infrastructure/gateway"
 	claimpg "github.com/celikbros/kapsora/internal/claim/infrastructure/postgres"
@@ -157,6 +159,20 @@ func run() error {
 		return err
 	}
 
+	// The settlement side of a decided icmal (WP-I7-04). It is given the settlement tables and
+	// nothing else: opening a settlement copies the batch's own approved total, nets the open
+	// recoveries and reads the contract's payment term, and it never decides anything on the
+	// merits -- so the claim, wallet, cipher and payment ports are left at their defaults, and
+	// a bug that tried to approve or pay something here would refuse rather than quietly work.
+	settlements, err := billingapp.New(billingapp.Deps{
+		Pool: pool, Repo: billingpg.New(), Batches: billingpg.NewBatchRepository(),
+		Settlements: billingpg.NewSettlementRepository(),
+		Audit:       auditpg.New(), Cursors: cursors, Logger: logger,
+	})
+	if err != nil {
+		return err
+	}
+
 	dispatcher := outbox.New(pool, outbox.Options{Logger: logger})
 	// A new enrollment opens its entitlement accounts here rather than in the request
 	// that created it: the accounts follow the plan configuration, and the handler is
@@ -202,6 +218,17 @@ func run() error {
 	// A free cancellation reaches this handler and produces nothing: it is the ordinary case
 	// of a member who called off a stay inside the window they were promised.
 	dispatcher.Handle(accommodationapp.CancelledEvent, claims.HandleBookingCancelled)
+	// The two icmal events WP-I7-03 published and nobody consumed. An outbox event with no
+	// handler is not ignored: the dispatcher defers it an hour and warns, for ever.
+	//
+	// `batch.submitted` is consumed and deliberately does nothing -- the payer's work item and
+	// notification were both written inside the submit's own transaction, and a settlement
+	// opened before anybody decided anything would be a settlement for a figure nobody agreed.
+	// `batch.decided` is where the settlement is opened, and it is idempotent twice over: it
+	// looks for the settlement a first delivery made, and `uq_billing_settlement_live_batch` is
+	// underneath that read for the case where two deliveries look at the same moment.
+	dispatcher.Handle(billingapp.BatchSubmittedEvent, settlements.HandleBatchSubmitted)
+	dispatcher.Handle(billingapp.BatchDecidedEvent, settlements.HandleBatchDecided)
 
 	go reportBacklog(ctx, logger, dispatcher)
 

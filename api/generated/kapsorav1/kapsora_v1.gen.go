@@ -2332,6 +2332,45 @@ func (e PartyCatalogEntryUniquenessScope) Valid() bool {
 	}
 }
 
+// Defines values for PaymentRecordSource.
+const (
+	PaymentRecordSourceERP    PaymentRecordSource = "ERP"
+	PaymentRecordSourceMANUAL PaymentRecordSource = "MANUAL"
+)
+
+// Valid indicates whether the value is a known member of the PaymentRecordSource enum.
+func (e PaymentRecordSource) Valid() bool {
+	switch e {
+	case PaymentRecordSourceERP:
+		return true
+	case PaymentRecordSourceMANUAL:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PaymentRecordStatus.
+const (
+	PaymentRecordStatusDISPUTED   PaymentRecordStatus = "DISPUTED"
+	PaymentRecordStatusRECONCILED PaymentRecordStatus = "RECONCILED"
+	PaymentRecordStatusRECORDED   PaymentRecordStatus = "RECORDED"
+)
+
+// Valid indicates whether the value is a known member of the PaymentRecordStatus enum.
+func (e PaymentRecordStatus) Valid() bool {
+	switch e {
+	case PaymentRecordStatusDISPUTED:
+		return true
+	case PaymentRecordStatusRECONCILED:
+		return true
+	case PaymentRecordStatusRECORDED:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PersonSexAtBirth.
 const (
 	PersonSexAtBirthFEMALE      PersonSexAtBirth = "FEMALE"
@@ -3031,6 +3070,63 @@ func (e RegistrationAuthority) Valid() bool {
 	}
 }
 
+// Defines values for ReimbursementDecision.
+const (
+	ReimbursementDecisionAPPROVE ReimbursementDecision = "APPROVE"
+	ReimbursementDecisionREJECT  ReimbursementDecision = "REJECT"
+)
+
+// Valid indicates whether the value is a known member of the ReimbursementDecision enum.
+func (e ReimbursementDecision) Valid() bool {
+	switch e {
+	case ReimbursementDecisionAPPROVE:
+		return true
+	case ReimbursementDecisionREJECT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ReimbursementStatus.
+const (
+	ReimbursementStatusAPPROVED          ReimbursementStatus = "APPROVED"
+	ReimbursementStatusCANCELLED         ReimbursementStatus = "CANCELLED"
+	ReimbursementStatusDRAFT             ReimbursementStatus = "DRAFT"
+	ReimbursementStatusPAID              ReimbursementStatus = "PAID"
+	ReimbursementStatusPARTIALLYAPPROVED ReimbursementStatus = "PARTIALLY_APPROVED"
+	ReimbursementStatusPAYMENTORDERED    ReimbursementStatus = "PAYMENT_ORDERED"
+	ReimbursementStatusREJECTED          ReimbursementStatus = "REJECTED"
+	ReimbursementStatusSUBMITTED         ReimbursementStatus = "SUBMITTED"
+	ReimbursementStatusUNDERREVIEW       ReimbursementStatus = "UNDER_REVIEW"
+)
+
+// Valid indicates whether the value is a known member of the ReimbursementStatus enum.
+func (e ReimbursementStatus) Valid() bool {
+	switch e {
+	case ReimbursementStatusAPPROVED:
+		return true
+	case ReimbursementStatusCANCELLED:
+		return true
+	case ReimbursementStatusDRAFT:
+		return true
+	case ReimbursementStatusPAID:
+		return true
+	case ReimbursementStatusPARTIALLYAPPROVED:
+		return true
+	case ReimbursementStatusPAYMENTORDERED:
+		return true
+	case ReimbursementStatusREJECTED:
+		return true
+	case ReimbursementStatusSUBMITTED:
+		return true
+	case ReimbursementStatusUNDERREVIEW:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ResolvePriceResultOutcome.
 const (
 	ResolvePriceResultOutcomeMATCHED        ResolvePriceResultOutcome = "MATCHED"
@@ -3538,6 +3634,27 @@ func (e ServiceUnitType) Valid() bool {
 	}
 }
 
+// Defines values for SettlementSettlementMethod.
+const (
+	SettlementSettlementMethodBANKTRANSFER SettlementSettlementMethod = "BANK_TRANSFER"
+	SettlementSettlementMethodOFFSET       SettlementSettlementMethod = "OFFSET"
+	SettlementSettlementMethodOTHER        SettlementSettlementMethod = "OTHER"
+)
+
+// Valid indicates whether the value is a known member of the SettlementSettlementMethod enum.
+func (e SettlementSettlementMethod) Valid() bool {
+	switch e {
+	case SettlementSettlementMethodBANKTRANSFER:
+		return true
+	case SettlementSettlementMethodOFFSET:
+		return true
+	case SettlementSettlementMethodOTHER:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SettlementMethod.
 const (
 	SettlementMethodBANKTRANSFER SettlementMethod = "BANK_TRANSFER"
@@ -3553,6 +3670,42 @@ func (e SettlementMethod) Valid() bool {
 	case SettlementMethodOFFSET:
 		return true
 	case SettlementMethodOTHER:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SettlementStatus.
+const (
+	SettlementStatusAPPROVED        SettlementStatus = "APPROVED"
+	SettlementStatusCANCELLED       SettlementStatus = "CANCELLED"
+	SettlementStatusDRAFT           SettlementStatus = "DRAFT"
+	SettlementStatusPAID            SettlementStatus = "PAID"
+	SettlementStatusPARTIALLYPAID   SettlementStatus = "PARTIALLY_PAID"
+	SettlementStatusPENDINGAPPROVAL SettlementStatus = "PENDING_APPROVAL"
+	SettlementStatusPOSTED          SettlementStatus = "POSTED"
+	SettlementStatusRECONCILED      SettlementStatus = "RECONCILED"
+)
+
+// Valid indicates whether the value is a known member of the SettlementStatus enum.
+func (e SettlementStatus) Valid() bool {
+	switch e {
+	case SettlementStatusAPPROVED:
+		return true
+	case SettlementStatusCANCELLED:
+		return true
+	case SettlementStatusDRAFT:
+		return true
+	case SettlementStatusPAID:
+		return true
+	case SettlementStatusPARTIALLYPAID:
+		return true
+	case SettlementStatusPENDINGAPPROVAL:
+		return true
+	case SettlementStatusPOSTED:
+		return true
+	case SettlementStatusRECONCILED:
 		return true
 	default:
 		return false
@@ -5726,6 +5879,13 @@ type CancelInpatientStay struct {
 	ReasonText *string `json:"reasonText,omitempty"`
 }
 
+// CancelSettlement Why this settlement is being withdrawn. The code is what a report counts; the text is
+// free prose for the person who reads the row afterwards.
+type CancelSettlement struct {
+	ReasonCode string  `json:"reasonCode"`
+	ReasonText *string `json:"reasonText,omitempty"`
+}
+
 // Cancellation The record of a cancellation: what it cost, what came back, and **the policy it was
 // judged by**, copied onto the row. The copy is the point - the row proves which terms
 // were applied even after the contract has been rewritten twice, and nothing has to be
@@ -6828,6 +6988,23 @@ type CreateOrganizationRequestOrganizationKind string
 // CreateOrganizationRequestRelationshipRole defines model for CreateOrganizationRequest.RelationshipRole.
 type CreateOrganizationRequestRelationshipRole string
 
+// CreatePaymentRecord One transfer somebody else made. The currency is the settlement's and may be omitted; a
+// value that disagrees with it is refused, because a total across currencies is not a
+// total.
+type CreatePaymentRecord struct {
+	// Amount An exact numeric(20,6) money or quantity value as a decimal string. It is a string
+	// and not a JSON number on purpose: a tariff row is what somebody is invoiced, and a
+	// float would round it silently somewhere between the browser and the ledger.
+	Amount            DecimalAmount `json:"amount"`
+	CurrencyCode      *string       `json:"currencyCode,omitempty"`
+	ExternalReference string        `json:"externalReference"`
+	Notes             *string       `json:"notes,omitempty"`
+	PaidAt            time.Time     `json:"paidAt"`
+
+	// Source Defaults to MANUAL.
+	Source *PaymentRecordSource `json:"source,omitempty"`
+}
+
 // CreatePersonRequest defines model for CreatePersonRequest.
 type CreatePersonRequest struct {
 	BirthDate   *openapi_types.Date `json:"birthDate,omitempty"`
@@ -6960,6 +7137,32 @@ type CreateProviderRequest struct {
 	// ProviderType What kind of place the provider is; it drives the default location and capability picker.
 	ProviderType         ProviderType       `json:"providerType"`
 	TenantOrganizationId openapi_types.UUID `json:"tenantOrganizationId"`
+}
+
+// CreateReimbursement What the member is asking to be paid back, and where to send it.
+//
+// `bankAccount` is the only field in this API that carries an account number. It is
+// normalised, encrypted and reduced to four characters in one transaction, and nothing
+// that comes back afterwards holds more than those four.
+type CreateReimbursement struct {
+	// BankAccount The IBAN the money should go to. Spaces are stripped and the value is upper-cased
+	// before anything else happens to it.
+	BankAccount string `json:"bankAccount"`
+
+	// CurrencyCode Defaults to TRY.
+	CurrencyCode *string `json:"currencyCode,omitempty"`
+
+	// PersonId Optional and, when present, has to be the caller's own person: a client echoing back
+	// what it read from `getMyPerson` is doing nothing wrong, and a body naming anybody
+	// else is 403. The answer is the server's either way.
+	PersonId          *openapi_types.UUID `json:"personId,omitempty"`
+	ReceiptDocumentId openapi_types.UUID  `json:"receiptDocumentId"`
+
+	// RequestedAmount An exact numeric(20,6) money or quantity value as a decimal string. It is a string
+	// and not a JSON number on purpose: a tariff row is what somebody is invoiced, and a
+	// float would round it silently somewhere between the browser and the ledger.
+	RequestedAmount  DecimalAmount      `json:"requestedAmount"`
+	ServiceRequestId openapi_types.UUID `json:"serviceRequestId"`
 }
 
 // CreateRelationshipRequest defines model for CreateRelationshipRequest.
@@ -7120,6 +7323,23 @@ type DecideMedicalReport struct {
 	// ReviewComment The reviewer's note. Clinical text: it is stored on the report, served only in the
 	// clinical projection, and never carried by the decision notification.
 	ReviewComment *string `json:"reviewComment,omitempty"`
+}
+
+// DecideReimbursement Approve in full, approve in part with a reason, or reject with a reason. An approval
+// with no `approvedAmount` approves the whole requested figure, which is what "approve"
+// means when nobody typed a number.
+type DecideReimbursement struct {
+	// ApprovedAmount Above zero and at most the requested amount. Below the requested amount it is a
+	// partial approval and needs a reason code; to approve nothing, reject.
+	ApprovedAmount *DecimalAmount `json:"approvedAmount,omitempty"`
+
+	// Decision Two words rather than three: approving in part is APPROVE with a figure below the
+	// requested one, because "how much" is a number and not a third kind of answer.
+	Decision ReimbursementDecision `json:"decision"`
+
+	// ReasonCode Required for a rejection and for a partial approval.
+	ReasonCode *string `json:"reasonCode,omitempty"`
+	ReasonText *string `json:"reasonText,omitempty"`
 }
 
 // DecimalAmount An exact numeric(20,6) money or quantity value as a decimal string. It is a string
@@ -9107,6 +9327,52 @@ type PatchWorkQueue struct {
 	SlaMinutes *int `json:"slaMinutes,omitempty"`
 }
 
+// PaymentRecord A finance fact with an external reference: somebody outside this system moved money,
+// and this is what they said about it. KAPSORA transferred nothing (v1.2 §4.3).
+type PaymentRecord struct {
+	// Amount An exact numeric(20,6) money or quantity value as a decimal string. It is a string
+	// and not a JSON number on purpose: a tariff row is what somebody is invoiced, and a
+	// float would round it silently somewhere between the browser and the ledger.
+	Amount       DecimalAmount `json:"amount"`
+	CreatedAt    time.Time     `json:"createdAt"`
+	CurrencyCode string        `json:"currencyCode"`
+
+	// ExternalReference The bank's or the ERP's own reference. It is unique per provider inside the tenant:
+	// the same transfer entered twice is how a settlement comes to look paid when half of
+	// it was not.
+	ExternalReference      string              `json:"externalReference"`
+	Id                     openapi_types.UUID  `json:"id"`
+	Notes                  *string             `json:"notes,omitempty"`
+	PaidAt                 time.Time           `json:"paidAt"`
+	ProviderOrganizationId openapi_types.UUID  `json:"providerOrganizationId"`
+	RecordedBy             *openapi_types.UUID `json:"recordedBy,omitempty"`
+	RowVersion             int64               `json:"rowVersion"`
+	SettlementId           openapi_types.UUID  `json:"settlementId"`
+
+	// Source MANUAL is a person typing what the bank statement says. ERP is M9's payment
+	// confirmation flowing back from the accounting system.
+	Source PaymentRecordSource `json:"source"`
+
+	// Status A record entered wrongly becomes DISPUTED and stays with its reference. Nothing here is
+	// ever deleted: "the bank says it sent this and we say it did not" is exactly the
+	// conversation the row exists to support.
+	Status PaymentRecordStatus `json:"status"`
+}
+
+// PaymentRecordList defines model for PaymentRecordList.
+type PaymentRecordList struct {
+	Items []PaymentRecord `json:"items"`
+}
+
+// PaymentRecordSource MANUAL is a person typing what the bank statement says. ERP is M9's payment
+// confirmation flowing back from the accounting system.
+type PaymentRecordSource string
+
+// PaymentRecordStatus A record entered wrongly becomes DISPUTED and stays with its reference. Nothing here is
+// ever deleted: "the bank says it sent this and we say it did not" is exactly the
+// conversation the row exists to support.
+type PaymentRecordStatus string
+
 // PaymentTerm defines model for PaymentTerm.
 type PaymentTerm struct {
 	ContractVersionId openapi_types.UUID `json:"contractVersionId"`
@@ -10051,6 +10317,14 @@ type ReassignWorkItem struct {
 	ReasonText      *string            `json:"reasonText,omitempty"`
 }
 
+// RecordReimbursementPayment The reference the bank gave back. KAPSORA moved nothing; this is the note that it was
+// moved.
+type RecordReimbursementPayment struct {
+	// PaidAt Defaults to now.
+	PaidAt           *time.Time `json:"paidAt,omitempty"`
+	PaymentReference string     `json:"paymentReference"`
+}
+
 // RedeemVoucher defines model for RedeemVoucher.
 type RedeemVoucher struct {
 	Items             []FulfilmentItemInput `json:"items"`
@@ -10065,6 +10339,66 @@ type RedeemVoucher struct {
 
 // RegistrationAuthority The body that issued the practitioner's registration number.
 type RegistrationAuthority string
+
+// Reimbursement A member paid for something themselves and wants the money back.
+//
+// **There is no account number in this schema and there will never be one.**
+// `bankAccountMasked` is four characters. The number the member typed exists as one
+// ciphertext in one column, is read back by nothing, and appears in no response, audit
+// row, notification, log line or outbox payload.
+type Reimbursement struct {
+	// ApprovedAmount Null until somebody decides. Zero on a rejection, which is the honest figure.
+	ApprovedAmount *DecimalAmount `json:"approvedAmount,omitempty"`
+
+	// BankAccountMasked The last four characters of the account, and every word this platform will ever say
+	// about it.
+	BankAccountMasked string `json:"bankAccountMasked"`
+
+	// ClaimId WP-I7-01's REIMBURSEMENT claim, created at the approval and never before: a claim
+	// raised at submission would be a claim the payer never agreed to.
+	ClaimId                *openapi_types.UUID `json:"claimId,omitempty"`
+	CreatedAt              time.Time           `json:"createdAt"`
+	CurrencyCode           string              `json:"currencyCode"`
+	DecidedAt              *time.Time          `json:"decidedAt,omitempty"`
+	DecidedBy              *openapi_types.UUID `json:"decidedBy,omitempty"`
+	DecisionReasonCode     *string             `json:"decisionReasonCode,omitempty"`
+	DuplicateOfId          *openapi_types.UUID `json:"duplicateOfId,omitempty"`
+	DuplicateOfReference   *string             `json:"duplicateOfReference,omitempty"`
+	EnrollmentId           openapi_types.UUID  `json:"enrollmentId"`
+	Id                     openapi_types.UUID  `json:"id"`
+	PaidAt                 *time.Time          `json:"paidAt,omitempty"`
+	PaymentReference       *string             `json:"paymentReference,omitempty"`
+	PersonId               openapi_types.UUID  `json:"personId"`
+	ProviderOrganizationId openapi_types.UUID  `json:"providerOrganizationId"`
+	ReceiptDocumentId      openapi_types.UUID  `json:"receiptDocumentId"`
+	Reference              string              `json:"reference"`
+
+	// RequestedAmount An exact numeric(20,6) money or quantity value as a decimal string. It is a string
+	// and not a JSON number on purpose: a tariff row is what somebody is invoiced, and a
+	// float would round it silently somewhere between the browser and the ledger.
+	RequestedAmount     DecimalAmount      `json:"requestedAmount"`
+	RowVersion          int64              `json:"rowVersion"`
+	ServiceDate         openapi_types.Date `json:"serviceDate"`
+	ServiceDefinitionId openapi_types.UUID `json:"serviceDefinitionId"`
+
+	// ServiceRequestId WP-I4-01's REIMBURSEMENT request, which carries the service and the date.
+	ServiceRequestId openapi_types.UUID  `json:"serviceRequestId"`
+	Status           ReimbursementStatus `json:"status"`
+	SubmittedAt      *time.Time          `json:"submittedAt,omitempty"`
+}
+
+// ReimbursementDecision Two words rather than three: approving in part is APPROVE with a figure below the
+// requested one, because "how much" is a number and not a third kind of answer.
+type ReimbursementDecision string
+
+// ReimbursementPage defines model for ReimbursementPage.
+type ReimbursementPage struct {
+	Items      []Reimbursement `json:"items"`
+	NextCursor *string         `json:"nextCursor"`
+}
+
+// ReimbursementStatus defines model for ReimbursementStatus.
+type ReimbursementStatus string
 
 // RejectMedicalReport defines model for RejectMedicalReport.
 type RejectMedicalReport struct {
@@ -10935,8 +11269,110 @@ type SessionInfo struct {
 	StepUpExpiresAt    *time.Time `json:"stepUpExpiresAt"`
 }
 
+// Settlement What the payer owes one provider for one decided icmal.
+//
+// The three money figures are the server's own, in exact decimals. `approvedAmount` is the
+// batch's total frozen at the moment the settlement opened; `withheldAmount` is the open
+// recoveries this settlement netted; `payableAmount` is the difference and is never above
+// the approved amount, which is a database CHECK.
+type Settlement struct {
+	// ApprovedAmount An exact numeric(20,6) money or quantity value as a decimal string. It is a string
+	// and not a JSON number on purpose: a tariff row is what somebody is invoiced, and a
+	// float would round it silently somewhere between the browser and the ledger.
+	ApprovedAmount   DecimalAmount       `json:"approvedAmount"`
+	ApprovedAt       *time.Time          `json:"approvedAt,omitempty"`
+	ApprovedBy       *openapi_types.UUID `json:"approvedBy,omitempty"`
+	BatchId          openapi_types.UUID  `json:"batchId"`
+	BatchReference   *string             `json:"batchReference,omitempty"`
+	CancelReasonCode *string             `json:"cancelReasonCode,omitempty"`
+
+	// CheckedBy The second pair of eyes above the tenant's threshold: the person who decided the
+	// batch, whose decision this approval is the countersignature on. Null below the
+	// threshold, where there is one person and recording them twice would say a check
+	// happened that did not.
+	CheckedBy    *openapi_types.UUID `json:"checkedBy,omitempty"`
+	CreatedAt    time.Time           `json:"createdAt"`
+	CurrencyCode string              `json:"currencyCode"`
+
+	// DueDate The contract's payment term applied to the day the batch was decided. A contract
+	// with no term is refused rather than defaulted: a due date this platform invented
+	// would be one nobody agreed to and everybody would be measured against.
+	DueDate openapi_types.Date `json:"dueDate"`
+	Id      openapi_types.UUID `json:"id"`
+
+	// PaidAmount An exact numeric(20,6) money or quantity value as a decimal string. It is a string
+	// and not a JSON number on purpose: a tariff row is what somebody is invoiced, and a
+	// float would round it silently somewhere between the browser and the ledger.
+	PaidAmount DecimalAmount `json:"paidAmount"`
+
+	// PayableAmount An exact numeric(20,6) money or quantity value as a decimal string. It is a string
+	// and not a JSON number on purpose: a tariff row is what somebody is invoiced, and a
+	// float would round it silently somewhere between the browser and the ledger.
+	PayableAmount DecimalAmount `json:"payableAmount"`
+
+	// PayerOrganizationId The sponsor the contract names. Null means the tenant itself is the payer, which is
+	// the ordinary case.
+	PayerOrganizationId *openapi_types.UUID `json:"payerOrganizationId,omitempty"`
+	Payments            []PaymentRecord     `json:"payments"`
+
+	// PostingId M9's accounting posting. Always null in this milestone.
+	PostingId              *openapi_types.UUID  `json:"postingId,omitempty"`
+	ProviderName           *string              `json:"providerName,omitempty"`
+	ProviderOrganizationId openapi_types.UUID   `json:"providerOrganizationId"`
+	Recoveries             []SettlementRecovery `json:"recoveries"`
+
+	// Reference `ST-YYYYMM-XXXXXXXX`. The tail is forty random bits: a sequential reference tells a
+	// competitor how much a tenant settled last month.
+	Reference        string                     `json:"reference"`
+	RowVersion       int64                      `json:"rowVersion"`
+	SettlementMethod SettlementSettlementMethod `json:"settlementMethod"`
+
+	// Status Where the settlement is. POSTED is M9's accounting posting and RECONCILED is
+	// WP-I7-05's; both are in the list because a filter that could not name them would be a
+	// filter that hid rows.
+	Status SettlementStatus `json:"status"`
+
+	// VersionNo Which attempt at settling this batch. A settlement is never edited: a wrong one is
+	// cancelled with a reason and the next version is opened on the same batch.
+	VersionNo int `json:"versionNo"`
+
+	// WithheldAmount An exact numeric(20,6) money or quantity value as a decimal string. It is a string
+	// and not a JSON number on purpose: a tariff row is what somebody is invoiced, and a
+	// float would round it silently somewhere between the browser and the ledger.
+	WithheldAmount DecimalAmount `json:"withheldAmount"`
+}
+
+// SettlementSettlementMethod defines model for Settlement.SettlementMethod.
+type SettlementSettlementMethod string
+
 // SettlementMethod How the provider is paid.
 type SettlementMethod string
+
+// SettlementPage defines model for SettlementPage.
+type SettlementPage struct {
+	Items      []Settlement `json:"items"`
+	NextCursor *string      `json:"nextCursor"`
+}
+
+// SettlementRecovery One RECOVERY adjustment this settlement took back, and for how much. It is listed rather
+// than only summed so that a provider disputing `withheldAmount` can see which claim each
+// kuruş came from.
+type SettlementRecovery struct {
+	AdjustmentId openapi_types.UUID `json:"adjustmentId"`
+
+	// Amount An exact numeric(20,6) money or quantity value as a decimal string. It is a string
+	// and not a JSON number on purpose: a tariff row is what somebody is invoiced, and a
+	// float would round it silently somewhere between the browser and the ledger.
+	Amount    DecimalAmount      `json:"amount"`
+	ClaimId   openapi_types.UUID `json:"claimId"`
+	CreatedAt time.Time          `json:"createdAt"`
+	Id        openapi_types.UUID `json:"id"`
+}
+
+// SettlementStatus Where the settlement is. POSTED is M9's accounting posting and RECONCILED is
+// WP-I7-05's; both are in the list because a filter that could not name them would be a
+// filter that hid rows.
+type SettlementStatus string
 
 // SimulateRuleSetVersionRequest defines model for SimulateRuleSetVersionRequest.
 type SimulateRuleSetVersionRequest struct {
@@ -11605,6 +12041,9 @@ type ProviderId = openapi_types.UUID
 // ProviderLocationId defines model for ProviderLocationId.
 type ProviderLocationId = openapi_types.UUID
 
+// ReimbursementId defines model for ReimbursementId.
+type ReimbursementId = openapi_types.UUID
+
 // RelationshipId defines model for RelationshipId.
 type RelationshipId = openapi_types.UUID
 
@@ -11634,6 +12073,9 @@ type ServiceDefinitionId = openapi_types.UUID
 
 // ServiceRequestVersionNo defines model for ServiceRequestVersionNo.
 type ServiceRequestVersionNo = int
+
+// SettlementId defines model for SettlementId.
+type SettlementId = openapi_types.UUID
 
 // StayId defines model for StayId.
 type StayId = openapi_types.UUID
@@ -13757,6 +14199,18 @@ type GetMyPersonParams struct {
 	XTenantID TenantHeader `json:"X-Tenant-ID"`
 }
 
+// GetMyReimbursementsParams defines parameters for GetMyReimbursements.
+type GetMyReimbursementsParams struct {
+	Status *ReimbursementStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// Cursor Opaque cursor from the previous response.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
 // ListMedicalReportsParams defines parameters for ListMedicalReports.
 type ListMedicalReportsParams struct {
 	// Cursor Opaque cursor from the previous response.
@@ -14725,6 +15179,76 @@ type TerminateProviderParams struct {
 	XCSRFToken *CsrfHeader `json:"X-CSRF-Token,omitempty"`
 }
 
+// ListReimbursementsParams defines parameters for ListReimbursements.
+type ListReimbursementsParams struct {
+	PersonId *openapi_types.UUID  `form:"personId,omitempty" json:"personId,omitempty"`
+	Status   *ReimbursementStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// From Service date, inclusive.
+	From *openapi_types.Date `form:"from,omitempty" json:"from,omitempty"`
+
+	// To Service date, inclusive.
+	To *openapi_types.Date `form:"to,omitempty" json:"to,omitempty"`
+
+	// Cursor Opaque cursor from the previous response.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// CreateReimbursementParams defines parameters for CreateReimbursement.
+type CreateReimbursementParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// GetReimbursementParams defines parameters for GetReimbursement.
+type GetReimbursementParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// DecideReimbursementParams defines parameters for DecideReimbursement.
+type DecideReimbursementParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// RecordReimbursementPaymentParams defines parameters for RecordReimbursementPayment.
+type RecordReimbursementPaymentParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// SubmitReimbursementParams defines parameters for SubmitReimbursement.
+type SubmitReimbursementParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
 // GetRuleEvaluationParams defines parameters for GetRuleEvaluation.
 type GetRuleEvaluationParams struct {
 	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
@@ -15204,6 +15728,73 @@ type SwitchTenantJSONBody struct {
 type SwitchTenantParams struct {
 	// XCSRFToken Required when the request is authenticated with the BFF session cookie.
 	XCSRFToken *CsrfHeader `json:"X-CSRF-Token,omitempty"`
+}
+
+// ListSettlementsParams defines parameters for ListSettlements.
+type ListSettlementsParams struct {
+	ProviderOrganizationId *openapi_types.UUID `form:"providerOrganizationId,omitempty" json:"providerOrganizationId,omitempty"`
+	PayerOrganizationId    *openapi_types.UUID `form:"payerOrganizationId,omitempty" json:"payerOrganizationId,omitempty"`
+	BatchId                *openapi_types.UUID `form:"batchId,omitempty" json:"batchId,omitempty"`
+	Status                 *SettlementStatus   `form:"status,omitempty" json:"status,omitempty"`
+	CurrencyCode           *string             `form:"currencyCode,omitempty" json:"currencyCode,omitempty"`
+
+	// DueFrom Due date, inclusive.
+	DueFrom *openapi_types.Date `form:"dueFrom,omitempty" json:"dueFrom,omitempty"`
+
+	// DueTo Due date, inclusive.
+	DueTo *openapi_types.Date `form:"dueTo,omitempty" json:"dueTo,omitempty"`
+
+	// Cursor Opaque cursor from the previous response.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// GetSettlementParams defines parameters for GetSettlement.
+type GetSettlementParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// ApproveSettlementParams defines parameters for ApproveSettlement.
+type ApproveSettlementParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// CancelSettlementParams defines parameters for CancelSettlement.
+type CancelSettlementParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ListPaymentRecordsParams defines parameters for ListPaymentRecords.
+type ListPaymentRecordsParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// CreatePaymentRecordParams defines parameters for CreatePaymentRecord.
+type CreatePaymentRecordParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
 // RedeemVoucherParams defines parameters for RedeemVoucher.
@@ -15694,6 +16285,15 @@ type SuspendProviderJSONRequestBody = ReasonCommand
 // TerminateProviderJSONRequestBody defines body for TerminateProvider for application/json ContentType.
 type TerminateProviderJSONRequestBody = ReasonCommand
 
+// CreateReimbursementJSONRequestBody defines body for CreateReimbursement for application/json ContentType.
+type CreateReimbursementJSONRequestBody = CreateReimbursement
+
+// DecideReimbursementJSONRequestBody defines body for DecideReimbursement for application/json ContentType.
+type DecideReimbursementJSONRequestBody = DecideReimbursement
+
+// RecordReimbursementPaymentJSONRequestBody defines body for RecordReimbursementPayment for application/json ContentType.
+type RecordReimbursementPaymentJSONRequestBody = RecordReimbursementPayment
+
 // PatchRuleSetVersionApplicationMergePatchPlusJSONRequestBody defines body for PatchRuleSetVersion for application/merge-patch+json ContentType.
 type PatchRuleSetVersionApplicationMergePatchPlusJSONRequestBody = UpdateRuleSetVersionRequest
 
@@ -15777,6 +16377,12 @@ type StepUpSessionJSONRequestBody StepUpSessionJSONBody
 
 // SwitchTenantJSONRequestBody defines body for SwitchTenant for application/json ContentType.
 type SwitchTenantJSONRequestBody SwitchTenantJSONBody
+
+// CancelSettlementJSONRequestBody defines body for CancelSettlement for application/json ContentType.
+type CancelSettlementJSONRequestBody = CancelSettlement
+
+// CreatePaymentRecordJSONRequestBody defines body for CreatePaymentRecord for application/json ContentType.
+type CreatePaymentRecordJSONRequestBody = CreatePaymentRecord
 
 // RedeemVoucherJSONRequestBody defines body for RedeemVoucher for application/json ContentType.
 type RedeemVoucherJSONRequestBody = RedeemVoucher
@@ -16400,6 +17006,9 @@ type ServerInterface interface {
 	// (GET /api/v1/me/person)
 	GetMyPerson(w http.ResponseWriter, r *http.Request, params GetMyPersonParams)
 
+	// (GET /api/v1/me/reimbursements)
+	GetMyReimbursements(w http.ResponseWriter, r *http.Request, params GetMyReimbursementsParams)
+
 	// (GET /api/v1/medical-reports)
 	ListMedicalReports(w http.ResponseWriter, r *http.Request, params ListMedicalReportsParams)
 
@@ -16655,6 +17264,24 @@ type ServerInterface interface {
 	// (POST /api/v1/providers/{providerId}/terminate)
 	TerminateProvider(w http.ResponseWriter, r *http.Request, providerId ProviderId, params TerminateProviderParams)
 
+	// (GET /api/v1/reimbursements)
+	ListReimbursements(w http.ResponseWriter, r *http.Request, params ListReimbursementsParams)
+
+	// (POST /api/v1/reimbursements)
+	CreateReimbursement(w http.ResponseWriter, r *http.Request, params CreateReimbursementParams)
+
+	// (GET /api/v1/reimbursements/{reimbursementId})
+	GetReimbursement(w http.ResponseWriter, r *http.Request, reimbursementId ReimbursementId, params GetReimbursementParams)
+
+	// (POST /api/v1/reimbursements/{reimbursementId}/decide)
+	DecideReimbursement(w http.ResponseWriter, r *http.Request, reimbursementId ReimbursementId, params DecideReimbursementParams)
+
+	// (POST /api/v1/reimbursements/{reimbursementId}/payment)
+	RecordReimbursementPayment(w http.ResponseWriter, r *http.Request, reimbursementId ReimbursementId, params RecordReimbursementPaymentParams)
+
+	// (POST /api/v1/reimbursements/{reimbursementId}/submit)
+	SubmitReimbursement(w http.ResponseWriter, r *http.Request, reimbursementId ReimbursementId, params SubmitReimbursementParams)
+
 	// (GET /api/v1/rule-evaluations/{ruleEvaluationId})
 	GetRuleEvaluation(w http.ResponseWriter, r *http.Request, ruleEvaluationId RuleEvaluationId, params GetRuleEvaluationParams)
 
@@ -16789,6 +17416,24 @@ type ServerInterface interface {
 
 	// (POST /api/v1/session/switch-tenant)
 	SwitchTenant(w http.ResponseWriter, r *http.Request, params SwitchTenantParams)
+
+	// (GET /api/v1/settlements)
+	ListSettlements(w http.ResponseWriter, r *http.Request, params ListSettlementsParams)
+
+	// (GET /api/v1/settlements/{settlementId})
+	GetSettlement(w http.ResponseWriter, r *http.Request, settlementId SettlementId, params GetSettlementParams)
+
+	// (POST /api/v1/settlements/{settlementId}/approve)
+	ApproveSettlement(w http.ResponseWriter, r *http.Request, settlementId SettlementId, params ApproveSettlementParams)
+
+	// (POST /api/v1/settlements/{settlementId}/cancel)
+	CancelSettlement(w http.ResponseWriter, r *http.Request, settlementId SettlementId, params CancelSettlementParams)
+
+	// (GET /api/v1/settlements/{settlementId}/payment-records)
+	ListPaymentRecords(w http.ResponseWriter, r *http.Request, settlementId SettlementId, params ListPaymentRecordsParams)
+
+	// (POST /api/v1/settlements/{settlementId}/payment-records)
+	CreatePaymentRecord(w http.ResponseWriter, r *http.Request, settlementId SettlementId, params CreatePaymentRecordParams)
 
 	// (GET /api/v1/tenants)
 	ListAccessibleTenants(w http.ResponseWriter, r *http.Request)
@@ -17565,6 +18210,11 @@ func (_ Unimplemented) GetMyPerson(w http.ResponseWriter, r *http.Request, param
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// (GET /api/v1/me/reimbursements)
+func (_ Unimplemented) GetMyReimbursements(w http.ResponseWriter, r *http.Request, params GetMyReimbursementsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // (GET /api/v1/medical-reports)
 func (_ Unimplemented) ListMedicalReports(w http.ResponseWriter, r *http.Request, params ListMedicalReportsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -17990,6 +18640,36 @@ func (_ Unimplemented) TerminateProvider(w http.ResponseWriter, r *http.Request,
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// (GET /api/v1/reimbursements)
+func (_ Unimplemented) ListReimbursements(w http.ResponseWriter, r *http.Request, params ListReimbursementsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/reimbursements)
+func (_ Unimplemented) CreateReimbursement(w http.ResponseWriter, r *http.Request, params CreateReimbursementParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/reimbursements/{reimbursementId})
+func (_ Unimplemented) GetReimbursement(w http.ResponseWriter, r *http.Request, reimbursementId ReimbursementId, params GetReimbursementParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/reimbursements/{reimbursementId}/decide)
+func (_ Unimplemented) DecideReimbursement(w http.ResponseWriter, r *http.Request, reimbursementId ReimbursementId, params DecideReimbursementParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/reimbursements/{reimbursementId}/payment)
+func (_ Unimplemented) RecordReimbursementPayment(w http.ResponseWriter, r *http.Request, reimbursementId ReimbursementId, params RecordReimbursementPaymentParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/reimbursements/{reimbursementId}/submit)
+func (_ Unimplemented) SubmitReimbursement(w http.ResponseWriter, r *http.Request, reimbursementId ReimbursementId, params SubmitReimbursementParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // (GET /api/v1/rule-evaluations/{ruleEvaluationId})
 func (_ Unimplemented) GetRuleEvaluation(w http.ResponseWriter, r *http.Request, ruleEvaluationId RuleEvaluationId, params GetRuleEvaluationParams) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -18212,6 +18892,36 @@ func (_ Unimplemented) StepUpSession(w http.ResponseWriter, r *http.Request, par
 
 // (POST /api/v1/session/switch-tenant)
 func (_ Unimplemented) SwitchTenant(w http.ResponseWriter, r *http.Request, params SwitchTenantParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/settlements)
+func (_ Unimplemented) ListSettlements(w http.ResponseWriter, r *http.Request, params ListSettlementsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/settlements/{settlementId})
+func (_ Unimplemented) GetSettlement(w http.ResponseWriter, r *http.Request, settlementId SettlementId, params GetSettlementParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/settlements/{settlementId}/approve)
+func (_ Unimplemented) ApproveSettlement(w http.ResponseWriter, r *http.Request, settlementId SettlementId, params ApproveSettlementParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/settlements/{settlementId}/cancel)
+func (_ Unimplemented) CancelSettlement(w http.ResponseWriter, r *http.Request, settlementId SettlementId, params CancelSettlementParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/settlements/{settlementId}/payment-records)
+func (_ Unimplemented) ListPaymentRecords(w http.ResponseWriter, r *http.Request, settlementId SettlementId, params ListPaymentRecordsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/settlements/{settlementId}/payment-records)
+func (_ Unimplemented) CreatePaymentRecord(w http.ResponseWriter, r *http.Request, settlementId SettlementId, params CreatePaymentRecordParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -31209,6 +31919,90 @@ func (siw *ServerInterfaceWrapper) GetMyPerson(w http.ResponseWriter, r *http.Re
 	handler.ServeHTTP(w, r)
 }
 
+// GetMyReimbursements operation middleware
+func (siw *ServerInterfaceWrapper) GetMyReimbursements(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetMyReimbursementsParams
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMyReimbursements(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListMedicalReports operation middleware
 func (siw *ServerInterfaceWrapper) ListMedicalReports(w http.ResponseWriter, r *http.Request) {
 
@@ -38193,6 +38987,551 @@ func (siw *ServerInterfaceWrapper) TerminateProvider(w http.ResponseWriter, r *h
 	handler.ServeHTTP(w, r)
 }
 
+// ListReimbursements operation middleware
+func (siw *ServerInterfaceWrapper) ListReimbursements(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListReimbursementsParams
+
+	// ------------- Optional query parameter "personId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "personId", r.URL.Query(), &params.PersonId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "personId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "personId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "from" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "from", r.URL.Query(), &params.From, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "from"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "from", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "to" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "to", r.URL.Query(), &params.To, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "to"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "to", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListReimbursements(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateReimbursement operation middleware
+func (siw *ServerInterfaceWrapper) CreateReimbursement(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateReimbursementParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateReimbursement(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetReimbursement operation middleware
+func (siw *ServerInterfaceWrapper) GetReimbursement(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "reimbursementId" -------------
+	var reimbursementId ReimbursementId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "reimbursementId", chi.URLParam(r, "reimbursementId"), &reimbursementId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "reimbursementId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetReimbursementParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetReimbursement(w, r, reimbursementId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DecideReimbursement operation middleware
+func (siw *ServerInterfaceWrapper) DecideReimbursement(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "reimbursementId" -------------
+	var reimbursementId ReimbursementId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "reimbursementId", chi.URLParam(r, "reimbursementId"), &reimbursementId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "reimbursementId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DecideReimbursementParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DecideReimbursement(w, r, reimbursementId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RecordReimbursementPayment operation middleware
+func (siw *ServerInterfaceWrapper) RecordReimbursementPayment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "reimbursementId" -------------
+	var reimbursementId ReimbursementId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "reimbursementId", chi.URLParam(r, "reimbursementId"), &reimbursementId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "reimbursementId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RecordReimbursementPaymentParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RecordReimbursementPayment(w, r, reimbursementId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SubmitReimbursement operation middleware
+func (siw *ServerInterfaceWrapper) SubmitReimbursement(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "reimbursementId" -------------
+	var reimbursementId ReimbursementId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "reimbursementId", chi.URLParam(r, "reimbursementId"), &reimbursementId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "reimbursementId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SubmitReimbursementParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SubmitReimbursement(w, r, reimbursementId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetRuleEvaluation operation middleware
 func (siw *ServerInterfaceWrapper) GetRuleEvaluation(w http.ResponseWriter, r *http.Request) {
 
@@ -41681,6 +43020,553 @@ func (siw *ServerInterfaceWrapper) SwitchTenant(w http.ResponseWriter, r *http.R
 	handler.ServeHTTP(w, r)
 }
 
+// ListSettlements operation middleware
+func (siw *ServerInterfaceWrapper) ListSettlements(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListSettlementsParams
+
+	// ------------- Optional query parameter "providerOrganizationId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "providerOrganizationId", r.URL.Query(), &params.ProviderOrganizationId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "providerOrganizationId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "providerOrganizationId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "payerOrganizationId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "payerOrganizationId", r.URL.Query(), &params.PayerOrganizationId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "payerOrganizationId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "payerOrganizationId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "batchId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "batchId", r.URL.Query(), &params.BatchId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "batchId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "batchId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "currencyCode" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "currencyCode", r.URL.Query(), &params.CurrencyCode, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "currencyCode"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "currencyCode", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "dueFrom" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "dueFrom", r.URL.Query(), &params.DueFrom, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "dueFrom"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "dueFrom", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "dueTo" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "dueTo", r.URL.Query(), &params.DueTo, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "dueTo"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "dueTo", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSettlements(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetSettlement operation middleware
+func (siw *ServerInterfaceWrapper) GetSettlement(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "settlementId" -------------
+	var settlementId SettlementId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "settlementId", chi.URLParam(r, "settlementId"), &settlementId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "settlementId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetSettlementParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSettlement(w, r, settlementId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ApproveSettlement operation middleware
+func (siw *ServerInterfaceWrapper) ApproveSettlement(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "settlementId" -------------
+	var settlementId SettlementId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "settlementId", chi.URLParam(r, "settlementId"), &settlementId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "settlementId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ApproveSettlementParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ApproveSettlement(w, r, settlementId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CancelSettlement operation middleware
+func (siw *ServerInterfaceWrapper) CancelSettlement(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "settlementId" -------------
+	var settlementId SettlementId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "settlementId", chi.URLParam(r, "settlementId"), &settlementId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "settlementId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CancelSettlementParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CancelSettlement(w, r, settlementId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListPaymentRecords operation middleware
+func (siw *ServerInterfaceWrapper) ListPaymentRecords(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "settlementId" -------------
+	var settlementId SettlementId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "settlementId", chi.URLParam(r, "settlementId"), &settlementId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "settlementId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListPaymentRecordsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListPaymentRecords(w, r, settlementId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreatePaymentRecord operation middleware
+func (siw *ServerInterfaceWrapper) CreatePaymentRecord(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "settlementId" -------------
+	var settlementId SettlementId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "settlementId", chi.URLParam(r, "settlementId"), &settlementId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "settlementId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreatePaymentRecordParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreatePaymentRecord(w, r, settlementId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListAccessibleTenants operation middleware
 func (siw *ServerInterfaceWrapper) ListAccessibleTenants(w http.ResponseWriter, r *http.Request) {
 
@@ -43762,6 +45648,45 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/batches/{batchId}/decide", wrapper.DecideBatch)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/settlements", wrapper.ListSettlements)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/settlements/{settlementId}", wrapper.GetSettlement)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/settlements/{settlementId}/approve", wrapper.ApproveSettlement)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/settlements/{settlementId}/cancel", wrapper.CancelSettlement)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/settlements/{settlementId}/payment-records", wrapper.ListPaymentRecords)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/settlements/{settlementId}/payment-records", wrapper.CreatePaymentRecord)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/reimbursements", wrapper.ListReimbursements)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/reimbursements", wrapper.CreateReimbursement)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/reimbursements/{reimbursementId}", wrapper.GetReimbursement)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/reimbursements/{reimbursementId}/submit", wrapper.SubmitReimbursement)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/reimbursements/{reimbursementId}/decide", wrapper.DecideReimbursement)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/reimbursements/{reimbursementId}/payment", wrapper.RecordReimbursementPayment)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/me/reimbursements", wrapper.GetMyReimbursements)
 	})
 
 	return r
@@ -57260,6 +59185,93 @@ func (response GetMyPerson404ApplicationProblemPlusJSONResponse) VisitGetMyPerso
 	return err
 }
 
+type GetMyReimbursementsRequestObject struct {
+	Params GetMyReimbursementsParams
+}
+
+type GetMyReimbursementsResponseObject interface {
+	VisitGetMyReimbursementsResponse(w http.ResponseWriter) error
+}
+
+type GetMyReimbursements200JSONResponse ReimbursementPage
+
+func (response GetMyReimbursements200JSONResponse) VisitGetMyReimbursementsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMyReimbursements400ApplicationProblemPlusJSONResponse Problem
+
+func (response GetMyReimbursements400ApplicationProblemPlusJSONResponse) VisitGetMyReimbursementsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMyReimbursements401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GetMyReimbursements401ApplicationProblemPlusJSONResponse) VisitGetMyReimbursementsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMyReimbursements403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetMyReimbursements403ApplicationProblemPlusJSONResponse) VisitGetMyReimbursementsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMyReimbursements429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response GetMyReimbursements429ApplicationProblemPlusJSONResponse) VisitGetMyReimbursementsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListMedicalReportsRequestObject struct {
 	Params ListMedicalReportsParams
 }
@@ -64543,6 +66555,759 @@ func (response TerminateProvider428ApplicationProblemPlusJSONResponse) VisitTerm
 	return err
 }
 
+type ListReimbursementsRequestObject struct {
+	Params ListReimbursementsParams
+}
+
+type ListReimbursementsResponseObject interface {
+	VisitListReimbursementsResponse(w http.ResponseWriter) error
+}
+
+type ListReimbursements200JSONResponse ReimbursementPage
+
+func (response ListReimbursements200JSONResponse) VisitListReimbursementsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListReimbursements400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListReimbursements400ApplicationProblemPlusJSONResponse) VisitListReimbursementsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListReimbursements401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response ListReimbursements401ApplicationProblemPlusJSONResponse) VisitListReimbursementsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListReimbursements403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListReimbursements403ApplicationProblemPlusJSONResponse) VisitListReimbursementsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListReimbursements429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response ListReimbursements429ApplicationProblemPlusJSONResponse) VisitListReimbursementsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateReimbursementRequestObject struct {
+	Params CreateReimbursementParams
+	Body   *CreateReimbursementJSONRequestBody
+}
+
+type CreateReimbursementResponseObject interface {
+	VisitCreateReimbursementResponse(w http.ResponseWriter) error
+}
+
+type CreateReimbursement201ResponseHeaders struct {
+	ETag *string
+}
+
+type CreateReimbursement201JSONResponse struct {
+	Body    Reimbursement
+	Headers CreateReimbursement201ResponseHeaders
+}
+
+func (response CreateReimbursement201JSONResponse) VisitCreateReimbursementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateReimbursement401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response CreateReimbursement401ApplicationProblemPlusJSONResponse) VisitCreateReimbursementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateReimbursement403ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateReimbursement403ApplicationProblemPlusJSONResponse) VisitCreateReimbursementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateReimbursement409ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateReimbursement409ApplicationProblemPlusJSONResponse) VisitCreateReimbursementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateReimbursement422ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateReimbursement422ApplicationProblemPlusJSONResponse) VisitCreateReimbursementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateReimbursement429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response CreateReimbursement429ApplicationProblemPlusJSONResponse) VisitCreateReimbursementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetReimbursementRequestObject struct {
+	ReimbursementId ReimbursementId `json:"reimbursementId"`
+	Params          GetReimbursementParams
+}
+
+type GetReimbursementResponseObject interface {
+	VisitGetReimbursementResponse(w http.ResponseWriter) error
+}
+
+type GetReimbursement200ResponseHeaders struct {
+	ETag *string
+}
+
+type GetReimbursement200JSONResponse struct {
+	Body    Reimbursement
+	Headers GetReimbursement200ResponseHeaders
+}
+
+func (response GetReimbursement200JSONResponse) VisitGetReimbursementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetReimbursement401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GetReimbursement401ApplicationProblemPlusJSONResponse) VisitGetReimbursementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetReimbursement403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetReimbursement403ApplicationProblemPlusJSONResponse) VisitGetReimbursementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetReimbursement404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetReimbursement404ApplicationProblemPlusJSONResponse) VisitGetReimbursementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetReimbursement429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response GetReimbursement429ApplicationProblemPlusJSONResponse) VisitGetReimbursementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DecideReimbursementRequestObject struct {
+	ReimbursementId ReimbursementId `json:"reimbursementId"`
+	Params          DecideReimbursementParams
+	Body            *DecideReimbursementJSONRequestBody
+}
+
+type DecideReimbursementResponseObject interface {
+	VisitDecideReimbursementResponse(w http.ResponseWriter) error
+}
+
+type DecideReimbursement200ResponseHeaders struct {
+	ETag *string
+}
+
+type DecideReimbursement200JSONResponse struct {
+	Body    Reimbursement
+	Headers DecideReimbursement200ResponseHeaders
+}
+
+func (response DecideReimbursement200JSONResponse) VisitDecideReimbursementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DecideReimbursement401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DecideReimbursement401ApplicationProblemPlusJSONResponse) VisitDecideReimbursementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DecideReimbursement403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DecideReimbursement403ApplicationProblemPlusJSONResponse) VisitDecideReimbursementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DecideReimbursement404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response DecideReimbursement404ApplicationProblemPlusJSONResponse) VisitDecideReimbursementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DecideReimbursement409ApplicationProblemPlusJSONResponse Problem
+
+func (response DecideReimbursement409ApplicationProblemPlusJSONResponse) VisitDecideReimbursementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DecideReimbursement412ApplicationProblemPlusJSONResponse Problem
+
+func (response DecideReimbursement412ApplicationProblemPlusJSONResponse) VisitDecideReimbursementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DecideReimbursement422ApplicationProblemPlusJSONResponse Problem
+
+func (response DecideReimbursement422ApplicationProblemPlusJSONResponse) VisitDecideReimbursementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DecideReimbursement428ApplicationProblemPlusJSONResponse Problem
+
+func (response DecideReimbursement428ApplicationProblemPlusJSONResponse) VisitDecideReimbursementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DecideReimbursement429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response DecideReimbursement429ApplicationProblemPlusJSONResponse) VisitDecideReimbursementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RecordReimbursementPaymentRequestObject struct {
+	ReimbursementId ReimbursementId `json:"reimbursementId"`
+	Params          RecordReimbursementPaymentParams
+	Body            *RecordReimbursementPaymentJSONRequestBody
+}
+
+type RecordReimbursementPaymentResponseObject interface {
+	VisitRecordReimbursementPaymentResponse(w http.ResponseWriter) error
+}
+
+type RecordReimbursementPayment200ResponseHeaders struct {
+	ETag *string
+}
+
+type RecordReimbursementPayment200JSONResponse struct {
+	Body    Reimbursement
+	Headers RecordReimbursementPayment200ResponseHeaders
+}
+
+func (response RecordReimbursementPayment200JSONResponse) VisitRecordReimbursementPaymentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RecordReimbursementPayment401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RecordReimbursementPayment401ApplicationProblemPlusJSONResponse) VisitRecordReimbursementPaymentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RecordReimbursementPayment403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RecordReimbursementPayment403ApplicationProblemPlusJSONResponse) VisitRecordReimbursementPaymentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RecordReimbursementPayment404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response RecordReimbursementPayment404ApplicationProblemPlusJSONResponse) VisitRecordReimbursementPaymentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RecordReimbursementPayment409ApplicationProblemPlusJSONResponse Problem
+
+func (response RecordReimbursementPayment409ApplicationProblemPlusJSONResponse) VisitRecordReimbursementPaymentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RecordReimbursementPayment412ApplicationProblemPlusJSONResponse Problem
+
+func (response RecordReimbursementPayment412ApplicationProblemPlusJSONResponse) VisitRecordReimbursementPaymentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RecordReimbursementPayment422ApplicationProblemPlusJSONResponse Problem
+
+func (response RecordReimbursementPayment422ApplicationProblemPlusJSONResponse) VisitRecordReimbursementPaymentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RecordReimbursementPayment428ApplicationProblemPlusJSONResponse Problem
+
+func (response RecordReimbursementPayment428ApplicationProblemPlusJSONResponse) VisitRecordReimbursementPaymentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RecordReimbursementPayment429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response RecordReimbursementPayment429ApplicationProblemPlusJSONResponse) VisitRecordReimbursementPaymentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitReimbursementRequestObject struct {
+	ReimbursementId ReimbursementId `json:"reimbursementId"`
+	Params          SubmitReimbursementParams
+}
+
+type SubmitReimbursementResponseObject interface {
+	VisitSubmitReimbursementResponse(w http.ResponseWriter) error
+}
+
+type SubmitReimbursement200ResponseHeaders struct {
+	ETag *string
+}
+
+type SubmitReimbursement200JSONResponse struct {
+	Body    Reimbursement
+	Headers SubmitReimbursement200ResponseHeaders
+}
+
+func (response SubmitReimbursement200JSONResponse) VisitSubmitReimbursementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitReimbursement401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response SubmitReimbursement401ApplicationProblemPlusJSONResponse) VisitSubmitReimbursementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitReimbursement403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response SubmitReimbursement403ApplicationProblemPlusJSONResponse) VisitSubmitReimbursementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitReimbursement404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response SubmitReimbursement404ApplicationProblemPlusJSONResponse) VisitSubmitReimbursementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitReimbursement409ApplicationProblemPlusJSONResponse Problem
+
+func (response SubmitReimbursement409ApplicationProblemPlusJSONResponse) VisitSubmitReimbursementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitReimbursement412ApplicationProblemPlusJSONResponse Problem
+
+func (response SubmitReimbursement412ApplicationProblemPlusJSONResponse) VisitSubmitReimbursementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitReimbursement428ApplicationProblemPlusJSONResponse Problem
+
+func (response SubmitReimbursement428ApplicationProblemPlusJSONResponse) VisitSubmitReimbursementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitReimbursement429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response SubmitReimbursement429ApplicationProblemPlusJSONResponse) VisitSubmitReimbursementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetRuleEvaluationRequestObject struct {
 	RuleEvaluationId RuleEvaluationId `json:"ruleEvaluationId"`
 	Params           GetRuleEvaluationParams
@@ -68785,6 +71550,709 @@ func (response SwitchTenant403ApplicationProblemPlusJSONResponse) VisitSwitchTen
 	return err
 }
 
+type ListSettlementsRequestObject struct {
+	Params ListSettlementsParams
+}
+
+type ListSettlementsResponseObject interface {
+	VisitListSettlementsResponse(w http.ResponseWriter) error
+}
+
+type ListSettlements200JSONResponse SettlementPage
+
+func (response ListSettlements200JSONResponse) VisitListSettlementsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListSettlements400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListSettlements400ApplicationProblemPlusJSONResponse) VisitListSettlementsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListSettlements401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response ListSettlements401ApplicationProblemPlusJSONResponse) VisitListSettlementsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListSettlements403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListSettlements403ApplicationProblemPlusJSONResponse) VisitListSettlementsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListSettlements429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response ListSettlements429ApplicationProblemPlusJSONResponse) VisitListSettlementsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSettlementRequestObject struct {
+	SettlementId SettlementId `json:"settlementId"`
+	Params       GetSettlementParams
+}
+
+type GetSettlementResponseObject interface {
+	VisitGetSettlementResponse(w http.ResponseWriter) error
+}
+
+type GetSettlement200ResponseHeaders struct {
+	ETag *string
+}
+
+type GetSettlement200JSONResponse struct {
+	Body    Settlement
+	Headers GetSettlement200ResponseHeaders
+}
+
+func (response GetSettlement200JSONResponse) VisitGetSettlementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSettlement401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GetSettlement401ApplicationProblemPlusJSONResponse) VisitGetSettlementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSettlement403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetSettlement403ApplicationProblemPlusJSONResponse) VisitGetSettlementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSettlement404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetSettlement404ApplicationProblemPlusJSONResponse) VisitGetSettlementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSettlement429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response GetSettlement429ApplicationProblemPlusJSONResponse) VisitGetSettlementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveSettlementRequestObject struct {
+	SettlementId SettlementId `json:"settlementId"`
+	Params       ApproveSettlementParams
+}
+
+type ApproveSettlementResponseObject interface {
+	VisitApproveSettlementResponse(w http.ResponseWriter) error
+}
+
+type ApproveSettlement200ResponseHeaders struct {
+	ETag *string
+}
+
+type ApproveSettlement200JSONResponse struct {
+	Body    Settlement
+	Headers ApproveSettlement200ResponseHeaders
+}
+
+func (response ApproveSettlement200JSONResponse) VisitApproveSettlementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveSettlement401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response ApproveSettlement401ApplicationProblemPlusJSONResponse) VisitApproveSettlementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveSettlement403ApplicationProblemPlusJSONResponse Problem
+
+func (response ApproveSettlement403ApplicationProblemPlusJSONResponse) VisitApproveSettlementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveSettlement404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ApproveSettlement404ApplicationProblemPlusJSONResponse) VisitApproveSettlementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveSettlement409ApplicationProblemPlusJSONResponse Problem
+
+func (response ApproveSettlement409ApplicationProblemPlusJSONResponse) VisitApproveSettlementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveSettlement412ApplicationProblemPlusJSONResponse Problem
+
+func (response ApproveSettlement412ApplicationProblemPlusJSONResponse) VisitApproveSettlementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveSettlement428ApplicationProblemPlusJSONResponse Problem
+
+func (response ApproveSettlement428ApplicationProblemPlusJSONResponse) VisitApproveSettlementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveSettlement429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response ApproveSettlement429ApplicationProblemPlusJSONResponse) VisitApproveSettlementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelSettlementRequestObject struct {
+	SettlementId SettlementId `json:"settlementId"`
+	Params       CancelSettlementParams
+	Body         *CancelSettlementJSONRequestBody
+}
+
+type CancelSettlementResponseObject interface {
+	VisitCancelSettlementResponse(w http.ResponseWriter) error
+}
+
+type CancelSettlement200ResponseHeaders struct {
+	ETag *string
+}
+
+type CancelSettlement200JSONResponse struct {
+	Body    Settlement
+	Headers CancelSettlement200ResponseHeaders
+}
+
+func (response CancelSettlement200JSONResponse) VisitCancelSettlementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelSettlement401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response CancelSettlement401ApplicationProblemPlusJSONResponse) VisitCancelSettlementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelSettlement403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CancelSettlement403ApplicationProblemPlusJSONResponse) VisitCancelSettlementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelSettlement404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CancelSettlement404ApplicationProblemPlusJSONResponse) VisitCancelSettlementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelSettlement409ApplicationProblemPlusJSONResponse Problem
+
+func (response CancelSettlement409ApplicationProblemPlusJSONResponse) VisitCancelSettlementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelSettlement412ApplicationProblemPlusJSONResponse Problem
+
+func (response CancelSettlement412ApplicationProblemPlusJSONResponse) VisitCancelSettlementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelSettlement422ApplicationProblemPlusJSONResponse Problem
+
+func (response CancelSettlement422ApplicationProblemPlusJSONResponse) VisitCancelSettlementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelSettlement428ApplicationProblemPlusJSONResponse Problem
+
+func (response CancelSettlement428ApplicationProblemPlusJSONResponse) VisitCancelSettlementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelSettlement429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response CancelSettlement429ApplicationProblemPlusJSONResponse) VisitCancelSettlementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPaymentRecordsRequestObject struct {
+	SettlementId SettlementId `json:"settlementId"`
+	Params       ListPaymentRecordsParams
+}
+
+type ListPaymentRecordsResponseObject interface {
+	VisitListPaymentRecordsResponse(w http.ResponseWriter) error
+}
+
+type ListPaymentRecords200JSONResponse PaymentRecordList
+
+func (response ListPaymentRecords200JSONResponse) VisitListPaymentRecordsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPaymentRecords401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response ListPaymentRecords401ApplicationProblemPlusJSONResponse) VisitListPaymentRecordsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPaymentRecords403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListPaymentRecords403ApplicationProblemPlusJSONResponse) VisitListPaymentRecordsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPaymentRecords404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ListPaymentRecords404ApplicationProblemPlusJSONResponse) VisitListPaymentRecordsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPaymentRecords429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response ListPaymentRecords429ApplicationProblemPlusJSONResponse) VisitListPaymentRecordsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePaymentRecordRequestObject struct {
+	SettlementId SettlementId `json:"settlementId"`
+	Params       CreatePaymentRecordParams
+	Body         *CreatePaymentRecordJSONRequestBody
+}
+
+type CreatePaymentRecordResponseObject interface {
+	VisitCreatePaymentRecordResponse(w http.ResponseWriter) error
+}
+
+type CreatePaymentRecord201ResponseHeaders struct {
+	ETag *string
+}
+
+type CreatePaymentRecord201JSONResponse struct {
+	Body    Settlement
+	Headers CreatePaymentRecord201ResponseHeaders
+}
+
+func (response CreatePaymentRecord201JSONResponse) VisitCreatePaymentRecordResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePaymentRecord401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response CreatePaymentRecord401ApplicationProblemPlusJSONResponse) VisitCreatePaymentRecordResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePaymentRecord403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CreatePaymentRecord403ApplicationProblemPlusJSONResponse) VisitCreatePaymentRecordResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePaymentRecord404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CreatePaymentRecord404ApplicationProblemPlusJSONResponse) VisitCreatePaymentRecordResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePaymentRecord409ApplicationProblemPlusJSONResponse Problem
+
+func (response CreatePaymentRecord409ApplicationProblemPlusJSONResponse) VisitCreatePaymentRecordResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePaymentRecord422ApplicationProblemPlusJSONResponse Problem
+
+func (response CreatePaymentRecord422ApplicationProblemPlusJSONResponse) VisitCreatePaymentRecordResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePaymentRecord429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response CreatePaymentRecord429ApplicationProblemPlusJSONResponse) VisitCreatePaymentRecordResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListAccessibleTenantsRequestObject struct {
 }
 
@@ -70600,6 +74068,9 @@ type StrictServerInterface interface {
 	// (GET /api/v1/me/person)
 	GetMyPerson(ctx context.Context, request GetMyPersonRequestObject) (GetMyPersonResponseObject, error)
 
+	// (GET /api/v1/me/reimbursements)
+	GetMyReimbursements(ctx context.Context, request GetMyReimbursementsRequestObject) (GetMyReimbursementsResponseObject, error)
+
 	// (GET /api/v1/medical-reports)
 	ListMedicalReports(ctx context.Context, request ListMedicalReportsRequestObject) (ListMedicalReportsResponseObject, error)
 
@@ -70855,6 +74326,24 @@ type StrictServerInterface interface {
 	// (POST /api/v1/providers/{providerId}/terminate)
 	TerminateProvider(ctx context.Context, request TerminateProviderRequestObject) (TerminateProviderResponseObject, error)
 
+	// (GET /api/v1/reimbursements)
+	ListReimbursements(ctx context.Context, request ListReimbursementsRequestObject) (ListReimbursementsResponseObject, error)
+
+	// (POST /api/v1/reimbursements)
+	CreateReimbursement(ctx context.Context, request CreateReimbursementRequestObject) (CreateReimbursementResponseObject, error)
+
+	// (GET /api/v1/reimbursements/{reimbursementId})
+	GetReimbursement(ctx context.Context, request GetReimbursementRequestObject) (GetReimbursementResponseObject, error)
+
+	// (POST /api/v1/reimbursements/{reimbursementId}/decide)
+	DecideReimbursement(ctx context.Context, request DecideReimbursementRequestObject) (DecideReimbursementResponseObject, error)
+
+	// (POST /api/v1/reimbursements/{reimbursementId}/payment)
+	RecordReimbursementPayment(ctx context.Context, request RecordReimbursementPaymentRequestObject) (RecordReimbursementPaymentResponseObject, error)
+
+	// (POST /api/v1/reimbursements/{reimbursementId}/submit)
+	SubmitReimbursement(ctx context.Context, request SubmitReimbursementRequestObject) (SubmitReimbursementResponseObject, error)
+
 	// (GET /api/v1/rule-evaluations/{ruleEvaluationId})
 	GetRuleEvaluation(ctx context.Context, request GetRuleEvaluationRequestObject) (GetRuleEvaluationResponseObject, error)
 
@@ -70989,6 +74478,24 @@ type StrictServerInterface interface {
 
 	// (POST /api/v1/session/switch-tenant)
 	SwitchTenant(ctx context.Context, request SwitchTenantRequestObject) (SwitchTenantResponseObject, error)
+
+	// (GET /api/v1/settlements)
+	ListSettlements(ctx context.Context, request ListSettlementsRequestObject) (ListSettlementsResponseObject, error)
+
+	// (GET /api/v1/settlements/{settlementId})
+	GetSettlement(ctx context.Context, request GetSettlementRequestObject) (GetSettlementResponseObject, error)
+
+	// (POST /api/v1/settlements/{settlementId}/approve)
+	ApproveSettlement(ctx context.Context, request ApproveSettlementRequestObject) (ApproveSettlementResponseObject, error)
+
+	// (POST /api/v1/settlements/{settlementId}/cancel)
+	CancelSettlement(ctx context.Context, request CancelSettlementRequestObject) (CancelSettlementResponseObject, error)
+
+	// (GET /api/v1/settlements/{settlementId}/payment-records)
+	ListPaymentRecords(ctx context.Context, request ListPaymentRecordsRequestObject) (ListPaymentRecordsResponseObject, error)
+
+	// (POST /api/v1/settlements/{settlementId}/payment-records)
+	CreatePaymentRecord(ctx context.Context, request CreatePaymentRecordRequestObject) (CreatePaymentRecordResponseObject, error)
 
 	// (GET /api/v1/tenants)
 	ListAccessibleTenants(ctx context.Context, request ListAccessibleTenantsRequestObject) (ListAccessibleTenantsResponseObject, error)
@@ -75488,6 +78995,32 @@ func (sh *strictHandler) GetMyPerson(w http.ResponseWriter, r *http.Request, par
 	}
 }
 
+// GetMyReimbursements operation middleware
+func (sh *strictHandler) GetMyReimbursements(w http.ResponseWriter, r *http.Request, params GetMyReimbursementsParams) {
+	var request GetMyReimbursementsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMyReimbursements(ctx, request.(GetMyReimbursementsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMyReimbursements")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMyReimbursementsResponseObject); ok {
+		if err := validResponse.VisitGetMyReimbursementsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListMedicalReports operation middleware
 func (sh *strictHandler) ListMedicalReports(w http.ResponseWriter, r *http.Request, params ListMedicalReportsParams) {
 	var request ListMedicalReportsRequestObject
@@ -78074,6 +81607,187 @@ func (sh *strictHandler) TerminateProvider(w http.ResponseWriter, r *http.Reques
 	}
 }
 
+// ListReimbursements operation middleware
+func (sh *strictHandler) ListReimbursements(w http.ResponseWriter, r *http.Request, params ListReimbursementsParams) {
+	var request ListReimbursementsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListReimbursements(ctx, request.(ListReimbursementsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListReimbursements")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListReimbursementsResponseObject); ok {
+		if err := validResponse.VisitListReimbursementsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateReimbursement operation middleware
+func (sh *strictHandler) CreateReimbursement(w http.ResponseWriter, r *http.Request, params CreateReimbursementParams) {
+	var request CreateReimbursementRequestObject
+
+	request.Params = params
+
+	var body CreateReimbursementJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateReimbursement(ctx, request.(CreateReimbursementRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateReimbursement")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateReimbursementResponseObject); ok {
+		if err := validResponse.VisitCreateReimbursementResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetReimbursement operation middleware
+func (sh *strictHandler) GetReimbursement(w http.ResponseWriter, r *http.Request, reimbursementId ReimbursementId, params GetReimbursementParams) {
+	var request GetReimbursementRequestObject
+
+	request.ReimbursementId = reimbursementId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetReimbursement(ctx, request.(GetReimbursementRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetReimbursement")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetReimbursementResponseObject); ok {
+		if err := validResponse.VisitGetReimbursementResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DecideReimbursement operation middleware
+func (sh *strictHandler) DecideReimbursement(w http.ResponseWriter, r *http.Request, reimbursementId ReimbursementId, params DecideReimbursementParams) {
+	var request DecideReimbursementRequestObject
+
+	request.ReimbursementId = reimbursementId
+	request.Params = params
+
+	var body DecideReimbursementJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DecideReimbursement(ctx, request.(DecideReimbursementRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DecideReimbursement")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DecideReimbursementResponseObject); ok {
+		if err := validResponse.VisitDecideReimbursementResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RecordReimbursementPayment operation middleware
+func (sh *strictHandler) RecordReimbursementPayment(w http.ResponseWriter, r *http.Request, reimbursementId ReimbursementId, params RecordReimbursementPaymentParams) {
+	var request RecordReimbursementPaymentRequestObject
+
+	request.ReimbursementId = reimbursementId
+	request.Params = params
+
+	var body RecordReimbursementPaymentJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RecordReimbursementPayment(ctx, request.(RecordReimbursementPaymentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RecordReimbursementPayment")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RecordReimbursementPaymentResponseObject); ok {
+		if err := validResponse.VisitRecordReimbursementPaymentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SubmitReimbursement operation middleware
+func (sh *strictHandler) SubmitReimbursement(w http.ResponseWriter, r *http.Request, reimbursementId ReimbursementId, params SubmitReimbursementParams) {
+	var request SubmitReimbursementRequestObject
+
+	request.ReimbursementId = reimbursementId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SubmitReimbursement(ctx, request.(SubmitReimbursementRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SubmitReimbursement")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SubmitReimbursementResponseObject); ok {
+		if err := validResponse.VisitSubmitReimbursementResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetRuleEvaluation operation middleware
 func (sh *strictHandler) GetRuleEvaluation(w http.ResponseWriter, r *http.Request, ruleEvaluationId RuleEvaluationId, params GetRuleEvaluationParams) {
 	var request GetRuleEvaluationRequestObject
@@ -79470,6 +83184,181 @@ func (sh *strictHandler) SwitchTenant(w http.ResponseWriter, r *http.Request, pa
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(SwitchTenantResponseObject); ok {
 		if err := validResponse.VisitSwitchTenantResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListSettlements operation middleware
+func (sh *strictHandler) ListSettlements(w http.ResponseWriter, r *http.Request, params ListSettlementsParams) {
+	var request ListSettlementsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListSettlements(ctx, request.(ListSettlementsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListSettlements")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListSettlementsResponseObject); ok {
+		if err := validResponse.VisitListSettlementsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetSettlement operation middleware
+func (sh *strictHandler) GetSettlement(w http.ResponseWriter, r *http.Request, settlementId SettlementId, params GetSettlementParams) {
+	var request GetSettlementRequestObject
+
+	request.SettlementId = settlementId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSettlement(ctx, request.(GetSettlementRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSettlement")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetSettlementResponseObject); ok {
+		if err := validResponse.VisitGetSettlementResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ApproveSettlement operation middleware
+func (sh *strictHandler) ApproveSettlement(w http.ResponseWriter, r *http.Request, settlementId SettlementId, params ApproveSettlementParams) {
+	var request ApproveSettlementRequestObject
+
+	request.SettlementId = settlementId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ApproveSettlement(ctx, request.(ApproveSettlementRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ApproveSettlement")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ApproveSettlementResponseObject); ok {
+		if err := validResponse.VisitApproveSettlementResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CancelSettlement operation middleware
+func (sh *strictHandler) CancelSettlement(w http.ResponseWriter, r *http.Request, settlementId SettlementId, params CancelSettlementParams) {
+	var request CancelSettlementRequestObject
+
+	request.SettlementId = settlementId
+	request.Params = params
+
+	var body CancelSettlementJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CancelSettlement(ctx, request.(CancelSettlementRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CancelSettlement")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CancelSettlementResponseObject); ok {
+		if err := validResponse.VisitCancelSettlementResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListPaymentRecords operation middleware
+func (sh *strictHandler) ListPaymentRecords(w http.ResponseWriter, r *http.Request, settlementId SettlementId, params ListPaymentRecordsParams) {
+	var request ListPaymentRecordsRequestObject
+
+	request.SettlementId = settlementId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListPaymentRecords(ctx, request.(ListPaymentRecordsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListPaymentRecords")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListPaymentRecordsResponseObject); ok {
+		if err := validResponse.VisitListPaymentRecordsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreatePaymentRecord operation middleware
+func (sh *strictHandler) CreatePaymentRecord(w http.ResponseWriter, r *http.Request, settlementId SettlementId, params CreatePaymentRecordParams) {
+	var request CreatePaymentRecordRequestObject
+
+	request.SettlementId = settlementId
+	request.Params = params
+
+	var body CreatePaymentRecordJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreatePaymentRecord(ctx, request.(CreatePaymentRecordRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreatePaymentRecord")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreatePaymentRecordResponseObject); ok {
+		if err := validResponse.VisitCreatePaymentRecordResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

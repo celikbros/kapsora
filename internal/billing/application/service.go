@@ -17,21 +17,26 @@ import (
 	healthapp "github.com/celikbros/kapsora/internal/health/application"
 	healthdomain "github.com/celikbros/kapsora/internal/health/domain"
 	"github.com/celikbros/kapsora/internal/identity"
+	"github.com/celikbros/kapsora/internal/platform/crypto"
 	"github.com/celikbros/kapsora/internal/platform/db"
 	"github.com/celikbros/kapsora/internal/platform/httpx"
 )
 
 // Service implements the invoice use cases.
 type Service struct {
-	pool      *pgxpool.Pool
-	repo      Repository
-	batches   BatchRepository
-	claims    ClaimsPort
-	workItems WorkItemPort
-	audit     audit.Recorder
-	cursors   *httpx.CursorCodec
-	logger    *slog.Logger
-	now       func() time.Time
+	pool         *pgxpool.Pool
+	repo         Repository
+	batches      BatchRepository
+	settlements  SettlementRepository
+	claims       ClaimsPort
+	workItems    WorkItemPort
+	entitlements EntitlementPort
+	payments     PaymentOrderPort
+	cipher       crypto.FieldCipher
+	audit        audit.Recorder
+	cursors      *httpx.CursorCodec
+	logger       *slog.Logger
+	now          func() time.Time
 }
 
 // Deps are the collaborators of the service.
@@ -42,6 +47,11 @@ type Deps struct {
 	// and refuses every batch command, which is the honest behaviour of a process that was
 	// never given one.
 	Batches BatchRepository
+	// Settlements is WP-I7-04's persistence: the settlement, its payment records and the
+	// member's reimbursement. A process wired without it serves the invoice and the icmal and
+	// refuses every settlement command, which is the honest behaviour of a process that was
+	// never given one.
+	Settlements SettlementRepository
 	// Claims is the claim module's INVOICED transition and the way back. It runs inside this
 	// package's transaction. The default refuses, which is the honest behaviour of a process
 	// that was never given one.
@@ -49,7 +59,18 @@ type Deps struct {
 	// WorkItems is WP-I4-03's queue, written from this side of the boundary. The default
 	// raises nothing, which is the right answer for a tenant that has configured no queue.
 	WorkItems WorkItemPort
-	Audit     audit.Recorder
+	// Entitlements is the member's wallet (WP-I2-03's ledger). The default refuses, because a
+	// reimbursement approved without a consumption is money paid out of a wallet nobody
+	// debited.
+	Entitlements EntitlementPort
+	// Payments is the payment adapter of M9. The default records the order and does nothing
+	// else, which is exactly what a platform that transfers no money should do.
+	Payments PaymentOrderPort
+	// Cipher is the platform's field cipher, the same one `party.person_identifier` is written
+	// through. It is required for the reimbursement and for nothing else: an IBAN reaches the
+	// database as this cipher's envelope or it does not reach it at all.
+	Cipher crypto.FieldCipher
+	Audit  audit.Recorder
 	// Cursors may be nil in a process that never pages.
 	Cursors *httpx.CursorCodec
 	Logger  *slog.Logger
@@ -68,6 +89,12 @@ func New(d Deps) (*Service, error) {
 	if d.WorkItems == nil {
 		d.WorkItems = NoWorkItems{}
 	}
+	if d.Entitlements == nil {
+		d.Entitlements = NoEntitlements{}
+	}
+	if d.Payments == nil {
+		d.Payments = RecordingPaymentOrders{}
+	}
 	if d.Audit == nil {
 		d.Audit = audit.NopRecorder{}
 	}
@@ -78,8 +105,9 @@ func New(d Deps) (*Service, error) {
 		d.Now = time.Now
 	}
 	return &Service{
-		pool: d.Pool, repo: d.Repo, batches: d.Batches, claims: d.Claims,
-		workItems: d.WorkItems, audit: d.Audit,
+		pool: d.Pool, repo: d.Repo, batches: d.Batches, settlements: d.Settlements,
+		claims: d.Claims, workItems: d.WorkItems, entitlements: d.Entitlements,
+		payments: d.Payments, cipher: d.Cipher, audit: d.Audit,
 		cursors: d.Cursors, logger: d.Logger, now: d.Now,
 	}, nil
 }
