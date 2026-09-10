@@ -582,13 +582,17 @@ describe('submitting an invoice', () => {
       header: { ...commandWithKey(finance, key), 'If-Match': `"${patched.rowVersion}"` },
       path: { invoiceId: draft.id },
     };
+    // Counted before the first submit rather than against a fixed number: WP-I7-03's icmal
+    // fixture seeds submitted invoices of its own, and a test that pinned a total would be a
+    // test about how many documents the world happens to hold.
+    const before = api.world.invoices.filter((i) => i.status === 'SUBMITTED').length;
     const first = (await unwrap(finance.c.POST('/api/v1/invoices/{invoiceId}/submit', { params })))
       .data;
     const replay = (await unwrap(finance.c.POST('/api/v1/invoices/{invoiceId}/submit', { params })))
       .data;
     // The same body, not a second submit: a replayed command must move one invoice.
     expect(replay).toEqual(first);
-    expect(api.world.invoices.filter((i) => i.status === 'SUBMITTED')).toHaveLength(2);
+    expect(api.world.invoices.filter((i) => i.status === 'SUBMITTED')).toHaveLength(before + 1);
   });
 });
 

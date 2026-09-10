@@ -128,7 +128,7 @@ func (s *Service) CreateInvoice(ctx context.Context, rc identity.RequestContext,
 				return err
 			}
 			if old.ProviderOrganizationID != in.ProviderOrganizationID {
-				return fieldError("supersedesInvoiceId", "REFERENCE",
+				return fieldError("supersedes_invoice_id", "REFERENCE",
 					"düzeltilen fatura aynı sağlayıcıya ait olmalı")
 			}
 			if !domain.CanSupersede(old.Status) {
@@ -196,13 +196,13 @@ func (s *Service) CreateInvoice(ctx context.Context, rc identity.RequestContext,
 
 		detail := map[string]any{
 			"providerOrganizationId": in.ProviderOrganizationID.String(),
-			"fiscalYear":             record.FiscalYear,
-			"currencyCode":           record.CurrencyCode,
-			"payableAmount":          record.PayableAmount,
-			"allocationCount":        len(allocations),
+			"fiscal_year":            record.FiscalYear,
+			"currency_code":          record.CurrencyCode,
+			"payable_amount":         record.PayableAmount,
+			"allocation_count":       len(allocations),
 		}
 		if superseded != nil {
-			detail["supersedesInvoiceId"] = superseded.ID.String()
+			detail["supersedes_invoice_id"] = superseded.ID.String()
 		}
 		if err := s.record(ctx, tx, rc, "invoice.create", record.ID, detail); err != nil {
 			return err
@@ -465,9 +465,9 @@ func (s *Service) PatchInvoiceDraft(ctx context.Context, rc identity.RequestCont
 			}
 		}
 		if err := s.record(ctx, tx, rc, "invoice.update", id, map[string]any{
-			"fiscalYear":    domain.FiscalYear(header.InvoiceDate),
-			"payableAmount": header.PayableAmount,
-			"currencyCode":  header.CurrencyCode,
+			"fiscal_year":    domain.FiscalYear(header.InvoiceDate),
+			"payable_amount": header.PayableAmount,
+			"currency_code":  header.CurrencyCode,
 		}); err != nil {
 			return err
 		}

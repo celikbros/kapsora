@@ -1931,7 +1931,7 @@ export interface StoredInvoice {
   supersededByInvoiceId: string | null;
   submittedAt: string | null;
   documentId: string | null;
-  /** WP-I7-03's icmal. Always null in this milestone. */
+  /** WP-I7-03's icmal, set when that icmal is submitted. */
   batchId: string | null;
   notes: string | null;
   createdAt: string;
@@ -1962,6 +1962,84 @@ export interface StoredInvoiceClaim {
   claimStatusBefore: Schemas['ClaimStatus'];
   active: boolean;
   createdAt: string;
+}
+
+/**
+ * An icmal (WP-I7-03): one provider's submitted invoices for one payer, one currency, one domain
+ * and one period, with the payer's decision on each of them.
+ *
+ * The five totals are the server's own. Until the batch is decided the four decision totals are
+ * zero, which is the truthful answer rather than a guess from the decisions taken so far; once
+ * it is decided they add up to `submittedTotal` exactly, which is a CHECK on the server's row.
+ */
+export interface StoredBatch {
+  id: string;
+  tenantId: string;
+  /** `IC-YYYYMM-XXXXXXXX`, unique inside the tenant. */
+  reference: string;
+  providerOrganizationId: string;
+  /** The sponsor the contract names. Null means the tenant itself is the payer. */
+  payerOrganizationId: string | null;
+  domainCode: string;
+  currencyCode: string;
+  periodFrom: string;
+  periodTo: string;
+  status: Schemas['BatchStatus'];
+  submittedAt: string | null;
+  submittedBy: string | null;
+  decidedAt: string | null;
+  decidedBy: string | null;
+  invoiceCount: number;
+  submittedTotal: string;
+  approvedTotal: string;
+  cutTotal: string;
+  returnedTotal: string;
+  rejectedTotal: string;
+  createdAt: string;
+  rowVersion: number;
+}
+
+/**
+ * One invoice in one icmal, with the payer's answer to it.
+ *
+ * `submittedAmount` is a copy of what the invoice was billing when the batch was submitted, not a
+ * live read: the batch is a record of what was *submitted*, and a total that silently followed a
+ * corrected document would stop matching the sum of its parts.
+ *
+ * `active` is "the batch this row sits on is not cancelled". One invoice sits in one live batch,
+ * and that is a partial unique index on the server.
+ */
+export interface StoredBatchInvoice {
+  id: string;
+  tenantId: string;
+  batchId: string;
+  invoiceId: string;
+  submittedAmount: string;
+  decision: Schemas['BatchDecision'] | null;
+  approvedAmount: string | null;
+  reasonCode: string | null;
+  reasonText: string | null;
+  decidedBy: string | null;
+  decidedAt: string | null;
+  active: boolean;
+  createdAt: string;
+}
+
+/**
+ * Which `claim.adjustment` row a CUT wrote, and which reversal took it back.
+ *
+ * It exists because a changed decision reverses rather than edits, and reversing means finding
+ * the rows the earlier decision wrote. Matching them by amount and reason would be a join by
+ * coincidence.
+ */
+export interface StoredBatchAdjustment {
+  id: string;
+  tenantId: string;
+  batchInvoiceId: string;
+  claimId: string;
+  adjustmentId: string;
+  amount: string;
+  reversedByAdjustmentId: string | null;
 }
 
 export interface MockWorld {
@@ -2098,6 +2176,15 @@ export interface MockWorld {
    */
   invoices: StoredInvoice[];
   invoiceAllocations: StoredInvoiceClaim[];
+  /**
+   * The icmal, its membership and the link between one CUT decision and the ledger rows it wrote
+   * (WP-I7-03). Three arrays rather than one nested shape because that is what the schema is, and
+   * because the membership is read from both ends: a batch asks which invoices it covers, and
+   * `putBatchInvoices` asks which invoices are already in a live one.
+   */
+  batches: StoredBatch[];
+  batchInvoices: StoredBatchInvoice[];
+  batchAdjustments: StoredBatchAdjustment[];
   /**
    * Moves a document on from SCANNING the way the scan worker does. It is the mock's
    * stand-in for the worker, so a screen can show "taranıyor" and then a verdict without
@@ -6268,6 +6355,202 @@ export function buildWorld(
   });
   seedAllocation(invoiceCorrection, correctedClaim, '500');
 
+  // --- M7: the icmal, and the payer's decision on each invoice in it (WP-I7-03) -------
+  //
+  // Appended after the invoices and at the very end of buildWorld, for the same reason every
+  // fixture since M5 is: one seeded random stream, and an id drawn earlier would change which
+  // organizations a small world gets and break tests that have nothing to do with icmals.
+  //
+  // Four batches, because those are the four states a screen has to be able to draw: a draft
+  // the provider is still filling, a submitted one waiting for the payer, an under-review one
+  // with all four decisions on it, and a decided one whose totals reconcile. The invoices and
+  // claims underneath them are seeded here rather than borrowed from the invoice fixture, so
+  // that putting an invoice into an icmal does not silently change what the invoice tests are
+  // about.
+  const batches: StoredBatch[] = [];
+  const batchInvoices: StoredBatchInvoice[] = [];
+  const batchAdjustments: StoredBatchAdjustment[] = [];
+
+  // The payer's financial reviewer, who is the person every decision in this fixture was taken
+  // by. It is looked up rather than invented so a screen showing who decided a row has a real
+  // account behind the id.
+  const financeActorId = accounts.find((a) => a.username === 'financial.reviewer')!.actorId;
+
+  const BATCH_REFERENCE_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  /** `IC-YYYYMM-XXXXXXXX`, drawn from the world's own stream so a rebuild is identical. */
+  const nextBatchReference = (): string => {
+    let tail = '';
+    for (let i = 0; i < 8; i += 1) {
+      tail += BATCH_REFERENCE_ALPHABET[Math.floor(random() * BATCH_REFERENCE_ALPHABET.length)];
+    }
+    return `IC-202603-${tail}`;
+  };
+
+  const seedBatch = (
+    status: Schemas['BatchStatus'],
+    daysAgo: number,
+    over: Partial<StoredBatch> = {},
+  ): StoredBatch => {
+    const submitted = status !== 'DRAFT' && status !== 'CANCELLED';
+    const row: StoredBatch = {
+      id: nextId(daysAgo * -86_400_000),
+      tenantId: demoA.id,
+      reference: nextBatchReference(),
+      providerOrganizationId: providerRel.id,
+      payerOrganizationId: null,
+      domainCode: 'HEALTH',
+      currencyCode: 'TRY',
+      periodFrom: '2026-03-01',
+      periodTo: '2026-03-31',
+      status,
+      submittedAt: submitted ? isoDaysAgo(base, daysAgo) : null,
+      submittedBy: submitted ? providerActorId : null,
+      decidedAt: null,
+      decidedBy: null,
+      invoiceCount: 0,
+      submittedTotal: '0',
+      approvedTotal: '0',
+      cutTotal: '0',
+      returnedTotal: '0',
+      rejectedTotal: '0',
+      createdAt: isoDaysAgo(base, daysAgo),
+      rowVersion: submitted ? 2 : 1,
+      ...over,
+    };
+    batches.push(row);
+    return row;
+  };
+
+  /** One invoice of the provider, on one claim worth exactly what it bills. */
+  const seedBatchableInvoice = (
+    status: Schemas['InvoiceStatus'],
+    claimStatus: Schemas['ClaimStatus'],
+    daysAgo: number,
+    amount: string,
+  ): StoredInvoice => {
+    const claim = seedInvoiceableClaim(claimStatus, daysAgo, amount);
+    const invoice = seedInvoice(status, daysAgo, amount, '0', amount);
+    seedAllocation(invoice, claim, amount, status !== 'RETURNED' && status !== 'CANCELLED');
+    return invoice;
+  };
+
+  /** Puts one invoice into one batch, keeping the header's count and submitted total in step. */
+  const seedBatchInvoice = (
+    batch: StoredBatch,
+    invoice: StoredInvoice,
+    decision: Schemas['BatchDecision'] | null = null,
+    approvedAmount: string | null = null,
+    reasonCode: string | null = null,
+  ): StoredBatchInvoice => {
+    const row: StoredBatchInvoice = {
+      id: nextId(),
+      tenantId: demoA.id,
+      batchId: batch.id,
+      invoiceId: invoice.id,
+      submittedAmount: invoice.payableAmount,
+      decision,
+      approvedAmount,
+      reasonCode,
+      reasonText: null,
+      decidedBy: decision ? financeActorId : null,
+      decidedAt: decision ? batch.createdAt : null,
+      active: batch.status !== 'CANCELLED',
+      createdAt: batch.createdAt,
+    };
+    batchInvoices.push(row);
+    batch.invoiceCount += 1;
+    if (batch.status !== 'DRAFT') {
+      batch.submittedTotal = fromMicros(
+        toMicros(batch.submittedTotal) + toMicros(invoice.payableAmount),
+      );
+      invoice.batchId = batch.id;
+    }
+    return row;
+  };
+
+  // The draft: two submitted invoices picked but not yet sent. Their `batchId` stays null,
+  // because a draft icmal moves nothing.
+  const batchDraft = seedBatch('DRAFT', 1);
+  seedBatchInvoice(batchDraft, seedBatchableInvoice('SUBMITTED', 'INVOICED', 4, '1200'));
+  seedBatchInvoice(batchDraft, seedBatchableInvoice('SUBMITTED', 'INVOICED', 3, '800'));
+
+  // The submitted one, waiting for the payer's finance to open it.
+  const batchSubmitted = seedBatch('SUBMITTED', 7);
+  seedBatchInvoice(batchSubmitted, seedBatchableInvoice('IN_BATCH', 'INVOICED', 9, '2500'));
+  seedBatchInvoice(batchSubmitted, seedBatchableInvoice('IN_BATCH', 'INVOICED', 8, '1500'));
+
+  // The one under review, with all four decisions on it and one invoice still unanswered — which
+  // is what a reviewer's progress bar is drawn from.
+  const batchUnderReview = seedBatch('UNDER_REVIEW', 5);
+  const reviewApproved = seedBatchableInvoice('IN_BATCH', 'INVOICED', 14, '1000');
+  const reviewCut = seedBatchableInvoice('IN_BATCH', 'INVOICED', 13, '900');
+  const reviewReturned = seedBatchableInvoice('RETURNED', 'APPROVED', 12, '400');
+  const reviewRejected = seedBatchableInvoice('REJECTED', 'CLOSED_UNPAID', 11, '250');
+  const reviewPending = seedBatchableInvoice('IN_BATCH', 'INVOICED', 10, '600');
+  seedBatchInvoice(batchUnderReview, reviewApproved, 'APPROVE', '1000', null);
+  const cutMember = seedBatchInvoice(batchUnderReview, reviewCut, 'CUT', '750', 'TARIFF_EXCEEDED');
+  seedBatchInvoice(batchUnderReview, reviewReturned, 'RETURN', '0', 'DOCUMENT_MISSING');
+  seedBatchInvoice(batchUnderReview, reviewRejected, 'REJECT', '0', 'NOT_COVERED');
+  seedBatchInvoice(batchUnderReview, reviewPending);
+
+  // The cut wrote a real ledger row on the claim it covers, and the link that lets a changed
+  // decision take exactly that row back rather than guessing by amount and reason.
+  const cutClaimId = invoiceAllocations.find((a) => a.invoiceId === reviewCut.id)!.claimId;
+  const cutAdjustment: StoredClaimAdjustment = {
+    id: nextId(),
+    tenantId: demoA.id,
+    claimId: cutClaimId,
+    versionNo: 1,
+    claimLineId: null,
+    adjustmentType: 'CUT',
+    amount: '150',
+    payerAmount: '150',
+    memberAmount: '0',
+    currencyCode: 'TRY',
+    reasonCode: 'TARIFF_EXCEEDED',
+    reasonText: null,
+    sourceType: 'REVIEW',
+    sourceId: null,
+    reversesAdjustmentId: null,
+    createdBy: financeActorId,
+    createdAt: batchUnderReview.createdAt,
+  };
+  claimAdjustments.push(cutAdjustment);
+  batchAdjustments.push({
+    id: nextId(),
+    tenantId: demoA.id,
+    batchInvoiceId: cutMember.id,
+    claimId: cutClaimId,
+    adjustmentId: cutAdjustment.id,
+    amount: '150',
+    reversedByAdjustmentId: null,
+  });
+
+  // And the decided one, whose four totals add up to what was submitted.
+  const batchDecided = seedBatch('DECIDED', 20, {
+    decidedAt: isoDaysAgo(base, 18),
+    decidedBy: financeActorId,
+    rowVersion: 3,
+  });
+  seedBatchInvoice(
+    batchDecided,
+    seedBatchableInvoice('APPROVED', 'INVOICED', 26, '3000'),
+    'APPROVE',
+    '3000',
+    null,
+  );
+  seedBatchInvoice(
+    batchDecided,
+    seedBatchableInvoice('PARTIALLY_APPROVED', 'INVOICED', 25, '2000'),
+    'CUT',
+    '1800',
+    'CONTRACT_TERMS',
+  );
+  batchDecided.approvedTotal = '4800';
+  batchDecided.cutTotal = '200';
+  batchDecided.returnedTotal = '0';
+  batchDecided.rejectedTotal = '0';
+
   return {
     tenants,
     accounts,
@@ -6350,6 +6633,9 @@ export function buildWorld(
     waitlistEntries,
     invoices,
     invoiceAllocations,
+    batches,
+    batchInvoices,
+    batchAdjustments,
     advanceScan,
     nextId,
     random,

@@ -51,3 +51,71 @@ func (c *Claims) ReleaseFromInvoice(ctx context.Context, tx pgx.Tx, tenantID uui
 	}
 	return c.svc.ReleaseFromInvoice(ctx, tx, tenantID, actorID, out)
 }
+
+// The icmal's half of the boundary (WP-I7-03). The batch decides *when* a claim is cut, put
+// back or closed unpaid; the claim module decides *whether* it may, and every one of these
+// runs inside the batch command's own transaction.
+
+// Cut implements billingapp.ClaimsPort.
+func (c *Claims) Cut(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, actorID *uuid.UUID,
+	cuts []billingapp.ClaimCut,
+) ([]billingapp.ClaimAdjustment, error) {
+	in := make([]claimapp.InvoiceCut, 0, len(cuts))
+	for _, cut := range cuts {
+		in = append(in, claimapp.InvoiceCut{
+			ClaimID: cut.ClaimID, Amount: cut.Amount,
+			ReasonCode: cut.ReasonCode, ReasonText: cut.ReasonText,
+		})
+	}
+	written, err := c.svc.CutAcrossClaims(ctx, tx, tenantID, actorID, in)
+	if err != nil {
+		return nil, err
+	}
+	return adjustmentsOf(written), nil
+}
+
+// Reverse implements billingapp.ClaimsPort.
+func (c *Claims) Reverse(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, actorID *uuid.UUID,
+	reversals []billingapp.ClaimReversal,
+) ([]billingapp.ClaimAdjustment, error) {
+	in := make([]claimapp.InvoiceReversal, 0, len(reversals))
+	for _, reversal := range reversals {
+		in = append(in, claimapp.InvoiceReversal{
+			ClaimID: reversal.ClaimID, AdjustmentID: reversal.AdjustmentID,
+			ReasonText: reversal.ReasonText,
+		})
+	}
+	written, err := c.svc.ReverseInvoiceCuts(ctx, tx, tenantID, actorID, in)
+	if err != nil {
+		return nil, err
+	}
+	return adjustmentsOf(written), nil
+}
+
+// CloseUnpaid implements billingapp.ClaimsPort.
+func (c *Claims) CloseUnpaid(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
+	actorID *uuid.UUID, claims []uuid.UUID,
+) error {
+	return c.svc.CloseUnpaid(ctx, tx, tenantID, actorID, claims)
+}
+
+// ReopenUnpaid implements billingapp.ClaimsPort.
+func (c *Claims) ReopenUnpaid(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
+	actorID *uuid.UUID, claims []uuid.UUID,
+) error {
+	return c.svc.ReopenUnpaid(ctx, tx, tenantID, actorID, claims)
+}
+
+// CutReasons implements billingapp.ClaimsPort.
+func (c *Claims) CutReasons() []string { return c.svc.CutReasonCodes() }
+
+// adjustmentsOf translates the claim module's answer into this package's vocabulary.
+func adjustmentsOf(rows []claimapp.AdjustmentRef) []billingapp.ClaimAdjustment {
+	out := make([]billingapp.ClaimAdjustment, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, billingapp.ClaimAdjustment{
+			ClaimID: row.ClaimID, AdjustmentID: row.AdjustmentID, Amount: row.Amount,
+		})
+	}
+	return out
+}

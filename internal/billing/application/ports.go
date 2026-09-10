@@ -407,6 +407,26 @@ type ClaimsPort interface {
 	// ReleaseFromInvoice puts each claim back to the status it had when it was allocated.
 	ReleaseFromInvoice(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, actorID *uuid.UUID,
 		releases []ClaimRelease) error
+	// Cut writes one WP-I7-01 CUT adjustment per claim, for a payer's cut on an invoice. The
+	// shares are computed here, exactly; whether a claim may carry one is the claim module's
+	// answer.
+	Cut(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, actorID *uuid.UUID,
+		cuts []ClaimCut) ([]ClaimAdjustment, error)
+	// Reverse takes back the adjustments a changed decision wrote. The amount is read off the
+	// row being reversed rather than supplied, so a decision changed twice cannot give the
+	// money back twice.
+	Reverse(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, actorID *uuid.UUID,
+		reversals []ClaimReversal) ([]ClaimAdjustment, error)
+	// CloseUnpaid finishes the claims of an invoice the payer rejected.
+	CloseUnpaid(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, actorID *uuid.UUID,
+		claims []uuid.UUID) error
+	// ReopenUnpaid puts them back on the invoice when the rejection is withdrawn.
+	ReopenUnpaid(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, actorID *uuid.UUID,
+		claims []uuid.UUID) error
+	// CutReasons is the closed list a cut adjustment's reason has to be in. It is asked for
+	// rather than copied, so this package cannot end up offering a reviewer a code the claim
+	// ledger would refuse.
+	CutReasons() []string
 }
 
 // ClaimRelease is one claim going back where it came from.
@@ -430,3 +450,27 @@ func (NoClaims) MarkInvoiced(context.Context, pgx.Tx, uuid.UUID, *uuid.UUID, []u
 func (NoClaims) ReleaseFromInvoice(context.Context, pgx.Tx, uuid.UUID, *uuid.UUID, []ClaimRelease) error {
 	return errors.New("billing: no claim service is wired; an invoice cannot be withdrawn")
 }
+
+// Cut implements ClaimsPort.
+func (NoClaims) Cut(context.Context, pgx.Tx, uuid.UUID, *uuid.UUID, []ClaimCut) ([]ClaimAdjustment, error) {
+	return nil, errors.New("billing: no claim service is wired; an invoice cannot be cut")
+}
+
+// Reverse implements ClaimsPort.
+func (NoClaims) Reverse(context.Context, pgx.Tx, uuid.UUID, *uuid.UUID, []ClaimReversal) ([]ClaimAdjustment, error) {
+	return nil, errors.New("billing: no claim service is wired; a cut cannot be taken back")
+}
+
+// CloseUnpaid implements ClaimsPort.
+func (NoClaims) CloseUnpaid(context.Context, pgx.Tx, uuid.UUID, *uuid.UUID, []uuid.UUID) error {
+	return errors.New("billing: no claim service is wired; an invoice cannot be rejected")
+}
+
+// ReopenUnpaid implements ClaimsPort.
+func (NoClaims) ReopenUnpaid(context.Context, pgx.Tx, uuid.UUID, *uuid.UUID, []uuid.UUID) error {
+	return errors.New("billing: no claim service is wired; a rejection cannot be withdrawn")
+}
+
+// CutReasons implements ClaimsPort. A process with no claim service offers no reason at all,
+// which is what refuses every cut before it is written.
+func (NoClaims) CutReasons() []string { return nil }

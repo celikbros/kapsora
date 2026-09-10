@@ -60,6 +60,12 @@ var AdjustmentSources = []string{
 	AdjustmentSourceReview, AdjustmentSourceManual, AdjustmentSourceRecovery,
 }
 
+// ReasonReviewReversed is the reason a reversal carries when the reviewer who wrote the
+// adjustment has changed their mind rather than found a mistake. It is named because
+// WP-I7-03's changed decision reverses without a person typing anything, and a reason code
+// spelled in two places is two codes a report has to add together.
+const ReasonReviewReversed = "REVIEW_REVERSED"
+
 // AdjustmentReasons is the closed list section 2.3 asks for.
 //
 // It is closed because an adjustment is what a provider disputes, and a dispute is answerable
@@ -75,6 +81,25 @@ var AdjustmentReasons = []string{
 	"ARITHMETIC_ERROR", "PRICE_CORRECTION", "CURRENCY_CORRECTION",
 	// A reversal: the adjustment should not have been made.
 	"REVIEW_REVERSED", "ENTERED_IN_ERROR",
+}
+
+// CutReasons is the subset a CUT may carry: the five reasons a payer takes money off a line
+// it otherwise accepted. It is named separately because WP-I7-03's icmal decision writes cut
+// adjustments from a reason the reviewer chose, and a reviewer offered "OVERPAYMENT" as a
+// reason for a cut would be offered a word that means something else in this ledger.
+var CutReasons = []string{
+	"TARIFF_EXCEEDED", "CONTRACT_TERMS", "NOT_COVERED", "DUPLICATE_SERVICE",
+	"DOCUMENT_MISSING",
+}
+
+// KnownCutReason reports whether a reason code is one a cut may carry.
+func KnownCutReason(code string) bool {
+	for _, known := range CutReasons {
+		if known == code {
+			return true
+		}
+	}
+	return false
 }
 
 // KnownAdjustmentReason reports whether a reason code is in the closed list.

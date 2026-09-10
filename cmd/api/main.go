@@ -309,9 +309,12 @@ func run() error {
 	// The port runs inside the invoice's own transaction, so an invoice that is SUBMITTED
 	// and claims that never moved is a state no reader observes.
 	billingSvc, err := billingapp.New(billingapp.Deps{
-		Pool: pool, Repo: billingpg.New(),
+		Pool: pool, Repo: billingpg.New(), Batches: billingpg.NewBatchRepository(),
 		Claims: billinggw.NewClaims(claimSvc),
-		Audit:  auditpg.New(), Cursors: cursors, Logger: logger,
+		// The icmal's review queue, written from the billing side of the boundary rather than
+		// through the worklist service, because that service opens a transaction of its own.
+		WorkItems: billingpg.NewWorkItems(logger),
+		Audit:     auditpg.New(), Cursors: cursors, Logger: logger,
 	})
 	if err != nil {
 		return err
@@ -892,6 +895,26 @@ func newRouter(d routerDeps) http.Handler {
 			}
 			tenant.Route("/invoices", func(r chi.Router) {
 				invoiceHandler.Routes(r, invoiceMW)
+			})
+
+			// The icmal: one provider's submitted invoices for one payer, one currency and
+			// one period, decided invoice by invoice by the payer's finance. It is served by
+			// the same handler as the invoice because the two are one module and one
+			// transaction boundary -- a decision cuts the claims of an invoice, and neither
+			// half can commit without the other.
+			//
+			// Every command takes If-Match and an idempotency key. A submit replayed must
+			// raise one work item, a decision replayed must reverse one adjustment and write
+			// one, and a decide replayed must publish one event that a settlement opens on.
+			batchMW := billinghttp.BatchMiddlewares{
+				CreateBatch:        d.idempotent("batch.create"),
+				PutBatchInvoices:   d.idempotent("batch.invoices.put"),
+				SubmitBatch:        d.idempotent("batch.submit"),
+				ReviewBatchInvoice: d.idempotent("batch.invoice.review"),
+				DecideBatch:        d.idempotent("batch.decide"),
+			}
+			tenant.Route("/batches", func(r chi.Router) {
+				invoiceHandler.BatchRoutes(r, batchMW)
 			})
 
 			// The accommodation vertical: the buildings, the room types, the daily

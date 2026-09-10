@@ -7,6 +7,7 @@ import { HttpResponse, http, type HttpHandler, type PathParams } from 'msw';
 
 import { accommodationHandlers } from './accommodation-handlers';
 import { lodgingTermsHandlers } from './lodging-terms-handlers';
+import { batchHandlers } from './batch-handlers';
 import { benefitHandlers } from './benefit-handlers';
 import { catalogHandlers } from './catalog-handlers';
 import { claimHandlers } from './claim-handlers';
@@ -1548,6 +1549,7 @@ export function createHandlers(api: MockApi): HttpHandler[] {
     ...lodgingTermsHandlers(api),
     // M7: the invoice a provider raised elsewhere, and the claims it collects.
     ...invoiceHandlers(api),
+    ...batchHandlers(api),
   ];
 }
 

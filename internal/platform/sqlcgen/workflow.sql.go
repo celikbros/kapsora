@@ -52,6 +52,52 @@ func (q *Queries) ClaimWorkItem(ctx context.Context, arg ClaimWorkItemParams) (i
 	return result.RowsAffected(), nil
 }
 
+const claimWorkItemForAggregate = `-- name: ClaimWorkItemForAggregate :execrows
+UPDATE workflow.work_item
+   SET status            = 'CLAIMED',
+       assignee_actor_id = $1,
+       assigned_at       = now(),
+       updated_by        = $2
+ WHERE tenant_id = $3
+   AND aggregate_type = $4
+   AND aggregate_id = $5
+   AND status = 'OPEN'
+`
+
+type ClaimWorkItemForAggregateParams struct {
+	AssigneeActorID uuid.NullUUID
+	ActorID         uuid.NullUUID
+	TenantID        uuid.UUID
+	AggregateType   string
+	AggregateID     uuid.UUID
+}
+
+// The work item a *producing module* takes on behalf of the person who has just acted on the
+// thing it was raised for (WP-I7-03: the payer's reviewer opening an icmal).
+//
+// It is addressed by the aggregate rather than by id for the same reason GetWorkQueueByCode
+// is addressed by code: a module raising and then closing its own work cannot know the id of
+// a row it never read back, and the aggregate is what the item is *about*. There is no
+// row_version, because the caller holds the aggregate's own row lock and the aggregate's
+// If-Match is what this transition is guarded by.
+//
+// Still OPEN is the whole precondition: an item somebody else is already holding is not taken
+// off them here. Nothing is raised when there is no item at all -- a tenant that has not
+// configured the queue has no work to claim, and the business command carries on.
+func (q *Queries) ClaimWorkItemForAggregate(ctx context.Context, arg ClaimWorkItemForAggregateParams) (int64, error) {
+	result, err := q.db.Exec(ctx, claimWorkItemForAggregate,
+		arg.AssigneeActorID,
+		arg.ActorID,
+		arg.TenantID,
+		arg.AggregateType,
+		arg.AggregateID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const completeWorkItem = `-- name: CompleteWorkItem :execrows
 UPDATE workflow.work_item
    SET status       = 'COMPLETED',
@@ -82,6 +128,47 @@ func (q *Queries) CompleteWorkItem(ctx context.Context, arg CompleteWorkItemPara
 		arg.TenantID,
 		arg.ID,
 		arg.RowVersion,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const completeWorkItemForAggregate = `-- name: CompleteWorkItemForAggregate :execrows
+UPDATE workflow.work_item
+   SET status       = 'COMPLETED',
+       outcome_code = $1,
+       completed_at = now(),
+       completed_by = $2,
+       updated_by   = $3
+ WHERE tenant_id = $4
+   AND aggregate_type = $5
+   AND aggregate_id = $6
+   AND status IN ('OPEN', 'CLAIMED')
+`
+
+type CompleteWorkItemForAggregateParams struct {
+	OutcomeCode   *string
+	CompletedBy   uuid.NullUUID
+	ActorID       uuid.NullUUID
+	TenantID      uuid.UUID
+	AggregateType string
+	AggregateID   uuid.UUID
+}
+
+// The other half: the module that raised the work says it is finished, because the thing the
+// work was about has been decided. OPEN as well as CLAIMED, so a decision taken by somebody
+// who never picked the item up still closes it rather than leaving a queue full of work
+// nobody has to do.
+func (q *Queries) CompleteWorkItemForAggregate(ctx context.Context, arg CompleteWorkItemForAggregateParams) (int64, error) {
+	result, err := q.db.Exec(ctx, completeWorkItemForAggregate,
+		arg.OutcomeCode,
+		arg.CompletedBy,
+		arg.ActorID,
+		arg.TenantID,
+		arg.AggregateType,
+		arg.AggregateID,
 	)
 	if err != nil {
 		return 0, err

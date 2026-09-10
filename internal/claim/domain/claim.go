@@ -82,14 +82,21 @@ const (
 	StatusInvoiced          = "INVOICED"
 	StatusBatched           = "BATCHED"
 	StatusSettled           = "SETTLED"
-	StatusCancelled         = "CANCELLED"
+	// StatusClosedUnpaid is where a claim lands when the payer rejects the invoice that was
+	// collecting it (WP-I7-03). The decision stands, the money will not be paid, and the
+	// claim is finished. It is not CANCELLED -- nobody withdrew it -- and it is not REJECTED,
+	// which is the payer refusing the *claim* rather than refusing to pay a document that
+	// billed it. A settlement summing "what did we decline to pay" needs the two apart.
+	StatusClosedUnpaid = "CLOSED_UNPAID"
+	StatusCancelled    = "CANCELLED"
 )
 
 // Statuses is the whole list, in lifecycle order, for a filter's validation.
 var Statuses = []string{
 	StatusDraft, StatusSubmitted, StatusAutoAdjudicated, StatusPendingMedical,
 	StatusPendingFinancial, StatusReturned, StatusPartiallyApproved, StatusApproved,
-	StatusRejected, StatusInvoiced, StatusBatched, StatusSettled, StatusCancelled,
+	StatusRejected, StatusInvoiced, StatusBatched, StatusSettled, StatusClosedUnpaid,
+	StatusCancelled,
 }
 
 // Version statuses.

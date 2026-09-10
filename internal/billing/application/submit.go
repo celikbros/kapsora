@@ -155,12 +155,12 @@ func (s *Service) SubmitInvoice(ctx context.Context, rc identity.RequestContext,
 			return err
 		}
 		if err := s.record(ctx, tx, rc, "invoice.submit", id, map[string]any{
-			"payableAmount":   payable.String(),
-			"allocationTotal": total.String(),
-			"difference":      difference.String(),
-			"tolerance":       tolerance.String(),
-			"allocationCount": len(rows),
-			"currencyCode":    record.CurrencyCode,
+			"payable_amount":   payable.String(),
+			"allocation_total": total.String(),
+			"difference":       difference.String(),
+			"tolerance":        tolerance.String(),
+			"allocation_count": len(rows),
+			"currency_code":    record.CurrencyCode,
 		}); err != nil {
 			return err
 		}
@@ -194,15 +194,15 @@ func (s *Service) publishSubmitted(ctx context.Context, tx pgx.Tx, rc identity.R
 	payload := map[string]any{
 		"invoiceId":              record.ID,
 		"providerOrganizationId": record.ProviderOrganizationID,
-		"fiscalYear":             record.FiscalYear,
-		"currencyCode":           record.CurrencyCode,
-		"payableAmount":          record.PayableAmount,
-		"allocationTotal":        total.String(),
-		"allocationCount":        allocations,
+		"fiscal_year":            record.FiscalYear,
+		"currency_code":          record.CurrencyCode,
+		"payable_amount":         record.PayableAmount,
+		"allocation_total":       total.String(),
+		"allocation_count":       allocations,
 		"domainCode":             record.DomainCode,
 	}
 	if record.SupersedesInvoiceID != nil {
-		payload["supersedesInvoiceId"] = *record.SupersedesInvoiceID
+		payload["supersedes_invoice_id"] = *record.SupersedesInvoiceID
 	}
 	_, _, err := outbox.Publish(ctx, tx, outbox.Event{
 		TenantID:      nullUUID(rc.TenantID),
@@ -278,8 +278,8 @@ func (s *Service) CancelInvoice(ctx context.Context, rc identity.RequestContext,
 		}
 
 		if err := s.record(ctx, tx, rc, "invoice.cancel", id, map[string]any{
-			"fromStatus":     record.Status,
-			"releasedClaims": len(releases),
+			"from_status":     record.Status,
+			"released_claims": len(releases),
 		}); err != nil {
 			return err
 		}

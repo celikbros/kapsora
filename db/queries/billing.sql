@@ -327,3 +327,297 @@ VALUES (sqlc.arg('tenant_id'), sqlc.arg('object_id'), 'INVOICE', sqlc.arg('aggre
         'INVOICE', sqlc.narg('purpose'), 'invoice.read', sqlc.narg('actor_id'))
 ON CONFLICT (tenant_id, object_id, aggregate_type, aggregate_id, document_type_code)
 DO NOTHING;
+
+-- ---------------------------------------------------------------------------
+-- WP-I7-03: the icmal, and the payer's decision on each invoice in it
+-- ---------------------------------------------------------------------------
+--
+-- The same two habits as above: every money column arrives as `text::numeric` and leaves as
+-- `trim_scale(...)::text`, so nothing here becomes a float; and every write carries its whole
+-- precondition in the WHERE clause, so a caller whose If-Match was stale writes nothing.
+--
+-- The statements never repeat a rule the schema already holds. The freeze is a trigger, the
+-- one-live-batch-per-invoice rule is a partial unique index, and the totals reconcile through
+-- a CHECK: what is below is only the shape of each command.
+
+-- name: CreateBatch :one
+INSERT INTO billing.batch (
+    tenant_id, reference, provider_organization_id, payer_organization_id, domain_code,
+    currency_code, period_from, period_to, created_by, updated_by)
+VALUES (sqlc.arg('tenant_id'), sqlc.arg('reference'), sqlc.arg('provider_organization_id'),
+        sqlc.narg('payer_organization_id'), sqlc.arg('domain_code'), sqlc.arg('currency_code'),
+        sqlc.arg('period_from'), sqlc.arg('period_to'), sqlc.narg('actor_id'),
+        sqlc.narg('actor_id'))
+RETURNING id, reference, provider_organization_id, payer_organization_id, domain_code,
+          currency_code, period_from, period_to, status, submitted_at, submitted_by,
+          decided_at, decided_by, invoice_count,
+          trim_scale(submitted_total)::text AS submitted_total,
+          trim_scale(approved_total)::text AS approved_total,
+          trim_scale(cut_total)::text AS cut_total,
+          trim_scale(returned_total)::text AS returned_total,
+          trim_scale(rejected_total)::text AS rejected_total,
+          created_at, row_version;
+
+-- name: GetBatch :one
+-- One batch, bounded by the caller's provider scope, exactly as GetInvoice is: an empty scope
+-- array means "no restriction", and a batch outside a scope that names organizations is
+-- genuinely not returned, so 404 is honest rather than a filtered 200.
+SELECT b.id, b.reference, b.provider_organization_id, b.payer_organization_id, b.domain_code,
+       b.currency_code, b.period_from, b.period_to, b.status, b.submitted_at, b.submitted_by,
+       b.decided_at, b.decided_by, b.invoice_count,
+       trim_scale(b.submitted_total)::text AS submitted_total,
+       trim_scale(b.approved_total)::text AS approved_total,
+       trim_scale(b.cut_total)::text AS cut_total,
+       trim_scale(b.returned_total)::text AS returned_total,
+       trim_scale(b.rejected_total)::text AS rejected_total,
+       b.created_at, b.row_version,
+       o.display_name AS provider_name
+  FROM billing.batch b
+  JOIN directory.tenant_organization t
+    ON t.tenant_id = b.tenant_id AND t.id = b.provider_organization_id
+  JOIN directory.organization o ON o.id = t.organization_id
+ WHERE b.tenant_id = sqlc.arg('tenant_id')
+   AND b.id = sqlc.arg('id')
+   AND (cardinality(sqlc.arg('scope_ids')::uuid[]) = 0
+        OR b.provider_organization_id = ANY(sqlc.arg('scope_ids')::uuid[]));
+
+-- name: LockBatch :one
+-- The same read, holding the row for the length of the command. Every write takes it first:
+-- the membership replacement, the submit, each decision and the decide all read a state and
+-- then act on it, and two callers doing that at once is how a batch ends up decided twice.
+SELECT b.id, b.reference, b.provider_organization_id, b.payer_organization_id, b.domain_code,
+       b.currency_code, b.period_from, b.period_to, b.status, b.submitted_at, b.submitted_by,
+       b.decided_at, b.decided_by, b.invoice_count,
+       trim_scale(b.submitted_total)::text AS submitted_total,
+       trim_scale(b.approved_total)::text AS approved_total,
+       trim_scale(b.cut_total)::text AS cut_total,
+       trim_scale(b.returned_total)::text AS returned_total,
+       trim_scale(b.rejected_total)::text AS rejected_total,
+       b.created_at, b.row_version
+  FROM billing.batch b
+ WHERE b.tenant_id = sqlc.arg('tenant_id')
+   AND b.id = sqlc.arg('id')
+   AND (cardinality(sqlc.arg('scope_ids')::uuid[]) = 0
+        OR b.provider_organization_id = ANY(sqlc.arg('scope_ids')::uuid[]))
+   FOR UPDATE;
+
+-- name: ListBatches :many
+-- One page of the keyset on (created_at DESC, id DESC).
+SELECT b.id, b.reference, b.provider_organization_id, b.payer_organization_id, b.domain_code,
+       b.currency_code, b.period_from, b.period_to, b.status, b.submitted_at, b.submitted_by,
+       b.decided_at, b.decided_by, b.invoice_count,
+       trim_scale(b.submitted_total)::text AS submitted_total,
+       trim_scale(b.approved_total)::text AS approved_total,
+       trim_scale(b.cut_total)::text AS cut_total,
+       trim_scale(b.returned_total)::text AS returned_total,
+       trim_scale(b.rejected_total)::text AS rejected_total,
+       b.created_at, b.row_version,
+       o.display_name AS provider_name
+  FROM billing.batch b
+  JOIN directory.tenant_organization t
+    ON t.tenant_id = b.tenant_id AND t.id = b.provider_organization_id
+  JOIN directory.organization o ON o.id = t.organization_id
+ WHERE b.tenant_id = sqlc.arg('tenant_id')
+   AND (cardinality(sqlc.arg('scope_ids')::uuid[]) = 0
+        OR b.provider_organization_id = ANY(sqlc.arg('scope_ids')::uuid[]))
+   AND (sqlc.narg('provider_organization_id')::uuid IS NULL
+        OR b.provider_organization_id = sqlc.narg('provider_organization_id')::uuid)
+   AND (sqlc.narg('payer_organization_id')::uuid IS NULL
+        OR b.payer_organization_id = sqlc.narg('payer_organization_id')::uuid)
+   AND (sqlc.narg('status')::text IS NULL OR b.status = sqlc.narg('status')::text)
+   AND (sqlc.narg('domain_code')::text IS NULL OR b.domain_code = sqlc.narg('domain_code')::text)
+   AND (sqlc.narg('currency_code')::text IS NULL
+        OR b.currency_code = sqlc.narg('currency_code')::text)
+   AND (sqlc.narg('date_from')::date IS NULL OR b.period_to >= sqlc.narg('date_from')::date)
+   AND (sqlc.narg('date_to')::date IS NULL OR b.period_from <= sqlc.narg('date_to')::date)
+   AND (sqlc.narg('after_created_at')::timestamptz IS NULL
+        OR (b.created_at, b.id) < (sqlc.narg('after_created_at')::timestamptz,
+                                   sqlc.narg('after_id')::uuid))
+ ORDER BY b.created_at DESC, b.id DESC
+ LIMIT sqlc.arg('page_size');
+
+-- name: SubmitBatch :execrows
+-- DRAFT to SUBMITTED, with the count and the submitted total the server computed from the
+-- members it just froze. Both figures are written here rather than summed on read, because a
+-- settlement opening on `batch.decided` has to be able to say what it is settling without
+-- walking the membership.
+UPDATE billing.batch
+   SET status          = 'SUBMITTED',
+       submitted_at    = sqlc.arg('submitted_at'),
+       submitted_by    = sqlc.arg('submitted_by'),
+       invoice_count   = sqlc.arg('invoice_count'),
+       submitted_total = sqlc.arg('submitted_total')::text::numeric,
+       updated_by      = sqlc.narg('actor_id')
+ WHERE tenant_id = sqlc.arg('tenant_id')
+   AND id = sqlc.arg('id')
+   AND status = 'DRAFT'
+   AND row_version = sqlc.arg('expected_row_version');
+
+-- name: StartBatchReview :execrows
+-- SUBMITTED to UNDER_REVIEW: the payer's reviewer has taken the work item and the batch is in
+-- front of somebody. There is no row_version, because this is not a command of its own -- it
+-- is the first decision's side effect, and that decision already holds the batch's row lock.
+UPDATE billing.batch
+   SET status     = 'UNDER_REVIEW',
+       updated_by = sqlc.narg('actor_id')
+ WHERE tenant_id = sqlc.arg('tenant_id')
+   AND id = sqlc.arg('id')
+   AND status = 'SUBMITTED';
+
+-- name: DecideBatch :execrows
+-- UNDER_REVIEW to DECIDED, with the four totals the server recomputed from the decisions.
+-- `ck_billing_batch_totals` refuses the write unless they add up to the submitted total, so a
+-- service that got the arithmetic wrong fails here rather than opening a settlement on a
+-- figure that is not the sum of its parts.
+UPDATE billing.batch
+   SET status         = 'DECIDED',
+       decided_at     = sqlc.arg('decided_at'),
+       decided_by     = sqlc.arg('decided_by'),
+       approved_total = sqlc.arg('approved_total')::text::numeric,
+       cut_total      = sqlc.arg('cut_total')::text::numeric,
+       returned_total = sqlc.arg('returned_total')::text::numeric,
+       rejected_total = sqlc.arg('rejected_total')::text::numeric,
+       updated_by     = sqlc.narg('actor_id')
+ WHERE tenant_id = sqlc.arg('tenant_id')
+   AND id = sqlc.arg('id')
+   AND status = 'UNDER_REVIEW'
+   AND row_version = sqlc.arg('expected_row_version');
+
+-- name: DeleteBatchInvoices :exec
+-- The first half of "replace the whole set". The freeze trigger refuses it on anything that
+-- has left DRAFT, so this statement can never quietly empty a submitted batch.
+DELETE FROM billing.batch_invoice
+ WHERE tenant_id = sqlc.arg('tenant_id')
+   AND batch_id = sqlc.arg('batch_id');
+
+-- name: CreateBatchInvoice :exec
+INSERT INTO billing.batch_invoice (
+    tenant_id, batch_id, invoice_id, submitted_amount, created_by)
+VALUES (sqlc.arg('tenant_id'), sqlc.arg('batch_id'), sqlc.arg('invoice_id'),
+        sqlc.arg('submitted_amount')::text::numeric, sqlc.narg('actor_id'));
+
+-- name: ListBatchInvoices :many
+-- The invoices one batch covers, with the payer's answer to each and enough of the invoice
+-- itself for a reviewer to read the row without a second request.
+SELECT bi.id, bi.invoice_id,
+       trim_scale(bi.submitted_amount)::text AS submitted_amount,
+       COALESCE(bi.decision, '')::text AS decision,
+       COALESCE(trim_scale(bi.approved_amount)::text, '')::text AS approved_amount,
+       COALESCE(bi.reason_code, '')::text AS reason_code,
+       bi.reason_text, bi.decided_by, bi.decided_at, bi.active, bi.created_at,
+       i.invoice_number, i.invoice_date, i.status AS invoice_status, i.currency_code,
+       trim_scale(i.payable_amount)::text AS payable_amount,
+       a.display_name AS decided_by_display_name
+  FROM billing.batch_invoice bi
+  JOIN billing.invoice i ON i.tenant_id = bi.tenant_id AND i.id = bi.invoice_id
+  LEFT JOIN iam.actor a ON a.id = bi.decided_by
+ WHERE bi.tenant_id = sqlc.arg('tenant_id')
+   AND bi.batch_id = sqlc.arg('batch_id')
+ ORDER BY bi.created_at, bi.id;
+
+-- name: LockBatchInvoice :one
+-- The member a decision is about, held for the length of the command.
+SELECT bi.id, bi.invoice_id,
+       trim_scale(bi.submitted_amount)::text AS submitted_amount,
+       COALESCE(bi.decision, '')::text AS decision,
+       COALESCE(trim_scale(bi.approved_amount)::text, '')::text AS approved_amount,
+       COALESCE(bi.reason_code, '')::text AS reason_code,
+       bi.reason_text, bi.decided_by, bi.decided_at, bi.active, bi.created_at
+  FROM billing.batch_invoice bi
+ WHERE bi.tenant_id = sqlc.arg('tenant_id')
+   AND bi.batch_id = sqlc.arg('batch_id')
+   AND bi.invoice_id = sqlc.arg('invoice_id')
+   FOR UPDATE;
+
+-- name: SetBatchInvoiceDecision :execrows
+-- The payer's answer to one invoice. `ck_billing_batch_invoice_decision` ties the amount to
+-- the word and demands a reason for anything but a plain approval; the freeze trigger refuses
+-- the write unless the batch is UNDER_REVIEW. Neither rule is repeated here.
+UPDATE billing.batch_invoice
+   SET decision        = sqlc.arg('decision'),
+       approved_amount = sqlc.arg('approved_amount')::text::numeric,
+       reason_code     = sqlc.narg('reason_code'),
+       reason_text     = sqlc.narg('reason_text'),
+       decided_by      = sqlc.arg('decided_by'),
+       decided_at      = sqlc.arg('decided_at')
+ WHERE tenant_id = sqlc.arg('tenant_id')
+   AND id = sqlc.arg('id');
+
+-- name: ListBatchCandidateInvoices :many
+-- The invoices a `putBatchInvoices` may name, answered for exactly the ids the caller sent,
+-- with the batch each of them is already live in when there is one.
+--
+-- `live_batch_id` is answered rather than filtered out, so the refusal can name the icmal
+-- instead of saying that an invoice the provider can see in their own list does not exist.
+SELECT i.id, i.provider_organization_id, i.payer_organization_id, i.status, i.currency_code,
+       i.domain_code, i.invoice_number, i.invoice_date,
+       trim_scale(i.payable_amount)::text AS payable_amount,
+       COALESCE((SELECT bi.batch_id
+          FROM billing.batch_invoice bi
+         WHERE bi.tenant_id = i.tenant_id AND bi.invoice_id = i.id AND bi.active
+         LIMIT 1), '00000000-0000-0000-0000-000000000000'::uuid)::uuid AS live_batch_id
+  FROM billing.invoice i
+ WHERE i.tenant_id = sqlc.arg('tenant_id')
+   AND i.id = ANY(sqlc.arg('invoice_ids')::uuid[])
+ ORDER BY i.created_at, i.id;
+
+-- name: SetInvoiceBatch :execrows
+-- The invoice joins the icmal. There is no row_version: the concurrency control of this
+-- transition is the batch's own If-Match and the row lock the submit already holds, and
+-- demanding an ETag per invoice would make a batch of fifty unsubmittable whenever anybody
+-- had touched any one of them.
+UPDATE billing.invoice
+   SET status     = 'IN_BATCH',
+       batch_id   = sqlc.arg('batch_id'),
+       updated_by = sqlc.narg('actor_id')
+ WHERE tenant_id = sqlc.arg('tenant_id')
+   AND id = sqlc.arg('id')
+   AND status = 'SUBMITTED';
+
+-- name: SetInvoiceReviewStatus :execrows
+-- Where one decision leaves the invoice. The whole precondition is in the predicate, so a
+-- decision arriving against an invoice somebody else has meanwhile moved changes nothing.
+UPDATE billing.invoice
+   SET status     = sqlc.arg('status'),
+       updated_by = sqlc.narg('actor_id')
+ WHERE tenant_id = sqlc.arg('tenant_id')
+   AND id = sqlc.arg('id')
+   AND status = ANY(sqlc.arg('from_statuses')::text[]);
+
+-- name: CreateBatchInvoiceAdjustment :exec
+-- The link between one CUT decision and the `claim.adjustment` row it wrote, so a changed
+-- decision can take back exactly what it wrote rather than guessing by amount and reason.
+INSERT INTO billing.batch_invoice_adjustment (
+    tenant_id, batch_invoice_id, claim_id, adjustment_id, amount, created_by)
+VALUES (sqlc.arg('tenant_id'), sqlc.arg('batch_invoice_id'), sqlc.arg('claim_id'),
+        sqlc.arg('adjustment_id'), sqlc.arg('amount')::text::numeric, sqlc.narg('actor_id'));
+
+-- name: ListLiveBatchInvoiceAdjustments :many
+-- What this member's current decision has written and nobody has taken back.
+SELECT a.id, a.claim_id, a.adjustment_id, trim_scale(a.amount)::text AS amount
+  FROM billing.batch_invoice_adjustment a
+ WHERE a.tenant_id = sqlc.arg('tenant_id')
+   AND a.batch_invoice_id = sqlc.arg('batch_invoice_id')
+   AND a.reversed_by_adjustment_id IS NULL
+ ORDER BY a.created_at, a.id;
+
+-- name: SetBatchInvoiceAdjustmentReversed :exec
+-- The row learns which reversal took it back. It is written once and never cleared: an
+-- adjustment put back twice would give the money back twice.
+UPDATE billing.batch_invoice_adjustment
+   SET reversed_by_adjustment_id = sqlc.arg('reversed_by_adjustment_id')
+ WHERE tenant_id = sqlc.arg('tenant_id')
+   AND id = sqlc.arg('id')
+   AND reversed_by_adjustment_id IS NULL;
+
+-- name: TouchDraftBatch :execrows
+-- The icmal's row version moves even though no column of the header changed: the ETag a caller
+-- holds is a statement about the batch *and what it covers*, and a membership replaced under a
+-- stale If-Match is exactly the race this guards. It is the same move `putInvoiceAllocations`
+-- makes on the invoice, for the same reason.
+UPDATE billing.batch
+   SET updated_by = sqlc.narg('actor_id')
+ WHERE tenant_id = sqlc.arg('tenant_id')
+   AND id = sqlc.arg('id')
+   AND status = 'DRAFT'
+   AND row_version = sqlc.arg('expected_row_version');

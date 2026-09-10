@@ -45,6 +45,8 @@ type fixture struct {
 
 	tenant     uuid.UUID
 	actor      uuid.UUID
+	reviewer   uuid.UUID
+	approver   uuid.UUID
 	provider   uuid.UUID
 	other      uuid.UUID
 	sponsor    uuid.UUID
@@ -72,7 +74,8 @@ func newFixture(t *testing.T) *fixture { //nolint:funlen // one linear fixture r
 		t.Fatalf("claim service: %v", err)
 	}
 	invoices, err := application.New(application.Deps{
-		Pool: h.App, Repo: billingpg.New(), Claims: billinggw.NewClaims(claims),
+		Pool: h.App, Repo: billingpg.New(), Batches: billingpg.NewBatchRepository(),
+		Claims: billinggw.NewClaims(claims), WorkItems: billingpg.NewWorkItems(logger),
 		Audit: auditpg.New(), Cursors: cursors, Logger: logger,
 		Now: func() time.Time { return fixtureNow },
 	})
@@ -93,6 +96,13 @@ func newFixture(t *testing.T) *fixture { //nolint:funlen // one linear fixture r
 	f.tenant = h.CreateTenant("INV" + uuid.NewString()[:6])
 	f.actor = h.CreateActor("invoice-"+uuid.NewString()[:8], "Fatura Kullanıcısı")
 	h.CreateMembership(f.tenant, f.actor)
+	// Two more people, because the icmal's maker-checker rule is about *people*: the provider
+	// clerk who sends a batch, the payer's reviewer who works through it, and the second pair
+	// of eyes above the tenant's threshold are three actors and never one with three hats.
+	f.reviewer = h.CreateActor("reviewer-"+uuid.NewString()[:8], "İnceleyici")
+	h.CreateMembership(f.tenant, f.reviewer)
+	f.approver = h.CreateActor("approver-"+uuid.NewString()[:8], "Onaylayıcı")
+	h.CreateMembership(f.tenant, f.approver)
 	f.sponsor = h.CreateTenantOrganization(f.tenant, "Sponsor", "SPONSOR")
 	payer := h.CreateTenantOrganization(f.tenant, "Payer", "PAYER")
 	f.provider = h.CreateTenantOrganization(f.tenant, "Provider", "PROVIDER")
@@ -366,10 +376,12 @@ func (f *fixture) allocate(t *testing.T, rc identity.RequestContext, view applic
 // to RETURNED — which releases the claim links through the database's own trigger — and puts
 // the claims back to the status they were allocated at, which is `ReleaseFromInvoice`.
 //
-// That command does not exist yet, so the two halves are written directly. They are written
-// *together* because that is the contract `ClaimsPort` states: the link flag and the claim
-// status move as one, and a reviewer that moved only the first would leave a claim nobody could
-// ever bill again.
+// WP-I7-03 now performs both halves through `ReviewBatchInvoice`, and its own tests drive that
+// command; here the two are written directly, because these tests are about the *invoice* and
+// building an icmal around every one of them would be four commands of somebody else's package.
+// They are written *together* because that is the contract `ClaimsPort` states: the link flag
+// and the claim status move as one, and a reviewer that moved only the first would leave a claim
+// nobody could ever bill again.
 func (f *fixture) returnInvoice(invoiceID uuid.UUID) {
 	f.returnInvoiceWithoutReleasingClaims(invoiceID)
 	f.h.AdminExec(`

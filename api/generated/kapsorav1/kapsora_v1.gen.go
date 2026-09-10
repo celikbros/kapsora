@@ -67,6 +67,63 @@ func (e AuthorizationStatus) Valid() bool {
 	}
 }
 
+// Defines values for BatchDecision.
+const (
+	BatchDecisionAPPROVE BatchDecision = "APPROVE"
+	BatchDecisionCUT     BatchDecision = "CUT"
+	BatchDecisionREJECT  BatchDecision = "REJECT"
+	BatchDecisionRETURN  BatchDecision = "RETURN"
+)
+
+// Valid indicates whether the value is a known member of the BatchDecision enum.
+func (e BatchDecision) Valid() bool {
+	switch e {
+	case BatchDecisionAPPROVE:
+		return true
+	case BatchDecisionCUT:
+		return true
+	case BatchDecisionREJECT:
+		return true
+	case BatchDecisionRETURN:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BatchStatus.
+const (
+	BatchStatusCANCELLED   BatchStatus = "CANCELLED"
+	BatchStatusCLOSED      BatchStatus = "CLOSED"
+	BatchStatusDECIDED     BatchStatus = "DECIDED"
+	BatchStatusDRAFT       BatchStatus = "DRAFT"
+	BatchStatusSETTLING    BatchStatus = "SETTLING"
+	BatchStatusSUBMITTED   BatchStatus = "SUBMITTED"
+	BatchStatusUNDERREVIEW BatchStatus = "UNDER_REVIEW"
+)
+
+// Valid indicates whether the value is a known member of the BatchStatus enum.
+func (e BatchStatus) Valid() bool {
+	switch e {
+	case BatchStatusCANCELLED:
+		return true
+	case BatchStatusCLOSED:
+		return true
+	case BatchStatusDECIDED:
+		return true
+	case BatchStatusDRAFT:
+		return true
+	case BatchStatusSETTLING:
+		return true
+	case BatchStatusSUBMITTED:
+		return true
+	case BatchStatusUNDERREVIEW:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for BookingGuestType.
 const (
 	BookingGuestTypeDEPENDANT BookingGuestType = "DEPENDANT"
@@ -268,6 +325,7 @@ const (
 	ClaimStatusAUTOADJUDICATED   ClaimStatus = "AUTO_ADJUDICATED"
 	ClaimStatusBATCHED           ClaimStatus = "BATCHED"
 	ClaimStatusCANCELLED         ClaimStatus = "CANCELLED"
+	ClaimStatusCLOSEDUNPAID      ClaimStatus = "CLOSED_UNPAID"
 	ClaimStatusDRAFT             ClaimStatus = "DRAFT"
 	ClaimStatusINVOICED          ClaimStatus = "INVOICED"
 	ClaimStatusPARTIALLYAPPROVED ClaimStatus = "PARTIALLY_APPROVED"
@@ -289,6 +347,8 @@ func (e ClaimStatus) Valid() bool {
 	case ClaimStatusBATCHED:
 		return true
 	case ClaimStatusCANCELLED:
+		return true
+	case ClaimStatusCLOSEDUNPAID:
 		return true
 	case ClaimStatusDRAFT:
 		return true
@@ -3015,43 +3075,43 @@ func (e ReviewNoShowRequestStatus) Valid() bool {
 
 // Defines values for RuleActionType.
 const (
-	ADJUSTPRICE            RuleActionType = "ADJUST_PRICE"
-	APPROVE                RuleActionType = "APPROVE"
-	PARTIALAPPROVE         RuleActionType = "PARTIAL_APPROVE"
-	REJECT                 RuleActionType = "REJECT"
-	REQUIREDOCUMENT        RuleActionType = "REQUIRE_DOCUMENT"
-	REQUIREFINANCIALREVIEW RuleActionType = "REQUIRE_FINANCIAL_REVIEW"
-	REQUIREMEDICALREVIEW   RuleActionType = "REQUIRE_MEDICAL_REVIEW"
-	REQUIREPREAUTH         RuleActionType = "REQUIRE_PREAUTH"
-	RESERVEENTITLEMENT     RuleActionType = "RESERVE_ENTITLEMENT"
-	SETLIMIT               RuleActionType = "SET_LIMIT"
-	WARN                   RuleActionType = "WARN"
+	RuleActionTypeADJUSTPRICE            RuleActionType = "ADJUST_PRICE"
+	RuleActionTypeAPPROVE                RuleActionType = "APPROVE"
+	RuleActionTypePARTIALAPPROVE         RuleActionType = "PARTIAL_APPROVE"
+	RuleActionTypeREJECT                 RuleActionType = "REJECT"
+	RuleActionTypeREQUIREDOCUMENT        RuleActionType = "REQUIRE_DOCUMENT"
+	RuleActionTypeREQUIREFINANCIALREVIEW RuleActionType = "REQUIRE_FINANCIAL_REVIEW"
+	RuleActionTypeREQUIREMEDICALREVIEW   RuleActionType = "REQUIRE_MEDICAL_REVIEW"
+	RuleActionTypeREQUIREPREAUTH         RuleActionType = "REQUIRE_PREAUTH"
+	RuleActionTypeRESERVEENTITLEMENT     RuleActionType = "RESERVE_ENTITLEMENT"
+	RuleActionTypeSETLIMIT               RuleActionType = "SET_LIMIT"
+	RuleActionTypeWARN                   RuleActionType = "WARN"
 )
 
 // Valid indicates whether the value is a known member of the RuleActionType enum.
 func (e RuleActionType) Valid() bool {
 	switch e {
-	case ADJUSTPRICE:
+	case RuleActionTypeADJUSTPRICE:
 		return true
-	case APPROVE:
+	case RuleActionTypeAPPROVE:
 		return true
-	case PARTIALAPPROVE:
+	case RuleActionTypePARTIALAPPROVE:
 		return true
-	case REJECT:
+	case RuleActionTypeREJECT:
 		return true
-	case REQUIREDOCUMENT:
+	case RuleActionTypeREQUIREDOCUMENT:
 		return true
-	case REQUIREFINANCIALREVIEW:
+	case RuleActionTypeREQUIREFINANCIALREVIEW:
 		return true
-	case REQUIREMEDICALREVIEW:
+	case RuleActionTypeREQUIREMEDICALREVIEW:
 		return true
-	case REQUIREPREAUTH:
+	case RuleActionTypeREQUIREPREAUTH:
 		return true
-	case RESERVEENTITLEMENT:
+	case RuleActionTypeRESERVEENTITLEMENT:
 		return true
-	case SETLIMIT:
+	case RuleActionTypeSETLIMIT:
 		return true
-	case WARN:
+	case RuleActionTypeWARN:
 		return true
 	default:
 		return false
@@ -5329,6 +5389,140 @@ type AvailabilitySearchResult struct {
 	Results  []AvailabilityRoomTypeResult `json:"results"`
 }
 
+// Batch An icmal: one provider's submitted invoices for one payer, one currency, one domain and
+// one period, with the payer's decision on each of them.
+//
+// The five totals are the server's own, in exact decimals. Until the batch is decided the
+// four decision totals are zero; once it is decided they add up to `submittedTotal`
+// exactly, which is a database CHECK.
+type Batch struct {
+	ApprovedTotal string              `json:"approvedTotal"`
+	CreatedAt     time.Time           `json:"createdAt"`
+	CurrencyCode  string              `json:"currencyCode"`
+	CutTotal      string              `json:"cutTotal"`
+	DecidedAt     *time.Time          `json:"decidedAt,omitempty"`
+	DecidedBy     *openapi_types.UUID `json:"decidedBy,omitempty"`
+	DomainCode    string              `json:"domainCode"`
+	Id            openapi_types.UUID  `json:"id"`
+	InvoiceCount  int                 `json:"invoiceCount"`
+	Invoices      []BatchInvoice      `json:"invoices"`
+
+	// PayerOrganizationId The sponsor the contract names. Null means the tenant itself is the payer, which is
+	// the ordinary case.
+	PayerOrganizationId    *openapi_types.UUID `json:"payerOrganizationId,omitempty"`
+	PeriodFrom             openapi_types.Date  `json:"periodFrom"`
+	PeriodTo               openapi_types.Date  `json:"periodTo"`
+	ProviderName           *string             `json:"providerName,omitempty"`
+	ProviderOrganizationId openapi_types.UUID  `json:"providerOrganizationId"`
+
+	// Reference `IC-YYYYMM-XXXXXXXX`. The tail is forty random bits: a sequential reference tells a
+	// competitor how many icmals a tenant settled last month.
+	Reference     string `json:"reference"`
+	RejectedTotal string `json:"rejectedTotal"`
+	ReturnedTotal string `json:"returnedTotal"`
+	RowVersion    int64  `json:"rowVersion"`
+
+	// Status The icmal lifecycle of v1.2 10.9. WP-I7-03 owns everything up to DECIDED; SETTLING and
+	// CLOSED are the settlement's and nothing in this contract puts a batch into one of them.
+	Status         BatchStatus         `json:"status"`
+	SubmittedAt    *time.Time          `json:"submittedAt,omitempty"`
+	SubmittedBy    *openapi_types.UUID `json:"submittedBy,omitempty"`
+	SubmittedTotal string              `json:"submittedTotal"`
+}
+
+// BatchDecision What the payer said about one invoice. Four words rather than two because a provider
+// acts on each of them differently: an approval is money coming, a cut is money to
+// dispute, a return is a document to correct and resend, and a rejection is the end of
+// that document.
+type BatchDecision string
+
+// BatchInvoice One invoice in one icmal, with the payer's answer to it. The decision fields are absent
+// on an invoice nobody has answered yet.
+type BatchInvoice struct {
+	// Active False once the icmal was cancelled. The row stays on the record and the invoice is
+	// free to go into another batch.
+	Active *bool `json:"active,omitempty"`
+
+	// ApprovedAmount Exact decimal. Equal to `submittedAmount` on an APPROVE, strictly between zero and
+	// it on a CUT, and zero on a RETURN or a REJECT. It is a database CHECK, not a
+	// convention.
+	ApprovedAmount       *string             `json:"approvedAmount,omitempty"`
+	CreatedAt            *time.Time          `json:"createdAt,omitempty"`
+	CurrencyCode         string              `json:"currencyCode"`
+	DecidedAt            *time.Time          `json:"decidedAt,omitempty"`
+	DecidedBy            *openapi_types.UUID `json:"decidedBy,omitempty"`
+	DecidedByDisplayName *string             `json:"decidedByDisplayName,omitempty"`
+
+	// Decision What the payer said about one invoice. Four words rather than two because a provider
+	// acts on each of them differently: an approval is money coming, a cut is money to
+	// dispute, a return is a document to correct and resend, and a rejection is the end of
+	// that document.
+	Decision *BatchDecision `json:"decision,omitempty"`
+
+	// Id The membership row, which is what a decision is recorded against.
+	Id            openapi_types.UUID `json:"id"`
+	InvoiceDate   openapi_types.Date `json:"invoiceDate"`
+	InvoiceId     openapi_types.UUID `json:"invoiceId"`
+	InvoiceNumber string             `json:"invoiceNumber"`
+
+	// InvoiceStatus The invoice lifecycle of v1.2 10.9. WP-I7-02 owns DRAFT, SUBMITTED and CANCELLED; the
+	// reviewer's RETURNED, APPROVED, PARTIALLY_APPROVED and REJECTED are WP-I7-03's,
+	// IN_BATCH is the icmal's and SETTLED is the settlement's. They are declared here
+	// because the lifecycle is one list and a list with a hole in it is a list nobody can
+	// read.
+	InvoiceStatus InvoiceStatus `json:"invoiceStatus"`
+	ReasonCode    *string       `json:"reasonCode,omitempty"`
+	ReasonText    *string       `json:"reasonText,omitempty"`
+
+	// SubmittedAmount What the invoice was billing at the moment the icmal was submitted, an exact
+	// decimal. It is a copy rather than a live read: the batch is a record of what was
+	// submitted.
+	SubmittedAmount string `json:"submittedAmount"`
+}
+
+// BatchPage defines model for BatchPage.
+type BatchPage struct {
+	Items      []Batch `json:"items"`
+	NextCursor *string `json:"nextCursor"`
+}
+
+// BatchStatus The icmal lifecycle of v1.2 10.9. WP-I7-03 owns everything up to DECIDED; SETTLING and
+// CLOSED are the settlement's and nothing in this contract puts a batch into one of them.
+type BatchStatus string
+
+// BatchSummary The totals and the per-decision counts, for both sides. All four decisions are always
+// listed, with zeroes where nothing carries them, so a screen can draw a stable set of
+// columns.
+type BatchSummary struct {
+	// Batch An icmal: one provider's submitted invoices for one payer, one currency, one domain and
+	// one period, with the payer's decision on each of them.
+	//
+	// The five totals are the server's own, in exact decimals. Until the batch is decided the
+	// four decision totals are zero; once it is decided they add up to `submittedTotal`
+	// exactly, which is a database CHECK.
+	Batch     Batch             `json:"batch"`
+	Decisions []BatchSummaryRow `json:"decisions"`
+
+	// PendingCount How many invoices nobody has answered yet.
+	PendingCount int `json:"pendingCount"`
+
+	// PendingTotal What those invoices are worth, an exact decimal.
+	PendingTotal string `json:"pendingTotal"`
+}
+
+// BatchSummaryRow defines model for BatchSummaryRow.
+type BatchSummaryRow struct {
+	ApprovedTotal string `json:"approvedTotal"`
+	Count         int    `json:"count"`
+
+	// Decision What the payer said about one invoice. Four words rather than two because a provider
+	// acts on each of them differently: an approval is money coming, a cut is money to
+	// dispute, a return is a document to correct and resend, and a rejection is the end of
+	// that document.
+	Decision       BatchDecision `json:"decision"`
+	SubmittedTotal string        `json:"submittedTotal"`
+}
+
 // Booking A hold, and what it became.
 //
 // `secondsToExpiry` is the countdown, computed on the server: a browser deriving it
@@ -5717,6 +5911,12 @@ type Claim struct {
 	// Status The claim lifecycle of v1.2 12.5. INVOICED, BATCHED and SETTLED are declared because
 	// the lifecycle is one list; the commands that reach them belong to M7 and nothing in
 	// this contract puts a claim into one of them.
+	//
+	// CLOSED_UNPAID is where a claim lands when the payer rejects the icmal invoice that was
+	// collecting it (WP-I7-03). The decision stands, the money will not be paid, and the
+	// claim is finished. It is not CANCELLED -- nobody withdrew it -- and it is not REJECTED,
+	// which is the payer refusing the *claim* rather than refusing to pay a document that
+	// billed it.
 	Status ClaimStatus `json:"status"`
 }
 
@@ -5864,6 +6064,12 @@ type ClaimInvoiceReadiness struct {
 	// Status The claim lifecycle of v1.2 12.5. INVOICED, BATCHED and SETTLED are declared because
 	// the lifecycle is one list; the commands that reach them belong to M7 and nothing in
 	// this contract puts a claim into one of them.
+	//
+	// CLOSED_UNPAID is where a claim lands when the payer rejects the icmal invoice that was
+	// collecting it (WP-I7-03). The decision stands, the money will not be paid, and the
+	// claim is finished. It is not CANCELLED -- nobody withdrew it -- and it is not REJECTED,
+	// which is the payer refusing the *claim* rather than refusing to pay a document that
+	// billed it.
 	Status ClaimStatus `json:"status"`
 }
 
@@ -5988,6 +6194,12 @@ type ClaimSourceType string
 // ClaimStatus The claim lifecycle of v1.2 12.5. INVOICED, BATCHED and SETTLED are declared because
 // the lifecycle is one list; the commands that reach them belong to M7 and nothing in
 // this contract puts a claim into one of them.
+//
+// CLOSED_UNPAID is where a claim lands when the payer rejects the icmal invoice that was
+// collecting it (WP-I7-03). The decision stands, the money will not be paid, and the
+// claim is finished. It is not CANCELLED -- nobody withdrew it -- and it is not REJECTED,
+// which is the payer refusing the *claim* rather than refusing to pay a document that
+// billed it.
 type ClaimStatus string
 
 // ClaimVersion defines model for ClaimVersion.
@@ -6251,6 +6463,19 @@ type CreateAuthorization struct {
 
 	// ValidTo When the promise stops holding and the reservations are released.
 	ValidTo time.Time `json:"validTo"`
+}
+
+// CreateBatch The five things an icmal is one of. The reference is the server's and is never sent.
+type CreateBatch struct {
+	// CurrencyCode Defaults to TRY.
+	CurrencyCode *string `json:"currencyCode,omitempty"`
+
+	// DomainCode Defaults to GENERIC.
+	DomainCode             *string             `json:"domainCode,omitempty"`
+	PayerOrganizationId    *openapi_types.UUID `json:"payerOrganizationId,omitempty"`
+	PeriodFrom             openapi_types.Date  `json:"periodFrom"`
+	PeriodTo               openapi_types.Date  `json:"periodTo"`
+	ProviderOrganizationId openapi_types.UUID  `json:"providerOrganizationId"`
 }
 
 // CreateBookingGuest defines model for CreateBookingGuest.
@@ -7716,7 +7941,8 @@ type Invoice struct {
 	AllocationTotal string              `json:"allocationTotal"`
 	Allocations     []InvoiceAllocation `json:"allocations"`
 
-	// BatchId The WP-I7-03 icmal this invoice sits in. Always null in this milestone.
+	// BatchId The WP-I7-03 icmal this invoice sits in, set when that icmal is submitted. Null on
+	// an invoice no icmal is collecting.
 	BatchId      *openapi_types.UUID `json:"batchId,omitempty"`
 	CreatedAt    time.Time           `json:"createdAt"`
 	CurrencyCode string              `json:"currencyCode"`
@@ -7806,6 +8032,12 @@ type InvoiceAllocation struct {
 	// ClaimStatus The claim lifecycle of v1.2 12.5. INVOICED, BATCHED and SETTLED are declared because
 	// the lifecycle is one list; the commands that reach them belong to M7 and nothing in
 	// this contract puts a claim into one of them.
+	//
+	// CLOSED_UNPAID is where a claim lands when the payer rejects the icmal invoice that was
+	// collecting it (WP-I7-03). The decision stands, the money will not be paid, and the
+	// claim is finished. It is not CANCELLED -- nobody withdrew it -- and it is not REJECTED,
+	// which is the payer refusing the *claim* rather than refusing to pay a document that
+	// billed it.
 	ClaimStatus ClaimStatus `json:"claimStatus"`
 
 	// ClaimVersionNo The version the allocation was made against. A claim corrected afterwards is a
@@ -9583,6 +9815,12 @@ type ProviderEarningsStatusTotal struct {
 	// Status The claim lifecycle of v1.2 12.5. INVOICED, BATCHED and SETTLED are declared because
 	// the lifecycle is one list; the commands that reach them belong to M7 and nothing in
 	// this contract puts a claim into one of them.
+	//
+	// CLOSED_UNPAID is where a claim lands when the payer rejects the icmal invoice that was
+	// collecting it (WP-I7-03). The decision stands, the money will not be paid, and the
+	// claim is finished. It is not CANCELLED -- nobody withdrew it -- and it is not REJECTED,
+	// which is the payer refusing the *claim* rather than refusing to pay a document that
+	// billed it.
 	Status ClaimStatus `json:"status"`
 }
 
@@ -9712,6 +9950,13 @@ type PutApprovalPolicies struct {
 	// Policies The whole set for this action. An empty array is a legitimate request: it means
 	// this action needs no policy at all, and it removes whatever was there.
 	Policies []ApprovalPolicyInput `json:"policies"`
+}
+
+// PutBatchInvoices The whole set, replacing whatever the draft carried. Duplicates are collapsed rather
+// than refused: naming the same invoice twice is a client's mistake and not a different
+// icmal.
+type PutBatchInvoices struct {
+	InvoiceIds []openapi_types.UUID `json:"invoiceIds"`
 }
 
 // PutClaimLines defines model for PutClaimLines.
@@ -9957,6 +10202,27 @@ type ResolvedPrice struct {
 	// UnitType Unit a service definition is counted in.
 	UnitType  ServiceUnitType `json:"unitType"`
 	VersionNo int             `json:"versionNo"`
+}
+
+// ReviewBatchInvoice One decision on one invoice. `approvedAmount` belongs to a CUT and only to a CUT: the
+// other three derive it, and a caller who could send it would be a caller who could
+// approve an amount nobody billed.
+type ReviewBatchInvoice struct {
+	// ApprovedAmount Required on a CUT, strictly between zero and the submitted amount. Ignored on the
+	// other three.
+	ApprovedAmount *DecimalAmount `json:"approvedAmount,omitempty"`
+
+	// Decision What the payer said about one invoice. Four words rather than two because a provider
+	// acts on each of them differently: an approval is money coming, a cut is money to
+	// dispute, a return is a document to correct and resend, and a rejection is the end of
+	// that document.
+	Decision BatchDecision `json:"decision"`
+
+	// ReasonCode Required for a CUT, a RETURN and a REJECT. A cut's has to be one of the claim
+	// ledger's cut reasons, because the cut writes an adjustment and an adjustment's
+	// reason is a closed list.
+	ReasonCode *string `json:"reasonCode,omitempty"`
+	ReasonText *string `json:"reasonText,omitempty"`
 }
 
 // ReviewComment defines model for ReviewComment.
@@ -11228,6 +11494,9 @@ type AdjustmentId = openapi_types.UUID
 // AuthorizationId defines model for AuthorizationId.
 type AuthorizationId = openapi_types.UUID
 
+// BatchId defines model for BatchId.
+type BatchId = openapi_types.UUID
+
 // BookingId defines model for BookingId.
 type BookingId = openapi_types.UUID
 
@@ -11784,6 +12053,97 @@ type ExtendAuthorizationParams struct {
 
 // IssueVoucherParams defines parameters for IssueVoucher.
 type IssueVoucherParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// ListBatchesParams defines parameters for ListBatches.
+type ListBatchesParams struct {
+	ProviderOrganizationId *openapi_types.UUID `form:"providerOrganizationId,omitempty" json:"providerOrganizationId,omitempty"`
+	PayerOrganizationId    *openapi_types.UUID `form:"payerOrganizationId,omitempty" json:"payerOrganizationId,omitempty"`
+	Status                 *BatchStatus        `form:"status,omitempty" json:"status,omitempty"`
+	DomainCode             *string             `form:"domainCode,omitempty" json:"domainCode,omitempty"`
+	CurrencyCode           *string             `form:"currencyCode,omitempty" json:"currencyCode,omitempty"`
+
+	// From Overlaps the batch period, inclusive.
+	From *openapi_types.Date `form:"from,omitempty" json:"from,omitempty"`
+
+	// To Overlaps the batch period, inclusive.
+	To *openapi_types.Date `form:"to,omitempty" json:"to,omitempty"`
+
+	// Cursor Opaque cursor from the previous response.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// CreateBatchParams defines parameters for CreateBatch.
+type CreateBatchParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// GetBatchParams defines parameters for GetBatch.
+type GetBatchParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// DecideBatchParams defines parameters for DecideBatch.
+type DecideBatchParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// PutBatchInvoicesParams defines parameters for PutBatchInvoices.
+type PutBatchInvoicesParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ReviewBatchInvoiceParams defines parameters for ReviewBatchInvoice.
+type ReviewBatchInvoiceParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// SubmitBatchParams defines parameters for SubmitBatch.
+type SubmitBatchParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// GetBatchSummaryParams defines parameters for GetBatchSummary.
+type GetBatchSummaryParams struct {
 	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
 	XTenantID TenantHeader `json:"X-Tenant-ID"`
 }
@@ -13289,8 +13649,8 @@ type ListInvoicesParams struct {
 	// To Invoice date, inclusive.
 	To *openapi_types.Date `form:"to,omitempty" json:"to,omitempty"`
 
-	// BatchId The WP-I7-03 icmal an invoice was put into. Nothing in this milestone writes it,
-	// so it matches nothing until the batch exists.
+	// BatchId The WP-I7-03 icmal an invoice was put into. It is written by `submitBatch` and is
+	// null on every invoice no icmal is collecting.
 	BatchId *openapi_types.UUID `form:"batchId,omitempty" json:"batchId,omitempty"`
 
 	// Cursor Opaque cursor from the previous response.
@@ -15043,6 +15403,15 @@ type ExtendAuthorizationJSONRequestBody = ExtendAuthorization
 // IssueVoucherJSONRequestBody defines body for IssueVoucher for application/json ContentType.
 type IssueVoucherJSONRequestBody = IssueVoucher
 
+// CreateBatchJSONRequestBody defines body for CreateBatch for application/json ContentType.
+type CreateBatchJSONRequestBody = CreateBatch
+
+// PutBatchInvoicesJSONRequestBody defines body for PutBatchInvoices for application/json ContentType.
+type PutBatchInvoicesJSONRequestBody = PutBatchInvoices
+
+// ReviewBatchInvoiceJSONRequestBody defines body for ReviewBatchInvoice for application/json ContentType.
+type ReviewBatchInvoiceJSONRequestBody = ReviewBatchInvoice
+
 // CreateClaimJSONRequestBody defines body for CreateClaim for application/json ContentType.
 type CreateClaimJSONRequestBody = CreateClaim
 
@@ -15700,6 +16069,30 @@ type ServerInterface interface {
 
 	// (POST /api/v1/authorizations/{authorizationId}/vouchers)
 	IssueVoucher(w http.ResponseWriter, r *http.Request, authorizationId AuthorizationId, params IssueVoucherParams)
+
+	// (GET /api/v1/batches)
+	ListBatches(w http.ResponseWriter, r *http.Request, params ListBatchesParams)
+
+	// (POST /api/v1/batches)
+	CreateBatch(w http.ResponseWriter, r *http.Request, params CreateBatchParams)
+
+	// (GET /api/v1/batches/{batchId})
+	GetBatch(w http.ResponseWriter, r *http.Request, batchId BatchId, params GetBatchParams)
+
+	// (POST /api/v1/batches/{batchId}/decide)
+	DecideBatch(w http.ResponseWriter, r *http.Request, batchId BatchId, params DecideBatchParams)
+
+	// (PUT /api/v1/batches/{batchId}/invoices)
+	PutBatchInvoices(w http.ResponseWriter, r *http.Request, batchId BatchId, params PutBatchInvoicesParams)
+
+	// (POST /api/v1/batches/{batchId}/invoices/{invoiceId}/review)
+	ReviewBatchInvoice(w http.ResponseWriter, r *http.Request, batchId BatchId, invoiceId InvoiceId, params ReviewBatchInvoiceParams)
+
+	// (POST /api/v1/batches/{batchId}/submit)
+	SubmitBatch(w http.ResponseWriter, r *http.Request, batchId BatchId, params SubmitBatchParams)
+
+	// (GET /api/v1/batches/{batchId}/summary)
+	GetBatchSummary(w http.ResponseWriter, r *http.Request, batchId BatchId, params GetBatchSummaryParams)
 
 	// (GET /api/v1/claims)
 	ListClaims(w http.ResponseWriter, r *http.Request, params ListClaimsParams)
@@ -16619,6 +17012,46 @@ func (_ Unimplemented) ExtendAuthorization(w http.ResponseWriter, r *http.Reques
 
 // (POST /api/v1/authorizations/{authorizationId}/vouchers)
 func (_ Unimplemented) IssueVoucher(w http.ResponseWriter, r *http.Request, authorizationId AuthorizationId, params IssueVoucherParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/batches)
+func (_ Unimplemented) ListBatches(w http.ResponseWriter, r *http.Request, params ListBatchesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/batches)
+func (_ Unimplemented) CreateBatch(w http.ResponseWriter, r *http.Request, params CreateBatchParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/batches/{batchId})
+func (_ Unimplemented) GetBatch(w http.ResponseWriter, r *http.Request, batchId BatchId, params GetBatchParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/batches/{batchId}/decide)
+func (_ Unimplemented) DecideBatch(w http.ResponseWriter, r *http.Request, batchId BatchId, params DecideBatchParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PUT /api/v1/batches/{batchId}/invoices)
+func (_ Unimplemented) PutBatchInvoices(w http.ResponseWriter, r *http.Request, batchId BatchId, params PutBatchInvoicesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/batches/{batchId}/invoices/{invoiceId}/review)
+func (_ Unimplemented) ReviewBatchInvoice(w http.ResponseWriter, r *http.Request, batchId BatchId, invoiceId InvoiceId, params ReviewBatchInvoiceParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/batches/{batchId}/submit)
+func (_ Unimplemented) SubmitBatch(w http.ResponseWriter, r *http.Request, batchId BatchId, params SubmitBatchParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/batches/{batchId}/summary)
+func (_ Unimplemented) GetBatchSummary(w http.ResponseWriter, r *http.Request, batchId BatchId, params GetBatchSummaryParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -20595,6 +21028,753 @@ func (siw *ServerInterfaceWrapper) IssueVoucher(w http.ResponseWriter, r *http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.IssueVoucher(w, r, authorizationId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListBatches operation middleware
+func (siw *ServerInterfaceWrapper) ListBatches(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListBatchesParams
+
+	// ------------- Optional query parameter "providerOrganizationId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "providerOrganizationId", r.URL.Query(), &params.ProviderOrganizationId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "providerOrganizationId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "providerOrganizationId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "payerOrganizationId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "payerOrganizationId", r.URL.Query(), &params.PayerOrganizationId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "payerOrganizationId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "payerOrganizationId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "domainCode" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "domainCode", r.URL.Query(), &params.DomainCode, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "domainCode"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "domainCode", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "currencyCode" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "currencyCode", r.URL.Query(), &params.CurrencyCode, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "currencyCode"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "currencyCode", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "from" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "from", r.URL.Query(), &params.From, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "from"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "from", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "to" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "to", r.URL.Query(), &params.To, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "to"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "to", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListBatches(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateBatch operation middleware
+func (siw *ServerInterfaceWrapper) CreateBatch(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateBatchParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateBatch(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetBatch operation middleware
+func (siw *ServerInterfaceWrapper) GetBatch(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "batchId" -------------
+	var batchId BatchId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "batchId", chi.URLParam(r, "batchId"), &batchId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "batchId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetBatchParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetBatch(w, r, batchId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DecideBatch operation middleware
+func (siw *ServerInterfaceWrapper) DecideBatch(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "batchId" -------------
+	var batchId BatchId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "batchId", chi.URLParam(r, "batchId"), &batchId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "batchId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DecideBatchParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DecideBatch(w, r, batchId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutBatchInvoices operation middleware
+func (siw *ServerInterfaceWrapper) PutBatchInvoices(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "batchId" -------------
+	var batchId BatchId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "batchId", chi.URLParam(r, "batchId"), &batchId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "batchId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PutBatchInvoicesParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutBatchInvoices(w, r, batchId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReviewBatchInvoice operation middleware
+func (siw *ServerInterfaceWrapper) ReviewBatchInvoice(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "batchId" -------------
+	var batchId BatchId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "batchId", chi.URLParam(r, "batchId"), &batchId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "batchId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "invoiceId" -------------
+	var invoiceId InvoiceId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "invoiceId", chi.URLParam(r, "invoiceId"), &invoiceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "invoiceId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ReviewBatchInvoiceParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReviewBatchInvoice(w, r, batchId, invoiceId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SubmitBatch operation middleware
+func (siw *ServerInterfaceWrapper) SubmitBatch(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "batchId" -------------
+	var batchId BatchId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "batchId", chi.URLParam(r, "batchId"), &batchId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "batchId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SubmitBatchParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SubmitBatch(w, r, batchId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetBatchSummary operation middleware
+func (siw *ServerInterfaceWrapper) GetBatchSummary(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "batchId" -------------
+	var batchId BatchId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "batchId", chi.URLParam(r, "batchId"), &batchId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "batchId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetBatchSummaryParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetBatchSummary(w, r, batchId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -42559,6 +43739,30 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/invoices/{invoiceId}/versions", wrapper.ListInvoiceVersions)
 	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/batches", wrapper.ListBatches)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/batches", wrapper.CreateBatch)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/batches/{batchId}", wrapper.GetBatch)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/batches/{batchId}/summary", wrapper.GetBatchSummary)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/v1/batches/{batchId}/invoices", wrapper.PutBatchInvoices)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/batches/{batchId}/submit", wrapper.SubmitBatch)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/batches/{batchId}/invoices/{invoiceId}/review", wrapper.ReviewBatchInvoice)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/batches/{batchId}/decide", wrapper.DecideBatch)
+	})
 
 	return r
 }
@@ -45638,6 +46842,803 @@ func (response IssueVoucher429ApplicationProblemPlusJSONResponse) VisitIssueVouc
 		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
 	}
 	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListBatchesRequestObject struct {
+	Params ListBatchesParams
+}
+
+type ListBatchesResponseObject interface {
+	VisitListBatchesResponse(w http.ResponseWriter) error
+}
+
+type ListBatches200JSONResponse BatchPage
+
+func (response ListBatches200JSONResponse) VisitListBatchesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListBatches400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListBatches400ApplicationProblemPlusJSONResponse) VisitListBatchesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListBatches403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListBatches403ApplicationProblemPlusJSONResponse) VisitListBatchesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListBatches422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListBatches422ApplicationProblemPlusJSONResponse) VisitListBatchesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateBatchRequestObject struct {
+	Params CreateBatchParams
+	Body   *CreateBatchJSONRequestBody
+}
+
+type CreateBatchResponseObject interface {
+	VisitCreateBatchResponse(w http.ResponseWriter) error
+}
+
+type CreateBatch201ResponseHeaders struct {
+	ETag *string
+}
+
+type CreateBatch201JSONResponse struct {
+	Body    Batch
+	Headers CreateBatch201ResponseHeaders
+}
+
+func (response CreateBatch201JSONResponse) VisitCreateBatchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateBatch403ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateBatch403ApplicationProblemPlusJSONResponse) VisitCreateBatchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateBatch422ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateBatch422ApplicationProblemPlusJSONResponse) VisitCreateBatchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateBatch429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response CreateBatch429ApplicationProblemPlusJSONResponse) VisitCreateBatchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetBatchRequestObject struct {
+	BatchId BatchId `json:"batchId"`
+	Params  GetBatchParams
+}
+
+type GetBatchResponseObject interface {
+	VisitGetBatchResponse(w http.ResponseWriter) error
+}
+
+type GetBatch200ResponseHeaders struct {
+	ETag *string
+}
+
+type GetBatch200JSONResponse struct {
+	Body    Batch
+	Headers GetBatch200ResponseHeaders
+}
+
+func (response GetBatch200JSONResponse) VisitGetBatchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetBatch403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetBatch403ApplicationProblemPlusJSONResponse) VisitGetBatchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetBatch404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetBatch404ApplicationProblemPlusJSONResponse) VisitGetBatchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DecideBatchRequestObject struct {
+	BatchId BatchId `json:"batchId"`
+	Params  DecideBatchParams
+}
+
+type DecideBatchResponseObject interface {
+	VisitDecideBatchResponse(w http.ResponseWriter) error
+}
+
+type DecideBatch200ResponseHeaders struct {
+	ETag *string
+}
+
+type DecideBatch200JSONResponse struct {
+	Body    Batch
+	Headers DecideBatch200ResponseHeaders
+}
+
+func (response DecideBatch200JSONResponse) VisitDecideBatchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DecideBatch403ApplicationProblemPlusJSONResponse Problem
+
+func (response DecideBatch403ApplicationProblemPlusJSONResponse) VisitDecideBatchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DecideBatch404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response DecideBatch404ApplicationProblemPlusJSONResponse) VisitDecideBatchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DecideBatch409ApplicationProblemPlusJSONResponse Problem
+
+func (response DecideBatch409ApplicationProblemPlusJSONResponse) VisitDecideBatchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DecideBatch412ApplicationProblemPlusJSONResponse Problem
+
+func (response DecideBatch412ApplicationProblemPlusJSONResponse) VisitDecideBatchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DecideBatch428ApplicationProblemPlusJSONResponse Problem
+
+func (response DecideBatch428ApplicationProblemPlusJSONResponse) VisitDecideBatchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DecideBatch429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response DecideBatch429ApplicationProblemPlusJSONResponse) VisitDecideBatchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutBatchInvoicesRequestObject struct {
+	BatchId BatchId `json:"batchId"`
+	Params  PutBatchInvoicesParams
+	Body    *PutBatchInvoicesJSONRequestBody
+}
+
+type PutBatchInvoicesResponseObject interface {
+	VisitPutBatchInvoicesResponse(w http.ResponseWriter) error
+}
+
+type PutBatchInvoices200ResponseHeaders struct {
+	ETag *string
+}
+
+type PutBatchInvoices200JSONResponse struct {
+	Body    Batch
+	Headers PutBatchInvoices200ResponseHeaders
+}
+
+func (response PutBatchInvoices200JSONResponse) VisitPutBatchInvoicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutBatchInvoices403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response PutBatchInvoices403ApplicationProblemPlusJSONResponse) VisitPutBatchInvoicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutBatchInvoices404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response PutBatchInvoices404ApplicationProblemPlusJSONResponse) VisitPutBatchInvoicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutBatchInvoices409ApplicationProblemPlusJSONResponse Problem
+
+func (response PutBatchInvoices409ApplicationProblemPlusJSONResponse) VisitPutBatchInvoicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutBatchInvoices412ApplicationProblemPlusJSONResponse Problem
+
+func (response PutBatchInvoices412ApplicationProblemPlusJSONResponse) VisitPutBatchInvoicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutBatchInvoices422ApplicationProblemPlusJSONResponse Problem
+
+func (response PutBatchInvoices422ApplicationProblemPlusJSONResponse) VisitPutBatchInvoicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutBatchInvoices428ApplicationProblemPlusJSONResponse Problem
+
+func (response PutBatchInvoices428ApplicationProblemPlusJSONResponse) VisitPutBatchInvoicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutBatchInvoices429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response PutBatchInvoices429ApplicationProblemPlusJSONResponse) VisitPutBatchInvoicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewBatchInvoiceRequestObject struct {
+	BatchId   BatchId   `json:"batchId"`
+	InvoiceId InvoiceId `json:"invoiceId"`
+	Params    ReviewBatchInvoiceParams
+	Body      *ReviewBatchInvoiceJSONRequestBody
+}
+
+type ReviewBatchInvoiceResponseObject interface {
+	VisitReviewBatchInvoiceResponse(w http.ResponseWriter) error
+}
+
+type ReviewBatchInvoice200ResponseHeaders struct {
+	ETag *string
+}
+
+type ReviewBatchInvoice200JSONResponse struct {
+	Body    Batch
+	Headers ReviewBatchInvoice200ResponseHeaders
+}
+
+func (response ReviewBatchInvoice200JSONResponse) VisitReviewBatchInvoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewBatchInvoice403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ReviewBatchInvoice403ApplicationProblemPlusJSONResponse) VisitReviewBatchInvoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewBatchInvoice404ApplicationProblemPlusJSONResponse Problem
+
+func (response ReviewBatchInvoice404ApplicationProblemPlusJSONResponse) VisitReviewBatchInvoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewBatchInvoice409ApplicationProblemPlusJSONResponse Problem
+
+func (response ReviewBatchInvoice409ApplicationProblemPlusJSONResponse) VisitReviewBatchInvoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewBatchInvoice412ApplicationProblemPlusJSONResponse Problem
+
+func (response ReviewBatchInvoice412ApplicationProblemPlusJSONResponse) VisitReviewBatchInvoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewBatchInvoice422ApplicationProblemPlusJSONResponse Problem
+
+func (response ReviewBatchInvoice422ApplicationProblemPlusJSONResponse) VisitReviewBatchInvoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewBatchInvoice428ApplicationProblemPlusJSONResponse Problem
+
+func (response ReviewBatchInvoice428ApplicationProblemPlusJSONResponse) VisitReviewBatchInvoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewBatchInvoice429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response ReviewBatchInvoice429ApplicationProblemPlusJSONResponse) VisitReviewBatchInvoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitBatchRequestObject struct {
+	BatchId BatchId `json:"batchId"`
+	Params  SubmitBatchParams
+}
+
+type SubmitBatchResponseObject interface {
+	VisitSubmitBatchResponse(w http.ResponseWriter) error
+}
+
+type SubmitBatch200ResponseHeaders struct {
+	ETag *string
+}
+
+type SubmitBatch200JSONResponse struct {
+	Body    Batch
+	Headers SubmitBatch200ResponseHeaders
+}
+
+func (response SubmitBatch200JSONResponse) VisitSubmitBatchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitBatch403ApplicationProblemPlusJSONResponse Problem
+
+func (response SubmitBatch403ApplicationProblemPlusJSONResponse) VisitSubmitBatchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitBatch404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response SubmitBatch404ApplicationProblemPlusJSONResponse) VisitSubmitBatchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitBatch409ApplicationProblemPlusJSONResponse Problem
+
+func (response SubmitBatch409ApplicationProblemPlusJSONResponse) VisitSubmitBatchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitBatch412ApplicationProblemPlusJSONResponse Problem
+
+func (response SubmitBatch412ApplicationProblemPlusJSONResponse) VisitSubmitBatchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitBatch428ApplicationProblemPlusJSONResponse Problem
+
+func (response SubmitBatch428ApplicationProblemPlusJSONResponse) VisitSubmitBatchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitBatch429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response SubmitBatch429ApplicationProblemPlusJSONResponse) VisitSubmitBatchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetBatchSummaryRequestObject struct {
+	BatchId BatchId `json:"batchId"`
+	Params  GetBatchSummaryParams
+}
+
+type GetBatchSummaryResponseObject interface {
+	VisitGetBatchSummaryResponse(w http.ResponseWriter) error
+}
+
+type GetBatchSummary200JSONResponse BatchSummary
+
+func (response GetBatchSummary200JSONResponse) VisitGetBatchSummaryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetBatchSummary403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetBatchSummary403ApplicationProblemPlusJSONResponse) VisitGetBatchSummaryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetBatchSummary404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetBatchSummary404ApplicationProblemPlusJSONResponse) VisitGetBatchSummaryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -68269,6 +70270,30 @@ type StrictServerInterface interface {
 	// (POST /api/v1/authorizations/{authorizationId}/vouchers)
 	IssueVoucher(ctx context.Context, request IssueVoucherRequestObject) (IssueVoucherResponseObject, error)
 
+	// (GET /api/v1/batches)
+	ListBatches(ctx context.Context, request ListBatchesRequestObject) (ListBatchesResponseObject, error)
+
+	// (POST /api/v1/batches)
+	CreateBatch(ctx context.Context, request CreateBatchRequestObject) (CreateBatchResponseObject, error)
+
+	// (GET /api/v1/batches/{batchId})
+	GetBatch(ctx context.Context, request GetBatchRequestObject) (GetBatchResponseObject, error)
+
+	// (POST /api/v1/batches/{batchId}/decide)
+	DecideBatch(ctx context.Context, request DecideBatchRequestObject) (DecideBatchResponseObject, error)
+
+	// (PUT /api/v1/batches/{batchId}/invoices)
+	PutBatchInvoices(ctx context.Context, request PutBatchInvoicesRequestObject) (PutBatchInvoicesResponseObject, error)
+
+	// (POST /api/v1/batches/{batchId}/invoices/{invoiceId}/review)
+	ReviewBatchInvoice(ctx context.Context, request ReviewBatchInvoiceRequestObject) (ReviewBatchInvoiceResponseObject, error)
+
+	// (POST /api/v1/batches/{batchId}/submit)
+	SubmitBatch(ctx context.Context, request SubmitBatchRequestObject) (SubmitBatchResponseObject, error)
+
+	// (GET /api/v1/batches/{batchId}/summary)
+	GetBatchSummary(ctx context.Context, request GetBatchSummaryRequestObject) (GetBatchSummaryResponseObject, error)
+
 	// (GET /api/v1/claims)
 	ListClaims(ctx context.Context, request ListClaimsRequestObject) (ListClaimsResponseObject, error)
 
@@ -70115,6 +72140,242 @@ func (sh *strictHandler) IssueVoucher(w http.ResponseWriter, r *http.Request, au
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(IssueVoucherResponseObject); ok {
 		if err := validResponse.VisitIssueVoucherResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListBatches operation middleware
+func (sh *strictHandler) ListBatches(w http.ResponseWriter, r *http.Request, params ListBatchesParams) {
+	var request ListBatchesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListBatches(ctx, request.(ListBatchesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListBatches")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListBatchesResponseObject); ok {
+		if err := validResponse.VisitListBatchesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateBatch operation middleware
+func (sh *strictHandler) CreateBatch(w http.ResponseWriter, r *http.Request, params CreateBatchParams) {
+	var request CreateBatchRequestObject
+
+	request.Params = params
+
+	var body CreateBatchJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateBatch(ctx, request.(CreateBatchRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateBatch")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateBatchResponseObject); ok {
+		if err := validResponse.VisitCreateBatchResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetBatch operation middleware
+func (sh *strictHandler) GetBatch(w http.ResponseWriter, r *http.Request, batchId BatchId, params GetBatchParams) {
+	var request GetBatchRequestObject
+
+	request.BatchId = batchId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetBatch(ctx, request.(GetBatchRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetBatch")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetBatchResponseObject); ok {
+		if err := validResponse.VisitGetBatchResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DecideBatch operation middleware
+func (sh *strictHandler) DecideBatch(w http.ResponseWriter, r *http.Request, batchId BatchId, params DecideBatchParams) {
+	var request DecideBatchRequestObject
+
+	request.BatchId = batchId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DecideBatch(ctx, request.(DecideBatchRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DecideBatch")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DecideBatchResponseObject); ok {
+		if err := validResponse.VisitDecideBatchResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutBatchInvoices operation middleware
+func (sh *strictHandler) PutBatchInvoices(w http.ResponseWriter, r *http.Request, batchId BatchId, params PutBatchInvoicesParams) {
+	var request PutBatchInvoicesRequestObject
+
+	request.BatchId = batchId
+	request.Params = params
+
+	var body PutBatchInvoicesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutBatchInvoices(ctx, request.(PutBatchInvoicesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutBatchInvoices")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutBatchInvoicesResponseObject); ok {
+		if err := validResponse.VisitPutBatchInvoicesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReviewBatchInvoice operation middleware
+func (sh *strictHandler) ReviewBatchInvoice(w http.ResponseWriter, r *http.Request, batchId BatchId, invoiceId InvoiceId, params ReviewBatchInvoiceParams) {
+	var request ReviewBatchInvoiceRequestObject
+
+	request.BatchId = batchId
+	request.InvoiceId = invoiceId
+	request.Params = params
+
+	var body ReviewBatchInvoiceJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReviewBatchInvoice(ctx, request.(ReviewBatchInvoiceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReviewBatchInvoice")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReviewBatchInvoiceResponseObject); ok {
+		if err := validResponse.VisitReviewBatchInvoiceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SubmitBatch operation middleware
+func (sh *strictHandler) SubmitBatch(w http.ResponseWriter, r *http.Request, batchId BatchId, params SubmitBatchParams) {
+	var request SubmitBatchRequestObject
+
+	request.BatchId = batchId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SubmitBatch(ctx, request.(SubmitBatchRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SubmitBatch")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SubmitBatchResponseObject); ok {
+		if err := validResponse.VisitSubmitBatchResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetBatchSummary operation middleware
+func (sh *strictHandler) GetBatchSummary(w http.ResponseWriter, r *http.Request, batchId BatchId, params GetBatchSummaryParams) {
+	var request GetBatchSummaryRequestObject
+
+	request.BatchId = batchId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetBatchSummary(ctx, request.(GetBatchSummaryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetBatchSummary")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetBatchSummaryResponseObject); ok {
+		if err := validResponse.VisitGetBatchSummaryResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

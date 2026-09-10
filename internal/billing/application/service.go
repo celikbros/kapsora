@@ -23,24 +23,33 @@ import (
 
 // Service implements the invoice use cases.
 type Service struct {
-	pool    *pgxpool.Pool
-	repo    Repository
-	claims  ClaimsPort
-	audit   audit.Recorder
-	cursors *httpx.CursorCodec
-	logger  *slog.Logger
-	now     func() time.Time
+	pool      *pgxpool.Pool
+	repo      Repository
+	batches   BatchRepository
+	claims    ClaimsPort
+	workItems WorkItemPort
+	audit     audit.Recorder
+	cursors   *httpx.CursorCodec
+	logger    *slog.Logger
+	now       func() time.Time
 }
 
 // Deps are the collaborators of the service.
 type Deps struct {
 	Pool *pgxpool.Pool
 	Repo Repository
+	// Batches is the icmal's own persistence. A process wired without it serves the invoice
+	// and refuses every batch command, which is the honest behaviour of a process that was
+	// never given one.
+	Batches BatchRepository
 	// Claims is the claim module's INVOICED transition and the way back. It runs inside this
 	// package's transaction. The default refuses, which is the honest behaviour of a process
 	// that was never given one.
 	Claims ClaimsPort
-	Audit  audit.Recorder
+	// WorkItems is WP-I4-03's queue, written from this side of the boundary. The default
+	// raises nothing, which is the right answer for a tenant that has configured no queue.
+	WorkItems WorkItemPort
+	Audit     audit.Recorder
 	// Cursors may be nil in a process that never pages.
 	Cursors *httpx.CursorCodec
 	Logger  *slog.Logger
@@ -56,6 +65,9 @@ func New(d Deps) (*Service, error) {
 	if d.Claims == nil {
 		d.Claims = NoClaims{}
 	}
+	if d.WorkItems == nil {
+		d.WorkItems = NoWorkItems{}
+	}
 	if d.Audit == nil {
 		d.Audit = audit.NopRecorder{}
 	}
@@ -66,7 +78,8 @@ func New(d Deps) (*Service, error) {
 		d.Now = time.Now
 	}
 	return &Service{
-		pool: d.Pool, repo: d.Repo, claims: d.Claims, audit: d.Audit,
+		pool: d.Pool, repo: d.Repo, batches: d.Batches, claims: d.Claims,
+		workItems: d.WorkItems, audit: d.Audit,
 		cursors: d.Cursors, logger: d.Logger, now: d.Now,
 	}, nil
 }

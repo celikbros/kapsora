@@ -436,9 +436,22 @@ func TestSubmittedInvoiceIsFrozen(t *testing.T) {
 	err = s.allocate(t, h, invoice, second, "100", "TRY")
 	dbtest.ExpectSQLState(t, err, dbtest.SQLStateCheckViolation, "adding a link to a submitted invoice")
 
-	// What may still move: the lifecycle, and the batch WP-I7-03 will put it in.
+	// What may still move: the lifecycle, and the batch WP-I7-03 puts it in. The batch is a
+	// real one since migration 000045: `fk_billing_invoice_batch` means an invoice can only
+	// point at an icmal that exists, which is the half of the link the column could not carry
+	// while the table it names did not exist.
 	h.AdminExec(`UPDATE billing.invoice SET status = 'APPROVED' WHERE id = $1`, invoice)
-	h.AdminExec(`UPDATE billing.invoice SET batch_id = $2 WHERE id = $1`, invoice, uuid.New())
+	ctx, cancel := h.Ctx()
+	defer cancel()
+	var batch uuid.UUID
+	if err := h.Admin.QueryRow(ctx, `
+		INSERT INTO billing.batch (tenant_id, reference, provider_organization_id, domain_code,
+		                           currency_code, period_from, period_to)
+		VALUES ($1, $2, $3, 'GENERIC', 'TRY', '2026-06-01', '2026-06-30') RETURNING id`,
+		s.tenant, "IC-202606-"+batchTail(), s.provider).Scan(&batch); err != nil {
+		t.Fatalf("open the batch: %v", err)
+	}
+	h.AdminExec(`UPDATE billing.invoice SET batch_id = $2 WHERE id = $1`, invoice, batch)
 }
 
 // TestClaimApprovedTotalIsLinesMinusAdjustments pins the SQL function the ceiling trigger uses

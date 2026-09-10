@@ -80,13 +80,16 @@ func TestNonsenseFallsBackToTheDefault(t *testing.T) {
 	}
 }
 
-// TestKeysAreTheOnesTheLoaderAsksFor keeps the exported list and the two constants in step: a
-// key added to the package and forgotten in `Keys` would be a setting a tenant could configure
-// and the loader would never read.
+// TestKeysAreTheOnesTheLoaderAsksFor keeps the exported list and the constants in step: a key
+// added to the package and forgotten in `Keys` would be a setting a tenant could configure and
+// the loader would never read.
 func TestKeysAreTheOnesTheLoaderAsksFor(t *testing.T) {
 	want := map[string]bool{
-		settings.KeyAllocationTolerance:  true,
-		settings.KeyInvoiceRequiresImage: true,
+		settings.KeyAllocationTolerance:    true,
+		settings.KeyInvoiceRequiresImage:   true,
+		settings.KeyBatchMinInvoices:       true,
+		settings.KeyBatchMaxInvoices:       true,
+		settings.KeyBatchDecisionThreshold: true,
 	}
 	if len(settings.Keys) != len(want) {
 		t.Fatalf("Keys has %d entries, want %d", len(settings.Keys), len(want))
@@ -95,5 +98,68 @@ func TestKeysAreTheOnesTheLoaderAsksFor(t *testing.T) {
 		if !want[key] {
 			t.Errorf("Keys carries an unknown key %q", key)
 		}
+	}
+}
+
+// TestBatchSettingsFallBackToTheDocumentedDefaults is the icmal's half of the same rule the
+// tolerance follows: a value nobody can interpret is a value nobody set (WP-I7-03 section 2.1).
+func TestBatchSettingsFallBackToTheDocumentedDefaults(t *testing.T) {
+	defaults := settings.Defaults()
+	cases := []struct {
+		name string
+		raw  map[string]string
+		want settings.Values
+	}{
+		{
+			name: "a tenant that configured nothing",
+			raw:  nil,
+			want: defaults,
+		},
+		{
+			name: "the tenant's own bounds and threshold",
+			raw: map[string]string{
+				settings.KeyBatchMinInvoices:       "5",
+				settings.KeyBatchMaxInvoices:       "50",
+				settings.KeyBatchDecisionThreshold: "250000.00",
+			},
+			want: settings.Values{
+				AllocationTolerance:  defaults.AllocationTolerance,
+				InvoiceRequiresImage: defaults.InvoiceRequiresImage,
+				BatchMinInvoices:     5, BatchMaxInvoices: 50,
+				// Canonicalised, so two tenants who typed "250000" and "250000.00" compare
+				// the same way against an exact decimal total.
+				BatchDecisionThreshold: "250000",
+			},
+		},
+		{
+			name: "a minimum above the maximum is a batch nobody could ever submit",
+			raw: map[string]string{
+				settings.KeyBatchMinInvoices: "40",
+				settings.KeyBatchMaxInvoices: "10",
+			},
+			want: defaults,
+		},
+		{
+			name: "nonsense, a zero and a negative threshold",
+			raw: map[string]string{
+				settings.KeyBatchMinInvoices:       "yarım",
+				settings.KeyBatchMaxInvoices:       "0",
+				settings.KeyBatchDecisionThreshold: "-1",
+			},
+			want: defaults,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := settings.FromMap(tc.raw)
+			if got.BatchMinInvoices != tc.want.BatchMinInvoices ||
+				got.BatchMaxInvoices != tc.want.BatchMaxInvoices ||
+				got.BatchDecisionThreshold != tc.want.BatchDecisionThreshold {
+				t.Fatalf("got min %d max %d threshold %s, want %d/%d/%s",
+					got.BatchMinInvoices, got.BatchMaxInvoices, got.BatchDecisionThreshold,
+					tc.want.BatchMinInvoices, tc.want.BatchMaxInvoices,
+					tc.want.BatchDecisionThreshold)
+			}
+		})
 	}
 }

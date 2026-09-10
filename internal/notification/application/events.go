@@ -71,6 +71,24 @@ const (
 	EventBookingOffered = "booking.offered"
 )
 
+// The icmal events (WP-I7-03 section 2.2 and 2.3). They are named here, with the rest, for the
+// reason the accommodation ones are: an event code is written once, and three spellings of the
+// same thing would be three different events.
+//
+// Who each one goes to is not a table here, because it is not a choice: `batch.submitted` is
+// told to the payer organization whose finance department has to review it, and `batch.decided`
+// to the provider organization that sent it. Neither ever reaches a member — an icmal is a
+// conversation between two organizations about money, and no person is a party to it.
+const (
+	// EventBatchSubmitted is a provider's icmal arriving in the payer's finance queue, with
+	// what it is worth and how many documents it covers.
+	EventBatchSubmitted = "batch.submitted"
+	// EventBatchDecided is the answer coming back: the totals, and a link to the returns and
+	// their reasons. The reasons themselves are on the screen the link leads to, because a
+	// reviewer's free text has no slot in the safe-variable catalogue and never will.
+	EventBatchDecided = "batch.decided"
+)
+
 // RecipientKind names a side of a booking without naming a row: who is told, decided once
 // per event rather than at each publisher.
 type RecipientKind string
@@ -113,6 +131,8 @@ var WiredEvents = []string{
 	EventBookingReminder,
 	EventBookingNoShowReported,
 	EventBookingOffered,
+	EventBatchSubmitted,
+	EventBatchDecided,
 }
 
 // BookingEvents is the accommodation subset, in the same order. WP-I6-02 and WP-I6-03 walk
@@ -306,6 +326,39 @@ func SeedTemplates() []SeedTemplate {
 		domain.VarAmount, domain.VarCurrency, domain.VarDeepLink,
 	)...)
 	out = append(out, bookingSeedTemplates()...)
+	out = append(out, batchSeedTemplates()...)
+	return out
+}
+
+// batchSeedTemplates is the icmal half of the catalogue (WP-I7-03).
+//
+// Both messages are written from the safe-variable catalogue and nothing else: a reference, a
+// status word, a day, an amount, a currency and a link. What is deliberately not in either of
+// them is the reason a reviewer typed and the number of any invoice inside the batch -- the
+// first is free prose and the second is a provider's fiscal document number, and neither is
+// something to put in an e-mail that leaves the building. Both are on the screen the deep link
+// leads to, behind a sign-in, which is where they belong.
+func batchSeedTemplates() []SeedTemplate {
+	var out []SeedTemplate
+	out = append(out, seedTemplatePair(
+		EventBatchSubmitted,
+		"Yeni icmal incelemenizi bekliyor: {{reference_no}}",
+		"{{provider_name}} {{event_date}} tarihinde {{reference_no}} numaralı icmali gönderdi.\n"+
+			"Toplam tutar: {{amount}} {{currency}}\n\n"+
+			"Faturaları tek tek incelemek için: {{deep_link}}",
+		domain.VarReferenceNo, domain.VarProviderName, domain.VarEventDate,
+		domain.VarAmount, domain.VarCurrency, domain.VarDeepLink,
+	)...)
+	out = append(out, seedTemplatePair(
+		EventBatchDecided,
+		"İcmaliniz sonuçlandı: {{reference_no}}",
+		"{{reference_no}} numaralı icmal {{event_date}} tarihinde sonuçlandı.\n"+
+			"Durum: {{status_code}}\n"+
+			"Onaylanan tutar: {{amount}} {{currency}}\n\n"+
+			"Fatura bazında kararları ve iade gerekçelerini görmek için: {{deep_link}}",
+		domain.VarReferenceNo, domain.VarStatusCode, domain.VarEventDate,
+		domain.VarAmount, domain.VarCurrency, domain.VarDeepLink,
+	)...)
 	return out
 }
 

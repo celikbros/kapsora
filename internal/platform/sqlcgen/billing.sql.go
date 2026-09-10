@@ -37,6 +37,168 @@ func (q *Queries) CountCleanInvoiceDocuments(ctx context.Context, arg CountClean
 	return count, err
 }
 
+const createBatch = `-- name: CreateBatch :one
+
+INSERT INTO billing.batch (
+    tenant_id, reference, provider_organization_id, payer_organization_id, domain_code,
+    currency_code, period_from, period_to, created_by, updated_by)
+VALUES ($1, $2, $3,
+        $4, $5, $6,
+        $7, $8, $9,
+        $9)
+RETURNING id, reference, provider_organization_id, payer_organization_id, domain_code,
+          currency_code, period_from, period_to, status, submitted_at, submitted_by,
+          decided_at, decided_by, invoice_count,
+          trim_scale(submitted_total)::text AS submitted_total,
+          trim_scale(approved_total)::text AS approved_total,
+          trim_scale(cut_total)::text AS cut_total,
+          trim_scale(returned_total)::text AS returned_total,
+          trim_scale(rejected_total)::text AS rejected_total,
+          created_at, row_version
+`
+
+type CreateBatchParams struct {
+	TenantID               uuid.UUID
+	Reference              string
+	ProviderOrganizationID uuid.UUID
+	PayerOrganizationID    uuid.NullUUID
+	DomainCode             string
+	CurrencyCode           string
+	PeriodFrom             pgtype.Date
+	PeriodTo               pgtype.Date
+	ActorID                uuid.NullUUID
+}
+
+type CreateBatchRow struct {
+	ID                     uuid.UUID
+	Reference              string
+	ProviderOrganizationID uuid.UUID
+	PayerOrganizationID    uuid.NullUUID
+	DomainCode             string
+	CurrencyCode           string
+	PeriodFrom             pgtype.Date
+	PeriodTo               pgtype.Date
+	Status                 string
+	SubmittedAt            *time.Time
+	SubmittedBy            uuid.NullUUID
+	DecidedAt              *time.Time
+	DecidedBy              uuid.NullUUID
+	InvoiceCount           int32
+	SubmittedTotal         string
+	ApprovedTotal          string
+	CutTotal               string
+	ReturnedTotal          string
+	RejectedTotal          string
+	CreatedAt              time.Time
+	RowVersion             int64
+}
+
+// ---------------------------------------------------------------------------
+// WP-I7-03: the icmal, and the payer's decision on each invoice in it
+// ---------------------------------------------------------------------------
+//
+// The same two habits as above: every money column arrives as `text::numeric` and leaves as
+// `trim_scale(...)::text`, so nothing here becomes a float; and every write carries its whole
+// precondition in the WHERE clause, so a caller whose If-Match was stale writes nothing.
+//
+// The statements never repeat a rule the schema already holds. The freeze is a trigger, the
+// one-live-batch-per-invoice rule is a partial unique index, and the totals reconcile through
+// a CHECK: what is below is only the shape of each command.
+func (q *Queries) CreateBatch(ctx context.Context, arg CreateBatchParams) (CreateBatchRow, error) {
+	row := q.db.QueryRow(ctx, createBatch,
+		arg.TenantID,
+		arg.Reference,
+		arg.ProviderOrganizationID,
+		arg.PayerOrganizationID,
+		arg.DomainCode,
+		arg.CurrencyCode,
+		arg.PeriodFrom,
+		arg.PeriodTo,
+		arg.ActorID,
+	)
+	var i CreateBatchRow
+	err := row.Scan(
+		&i.ID,
+		&i.Reference,
+		&i.ProviderOrganizationID,
+		&i.PayerOrganizationID,
+		&i.DomainCode,
+		&i.CurrencyCode,
+		&i.PeriodFrom,
+		&i.PeriodTo,
+		&i.Status,
+		&i.SubmittedAt,
+		&i.SubmittedBy,
+		&i.DecidedAt,
+		&i.DecidedBy,
+		&i.InvoiceCount,
+		&i.SubmittedTotal,
+		&i.ApprovedTotal,
+		&i.CutTotal,
+		&i.ReturnedTotal,
+		&i.RejectedTotal,
+		&i.CreatedAt,
+		&i.RowVersion,
+	)
+	return i, err
+}
+
+const createBatchInvoice = `-- name: CreateBatchInvoice :exec
+INSERT INTO billing.batch_invoice (
+    tenant_id, batch_id, invoice_id, submitted_amount, created_by)
+VALUES ($1, $2, $3,
+        $4::text::numeric, $5)
+`
+
+type CreateBatchInvoiceParams struct {
+	TenantID        uuid.UUID
+	BatchID         uuid.UUID
+	InvoiceID       uuid.UUID
+	SubmittedAmount string
+	ActorID         uuid.NullUUID
+}
+
+func (q *Queries) CreateBatchInvoice(ctx context.Context, arg CreateBatchInvoiceParams) error {
+	_, err := q.db.Exec(ctx, createBatchInvoice,
+		arg.TenantID,
+		arg.BatchID,
+		arg.InvoiceID,
+		arg.SubmittedAmount,
+		arg.ActorID,
+	)
+	return err
+}
+
+const createBatchInvoiceAdjustment = `-- name: CreateBatchInvoiceAdjustment :exec
+INSERT INTO billing.batch_invoice_adjustment (
+    tenant_id, batch_invoice_id, claim_id, adjustment_id, amount, created_by)
+VALUES ($1, $2, $3,
+        $4, $5::text::numeric, $6)
+`
+
+type CreateBatchInvoiceAdjustmentParams struct {
+	TenantID       uuid.UUID
+	BatchInvoiceID uuid.UUID
+	ClaimID        uuid.UUID
+	AdjustmentID   uuid.UUID
+	Amount         string
+	ActorID        uuid.NullUUID
+}
+
+// The link between one CUT decision and the `claim.adjustment` row it wrote, so a changed
+// decision can take back exactly what it wrote rather than guessing by amount and reason.
+func (q *Queries) CreateBatchInvoiceAdjustment(ctx context.Context, arg CreateBatchInvoiceAdjustmentParams) error {
+	_, err := q.db.Exec(ctx, createBatchInvoiceAdjustment,
+		arg.TenantID,
+		arg.BatchInvoiceID,
+		arg.ClaimID,
+		arg.AdjustmentID,
+		arg.Amount,
+		arg.ActorID,
+	)
+	return err
+}
+
 const createInvoice = `-- name: CreateInvoice :one
 
 INSERT INTO billing.invoice (
@@ -209,6 +371,76 @@ func (q *Queries) CreateInvoiceAllocation(ctx context.Context, arg CreateInvoice
 	return err
 }
 
+const decideBatch = `-- name: DecideBatch :execrows
+UPDATE billing.batch
+   SET status         = 'DECIDED',
+       decided_at     = $1,
+       decided_by     = $2,
+       approved_total = $3::text::numeric,
+       cut_total      = $4::text::numeric,
+       returned_total = $5::text::numeric,
+       rejected_total = $6::text::numeric,
+       updated_by     = $7
+ WHERE tenant_id = $8
+   AND id = $9
+   AND status = 'UNDER_REVIEW'
+   AND row_version = $10
+`
+
+type DecideBatchParams struct {
+	DecidedAt          *time.Time
+	DecidedBy          uuid.NullUUID
+	ApprovedTotal      string
+	CutTotal           string
+	ReturnedTotal      string
+	RejectedTotal      string
+	ActorID            uuid.NullUUID
+	TenantID           uuid.UUID
+	ID                 uuid.UUID
+	ExpectedRowVersion int64
+}
+
+// UNDER_REVIEW to DECIDED, with the four totals the server recomputed from the decisions.
+// `ck_billing_batch_totals` refuses the write unless they add up to the submitted total, so a
+// service that got the arithmetic wrong fails here rather than opening a settlement on a
+// figure that is not the sum of its parts.
+func (q *Queries) DecideBatch(ctx context.Context, arg DecideBatchParams) (int64, error) {
+	result, err := q.db.Exec(ctx, decideBatch,
+		arg.DecidedAt,
+		arg.DecidedBy,
+		arg.ApprovedTotal,
+		arg.CutTotal,
+		arg.ReturnedTotal,
+		arg.RejectedTotal,
+		arg.ActorID,
+		arg.TenantID,
+		arg.ID,
+		arg.ExpectedRowVersion,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const deleteBatchInvoices = `-- name: DeleteBatchInvoices :exec
+DELETE FROM billing.batch_invoice
+ WHERE tenant_id = $1
+   AND batch_id = $2
+`
+
+type DeleteBatchInvoicesParams struct {
+	TenantID uuid.UUID
+	BatchID  uuid.UUID
+}
+
+// The first half of "replace the whole set". The freeze trigger refuses it on anything that
+// has left DRAFT, so this statement can never quietly empty a submitted batch.
+func (q *Queries) DeleteBatchInvoices(ctx context.Context, arg DeleteBatchInvoicesParams) error {
+	_, err := q.db.Exec(ctx, deleteBatchInvoices, arg.TenantID, arg.BatchID)
+	return err
+}
+
 const deleteInvoiceAllocations = `-- name: DeleteInvoiceAllocations :exec
 DELETE FROM billing.invoice_claim
  WHERE tenant_id = $1
@@ -269,6 +501,91 @@ func (q *Queries) FindInvoiceByNumber(ctx context.Context, arg FindInvoiceByNumb
 	)
 	var i FindInvoiceByNumberRow
 	err := row.Scan(&i.ID, &i.Status)
+	return i, err
+}
+
+const getBatch = `-- name: GetBatch :one
+SELECT b.id, b.reference, b.provider_organization_id, b.payer_organization_id, b.domain_code,
+       b.currency_code, b.period_from, b.period_to, b.status, b.submitted_at, b.submitted_by,
+       b.decided_at, b.decided_by, b.invoice_count,
+       trim_scale(b.submitted_total)::text AS submitted_total,
+       trim_scale(b.approved_total)::text AS approved_total,
+       trim_scale(b.cut_total)::text AS cut_total,
+       trim_scale(b.returned_total)::text AS returned_total,
+       trim_scale(b.rejected_total)::text AS rejected_total,
+       b.created_at, b.row_version,
+       o.display_name AS provider_name
+  FROM billing.batch b
+  JOIN directory.tenant_organization t
+    ON t.tenant_id = b.tenant_id AND t.id = b.provider_organization_id
+  JOIN directory.organization o ON o.id = t.organization_id
+ WHERE b.tenant_id = $1
+   AND b.id = $2
+   AND (cardinality($3::uuid[]) = 0
+        OR b.provider_organization_id = ANY($3::uuid[]))
+`
+
+type GetBatchParams struct {
+	TenantID uuid.UUID
+	ID       uuid.UUID
+	ScopeIds []uuid.UUID
+}
+
+type GetBatchRow struct {
+	ID                     uuid.UUID
+	Reference              string
+	ProviderOrganizationID uuid.UUID
+	PayerOrganizationID    uuid.NullUUID
+	DomainCode             string
+	CurrencyCode           string
+	PeriodFrom             pgtype.Date
+	PeriodTo               pgtype.Date
+	Status                 string
+	SubmittedAt            *time.Time
+	SubmittedBy            uuid.NullUUID
+	DecidedAt              *time.Time
+	DecidedBy              uuid.NullUUID
+	InvoiceCount           int32
+	SubmittedTotal         string
+	ApprovedTotal          string
+	CutTotal               string
+	ReturnedTotal          string
+	RejectedTotal          string
+	CreatedAt              time.Time
+	RowVersion             int64
+	ProviderName           string
+}
+
+// One batch, bounded by the caller's provider scope, exactly as GetInvoice is: an empty scope
+// array means "no restriction", and a batch outside a scope that names organizations is
+// genuinely not returned, so 404 is honest rather than a filtered 200.
+func (q *Queries) GetBatch(ctx context.Context, arg GetBatchParams) (GetBatchRow, error) {
+	row := q.db.QueryRow(ctx, getBatch, arg.TenantID, arg.ID, arg.ScopeIds)
+	var i GetBatchRow
+	err := row.Scan(
+		&i.ID,
+		&i.Reference,
+		&i.ProviderOrganizationID,
+		&i.PayerOrganizationID,
+		&i.DomainCode,
+		&i.CurrencyCode,
+		&i.PeriodFrom,
+		&i.PeriodTo,
+		&i.Status,
+		&i.SubmittedAt,
+		&i.SubmittedBy,
+		&i.DecidedAt,
+		&i.DecidedBy,
+		&i.InvoiceCount,
+		&i.SubmittedTotal,
+		&i.ApprovedTotal,
+		&i.CutTotal,
+		&i.ReturnedTotal,
+		&i.RejectedTotal,
+		&i.CreatedAt,
+		&i.RowVersion,
+		&i.ProviderName,
+	)
 	return i, err
 }
 
@@ -427,6 +744,289 @@ func (q *Queries) LinkInvoiceDocument(ctx context.Context, arg LinkInvoiceDocume
 		arg.ActorID,
 	)
 	return err
+}
+
+const listBatchCandidateInvoices = `-- name: ListBatchCandidateInvoices :many
+SELECT i.id, i.provider_organization_id, i.payer_organization_id, i.status, i.currency_code,
+       i.domain_code, i.invoice_number, i.invoice_date,
+       trim_scale(i.payable_amount)::text AS payable_amount,
+       COALESCE((SELECT bi.batch_id
+          FROM billing.batch_invoice bi
+         WHERE bi.tenant_id = i.tenant_id AND bi.invoice_id = i.id AND bi.active
+         LIMIT 1), '00000000-0000-0000-0000-000000000000'::uuid)::uuid AS live_batch_id
+  FROM billing.invoice i
+ WHERE i.tenant_id = $1
+   AND i.id = ANY($2::uuid[])
+ ORDER BY i.created_at, i.id
+`
+
+type ListBatchCandidateInvoicesParams struct {
+	TenantID   uuid.UUID
+	InvoiceIds []uuid.UUID
+}
+
+type ListBatchCandidateInvoicesRow struct {
+	ID                     uuid.UUID
+	ProviderOrganizationID uuid.UUID
+	PayerOrganizationID    uuid.NullUUID
+	Status                 string
+	CurrencyCode           string
+	DomainCode             string
+	InvoiceNumber          string
+	InvoiceDate            pgtype.Date
+	PayableAmount          string
+	LiveBatchID            uuid.UUID
+}
+
+// The invoices a `putBatchInvoices` may name, answered for exactly the ids the caller sent,
+// with the batch each of them is already live in when there is one.
+//
+// `live_batch_id` is answered rather than filtered out, so the refusal can name the icmal
+// instead of saying that an invoice the provider can see in their own list does not exist.
+func (q *Queries) ListBatchCandidateInvoices(ctx context.Context, arg ListBatchCandidateInvoicesParams) ([]ListBatchCandidateInvoicesRow, error) {
+	rows, err := q.db.Query(ctx, listBatchCandidateInvoices, arg.TenantID, arg.InvoiceIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListBatchCandidateInvoicesRow
+	for rows.Next() {
+		var i ListBatchCandidateInvoicesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProviderOrganizationID,
+			&i.PayerOrganizationID,
+			&i.Status,
+			&i.CurrencyCode,
+			&i.DomainCode,
+			&i.InvoiceNumber,
+			&i.InvoiceDate,
+			&i.PayableAmount,
+			&i.LiveBatchID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listBatchInvoices = `-- name: ListBatchInvoices :many
+SELECT bi.id, bi.invoice_id,
+       trim_scale(bi.submitted_amount)::text AS submitted_amount,
+       COALESCE(bi.decision, '')::text AS decision,
+       COALESCE(trim_scale(bi.approved_amount)::text, '')::text AS approved_amount,
+       COALESCE(bi.reason_code, '')::text AS reason_code,
+       bi.reason_text, bi.decided_by, bi.decided_at, bi.active, bi.created_at,
+       i.invoice_number, i.invoice_date, i.status AS invoice_status, i.currency_code,
+       trim_scale(i.payable_amount)::text AS payable_amount,
+       a.display_name AS decided_by_display_name
+  FROM billing.batch_invoice bi
+  JOIN billing.invoice i ON i.tenant_id = bi.tenant_id AND i.id = bi.invoice_id
+  LEFT JOIN iam.actor a ON a.id = bi.decided_by
+ WHERE bi.tenant_id = $1
+   AND bi.batch_id = $2
+ ORDER BY bi.created_at, bi.id
+`
+
+type ListBatchInvoicesParams struct {
+	TenantID uuid.UUID
+	BatchID  uuid.UUID
+}
+
+type ListBatchInvoicesRow struct {
+	ID                   uuid.UUID
+	InvoiceID            uuid.UUID
+	SubmittedAmount      string
+	Decision             string
+	ApprovedAmount       string
+	ReasonCode           string
+	ReasonText           *string
+	DecidedBy            uuid.NullUUID
+	DecidedAt            *time.Time
+	Active               bool
+	CreatedAt            time.Time
+	InvoiceNumber        string
+	InvoiceDate          pgtype.Date
+	InvoiceStatus        string
+	CurrencyCode         string
+	PayableAmount        string
+	DecidedByDisplayName *string
+}
+
+// The invoices one batch covers, with the payer's answer to each and enough of the invoice
+// itself for a reviewer to read the row without a second request.
+func (q *Queries) ListBatchInvoices(ctx context.Context, arg ListBatchInvoicesParams) ([]ListBatchInvoicesRow, error) {
+	rows, err := q.db.Query(ctx, listBatchInvoices, arg.TenantID, arg.BatchID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListBatchInvoicesRow
+	for rows.Next() {
+		var i ListBatchInvoicesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.InvoiceID,
+			&i.SubmittedAmount,
+			&i.Decision,
+			&i.ApprovedAmount,
+			&i.ReasonCode,
+			&i.ReasonText,
+			&i.DecidedBy,
+			&i.DecidedAt,
+			&i.Active,
+			&i.CreatedAt,
+			&i.InvoiceNumber,
+			&i.InvoiceDate,
+			&i.InvoiceStatus,
+			&i.CurrencyCode,
+			&i.PayableAmount,
+			&i.DecidedByDisplayName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listBatches = `-- name: ListBatches :many
+SELECT b.id, b.reference, b.provider_organization_id, b.payer_organization_id, b.domain_code,
+       b.currency_code, b.period_from, b.period_to, b.status, b.submitted_at, b.submitted_by,
+       b.decided_at, b.decided_by, b.invoice_count,
+       trim_scale(b.submitted_total)::text AS submitted_total,
+       trim_scale(b.approved_total)::text AS approved_total,
+       trim_scale(b.cut_total)::text AS cut_total,
+       trim_scale(b.returned_total)::text AS returned_total,
+       trim_scale(b.rejected_total)::text AS rejected_total,
+       b.created_at, b.row_version,
+       o.display_name AS provider_name
+  FROM billing.batch b
+  JOIN directory.tenant_organization t
+    ON t.tenant_id = b.tenant_id AND t.id = b.provider_organization_id
+  JOIN directory.organization o ON o.id = t.organization_id
+ WHERE b.tenant_id = $1
+   AND (cardinality($2::uuid[]) = 0
+        OR b.provider_organization_id = ANY($2::uuid[]))
+   AND ($3::uuid IS NULL
+        OR b.provider_organization_id = $3::uuid)
+   AND ($4::uuid IS NULL
+        OR b.payer_organization_id = $4::uuid)
+   AND ($5::text IS NULL OR b.status = $5::text)
+   AND ($6::text IS NULL OR b.domain_code = $6::text)
+   AND ($7::text IS NULL
+        OR b.currency_code = $7::text)
+   AND ($8::date IS NULL OR b.period_to >= $8::date)
+   AND ($9::date IS NULL OR b.period_from <= $9::date)
+   AND ($10::timestamptz IS NULL
+        OR (b.created_at, b.id) < ($10::timestamptz,
+                                   $11::uuid))
+ ORDER BY b.created_at DESC, b.id DESC
+ LIMIT $12
+`
+
+type ListBatchesParams struct {
+	TenantID               uuid.UUID
+	ScopeIds               []uuid.UUID
+	ProviderOrganizationID uuid.NullUUID
+	PayerOrganizationID    uuid.NullUUID
+	Status                 *string
+	DomainCode             *string
+	CurrencyCode           *string
+	DateFrom               pgtype.Date
+	DateTo                 pgtype.Date
+	AfterCreatedAt         *time.Time
+	AfterID                uuid.NullUUID
+	PageSize               int32
+}
+
+type ListBatchesRow struct {
+	ID                     uuid.UUID
+	Reference              string
+	ProviderOrganizationID uuid.UUID
+	PayerOrganizationID    uuid.NullUUID
+	DomainCode             string
+	CurrencyCode           string
+	PeriodFrom             pgtype.Date
+	PeriodTo               pgtype.Date
+	Status                 string
+	SubmittedAt            *time.Time
+	SubmittedBy            uuid.NullUUID
+	DecidedAt              *time.Time
+	DecidedBy              uuid.NullUUID
+	InvoiceCount           int32
+	SubmittedTotal         string
+	ApprovedTotal          string
+	CutTotal               string
+	ReturnedTotal          string
+	RejectedTotal          string
+	CreatedAt              time.Time
+	RowVersion             int64
+	ProviderName           string
+}
+
+// One page of the keyset on (created_at DESC, id DESC).
+func (q *Queries) ListBatches(ctx context.Context, arg ListBatchesParams) ([]ListBatchesRow, error) {
+	rows, err := q.db.Query(ctx, listBatches,
+		arg.TenantID,
+		arg.ScopeIds,
+		arg.ProviderOrganizationID,
+		arg.PayerOrganizationID,
+		arg.Status,
+		arg.DomainCode,
+		arg.CurrencyCode,
+		arg.DateFrom,
+		arg.DateTo,
+		arg.AfterCreatedAt,
+		arg.AfterID,
+		arg.PageSize,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListBatchesRow
+	for rows.Next() {
+		var i ListBatchesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Reference,
+			&i.ProviderOrganizationID,
+			&i.PayerOrganizationID,
+			&i.DomainCode,
+			&i.CurrencyCode,
+			&i.PeriodFrom,
+			&i.PeriodTo,
+			&i.Status,
+			&i.SubmittedAt,
+			&i.SubmittedBy,
+			&i.DecidedAt,
+			&i.DecidedBy,
+			&i.InvoiceCount,
+			&i.SubmittedTotal,
+			&i.ApprovedTotal,
+			&i.CutTotal,
+			&i.ReturnedTotal,
+			&i.RejectedTotal,
+			&i.CreatedAt,
+			&i.RowVersion,
+			&i.ProviderName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listInvoiceAllocations = `-- name: ListInvoiceAllocations :many
@@ -847,6 +1447,187 @@ func (q *Queries) ListInvoices(ctx context.Context, arg ListInvoicesParams) ([]L
 	return items, nil
 }
 
+const listLiveBatchInvoiceAdjustments = `-- name: ListLiveBatchInvoiceAdjustments :many
+SELECT a.id, a.claim_id, a.adjustment_id, trim_scale(a.amount)::text AS amount
+  FROM billing.batch_invoice_adjustment a
+ WHERE a.tenant_id = $1
+   AND a.batch_invoice_id = $2
+   AND a.reversed_by_adjustment_id IS NULL
+ ORDER BY a.created_at, a.id
+`
+
+type ListLiveBatchInvoiceAdjustmentsParams struct {
+	TenantID       uuid.UUID
+	BatchInvoiceID uuid.UUID
+}
+
+type ListLiveBatchInvoiceAdjustmentsRow struct {
+	ID           uuid.UUID
+	ClaimID      uuid.UUID
+	AdjustmentID uuid.UUID
+	Amount       string
+}
+
+// What this member's current decision has written and nobody has taken back.
+func (q *Queries) ListLiveBatchInvoiceAdjustments(ctx context.Context, arg ListLiveBatchInvoiceAdjustmentsParams) ([]ListLiveBatchInvoiceAdjustmentsRow, error) {
+	rows, err := q.db.Query(ctx, listLiveBatchInvoiceAdjustments, arg.TenantID, arg.BatchInvoiceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListLiveBatchInvoiceAdjustmentsRow
+	for rows.Next() {
+		var i ListLiveBatchInvoiceAdjustmentsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ClaimID,
+			&i.AdjustmentID,
+			&i.Amount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const lockBatch = `-- name: LockBatch :one
+SELECT b.id, b.reference, b.provider_organization_id, b.payer_organization_id, b.domain_code,
+       b.currency_code, b.period_from, b.period_to, b.status, b.submitted_at, b.submitted_by,
+       b.decided_at, b.decided_by, b.invoice_count,
+       trim_scale(b.submitted_total)::text AS submitted_total,
+       trim_scale(b.approved_total)::text AS approved_total,
+       trim_scale(b.cut_total)::text AS cut_total,
+       trim_scale(b.returned_total)::text AS returned_total,
+       trim_scale(b.rejected_total)::text AS rejected_total,
+       b.created_at, b.row_version
+  FROM billing.batch b
+ WHERE b.tenant_id = $1
+   AND b.id = $2
+   AND (cardinality($3::uuid[]) = 0
+        OR b.provider_organization_id = ANY($3::uuid[]))
+   FOR UPDATE
+`
+
+type LockBatchParams struct {
+	TenantID uuid.UUID
+	ID       uuid.UUID
+	ScopeIds []uuid.UUID
+}
+
+type LockBatchRow struct {
+	ID                     uuid.UUID
+	Reference              string
+	ProviderOrganizationID uuid.UUID
+	PayerOrganizationID    uuid.NullUUID
+	DomainCode             string
+	CurrencyCode           string
+	PeriodFrom             pgtype.Date
+	PeriodTo               pgtype.Date
+	Status                 string
+	SubmittedAt            *time.Time
+	SubmittedBy            uuid.NullUUID
+	DecidedAt              *time.Time
+	DecidedBy              uuid.NullUUID
+	InvoiceCount           int32
+	SubmittedTotal         string
+	ApprovedTotal          string
+	CutTotal               string
+	ReturnedTotal          string
+	RejectedTotal          string
+	CreatedAt              time.Time
+	RowVersion             int64
+}
+
+// The same read, holding the row for the length of the command. Every write takes it first:
+// the membership replacement, the submit, each decision and the decide all read a state and
+// then act on it, and two callers doing that at once is how a batch ends up decided twice.
+func (q *Queries) LockBatch(ctx context.Context, arg LockBatchParams) (LockBatchRow, error) {
+	row := q.db.QueryRow(ctx, lockBatch, arg.TenantID, arg.ID, arg.ScopeIds)
+	var i LockBatchRow
+	err := row.Scan(
+		&i.ID,
+		&i.Reference,
+		&i.ProviderOrganizationID,
+		&i.PayerOrganizationID,
+		&i.DomainCode,
+		&i.CurrencyCode,
+		&i.PeriodFrom,
+		&i.PeriodTo,
+		&i.Status,
+		&i.SubmittedAt,
+		&i.SubmittedBy,
+		&i.DecidedAt,
+		&i.DecidedBy,
+		&i.InvoiceCount,
+		&i.SubmittedTotal,
+		&i.ApprovedTotal,
+		&i.CutTotal,
+		&i.ReturnedTotal,
+		&i.RejectedTotal,
+		&i.CreatedAt,
+		&i.RowVersion,
+	)
+	return i, err
+}
+
+const lockBatchInvoice = `-- name: LockBatchInvoice :one
+SELECT bi.id, bi.invoice_id,
+       trim_scale(bi.submitted_amount)::text AS submitted_amount,
+       COALESCE(bi.decision, '')::text AS decision,
+       COALESCE(trim_scale(bi.approved_amount)::text, '')::text AS approved_amount,
+       COALESCE(bi.reason_code, '')::text AS reason_code,
+       bi.reason_text, bi.decided_by, bi.decided_at, bi.active, bi.created_at
+  FROM billing.batch_invoice bi
+ WHERE bi.tenant_id = $1
+   AND bi.batch_id = $2
+   AND bi.invoice_id = $3
+   FOR UPDATE
+`
+
+type LockBatchInvoiceParams struct {
+	TenantID  uuid.UUID
+	BatchID   uuid.UUID
+	InvoiceID uuid.UUID
+}
+
+type LockBatchInvoiceRow struct {
+	ID              uuid.UUID
+	InvoiceID       uuid.UUID
+	SubmittedAmount string
+	Decision        string
+	ApprovedAmount  string
+	ReasonCode      string
+	ReasonText      *string
+	DecidedBy       uuid.NullUUID
+	DecidedAt       *time.Time
+	Active          bool
+	CreatedAt       time.Time
+}
+
+// The member a decision is about, held for the length of the command.
+func (q *Queries) LockBatchInvoice(ctx context.Context, arg LockBatchInvoiceParams) (LockBatchInvoiceRow, error) {
+	row := q.db.QueryRow(ctx, lockBatchInvoice, arg.TenantID, arg.BatchID, arg.InvoiceID)
+	var i LockBatchInvoiceRow
+	err := row.Scan(
+		&i.ID,
+		&i.InvoiceID,
+		&i.SubmittedAmount,
+		&i.Decision,
+		&i.ApprovedAmount,
+		&i.ReasonCode,
+		&i.ReasonText,
+		&i.DecidedBy,
+		&i.DecidedAt,
+		&i.Active,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const lockInvoice = `-- name: LockInvoice :one
 SELECT i.id, i.provider_organization_id, i.payer_organization_id, i.source, i.edocument_id,
        i.invoice_number, i.invoice_date, i.fiscal_year, i.currency_code,
@@ -930,6 +1711,137 @@ func (q *Queries) LockInvoice(ctx context.Context, arg LockInvoiceParams) (LockI
 	return i, err
 }
 
+const setBatchInvoiceAdjustmentReversed = `-- name: SetBatchInvoiceAdjustmentReversed :exec
+UPDATE billing.batch_invoice_adjustment
+   SET reversed_by_adjustment_id = $1
+ WHERE tenant_id = $2
+   AND id = $3
+   AND reversed_by_adjustment_id IS NULL
+`
+
+type SetBatchInvoiceAdjustmentReversedParams struct {
+	ReversedByAdjustmentID uuid.NullUUID
+	TenantID               uuid.UUID
+	ID                     uuid.UUID
+}
+
+// The row learns which reversal took it back. It is written once and never cleared: an
+// adjustment put back twice would give the money back twice.
+func (q *Queries) SetBatchInvoiceAdjustmentReversed(ctx context.Context, arg SetBatchInvoiceAdjustmentReversedParams) error {
+	_, err := q.db.Exec(ctx, setBatchInvoiceAdjustmentReversed, arg.ReversedByAdjustmentID, arg.TenantID, arg.ID)
+	return err
+}
+
+const setBatchInvoiceDecision = `-- name: SetBatchInvoiceDecision :execrows
+UPDATE billing.batch_invoice
+   SET decision        = $1,
+       approved_amount = $2::text::numeric,
+       reason_code     = $3,
+       reason_text     = $4,
+       decided_by      = $5,
+       decided_at      = $6
+ WHERE tenant_id = $7
+   AND id = $8
+`
+
+type SetBatchInvoiceDecisionParams struct {
+	Decision       *string
+	ApprovedAmount string
+	ReasonCode     *string
+	ReasonText     *string
+	DecidedBy      uuid.NullUUID
+	DecidedAt      *time.Time
+	TenantID       uuid.UUID
+	ID             uuid.UUID
+}
+
+// The payer's answer to one invoice. `ck_billing_batch_invoice_decision` ties the amount to
+// the word and demands a reason for anything but a plain approval; the freeze trigger refuses
+// the write unless the batch is UNDER_REVIEW. Neither rule is repeated here.
+func (q *Queries) SetBatchInvoiceDecision(ctx context.Context, arg SetBatchInvoiceDecisionParams) (int64, error) {
+	result, err := q.db.Exec(ctx, setBatchInvoiceDecision,
+		arg.Decision,
+		arg.ApprovedAmount,
+		arg.ReasonCode,
+		arg.ReasonText,
+		arg.DecidedBy,
+		arg.DecidedAt,
+		arg.TenantID,
+		arg.ID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const setInvoiceBatch = `-- name: SetInvoiceBatch :execrows
+UPDATE billing.invoice
+   SET status     = 'IN_BATCH',
+       batch_id   = $1,
+       updated_by = $2
+ WHERE tenant_id = $3
+   AND id = $4
+   AND status = 'SUBMITTED'
+`
+
+type SetInvoiceBatchParams struct {
+	BatchID  uuid.NullUUID
+	ActorID  uuid.NullUUID
+	TenantID uuid.UUID
+	ID       uuid.UUID
+}
+
+// The invoice joins the icmal. There is no row_version: the concurrency control of this
+// transition is the batch's own If-Match and the row lock the submit already holds, and
+// demanding an ETag per invoice would make a batch of fifty unsubmittable whenever anybody
+// had touched any one of them.
+func (q *Queries) SetInvoiceBatch(ctx context.Context, arg SetInvoiceBatchParams) (int64, error) {
+	result, err := q.db.Exec(ctx, setInvoiceBatch,
+		arg.BatchID,
+		arg.ActorID,
+		arg.TenantID,
+		arg.ID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const setInvoiceReviewStatus = `-- name: SetInvoiceReviewStatus :execrows
+UPDATE billing.invoice
+   SET status     = $1,
+       updated_by = $2
+ WHERE tenant_id = $3
+   AND id = $4
+   AND status = ANY($5::text[])
+`
+
+type SetInvoiceReviewStatusParams struct {
+	Status       string
+	ActorID      uuid.NullUUID
+	TenantID     uuid.UUID
+	ID           uuid.UUID
+	FromStatuses []string
+}
+
+// Where one decision leaves the invoice. The whole precondition is in the predicate, so a
+// decision arriving against an invoice somebody else has meanwhile moved changes nothing.
+func (q *Queries) SetInvoiceReviewStatus(ctx context.Context, arg SetInvoiceReviewStatusParams) (int64, error) {
+	result, err := q.db.Exec(ctx, setInvoiceReviewStatus,
+		arg.Status,
+		arg.ActorID,
+		arg.TenantID,
+		arg.ID,
+		arg.FromStatuses,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const setInvoiceStatus = `-- name: SetInvoiceStatus :execrows
 UPDATE billing.invoice
    SET status       = $1,
@@ -994,6 +1906,111 @@ func (q *Queries) SetInvoiceSupersededBy(ctx context.Context, arg SetInvoiceSupe
 		arg.ActorID,
 		arg.TenantID,
 		arg.ID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const startBatchReview = `-- name: StartBatchReview :execrows
+UPDATE billing.batch
+   SET status     = 'UNDER_REVIEW',
+       updated_by = $1
+ WHERE tenant_id = $2
+   AND id = $3
+   AND status = 'SUBMITTED'
+`
+
+type StartBatchReviewParams struct {
+	ActorID  uuid.NullUUID
+	TenantID uuid.UUID
+	ID       uuid.UUID
+}
+
+// SUBMITTED to UNDER_REVIEW: the payer's reviewer has taken the work item and the batch is in
+// front of somebody. There is no row_version, because this is not a command of its own -- it
+// is the first decision's side effect, and that decision already holds the batch's row lock.
+func (q *Queries) StartBatchReview(ctx context.Context, arg StartBatchReviewParams) (int64, error) {
+	result, err := q.db.Exec(ctx, startBatchReview, arg.ActorID, arg.TenantID, arg.ID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const submitBatch = `-- name: SubmitBatch :execrows
+UPDATE billing.batch
+   SET status          = 'SUBMITTED',
+       submitted_at    = $1,
+       submitted_by    = $2,
+       invoice_count   = $3,
+       submitted_total = $4::text::numeric,
+       updated_by      = $5
+ WHERE tenant_id = $6
+   AND id = $7
+   AND status = 'DRAFT'
+   AND row_version = $8
+`
+
+type SubmitBatchParams struct {
+	SubmittedAt        *time.Time
+	SubmittedBy        uuid.NullUUID
+	InvoiceCount       int32
+	SubmittedTotal     string
+	ActorID            uuid.NullUUID
+	TenantID           uuid.UUID
+	ID                 uuid.UUID
+	ExpectedRowVersion int64
+}
+
+// DRAFT to SUBMITTED, with the count and the submitted total the server computed from the
+// members it just froze. Both figures are written here rather than summed on read, because a
+// settlement opening on `batch.decided` has to be able to say what it is settling without
+// walking the membership.
+func (q *Queries) SubmitBatch(ctx context.Context, arg SubmitBatchParams) (int64, error) {
+	result, err := q.db.Exec(ctx, submitBatch,
+		arg.SubmittedAt,
+		arg.SubmittedBy,
+		arg.InvoiceCount,
+		arg.SubmittedTotal,
+		arg.ActorID,
+		arg.TenantID,
+		arg.ID,
+		arg.ExpectedRowVersion,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const touchDraftBatch = `-- name: TouchDraftBatch :execrows
+UPDATE billing.batch
+   SET updated_by = $1
+ WHERE tenant_id = $2
+   AND id = $3
+   AND status = 'DRAFT'
+   AND row_version = $4
+`
+
+type TouchDraftBatchParams struct {
+	ActorID            uuid.NullUUID
+	TenantID           uuid.UUID
+	ID                 uuid.UUID
+	ExpectedRowVersion int64
+}
+
+// The icmal's row version moves even though no column of the header changed: the ETag a caller
+// holds is a statement about the batch *and what it covers*, and a membership replaced under a
+// stale If-Match is exactly the race this guards. It is the same move `putInvoiceAllocations`
+// makes on the invoice, for the same reason.
+func (q *Queries) TouchDraftBatch(ctx context.Context, arg TouchDraftBatchParams) (int64, error) {
+	result, err := q.db.Exec(ctx, touchDraftBatch,
+		arg.ActorID,
+		arg.TenantID,
+		arg.ID,
+		arg.ExpectedRowVersion,
 	)
 	if err != nil {
 		return 0, err

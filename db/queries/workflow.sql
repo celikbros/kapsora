@@ -341,3 +341,42 @@ SELECT p.id, p.action_code, p.scope_code, p.version_no,
    AND (p.max_amount IS NULL OR p.max_amount >= sqlc.arg('amount')::text::numeric)
  ORDER BY p.min_amount DESC NULLS LAST, p.max_amount ASC NULLS LAST, p.scope_code
  LIMIT 1;
+
+-- name: ClaimWorkItemForAggregate :execrows
+-- The work item a *producing module* takes on behalf of the person who has just acted on the
+-- thing it was raised for (WP-I7-03: the payer's reviewer opening an icmal).
+--
+-- It is addressed by the aggregate rather than by id for the same reason GetWorkQueueByCode
+-- is addressed by code: a module raising and then closing its own work cannot know the id of
+-- a row it never read back, and the aggregate is what the item is *about*. There is no
+-- row_version, because the caller holds the aggregate's own row lock and the aggregate's
+-- If-Match is what this transition is guarded by.
+--
+-- Still OPEN is the whole precondition: an item somebody else is already holding is not taken
+-- off them here. Nothing is raised when there is no item at all -- a tenant that has not
+-- configured the queue has no work to claim, and the business command carries on.
+UPDATE workflow.work_item
+   SET status            = 'CLAIMED',
+       assignee_actor_id = sqlc.arg('assignee_actor_id'),
+       assigned_at       = now(),
+       updated_by        = sqlc.narg('actor_id')
+ WHERE tenant_id = sqlc.arg('tenant_id')
+   AND aggregate_type = sqlc.arg('aggregate_type')
+   AND aggregate_id = sqlc.arg('aggregate_id')
+   AND status = 'OPEN';
+
+-- name: CompleteWorkItemForAggregate :execrows
+-- The other half: the module that raised the work says it is finished, because the thing the
+-- work was about has been decided. OPEN as well as CLAIMED, so a decision taken by somebody
+-- who never picked the item up still closes it rather than leaving a queue full of work
+-- nobody has to do.
+UPDATE workflow.work_item
+   SET status       = 'COMPLETED',
+       outcome_code = sqlc.arg('outcome_code'),
+       completed_at = now(),
+       completed_by = sqlc.narg('completed_by'),
+       updated_by   = sqlc.narg('actor_id')
+ WHERE tenant_id = sqlc.arg('tenant_id')
+   AND aggregate_type = sqlc.arg('aggregate_type')
+   AND aggregate_id = sqlc.arg('aggregate_id')
+   AND status IN ('OPEN', 'CLAIMED');

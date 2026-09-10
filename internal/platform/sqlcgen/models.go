@@ -476,6 +476,63 @@ type BenefitServiceEntitlementMapping struct {
 	RowVersion              int64
 }
 
+type BillingBatch struct {
+	ID                     uuid.UUID
+	TenantID               uuid.UUID
+	Reference              string
+	ProviderOrganizationID uuid.UUID
+	PayerOrganizationID    uuid.NullUUID
+	DomainCode             string
+	CurrencyCode           string
+	PeriodFrom             pgtype.Date
+	PeriodTo               pgtype.Date
+	Status                 string
+	SubmittedAt            *time.Time
+	SubmittedBy            uuid.NullUUID
+	DecidedAt              *time.Time
+	DecidedBy              uuid.NullUUID
+	InvoiceCount           int32
+	SubmittedTotal         pgtype.Numeric
+	ApprovedTotal          pgtype.Numeric
+	CutTotal               pgtype.Numeric
+	ReturnedTotal          pgtype.Numeric
+	RejectedTotal          pgtype.Numeric
+	CreatedAt              time.Time
+	CreatedBy              uuid.NullUUID
+	UpdatedAt              time.Time
+	UpdatedBy              uuid.NullUUID
+	RowVersion             int64
+}
+
+type BillingBatchInvoice struct {
+	ID              uuid.UUID
+	TenantID        uuid.UUID
+	BatchID         uuid.UUID
+	InvoiceID       uuid.UUID
+	SubmittedAmount pgtype.Numeric
+	Decision        *string
+	ApprovedAmount  pgtype.Numeric
+	ReasonCode      *string
+	ReasonText      *string
+	DecidedBy       uuid.NullUUID
+	DecidedAt       *time.Time
+	Active          bool
+	CreatedAt       time.Time
+	CreatedBy       uuid.NullUUID
+}
+
+type BillingBatchInvoiceAdjustment struct {
+	ID                     uuid.UUID
+	TenantID               uuid.UUID
+	BatchInvoiceID         uuid.UUID
+	ClaimID                uuid.UUID
+	AdjustmentID           uuid.UUID
+	Amount                 pgtype.Numeric
+	ReversedByAdjustmentID uuid.NullUUID
+	CreatedAt              time.Time
+	CreatedBy              uuid.NullUUID
+}
+
 type BillingInvoice struct {
 	ID                     uuid.UUID
 	TenantID               uuid.UUID

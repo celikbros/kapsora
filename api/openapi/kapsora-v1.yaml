@@ -11775,8 +11775,8 @@ paths:
         - name: batchId
           in: query
           description: |
-            The WP-I7-03 icmal an invoice was put into. Nothing in this milestone writes it,
-            so it matches nothing until the batch exists.
+            The WP-I7-03 icmal an invoice was put into. It is written by `submitBatch` and is
+            null on every invoice no icmal is collecting.
           schema:
             type: string
             format: uuid
@@ -12204,6 +12204,479 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /api/v1/batches:
+    get:
+      tags: [Billing]
+      operationId: listBatches
+      description: |
+        The icmals of this tenant, newest first, with their totals and how many invoices each
+        of them carries.
+
+        A provider-scoped caller reads its own batches and nothing else; the boundary is
+        applied in SQL rather than after the read, so a batch outside it is genuinely not
+        returned and 404 is the honest answer to asking for one by id.
+
+        The totals are the server's own, in exact decimals. Until the batch is decided the four
+        decision totals are zero, which is the truthful answer rather than a guess from the
+        decisions taken so far.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: providerOrganizationId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: payerOrganizationId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/BatchStatus'
+        - name: domainCode
+          in: query
+          schema:
+            type: string
+            pattern: '^[A-Z][A-Z0-9_]{1,31}$'
+        - name: currencyCode
+          in: query
+          schema:
+            type: string
+            pattern: '^[A-Z]{3}$'
+        - name: from
+          in: query
+          description: Overlaps the batch period, inclusive.
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          description: Overlaps the batch period, inclusive.
+          schema:
+            type: string
+            format: date
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Batches
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchPage'
+        '400':
+          description: |
+            The paging cursor could not be read. CURSOR_INVALID.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags: [Billing]
+      operationId: createBatch
+      description: |
+        Opens a draft icmal for one provider, one payer, one currency, one domain and one
+        period.
+
+        All five are fixed here and never derived from whatever is put in afterwards, which is
+        the whole reason `putBatchInvoices` can refuse a mixture: a total across currencies is
+        not a total, and a batch spanning two payers is two conversations in one document.
+
+        The reference is the server's: `IC-YYYYMM-XXXXXXXX`, where the tail is forty random
+        bits. It is random rather than sequential because a sequential reference tells a
+        competitor how many icmals a tenant settled last month.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBatch'
+      responses:
+        '201':
+          description: Batch draft opened
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Batch'
+        '403':
+          description: |
+            A provider-scoped caller opening an icmal for somebody else's provider.
+            INVOICE_PROVIDER_SCOPE.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: |
+            The organization is not a provider of this tenant, or the period is not a period.
+            INVOICE_PROVIDER_UNKNOWN, VALIDATION_FAILED.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/batches/{batchId}:
+    get:
+      tags: [Billing]
+      operationId: getBatch
+      description: |
+        One icmal with the invoices it covers, each with the payer's decision, the amount that
+        decision approved and the reason where there is one.
+
+        Both sides read the same body. A decision is visible to the provider from the moment it
+        is taken, because an icmal a provider cannot see the reasoning of is an icmal they
+        cannot dispute.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/BatchId'
+      responses:
+        '200':
+          description: Batch
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Batch'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/batches/{batchId}/summary:
+    get:
+      tags: [Billing]
+      operationId: getBatchSummary
+      description: |
+        The totals and the per-decision counts, for both sides: how many invoices were
+        approved, cut, returned and rejected, what each group adds up to, and how much is still
+        waiting for an answer.
+
+        The counts are computed from the decisions rather than stored, because they are a view
+        of the decisions and not a fact of their own — a stored count would be a second place
+        for the same truth and therefore a second place for it to be wrong.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/BatchId'
+      responses:
+        '200':
+          description: Batch summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchSummary'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/batches/{batchId}/invoices:
+    put:
+      tags: [Billing]
+      operationId: putBatchInvoices
+      description: |
+        Replaces the whole set of invoices a DRAFT icmal collects. The pick list is
+        `listInvoices` filtered to this provider's SUBMITTED documents of the batch's payer,
+        domain and currency.
+
+        Two rules refuse a row, and each of them names the invoice rather than its position in
+        the body, because a provider knows their documents by number:
+
+        * an invoice that does not belong in this icmal — `BATCH_MIXED`, naming the field that
+          disagreed (`providerOrganizationId`, `payerOrganizationId`, `currencyCode`,
+          `domainCode` or `status`) and both values;
+        * an invoice already in a live batch — `INVOICE_ALREADY_BATCHED`, naming that batch.
+
+        An empty list clears the membership, which is how a provider starts over. It is not a
+        state the icmal can be submitted from unless the tenant's minimum is zero, and it is
+        not.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/BatchId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutBatchInvoices'
+      responses:
+        '200':
+          description: Membership replaced
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Batch'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            The batch has left DRAFT, or one of the invoices is already in a live batch.
+            BATCH_FROZEN, INVOICE_ALREADY_BATCHED.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: |
+            An invoice does not belong in this icmal. BATCH_MIXED, VALIDATION_FAILED.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/batches/{batchId}/submit:
+    post:
+      tags: [Billing]
+      operationId: submitBatch
+      description: |
+        Sends the icmal to the payer.
+
+        The count has to be inside the tenant's `billing.batch_min_invoices` and
+        `billing.batch_max_invoices`, otherwise `BATCH_SIZE_OUT_OF_RANGE` carrying all three
+        figures. Above `billing.batch_decision_threshold` the caller re-enters their password
+        first, which is `STEP_UP_REQUIRED`.
+
+        Then the batch becomes SUBMITTED, its invoices become IN_BATCH, its membership and
+        amounts freeze in the database, a work item is raised in the payer's `BATCH_REVIEW`
+        queue and `batch.submitted` goes to the outbox and to the payer's finance.
+
+        Replaying the command with the same `Idempotency-Key` answers the same body.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/BatchId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Batch submitted
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Batch'
+        '403':
+          description: |
+            The caller is not scoped to this provider, or the amount is above the tenant's
+            threshold and the step-up window has closed. INVOICE_PROVIDER_SCOPE,
+            STEP_UP_REQUIRED.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            The batch is not a draft, one of its invoices has stopped being SUBMITTED, or the
+            count is outside the tenant's bounds. BATCH_TRANSITION_INVALID, BATCH_MIXED,
+            BATCH_SIZE_OUT_OF_RANGE.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/batches/{batchId}/invoices/{invoiceId}/review:
+    post:
+      tags: [Billing]
+      operationId: reviewBatchInvoice
+      description: |
+        The payer's answer to one invoice in the icmal. Taking the first decision moves the
+        batch to UNDER_REVIEW and claims the work item.
+
+        * `APPROVE` accepts the invoice for what it billed. `approvedAmount` is not sent and is
+          not accepted: it is the submitted amount, exactly.
+        * `CUT` accepts part of it. `approvedAmount` is required and has to be strictly between
+          zero and the submitted amount, and the difference is written as WP-I7-01 `CUT`
+          adjustments across the claims the invoice covers, in proportion to their allocations,
+          exact, with the rounding difference on the largest allocation. `reasonCode` has to be
+          one of the claim ledger's cut reasons.
+        * `RETURN` sends the document back for correction: the invoice becomes RETURNED and its
+          claims are freed, so the provider can raise the correction that supersedes it.
+        * `REJECT` refuses it: the invoice becomes REJECTED and its claims are closed unpaid.
+
+        **A decision may be changed while the batch is UNDER_REVIEW, and changing one never
+        edits what the last one did.** A cut is reversed by a `REVERSAL` row in the claim ledger
+        rather than rewritten, a return puts the invoice and its claims back where the batch had
+        them, and a rejection is undone the same way. The last decision stands and every one of
+        them is an audit row.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/BatchId'
+        - $ref: '#/components/parameters/InvoiceId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewBatchInvoice'
+      responses:
+        '200':
+          description: Decision recorded
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Batch'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: |
+            The batch is not there, or the invoice is not in it. BATCH_NOT_FOUND,
+            BATCH_INVOICE_NOT_FOUND.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: |
+            The batch is not one a decision can be recorded on, or undoing the previous
+            decision would take back a claim that is now on another live invoice.
+            BATCH_TRANSITION_INVALID, CLAIM_ALREADY_INVOICED.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: |
+            The decision, its amount or its reason is not one the row can carry.
+            VALIDATION_FAILED.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/batches/{batchId}/decide:
+    post:
+      tags: [Billing]
+      operationId: decideBatch
+      description: |
+        Closes the icmal off: every invoice answered, the four totals recomputed on the server
+        and the provider told.
+
+        **Two people, at least.** The person who submitted the batch never decides it, at any
+        amount — that is WP-I4-03 §2.4's rule — and above `billing.batch_decision_threshold`
+        the person who took the last decision may not be the one who closes it either.
+
+        The totals are recomputed from the decisions and written with the batch:
+        `approved + cut + returned + rejected = submitted`, exactly, which is a database CHECK
+        as well. Approved invoices become APPROVED and cut ones PARTIALLY_APPROVED at this
+        moment and not before, so a reviewer who changed their mind halfway through never told
+        a provider a document had been accepted.
+
+        Then the work item is completed and `batch.decided` goes to the outbox, carrying the
+        totals and each return's and rejection's reason code.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/BatchId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Batch decided
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Batch'
+        '403':
+          description: |
+            The caller submitted this batch, or is the person who took the last decision on a
+            batch above the tenant's threshold. BATCH_SUBMITTER_CANNOT_DECIDE,
+            BATCH_SECOND_REVIEWER_REQUIRED.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            The batch is not under review, or an invoice in it has not been answered.
+            BATCH_TRANSITION_INVALID, BATCH_NOT_FULLY_DECIDED.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: ETag mismatch
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '428':
+          description: If-Match header missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
 components:
   securitySchemes:
     sessionCookie:
@@ -12654,6 +13127,13 @@ components:
         format: uuid
     InvoiceId:
       name: invoiceId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    BatchId:
+      name: batchId
       in: path
       required: true
       schema:
@@ -20173,11 +20653,18 @@ components:
       type: string
       enum:
         [DRAFT, SUBMITTED, AUTO_ADJUDICATED, PENDING_MEDICAL, PENDING_FINANCIAL, RETURNED,
-         PARTIALLY_APPROVED, APPROVED, REJECTED, INVOICED, BATCHED, SETTLED, CANCELLED]
+         PARTIALLY_APPROVED, APPROVED, REJECTED, INVOICED, BATCHED, SETTLED, CLOSED_UNPAID,
+         CANCELLED]
       description: |
         The claim lifecycle of v1.2 12.5. INVOICED, BATCHED and SETTLED are declared because
         the lifecycle is one list; the commands that reach them belong to M7 and nothing in
         this contract puts a claim into one of them.
+
+        CLOSED_UNPAID is where a claim lands when the payer rejects the icmal invoice that was
+        collecting it (WP-I7-03). The decision stands, the money will not be paid, and the
+        claim is finished. It is not CANCELLED -- nobody withdrew it -- and it is not REJECTED,
+        which is the payer refusing the *claim* rather than refusing to pay a document that
+        billed it.
     ClaimVersionStatus:
       type: string
       enum: [DRAFT, SUBMITTED, SUPERSEDED]
@@ -22496,7 +22983,9 @@ components:
         batchId:
           type: [string, 'null']
           format: uuid
-          description: The WP-I7-03 icmal this invoice sits in. Always null in this milestone.
+          description: |
+            The WP-I7-03 icmal this invoice sits in, set when that icmal is submitted. Null on
+            an invoice no icmal is collecting.
         notes:
           type: [string, 'null']
           maxLength: 2000
@@ -22738,3 +23227,281 @@ components:
           maxItems: 500
           items:
             $ref: '#/components/schemas/InvoiceAllocationInput'
+    BatchStatus:
+      type: string
+      enum: [DRAFT, SUBMITTED, UNDER_REVIEW, DECIDED, SETTLING, CLOSED, CANCELLED]
+      description: |
+        The icmal lifecycle of v1.2 10.9. WP-I7-03 owns everything up to DECIDED; SETTLING and
+        CLOSED are the settlement's and nothing in this contract puts a batch into one of them.
+    BatchDecision:
+      type: string
+      enum: [APPROVE, CUT, RETURN, REJECT]
+      description: |
+        What the payer said about one invoice. Four words rather than two because a provider
+        acts on each of them differently: an approval is money coming, a cut is money to
+        dispute, a return is a document to correct and resend, and a rejection is the end of
+        that document.
+    BatchInvoice:
+      type: object
+      additionalProperties: false
+      required:
+        [id, invoiceId, invoiceNumber, invoiceDate, invoiceStatus, currencyCode,
+         submittedAmount]
+      description: |
+        One invoice in one icmal, with the payer's answer to it. The decision fields are absent
+        on an invoice nobody has answered yet.
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The membership row, which is what a decision is recorded against.
+        invoiceId:
+          type: string
+          format: uuid
+        invoiceNumber:
+          type: string
+        invoiceDate:
+          type: string
+          format: date
+        invoiceStatus:
+          $ref: '#/components/schemas/InvoiceStatus'
+        currencyCode:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        submittedAmount:
+          type: string
+          description: |
+            What the invoice was billing at the moment the icmal was submitted, an exact
+            decimal. It is a copy rather than a live read: the batch is a record of what was
+            submitted.
+        decision:
+          $ref: '#/components/schemas/BatchDecision'
+        approvedAmount:
+          type: [string, 'null']
+          description: |
+            Exact decimal. Equal to `submittedAmount` on an APPROVE, strictly between zero and
+            it on a CUT, and zero on a RETURN or a REJECT. It is a database CHECK, not a
+            convention.
+        reasonCode:
+          type: [string, 'null']
+          pattern: '^[A-Z][A-Z0-9_.:-]{1,79}$'
+        reasonText:
+          type: [string, 'null']
+          maxLength: 1000
+        decidedBy:
+          type: [string, 'null']
+          format: uuid
+        decidedByDisplayName:
+          type: [string, 'null']
+        decidedAt:
+          type: [string, 'null']
+          format: date-time
+        active:
+          type: boolean
+          description: |
+            False once the icmal was cancelled. The row stays on the record and the invoice is
+            free to go into another batch.
+        createdAt:
+          type: string
+          format: date-time
+    Batch:
+      type: object
+      additionalProperties: false
+      required:
+        [id, reference, providerOrganizationId, domainCode, currencyCode, periodFrom, periodTo,
+         status, invoiceCount, submittedTotal, approvedTotal, cutTotal, returnedTotal,
+         rejectedTotal, invoices, createdAt, rowVersion]
+      description: |
+        An icmal: one provider's submitted invoices for one payer, one currency, one domain and
+        one period, with the payer's decision on each of them.
+
+        The five totals are the server's own, in exact decimals. Until the batch is decided the
+        four decision totals are zero; once it is decided they add up to `submittedTotal`
+        exactly, which is a database CHECK.
+      properties:
+        id:
+          type: string
+          format: uuid
+        reference:
+          type: string
+          pattern: '^IC-[0-9]{6}-[A-Z2-7]{8}$'
+          description: |
+            `IC-YYYYMM-XXXXXXXX`. The tail is forty random bits: a sequential reference tells a
+            competitor how many icmals a tenant settled last month.
+        providerOrganizationId:
+          type: string
+          format: uuid
+        providerName:
+          type: string
+        payerOrganizationId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            The sponsor the contract names. Null means the tenant itself is the payer, which is
+            the ordinary case.
+        domainCode:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]{1,31}$'
+        currencyCode:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        periodFrom:
+          type: string
+          format: date
+        periodTo:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/BatchStatus'
+        submittedAt:
+          type: [string, 'null']
+          format: date-time
+        submittedBy:
+          type: [string, 'null']
+          format: uuid
+        decidedAt:
+          type: [string, 'null']
+          format: date-time
+        decidedBy:
+          type: [string, 'null']
+          format: uuid
+        invoiceCount:
+          type: integer
+          minimum: 0
+        submittedTotal:
+          type: string
+        approvedTotal:
+          type: string
+        cutTotal:
+          type: string
+        returnedTotal:
+          type: string
+        rejectedTotal:
+          type: string
+        invoices:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchInvoice'
+        createdAt:
+          type: string
+          format: date-time
+        rowVersion:
+          type: integer
+          format: int64
+    BatchSummaryRow:
+      type: object
+      additionalProperties: false
+      required: [decision, count, submittedTotal, approvedTotal]
+      properties:
+        decision:
+          $ref: '#/components/schemas/BatchDecision'
+        count:
+          type: integer
+          minimum: 0
+        submittedTotal:
+          type: string
+        approvedTotal:
+          type: string
+    BatchSummary:
+      type: object
+      additionalProperties: false
+      required: [batch, pendingCount, pendingTotal, decisions]
+      description: |
+        The totals and the per-decision counts, for both sides. All four decisions are always
+        listed, with zeroes where nothing carries them, so a screen can draw a stable set of
+        columns.
+      properties:
+        batch:
+          $ref: '#/components/schemas/Batch'
+        pendingCount:
+          type: integer
+          minimum: 0
+          description: How many invoices nobody has answered yet.
+        pendingTotal:
+          type: string
+          description: What those invoices are worth, an exact decimal.
+        decisions:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchSummaryRow'
+    BatchPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Batch'
+        nextCursor:
+          type: [string, 'null']
+    CreateBatch:
+      type: object
+      additionalProperties: false
+      required: [providerOrganizationId, periodFrom, periodTo]
+      description: |
+        The five things an icmal is one of. The reference is the server's and is never sent.
+      properties:
+        providerOrganizationId:
+          type: string
+          format: uuid
+        payerOrganizationId:
+          type: [string, 'null']
+          format: uuid
+        domainCode:
+          type: [string, 'null']
+          pattern: '^[A-Z][A-Z0-9_]{1,31}$'
+          description: Defaults to GENERIC.
+        currencyCode:
+          type: [string, 'null']
+          pattern: '^[A-Z]{3}$'
+          description: Defaults to TRY.
+        periodFrom:
+          type: string
+          format: date
+        periodTo:
+          type: string
+          format: date
+    PutBatchInvoices:
+      type: object
+      additionalProperties: false
+      required: [invoiceIds]
+      description: |
+        The whole set, replacing whatever the draft carried. Duplicates are collapsed rather
+        than refused: naming the same invoice twice is a client's mistake and not a different
+        icmal.
+      properties:
+        invoiceIds:
+          type: array
+          maxItems: 500
+          items:
+            type: string
+            format: uuid
+    ReviewBatchInvoice:
+      type: object
+      additionalProperties: false
+      required: [decision]
+      description: |
+        One decision on one invoice. `approvedAmount` belongs to a CUT and only to a CUT: the
+        other three derive it, and a caller who could send it would be a caller who could
+        approve an amount nobody billed.
+      properties:
+        decision:
+          $ref: '#/components/schemas/BatchDecision'
+        approvedAmount:
+          oneOf:
+            - $ref: '#/components/schemas/DecimalAmount'
+            - type: 'null'
+          description: |
+            Required on a CUT, strictly between zero and the submitted amount. Ignored on the
+            other three.
+        reasonCode:
+          type: [string, 'null']
+          pattern: '^[A-Z][A-Z0-9_.:-]{1,79}$'
+          description: |
+            Required for a CUT, a RETURN and a REJECT. A cut's has to be one of the claim
+            ledger's cut reasons, because the cut writes an adjustment and an adjustment's
+            reason is a closed list.
+        reasonText:
+          type: [string, 'null']
+          maxLength: 1000

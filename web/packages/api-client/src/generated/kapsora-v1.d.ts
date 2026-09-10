@@ -909,6 +909,228 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/batches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The icmals of this tenant, newest first, with their totals and how many invoices each
+         *     of them carries.
+         *
+         *     A provider-scoped caller reads its own batches and nothing else; the boundary is
+         *     applied in SQL rather than after the read, so a batch outside it is genuinely not
+         *     returned and 404 is the honest answer to asking for one by id.
+         *
+         *     The totals are the server's own, in exact decimals. Until the batch is decided the four
+         *     decision totals are zero, which is the truthful answer rather than a guess from the
+         *     decisions taken so far.
+         */
+        get: operations["listBatches"];
+        put?: never;
+        /**
+         * @description Opens a draft icmal for one provider, one payer, one currency, one domain and one
+         *     period.
+         *
+         *     All five are fixed here and never derived from whatever is put in afterwards, which is
+         *     the whole reason `putBatchInvoices` can refuse a mixture: a total across currencies is
+         *     not a total, and a batch spanning two payers is two conversations in one document.
+         *
+         *     The reference is the server's: `IC-YYYYMM-XXXXXXXX`, where the tail is forty random
+         *     bits. It is random rather than sequential because a sequential reference tells a
+         *     competitor how many icmals a tenant settled last month.
+         */
+        post: operations["createBatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/batches/{batchId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One icmal with the invoices it covers, each with the payer's decision, the amount that
+         *     decision approved and the reason where there is one.
+         *
+         *     Both sides read the same body. A decision is visible to the provider from the moment it
+         *     is taken, because an icmal a provider cannot see the reasoning of is an icmal they
+         *     cannot dispute.
+         */
+        get: operations["getBatch"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/batches/{batchId}/decide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Closes the icmal off: every invoice answered, the four totals recomputed on the server
+         *     and the provider told.
+         *
+         *     **Two people, at least.** The person who submitted the batch never decides it, at any
+         *     amount — that is WP-I4-03 §2.4's rule — and above `billing.batch_decision_threshold`
+         *     the person who took the last decision may not be the one who closes it either.
+         *
+         *     The totals are recomputed from the decisions and written with the batch:
+         *     `approved + cut + returned + rejected = submitted`, exactly, which is a database CHECK
+         *     as well. Approved invoices become APPROVED and cut ones PARTIALLY_APPROVED at this
+         *     moment and not before, so a reviewer who changed their mind halfway through never told
+         *     a provider a document had been accepted.
+         *
+         *     Then the work item is completed and `batch.decided` goes to the outbox, carrying the
+         *     totals and each return's and rejection's reason code.
+         */
+        post: operations["decideBatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/batches/{batchId}/invoices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * @description Replaces the whole set of invoices a DRAFT icmal collects. The pick list is
+         *     `listInvoices` filtered to this provider's SUBMITTED documents of the batch's payer,
+         *     domain and currency.
+         *
+         *     Two rules refuse a row, and each of them names the invoice rather than its position in
+         *     the body, because a provider knows their documents by number:
+         *
+         *     * an invoice that does not belong in this icmal — `BATCH_MIXED`, naming the field that
+         *       disagreed (`providerOrganizationId`, `payerOrganizationId`, `currencyCode`,
+         *       `domainCode` or `status`) and both values;
+         *     * an invoice already in a live batch — `INVOICE_ALREADY_BATCHED`, naming that batch.
+         *
+         *     An empty list clears the membership, which is how a provider starts over. It is not a
+         *     state the icmal can be submitted from unless the tenant's minimum is zero, and it is
+         *     not.
+         */
+        put: operations["putBatchInvoices"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/batches/{batchId}/invoices/{invoiceId}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description The payer's answer to one invoice in the icmal. Taking the first decision moves the
+         *     batch to UNDER_REVIEW and claims the work item.
+         *
+         *     * `APPROVE` accepts the invoice for what it billed. `approvedAmount` is not sent and is
+         *       not accepted: it is the submitted amount, exactly.
+         *     * `CUT` accepts part of it. `approvedAmount` is required and has to be strictly between
+         *       zero and the submitted amount, and the difference is written as WP-I7-01 `CUT`
+         *       adjustments across the claims the invoice covers, in proportion to their allocations,
+         *       exact, with the rounding difference on the largest allocation. `reasonCode` has to be
+         *       one of the claim ledger's cut reasons.
+         *     * `RETURN` sends the document back for correction: the invoice becomes RETURNED and its
+         *       claims are freed, so the provider can raise the correction that supersedes it.
+         *     * `REJECT` refuses it: the invoice becomes REJECTED and its claims are closed unpaid.
+         *
+         *     **A decision may be changed while the batch is UNDER_REVIEW, and changing one never
+         *     edits what the last one did.** A cut is reversed by a `REVERSAL` row in the claim ledger
+         *     rather than rewritten, a return puts the invoice and its claims back where the batch had
+         *     them, and a rejection is undone the same way. The last decision stands and every one of
+         *     them is an audit row.
+         */
+        post: operations["reviewBatchInvoice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/batches/{batchId}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Sends the icmal to the payer.
+         *
+         *     The count has to be inside the tenant's `billing.batch_min_invoices` and
+         *     `billing.batch_max_invoices`, otherwise `BATCH_SIZE_OUT_OF_RANGE` carrying all three
+         *     figures. Above `billing.batch_decision_threshold` the caller re-enters their password
+         *     first, which is `STEP_UP_REQUIRED`.
+         *
+         *     Then the batch becomes SUBMITTED, its invoices become IN_BATCH, its membership and
+         *     amounts freeze in the database, a work item is raised in the payer's `BATCH_REVIEW`
+         *     queue and `batch.submitted` goes to the outbox and to the payer's finance.
+         *
+         *     Replaying the command with the same `Idempotency-Key` answers the same body.
+         */
+        post: operations["submitBatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/batches/{batchId}/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The totals and the per-decision counts, for both sides: how many invoices were
+         *     approved, cut, returned and rejected, what each group adds up to, and how much is still
+         *     waiting for an answer.
+         *
+         *     The counts are computed from the decisions rather than stored, because they are a view
+         *     of the decisions and not a fact of their own — a stored count would be a second place
+         *     for the same truth and therefore a second place for it to be wrong.
+         */
+        get: operations["getBatchSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/claims": {
         parameters: {
             query?: never;
@@ -5832,6 +6054,140 @@ export interface components {
             results: components["schemas"]["AvailabilityRoomTypeResult"][];
         };
         /**
+         * @description An icmal: one provider's submitted invoices for one payer, one currency, one domain and
+         *     one period, with the payer's decision on each of them.
+         *
+         *     The five totals are the server's own, in exact decimals. Until the batch is decided the
+         *     four decision totals are zero; once it is decided they add up to `submittedTotal`
+         *     exactly, which is a database CHECK.
+         */
+        Batch: {
+            approvedTotal: string;
+            /** Format: date-time */
+            createdAt: string;
+            currencyCode: string;
+            cutTotal: string;
+            /** Format: date-time */
+            decidedAt?: string | null;
+            /** Format: uuid */
+            decidedBy?: string | null;
+            domainCode: string;
+            /** Format: uuid */
+            id: string;
+            invoiceCount: number;
+            invoices: components["schemas"]["BatchInvoice"][];
+            /**
+             * Format: uuid
+             * @description The sponsor the contract names. Null means the tenant itself is the payer, which is
+             *     the ordinary case.
+             */
+            payerOrganizationId?: string | null;
+            /** Format: date */
+            periodFrom: string;
+            /** Format: date */
+            periodTo: string;
+            providerName?: string;
+            /** Format: uuid */
+            providerOrganizationId: string;
+            /**
+             * @description `IC-YYYYMM-XXXXXXXX`. The tail is forty random bits: a sequential reference tells a
+             *     competitor how many icmals a tenant settled last month.
+             */
+            reference: string;
+            rejectedTotal: string;
+            returnedTotal: string;
+            /** Format: int64 */
+            rowVersion: number;
+            status: components["schemas"]["BatchStatus"];
+            /** Format: date-time */
+            submittedAt?: string | null;
+            /** Format: uuid */
+            submittedBy?: string | null;
+            submittedTotal: string;
+        };
+        /**
+         * @description What the payer said about one invoice. Four words rather than two because a provider
+         *     acts on each of them differently: an approval is money coming, a cut is money to
+         *     dispute, a return is a document to correct and resend, and a rejection is the end of
+         *     that document.
+         * @enum {string}
+         */
+        BatchDecision: "APPROVE" | "CUT" | "RETURN" | "REJECT";
+        /**
+         * @description One invoice in one icmal, with the payer's answer to it. The decision fields are absent
+         *     on an invoice nobody has answered yet.
+         */
+        BatchInvoice: {
+            /**
+             * @description False once the icmal was cancelled. The row stays on the record and the invoice is
+             *     free to go into another batch.
+             */
+            active?: boolean;
+            /**
+             * @description Exact decimal. Equal to `submittedAmount` on an APPROVE, strictly between zero and
+             *     it on a CUT, and zero on a RETURN or a REJECT. It is a database CHECK, not a
+             *     convention.
+             */
+            approvedAmount?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+            currencyCode: string;
+            /** Format: date-time */
+            decidedAt?: string | null;
+            /** Format: uuid */
+            decidedBy?: string | null;
+            decidedByDisplayName?: string | null;
+            decision?: components["schemas"]["BatchDecision"];
+            /**
+             * Format: uuid
+             * @description The membership row, which is what a decision is recorded against.
+             */
+            id: string;
+            /** Format: date */
+            invoiceDate: string;
+            /** Format: uuid */
+            invoiceId: string;
+            invoiceNumber: string;
+            invoiceStatus: components["schemas"]["InvoiceStatus"];
+            reasonCode?: string | null;
+            reasonText?: string | null;
+            /**
+             * @description What the invoice was billing at the moment the icmal was submitted, an exact
+             *     decimal. It is a copy rather than a live read: the batch is a record of what was
+             *     submitted.
+             */
+            submittedAmount: string;
+        };
+        BatchPage: {
+            items: components["schemas"]["Batch"][];
+            nextCursor: string | null;
+        };
+        /**
+         * @description The icmal lifecycle of v1.2 10.9. WP-I7-03 owns everything up to DECIDED; SETTLING and
+         *     CLOSED are the settlement's and nothing in this contract puts a batch into one of them.
+         * @enum {string}
+         */
+        BatchStatus: "DRAFT" | "SUBMITTED" | "UNDER_REVIEW" | "DECIDED" | "SETTLING" | "CLOSED" | "CANCELLED";
+        /**
+         * @description The totals and the per-decision counts, for both sides. All four decisions are always
+         *     listed, with zeroes where nothing carries them, so a screen can draw a stable set of
+         *     columns.
+         */
+        BatchSummary: {
+            batch: components["schemas"]["Batch"];
+            decisions: components["schemas"]["BatchSummaryRow"][];
+            /** @description How many invoices nobody has answered yet. */
+            pendingCount: number;
+            /** @description What those invoices are worth, an exact decimal. */
+            pendingTotal: string;
+        };
+        BatchSummaryRow: {
+            approvedTotal: string;
+            count: number;
+            decision: components["schemas"]["BatchDecision"];
+            submittedTotal: string;
+        };
+        /**
          * @description A hold, and what it became.
          *
          *     `secondsToExpiry` is the countdown, computed on the server: a browser deriving it
@@ -6487,9 +6843,15 @@ export interface components {
          * @description The claim lifecycle of v1.2 12.5. INVOICED, BATCHED and SETTLED are declared because
          *     the lifecycle is one list; the commands that reach them belong to M7 and nothing in
          *     this contract puts a claim into one of them.
+         *
+         *     CLOSED_UNPAID is where a claim lands when the payer rejects the icmal invoice that was
+         *     collecting it (WP-I7-03). The decision stands, the money will not be paid, and the
+         *     claim is finished. It is not CANCELLED -- nobody withdrew it -- and it is not REJECTED,
+         *     which is the payer refusing the *claim* rather than refusing to pay a document that
+         *     billed it.
          * @enum {string}
          */
-        ClaimStatus: "DRAFT" | "SUBMITTED" | "AUTO_ADJUDICATED" | "PENDING_MEDICAL" | "PENDING_FINANCIAL" | "RETURNED" | "PARTIALLY_APPROVED" | "APPROVED" | "REJECTED" | "INVOICED" | "BATCHED" | "SETTLED" | "CANCELLED";
+        ClaimStatus: "DRAFT" | "SUBMITTED" | "AUTO_ADJUDICATED" | "PENDING_MEDICAL" | "PENDING_FINANCIAL" | "RETURNED" | "PARTIALLY_APPROVED" | "APPROVED" | "REJECTED" | "INVOICED" | "BATCHED" | "SETTLED" | "CLOSED_UNPAID" | "CANCELLED";
         ClaimVersion: {
             exceptions: components["schemas"]["ClaimException"][];
             lines: components["schemas"]["ClaimLine"][];
@@ -6754,6 +7116,21 @@ export interface components {
              * @description When the promise stops holding and the reservations are released.
              */
             validTo: string;
+        };
+        /** @description The five things an icmal is one of. The reference is the server's and is never sent. */
+        CreateBatch: {
+            /** @description Defaults to TRY. */
+            currencyCode?: string | null;
+            /** @description Defaults to GENERIC. */
+            domainCode?: string | null;
+            /** Format: uuid */
+            payerOrganizationId?: string | null;
+            /** Format: date */
+            periodFrom: string;
+            /** Format: date */
+            periodTo: string;
+            /** Format: uuid */
+            providerOrganizationId: string;
         };
         CreateBookingGuest: {
             displayName: string;
@@ -8237,7 +8614,8 @@ export interface components {
             allocationTotal: string;
             /**
              * Format: uuid
-             * @description The WP-I7-03 icmal this invoice sits in. Always null in this milestone.
+             * @description The WP-I7-03 icmal this invoice sits in, set when that icmal is submitted. Null on
+             *     an invoice no icmal is collecting.
              */
             batchId?: string | null;
             /** Format: date-time */
@@ -10083,6 +10461,14 @@ export interface components {
              */
             policies: components["schemas"]["ApprovalPolicyInput"][];
         };
+        /**
+         * @description The whole set, replacing whatever the draft carried. Duplicates are collapsed rather
+         *     than refused: naming the same invoice twice is a client's mistake and not a different
+         *     icmal.
+         */
+        PutBatchInvoices: {
+            invoiceIds: string[];
+        };
         PutClaimLines: {
             lines: components["schemas"]["NewClaimLine"][];
         };
@@ -10296,6 +10682,26 @@ export interface components {
             /** @description Every candidate that tied at the top when the outcome is REVIEW_REQUIRED. */
             tied: components["schemas"]["ResolvedPrice"][];
             winner?: components["schemas"]["ResolvedPrice"];
+        };
+        /**
+         * @description One decision on one invoice. `approvedAmount` belongs to a CUT and only to a CUT: the
+         *     other three derive it, and a caller who could send it would be a caller who could
+         *     approve an amount nobody billed.
+         */
+        ReviewBatchInvoice: {
+            /**
+             * @description Required on a CUT, strictly between zero and the submitted amount. Ignored on the
+             *     other three.
+             */
+            approvedAmount?: components["schemas"]["DecimalAmount"] | null;
+            decision: components["schemas"]["BatchDecision"];
+            /**
+             * @description Required for a CUT, a RETURN and a REJECT. A cut's has to be one of the claim
+             *     ledger's cut reasons, because the cut writes an adjustment and an adjustment's
+             *     reason is a closed list.
+             */
+            reasonCode?: string | null;
+            reasonText?: string | null;
         };
         ReviewComment: {
             comment?: string;
@@ -11587,6 +11993,7 @@ export interface components {
         AccountId: string;
         AdjustmentId: string;
         AuthorizationId: string;
+        BatchId: string;
         BookingId: string;
         CaseId: string;
         ClaimId: string;
@@ -11674,6 +12081,13 @@ export type SchemaAvailabilityQuote = components['schemas']['AvailabilityQuote']
 export type SchemaAvailabilityRoomTypeResult = components['schemas']['AvailabilityRoomTypeResult'];
 export type SchemaAvailabilitySearchRequest = components['schemas']['AvailabilitySearchRequest'];
 export type SchemaAvailabilitySearchResult = components['schemas']['AvailabilitySearchResult'];
+export type SchemaBatch = components['schemas']['Batch'];
+export type SchemaBatchDecision = components['schemas']['BatchDecision'];
+export type SchemaBatchInvoice = components['schemas']['BatchInvoice'];
+export type SchemaBatchPage = components['schemas']['BatchPage'];
+export type SchemaBatchStatus = components['schemas']['BatchStatus'];
+export type SchemaBatchSummary = components['schemas']['BatchSummary'];
+export type SchemaBatchSummaryRow = components['schemas']['BatchSummaryRow'];
 export type SchemaBooking = components['schemas']['Booking'];
 export type SchemaBookingGuest = components['schemas']['BookingGuest'];
 export type SchemaBookingGuestType = components['schemas']['BookingGuestType'];
@@ -11736,6 +12150,7 @@ export type SchemaContractVersionStatus = components['schemas']['ContractVersion
 export type SchemaContractVersionSummary = components['schemas']['ContractVersionSummary'];
 export type SchemaCreateAdjustmentRequest = components['schemas']['CreateAdjustmentRequest'];
 export type SchemaCreateAuthorization = components['schemas']['CreateAuthorization'];
+export type SchemaCreateBatch = components['schemas']['CreateBatch'];
 export type SchemaCreateBookingGuest = components['schemas']['CreateBookingGuest'];
 export type SchemaCreateClaim = components['schemas']['CreateClaim'];
 export type SchemaCreateClaimAdjustment = components['schemas']['CreateClaimAdjustment'];
@@ -11959,6 +12374,7 @@ export type SchemaProviderSearchResult = components['schemas']['ProviderSearchRe
 export type SchemaProviderStatus = components['schemas']['ProviderStatus'];
 export type SchemaProviderType = components['schemas']['ProviderType'];
 export type SchemaPutApprovalPolicies = components['schemas']['PutApprovalPolicies'];
+export type SchemaPutBatchInvoices = components['schemas']['PutBatchInvoices'];
 export type SchemaPutClaimLines = components['schemas']['PutClaimLines'];
 export type SchemaPutEncounterDiagnoses = components['schemas']['PutEncounterDiagnoses'];
 export type SchemaPutInvoiceAllocations = components['schemas']['PutInvoiceAllocations'];
@@ -11989,6 +12405,7 @@ export type SchemaReportNoShowRequest = components['schemas']['ReportNoShowReque
 export type SchemaResolvedPrice = components['schemas']['ResolvedPrice'];
 export type SchemaResolvePriceRequest = components['schemas']['ResolvePriceRequest'];
 export type SchemaResolvePriceResult = components['schemas']['ResolvePriceResult'];
+export type SchemaReviewBatchInvoice = components['schemas']['ReviewBatchInvoice'];
 export type SchemaReviewComment = components['schemas']['ReviewComment'];
 export type SchemaReviewNoShowRequest = components['schemas']['ReviewNoShowRequest'];
 export type SchemaRoomType = components['schemas']['RoomType'];
@@ -12101,6 +12518,7 @@ export type ParameterAccessReasonHeader = components['parameters']['AccessReason
 export type ParameterAccountId = components['parameters']['AccountId'];
 export type ParameterAdjustmentId = components['parameters']['AdjustmentId'];
 export type ParameterAuthorizationId = components['parameters']['AuthorizationId'];
+export type ParameterBatchId = components['parameters']['BatchId'];
 export type ParameterBookingId = components['parameters']['BookingId'];
 export type ParameterCaseId = components['parameters']['CaseId'];
 export type ParameterClaimId = components['parameters']['ClaimId'];
@@ -13702,6 +14120,482 @@ export interface operations {
             409: components["responses"]["Conflict"];
             422: components["responses"]["ValidationError"];
             429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listBatches: {
+        parameters: {
+            query?: {
+                currencyCode?: string;
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                domainCode?: string;
+                /** @description Overlaps the batch period, inclusive. */
+                from?: string;
+                limit?: components["parameters"]["Limit"];
+                payerOrganizationId?: string;
+                providerOrganizationId?: string;
+                status?: components["schemas"]["BatchStatus"];
+                /** @description Overlaps the batch period, inclusive. */
+                to?: string;
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Batches */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchPage"];
+                };
+            };
+            /** @description The paging cursor could not be read. CURSOR_INVALID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    createBatch: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateBatch"];
+            };
+        };
+        responses: {
+            /** @description Batch draft opened */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Batch"];
+                };
+            };
+            /**
+             * @description A provider-scoped caller opening an icmal for somebody else's provider.
+             *     INVOICE_PROVIDER_SCOPE.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /**
+             * @description The organization is not a provider of this tenant, or the period is not a period.
+             *     INVOICE_PROVIDER_UNKNOWN, VALIDATION_FAILED.
+             */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getBatch: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                batchId: components["parameters"]["BatchId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Batch */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Batch"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    decideBatch: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                batchId: components["parameters"]["BatchId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Batch decided */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Batch"];
+                };
+            };
+            /**
+             * @description The caller submitted this batch, or is the person who took the last decision on a
+             *     batch above the tenant's threshold. BATCH_SUBMITTER_CANNOT_DECIDE,
+             *     BATCH_SECOND_REVIEWER_REQUIRED.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /**
+             * @description The batch is not under review, or an invoice in it has not been answered.
+             *     BATCH_TRANSITION_INVALID, BATCH_NOT_FULLY_DECIDED.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    putBatchInvoices: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                batchId: components["parameters"]["BatchId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PutBatchInvoices"];
+            };
+        };
+        responses: {
+            /** @description Membership replaced */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Batch"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /**
+             * @description The batch has left DRAFT, or one of the invoices is already in a live batch.
+             *     BATCH_FROZEN, INVOICE_ALREADY_BATCHED.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description An invoice does not belong in this icmal. BATCH_MIXED, VALIDATION_FAILED. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    reviewBatchInvoice: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                batchId: components["parameters"]["BatchId"];
+                invoiceId: components["parameters"]["InvoiceId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewBatchInvoice"];
+            };
+        };
+        responses: {
+            /** @description Decision recorded */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Batch"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            /**
+             * @description The batch is not there, or the invoice is not in it. BATCH_NOT_FOUND,
+             *     BATCH_INVOICE_NOT_FOUND.
+             */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /**
+             * @description The batch is not one a decision can be recorded on, or undoing the previous
+             *     decision would take back a claim that is now on another live invoice.
+             *     BATCH_TRANSITION_INVALID, CLAIM_ALREADY_INVOICED.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /**
+             * @description The decision, its amount or its reason is not one the row can carry.
+             *     VALIDATION_FAILED.
+             */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    submitBatch: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                batchId: components["parameters"]["BatchId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Batch submitted */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Batch"];
+                };
+            };
+            /**
+             * @description The caller is not scoped to this provider, or the amount is above the tenant's
+             *     threshold and the step-up window has closed. INVOICE_PROVIDER_SCOPE,
+             *     STEP_UP_REQUIRED.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /**
+             * @description The batch is not a draft, one of its invoices has stopped being SUBMITTED, or the
+             *     count is outside the tenant's bounds. BATCH_TRANSITION_INVALID, BATCH_MIXED,
+             *     BATCH_SIZE_OUT_OF_RANGE.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description If-Match header missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getBatchSummary: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                batchId: components["parameters"]["BatchId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Batch summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchSummary"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     listClaims: {
@@ -18330,8 +19224,8 @@ export interface operations {
         parameters: {
             query?: {
                 /**
-                 * @description The WP-I7-03 icmal an invoice was put into. Nothing in this milestone writes it,
-                 *     so it matches nothing until the batch exists.
+                 * @description The WP-I7-03 icmal an invoice was put into. It is written by `submitBatch` and is
+                 *     null on every invoice no icmal is collecting.
                  */
                 batchId?: string;
                 /** @description Opaque cursor from the previous response. */
