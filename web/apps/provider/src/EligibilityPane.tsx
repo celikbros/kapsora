@@ -53,7 +53,7 @@ export function EligibilityPane({ check }: { check: LiveCheck }) {
     <aside
       aria-labelledby="eligibility-pane"
       aria-live="polite"
-      className="bg-surface border-border rounded-md border p-4"
+      className="bg-surface-raised border-line rounded-md border p-4"
       data-testid="eligibility-pane"
     >
       <h2 id="eligibility-pane" className="text-base font-semibold">
@@ -100,7 +100,7 @@ export function EligibilityPane({ check }: { check: LiveCheck }) {
             </ul>
           ) : null}
           {(check.data.items ?? []).map((item, i) => (
-            <div key={i} className="border-border border-t pt-2">
+            <div key={i} className="border-line border-t pt-2">
               {item.entitlementCode ? (
                 <p>
                   <code className="font-mono text-xs">{item.entitlementCode}</code>

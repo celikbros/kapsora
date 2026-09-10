@@ -70,7 +70,7 @@ export function PropertiesPage() {
           {properties.data.items.map((p) => (
             <li
               key={p.id}
-              className="bg-surface border-border rounded-lg border p-3"
+              className="bg-surface-raised border-line rounded-lg border p-3"
               data-testid="property-row"
             >
               <div className="flex items-baseline justify-between gap-3">

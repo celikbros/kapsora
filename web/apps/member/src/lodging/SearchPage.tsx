@@ -332,7 +332,7 @@ function RoomRow({
   const full = room.available === 0;
   return (
     <li
-      className={`bg-surface border-border rounded-lg border p-3 ${chosen ? 'ring-primary ring-2' : ''}`}
+      className={`bg-surface-raised border-line rounded-lg border p-3 ${chosen ? 'ring-primary ring-2' : ''}`}
       data-testid="room-row"
       aria-current={chosen ? 'true' : undefined}
     >

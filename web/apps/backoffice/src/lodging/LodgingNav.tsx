@@ -13,7 +13,7 @@ export function LodgingNav() {
   return (
     <nav
       aria-label={t('nav.lodging')}
-      className="border-border flex border-b"
+      className="border-line flex border-b"
       data-testid="lodging-nav"
     >
       <Link to="/lodging/bookings" className={tab}>

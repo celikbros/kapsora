@@ -119,6 +119,13 @@ export const NAV_ENTRIES: NavEntry[] = [
     permission: 'health.medical_report.review',
   },
   {
+    key: 'billing',
+    path: '/billing/batches',
+    labelKey: 'nav.billing',
+    implemented: true,
+    permission: 'settlement.read',
+  },
+  {
     key: 'reconciliation',
     path: '/reconciliation',
     labelKey: 'nav.reconciliation',

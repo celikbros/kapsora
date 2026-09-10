@@ -47,6 +47,9 @@ import {
   type StoredPriceItem,
   type StoredProperty,
   type StoredRoomType,
+  toEnrollment,
+  toPersonContact,
+  toPersonSummary,
 } from './data';
 import { resolveEligibility } from './eligibility-handlers';
 import type { EligibilityCheckRequest } from '../decimals';
@@ -60,6 +63,7 @@ import {
   organizationScope,
   parseLimit,
   pathParam,
+  personScope,
   problem,
   readJson,
   resolvePerson,
@@ -825,6 +829,32 @@ export function accommodationHandlers(api: MockApi): HttpHandler[] {
     coverForService,
   });
   return [
+    // WP-I6-01: the person the signed-in member acts for, with their enrollments and masked
+    // contacts. Any tenant permission reaches it; the PERSON grant is what answers, and an
+    // account bound to nobody is told so rather than handed an empty person.
+    http.get(`${ANY}/api/v1/me/person`, async ({ request }) => {
+      await wait(api);
+      const g = guardTenant(api, request, 'eligibility.check', false);
+      if ('error' in g) return g.error;
+      const personId = personScope(api, g.session, g.tenantId);
+      const person = personId
+        ? world().people.find((p) => p.tenantId === g.tenantId && p.id === personId)
+        : undefined;
+      if (!person) {
+        return problem(api, 403, 'PERSON_BINDING_MISSING', 'Bu hesap bir kişiye bağlı değil');
+      }
+      const body: Schemas['MyPerson'] = {
+        person: toPersonSummary(person),
+        enrollments: world()
+          .enrollments.filter((e) => e.tenantId === g.tenantId && e.personId === person.id)
+          .sort((a, b) => b.validFrom.localeCompare(a.validFrom))
+          .map(toEnrollment),
+        contacts: world()
+          .personContacts.filter((c) => c.tenantId === g.tenantId && c.personId === person.id)
+          .map(toPersonContact),
+      };
+      return HttpResponse.json(body, { headers: { 'Cache-Control': 'no-store' } });
+    }),
     http.get(`${ANY}/api/v1/accommodation/properties`, async ({ request }) => {
       await wait(api);
       const g = guardTenant(api, request, PERMISSION_READ, false);

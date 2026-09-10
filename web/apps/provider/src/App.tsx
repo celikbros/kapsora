@@ -44,6 +44,11 @@ import { CaseOpenPage } from './health/CaseOpenPage';
 import { CasePage } from './health/CasePage';
 import { ReportPage } from './health/ReportPage';
 import { StayPage } from './health/StayPage';
+import { BatchListPage } from './billing/BatchListPage';
+import { BatchNewPage, BatchPage } from './billing/BatchPage';
+import { EarningsPage } from './billing/EarningsPage';
+import { InvoiceListPage } from './billing/InvoiceListPage';
+import { InvoiceNewPage, InvoicePage } from './billing/InvoicePage';
 import { DeskPage } from './lodging/DeskPage';
 import { InventoryPage } from './lodging/InventoryPage';
 import { ServicesProvider, type AppServices } from './services';
@@ -168,6 +173,7 @@ function Shell() {
   const canReadClaims = usePermission('claim.read');
   const canManageInventory = usePermission('accommodation.inventory.manage');
   const canRunDesk = usePermission('accommodation.booking.manage');
+  const canBill = usePermission('invoice.read');
   const color = active ? tenantColor(active.tenant.code) : null;
   const header = (
     <div className="flex h-14 min-w-0 items-center gap-2 px-3 sm:gap-3 sm:px-4">
@@ -233,6 +239,11 @@ function Shell() {
       {canRunDesk ? (
         <Link to="/lodging/desk" className={item}>
           {t('provider.nav.desk')}
+        </Link>
+      ) : null}
+      {canBill ? (
+        <Link to="/billing" className={item}>
+          {t('provider.nav.billing')}
         </Link>
       ) : null}
     </nav>
@@ -354,6 +365,55 @@ const deskRoute = createRoute({
   path: '/lodging/desk',
   component: DeskPage,
 });
+function billingSearch(raw: Record<string, unknown>): {
+  currency?: string;
+  claims?: string;
+  supersedes?: string;
+} {
+  const out: { currency?: string; claims?: string; supersedes?: string } = {};
+  if (typeof raw['currency'] === 'string' && raw['currency'] !== '') out.currency = raw['currency'];
+  if (typeof raw['claims'] === 'string') out.claims = raw['claims'];
+  if (typeof raw['supersedes'] === 'string' && raw['supersedes'] !== '')
+    out.supersedes = raw['supersedes'];
+  return out;
+}
+const earningsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/billing',
+  component: EarningsPage,
+});
+const invoicesRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/billing/invoices',
+  component: InvoiceListPage,
+});
+const invoiceNewRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/billing/invoices/new',
+  validateSearch: billingSearch,
+  component: InvoiceNewPage,
+});
+const invoiceRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/billing/invoices/$invoiceId',
+  validateSearch: billingSearch,
+  component: InvoicePage,
+});
+const batchesRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/billing/batches',
+  component: BatchListPage,
+});
+const batchNewRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/billing/batches/new',
+  component: BatchNewPage,
+});
+const batchRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/billing/batches/$batchId',
+  component: BatchPage,
+});
 const routeTree = rootRoute.addChildren([
   loginRoute,
   tenantRoute,
@@ -372,6 +432,13 @@ const routeTree = rootRoute.addChildren([
     claimRoute,
     inventoryRoute,
     deskRoute,
+    earningsRoute,
+    invoicesRoute,
+    invoiceNewRoute,
+    invoiceRoute,
+    batchesRoute,
+    batchNewRoute,
+    batchRoute,
   ]),
 ]);
 

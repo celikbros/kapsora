@@ -124,7 +124,7 @@ function ArrivalRow({ booking, propertyName }: { booking: Booking; propertyName:
   }
 
   return (
-    <li className="bg-surface border-border rounded-lg border p-3" data-testid="arrival-row">
+    <li className="bg-surface-raised border-line rounded-lg border p-3" data-testid="arrival-row">
       <BookingHead booking={booking} propertyName={propertyName} />
       <form onSubmit={submit} className="mt-3 flex flex-wrap items-end gap-2" noValidate>
         <FormField label={t('provider.lodging.desk.token')} className="min-w-0 flex-1">
@@ -155,7 +155,7 @@ function DepartureRow({ booking, propertyName }: { booking: Booking; propertyNam
   const toast = useToast();
   const checkOut = useCheckOut();
   return (
-    <li className="bg-surface border-border rounded-lg border p-3" data-testid="departure-row">
+    <li className="bg-surface-raised border-line rounded-lg border p-3" data-testid="departure-row">
       <BookingHead booking={booking} propertyName={propertyName} />
       <p className="text-fg-muted mt-2 text-sm">
         {t('provider.lodging.desk.checkedInAt')}: {formatDateTime(booking.checkedInAt ?? null)}
@@ -215,7 +215,7 @@ function NoShowForm({ booking, onDone }: { booking: Booking; onDone: () => void 
   }
 
   return (
-    <div className="border-border mt-3 grid gap-3 border-t pt-3" data-testid="no-show-form">
+    <div className="border-line mt-3 grid gap-3 border-t pt-3" data-testid="no-show-form">
       <p className="text-sm">{t('provider.lodging.desk.noShowIntro')}</p>
       <DocumentsPanel
         aggregateType="BOOKING"

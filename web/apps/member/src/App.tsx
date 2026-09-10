@@ -36,6 +36,9 @@ import { BookingPage } from './lodging/BookingPage';
 import { BookingsPage } from './lodging/BookingsPage';
 import { HomePage } from './lodging/HomePage';
 import { SearchPage } from './lodging/SearchPage';
+import { NewReimbursementPage } from './reimbursement/NewReimbursementPage';
+import { ReimbursementPage } from './reimbursement/ReimbursementPage';
+import { ReimbursementsPage } from './reimbursement/ReimbursementsPage';
 import { ServicesProvider, type AppServices } from './services';
 
 /**
@@ -185,7 +188,7 @@ function Tabs({ wide }: { wide: boolean }) {
       className={
         wide
           ? 'flex items-center gap-1'
-          : 'bg-surface border-border fixed inset-x-0 bottom-0 z-30 flex border-t pb-[env(safe-area-inset-bottom)]'
+          : 'bg-surface-raised border-line fixed inset-x-0 bottom-0 z-30 flex border-t pb-[env(safe-area-inset-bottom)]'
       }
     >
       <Link to="/" className={tab} activeOptions={{ exact: true }}>
@@ -300,10 +303,33 @@ const bookingRoute = createRoute({
   path: '/bookings/$bookingId',
   component: BookingPage,
 });
+const reimbursementsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/reimbursements',
+  component: ReimbursementsPage,
+});
+const reimbursementNewRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/reimbursements/new',
+  component: NewReimbursementPage,
+});
+const reimbursementRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/reimbursements/$reimbursementId',
+  component: ReimbursementPage,
+});
 const routeTree = rootRoute.addChildren([
   loginRoute,
   tenantRoute,
-  appRoute.addChildren([homeRoute, searchRoute, bookingsRoute, bookingRoute]),
+  appRoute.addChildren([
+    homeRoute,
+    searchRoute,
+    bookingsRoute,
+    bookingRoute,
+    reimbursementsRoute,
+    reimbursementNewRoute,
+    reimbursementRoute,
+  ]),
 ]);
 
 export function createAppRouter(services: AppServices, history?: RouterHistory) {

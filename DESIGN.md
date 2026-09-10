@@ -148,6 +148,10 @@ components:
     borderColor: '{colors.border}'
     rounded: '{rounded.lg}'
     padding: '1rem'
+  figures:
+    textColor: '{colors.fg}'
+    typography: '{typography.body}'
+    width: '24rem'
   tab-bar:
     backgroundColor: '{colors.surface}'
     textColor: '{colors.fg-muted}'
@@ -184,9 +188,10 @@ needs:
 in for hours, on wide screens, with keyboard and tab order that just work.
 
 **Modes:** the backoffice is _Operate_ (dense lists, forms, review). The provider portal
-is _Operate_ with a fast-entry bias. The member app is _Read_ on the home and the booking
-list and _Operate_ on the search-hold-confirm flow; from M6 it is a product rather than a
-placeholder, and its first viewport is a 390px phone.
+is _Operate_ with a fast-entry bias, and from M7 that includes the money it is owed —
+earnings, invoices, icmaller. The member app is _Read_ on the home and the booking list
+and _Operate_ on the search-hold-confirm flow and on the three-step reimbursement; from M6
+it is a product rather than a placeholder, and its first viewport is a 390px phone.
 
 **Anti-references:** the consumer fintech dashboard (big rounded metric cards, pastel
 gradients, celebratory copy); the crowded insurer portal (nested tabs, everything on one
@@ -251,9 +256,9 @@ that container is positioned, so an sr-only header label cannot widen the docume
 Member app: no sidebar. A 56px header carries the wordmark, the tenant badge and the exit;
 the three tabs stand in that header on ≥768px and are a fixed bottom bar below it, inside
 `env(safe-area-inset-bottom)`. Content is padded 16px and capped at `max-w-5xl` on a wide
-screen. At ≥1024px the search and booking screens split into content and a 22rem receipt
-column (`grid-cols-[1fr_22rem]`, the receipt `sticky top-20`); below that the receipt is
-pinned above the tab bar and the list under it is padded clear of it.
+screen. At ≥1024px the search, booking and reimbursement screens split into content and a
+22rem receipt column (`grid-cols-[1fr_22rem]`, the receipt `sticky top-4`/`top-20`); below
+that the receipt is pinned above the tab bar and the list under it is padded clear of it.
 
 Forms: two columns on ≥768px, label above control, hint below, error below hint in
 `danger`, required marked with `*` and an sr-only word. Client validation gives instant
@@ -274,6 +279,23 @@ action beneath it. Money lines are monospace, right-aligned and `tabular-nums`; 
 carry a muted note under its value. It is the same component pinned (phone) and in column
 (desktop), never two.
 
+**The figures block** is the operator's counterpart to the receipt: a `<dl>` capped at
+`max-w-sm` (24rem) on a `[max-content_minmax(0,1fr)]` grid, labels muted in the left
+column, values right-aligned monospace `tabular-nums` in the right. One row is emphasised —
+label `font-medium`, value semibold and a step larger — and it is the row that always
+carries a figure. Under the block sits the sentence "Rakamlar sunucunundur; ekran
+toplamaz." It is what earnings, invoice allocations, the icmal totals, the settlement and
+the reimbursement all use, and it never nests inside a table.
+
+**Status tone is one map, in `@kapsora/api-client`** (`billing-tones.ts`): `invoiceTone`,
+`batchTone`, `decisionTone`, `settlementTone`, `reimbursementTone`, each returning the
+`Badge` tone union. Every app re-exports it rather than writing its own switch, so a
+member and an operator looking at the same record see the same colour.
+
+**A section navigation** is the tab-strip rule applied one level down: the main navigation
+names the section once, `BillingNav` names its three lists as square triggers on a bottom
+line, `aria-[current=page]` colouring the active one `primary`.
+
 **The member tab bar** is three links — Ana sayfa · Ara · Rezervasyonlarım — each a drawn
 20px icon over a 12px label, `aria-current` colouring the active one `primary`. Above 768px
 the same three links are a tab strip in the header, square with a 2px underline, as the tab
@@ -281,7 +303,7 @@ strip rule requires.
 
 ## Patterns settled while building
 
-These were decided against real screens, M2 through M6. They are here so the next screen
+These were decided against real screens, M2 through M7. They are here so the next screen
 does not re-argue them.
 
 **A dense editable set is a table that edits in place.** Price items, entitlement
@@ -517,6 +539,69 @@ member tabs are three 20px SVG paths at 1.6 stroke with round caps, `aria-hidden
 label under each one is the name. A typographic glyph pressed into service as an icon inherits
 the text metrics and the font's own idea of a shape, and it goes wrong in exactly the place —
 a 390px bottom bar — where the icon is doing the most work.
+
+**A block of figures ends on the one figure that is always there.** Hakediş, the invoice's
+allocations, the icmal's totals, the settlement and the reimbursement all read back through
+the same `<dl>`: capped at 24rem so the eye travels a short line, labels in a `max-content`
+column, values right-aligned and monospaced under one another. Exactly one row is
+emphasised — its label `font-medium`, its value semibold and a step larger — and it is the
+row whose figure is always present: faturalanabilir, onaylanan, ödenecek. Where the figure
+is still a dash, as an undecided reimbursement's onaylanan is, the emphasis is not spent on
+it. Under every such block stands "Rakamlar sunucunundur; ekran toplamaz.", because an
+operator who believes the screen is adding will audit the screen instead of the record, and
+every money string on these surfaces came off the wire exactly as it is printed.
+
+**Below 768 every list stacks, and a card that can be acted on carries its own command.**
+The invoice, icmal, settlement and reimbursement lists all become the same card — reference
+and status badge on the first line, the provider or the hak sahibi on the second, the date
+and the money on the third — and the icmal's review table stacks the same way, with the
+decision badge and the approved amount on a line of their own and the reason beneath. Where
+the wide table had a column of buttons, each stacked card carries its own "Fatura kararı".
+One action bar under a list of cards would have to say which card it acts on; the card
+already says it.
+
+**A decision form opens by naming what it decides.** The first line inside the form is
+"KPS2026000053 için karar · 600,00 TRY" — the reference it will change and the amount at
+stake, the amount in monospace. The form is disclosed under a table of rows and the row
+that opened it may already be out of view, so a form headed only "Karar" is a form whose
+subject the operator has to hold in their head while typing a cut into it.
+
+**One status is one colour, wherever it is shown.** The tone for every billing status lives
+in the wire package (`@kapsora/api-client/billing-tones`), and the backoffice, the provider
+portal and the member app import it rather than writing their own switch. A member reading
+"Kısmen onaylandı" in green and an operator reading the same word in amber would be looking
+at two different records as far as either of them can tell, and the map is small enough
+that three copies of it would have drifted by the second status the domain adds.
+
+**The member's three steps fill one receipt.** Talep, Makbuz, Hesap — three cards that
+appear one at a time as the server accepts the one before, a ribbon of numbered pills above
+them saying where the member is, and the receipt beside them collecting what has been agreed
+so far. The receipt is the lodging component unchanged: pinned above the thumb on a phone,
+a 22rem sticky column at ≥1024. The IBAN is typed once, into a field whose hint says it will
+be, and from then on — in the member's own record and on the reviewer's screen alike — it is
+"Hesap •••• 1326". An account number redisplayed in full is an account number read over a
+shoulder, and neither side of this flow needs the other fourteen characters.
+
+**What happened is its own card, and it is called "Ne oldu".** The settlement and the
+reimbursement each end on an ordered list of the moments that produced them — karar, onay,
+karşı imza, ödeme — with the timestamp on the right and the bank's own reference in
+monospace where there is one. It is the sequence rule given a heading: someone opening a
+settled record is asking when, by whom and against which reference, and a card that asks
+the question in its title answers it before they have to look for the answer.
+
+**A lookup the caller's grant cannot answer says "—", not "…" forever.** The name and
+catalogue reads behind these screens retry nothing and settle to null on a refusal, so a
+reviewer without `organization.read`, or without the catalogue grant, sees a dash where the
+provider or the service name would be at the same moment everyone else sees the name. An
+ellipsis that never resolves is worse than an admission of ignorance: it holds the reviewer
+at the screen waiting for a fact their token will never produce.
+
+**The card stays when its button cannot.** While an icmal still has an undecided invoice,
+"İcmali karara bağla" keeps its heading and the sentence naming who may not press it — the
+person who submitted the icmal, and above the threshold the person who gave the last
+decision — and only the button is absent. Absent-not-disabled was never about hiding the
+step: an operator who cannot see that the step exists cannot plan the day around it, and one
+looking at a greyed button cannot find out why it is grey.
 
 ## Motion
 

@@ -71,7 +71,7 @@ export function HomePage() {
                       aria-hidden="true"
                       // A box the height of the first line: the leader sits on the name's baseline
                       // even when the name wraps.
-                      className="border-border h-[1.1em] self-start border-b border-dotted"
+                      className="border-line h-[1.1em] self-start border-b border-dotted"
                     />
                     <dd className="text-right font-mono text-lg font-semibold tabular-nums">
                       {account.definition.unitType === 'MONEY'
@@ -141,6 +141,20 @@ export function HomePage() {
         <Link to="/search" className={BUTTON_LINK} data-testid="home-search">
           {t('lodging.home.search')}
         </Link>
+      ) : null}
+
+      {personId !== null ? (
+        <Card>
+          <h2 className="text-base font-semibold">{t('billing.member.title')}</h2>
+          <p className="text-fg-muted mt-1 text-xs">{t('billing.member.intro')}</p>
+          <Link
+            to="/reimbursements"
+            className="text-primary mt-2 block text-sm underline underline-offset-4"
+            data-testid="home-reimbursements"
+          >
+            {t('billing.member.title')}
+          </Link>
+        </Card>
       ) : null}
     </div>
   );

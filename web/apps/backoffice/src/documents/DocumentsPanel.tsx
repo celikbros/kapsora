@@ -225,7 +225,7 @@ export function DocumentsPanel({
       {canUpload && !readOnly ? (
         <form
           onSubmit={submitUpload}
-          className="border-border grid gap-3 rounded-md border p-3 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end"
+          className="border-line grid gap-3 rounded-md border p-3 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end"
           noValidate
           data-testid="document-upload-form"
         >
@@ -234,7 +234,7 @@ export function DocumentsPanel({
             required
             requiredLabel={t('common.requiredMark')}
           >
-            <label className="bg-surface border-border-strong hover:bg-surface-2 inline-flex h-10 cursor-pointer items-center gap-2 rounded-md border px-3 text-sm">
+            <label className="bg-surface-raised border-line-strong hover:bg-surface-2 inline-flex h-10 cursor-pointer items-center gap-2 rounded-md border px-3 text-sm">
               <span className="font-medium">{t('documents.choose')}</span>
               <span className="text-fg-muted truncate">
                 {file ? file.name : t('documents.noFile')}

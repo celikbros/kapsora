@@ -39,6 +39,12 @@ import { BookingListPage } from './lodging/BookingListPage';
 import { PropertiesPage } from './lodging/PropertiesPage';
 import { PropertyDetailPage } from './lodging/PropertyDetailPage';
 import { WaitlistPage } from './lodging/WaitlistPage';
+import { BatchReviewListPage } from './billing/BatchReviewListPage';
+import { BatchReviewPage } from './billing/BatchReviewPage';
+import { ReimbursementListPage } from './billing/ReimbursementListPage';
+import { ReimbursementPage } from './billing/ReimbursementPage';
+import { SettlementListPage } from './billing/SettlementListPage';
+import { SettlementPage } from './billing/SettlementPage';
 import { ProviderListPage } from './providers/ProviderListPage';
 import { providerListSearch } from './providers/routes';
 import { ImportDetailPage } from './imports/ImportDetailPage';
@@ -214,6 +220,36 @@ const lodgingWaitlistRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/lodging/waitlist',
   component: WaitlistPage,
+});
+const billingBatchesRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/billing/batches',
+  component: BatchReviewListPage,
+});
+const billingBatchRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/billing/batches/$batchId',
+  component: BatchReviewPage,
+});
+const billingSettlementsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/billing/settlements',
+  component: SettlementListPage,
+});
+const billingSettlementRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/billing/settlements/$settlementId',
+  component: SettlementPage,
+});
+const billingReimbursementsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/billing/reimbursements',
+  component: ReimbursementListPage,
+});
+const billingReimbursementRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/billing/reimbursements/$reimbursementId',
+  component: ReimbursementPage,
 });
 const medicalReportsRoute = createRoute({
   getParentRoute: () => appRoute,
@@ -549,6 +585,12 @@ const routeTree = rootRoute.addChildren([
     lodgingBookingsRoute,
     lodgingBookingRoute,
     lodgingWaitlistRoute,
+    billingBatchesRoute,
+    billingBatchRoute,
+    billingSettlementsRoute,
+    billingSettlementRoute,
+    billingReimbursementsRoute,
+    billingReimbursementRoute,
     medicalReportsRoute,
     medicalReportRoute,
     worklistRoute,

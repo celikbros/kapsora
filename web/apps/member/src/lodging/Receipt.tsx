@@ -53,7 +53,7 @@ export function Receipt({
       aria-label={title}
       data-testid="receipt"
       className={cn(
-        'bg-surface border-border rounded-lg border p-4 shadow-[0_-2px_8px_rgba(20,32,46,0.06)]',
+        'bg-surface-raised border-line rounded-lg border p-4 shadow-[0_-2px_8px_rgba(20,32,46,0.06)]',
         pinned && 'sticky bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-20',
         className,
       )}
@@ -84,7 +84,7 @@ export function Receipt({
       {total ? (
         <div
           className={cn(
-            'border-border mt-3 grid grid-cols-[auto_1fr] items-baseline gap-x-3 border-t pt-3',
+            'border-line mt-3 grid grid-cols-[auto_1fr] items-baseline gap-x-3 border-t pt-3',
             settling && 'receipt-line',
           )}
         >

@@ -14,6 +14,7 @@ import { MembershipsTab } from './MembershipsTab';
 import { AccessLogTab } from './AccessLogTab';
 import { HealthTab } from './HealthTab';
 import { LodgingTab } from './LodgingTab';
+import { ReimbursementsTab } from './ReimbursementsTab';
 import { usePerson } from './queries';
 
 /** One member with everything hanging off them, one tab per concern. */
@@ -145,6 +146,11 @@ export function PersonDetailPage() {
             label: t('people.tabs.lodging'),
             visible: canReadLodging,
             content: <LodgingTab personId={personId} />,
+          },
+          {
+            value: 'reimbursements',
+            label: t('people.tabs.reimbursements'),
+            content: <ReimbursementsTab personId={personId} />,
           },
           {
             value: 'accessLog',

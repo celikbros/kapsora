@@ -42,7 +42,7 @@ export function BookingsPage() {
               <Link
                 to="/bookings/$bookingId"
                 params={{ bookingId: b.id }}
-                className="bg-surface border-border block rounded-lg border p-3"
+                className="bg-surface-raised border-line block rounded-lg border p-3"
                 data-testid="booking-row"
               >
                 <span className="flex items-baseline justify-between gap-3">
@@ -79,7 +79,7 @@ export function BookingsPage() {
         ) : (
           <ul className="grid gap-2" data-testid="waitlist-list">
             {entries.map((e) => (
-              <li key={e.id} className="bg-surface border-border rounded-lg border p-3">
+              <li key={e.id} className="bg-surface-raised border-line rounded-lg border p-3">
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="text-sm font-medium">{names.get(e.propertyId) ?? '…'}</span>
                   <Badge tone={e.status === 'OFFERED' ? 'success' : 'neutral'}>

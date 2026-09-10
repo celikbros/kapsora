@@ -797,7 +797,7 @@ export function RequestDetailPage() {
       {request.status === 'REJECTED' ? (
         <section
           aria-labelledby="request-rejected"
-          className="bg-surface-2 border-border-strong mb-4 rounded-md border p-4 text-sm"
+          className="bg-surface-2 border-line-strong mb-4 rounded-md border p-4 text-sm"
           data-testid="rejected-panel"
         >
           <h2 id="request-rejected" className="font-semibold">
@@ -893,7 +893,7 @@ export function RequestDetailPage() {
           ) : (
             <VersionsList versions={versions.data ?? []} />
           )}
-          <div className="border-border mt-4 border-t pt-3 text-sm" data-testid="request-decision">
+          <div className="border-line mt-4 border-t pt-3 text-sm" data-testid="request-decision">
             <h3 className="font-medium">{t('requests.decision.title')}</h3>
             <p className="mt-1">{t(`requests.decision.${decided ? request.status : 'none'}`)}</p>
             {request.rejectReasonCode ? (

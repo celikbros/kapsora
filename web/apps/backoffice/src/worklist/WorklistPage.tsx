@@ -221,7 +221,7 @@ export function WorklistPage() {
       <PageHeader title={t('worklist.title')} description={t('worklist.intro')} />
 
       <div className="mb-4 flex flex-wrap items-end gap-3">
-        <nav aria-label={t('worklist.title')} className="border-border flex border-b">
+        <nav aria-label={t('worklist.title')} className="border-line flex border-b">
           {VIEWS.map((v) => (
             <button
               key={v}

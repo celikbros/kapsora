@@ -96,7 +96,7 @@ export function MemberPicker({
       ) : people.data && people.data.items.length > 0 ? (
         <ul
           data-testid="member-candidates"
-          className="border-border divide-border max-h-56 divide-y overflow-auto rounded-md border text-sm"
+          className="border-line divide-border max-h-56 divide-y overflow-auto rounded-md border text-sm"
         >
           {people.data.items.map((p) => (
             <li key={p.id}>

@@ -86,7 +86,7 @@ export function BookingListPage() {
           {bookings.data.items.map((b) => (
             <li
               key={b.id}
-              className="bg-surface border-border rounded-lg border p-3"
+              className="bg-surface-raised border-line rounded-lg border p-3"
               data-testid="booking-row"
             >
               <div className="flex items-baseline justify-between gap-3">
