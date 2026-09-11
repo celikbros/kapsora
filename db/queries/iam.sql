@@ -68,6 +68,12 @@ INSERT INTO iam.role_permission (tenant_id, role_id, permission_code)
 VALUES ($1, $2, $3)
 ON CONFLICT DO NOTHING;
 
+-- name: AddRolePermissionCounted :execrows
+-- AddRolePermission, reporting whether a row was written (1) or was already there (0).
+INSERT INTO iam.role_permission (tenant_id, role_id, permission_code)
+VALUES ($1, $2, $3)
+ON CONFLICT DO NOTHING;
+
 -- name: GetRoleByCode :one
 SELECT id, code, name, is_system_role FROM iam.role WHERE tenant_id = $1 AND code = $2;
 

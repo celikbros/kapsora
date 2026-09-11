@@ -237,6 +237,16 @@ func (s *seeder) ensureTenant(ctx context.Context, code, legalName, displayName 
 		return uuid.Nil, fmt.Errorf("look up tenant %s: %w", code, err)
 	}
 	fmt.Printf("tenant  %-22s exists (%s)\n", code, id)
+	// A tenant provisioned by an earlier seed has the roles the templates had then. The
+	// grants below name roles and lean on permissions added since, so bring it up to date
+	// first; on a tenant already in step this writes nothing.
+	res, err := s.provisioner.SyncSystemRoles(ctx, id)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("sync roles of %s: %w", code, err)
+	}
+	if res.Changed() {
+		fmt.Printf("roles   %-22s %d created %v, %d permissions added\n", code, len(res.RolesCreated), res.RolesCreated, res.PermissionsAdded)
+	}
 	return id, nil
 }
 

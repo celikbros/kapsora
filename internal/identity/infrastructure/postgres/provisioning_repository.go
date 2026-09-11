@@ -207,3 +207,41 @@ func (r *ProvisioningRepository) EnsureProviderOrganization(ctx context.Context,
 	})
 	return id, err
 }
+
+// SyncSystemRoles implements application.ProvisioningRepository. It is ProvisionTenant's role
+// step for a tenant that already exists: every template role the tenant lacks is created,
+// and every template permission a role lacks is added. It only adds. A permission a template
+// no longer lists stays on the role until somebody takes it off, because removing access
+// from a running tenant is a decision for a person and not a side effect of an upgrade.
+func (r *ProvisioningRepository) SyncSystemRoles(ctx context.Context, tenantID uuid.UUID, roles []application.RoleTemplate) (application.RoleSyncResult, error) {
+	var res application.RoleSyncResult
+	err := db.WithTenantTx(ctx, r.pool, db.TenantContext{TenantID: tenantID}, func(ctx context.Context, tx pgx.Tx) error {
+		q := sqlcgen.New(tx)
+		for _, tpl := range roles {
+			_, err := q.GetRoleByCode(ctx, sqlcgen.GetRoleByCodeParams{TenantID: tenantID, Code: tpl.Code})
+			switch {
+			case errors.Is(err, pgx.ErrNoRows):
+				res.RolesCreated = append(res.RolesCreated, tpl.Code)
+			case err != nil:
+				return fmt.Errorf("identity: find role %s: %w", tpl.Code, err)
+			}
+			desc := tpl.Description
+			roleID, err := q.CreateRole(ctx, sqlcgen.CreateRoleParams{TenantID: tenantID, Code: tpl.Code, Name: tpl.Name, Description: &desc, IsSystemRole: true})
+			if err != nil {
+				return fmt.Errorf("identity: create role %s: %w", tpl.Code, err)
+			}
+			for _, perm := range tpl.Permissions {
+				n, err := q.AddRolePermissionCounted(ctx, sqlcgen.AddRolePermissionCountedParams{TenantID: tenantID, RoleID: roleID, PermissionCode: perm})
+				if err != nil {
+					return fmt.Errorf("identity: role %s permission %s: %w", tpl.Code, perm, err)
+				}
+				res.PermissionsAdded += int(n)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return application.RoleSyncResult{}, err
+	}
+	return res, nil
+}

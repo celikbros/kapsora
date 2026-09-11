@@ -37,6 +37,27 @@ func (q *Queries) AddRolePermission(ctx context.Context, arg AddRolePermissionPa
 	return err
 }
 
+const addRolePermissionCounted = `-- name: AddRolePermissionCounted :execrows
+INSERT INTO iam.role_permission (tenant_id, role_id, permission_code)
+VALUES ($1, $2, $3)
+ON CONFLICT DO NOTHING
+`
+
+type AddRolePermissionCountedParams struct {
+	TenantID       uuid.UUID
+	RoleID         uuid.UUID
+	PermissionCode string
+}
+
+// AddRolePermission, reporting whether a row was written (1) or was already there (0).
+func (q *Queries) AddRolePermissionCounted(ctx context.Context, arg AddRolePermissionCountedParams) (int64, error) {
+	result, err := q.db.Exec(ctx, addRolePermissionCounted, arg.TenantID, arg.RoleID, arg.PermissionCode)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const createAccessGrant = `-- name: CreateAccessGrant :one
 INSERT INTO iam.access_grant (tenant_id, tenant_membership_id, role_id, scope_type, scope_id, granted_by, grant_reason)
 VALUES ($1, $2, $3, $4, $5, $6, $7)

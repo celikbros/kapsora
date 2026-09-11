@@ -122,6 +122,44 @@ type ProvisioningRepository interface {
 	// reaches the identity module.
 	EnsureOrganizationTaxIdentity(ctx context.Context, tenantID, relationshipID uuid.UUID,
 		cipher, hash []byte) (bool, error)
+	// SyncSystemRoles gives a tenant that already exists the template roles and permissions
+	// it was provisioned before. It only adds; see RoleSyncResult.
+	SyncSystemRoles(ctx context.Context, tenantID uuid.UUID, roles []RoleTemplate) (RoleSyncResult, error)
+}
+
+// RoleSyncResult is what SyncSystemRoles changed: the role codes it created and how many
+// role permissions it added. Both are zero on a tenant already in step with RoleTemplates.
+type RoleSyncResult struct {
+	RolesCreated     []string
+	PermissionsAdded int
+}
+
+// Changed reports whether the sync wrote anything.
+func (r RoleSyncResult) Changed() bool { return len(r.RolesCreated) > 0 || r.PermissionsAdded > 0 }
+
+// SyncSystemRoles brings an existing tenant's system roles up to RoleTemplates.
+//
+// Roles are written into a tenant once, when it is provisioned, so a role or a permission
+// added to the templates afterwards never reached the tenants that already existed: the
+// demo tenant had no SPONSOR_HR, and its older roles lacked every permission a later
+// increment gave them. This is the step that closes that gap. It is additive and
+// idempotent -- a second run writes nothing -- and it is audited only when it changed
+// something.
+func (p *Provisioner) SyncSystemRoles(ctx context.Context, tenantID uuid.UUID) (RoleSyncResult, error) {
+	res, err := p.repo.SyncSystemRoles(ctx, tenantID, RoleTemplates())
+	if err != nil {
+		return RoleSyncResult{}, err
+	}
+	if res.Changed() {
+		_ = p.audit(ctx, audit.Event{
+			TenantID:   nullUUID(tenantID),
+			Category:   audit.CategoryAdmin,
+			ActionCode: "tenant.roles.sync",
+			Outcome:    audit.OutcomeSuccess,
+			Detail:     map[string]any{"roles_created": res.RolesCreated, "permissions_added": res.PermissionsAdded},
+		})
+	}
+	return res, nil
 }
 
 // Provisioner creates tenants and issues role grants.

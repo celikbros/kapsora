@@ -213,15 +213,21 @@ func run() error {
 	// twice.
 	dispatcher.Handle(notificationapp.NotifyRequestedEvent, notifications.HandleNotifyRequested)
 	dispatcher.Handle(notificationapp.SendRequestedEvent, notifications.HandleSendRequested)
-	// A decided service request. Most of them are not admissions and this handler quietly
-	// recognises none of its own in them; the ones that are move the stay to AUTHORIZED with
-	// a hold taken for the days the reviewer actually approved, or to REJECTED with none.
-	// It is idempotent by predicate rather than by flag, so a redelivery finds nothing left
-	// to do rather than reserving the same entitlement twice.
-	dispatcher.Handle(servicerequestapp.DecidedEvent, stays.HandleServiceRequestDecided)
-	// The same event, the other subscriber: an approved RESERVATION request turns its hold
-	// into a confirmed stay, and a refused one gives the room and the nights back.
-	dispatcher.Handle(servicerequestapp.DecidedEvent, bookings.HandleServiceRequestDecided)
+	// A decided service request has two subscribers, and the dispatcher holds one handler per
+	// event, so both go in under one name through outbox.All: each runs whatever the other
+	// returned, and a retry runs both again.
+	//
+	// The first is the admission. Most requests are not admissions and it quietly recognises
+	// none of its own in them; the ones that are move the stay to AUTHORIZED with a hold taken
+	// for the days the reviewer actually approved, or to REJECTED with none. The second is the
+	// booking: an approved RESERVATION request turns its hold into a confirmed stay, and a
+	// refused one gives the room and the nights back. Both are idempotent by predicate rather
+	// than by flag — which All requires — so a redelivery finds nothing left to do rather
+	// than reserving the same entitlement twice.
+	dispatcher.Handle(servicerequestapp.DecidedEvent, outbox.All(
+		stays.HandleServiceRequestDecided,
+		bookings.HandleServiceRequestDecided,
+	))
 	// A stay that ended. Each of the three is a claim the provider may invoice, and each is
 	// raised here rather than inside the command that ended the stay: a desk clerk closing a
 	// stay at eleven at night must not be told that the billing side is down.
