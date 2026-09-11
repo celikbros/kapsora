@@ -12,6 +12,9 @@ Makefile text eol=lf
 
 # Windows-only helper keeps CRLF so PowerShell 5.1 parses it predictably.
 *.ps1  text eol=crlf
+# Batch files keep CRLF too: cmd.exe misreads labels and goto in an LF-only file.
+*.cmd  text eol=crlf
+*.bat  text eol=crlf
 
 # Binary baseline documents
 *.docx binary
