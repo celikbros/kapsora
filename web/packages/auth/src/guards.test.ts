@@ -3,6 +3,7 @@ import { createMockServer } from '@kapsora/api-client/mocks/node';
 import { isRedirect } from '@tanstack/react-router';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import {
+  NOT_FOR_APP_PATH,
   hasPermission,
   redirectIfAuthenticated,
   requireAuthenticated,
@@ -94,5 +95,44 @@ describe('guards', () => {
     expect(safeReturnTo('https://evil.example')).toBe('/');
     expect(safeReturnTo('/auth/login')).toBe('/');
     expect(safeReturnTo(undefined, '/home')).toBe('/home');
+  });
+
+  it('admits an account only where it has work, and says so where it has none', async () => {
+    const store = makeStore();
+    await store.login('provider.a', 'demo parola 2026 kapsora');
+    expect((await requireTenant(store, { pathname: '/' }, 'provider')).activeTenant).not.toBeNull();
+    const r = await redirectOf(requireTenant(store, { pathname: '/claims' }, 'backoffice'));
+    expect(r?.to).toBe(NOT_FOR_APP_PATH);
+    expect(r?.search).toEqual({});
+    expect((await redirectOf(requireTenant(store, { pathname: '/' }, 'member')))?.to).toBe(
+      NOT_FOR_APP_PATH,
+    );
+  });
+
+  it('sends a staff account away from the member app and a member away from the backoffice', async () => {
+    const staff = makeStore();
+    await staff.login('admin.a', 'demo parola 2026 kapsora');
+    expect((await redirectOf(requireTenant(staff, { pathname: '/' }, 'member')))?.to).toBe(
+      NOT_FOR_APP_PATH,
+    );
+    expect(
+      (await requireTenant(staff, { pathname: '/' }, 'backoffice')).activeTenant,
+    ).not.toBeNull();
+
+    const member = makeStore();
+    await member.login('member.a', 'demo parola 2026 kapsora');
+    expect(
+      (await requireTenant(member, { pathname: '/' }, 'member')).activeTenant?.personId,
+    ).toBeTruthy();
+    expect((await redirectOf(requireTenant(member, { pathname: '/' }, 'backoffice')))?.to).toBe(
+      NOT_FOR_APP_PATH,
+    );
+  });
+
+  it('still sends a multi-tenant staff account to the picker in the backoffice', async () => {
+    const store = makeStore();
+    await store.login('both.ab', 'demo parola 2026 kapsora');
+    const r = await redirectOf(requireTenant(store, { pathname: '/organizations' }, 'backoffice'));
+    expect(r?.to).toBe('/auth/tenant');
   });
 });

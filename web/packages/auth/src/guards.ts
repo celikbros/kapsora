@@ -3,11 +3,14 @@
  * a protected screen never mounts for an anonymous user.
  */
 import { redirect } from '@tanstack/react-router';
+import { fitsApp, type KapsoraApp } from './apps';
 import type { SessionState, SessionStore } from './store';
 
 export const LOGIN_PATH = '/auth/login';
 export const TENANT_PICKER_PATH = '/auth/tenant';
 export const PASSWORD_PATH = '/auth/password';
+/** Where an account with no work in this app is told which app it is for. */
+export const NOT_FOR_APP_PATH = '/auth/not-for-app';
 
 /** The part of the router location the guards need. */
 export interface GuardLocation {
@@ -51,14 +54,26 @@ export async function requireAuthenticated(
 /**
  * Signed in with an active tenant. One membership is selected automatically; several
  * memberships send the user to the picker; none shows the "no tenants" page.
+ *
+ * Given the app, only the tenants the account has work in there count (see apps.ts): an
+ * active tenant it does not fit is set aside rather than trusted, one fitting tenant is
+ * chosen for it, several go to the picker, and none sends it to the page that says which
+ * app the account is for. The server narrows every call by the grants anyway; this is the
+ * part that tells the person instead of showing them screens that all refuse.
  */
 export async function requireTenant(
   store: SessionStore,
   location: GuardLocation,
+  app?: KapsoraApp,
 ): Promise<SessionState> {
   const state = await requireAuthenticated(store, location);
-  if (state.activeTenant) return state;
-  const tenants = state.me!.tenants.filter((t) => t.tenant.status === 'ACTIVE');
+  if (state.activeTenant && (!app || fitsApp(state.activeTenant, app))) return state;
+  const tenants = state.me!.tenants.filter(
+    (t) => t.tenant.status === 'ACTIVE' && (!app || fitsApp(t, app)),
+  );
+  if (app && tenants.length === 0) {
+    redirectTo(NOT_FOR_APP_PATH);
+  }
   if (tenants.length === 1) {
     await store.switchTenant(tenants[0]!.tenant.id);
     return store.getState();

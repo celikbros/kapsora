@@ -17,6 +17,8 @@ export { PasswordInput } from './PasswordInput';
 export type { PasswordInputProps } from './PasswordInput';
 export { DemoAccounts } from './DemoAccounts';
 export type { DemoAccount } from './DemoAccounts';
+export { NotForThisApp } from './NotForThisApp';
+export type { AppKind, NotForThisAppProps } from './NotForThisApp';
 export { AppShell, Breadcrumb, Card, PageHeader } from './PageShell';
 export type { AppShellProps, BreadcrumbItem, PageHeaderProps } from './PageShell';
 export { ProblemAlert } from './ProblemAlert';

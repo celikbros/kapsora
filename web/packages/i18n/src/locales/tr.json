@@ -64,7 +64,17 @@
     "hidePassword": "Gizle",
     "demoTitle": "Demo hesapları",
     "demoIntro": "Bu kurulum örnek verilerle çalışıyor. Bir hesaba dokunun, o hesapla girilir.",
-    "demoSignInAs": "{{name}} olarak gir"
+    "demoSignInAs": "{{name}} olarak gir",
+    "notForAppTitle": "Hesabınızın bu uygulamada bir görevi yok",
+    "notForAppBody": "Giriş başarılı, ancak hesabınıza bu uygulamada bir görev tanımlanmamış. Burada size ait bir kayıt gösterilmez.",
+    "notForAppFits": "Hesabınızla şunları kullanabilirsiniz:",
+    "notForAppNone": "Hesabınıza henüz hiçbir uygulamada görev tanımlanmamış. Yöneticinizle görüşün.",
+    "notForAppSignOut": "Başka bir hesapla giriş yap",
+    "apps": {
+      "backoffice": "Yönetim paneli",
+      "provider": "Sağlayıcı portalı",
+      "member": "Üye uygulaması"
+    }
   },
   "header": {
     "userMenu": "Kullanıcı menüsü",

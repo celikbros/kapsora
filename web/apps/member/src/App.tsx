@@ -1,5 +1,7 @@
 import {
   SessionProvider,
+  fitsApp,
+  requireAuthenticated,
   requireTenant,
   safeReturnTo,
   tenantColor,
@@ -43,6 +45,7 @@ import { NewReimbursementPage } from './reimbursement/NewReimbursementPage';
 import { ReimbursementPage } from './reimbursement/ReimbursementPage';
 import { ReimbursementsPage } from './reimbursement/ReimbursementsPage';
 import { ServicesProvider, type AppServices } from './services';
+import { NotForAppPage } from './NotForAppPage';
 
 /**
  * Member PWA shell (mobile-first): routing, session bootstrap, the tenant header and the
@@ -161,21 +164,23 @@ function TenantPage() {
       <Card className="w-full max-w-md">
         <h1 className="text-xl font-semibold">{t('auth.tenantPickerTitle')}</h1>
         <ul className="mt-4 grid gap-2">
-          {(me?.tenants ?? []).map((ctx) => (
-            <li key={ctx.tenant.id} className="flex items-center gap-3">
-              <span className="flex-1">{ctx.tenant.displayName}</span>
-              <Button
-                size="sm"
-                onClick={() =>
-                  void store
-                    .switchTenant(ctx.tenant.id)
-                    .then(() => navigate({ href: safeReturnTo(search.returnTo, '/') }))
-                }
-              >
-                {t('auth.tenantSelect')}
-              </Button>
-            </li>
-          ))}
+          {(me?.tenants ?? [])
+            .filter((ctx) => fitsApp(ctx, 'member'))
+            .map((ctx) => (
+              <li key={ctx.tenant.id} className="flex items-center gap-3">
+                <span className="flex-1">{ctx.tenant.displayName}</span>
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    void store
+                      .switchTenant(ctx.tenant.id)
+                      .then(() => navigate({ href: safeReturnTo(search.returnTo, '/') }))
+                  }
+                >
+                  {t('auth.tenantSelect')}
+                </Button>
+              </li>
+            ))}
         </ul>
       </Card>
     </main>
@@ -303,14 +308,28 @@ const tenantRoute = createRoute({
   validateSearch: returnToSearch,
   component: TenantPage,
 });
+const notForAppRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/auth/not-for-app',
+  beforeLoad: ({ context, location }) =>
+    requireAuthenticated(context.services.store, {
+      pathname: location.pathname,
+      searchStr: location.searchStr,
+    }),
+  component: NotForAppPage,
+});
 const appRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: 'app',
   beforeLoad: ({ context, location }) =>
-    requireTenant(context.services.store, {
-      pathname: location.pathname,
-      searchStr: location.searchStr,
-    }),
+    requireTenant(
+      context.services.store,
+      {
+        pathname: location.pathname,
+        searchStr: location.searchStr,
+      },
+      'member',
+    ),
   component: Shell,
 });
 const homeRoute = createRoute({ getParentRoute: () => appRoute, path: '/', component: HomePage });
@@ -347,6 +366,7 @@ const reimbursementRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   loginRoute,
   tenantRoute,
+  notForAppRoute,
   appRoute.addChildren([
     homeRoute,
     searchRoute,

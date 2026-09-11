@@ -59,7 +59,17 @@
     "hidePassword": "Hide",
     "demoTitle": "Demo accounts",
     "demoIntro": "This setup runs on sample data. Choose an account to sign in as it.",
-    "demoSignInAs": "Sign in as {{name}}"
+    "demoSignInAs": "Sign in as {{name}}",
+    "notForAppTitle": "Your account has no work in this app",
+    "notForAppBody": "You are signed in, but your account has no role in this app. Nothing of yours is shown here.",
+    "notForAppFits": "Your account can use:",
+    "notForAppNone": "Your account has no role in any app yet. Contact your administrator.",
+    "notForAppSignOut": "Sign in with another account",
+    "apps": {
+      "backoffice": "backoffice",
+      "provider": "provider portal",
+      "member": "member app"
+    }
   },
   "header": {
     "userMenu": "User menu",

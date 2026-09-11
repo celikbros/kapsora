@@ -72,6 +72,7 @@ import { PersonListPage, type PersonListSearch } from './people/PersonListPage';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { LogoutPage } from './pages/LogoutPage';
+import { NotForAppPage } from './pages/NotForAppPage';
 import { PasswordPage } from './pages/PasswordPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { SoonPage } from './pages/SoonPage';
@@ -126,15 +127,31 @@ const passwordRoute = createRoute({
   component: PasswordPage,
 });
 
+/** An account with no work in the backoffice is told which app it is for. */
+const notForAppRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/auth/not-for-app',
+  beforeLoad: ({ context, location }) =>
+    requireAuthenticated(context.services.store, {
+      pathname: location.pathname,
+      searchStr: location.searchStr,
+    }),
+  component: NotForAppPage,
+});
+
 /** Everything under the shell needs a session and an active tenant. */
 const appRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: 'app',
   beforeLoad: ({ context, location }) =>
-    requireTenant(context.services.store, {
-      pathname: location.pathname,
-      searchStr: location.searchStr,
-    }),
+    requireTenant(
+      context.services.store,
+      {
+        pathname: location.pathname,
+        searchStr: location.searchStr,
+      },
+      'backoffice',
+    ),
   component: AppLayout,
 });
 
@@ -563,6 +580,7 @@ const routeTree = rootRoute.addChildren([
   logoutRoute,
   tenantRoute,
   passwordRoute,
+  notForAppRoute,
   appRoute.addChildren([
     homeRoute,
     profileRoute,

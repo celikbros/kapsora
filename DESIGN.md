@@ -668,6 +668,15 @@ reimbursement list alike — and so does an ERP total that has not arrived. A ze
 decision: printed for an undecided line it tells a provider their invoice was refused. Where
 the server sends a real zero, the zero is printed.
 
+**An account meets only the apps it has work in.** Each app admits a tenant context by how the
+server places it: bound to a person is the member app, an ORGANIZATION grant is the provider
+portal, neither with permissions is the backoffice. The tenant picker lists only the tenants
+that fit the app. An account with no fitting tenant lands on one card — "Hesabınızın bu
+uygulamada bir görevi yok" — that names, as a plain list, the apps it can use (or says it has
+none) and offers one secondary action, signing in as somebody else. Nothing of the app renders
+behind it: no shell, no sidebar, no data. The server still narrows every call; the card is the
+sentence the refusals would otherwise leave unsaid.
+
 ## Motion
 
 Toasts slide up 160ms ease-out. The member surface adds the system's one authored moment:

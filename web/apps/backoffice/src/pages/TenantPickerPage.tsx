@@ -1,5 +1,5 @@
 import type { ApiError } from '@kapsora/api-client';
-import { safeReturnTo, tenantColor, useSession, useSessionStore } from '@kapsora/auth';
+import { fitsApp, safeReturnTo, tenantColor, useSession, useSessionStore } from '@kapsora/auth';
 import { useTranslation } from '@kapsora/i18n';
 import { Badge, Button, Card, EmptyState, ProblemAlert, statusTone } from '@kapsora/ui';
 import { useNavigate, useSearch } from '@tanstack/react-router';
@@ -17,7 +17,8 @@ export function TenantPickerPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [problem, setProblem] = useState<ApiError['problem'] | null>(null);
 
-  const tenants = me?.tenants ?? [];
+  // Only the tenants this account has backoffice work in; the rest belong to another app.
+  const tenants = (me?.tenants ?? []).filter((ctx) => fitsApp(ctx, 'backoffice'));
 
   async function choose(tenantId: string) {
     setBusy(tenantId);
