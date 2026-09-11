@@ -106,8 +106,16 @@ nginx -t && systemctl reload nginx
 Caddy tercih ediliyorsa `deploy/caddy/Caddyfile` → `/etc/caddy/Caddyfile`, alan adını
 değiştirip `systemctl reload caddy`; sertifikayı Caddy kendisi alır.
 
+Üç uygulama tek alan adında yayınlanır: yönetim paneli `/`, sağlayıcı portalı `/portal/`, üye
+uygulaması `/uye/`. Tek alan adı tek oturum çerezi demektir; kişi hangisinden girerse girsin,
+hesabının görevli olduğu uygulamaya yeniden parola sormadan geçer (tek giriş). Derlemeler bu
+yollara göre üretilir (`VITE_BASE_PATH` ile değiştirilebilir); uygulamaları ayrı alan adlarına
+koymak tek girişi bozar, çünkü oturum çerezi tek bir alan adına bağlıdır.
+
 ## 7. Doğrulama
 
+- `https://<alan adı>/portal/` ve `https://<alan adı>/uye/` kendi giriş ekranlarını açar; bir
+  sağlayıcı hesabıyla `/` üzerinden girildiğinde `/portal/`a geçilir.
 - `https://<alan adı>/` backoffice giriş ekranı; `https://<alan adı>/health/ready` dışarıdan
   404 (yalnız localhost).
 - Giriş → tenant → Kurumlar listesi; `journalctl -u kapsora-api -f` içinde `request_id`

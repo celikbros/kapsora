@@ -518,7 +518,13 @@ const routeTree = rootRoute.addChildren([
 ]);
 
 export function createAppRouter(services: AppServices, history?: RouterHistory) {
-  return createRouter({ routeTree, context: { services }, ...(history ? { history } : {}) });
+  // BASE_URL is / on the development server and the deployed path in a build (vite.config.ts).
+  return createRouter({
+    routeTree,
+    basepath: import.meta.env.BASE_URL,
+    context: { services },
+    ...(history ? { history } : {}),
+  });
 }
 
 declare module '@tanstack/react-router' {

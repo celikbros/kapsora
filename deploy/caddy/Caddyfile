@@ -41,6 +41,26 @@ kapsora.example.com {
 		}
 	}
 
+	# The provider portal and the member app on the same origin as the backoffice: one origin is
+	# one session cookie, so signing in once signs in everywhere (the single sign-in). handle_path
+	# strips the prefix, so each app's dist/ is served as it was built (base /portal/, /uye/).
+	handle_path /portal/* {
+		root * /opt/kapsora/web/provider
+		@assets path /assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+		header Cache-Control "no-store"
+		try_files {path} /index.html
+		file_server
+	}
+	handle_path /uye/* {
+		root * /opt/kapsora/web/member
+		@assets path /assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+		header Cache-Control "no-store"
+		try_files {path} /index.html
+		file_server
+	}
+
 	# Static backoffice build (pnpm build → web/apps/backoffice/dist).
 	handle {
 		root * /opt/kapsora/web/backoffice

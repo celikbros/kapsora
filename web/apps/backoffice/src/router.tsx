@@ -647,6 +647,7 @@ const routeTree = rootRoute.addChildren([
 
 export function createAppRouter(services: AppServices, history?: RouterHistory) {
   return createRouter({
+    basepath: import.meta.env.BASE_URL,
     routeTree,
     context: { services },
     defaultPreload: false,
