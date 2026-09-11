@@ -3,7 +3,7 @@ import { formatMoney, initI18n } from '@kapsora/i18n';
 import { createMemoryHistory } from '@tanstack/react-router';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { createServices } from './services';
 
@@ -107,5 +107,56 @@ describe('the icmal', () => {
     const rows = within(await screen.findByTestId('decision-table')).getAllByTestId('decision-row');
     expect(rows.length).toBe(members.length);
     expect(rows[0]).toHaveTextContent('Karar bekliyor');
+  });
+});
+
+describe('cari ekstre', () => {
+  it('shows the period totals the server computed and the invoices behind them', async () => {
+    const { services } = mount('/billing/statement');
+    await login();
+    fireEvent.change(await screen.findByLabelText(/^Dönem başı/), {
+      target: { value: '2026-01-01' },
+    });
+    const totals = await screen.findByTestId('statement-totals');
+    const tenantId = services.store.getState().activeTenant!.tenant.id;
+    const statement = await services.ops.report.statement(tenantId, providerId(), {
+      periodFrom: '2026-01-01',
+      periodTo: new Date().toISOString().slice(0, 10),
+    });
+    expect(within(totals).getByTestId('total-invoiced')).toHaveTextContent(
+      formatMoney(statement.totals.invoicedTotal, statement.currencyCode),
+    );
+    expect(within(totals).getByTestId('total-open')).toHaveTextContent(
+      formatMoney(statement.totals.openBalance, statement.currencyCode),
+    );
+    const rows = within(screen.getByTestId('statement-invoices')).getAllByTestId(
+      'statement-invoice',
+    );
+    expect(rows.length).toBe(statement.invoices.length);
+  });
+});
+
+describe('the statement as a file', () => {
+  it('queues the statement of the provider, shows it ready, and downloads it with the watermark', async () => {
+    const opened = vi.fn();
+    window.open = opened as unknown as typeof window.open;
+    mount('/billing/statement');
+    const user = await login();
+    await user.click(await screen.findByTestId('statement-export-request'));
+    await waitFor(() =>
+      expect(screen.getByTestId('statement-export-status')).toHaveTextContent('Hazır'),
+    );
+    const created = api.world.exports.find(
+      (x) =>
+        x.kind === 'PROVIDER_STATEMENT' &&
+        x.downloadCount === 0 &&
+        x.providerOrganizationId === providerId(),
+    )!;
+    expect(created).toBeDefined();
+    await user.click(screen.getByTestId('statement-export-download'));
+    await waitFor(() => expect(opened).toHaveBeenCalledTimes(1));
+    expect(await screen.findByTestId('statement-export-watermark')).toHaveTextContent(
+      'Burak Faturalama',
+    );
   });
 });

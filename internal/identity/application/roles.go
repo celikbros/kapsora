@@ -125,10 +125,11 @@ func RoleTemplates() []RoleTemplate {
 				"invoice.read", "invoice.manage", "batch.create",
 				"batch.submit", "settlement.read", "fiscal.edocument.read", "document.read",
 				// WP-I7-05 §2.2: the provider reads its own cari ekstre -- what it billed, what the
-				// payer decided, what was settled and what is still open. It is `report.read` and
-				// deliberately not `report.export`: the figures are the provider's own to look at,
-				// and a file leaving the payer's tenant is the payer's decision.
-				"report.read",
+				// payer decided, what was settled and what is still open -- and, per WP-I7-06
+				// §2.1.4, exports it. The export is scoped to the caller's organization by the
+				// service, watermarked and audited per download; `report.export.sensitive` stays
+				// off, so the claims file with its line descriptions is never the provider's.
+				"report.read", "report.export",
 				"document.link"}},
 		// accommodation.property.read is the grant migration 000040 adds, and it is held by
 		// the four roles that have a reason to look at a hotel: the member who will stay in

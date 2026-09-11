@@ -26,7 +26,13 @@ import { useState, type FormEvent } from 'react';
 
 import { problemOf } from '../problems';
 import { BillingNav } from './BillingNav';
-import { useBatch, useBatchSummary, useDecideBatch, useReviewBatchInvoice } from './queries';
+import {
+  useBatch,
+  useBatchSummary,
+  useDecideBatch,
+  useInvoice,
+  useReviewBatchInvoice,
+} from './queries';
 import { batchTone, decisionTone, invoiceTone } from './status';
 
 const CUT_REASONS = [
@@ -451,6 +457,7 @@ function DecisionForm({
           {formatMoney(invoice.submittedAmount, invoice.currencyCode)}
         </span>
       </p>
+      <InvoiceClaims invoiceId={invoice.invoiceId} currency={invoice.currencyCode} />
       <FormField
         label={t('billing.office.decide')}
         required
@@ -532,5 +539,55 @@ function DecisionForm({
         </div>
       </div>
     </form>
+  );
+}
+
+/**
+ * The claims the invoice carries, each opening the claim itself — which answers with the
+ * projection the reader holds, so a financial reviewer sees the lines and the sponsor's HR
+ * never sees a line description.
+ */
+function InvoiceClaims({ invoiceId, currency }: { invoiceId: string; currency: string }) {
+  const { t } = useTranslation();
+  const invoice = useInvoice(invoiceId);
+  if (invoice.isPending) {
+    return (
+      <p className="text-fg-muted flex items-center gap-2 text-sm md:col-span-4" aria-busy="true">
+        <Spinner /> {t('billing.report.claimsLoading')}
+      </p>
+    );
+  }
+  if (invoice.isError) {
+    return (
+      <div className="md:col-span-4">
+        <ProblemAlert problem={problemOf(invoice.error)} />
+      </div>
+    );
+  }
+  const allocations = invoice.data.data.allocations;
+  return (
+    <div className="md:col-span-4" data-testid="invoice-claims">
+      <h3 className="text-sm font-semibold">{t('billing.report.claimsOnInvoice')}</h3>
+      <ul className="mt-1 grid max-w-lg gap-1 text-sm">
+        {allocations.map((a) => (
+          <li
+            key={a.claimId}
+            className="grid grid-cols-[minmax(0,1fr)_9rem] items-baseline gap-x-3"
+            data-testid="invoice-claim"
+          >
+            <Link
+              to="/claims/$claimId"
+              params={{ claimId: a.claimId }}
+              className="text-primary font-mono text-xs underline-offset-4 hover:underline"
+            >
+              {a.claimReference}
+            </Link>
+            <span className="text-right font-mono tabular-nums">
+              {formatMoney(a.allocatedAmount, currency)}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

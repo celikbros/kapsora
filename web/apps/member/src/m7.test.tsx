@@ -129,6 +129,11 @@ describe('a new reimbursement', () => {
       expect(receipt).toHaveTextContent('Hesap •••• 1326');
       expect(receipt.textContent).not.toContain('TR33');
       expect(receipt.textContent).not.toContain('8413');
+      // Typed once and kept nowhere on the device.
+      const stored =
+        JSON.stringify({ ...window.localStorage }) + JSON.stringify({ ...window.sessionStorage });
+      expect(stored).not.toContain('8413');
+      expect(stored).not.toContain('TR33');
       await user.click(screen.getByTestId('submit-reimbursement'));
       await waitFor(() =>
         expect(screen.getByTestId('reimbursement-status')).toHaveTextContent('Gönderildi'),

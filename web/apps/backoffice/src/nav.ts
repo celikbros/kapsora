@@ -7,6 +7,8 @@ export interface NavEntry {
   implemented: boolean;
   /** Permission that must be present for the entry to show; undefined = always. */
   permission?: string;
+  /** The path prefix that marks the entry current, when the section is wider than its landing list. */
+  match?: string;
 }
 
 export const NAV_ENTRIES: NavEntry[] = [
@@ -124,12 +126,7 @@ export const NAV_ENTRIES: NavEntry[] = [
     labelKey: 'nav.billing',
     implemented: true,
     permission: 'settlement.read',
-  },
-  {
-    key: 'reconciliation',
-    path: '/reconciliation',
-    labelKey: 'nav.reconciliation',
-    implemented: false,
+    match: '/billing',
   },
   {
     key: 'worklist',

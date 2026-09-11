@@ -14,6 +14,8 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { createKapsoraClient, randomId, type KapsoraClient } from '../client';
 import { createOperations } from '../operations';
 import { ApiError, unwrap, type Problem } from '../problem';
+import { claimTotals } from './claim-handlers';
+import { toMicros } from './data';
 import { createMockServer } from './node';
 
 const { api, server } = createMockServer({ organizationsPerTenant: 6 });
@@ -210,6 +212,20 @@ describe('the operations dashboard (WP-I7-05 §2.4)', () => {
     // Every aging bucket is drawn, even the empty ones, so a screen has four columns on a quiet
     // morning and four on a busy one.
     expect(board.claimAging.map((f) => f.bucket)).toEqual(['D0_1', 'D2_7', 'D8_30', 'D31_PLUS']);
+  });
+
+  it('values each status at the approved totals of its claims, as the server does', async () => {
+    const s = await signIn('financial.reviewer');
+    const board = (
+      await unwrap(s.c.GET('/api/v1/operations/dashboard', { params: { header: tenant(s) } }))
+    ).data;
+    const approved = board.claimsByStatus.find((f) => f.status === 'APPROVED');
+    expect(approved, 'the fixture has approved claims').toBeDefined();
+    const expected = api.world.claims
+      .filter((c) => c.tenantId === s.tenantId && c.status === 'APPROVED')
+      .reduce((total, c) => total + claimTotals(api.world, c.id).approved, 0n);
+    expect(expected > 0n, 'the approved claims are worth something').toBe(true);
+    expect(toMicros(approved!.approvedTotal)).toBe(expected);
   });
 
   it('counts the settlements its own filter names', async () => {

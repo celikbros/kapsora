@@ -1,19 +1,26 @@
-import { useSession } from '@kapsora/auth';
+import { usePermission, useSession } from '@kapsora/auth';
 import { useTranslation } from '@kapsora/i18n';
 import { Card, PageHeader } from '@kapsora/ui';
 import { Link } from '@tanstack/react-router';
+import { Dashboard } from '../billing/Dashboard';
 import { NAV_ENTRIES } from '../nav';
 
 export function HomePage() {
   const { t } = useTranslation();
   const me = useSession((s) => s.me);
   const active = useSession((s) => s.activeTenant);
+  const canReadReports = usePermission('report.read');
   return (
     <>
       <PageHeader
         title={t('nav.home')}
         {...(me ? { description: `${me.displayName} · ${active?.tenant.displayName ?? ''}` } : {})}
       />
+      {canReadReports ? (
+        <div className="mb-6">
+          <Dashboard />
+        </div>
+      ) : null}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {NAV_ENTRIES.filter(
           (e) => e.key !== 'home' && (!e.permission || active?.permissions.includes(e.permission)),

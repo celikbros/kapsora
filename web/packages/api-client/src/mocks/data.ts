@@ -1647,10 +1647,11 @@ const PROVIDER_BILLING_PERMISSIONS = [
   'settlement.read',
   'fiscal.edocument.read',
   'document.read',
-  // WP-I7-05 §2.2: the provider reads its own cari ekstre. It is report.read and deliberately
-  // not report.export — the figures are the provider's own to look at, and a file leaving the
-  // payer's tenant is the payer's decision.
+  // WP-I7-05 §2.2 and WP-I7-06 §2.1.4: the provider reads its own cari ekstre and exports
+  // it — scoped to its organization, watermarked, audited per download. Never
+  // report.export.sensitive: the claims file with its line descriptions is not the provider's.
   'report.read',
+  'report.export',
   'document.link',
 ];
 

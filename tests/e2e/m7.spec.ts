@@ -43,4 +43,20 @@ test('the reviewer takes a cut, closes the icmal, and reads the settlements', as
   await page.getByTestId('settlement-row').first().getByRole('link').click();
   await expect(page.getByTestId('settlement-figures')).toBeVisible();
   await expect(page.getByTestId('payable')).toContainText('TRY');
+
+  await page.getByTestId('billing-nav').getByRole('link', { name: 'Günlük mutabakat' }).click();
+  await expect(page.getByTestId('run-table')).toBeVisible();
+  await page
+    .getByTestId('run-row')
+    .filter({ hasText: 'Fark var' })
+    .first()
+    .getByRole('link')
+    .click();
+  await expect(page.getByTestId('run-status')).toHaveText('Fark var');
+  await expect(page.getByTestId('difference-row').first()).toBeVisible();
+
+  await page.getByTestId('billing-nav').getByRole('link', { name: 'Dışa aktarım' }).click();
+  await expect(page.getByTestId('export-form')).toBeVisible();
+  await page.getByTestId('request-export').click();
+  await expect(page.getByTestId('download-export').first()).toBeVisible({ timeout: 15_000 });
 });

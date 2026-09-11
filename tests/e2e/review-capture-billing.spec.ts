@@ -20,8 +20,16 @@ async function settled(page: Page) {
   await expect(page.locator('td, dd', { hasText: /^…$/ })).toHaveCount(0, { timeout: 20_000 });
 }
 
+async function dismissToasts(page: Page) {
+  for (const close of await page.locator('.k-toast button[aria-label="Kapat"]').all()) {
+    await close.click().catch(() => undefined);
+  }
+  await expect(page.locator('.k-toast')).toHaveCount(0, { timeout: 10_000 });
+}
+
 async function capture(page: Page, name: string) {
   mkdirSync(OUT, { recursive: true });
+  await dismissToasts(page);
   await page.setViewportSize({ width: 1440, height: 900 });
   await settled(page);
   await page.screenshot({ path: `${OUT}/${name}-desktop.png`, fullPage: true });
@@ -88,4 +96,46 @@ test('backoffice: the icmal review with a decision form, the settlement, the rei
   await page.getByTestId('reimbursement-row').first().getByRole('link').click();
   await expect(page.getByTestId('reimbursement-decision')).toBeVisible();
   await capture(page, 'billing-reimbursement');
+
+  await page.getByTestId('billing-nav').getByRole('link', { name: 'Günlük mutabakat' }).click();
+  await expect(page.getByTestId('run-table')).toBeVisible();
+  await capture(page, 'billing-reconciliation');
+  // At 390 the strip scrolls and the list the reader is on is in view.
+  await page.setViewportSize({ width: 390, height: 844 });
+  const strip = page.getByTestId('billing-nav');
+  await expect
+    .poll(() => strip.evaluate((el) => el.scrollWidth > el.clientWidth && el.scrollLeft > 0))
+    .toBe(true);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page
+    .getByTestId('run-row')
+    .filter({ hasText: 'Fark var' })
+    .first()
+    .getByRole('link')
+    .click();
+  await expect(page.getByTestId('difference-row').first()).toBeVisible();
+  await capture(page, 'billing-run');
+
+  await page.getByTestId('billing-nav').getByRole('link', { name: 'Dışa aktarım' }).click();
+  await expect(page.getByTestId('export-form')).toBeVisible();
+  await page.getByTestId('request-export').click();
+  await expect(page.getByTestId('download-export').first()).toBeVisible({ timeout: 15_000 });
+  await capture(page, 'billing-exports');
+  await page.getByTestId('download-export').first().click();
+  await expect(page.getByTestId('download-purpose')).toBeVisible();
+  await capture(page, 'billing-export-purpose');
+  // Still open after the width change, and it refuses an unchosen purpose in place.
+  await expect(page.getByTestId('download-purpose')).toBeVisible();
+  await page.getByTestId('download-confirm').click();
+  await expect(page.getByText('İndirmenin amacını seçin.')).toBeVisible();
+  await capture(page, 'billing-export-purpose-error');
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('download-purpose')).toHaveCount(0);
+
+  await page
+    .getByRole('navigation', { name: 'Ana menü' })
+    .getByRole('link', { name: 'Ana Sayfa' })
+    .click();
+  await expect(page.getByTestId('dashboard')).toBeVisible();
+  await capture(page, 'billing-dashboard');
 });

@@ -65,6 +65,12 @@ export function EarningsPage() {
             >
               {t('billing.provider.batchesTitle')}
             </Link>
+            <Link
+              to="/billing/statement"
+              className="text-primary self-center text-sm underline-offset-4 hover:underline"
+            >
+              {t('billing.report.statementTitle')}
+            </Link>
           </div>
         }
       />

@@ -53,6 +53,7 @@ import {
   type MockSession,
   type Schemas,
 } from './handlers';
+import { claimTotals } from './claim-handlers';
 import { NO_STORE } from './health-handlers';
 
 const PERMISSION_REPORT_READ = 'report.read';
@@ -467,7 +468,10 @@ export function reportHandlers(api: MockApi): HttpHandler[] {
         .map(([status, rows]) => ({
           status,
           claimCount: rows.length,
-          approvedTotal: sum(rows.map(() => '0')),
+          // The claim's approved total, the one arithmetic `billing.claim_approved_total` does.
+          approvedTotal: amount(
+            rows.reduce((total, c) => total + claimTotals(world(), c.id).approved, 0n),
+          ),
           filter: { resource: 'claims', statuses: [status] },
         }));
 
@@ -484,7 +488,9 @@ export function reportHandlers(api: MockApi): HttpHandler[] {
         return {
           bucket,
           claimCount: rows.length,
-          approvedTotal: '0',
+          approvedTotal: amount(
+            rows.reduce((total, c) => total + claimTotals(world(), c.id).approved, 0n),
+          ),
           filter: { resource: 'claims', statuses: OPEN_CLAIM_STATUSES, agingBucket: bucket },
         };
       });

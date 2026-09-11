@@ -128,7 +128,10 @@ export function AppLayout() {
       <ul className="grid gap-0.5">
         {NAV_ENTRIES.filter((e) => !e.permission || active?.permissions.includes(e.permission)).map(
           (entry) => {
-            const current = entry.path === '/' ? pathname === '/' : pathname.startsWith(entry.path);
+            const current =
+              entry.path === '/'
+                ? pathname === '/'
+                : pathname.startsWith(entry.match ?? entry.path);
             return (
               <li key={entry.key}>
                 <Link

@@ -1,5 +1,8 @@
 import type {
   BatchListQuery,
+  CreateExport,
+  ExportListQuery,
+  ReconciliationRunListQuery,
   CancelSettlement,
   CreatePaymentRecord,
   DecideReimbursement,
@@ -188,5 +191,101 @@ export function useRecordReimbursementPayment(reimbursementId: string) {
     mutationFn: (input: { etag: string; body: RecordReimbursementPayment }) =>
       ops.billing.recordReimbursementPayment(tenantId, reimbursementId, input.etag, input.body),
     onSuccess: () => invalidate(),
+  });
+}
+
+// --- WP-I7-05: reconciliation, the dashboard, exports ----------------------------------
+
+export function useReconciliationRuns(query: ReconciliationRunListQuery) {
+  const ops = useOps();
+  const tenantId = useTenantId();
+  return useQuery({
+    queryKey: ['billing', tenantId, 'reconciliation-runs', query],
+    queryFn: () => ops.report.listRuns(tenantId, { limit: 100, ...query }),
+  });
+}
+
+export function useReconciliationRun(runId: string) {
+  const ops = useOps();
+  const tenantId = useTenantId();
+  return useQuery({
+    queryKey: ['billing', tenantId, 'reconciliation-run', runId],
+    queryFn: () => ops.report.getRun(tenantId, runId),
+  });
+}
+
+export function useDashboard() {
+  const ops = useOps();
+  const tenantId = useTenantId();
+  return useQuery({
+    queryKey: ['billing', tenantId, 'dashboard'],
+    queryFn: () => ops.report.dashboard(tenantId),
+    staleTime: 30_000,
+  });
+}
+
+const EXPORT_POLL_MS = 4_000;
+
+/** The list, re-read while the worker is still rendering something on it. */
+export function useExports(query: ExportListQuery) {
+  const ops = useOps();
+  const tenantId = useTenantId();
+  return useQuery({
+    queryKey: ['billing', tenantId, 'exports', query],
+    // A pending export is looked at one by one: the list is a snapshot, and the row the
+    // worker is rendering answers its own state.
+    queryFn: async () => {
+      const page = await ops.report.listExports(tenantId, { limit: 100, ...query });
+      const items = await Promise.all(
+        page.items.map(async (x) =>
+          x.status === 'QUEUED' || x.status === 'RUNNING'
+            ? (await ops.report.getExport(tenantId, x.id)).data
+            : x,
+        ),
+      );
+      return { ...page, items };
+    },
+    refetchInterval: (q) =>
+      q.state.data?.items.some((x) => x.status === 'QUEUED' || x.status === 'RUNNING')
+        ? EXPORT_POLL_MS
+        : false,
+  });
+}
+
+export function useCreateExport() {
+  const ops = useOps();
+  const tenantId = useTenantId();
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (body: CreateExport) => ops.report.createExport(tenantId, body),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['billing', tenantId, 'exports'] }),
+  });
+}
+
+/**
+ * One download of one export. The export is named per call, so a single dialog on the page
+ * can serve every row — and a row re-rendered by a width change loses nothing.
+ */
+export function useDownloadExport() {
+  const ops = useOps();
+  const tenantId = useTenantId();
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { exportId: string; purposeCode: string; reasonText?: string }) =>
+      ops.report.downloadExport(tenantId, input.exportId, {
+        purposeCode: input.purposeCode,
+        ...(input.reasonText ? { reasonText: input.reasonText } : {}),
+      }),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['billing', tenantId, 'exports'] }),
+  });
+}
+
+/** One invoice, read when a reviewer opens a decision on it: its claims and allocations. */
+export function useInvoice(invoiceId: string) {
+  const ops = useOps();
+  const tenantId = useTenantId();
+  return useQuery({
+    queryKey: ['billing', tenantId, 'invoice', invoiceId],
+    queryFn: () => ops.billing.getInvoice(tenantId, invoiceId),
   });
 }

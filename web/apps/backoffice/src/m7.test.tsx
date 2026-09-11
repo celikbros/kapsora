@@ -3,7 +3,7 @@ import { formatMoney, initI18n } from '@kapsora/i18n';
 import { createMemoryHistory } from '@tanstack/react-router';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { createServices } from './api';
 
@@ -144,5 +144,133 @@ describe('the reimbursement', () => {
     await waitFor(() =>
       expect(screen.getByTestId('reimbursement-status')).toHaveTextContent('Ödendi'),
     );
+  });
+});
+
+describe('the operations dashboard', () => {
+  it('sits on the home page, values the claims, and links only where the list reproduces the figure', async () => {
+    const { history } = mount('/');
+    const user = await login('financial.reviewer');
+    const dashboard = await screen.findByTestId('dashboard');
+    const batches = within(dashboard).getByTestId('dashboard-batches');
+    const waiting = api.world.batches.filter(
+      (b) => b.status === 'SUBMITTED' || b.status === 'UNDER_REVIEW',
+    ).length;
+    expect(batches).toHaveTextContent(String(waiting));
+    // Two statuses make the figure; the list takes one, so the label is not a link.
+    expect(within(batches).queryByRole('link')).toBeNull();
+    // Approved claims are worth what the server says, not nothing.
+    const approved = within(dashboard).getByTestId('claims-APPROVED');
+    // The amount cell itself, not a substring: '1.500,00 TRY' contains '0,00 TRY'.
+    expect(approved.lastElementChild!.textContent).not.toBe(formatMoney('0', 'TRY'));
+    await user.click(within(approved).getByRole('link'));
+    await waitFor(() => expect(history.location.pathname).toBe('/claims'));
+    expect(history.location.search).toContain('APPROVED');
+  });
+});
+
+describe('the reconciliation', () => {
+  it('lists the runs and opens the differing day with each difference by reference', async () => {
+    mount('/billing/reconciliation');
+    const user = await login('financial.reviewer');
+    const table = await screen.findByTestId('run-table');
+    expect(within(table).getAllByTestId('run-row').length).toBe(
+      api.world.reconciliationRuns.length,
+    );
+    const differing = api.world.reconciliationRuns.find(
+      (r) => r.scope === 'TENANT' && r.differenceCount > 0,
+    )!;
+    const row = within(table)
+      .getAllByTestId('run-row')
+      .find((r) => r.textContent?.includes('Fark var') && r.textContent.includes('Kurum'))!;
+    await user.click(within(row).getByRole('link'));
+    expect(await screen.findByTestId('run-status')).toHaveTextContent('Fark var');
+    expect(screen.getByTestId('run-open')).toHaveTextContent(
+      formatMoney(differing.openTotal, differing.currencyCode),
+    );
+    const differences = within(screen.getByTestId('difference-table')).getAllByTestId(
+      'difference-row',
+    );
+    expect(differences.length).toBe(differing.differenceCount);
+    expect(differences[0]).toHaveTextContent(differing.differences[0]!.reference);
+    expect(differences[0]!.textContent).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}/);
+  });
+});
+
+describe('the exports', () => {
+  it('queues a file, shows it ready, and opens it through an audited download with the watermark', async () => {
+    const opened = vi.fn();
+    window.open = opened as unknown as typeof window.open;
+    mount('/billing/exports');
+    const user = await login('financial.reviewer');
+    const form = await screen.findByTestId('export-form');
+    await user.selectOptions(within(form).getByLabelText(/^Rapor/), 'SETTLEMENTS');
+    await user.click(screen.getByTestId('request-export'));
+    const table = await screen.findByTestId('export-table');
+    await waitFor(
+      () => {
+        const rows = within(table).getAllByTestId('export-row');
+        expect(rows.some((r) => within(r).queryByTestId('download-export'))).toBe(true);
+      },
+      { timeout: 10_000 },
+    );
+    const ready = within(table)
+      .getAllByTestId('export-row')
+      .find((r) => within(r).queryByTestId('download-export'))!;
+    await user.click(within(ready).getByTestId('download-export'));
+    const purpose = await screen.findByTestId('download-purpose');
+    expect(opened).not.toHaveBeenCalled();
+    // Nothing is chosen for the reader: confirming without a purpose is refused in place.
+    await user.click(screen.getByTestId('download-confirm'));
+    expect(await within(purpose).findByText('İndirmenin amacını seçin.')).toBeInTheDocument();
+    expect(opened).not.toHaveBeenCalled();
+    await user.selectOptions(within(purpose).getByLabelText(/^İndirme amacı/), 'AUDIT');
+    await user.click(screen.getByTestId('download-confirm'));
+    await waitFor(() => expect(opened).toHaveBeenCalledTimes(1));
+    const watermark = await within(ready).findByTestId('export-watermark');
+    expect(watermark.textContent).toContain('Fuat Mali Değerlendirici');
+  });
+});
+
+describe('the settlement above the checker threshold', () => {
+  it('asks for the password and then names the second-person rule when the decider approves', async () => {
+    const pending = api.world.settlements.find((x) => x.status === 'PENDING_APPROVAL')!;
+    // Above the tenant's threshold, decided by the approver themselves: the rule has somebody
+    // to refuse. The fixture's figures are small on purpose, so the case is made here.
+    pending.approvedAmount = '60000';
+    pending.payableAmount = '60000';
+    pending.withheldAmount = '0';
+    const approver = api.world.accounts.find((a) => a.username === 'payer.approver')!;
+    api.world.batches.find((b) => b.id === pending.batchId)!.decidedBy = approver.actorId;
+
+    mount(`/billing/settlements/${pending.id}`);
+    const user = await login('payer.approver');
+    await user.click(await screen.findByTestId('approve-settlement'));
+    const dialog = await screen.findByRole('dialog');
+    await user.type(within(dialog).getByLabelText(/^Parola/), PASSWORD);
+    await user.keyboard('{Enter}');
+    expect(await screen.findByText(/İcmali karara bağlayan kişi/)).toBeInTheDocument();
+    expect(screen.getByTestId('settlement-status')).toHaveTextContent('Onay bekliyor');
+    expect(pending.status).toBe('PENDING_APPROVAL');
+  });
+});
+
+describe('a payment beyond the remainder', () => {
+  it('is refused by the server and the figures stay as they were', async () => {
+    const approved = api.world.settlements.find((x) => x.status === 'APPROVED')!;
+    const paidBefore = approved.paidAmount;
+    mount(`/billing/settlements/${approved.id}`);
+    const user = await login('financial.reviewer');
+    const form = await screen.findByTestId('payment-form');
+    await user.type(within(form).getByLabelText(/^Dış referans/), 'EFT-2026-09-0999');
+    await user.type(within(form).getByLabelText(/^Tutar/), '999999');
+    fireEvent.change(within(form).getByLabelText(/^Ödeme tarihi/), {
+      target: { value: '2026-09-10' },
+    });
+    await user.click(screen.getByTestId('record-payment'));
+    expect(await within(form).findByRole('alert')).toBeInTheDocument();
+    expect(approved.paidAmount).toBe(paidBefore);
+    expect(screen.getByTestId('settlement-status')).toHaveTextContent('Onaylandı');
+    expect(screen.getByTestId('paid')).toHaveTextContent(formatMoney(paidBefore, 'TRY'));
   });
 });

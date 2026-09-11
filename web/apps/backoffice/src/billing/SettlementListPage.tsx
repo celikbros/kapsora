@@ -15,7 +15,7 @@ import {
   Table,
   useMinWidth,
 } from '@kapsora/ui';
-import { Link } from '@tanstack/react-router';
+import { Link, useSearch } from '@tanstack/react-router';
 import { useState } from 'react';
 
 import { problemOf } from '../problems';
@@ -37,7 +37,8 @@ const STATUSES: SettlementStatus[] = [
 export function SettlementListPage() {
   const { t } = useTranslation();
   const wide = useMinWidth(768);
-  const [status, setStatus] = useState('');
+  const search = useSearch({ from: '/app/billing/settlements' });
+  const [status, setStatus] = useState(search.status ?? '');
   const settlements = useSettlements(status ? { status: status as SettlementStatus } : {});
   const rows = settlements.data?.items ?? [];
 

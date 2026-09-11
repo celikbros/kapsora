@@ -15,7 +15,7 @@ import {
   Table,
   useMinWidth,
 } from '@kapsora/ui';
-import { Link } from '@tanstack/react-router';
+import { Link, useSearch } from '@tanstack/react-router';
 import { useState } from 'react';
 
 import { problemOf } from '../problems';
@@ -36,7 +36,8 @@ const STATUSES: BatchStatus[] = [
 export function BatchReviewListPage() {
   const { t } = useTranslation();
   const wide = useMinWidth(768);
-  const [status, setStatus] = useState('');
+  const search = useSearch({ from: '/app/billing/batches' });
+  const [status, setStatus] = useState(search.status ?? '');
   const batches = useBatches(status ? { status: status as BatchStatus } : {});
   const rows = (batches.data?.items ?? []).filter((b) => b.status !== 'DRAFT');
 

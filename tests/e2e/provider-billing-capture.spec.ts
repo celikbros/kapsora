@@ -73,4 +73,13 @@ test('provider portal: earnings, the invoice, the icmal', async ({ page }) => {
   await page.getByTestId('batch-row').first().getByRole('link').first().click();
   await expect(page.getByTestId('membership-list')).toBeVisible();
   await capture(page, 'provider-batch');
+
+  await page
+    .getByRole('navigation', { name: 'Sağlayıcı portalı' })
+    .getByRole('link', { name: 'Hakediş ve fatura' })
+    .click();
+  await page.getByRole('link', { name: 'Cari ekstre' }).first().click();
+  await page.getByLabel(/^Dönem başı/).fill('2026-01-01');
+  await expect(page.getByTestId('statement-totals')).toBeVisible();
+  await capture(page, 'provider-statement');
 });

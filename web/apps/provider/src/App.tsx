@@ -49,6 +49,7 @@ import { BatchNewPage, BatchPage } from './billing/BatchPage';
 import { EarningsPage } from './billing/EarningsPage';
 import { InvoiceListPage } from './billing/InvoiceListPage';
 import { InvoiceNewPage, InvoicePage } from './billing/InvoicePage';
+import { StatementPage } from './billing/StatementPage';
 import { DeskPage } from './lodging/DeskPage';
 import { InventoryPage } from './lodging/InventoryPage';
 import { ServicesProvider, type AppServices } from './services';
@@ -414,6 +415,11 @@ const batchRoute = createRoute({
   path: '/billing/batches/$batchId',
   component: BatchPage,
 });
+const statementRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/billing/statement',
+  component: StatementPage,
+});
 const routeTree = rootRoute.addChildren([
   loginRoute,
   tenantRoute,
@@ -439,6 +445,7 @@ const routeTree = rootRoute.addChildren([
     batchesRoute,
     batchNewRoute,
     batchRoute,
+    statementRoute,
   ]),
 ]);
 

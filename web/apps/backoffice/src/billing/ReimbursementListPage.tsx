@@ -15,7 +15,7 @@ import {
   Table,
   useMinWidth,
 } from '@kapsora/ui';
-import { Link } from '@tanstack/react-router';
+import { Link, useSearch } from '@tanstack/react-router';
 import { useState } from 'react';
 
 import { usePersonName } from '../claims/names';
@@ -39,7 +39,8 @@ const STATUSES: ReimbursementStatus[] = [
 export function ReimbursementListPage() {
   const { t } = useTranslation();
   const wide = useMinWidth(768);
-  const [status, setStatus] = useState('');
+  const search = useSearch({ from: '/app/billing/reimbursements' });
+  const [status, setStatus] = useState(search.status ?? '');
   const reimbursements = useReimbursements(status ? { status: status as ReimbursementStatus } : {});
   const rows = (reimbursements.data?.items ?? []).filter((r) => r.status !== 'DRAFT');
 

@@ -376,6 +376,26 @@ export type {
   StaySegmentType,
 } from './inpatient';
 export { billingOperations } from './billing';
+export { reportOperations } from './report';
+export type {
+  CreateExport,
+  DashboardFilter,
+  Export,
+  ExportDownload,
+  ExportKind,
+  ExportListQuery,
+  ExportPage,
+  ExportStatus,
+  OperationsDashboard,
+  ProviderStatement,
+  ReconciliationDifference,
+  ReconciliationRun,
+  ReconciliationRunListQuery,
+  ReconciliationRunPage,
+  StatementInvoice,
+  StatementQuery,
+  StatementSettlement,
+} from './report';
 export type {
   Batch,
   BatchDecision,

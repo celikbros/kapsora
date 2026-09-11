@@ -45,6 +45,9 @@ import { ReimbursementListPage } from './billing/ReimbursementListPage';
 import { ReimbursementPage } from './billing/ReimbursementPage';
 import { SettlementListPage } from './billing/SettlementListPage';
 import { SettlementPage } from './billing/SettlementPage';
+import { ExportsPage } from './billing/ExportsPage';
+import { ReconciliationListPage } from './billing/ReconciliationListPage';
+import { ReconciliationRunPage } from './billing/ReconciliationRunPage';
 import { ProviderListPage } from './providers/ProviderListPage';
 import { providerListSearch } from './providers/routes';
 import { ImportDetailPage } from './imports/ImportDetailPage';
@@ -221,9 +224,13 @@ const lodgingWaitlistRoute = createRoute({
   path: '/lodging/waitlist',
   component: WaitlistPage,
 });
+function statusSearch(raw: Record<string, unknown>): { status?: string } {
+  return typeof raw['status'] === 'string' && raw['status'] !== '' ? { status: raw['status'] } : {};
+}
 const billingBatchesRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/billing/batches',
+  validateSearch: statusSearch,
   component: BatchReviewListPage,
 });
 const billingBatchRoute = createRoute({
@@ -234,6 +241,7 @@ const billingBatchRoute = createRoute({
 const billingSettlementsRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/billing/settlements',
+  validateSearch: statusSearch,
   component: SettlementListPage,
 });
 const billingSettlementRoute = createRoute({
@@ -244,12 +252,28 @@ const billingSettlementRoute = createRoute({
 const billingReimbursementsRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/billing/reimbursements',
+  validateSearch: statusSearch,
   component: ReimbursementListPage,
 });
 const billingReimbursementRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/billing/reimbursements/$reimbursementId',
   component: ReimbursementPage,
+});
+const billingReconciliationRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/billing/reconciliation',
+  component: ReconciliationListPage,
+});
+const billingReconciliationRunRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/billing/reconciliation/$runId',
+  component: ReconciliationRunPage,
+});
+const billingExportsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/billing/exports',
+  component: ExportsPage,
 });
 const medicalReportsRoute = createRoute({
   getParentRoute: () => appRoute,
@@ -591,6 +615,9 @@ const routeTree = rootRoute.addChildren([
     billingSettlementRoute,
     billingReimbursementsRoute,
     billingReimbursementRoute,
+    billingReconciliationRoute,
+    billingReconciliationRunRoute,
+    billingExportsRoute,
     medicalReportsRoute,
     medicalReportRoute,
     worklistRoute,

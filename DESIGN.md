@@ -189,7 +189,7 @@ in for hours, on wide screens, with keyboard and tab order that just work.
 
 **Modes:** the backoffice is _Operate_ (dense lists, forms, review). The provider portal
 is _Operate_ with a fast-entry bias, and from M7 that includes the money it is owed —
-earnings, invoices, icmaller. The member app is _Read_ on the home and the booking list
+earnings, invoices, icmaller and the cari ekstre. The member app is _Read_ on the home and the booking list
 and _Operate_ on the search-hold-confirm flow and on the three-step reimbursement; from M6
 it is a product rather than a placeholder, and its first viewport is a 390px phone.
 
@@ -284,8 +284,9 @@ carry a muted note under its value. It is the same component pinned (phone) and 
 column, values right-aligned monospace `tabular-nums` in the right. One row is emphasised —
 label `font-medium`, value semibold and a step larger — and it is the row that always
 carries a figure. Under the block sits the sentence "Rakamlar sunucunundur; ekran
-toplamaz." It is what earnings, invoice allocations, the icmal totals, the settlement and
-the reimbursement all use, and it never nests inside a table.
+toplamaz." It is what earnings, invoice allocations, the icmal totals, the settlement,
+the reimbursement, the provider's cari ekstre and a reconciliation run all use — the last
+two emphasising Açık bakiye — and it never nests inside a table.
 
 **Status tone is one map, in `@kapsora/api-client`** (`billing-tones.ts`): `invoiceTone`,
 `batchTone`, `decisionTone`, `settlementTone`, `reimbursementTone`, each returning the
@@ -293,8 +294,9 @@ the reimbursement all use, and it never nests inside a table.
 member and an operator looking at the same record see the same colour.
 
 **A section navigation** is the tab-strip rule applied one level down: the main navigation
-names the section once, `BillingNav` names its three lists as square triggers on a bottom
-line, `aria-[current=page]` colouring the active one `primary`.
+names the section once, `BillingNav` names its five lists — İcmal incelemesi · Ödeme
+mutabakatları · Geri ödeme incelemesi · Günlük mutabakat · Dışa aktarım — as square
+triggers on a bottom line, `aria-[current=page]` colouring the active one `primary`.
 
 **The member tab bar** is three links — Ana sayfa · Ara · Rezervasyonlarım — each a drawn
 20px icon over a 12px label, `aria-current` colouring the active one `primary`. Above 768px
@@ -349,9 +351,14 @@ entered once, shown masked afterwards, and searched only behind a password.
 autocorrect off, and there is no visual rule builder: an operator writing rules is a
 trained user, and a half-built builder is worse than a good text field.
 
-**A tab strip sits on a line.** Triggers are square with a 2px underline; a rounded corner
-under a thick border fights the line it sits on, which is what the detector flagged the
-first time this component was written.
+**A tab strip sits on a line, and it is one line at every width.** Triggers are square with
+a 2px underline; a rounded corner under a thick border fights the line it sits on, which is
+what the detector flagged the first time this component was written. The triggers neither
+wrap nor shrink (`whitespace-nowrap`, `shrink-0`): on a phone the strip scrolls sideways
+inside its own `overflow-x-auto`, so the active underline always sits on the rule instead of
+on a second row floating above it. The main navigation names a section once, and the
+section's sub-lists — the billing section's Günlük mutabakat and Dışa aktarım among them —
+live in its strip, never as sidebar entries of their own.
 
 **A record read to understand a decision is laid out as the sequence that produced it.**
 The request detail is not a form of its fields; it is what was asked for, what the system
@@ -552,7 +559,8 @@ operator who believes the screen is adding will audit the screen instead of the 
 every money string on these surfaces came off the wire exactly as it is printed.
 
 **Below 768 every list stacks, and a card that can be acted on carries its own command.**
-The invoice, icmal, settlement and reimbursement lists all become the same card — reference
+The invoice, icmal, settlement, reimbursement, reconciliation-run and export lists, and the
+cari ekstre's two tables, all become the same card — reference
 and status badge on the first line, the provider or the hak sahibi on the second, the date
 and the money on the third — and the icmal's review table stacks the same way, with the
 decision badge and the approved amount on a line of their own and the reason beneath. Where
@@ -602,6 +610,50 @@ person who submitted the icmal, and above the threshold the person who gave the 
 decision — and only the button is absent. Absent-not-disabled was never about hiding the
 step: an operator who cannot see that the step exists cannot plan the day around it, and one
 looking at a greyed button cannot find out why it is grey.
+
+**A dashboard is rows of figures, not tiles.** The operations panel on the home page is
+three cards — claims by status and claim aging side by side, and what is waiting across both,
+capped so its figures stay near their labels — and each is a list of rows in the figures
+block's grammar: the label, the count, the amount, both monospaced and right-aligned. The
+list is the grid (`minmax(0,1fr) auto auto`) and every row sits on its tracks as a subgrid,
+so the counts and the sums stand under one another down the card; a row with no amount
+leaves its track empty rather than sliding its count into it.
+There is no hero number and no "tümünü gör" under a card; a row is the way into its list,
+when it has one. The as-of time stands beside the heading, because a figure without its
+moment is a figure from nobody knows when. The claims under an invoice on the icmal review
+are the same row with the count taken out: reference, then amount.
+
+**A figure links to a list only when that list shows the same number.** The lists filter by
+one status and no date window, so a claims row for a single status opens the claims list on
+that status, the past-SLA row opens the worklist's overdue view, and every figure bounded by
+an aging bucket, a due window or two statuses keeps its label as plain text. A link that
+lands on a list counting a different set of rows teaches the operator that the dashboard and
+the lists disagree, and then neither is trusted; no link is better than that one.
+
+**An export is a state first and a download second.** A requested file is Sırada, then
+Hazırlanıyor, then Hazır with its Geçerlilik sonu beside it — or Başarısız, or Süresi doldu —
+a badge toned from one map, and İndir exists only on Hazır. Each row says what the file
+covers in words: the provider and the period where it has them, "Kapsamdaki tüm kayıtlar"
+where it has neither, so two settlement exports asked for a week apart are told apart without
+opening either. The request form shows the period fields only for the kinds a period bounds —
+the statement, the icmal, the reconciliation — because a date field the file ignores is a
+promise the file breaks. The cari ekstre carries the same block under its own period fields:
+Dışa aktar, the state as a `role="status"` line, then İndir.
+
+**An audited download asks why before the link exists.** İndir on the exports list opens
+İndirme amacı — the access purposes from the reference list, an optional reason, and the
+sentence that the file is watermarked and the download is written to the audit log — on
+every download, because every download is its own access. The link is minted with that
+purpose and opened in a new tab, and afterwards the Filigran the file carries is printed
+under the button, so the operator knows what the copy on their disk says about them. The
+provider downloading its own cari ekstre is the one caller with a single possible purpose,
+and it is sent without a question: a dialog with one choice is a click-through.
+
+**An amount not yet decided is "—", never "0,00".** An invoice whose icmal has not reached a
+decision shows its onaylanan as a dash — on the cari ekstre, the icmal review and the
+reimbursement list alike — and so does an ERP total that has not arrived. A zero is a
+decision: printed for an undecided line it tells a provider their invoice was refused. Where
+the server sends a real zero, the zero is printed.
 
 ## Motion
 

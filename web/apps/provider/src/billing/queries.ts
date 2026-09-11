@@ -1,3 +1,4 @@
+import type { CreateExport } from '@kapsora/api-client';
 import type {
   BatchListQuery,
   CreateBatch,
@@ -173,5 +174,56 @@ export function useSubmitBatch(batchId: string) {
   return useMutation({
     mutationFn: (etag: string) => ops.billing.submitBatch(tenantId, batchId, etag),
     onSuccess: () => invalidate(),
+  });
+}
+
+/** Cari ekstre: the provider's own figures for a period, as the database keeps them. */
+export function useStatement(
+  providerId: string | null,
+  query: { periodFrom: string; periodTo: string; currencyCode?: string },
+) {
+  const ops = useOps();
+  const tenantId = useTenantId();
+  return useQuery({
+    queryKey: ['provider', tenantId, 'billing', 'statement', providerId, query],
+    queryFn: () => ops.report.statement(tenantId, providerId!, query),
+    enabled: providerId !== null && query.periodFrom !== '' && query.periodTo !== '',
+  });
+}
+
+const EXPORT_POLL_MS = 3_000;
+
+export function useCreateStatementExport() {
+  const ops = useOps();
+  const tenantId = useTenantId();
+  return useMutation({
+    mutationFn: (body: CreateExport) => ops.report.createExport(tenantId, body),
+  });
+}
+
+/** The export just asked for, re-read while the worker is still rendering it. */
+export function useStatementExport(exportId: string | null) {
+  const ops = useOps();
+  const tenantId = useTenantId();
+  return useQuery({
+    queryKey: ['provider', tenantId, 'billing', 'export', exportId],
+    queryFn: () => ops.report.getExport(tenantId, exportId!),
+    enabled: exportId !== null,
+    refetchInterval: (q) => {
+      const status = q.state.data?.data.status;
+      return status === 'QUEUED' || status === 'RUNNING' ? EXPORT_POLL_MS : false;
+    },
+  });
+}
+
+export function useDownloadStatementExport(exportId: string | null) {
+  const ops = useOps();
+  const tenantId = useTenantId();
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { purposeCode?: string; reasonText?: string }) =>
+      ops.report.downloadExport(tenantId, exportId!, body),
+    onSuccess: () =>
+      client.invalidateQueries({ queryKey: ['provider', tenantId, 'billing', 'export', exportId] }),
   });
 }
