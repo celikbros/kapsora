@@ -54,7 +54,12 @@
     "mustChangePassword": "You must change your password before continuing.",
     "stepUpTitle": "Confirm your password",
     "stepUpIntro": "{{action}} needs your password again. The confirmation is valid for a short window.",
-    "stepUpConfirm": "Confirm"
+    "stepUpConfirm": "Confirm",
+    "showPassword": "Show",
+    "hidePassword": "Hide",
+    "demoTitle": "Demo accounts",
+    "demoIntro": "This setup runs on sample data. Choose an account to sign in as it.",
+    "demoSignInAs": "Sign in as {{name}}"
   },
   "header": {
     "userMenu": "User menu",

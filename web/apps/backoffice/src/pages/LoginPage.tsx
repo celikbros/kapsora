@@ -1,10 +1,53 @@
 import type { ApiError } from '@kapsora/api-client';
 import { safeReturnTo, useSessionStore } from '@kapsora/auth';
 import { useTranslation } from '@kapsora/i18n';
-import { Button, Card, FormField, Input, ProblemAlert } from '@kapsora/ui';
+import {
+  Button,
+  Card,
+  DemoAccounts,
+  FormField,
+  Input,
+  PasswordInput,
+  ProblemAlert,
+  type DemoAccount,
+} from '@kapsora/ui';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { problemOf } from '../problems';
 import { useState, type FormEvent } from 'react';
+
+/**
+ * Demo sign-in: only on the development server with the in-browser sample data. A built bundle
+ * has DEV false, so the list below never reaches a real deployment, whatever the mock flag says.
+ */
+const DEMO_LOGIN = import.meta.env.DEV && import.meta.env['VITE_API_MOCK'] !== 'false';
+const DEMO_PASSWORD = 'demo parola 2026 kapsora';
+const DEMO_ACCOUNTS: DemoAccount[] = [
+  {
+    username: 'financial.reviewer',
+    name: 'Fuat Mali Değerlendirici',
+    role: 'İcmal, geri ödeme, günlük mutabakat, dışa aktarım',
+  },
+  {
+    username: 'payer.approver',
+    name: 'Pınar Ödeyici Onaylayıcı',
+    role: 'Ödeme mutabakatı onayı ve ödeme kaydı',
+  },
+  {
+    username: 'admin.a',
+    name: 'Ayşe Yönetici',
+    role: 'Kurumlar, hak sahipleri, programlar, sözleşmeler',
+  },
+  {
+    username: 'doctor.a',
+    name: 'Demet Tıbbi Değerlendirici',
+    role: 'Tıbbi rapor ve claim incelemesi',
+  },
+  {
+    username: 'sponsor.hr',
+    name: 'Selin İnsan Kaynakları',
+    role: 'Çalışan görünümü, tanı görmeden',
+  },
+];
 
 /** Own-credentials login (ADR-022): username + password to POST /api/v1/session/login. */
 export function LoginPage() {
@@ -17,12 +60,16 @@ export function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<ApiError['problem'] | null>(null);
 
-  async function submit(e: FormEvent) {
+  function submit(e: FormEvent) {
     e.preventDefault();
+    void signIn(username.trim(), password);
+  }
+
+  async function signIn(user: string, pass: string) {
     setBusy(true);
     setProblem(null);
     try {
-      const state = await store.login(username.trim(), password);
+      const state = await store.login(user, pass);
       setPassword('');
       if (state.session?.mustChangePassword) {
         await navigate({ to: '/auth/password' });
@@ -65,9 +112,8 @@ export function LoginPage() {
             />
           </FormField>
           <FormField label={t('auth.password')} required requiredLabel={t('common.requiredMark')}>
-            <Input
+            <PasswordInput
               name="password"
-              type="password"
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -79,6 +125,16 @@ export function LoginPage() {
             {busy ? t('auth.submitting') : t('auth.submit')}
           </Button>
         </form>
+        {DEMO_LOGIN ? (
+          <DemoAccounts
+            accounts={DEMO_ACCOUNTS}
+            busy={busy}
+            onPick={(user) => {
+              setUsername(user);
+              void signIn(user, DEMO_PASSWORD);
+            }}
+          />
+        ) : null}
       </Card>
     </main>
   );

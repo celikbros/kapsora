@@ -59,7 +59,12 @@
     "mustChangePassword": "Devam etmeden önce parolanızı değiştirmeniz gerekiyor.",
     "stepUpTitle": "Parolanızı doğrulayın",
     "stepUpIntro": "{{action}} için parolanızı yeniden girmeniz gerekiyor. Bu doğrulama kısa süre geçerlidir.",
-    "stepUpConfirm": "Doğrula"
+    "stepUpConfirm": "Doğrula",
+    "showPassword": "Göster",
+    "hidePassword": "Gizle",
+    "demoTitle": "Demo hesapları",
+    "demoIntro": "Bu kurulum örnek verilerle çalışıyor. Bir hesaba dokunun, o hesapla girilir.",
+    "demoSignInAs": "{{name}} olarak gir"
   },
   "header": {
     "userMenu": "Kullanıcı menüsü",

@@ -12,11 +12,14 @@ import {
   Badge,
   Button,
   Card,
+  DemoAccounts,
   FormField,
   Input,
+  PasswordInput,
   ProblemAlert,
   ToastProvider,
   useMinWidth,
+  type DemoAccount,
 } from '@kapsora/ui';
 import { QueryClientProvider } from '@tanstack/react-query';
 import {
@@ -64,6 +67,16 @@ function returnToSearch(raw: Record<string, unknown>): { returnTo?: string } {
   return typeof raw['returnTo'] === 'string' ? { returnTo: raw['returnTo'] } : {};
 }
 
+/**
+ * Demo sign-in: only on the development server with the in-browser sample data. A built bundle
+ * has DEV false, so the list below never reaches a real deployment, whatever the mock flag says.
+ */
+const DEMO_LOGIN = import.meta.env.DEV && import.meta.env['VITE_API_MOCK'] !== 'false';
+const DEMO_PASSWORD = 'demo parola 2026 kapsora';
+const DEMO_ACCOUNTS: DemoAccount[] = [
+  { username: 'member.a', name: 'Hak sahibi', role: 'Kalan haklar, konaklama, geri ödeme' },
+];
+
 function LoginPage() {
   const { t } = useTranslation();
   const store = useSessionStore();
@@ -74,12 +87,16 @@ function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<ProblemView | null>(null);
 
-  async function submit(e: FormEvent) {
+  function submit(e: FormEvent) {
     e.preventDefault();
+    void signIn(username.trim(), password);
+  }
+
+  async function signIn(user: string, pass: string) {
     setBusy(true);
     setProblem(null);
     try {
-      await store.login(username.trim(), password);
+      await store.login(user, pass);
       setPassword('');
       await navigate({ href: safeReturnTo(search.returnTo, '/') });
     } catch (err) {
@@ -105,9 +122,8 @@ function LoginPage() {
             />
           </FormField>
           <FormField label={t('auth.password')} required requiredLabel={t('common.requiredMark')}>
-            <Input
+            <PasswordInput
               name="password"
-              type="password"
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -119,6 +135,16 @@ function LoginPage() {
             {t('auth.submit')}
           </Button>
         </form>
+        {DEMO_LOGIN ? (
+          <DemoAccounts
+            accounts={DEMO_ACCOUNTS}
+            busy={busy}
+            onPick={(user) => {
+              setUsername(user);
+              void signIn(user, DEMO_PASSWORD);
+            }}
+          />
+        ) : null}
       </Card>
     </main>
   );

@@ -649,6 +649,19 @@ under the button, so the operator knows what the copy on their disk says about t
 provider downloading its own cari ekstre is the one caller with a single possible purpose,
 and it is sent without a question: a dialog with one choice is a click-through.
 
+**A password field can be read before it is sent.** Every password input is the shared
+`PasswordInput`: a drawn eye at the field's end, 20px at the 1.75 stroke, a real button whose
+state is `aria-pressed` and whose name is the verb alone, "Göster" or "Gizle", because the
+field's own label already says what is shown and a second control called "Parola" beside it
+would be two things answering to one name. Showing changes the type and nothing else; the
+value never leaves the input. The sign-in screens and the step-up dialog use it.
+
+**A demo account list exists only where the demo does.** On the development server with the
+in-browser sample data, each sign-in screen lists its sample accounts under the form — name,
+what the account does, the username in mono — and one press signs in. The list is gated on the
+build as well as the mock flag, so no built bundle carries it and a real deployment can never
+show who may sign in.
+
 **An amount not yet decided is "—", never "0,00".** An invoice whose icmal has not reached a
 decision shows its onaylanan as a dash — on the cari ekstre, the icmal review and the
 reimbursement list alike — and so does an ERP total that has not arrived. A zero is a

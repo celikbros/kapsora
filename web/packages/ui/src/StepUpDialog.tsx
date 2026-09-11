@@ -4,7 +4,7 @@ import { useState, type FormEvent } from 'react';
 import { Button } from './Button';
 import { Dialog } from './Dialog';
 import { FormField } from './FormField';
-import { Input } from './Input';
+import { PasswordInput } from './PasswordInput';
 import { ProblemAlert, type ProblemLike } from './ProblemAlert';
 
 export interface StepUpDialogProps {
@@ -53,9 +53,8 @@ export function StepUpDialog({
     >
       <form onSubmit={submit} className="grid gap-4" noValidate>
         <FormField label={t('auth.password')} required requiredLabel={t('common.requiredMark')}>
-          <Input
+          <PasswordInput
             name="password"
-            type="password"
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
