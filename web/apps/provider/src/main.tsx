@@ -7,7 +7,10 @@ import './app.css';
 
 async function start() {
   initI18n('tr');
-  if (import.meta.env['VITE_API_MOCK'] !== 'false') {
+  // The in-browser sample data runs on the development server only, and there unless
+  // VITE_API_MOCK=false. A build never carries it: a deployment built without the flag must
+  // not come up on fake data.
+  if (import.meta.env.DEV && import.meta.env['VITE_API_MOCK'] !== 'false') {
     const { startMockApi } = await import('@kapsora/api-client/mocks/browser');
     await startMockApi();
   }
