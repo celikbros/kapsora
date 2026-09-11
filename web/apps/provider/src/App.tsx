@@ -23,7 +23,8 @@ import {
   PasswordInput,
   ProblemAlert,
   ToastProvider,
-  type DemoAccount,
+  DEMO_ACCOUNTS,
+  DEMO_PASSWORD,
 } from '@kapsora/ui';
 import { QueryClientProvider } from '@tanstack/react-query';
 import {
@@ -83,20 +84,10 @@ function returnToSearch(raw: Record<string, unknown>): { returnTo?: string } {
 }
 
 /**
- * Demo sign-in: only on the development server with the in-browser sample data. A built bundle
- * has DEV false, so the list below never reaches a real deployment, whatever the mock flag says.
+ * Demo sign-in: only on the development server. A built bundle
+ * has DEV false, so the list below never reaches a real deployment, whether it talks to the sample data or to a local API.
  */
-const DEMO_LOGIN = import.meta.env.DEV && import.meta.env['VITE_API_MOCK'] !== 'false';
-const DEMO_PASSWORD = 'demo parola 2026 kapsora';
-const DEMO_ACCOUNTS: DemoAccount[] = [
-  { username: 'billing.a', name: 'Burak Faturalama', role: 'Hakediş, fatura, icmal, cari ekstre' },
-  { username: 'provider.a', name: 'Pelin Sağlayıcı', role: 'Uygunluk sorgusu, talep, vaka' },
-  {
-    username: 'reservation.a',
-    name: 'Rezan Rezervasyon',
-    role: 'Otel kontenjanı, gelen ve giden misafir',
-  },
-];
+const DEMO_LOGIN = import.meta.env.DEV;
 
 function LoginPage() {
   const { t } = useTranslation();

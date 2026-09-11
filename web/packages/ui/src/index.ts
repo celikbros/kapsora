@@ -15,7 +15,7 @@ export { Input, Textarea } from './Input';
 export type { InputProps, TextareaProps } from './Input';
 export { PasswordInput } from './PasswordInput';
 export type { PasswordInputProps } from './PasswordInput';
-export { DemoAccounts } from './DemoAccounts';
+export { DEMO_ACCOUNTS, DEMO_PASSWORD, DemoAccounts } from './DemoAccounts';
 export type { DemoAccount } from './DemoAccounts';
 export { AppChooser } from './AppChooser';
 export { OwnFileNotice } from './OwnFileNotice';

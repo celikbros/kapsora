@@ -656,11 +656,12 @@ field's own label already says what is shown and a second control called "Parola
 would be two things answering to one name. Showing changes the type and nothing else; the
 value never leaves the input. The sign-in screens and the step-up dialog use it.
 
-**A demo account list exists only where the demo does.** On the development server with the
-in-browser sample data, each sign-in screen lists its sample accounts under the form — name,
-what the account does, the username in mono — and one press signs in. The list is gated on the
-build as well as the mock flag, so no built bundle carries it and a real deployment can never
-show who may sign in.
+**A demo account list exists only where the demo does.** On a development server — with the
+in-browser sample data or against a local API loaded by the demo seed — every sign-in screen lists
+all the demo accounts under the form, whichever app they belong to: name, "app · what the account
+does", the username in mono. One press signs in, and the single sign-in takes the account to its
+app. The list is gated on the development build, so no built bundle carries it and a real
+deployment can never show who may sign in.
 
 **An amount not yet decided is "—", never "0,00".** An invoice whose icmal has not reached a
 decision shows its onaylanan as a dash — on the cari ekstre, the icmal review and the

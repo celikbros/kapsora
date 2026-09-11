@@ -9,7 +9,8 @@ import {
   Input,
   PasswordInput,
   ProblemAlert,
-  type DemoAccount,
+  DEMO_ACCOUNTS,
+  DEMO_PASSWORD,
 } from '@kapsora/ui';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { APP_URLS } from '../appUrls';
@@ -17,43 +18,10 @@ import { problemOf } from '../problems';
 import { useState, type FormEvent } from 'react';
 
 /**
- * Demo sign-in: only on the development server with the in-browser sample data. A built bundle
- * has DEV false, so the list below never reaches a real deployment, whatever the mock flag says.
+ * Demo sign-in: only on the development server. A built bundle
+ * has DEV false, so the list below never reaches a real deployment, whether it talks to the sample data or to a local API.
  */
-const DEMO_LOGIN = import.meta.env.DEV && import.meta.env['VITE_API_MOCK'] !== 'false';
-const DEMO_PASSWORD = 'demo parola 2026 kapsora';
-const DEMO_ACCOUNTS: DemoAccount[] = [
-  {
-    username: 'financial.reviewer',
-    name: 'Fuat Mali Değerlendirici',
-    role: 'İcmal, geri ödeme, günlük mutabakat, dışa aktarım',
-  },
-  {
-    username: 'payer.approver',
-    name: 'Pınar Ödeyici Onaylayıcı',
-    role: 'Ödeme mutabakatı onayı ve ödeme kaydı',
-  },
-  {
-    username: 'admin.a',
-    name: 'Ayşe Yönetici',
-    role: 'Kurumlar, hak sahipleri, programlar, sözleşmeler',
-  },
-  {
-    username: 'doctor.a',
-    name: 'Demet Tıbbi Değerlendirici',
-    role: 'Tıbbi rapor ve claim incelemesi',
-  },
-  {
-    username: 'sponsor.hr',
-    name: 'Selin İnsan Kaynakları',
-    role: 'Çalışan görünümü, tanı görmeden',
-  },
-  {
-    username: 'staff.member',
-    name: 'Deniz Çalışan',
-    role: 'Tıbbi değerlendirici; aynı zamanda üye (iki uygulama)',
-  },
-];
+const DEMO_LOGIN = import.meta.env.DEV;
 
 /** Own-credentials login (ADR-022): username + password to POST /api/v1/session/login. */
 export function LoginPage() {

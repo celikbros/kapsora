@@ -45,6 +45,10 @@ describe('the sign-in screen', () => {
     mount('/');
     const user = userEvent.setup();
     const list = await screen.findByTestId('demo-accounts');
+    // One sign-in for all three apps: the list names every demo account, not only this app's.
+    for (const name of ['Burak Faturalama', 'Hak sahibi', 'Deniz Çalışan']) {
+      expect(within(list).getByRole('button', { name: `${name} olarak gir` })).toBeInTheDocument();
+    }
     await user.click(
       within(list).getByRole('button', { name: 'Fuat Mali Değerlendirici olarak gir' }),
     );
