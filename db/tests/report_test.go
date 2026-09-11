@@ -417,6 +417,9 @@ func TestReportPermissionsAreSeededAndGrantable(t *testing.T) {
 		{"PROGRAM_MANAGER", "report.export"},
 		{"AUDITOR", "report.export"},
 		{"AUDITOR", "report.export.sensitive"},
+		// WP-I7-06 §2.1.4: the provider exports its own cari ekstre. The service scopes the file
+		// to the caller's organization, and it is watermarked and audited per download.
+		{"PROVIDER_BILLING", "report.export"},
 	} {
 		if !byRole[want.role][want.permission] {
 			t.Errorf("%s does not hold %s", want.role, want.permission)
@@ -432,9 +435,13 @@ func TestReportPermissionsAreSeededAndGrantable(t *testing.T) {
 	if byRole["PROGRAM_MANAGER"]["report.export.sensitive"] {
 		t.Error("PROGRAM_MANAGER must not hold report.export.sensitive")
 	}
-	// The provider side exports nothing at all: a provider reads its own statement through the
-	// screen, and a file leaving the payer's tenant is the payer's decision.
-	for _, role := range []string{"PROVIDER_BILLING", "PROVIDER_STAFF", "MEMBER", "SPONSOR_HR"} {
+	// The provider's billing desk exports its own statement and nothing sensitive: the claims
+	// file carries line descriptions, and those are never the provider's to take out.
+	if byRole["PROVIDER_BILLING"]["report.export.sensitive"] {
+		t.Error("PROVIDER_BILLING must not hold report.export.sensitive")
+	}
+	// The rest of the provider side, the member and the sponsor's HR export nothing at all.
+	for _, role := range []string{"PROVIDER_STAFF", "MEMBER", "SPONSOR_HR"} {
 		if byRole[role]["report.export"] || byRole[role]["report.export.sensitive"] {
 			t.Errorf("%s holds an export grant", role)
 		}
