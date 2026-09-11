@@ -26,7 +26,8 @@ function Import-DotEnv {
         return
     }
     Get-Content $envFile | ForEach-Object {
-        if ($_ -match '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$') {
+        # -cmatch: case-insensitive [A-Za-z] misses the capital I under a Turkish system culture.
+        if ($_ -cmatch '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$') {
             [Environment]::SetEnvironmentVariable($matches[1], $matches[2])
         }
     }

@@ -13,9 +13,12 @@ $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
 
 # Load .env into the process environment (KEY=VALUE lines, # comments).
+# -cmatch, not -match: case-insensitive matching follows the system culture, and on a Turkish
+# Windows [A-Za-z] then misses the capital I (it folds to the dotless ı), so every key with an I
+# (KAPSORA_MIGRATE_..., KAPSORA_COOKIE_SIGNING_KEY, KAPSORA_MINIO_...) was silently skipped.
 if (Test-Path ".env") {
     Get-Content ".env" | ForEach-Object {
-        if ($_ -match '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$') {
+        if ($_ -cmatch '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$') {
             [Environment]::SetEnvironmentVariable($matches[1], $matches[2])
         }
     }
