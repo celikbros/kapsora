@@ -40,17 +40,17 @@ const (
 // The grant is what the whole of WP-I6-04 section 2.4 rests on, so it is worth being
 // precise about who may write one: the seed and M10's onboarding, never a member. A member
 // who could create their own PERSON grant could name anybody.
-func (s *seeder) ensureDemoMember(ctx context.Context, tenantID uuid.UUID, demoPassword string) error {
+func (s *seeder) ensureDemoMember(ctx context.Context, tenantID uuid.UUID, demoPassword string) (uuid.UUID, error) {
 	rc := identity.RequestContext{TenantID: tenantID}
 
 	personID, err := s.ensureDemoPerson(ctx, rc)
 	if err != nil {
-		return err
+		return uuid.Nil, err
 	}
 	actorID, err := s.ensureAccount(ctx, demoMemberUsername, demoMemberFirstName+" "+demoMemberLastName,
 		demoMemberUsername+"@demo.test", demoPassword)
 	if err != nil {
-		return err
+		return uuid.Nil, err
 	}
 	created, err := s.provisioner.GrantRole(ctx, identityapp.GrantRoleInput{
 		TenantID: tenantID, ActorID: actorID, RoleCode: "MEMBER",
@@ -59,14 +59,14 @@ func (s *seeder) ensureDemoMember(ctx context.Context, tenantID uuid.UUID, demoP
 		Reason:    "seed demo member binding",
 	})
 	if err != nil {
-		return fmt.Errorf("bind %s to a person: %w", demoMemberUsername, err)
+		return uuid.Nil, fmt.Errorf("bind %s to a person: %w", demoMemberUsername, err)
 	}
 	state := "exists"
 	if created {
 		state = "granted"
 	}
 	fmt.Printf("member  %-22s %s (person %s)\n", demoMemberUsername, state, personID)
-	return nil
+	return actorID, nil
 }
 
 // ensureDemoPerson finds the demo principal by name or creates it. Finding by name rather

@@ -14,6 +14,18 @@ RETURNING id;
 -- name: UpdateOrganizationDisplayName :exec
 UPDATE directory.organization SET display_name = $2 WHERE id = $1;
 
+-- name: SetOrganizationTaxIdentityIfAbsent :execrows
+-- Gives an organization the tax identity it was created without.
+--
+-- It exists for the seed: `EnsureProviderOrganization` writes a bare global organization,
+-- and an invoice may not be raised against a provider with no tax identity, so a demo
+-- database seeded before this step would otherwise be one nobody can bill through. The
+-- `IS NULL` is the whole of its safety: a real taxpayer's number is never overwritten by a
+-- demo one, and re-running the seed writes nothing the second time.
+UPDATE directory.organization
+   SET tax_number_cipher = $2, tax_number_hash = $3
+ WHERE id = $1 AND tax_number_hash IS NULL;
+
 -- name: OrganizationRelationshipCount :one
 SELECT directory.organization_relationship_count($1)::integer AS relationship_count;
 

@@ -336,6 +336,33 @@ func (q *Queries) OrganizationRelationshipCount(ctx context.Context, org uuid.UU
 	return relationship_count, err
 }
 
+const setOrganizationTaxIdentityIfAbsent = `-- name: SetOrganizationTaxIdentityIfAbsent :execrows
+UPDATE directory.organization
+   SET tax_number_cipher = $2, tax_number_hash = $3
+ WHERE id = $1 AND tax_number_hash IS NULL
+`
+
+type SetOrganizationTaxIdentityIfAbsentParams struct {
+	ID              uuid.UUID
+	TaxNumberCipher []byte
+	TaxNumberHash   []byte
+}
+
+// Gives an organization the tax identity it was created without.
+//
+// It exists for the seed: `EnsureProviderOrganization` writes a bare global organization,
+// and an invoice may not be raised against a provider with no tax identity, so a demo
+// database seeded before this step would otherwise be one nobody can bill through. The
+// `IS NULL` is the whole of its safety: a real taxpayer's number is never overwritten by a
+// demo one, and re-running the seed writes nothing the second time.
+func (q *Queries) SetOrganizationTaxIdentityIfAbsent(ctx context.Context, arg SetOrganizationTaxIdentityIfAbsentParams) (int64, error) {
+	result, err := q.db.Exec(ctx, setOrganizationTaxIdentityIfAbsent, arg.ID, arg.TaxNumberCipher, arg.TaxNumberHash)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const updateOrganizationDisplayName = `-- name: UpdateOrganizationDisplayName :exec
 UPDATE directory.organization SET display_name = $2 WHERE id = $1
 `

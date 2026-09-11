@@ -385,6 +385,11 @@ SELECT b.id, b.reference, b.provider_organization_id, b.payer_organization_id, b
 -- The same read, holding the row for the length of the command. Every write takes it first:
 -- the membership replacement, the submit, each decision and the decide all read a state and
 -- then act on it, and two callers doing that at once is how a batch ends up decided twice.
+--
+-- The provider's display name is joined in for the same reason `GetBatch` joins it: the submit
+-- and the decide both send a notification naming the provider, and a name the command did not
+-- read is an empty variable the notification gate refuses. `FOR UPDATE OF b` keeps the lock on
+-- the batch alone, so the join does not take a row lock on the directory.
 SELECT b.id, b.reference, b.provider_organization_id, b.payer_organization_id, b.domain_code,
        b.currency_code, b.period_from, b.period_to, b.status, b.submitted_at, b.submitted_by,
        b.decided_at, b.decided_by, b.invoice_count,
@@ -393,13 +398,17 @@ SELECT b.id, b.reference, b.provider_organization_id, b.payer_organization_id, b
        trim_scale(b.cut_total)::text AS cut_total,
        trim_scale(b.returned_total)::text AS returned_total,
        trim_scale(b.rejected_total)::text AS rejected_total,
-       b.created_at, b.row_version
+       b.created_at, b.row_version,
+       COALESCE(o.display_name, '')::text AS provider_name
   FROM billing.batch b
+  LEFT JOIN directory.tenant_organization t
+         ON t.tenant_id = b.tenant_id AND t.id = b.provider_organization_id
+  LEFT JOIN directory.organization o ON o.id = t.organization_id
  WHERE b.tenant_id = sqlc.arg('tenant_id')
    AND b.id = sqlc.arg('id')
    AND (cardinality(sqlc.arg('scope_ids')::uuid[]) = 0
         OR b.provider_organization_id = ANY(sqlc.arg('scope_ids')::uuid[]))
-   FOR UPDATE;
+   FOR UPDATE OF b;
 
 -- name: ListBatches :many
 -- One page of the keyset on (created_at DESC, id DESC).

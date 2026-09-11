@@ -152,6 +152,36 @@ func (r *ProvisioningRepository) GrantRole(ctx context.Context, in application.G
 	return created, err
 }
 
+// EnsureOrganizationTaxIdentity implements application.ProvisioningRepository.
+//
+// The relationship is read first so the write names an organization this tenant actually has
+// a relationship with: directory.organization is global and carries no RLS of its own, and a
+// helper that took a bare organization id would be a helper that could write across tenants.
+func (r *ProvisioningRepository) EnsureOrganizationTaxIdentity(ctx context.Context, tenantID,
+	relationshipID uuid.UUID, cipher, hash []byte,
+) (bool, error) {
+	if len(cipher) == 0 || len(hash) == 0 {
+		return false, fmt.Errorf("identity: a tax identity needs both a ciphertext and an index")
+	}
+	written := false
+	err := db.WithTenantTx(ctx, r.pool, db.TenantContext{TenantID: tenantID}, func(ctx context.Context, tx pgx.Tx) error {
+		q := sqlcgen.New(tx)
+		row, err := q.GetTenantOrganization(ctx, sqlcgen.GetTenantOrganizationParams{TenantID: tenantID, ID: relationshipID})
+		if err != nil {
+			return fmt.Errorf("identity: find organization relationship: %w", err)
+		}
+		rows, err := q.SetOrganizationTaxIdentityIfAbsent(ctx, sqlcgen.SetOrganizationTaxIdentityIfAbsentParams{
+			ID: row.OrganizationID, TaxNumberCipher: cipher, TaxNumberHash: hash,
+		})
+		if err != nil {
+			return fmt.Errorf("identity: set organization tax identity: %w", err)
+		}
+		written = rows > 0
+		return nil
+	})
+	return written, err
+}
+
 // EnsureProviderOrganization implements application.ProvisioningRepository.
 func (r *ProvisioningRepository) EnsureProviderOrganization(ctx context.Context, tenantID uuid.UUID, tenantCode, displayName string) (uuid.UUID, error) {
 	var id uuid.UUID

@@ -64,8 +64,8 @@ func listBatchesRow(r sqlcgen.ListBatchesRow) batchRow { return batchRow(r) }
 func lockBatchRow(r sqlcgen.LockBatchRow) batchRow {
 	return batchRow{
 		ID: r.ID, Reference: r.Reference,
-		ProviderOrganizationID: r.ProviderOrganizationID,
-		PayerOrganizationID:    r.PayerOrganizationID, DomainCode: r.DomainCode,
+		ProviderOrganizationID: r.ProviderOrganizationID, ProviderName: r.ProviderName,
+		PayerOrganizationID: r.PayerOrganizationID, DomainCode: r.DomainCode,
 		CurrencyCode: r.CurrencyCode, PeriodFrom: r.PeriodFrom, PeriodTo: r.PeriodTo,
 		Status: r.Status, SubmittedAt: r.SubmittedAt, SubmittedBy: r.SubmittedBy,
 		DecidedAt: r.DecidedAt, DecidedBy: r.DecidedBy, InvoiceCount: r.InvoiceCount,

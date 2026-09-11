@@ -110,6 +110,18 @@ type ProvisioningRepository interface {
 	// a PROVIDER relationship (and a bare global organization) when missing. Demo/seed only:
 	// the real organization flow with tax-number deduplication is WP-I1-03's.
 	EnsureProviderOrganization(ctx context.Context, tenantID uuid.UUID, tenantCode, displayName string) (uuid.UUID, error)
+	// EnsureOrganizationTaxIdentity gives the organization behind a relationship the tax
+	// identity it was created without, and reports whether it wrote one. Demo/seed only, and
+	// for the same reason the helper above is: `EnsureProviderOrganization` writes a bare
+	// global organization, and WP-I7-02 refuses to raise an invoice against a provider that
+	// carries no tax identity. It never replaces one that is already there, so a real
+	// taxpayer's number cannot be overwritten by a demo one and a second seed run writes
+	// nothing.
+	//
+	// Both values arrive already enciphered and already indexed: the number itself never
+	// reaches the identity module.
+	EnsureOrganizationTaxIdentity(ctx context.Context, tenantID, relationshipID uuid.UUID,
+		cipher, hash []byte) (bool, error)
 }
 
 // Provisioner creates tenants and issues role grants.
@@ -194,4 +206,11 @@ func (p *Provisioner) GrantRole(ctx context.Context, in GrantRoleInput) (bool, e
 // EnsureProviderOrganization is the seed helper described on the repository port.
 func (p *Provisioner) EnsureProviderOrganization(ctx context.Context, tenantID uuid.UUID, tenantCode, displayName string) (uuid.UUID, error) {
 	return p.repo.EnsureProviderOrganization(ctx, tenantID, tenantCode, displayName)
+}
+
+// EnsureOrganizationTaxIdentity is the seed helper described on the repository port.
+func (p *Provisioner) EnsureOrganizationTaxIdentity(ctx context.Context, tenantID,
+	relationshipID uuid.UUID, cipher, hash []byte,
+) (bool, error) {
+	return p.repo.EnsureOrganizationTaxIdentity(ctx, tenantID, relationshipID, cipher, hash)
 }

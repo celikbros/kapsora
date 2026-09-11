@@ -24,22 +24,36 @@ import (
 
 	auditpg "github.com/celikbros/kapsora/internal/audit/postgres"
 	benefitapp "github.com/celikbros/kapsora/internal/benefit/application"
-	benefitpg "github.com/celikbros/kapsora/internal/benefit/infrastructure/postgres"
 	catalogapp "github.com/celikbros/kapsora/internal/catalog/application"
-	catalogpg "github.com/celikbros/kapsora/internal/catalog/infrastructure/postgres"
+	documentapp "github.com/celikbros/kapsora/internal/document/application"
 	"github.com/celikbros/kapsora/internal/identity/application"
 	"github.com/celikbros/kapsora/internal/identity/domain"
 	identitypg "github.com/celikbros/kapsora/internal/identity/infrastructure/postgres"
 	notificationapp "github.com/celikbros/kapsora/internal/notification/application"
-	notificationpg "github.com/celikbros/kapsora/internal/notification/infrastructure/postgres"
 	partyapp "github.com/celikbros/kapsora/internal/party/application"
-	partypg "github.com/celikbros/kapsora/internal/party/infrastructure/postgres"
 	"github.com/celikbros/kapsora/internal/platform/config"
 	"github.com/celikbros/kapsora/internal/platform/crypto/localkey"
 	"github.com/celikbros/kapsora/internal/platform/db"
-	"github.com/celikbros/kapsora/internal/platform/httpx"
+	"github.com/celikbros/kapsora/internal/platform/objectstore"
 	"github.com/celikbros/kapsora/internal/platform/sqlcgen"
 )
+
+// newSeedObjectStore builds the S3 client the document steps of the business scenario write
+// through. It refuses rather than falling back to something that stores nothing: a document
+// row whose bytes were never written is a download that answers 500 six weeks later, and the
+// seed is the one place where saying so immediately costs nobody anything.
+func newSeedObjectStore(cfg config.Config) (objectstore.Store, error) {
+	if !cfg.Documents.Configured() {
+		return nil, fmt.Errorf(
+			"seed demo needs an object store for the invoice scan and the member's receipt; " +
+				"set KAPSORA_MINIO_ROOT_USER and KAPSORA_MINIO_ROOT_PASSWORD (see .env.example) " +
+				"and start it with scripts/native/up")
+	}
+	return objectstore.NewS3(objectstore.S3Options{
+		Endpoint: cfg.Documents.Endpoint, Region: cfg.Documents.Region,
+		AccessKey: cfg.Documents.AccessKey, SecretKey: cfg.Documents.SecretKey,
+	})
+}
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
@@ -63,6 +77,19 @@ type seeder struct {
 	// the field cipher and the blind indexer, because a person without an identifier is
 	// not a person anybody could be found as.
 	party *partyapp.Service
+	// keys is the platform cipher and blind indexer. The seed holds it because a VKN and a
+	// TCKN reach the database as an envelope or they do not reach it at all.
+	keys *localkey.Provider
+	// biz are the verticals the WP-I7 business scenario is driven through. It is nil in a
+	// seeder built for the reference-data steps alone.
+	biz *verticals
+	// clock is what every dated row the business scenario writes is stamped with. The steps
+	// move it, so a demo database reads like a few weeks of business rather than one instant.
+	clock *seedClock
+	// claimEpoch and claimSeq give every claim of one run a service date of its own, so the
+	// demo world does not trip WP-I5-04's duplicate check on itself.
+	claimEpoch time.Time
+	claimSeq   int
 }
 
 func run(args []string) error {
@@ -77,7 +104,7 @@ func run(args []string) error {
 		return fmt.Errorf("seed is refused in environment %q", cfg.Environment)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
 	pool, err := db.NewPool(ctx, cfg.DatabaseURL, db.PoolOptions{ApplicationName: "kapsora-seed", MaxConns: 2})
@@ -100,32 +127,6 @@ func run(args []string) error {
 	if err != nil {
 		return err
 	}
-	// The seed answers no paged HTTP request, but the catalogue and notification services
-	// require a cursor codec for the list reads they use to stay idempotent. The key is a
-	// local development constant on purpose: nothing signs a cursor a user ever holds.
-	cursors, err := httpx.NewCursorCodec([]byte("kapsora-seed-cursor-key-0123456789ab"))
-	if err != nil {
-		return err
-	}
-	catalogSvc, err := catalogapp.New(catalogapp.Deps{
-		Pool: pool, Repo: catalogpg.New(), Audit: auditpg.New(), Cursors: cursors,
-	})
-	if err != nil {
-		return err
-	}
-	// No channel adapters: the seed publishes templates and sends nothing.
-	notificationSvc, err := notificationapp.New(notificationapp.Deps{
-		Pool: pool, Repo: notificationpg.New(nil), Audit: auditpg.New(), Cursors: cursors,
-	})
-	if err != nil {
-		return err
-	}
-	benefitSvc, err := benefitapp.New(benefitapp.Deps{
-		Pool: pool, Repo: benefitpg.New(), Audit: auditpg.New(), Cursors: cursors,
-	})
-	if err != nil {
-		return err
-	}
 	// The same local key provider cmd/api uses (ADR-020). The seed writes an identifier
 	// through the ordinary encryption path rather than an INSERT of its own, so a demo
 	// database holds a TCKN exactly the way a real one does: in person_identifier.value_enc
@@ -134,10 +135,18 @@ func run(args []string) error {
 	if err != nil {
 		return err
 	}
-	partySvc, err := partyapp.New(partyapp.Deps{
-		Pool: pool, Repo: partypg.New(), Cipher: keys, Index: keys,
-		Audit: auditpg.New(), Cursors: cursors,
-	})
+	clock := &seedClock{at: time.Now().UTC()}
+	deps := seedDeps{
+		Pool: pool, Keys: keys, Logger: slog.Default(), Clock: clock,
+		Storage: documentapp.Storage{
+			QuarantineBucket: cfg.Documents.QuarantineBucket,
+			SecureBucket:     cfg.Documents.SecureBucket,
+			UploadTTL:        cfg.Documents.UploadURLTTL,
+			DownloadTTL:      cfg.Documents.DownloadURLTTL,
+			EncryptionKeyRef: cfg.Documents.EncryptionKeyRef,
+		},
+	}
+	catalogSvc, notificationSvc, benefitSvc, partySvc, err := newReferenceServices(deps)
 	if err != nil {
 		return err
 	}
@@ -150,6 +159,8 @@ func run(args []string) error {
 		notifications: notificationSvc,
 		benefits:      benefitSvc,
 		party:         partySvc,
+		keys:          keys,
+		clock:         clock,
 	}
 
 	switch args[0] {
@@ -164,6 +175,18 @@ func run(args []string) error {
 		_, err := s.ensureAccount(ctx, args[1], args[2], email, "")
 		return err
 	case "demo":
+		// The object store the business scenario's documents live in: the scan of an
+		// invoice and the member's receipt. It is the same S3 port cmd/api signs its upload
+		// URLs against, and the seed is refused without one rather than writing a document
+		// row with no bytes behind it — a download that answered 500 six weeks later would
+		// be worse than a demo that stops now and says what is missing. It is built here
+		// rather than above because `seed account` needs no file at all.
+		if deps.Store, err = newSeedObjectStore(cfg); err != nil {
+			return err
+		}
+		if s.biz, err = newVerticals(deps); err != nil {
+			return err
+		}
 		return s.demo(ctx)
 	default:
 		return fmt.Errorf("unknown command %q; use account or demo", args[0])
@@ -234,12 +257,22 @@ func (s *seeder) demo(ctx context.Context) error {
 		return err
 	}
 
+	// The demo people. The first five are M1's; the six below them are the ones the six
+	// scenarios of scripts/demo/KAPSORA-Demo-Rehberi.html are walked as, and their names are
+	// the guide's own so that a reader of the guide and a reader of the account table are
+	// looking at the same person.
 	users := []struct{ username, name string }{
 		{"admin.a", "Ayşe Admin"},
 		{"reviewer.a", "Rıza Değerlendirici"},
 		{"provider.a", "Pınar Sağlayıcı"},
 		{"admin.b", "Burak Admin"},
 		{"both.ab", "Deniz Denetçi"},
+		{"financial.reviewer", "Fuat Mali Değerlendirici"},
+		{"payer.approver", "Pınar Ödeyici Onaylayıcı"},
+		{"doctor.a", "Demet Tıbbi Değerlendirici"},
+		{"sponsor.hr", "Selin İnsan Kaynakları"},
+		{"billing.a", "Burak Faturalama"},
+		{"reservation.a", "Rezan Rezervasyon"},
 	}
 	actors := map[string]uuid.UUID{}
 	for _, u := range users {
@@ -259,6 +292,21 @@ func (s *seeder) demo(ctx context.Context) error {
 		{TenantID: tenantB, ActorID: actors["admin.b"], RoleCode: "TENANT_ADMIN"},
 		{TenantID: tenantA, ActorID: actors["both.ab"], RoleCode: "AUDITOR"},
 		{TenantID: tenantB, ActorID: actors["both.ab"], RoleCode: "AUDITOR"},
+		// WP-I7's people. Each holds exactly the role the mock world grants the same
+		// username, so the guide and the login work the same way against the mock and
+		// against the real API.
+		{TenantID: tenantA, ActorID: actors["financial.reviewer"], RoleCode: "FINANCIAL_REVIEWER"},
+		// A separate account from the reviewer on purpose: every maker-checker rule in the
+		// settlement is a rule about *which person*, and one account holding both would make
+		// scenario 3 untestable.
+		{TenantID: tenantA, ActorID: actors["payer.approver"], RoleCode: "PAYER_APPROVER"},
+		{TenantID: tenantA, ActorID: actors["doctor.a"], RoleCode: "MEDICAL_REVIEWER"},
+		{TenantID: tenantA, ActorID: actors["sponsor.hr"], RoleCode: "SPONSOR_HR"},
+		// The billing desk and the clinic desk of one hospital see the same organization and
+		// neither sees anybody else's, so `billing.a` is scoped to the relationship row
+		// `provider.a` is scoped to.
+		{TenantID: tenantA, ActorID: actors["billing.a"], RoleCode: "PROVIDER_BILLING",
+			ScopeType: application.ScopeOrganization, ScopeID: uuid.NullUUID{UUID: hospital, Valid: true}},
 	}
 	for _, g := range grants {
 		g.Reason = "seed demo"
@@ -292,8 +340,22 @@ func (s *seeder) demo(ctx context.Context) error {
 	// The member binding is DEMO_A's only: a member account acts for one person in one
 	// tenant, and a second binding in DEMO_B would make the mock world ambiguous about
 	// which one member.a is.
-	if err := s.ensureDemoMember(ctx, tenantA, demoPassword); err != nil {
+	memberActor, err := s.ensureDemoMember(ctx, tenantA, demoPassword)
+	if err != nil {
 		return err
+	}
+	actors[demoMemberUsername] = memberActor
+
+	// The business world of WP-I7: the contract, the plan, the claims, the invoices, the
+	// icmals, the settlements, the member's reimbursement, the hotel's allotment and the
+	// reconciliation runs — every state the six scenarios of the demo guide open on.
+	//
+	// It runs last because it needs everything above it: the tenant, the accounts, the
+	// grants, the notification templates and the bound member.
+	if s.biz != nil {
+		if err := s.ensureBusinessScenario(ctx, tenantA, actors); err != nil {
+			return fmt.Errorf("business scenario: %w", err)
+		}
 	}
 	fmt.Println("demo data ready")
 	return nil
