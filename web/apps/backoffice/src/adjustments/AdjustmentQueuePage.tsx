@@ -1,5 +1,5 @@
 import { ApiError, type EntitlementAdjustment } from '@kapsora/api-client';
-import { usePermission, useSession } from '@kapsora/auth';
+import { usePermission, useSelfPersonId, useSession } from '@kapsora/auth';
 import { formatDateTime, useTranslation } from '@kapsora/i18n';
 import {
   Badge,
@@ -15,6 +15,7 @@ import {
   TR,
   Table,
   type BadgeTone,
+  OwnFileNotice,
 } from '@kapsora/ui';
 import { useState } from 'react';
 
@@ -57,6 +58,9 @@ function QueueRow({
   const balances = account.data?.data;
   const definition = balances?.definition;
   const negative = isNegativeDecimal(adjustment.deltaQuantity);
+  const self = useSelfPersonId();
+  // A change to the reviewer's own balance is decided by somebody else.
+  const own = self !== null && balances?.personId === self;
 
   return (
     <TR>
@@ -111,6 +115,8 @@ function QueueRow({
           <p className="text-fg-muted max-w-prose text-xs">
             {t('entitlements.adjustments.sameActorBlocked')}
           </p>
+        ) : own ? (
+          <OwnFileNotice />
         ) : (
           // Both open a confirmation; the committing button lives there, so the row keeps
           // the quiet weight DESIGN.md asks of a list.

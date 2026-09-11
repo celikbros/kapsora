@@ -1899,6 +1899,9 @@ paths:
       tags: [Benefit]
       operationId: approveEntitlementAdjustment
       description: |
+        A reviewer may not decide a file that belongs to their own person (selfPersonId on
+        the tenant context): 403 OWN_FILE_DECISION, audited as a denial.
+
         Approves a pending adjustment and writes the ADJUST ledger movement in the same
         transaction. The approver must differ from the requester (403
         MAKER_CHECKER_SAME_ACTOR) and must have re-entered their password (step-up).
@@ -1936,7 +1939,11 @@ paths:
     post:
       tags: [Benefit]
       operationId: rejectEntitlementAdjustment
-      description: Rejects a pending adjustment with a reason; nothing moves.
+      description: |
+        A reviewer may not decide a file that belongs to their own person (selfPersonId on
+        the tenant context): 403 OWN_FILE_DECISION, audited as a denial.
+
+        Rejects a pending adjustment with a reason; nothing moves.
       parameters:
         - $ref: '#/components/parameters/TenantHeader'
         - $ref: '#/components/parameters/AdjustmentId'
@@ -2581,6 +2588,9 @@ paths:
       tags: [Service Requests]
       operationId: returnServiceRequest
       description: |
+        A reviewer may not decide a file that belongs to their own person (selfPersonId on
+        the tenant context): 403 OWN_FILE_DECISION, audited as a denial.
+
         Sends a request awaiting review or a document back to the requester. This is not a
         rejection and the two must never be collapsed: the request keeps its reference, goes
         back to DRAFT, opens the next version to be corrected in, and the reason stays on the
@@ -2636,6 +2646,9 @@ paths:
       tags: [Service Requests]
       operationId: rejectServiceRequest
       description: |
+        A reviewer may not decide a file that belongs to their own person (selfPersonId on
+        the tenant context): 403 OWN_FILE_DECISION, audited as a denial.
+
         Refuses a request awaiting review. A rejected request is finished: it is closed, its
         version is frozen and it cannot be corrected. A fresh attempt is a new request that
         names this one in supersedesRequestId, which is what keeps "we asked again,
@@ -2688,6 +2701,9 @@ paths:
       tags: [Service Requests]
       operationId: approveServiceRequest
       description: |
+        A reviewer may not decide a file that belongs to their own person (selfPersonId on
+        the tenant context): 403 OWN_FILE_DECISION, audited as a denial.
+
         Approves a request awaiting review in full. Every line is approved for what was
         requested unless the command names lines explicitly. Approval decides; it does not
         reserve anything, and no balance moves until an authorization is raised against this
@@ -2740,6 +2756,9 @@ paths:
       tags: [Service Requests]
       operationId: partiallyApproveServiceRequest
       description: |
+        A reviewer may not decide a file that belongs to their own person (selfPersonId on
+        the tenant context): 403 OWN_FILE_DECISION, audited as a denial.
+
         Approves some of what was asked for and refuses or reduces the rest. The line
         decisions are required and at least one of them has to differ from a full approval,
         otherwise the command is an approve and says so: a partial approval that approved
@@ -8695,6 +8714,9 @@ paths:
       tags: [Clinical]
       operationId: startMedicalReview
       description: |
+        A reviewer may not decide a file that belongs to their own person (selfPersonId on
+        the tenant context): 403 OWN_FILE_DECISION, audited as a denial.
+
         A reviewer has picked the report up. The worklist raises the same transition when the
         report's work item is claimed, so a reviewer who works from the queue never has to
         give this command at all.
@@ -8738,6 +8760,9 @@ paths:
       tags: [Clinical]
       operationId: approveMedicalReport
       description: |
+        A reviewer may not decide a file that belongs to their own person (selfPersonId on
+        the tenant context): 403 OWN_FILE_DECISION, audited as a denial.
+
         The decision claims and authorizations lean on.
 
         If the report is a correction, the version it corrects leaves APPROVED in the same
@@ -8797,6 +8822,9 @@ paths:
       tags: [Clinical]
       operationId: rejectMedicalReport
       description: |
+        A reviewer may not decide a file that belongs to their own person (selfPersonId on
+        the tenant context): 403 OWN_FILE_DECISION, audited as a denial.
+
         The other half of the same decision, and it says why in a code: a rejection nobody can
         count is a rejection nobody can improve on. The comment is optional, is clinical text
         and is served only in the clinical projection.
@@ -9814,6 +9842,9 @@ paths:
       tags: [Claims]
       operationId: decideClaimLines
       description: |
+        A reviewer may not decide a file that belongs to their own person (selfPersonId on
+        the tenant context): 403 OWN_FILE_DECISION, audited as a denial.
+
         Records a decision on each named line of the current version, at the stage the claim is
         waiting in.
 
@@ -9894,6 +9925,9 @@ paths:
       tags: [Claims]
       operationId: approveClaim
       description: |
+        A reviewer may not decide a file that belongs to their own person (selfPersonId on
+        the tenant context): 403 OWN_FILE_DECISION, audited as a denial.
+
         Finishes the claim. Every line of the current version must carry a decision; the status
         it lands in is what those decisions say — APPROVED when every line was approved,
         PARTIALLY_APPROVED when some were cut or rejected and something is still payable,
@@ -9968,6 +10002,9 @@ paths:
       tags: [Claims]
       operationId: rejectClaim
       description: |
+        A reviewer may not decide a file that belongs to their own person (selfPersonId on
+        the tenant context): 403 OWN_FILE_DECISION, audited as a denial.
+
         Refuses the claim outright, with a reason. Every line of the current version is
         recorded REJECTED at the caller's stage, whatever it carried before, and anything the
         claim was holding on its authorization is released — a refused claim must not keep a
@@ -10027,6 +10064,9 @@ paths:
       tags: [Claims]
       operationId: returnClaim
       description: |
+        A reviewer may not decide a file that belongs to their own person (selfPersonId on
+        the tenant context): 403 OWN_FILE_DECISION, audited as a denial.
+
         Sends the claim back to the provider to be corrected, with a reason.
 
         It never edits the decided version. The submitted version becomes SUPERSEDED with the
@@ -10271,6 +10311,9 @@ paths:
       tags: [Claims]
       operationId: createClaimAdjustment
       description: |
+        A reviewer may not decide a file that belongs to their own person (selfPersonId on
+        the tenant context): 403 OWN_FILE_DECISION, audited as a denial.
+
         Records money that moved on a decided claim: a `CUT`, a `RECOVERY` or a `CORRECTION`
         with its payer/member split, a reason code from the closed list, and optionally the
         line it belongs to.
@@ -11498,6 +11541,9 @@ paths:
       tags: [Accommodation]
       operationId: reviewNoShow
       description: |
+        A reviewer may not decide a file that belongs to their own person (selfPersonId on
+        the tenant context): 403 OWN_FILE_DECISION, audited as a denial.
+
         The payer's answer to a provider's claim, and the only place a no-show costs anybody
         anything.
 
@@ -13227,6 +13273,9 @@ paths:
       tags: [Billing]
       operationId: decideReimbursement
       description: |
+        A reviewer may not decide a file that belongs to their own person (selfPersonId on
+        the tenant context): 403 OWN_FILE_DECISION, audited as a denial.
+
         Answers the member: approve in full, approve in part with a reason, or reject with a
         reason.
 

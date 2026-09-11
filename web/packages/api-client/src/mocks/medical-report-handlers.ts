@@ -47,6 +47,7 @@ import {
   withinScope,
   type FieldError,
   type Schemas,
+  ownFile,
 } from './handlers';
 import {
   NO_STORE,
@@ -847,6 +848,8 @@ export function medicalReportHandlers(api: MockApi): HttpHandler[] {
           'start-review',
         );
         if ('error' in guard) return guard.error;
+        const own = ownFile(api, g.session, g.tenantId, guard.row.personId);
+        if (own) return own;
         guard.row.status = guard.to;
         guard.row.rowVersion += 1;
         return answer(g.session, g.tenantId, guard.row);
@@ -867,6 +870,8 @@ export function medicalReportHandlers(api: MockApi): HttpHandler[] {
         'approve',
       );
       if ('error' in guard) return guard.error;
+      const own = ownFile(api, g.session, g.tenantId, guard.row.personId);
+      if (own) return own;
       const body = (await readJson<Schemas['DecideMedicalReport']>(request)) ?? {};
       if ((body.reviewComment ?? '').length > MAX_SUMMARY) {
         return validationFailed(api, [
@@ -905,6 +910,8 @@ export function medicalReportHandlers(api: MockApi): HttpHandler[] {
         'reject',
       );
       if ('error' in guard) return guard.error;
+      const own = ownFile(api, g.session, g.tenantId, guard.row.personId);
+      if (own) return own;
       const body = await readJson<Schemas['RejectMedicalReport']>(request);
       if (!body) {
         return problem(api, 400, 'INVALID_REQUEST_BODY', 'İstek gövdesi geçersiz');

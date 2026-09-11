@@ -530,6 +530,30 @@ export function organizationScope(
 }
 
 /**
+ * The server's own-file rule (identity.RefuseOwnFile): a reviewer may not decide a file that
+ * belongs to the person their account is, whichever app they came from. Answers the 403 the
+ * server does, or null when the file is somebody else's.
+ */
+export function ownFile(
+  api: MockApi,
+  session: MockSession,
+  tenantId: string,
+  personId: string | null | undefined,
+): Response | null {
+  const tenant = api.world.tenants.find((t) => t.id === tenantId);
+  if (!tenant || !personId) return null;
+  const self =
+    session.account.memberships
+      .filter((m) => m.tenantCode === tenant.code)
+      .flatMap((m) => m.scopes ?? [])
+      .find((g) => g.type === 'PERSON')?.id ?? null;
+  if (self === null || self !== personId) return null;
+  return problem(api, 403, 'OWN_FILE_DECISION', 'Bu dosya size ait', {
+    detail: 'Kendi dosyanıza karar veremezsiniz; başka bir değerlendirici karar vermeli.',
+  });
+}
+
+/**
  * The person this session is bound to in this tenant, or null for a desk.
  *
  * It is the PERSON access grant and nothing else, exactly as the server reads it: a member

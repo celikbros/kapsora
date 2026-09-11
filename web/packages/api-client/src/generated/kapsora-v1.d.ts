@@ -349,7 +349,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * @description The payer's answer to a provider's claim, and the only place a no-show costs anybody
+         * @description A reviewer may not decide a file that belongs to their own person (selfPersonId on
+         *     the tenant context): 403 OWN_FILE_DECISION, audited as a denial.
+         *
+         *     The payer's answer to a provider's claim, and the only place a no-show costs anybody
          *     anything.
          *
          *     **The reviewer may not be the reporter.** It is refused with NO_SHOW_SAME_ACTOR, and a
@@ -1218,7 +1221,10 @@ export interface paths {
         get: operations["listClaimAdjustments"];
         put?: never;
         /**
-         * @description Records money that moved on a decided claim: a `CUT`, a `RECOVERY` or a `CORRECTION`
+         * @description A reviewer may not decide a file that belongs to their own person (selfPersonId on
+         *     the tenant context): 403 OWN_FILE_DECISION, audited as a denial.
+         *
+         *     Records money that moved on a decided claim: a `CUT`, a `RECOVERY` or a `CORRECTION`
          *     with its payer/member split, a reason code from the closed list, and optionally the
          *     line it belongs to.
          *
@@ -1252,7 +1258,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * @description Finishes the claim. Every line of the current version must carry a decision; the status
+         * @description A reviewer may not decide a file that belongs to their own person (selfPersonId on
+         *     the tenant context): 403 OWN_FILE_DECISION, audited as a denial.
+         *
+         *     Finishes the claim. Every line of the current version must carry a decision; the status
          *     it lands in is what those decisions say — APPROVED when every line was approved,
          *     PARTIALLY_APPROVED when some were cut or rejected and something is still payable,
          *     REJECTED when nothing is.
@@ -1334,7 +1343,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * @description Records a decision on each named line of the current version, at the stage the claim is
+         * @description A reviewer may not decide a file that belongs to their own person (selfPersonId on
+         *     the tenant context): 403 OWN_FILE_DECISION, audited as a denial.
+         *
+         *     Records a decision on each named line of the current version, at the stage the claim is
          *     waiting in.
          *
          *     The stage is not the caller's choice. A claim in PENDING_MEDICAL is decided by a holder
@@ -1393,7 +1405,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * @description Refuses the claim outright, with a reason. Every line of the current version is
+         * @description A reviewer may not decide a file that belongs to their own person (selfPersonId on
+         *     the tenant context): 403 OWN_FILE_DECISION, audited as a denial.
+         *
+         *     Refuses the claim outright, with a reason. Every line of the current version is
          *     recorded REJECTED at the caller's stage, whatever it carried before, and anything the
          *     claim was holding on its authorization is released — a refused claim must not keep a
          *     member's entitlement reserved.
@@ -1417,7 +1432,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * @description Sends the claim back to the provider to be corrected, with a reason.
+         * @description A reviewer may not decide a file that belongs to their own person (selfPersonId on
+         *     the tenant context): 403 OWN_FILE_DECISION, audited as a denial.
+         *
+         *     Sends the claim back to the provider to be corrected, with a reason.
          *
          *     It never edits the decided version. The submitted version becomes SUPERSEDED with the
          *     return reason on it and keeps every line decision it was given, and version n+1 is
@@ -2333,7 +2351,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * @description Approves a pending adjustment and writes the ADJUST ledger movement in the same
+         * @description A reviewer may not decide a file that belongs to their own person (selfPersonId on
+         *     the tenant context): 403 OWN_FILE_DECISION, audited as a denial.
+         *
+         *     Approves a pending adjustment and writes the ADJUST ledger movement in the same
          *     transaction. The approver must differ from the requester (403
          *     MAKER_CHECKER_SAME_ACTOR) and must have re-entered their password (step-up).
          */
@@ -2353,7 +2374,12 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Rejects a pending adjustment with a reason; nothing moves. */
+        /**
+         * @description A reviewer may not decide a file that belongs to their own person (selfPersonId on
+         *     the tenant context): 403 OWN_FILE_DECISION, audited as a denial.
+         *
+         *     Rejects a pending adjustment with a reason; nothing moves.
+         */
         post: operations["rejectEntitlementAdjustment"];
         delete?: never;
         options?: never;
@@ -3433,7 +3459,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * @description The decision claims and authorizations lean on.
+         * @description A reviewer may not decide a file that belongs to their own person (selfPersonId on
+         *     the tenant context): 403 OWN_FILE_DECISION, audited as a denial.
+         *
+         *     The decision claims and authorizations lean on.
          *
          *     If the report is a correction, the version it corrects leaves APPROVED in the same
          *     transaction, so the chain has exactly one approved version at every moment a reader
@@ -3483,7 +3512,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * @description The other half of the same decision, and it says why in a code: a rejection nobody can
+         * @description A reviewer may not decide a file that belongs to their own person (selfPersonId on
+         *     the tenant context): 403 OWN_FILE_DECISION, audited as a denial.
+         *
+         *     The other half of the same decision, and it says why in a code: a rejection nobody can
          *     count is a rejection nobody can improve on. The comment is optional, is clinical text
          *     and is served only in the clinical projection.
          *
@@ -3534,7 +3566,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * @description A reviewer has picked the report up. The worklist raises the same transition when the
+         * @description A reviewer may not decide a file that belongs to their own person (selfPersonId on
+         *     the tenant context): 403 OWN_FILE_DECISION, audited as a denial.
+         *
+         *     A reviewer has picked the report up. The worklist raises the same transition when the
          *     report's work item is claimed, so a reviewer who works from the queue never has to
          *     give this command at all.
          */
@@ -4996,7 +5031,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * @description Answers the member: approve in full, approve in part with a reason, or reject with a
+         * @description A reviewer may not decide a file that belongs to their own person (selfPersonId on
+         *     the tenant context): 403 OWN_FILE_DECISION, audited as a denial.
+         *
+         *     Answers the member: approve in full, approve in part with a reason, or reject with a
          *     reason.
          *
          *     **An approval consumes the member's money entitlement, on approval, for exactly the
@@ -5566,7 +5604,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * @description Approves a request awaiting review in full. Every line is approved for what was
+         * @description A reviewer may not decide a file that belongs to their own person (selfPersonId on
+         *     the tenant context): 403 OWN_FILE_DECISION, audited as a denial.
+         *
+         *     Approves a request awaiting review in full. Every line is approved for what was
          *     requested unless the command names lines explicitly. Approval decides; it does not
          *     reserve anything, and no balance moves until an authorization is raised against this
          *     request.
@@ -5632,7 +5673,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * @description Approves some of what was asked for and refuses or reduces the rest. The line
+         * @description A reviewer may not decide a file that belongs to their own person (selfPersonId on
+         *     the tenant context): 403 OWN_FILE_DECISION, audited as a denial.
+         *
+         *     Approves some of what was asked for and refuses or reduces the rest. The line
          *     decisions are required and at least one of them has to differ from a full approval,
          *     otherwise the command is an approve and says so: a partial approval that approved
          *     everything would leave a member reading a word that does not match the numbers.
@@ -5654,7 +5698,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * @description Refuses a request awaiting review. A rejected request is finished: it is closed, its
+         * @description A reviewer may not decide a file that belongs to their own person (selfPersonId on
+         *     the tenant context): 403 OWN_FILE_DECISION, audited as a denial.
+         *
+         *     Refuses a request awaiting review. A rejected request is finished: it is closed, its
          *     version is frozen and it cannot be corrected. A fresh attempt is a new request that
          *     names this one in supersedesRequestId, which is what keeps "we asked again,
          *     differently" readable rather than hidden inside one row that changed its mind.
@@ -5676,7 +5723,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * @description Sends a request awaiting review or a document back to the requester. This is not a
+         * @description A reviewer may not decide a file that belongs to their own person (selfPersonId on
+         *     the tenant context): 403 OWN_FILE_DECISION, audited as a denial.
+         *
+         *     Sends a request awaiting review or a document back to the requester. This is not a
          *     rejection and the two must never be collapsed: the request keeps its reference, goes
          *     back to DRAFT, opens the next version to be corrected in, and the reason stays on the
          *     version that was sent back, so what was submitted the first time is still readable

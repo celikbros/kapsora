@@ -5,7 +5,7 @@ import type {
   ServiceRequestItems,
   ServiceRequestVersionSummary,
 } from '@kapsora/api-client';
-import { usePermission } from '@kapsora/auth';
+import { usePermission, useSelfPersonId } from '@kapsora/auth';
 import { formatDate, formatDateTime, formatMoney, useTranslation } from '@kapsora/i18n';
 import {
   Badge,
@@ -27,6 +27,7 @@ import {
   Table,
   Textarea,
   useToast,
+  OwnFileNotice,
 } from '@kapsora/ui';
 import { Link, useParams } from '@tanstack/react-router';
 import { useState, type FormEvent } from 'react';
@@ -642,6 +643,7 @@ export function RequestDetailPage() {
   const canSubmit = usePermission('service_request.submit');
   const canReview = usePermission('service_request.review');
   const canCancel = usePermission('service_request.cancel');
+  const self = useSelfPersonId();
   const [dialog, setDialog] = useState<Command | null>(null);
 
   if (query.isPending) {
@@ -686,12 +688,15 @@ export function RequestDetailPage() {
     request.status === 'EXPIRED' ||
     request.status === 'CLOSED';
   const lastReturned = (versions.data ?? []).find((v) => v.returnedAt);
+  // A reviewer's own file: they may read it, but the decision is somebody else's.
+  const own = self !== null && request.personId === self;
+  const ownPending = own && canReview && (allowed.return || allowed.reject || allowed.approve);
   const offer = {
     submit: allowed.submit && canSubmit,
-    return: allowed.return && canReview,
-    reject: allowed.reject && canReview,
-    approve: allowed.approve && canReview,
-    partiallyApprove: allowed.partiallyApprove && canReview,
+    return: allowed.return && canReview && !own,
+    reject: allowed.reject && canReview && !own,
+    approve: allowed.approve && canReview && !own,
+    partiallyApprove: allowed.partiallyApprove && canReview && !own,
     cancel: allowed.cancel && canCancel,
   };
   const anyCommand = Object.values(offer).some(Boolean);
@@ -811,6 +816,7 @@ export function RequestDetailPage() {
         </section>
       ) : null}
 
+      {ownPending ? <OwnFileNotice className="mb-4" /> : null}
       {anyCommand ? (
         <div className="mb-4 flex flex-wrap gap-2" data-testid="request-commands">
           {offer.submit ? (

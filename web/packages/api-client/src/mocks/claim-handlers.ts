@@ -70,6 +70,7 @@ import {
   withinScope,
   type FieldError,
   type Schemas,
+  ownFile,
 } from './handlers';
 import {
   NO_STORE,
@@ -1378,6 +1379,8 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
         'DECIDE',
       );
       if ('error' in found) return found.error;
+      const own = ownFile(api, gg.session, gg.tenantId, found.row.personId);
+      if (own) return own;
       const claim = found.row;
       const stage: Schemas['ClaimDecisionStage'] =
         claim.status === 'PENDING_MEDICAL' ? 'MEDICAL' : 'FINANCIAL';
@@ -1484,6 +1487,8 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
         'APPROVE',
       );
       if ('error' in found) return found.error;
+      const own = ownFile(api, gg.session, gg.tenantId, found.row.personId);
+      if (own) return own;
       const body = await readJson<Schemas['ClaimDecisionReason']>(request);
       if (!body || !REASON_CODE.test(body.reasonCode)) {
         return validationFailed(api, [{ field: 'reasonCode', code: 'FORMAT' }]);
@@ -1520,6 +1525,8 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
         'REJECT',
       );
       if ('error' in found) return found.error;
+      const own = ownFile(api, gg.session, gg.tenantId, found.row.personId);
+      if (own) return own;
       const body = await readJson<Schemas['ClaimDecisionReason']>(request);
       if (!body || !REASON_CODE.test(body.reasonCode)) {
         return validationFailed(api, [{ field: 'reasonCode', code: 'FORMAT' }]);
@@ -1579,6 +1586,8 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
         'RETURN',
       );
       if ('error' in found) return found.error;
+      const own = ownFile(api, gg.session, gg.tenantId, found.row.personId);
+      if (own) return own;
       const body = await readJson<Schemas['ClaimReturnReason']>(request);
       if (!body || !REASON_CODE.test(body.reasonCode)) {
         return validationFailed(api, [{ field: 'reasonCode', code: 'FORMAT' }]);

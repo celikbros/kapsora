@@ -218,7 +218,23 @@ var (
 	// binding worth having: a member cannot hold a room for their neighbour by editing a
 	// request body.
 	ErrPersonScope = errors.New("identity: this caller may act only for its own person")
+	// ErrOwnFile is a reviewer deciding a file that belongs to the person they are. A member
+	// who also works as staff reviews everyone's files but their own: whoever decides a
+	// claim, a request, a report or a refund must not be the person it pays or refuses.
+	ErrOwnFile = errors.New("identity: a person may not decide their own file")
 )
+
+// RefuseOwnFile refuses a decision on a file whose person is the caller's own person. It
+// reads SelfPersonID, which is set whichever app the request came from, so a reviewer who is
+// also a member is recognised in the backoffice, where they act for nobody. It is called by
+// every command that decides a person's file, after the file is locked and before anything
+// is written.
+func RefuseOwnFile(rc RequestContext, subject uuid.UUID) error {
+	if subject != uuid.Nil && rc.SelfPersonID.Valid && rc.SelfPersonID.UUID == subject {
+		return ErrOwnFile
+	}
+	return nil
+}
 
 type ctxKey struct{}
 type sessionCtxKey struct{}

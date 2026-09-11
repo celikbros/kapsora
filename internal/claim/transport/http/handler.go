@@ -204,6 +204,8 @@ func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) 
 	var ve *domain.ValidationError
 	var healthVE *healthdomain.ValidationError
 	switch {
+	case errors.Is(err, identity.ErrOwnFile):
+		h.deny.Deny(w, r, err, "claim.review")
 	case errors.As(err, &ve):
 		writeValidation(w, r, ve.Fields)
 	case errors.As(err, &healthVE):

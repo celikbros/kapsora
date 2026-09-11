@@ -105,6 +105,7 @@ type scenario struct {
 	billing     uuid.UUID // billing.a: raises invoices and sends icmals
 	reservation uuid.UUID // reservation.a: keeps the hotel's allotment
 	member      uuid.UUID // member.a: asks for the reimbursement
+	provider    uuid.UUID // provider.a: the clinic desk that raises requests and reports
 
 	sponsorOrg  uuid.UUID
 	payerOrg    uuid.UUID
@@ -223,6 +224,7 @@ func (s *seeder) ensureBusinessScenario(ctx context.Context, tenantID uuid.UUID,
 		billing:     actors["billing.a"],
 		reservation: actors["reservation.a"],
 		member:      actors["member.a"],
+		provider:    actors["provider.a"],
 		services:    map[string]uuid.UUID{},
 	}
 	steps := []struct {
@@ -240,6 +242,9 @@ func (s *seeder) ensureBusinessScenario(ctx context.Context, tenantID uuid.UUID,
 		{"reimbursement", s.ensureDemoReimbursement},
 		{"accommodation", s.ensureDemoAccommodation},
 		{"reconciliation", s.ensureDemoReconciliation},
+		// Last, and on its own: the staff member's files belong to a second person, and none of
+		// the steps above reads anything of hers.
+		{"staff member", s.ensureStaffMemberFiles},
 	}
 	for _, st := range steps {
 		if err := st.run(ctx, sc); err != nil {

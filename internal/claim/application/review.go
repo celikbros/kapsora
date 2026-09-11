@@ -63,6 +63,10 @@ func (s *Service) DecideLines(ctx context.Context, rc identity.RequestContext, i
 		if err != nil {
 			return err
 		}
+		// A reviewer may not decide a file that belongs to their own person.
+		if err := identity.RefuseOwnFile(rc, current.PersonID); err != nil {
+			return err
+		}
 		if !domain.Allowed(domain.CommandDecide, current.Status) {
 			return ErrTransitionInvalid
 		}
@@ -206,6 +210,10 @@ func (s *Service) Approve(ctx context.Context, rc identity.RequestContext, id uu
 		if err != nil {
 			return err
 		}
+		// A reviewer may not decide a file that belongs to their own person.
+		if err := identity.RefuseOwnFile(rc, current.PersonID); err != nil {
+			return err
+		}
 		if !domain.Allowed(domain.CommandApprove, current.Status) {
 			return ErrTransitionInvalid
 		}
@@ -307,6 +315,10 @@ func (s *Service) Reject(ctx context.Context, rc identity.RequestContext, id uui
 		if err != nil {
 			return err
 		}
+		// A reviewer may not decide a file that belongs to their own person.
+		if err := identity.RefuseOwnFile(rc, current.PersonID); err != nil {
+			return err
+		}
 		if !domain.Allowed(domain.CommandReject, current.Status) {
 			return ErrTransitionInvalid
 		}
@@ -395,6 +407,10 @@ func (s *Service) Return(ctx context.Context, rc identity.RequestContext, id uui
 	err := s.withTx(ctx, rc, func(ctx context.Context, tx pgx.Tx) error {
 		current, err := s.repo.LockClaim(ctx, tx, rc.TenantID, id, scopeOf(rc))
 		if err != nil {
+			return err
+		}
+		// A reviewer may not decide a file that belongs to their own person.
+		if err := identity.RefuseOwnFile(rc, current.PersonID); err != nil {
 			return err
 		}
 		if !domain.Allowed(domain.CommandReturn, current.Status) {

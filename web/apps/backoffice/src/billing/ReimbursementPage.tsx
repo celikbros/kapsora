@@ -1,3 +1,4 @@
+import { useSelfPersonId } from '@kapsora/auth';
 import { formatDate, formatDateTime, formatMoney, useTranslation } from '@kapsora/i18n';
 import {
   Badge,
@@ -12,6 +13,7 @@ import {
   Spinner,
   Textarea,
   useToast,
+  OwnFileNotice,
 } from '@kapsora/ui';
 import { Link, useParams } from '@tanstack/react-router';
 import { useState, type FormEvent } from 'react';
@@ -38,6 +40,7 @@ export function ReimbursementPage() {
   const reimbursement = useReimbursement(reimbursementId);
   const decide = useDecideReimbursement(reimbursementId);
   const pay = useRecordReimbursementPayment(reimbursementId);
+  const self = useSelfPersonId();
   const record = reimbursement.data?.data ?? null;
   const etag = reimbursement.data?.etag ?? '';
   const person = usePersonName(record?.personId);
@@ -52,7 +55,10 @@ export function ReimbursementPage() {
   if (reimbursement.isPending) return <Spinner />;
   if (reimbursement.isError) return <ProblemAlert problem={problemOf(reimbursement.error)} />;
   if (!record) return null;
-  const decidable = record.status === 'SUBMITTED' || record.status === 'UNDER_REVIEW';
+  // A reviewer's own refund: readable, decided by somebody else.
+  const own = self !== null && record.personId === self;
+  const open = record.status === 'SUBMITTED' || record.status === 'UNDER_REVIEW';
+  const decidable = open && !own;
   const payable =
     record.status === 'APPROVED' ||
     record.status === 'PARTIALLY_APPROVED' ||
@@ -220,6 +226,8 @@ export function ReimbursementPage() {
           ) : null}
         </ol>
       </Card>
+
+      {open && own ? <OwnFileNotice /> : null}
 
       {decidable ? (
         <Card>

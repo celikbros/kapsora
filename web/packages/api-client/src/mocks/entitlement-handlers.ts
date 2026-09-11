@@ -32,6 +32,7 @@ import {
   stepUpRequired,
   wait,
   type Schemas,
+  ownFile,
 } from './handlers';
 
 export function entitlementHandlers(api: MockApi): HttpHandler[] {
@@ -195,6 +196,13 @@ export function entitlementHandlers(api: MockApi): HttpHandler[] {
         if (adjustment.requestedBy === g.session.account.actorId) {
           return problem(api, 403, 'MAKER_CHECKER_SAME_ACTOR', 'Kendi talebinizi onaylayamazsınız');
         }
+        const own = ownFile(
+          api,
+          g.session,
+          g.tenantId,
+          findAccount(g.tenantId, adjustment.accountId)?.personId,
+        );
+        if (own) return own;
         const account = findAccount(g.tenantId, adjustment.accountId);
         if (!account) return problem(api, 404, 'RESOURCE_NOT_FOUND', 'Kaynak bulunamadı');
         const body = (await readJson<Schemas['ReviewComment']>(request)) ?? {};
@@ -252,6 +260,13 @@ export function entitlementHandlers(api: MockApi): HttpHandler[] {
         if (adjustment.requestedBy === g.session.account.actorId) {
           return problem(api, 403, 'MAKER_CHECKER_SAME_ACTOR', 'Kendi talebinizi reddedemezsiniz');
         }
+        const own = ownFile(
+          api,
+          g.session,
+          g.tenantId,
+          findAccount(g.tenantId, adjustment.accountId)?.personId,
+        );
+        if (own) return own;
         const body = await readJson<Schemas['ReasonCommand']>(request);
         if (!body?.reasonCode) {
           return problem(api, 422, 'VALIDATION_FAILED', 'Doğrulama hatası', {

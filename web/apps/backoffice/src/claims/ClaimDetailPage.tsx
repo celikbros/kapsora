@@ -7,7 +7,7 @@ import type {
   ClaimLineDecisionInput,
   Diagnosis,
 } from '@kapsora/api-client';
-import { usePermission } from '@kapsora/auth';
+import { usePermission, useSelfPersonId } from '@kapsora/auth';
 import { formatDate, formatDateTime, formatMoney, useTranslation } from '@kapsora/i18n';
 import {
   Badge,
@@ -30,6 +30,7 @@ import {
   Textarea,
   useMinWidth,
   useToast,
+  OwnFileNotice,
 } from '@kapsora/ui';
 import { Link, useParams } from '@tanstack/react-router';
 import { useState, type ReactNode } from 'react';
@@ -526,6 +527,7 @@ export function ClaimDetailPage() {
   const query = useClaim(claimId, access);
   const canMedical = usePermission('claim.medical.review');
   const canFinancial = usePermission('claim.financial.review');
+  const self = useSelfPersonId();
   const commands = useClaimCommands(claimId, access);
   const claim = query.data?.data;
   const personName = usePersonName(claim?.personId);
@@ -579,14 +581,18 @@ export function ClaimDetailPage() {
     );
   }
 
-  const stage: Stage =
-    claim.status === 'PENDING_MEDICAL' && canMedical
+  // A reviewer's own claim: readable, never decidable by them.
+  const own = self !== null && claim.personId === self;
+  const stage: Stage = own
+    ? null
+    : claim.status === 'PENDING_MEDICAL' && canMedical
       ? 'MEDICAL'
       : claim.status === 'PENDING_FINANCIAL' && canFinancial
         ? 'FINANCIAL'
         : null;
   const reviewing = claim.status === 'PENDING_MEDICAL' || claim.status === 'PENDING_FINANCIAL';
   const mayFinish =
+    !own &&
     reviewing &&
     ((claim.status === 'PENDING_MEDICAL' && canMedical) ||
       (claim.status === 'PENDING_FINANCIAL' && canFinancial));
@@ -670,6 +676,7 @@ export function ClaimDetailPage() {
             <Badge tone={claimTone(claim.status)} data-testid="claim-status">
               {t(`claims.status.${claim.status}`)}
             </Badge>
+            {own && reviewing ? <OwnFileNotice /> : null}
             {mayFinish && allDecided ? (
               <Button size="sm" onClick={() => setCommand('approve')}>
                 {t('claims.commands.approve')}

@@ -18,6 +18,7 @@ export type { PasswordInputProps } from './PasswordInput';
 export { DemoAccounts } from './DemoAccounts';
 export type { DemoAccount } from './DemoAccounts';
 export { AppChooser } from './AppChooser';
+export { OwnFileNotice } from './OwnFileNotice';
 export type { AppChooserProps, AppKind } from './AppChooser';
 export { AppShell, Breadcrumb, Card, PageHeader } from './PageShell';
 export type { AppShellProps, BreadcrumbItem, PageHeaderProps } from './PageShell';

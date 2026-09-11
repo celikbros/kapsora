@@ -51,6 +51,7 @@ import {
   withinScope,
   type FieldError,
   type Schemas,
+  ownFile,
 } from './handlers';
 import { runRules } from './rules-handlers';
 
@@ -591,6 +592,10 @@ export function serviceRequestHandlers(api: MockApi): HttpHandler[] {
       if (errors.length > 0) return validationFailed(api, errors);
       const found = find(g.session, g.tenantId, pathParam(params, 'requestId'));
       if (!found) return requestNotFound(api);
+      if (command !== 'CANCEL') {
+        const own = ownFile(api, g.session, g.tenantId, found.personId);
+        if (own) return own;
+      }
       const to = transitionTarget(command, found.status);
       if (!to) return transitionInvalid(api);
       if (found.rowVersion !== expected) return etagMismatch(api);
@@ -670,6 +675,8 @@ export function serviceRequestHandlers(api: MockApi): HttpHandler[] {
 
       const found = find(g.session, g.tenantId, pathParam(params, 'requestId'));
       if (!found) return requestNotFound(api);
+      const own = ownFile(api, g.session, g.tenantId, found.personId);
+      if (own) return own;
       const to = transitionTarget(command, found.status);
       if (!to) return transitionInvalid(api);
       if (found.rowVersion !== expected) return etagMismatch(api);

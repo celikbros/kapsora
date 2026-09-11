@@ -679,6 +679,15 @@ in the app it opened by address meets the same card, forwarded when it has exact
 Nothing of an app renders for an account with no work in it. The tenant picker lists only the
 tenants that fit the app.
 
+**Your own file is readable, never decidable.** When a file's person is the reviewer's own
+(`selfPersonId` on the tenant context — a reviewer who is also a member), the decision controls
+are absent, not disabled, and one quiet note stands where they would be: "Bu dosya size ait.
+Kendi dosyanıza karar veremezsiniz; başka bir değerlendirici karar vermeli." It uses the sunken
+surface and muted text, never a warning colour: nothing is wrong, the decision is simply someone
+else's. The server refuses it anyway (403 OWN_FILE_DECISION, audited), so the note is the
+sentence, not the lock. The same note serves requests, claims, medical reports, refunds and
+balance adjustments.
+
 ## Motion
 
 Toasts slide up 160ms ease-out. The member surface adds the system's one authored moment:

@@ -37,6 +37,10 @@
     "medicalReports": "Tıbbi inceleme",
     "billing": "İcmal ve Ödeme"
   },
+  "ownFile": {
+    "title": "Bu dosya size ait.",
+    "body": "Kendi dosyanıza karar veremezsiniz; başka bir değerlendirici karar vermeli."
+  },
   "auth": {
     "loginTitle": "Oturum aç",
     "loginIntro": "KAPSORA hesabınızla giriş yapın.",

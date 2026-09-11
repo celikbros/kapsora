@@ -114,6 +114,11 @@ func (h *Handler) require(w http.ResponseWriter, r *http.Request, permission str
 // carry extension members rather than prose, because the fact is what makes them actionable:
 // a mismatch carries both figures and the difference, and a refused allocation names the claim.
 func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) {
+	// A reviewer deciding their own refund: a 403, audited like any other denial.
+	if errors.Is(err, identity.ErrOwnFile) {
+		h.deny.Deny(w, r, err, "claim.financial.review")
+		return
+	}
 	// The icmal's and the settlement's own refusals first. They are separate switches only so
 	// this one does not grow to fifty arms; nothing below can match an error one of them
 	// handled.

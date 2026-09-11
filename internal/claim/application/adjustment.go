@@ -75,6 +75,10 @@ func (s *Service) CreateAdjustment(ctx context.Context, rc identity.RequestConte
 		if err != nil {
 			return err
 		}
+		// Cutting or restoring money on a claim is a decision on it: not on your own.
+		if err := identity.RefuseOwnFile(rc, record.PersonID); err != nil {
+			return err
+		}
 		if !domain.Decided(record.Status) {
 			return ErrNotDecided
 		}

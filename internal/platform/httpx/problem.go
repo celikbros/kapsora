@@ -170,3 +170,16 @@ func WritePersonBindingMissingProblem(w http.ResponseWriter, r *http.Request) {
 		Detail: "Üye hesabınızın kayıt işlemi tamamlanmadığı için kendi bilgilerinizi göremiyoruz; kurumunuzun yetkilisine başvurun.",
 	})
 }
+
+// WriteOwnFileProblem answers a reviewer deciding a file that belongs to the person they are.
+// It names nothing about the file: the reviewer already knows whose it is, and the point of
+// the answer is who should decide it instead.
+func WriteOwnFileProblem(w http.ResponseWriter, r *http.Request) {
+	WriteProblem(w, r, Problem{
+		Type:   ProblemTypeBase + "identity/own-file-decision",
+		Title:  "Bu dosya size ait",
+		Status: http.StatusForbidden,
+		Code:   "OWN_FILE_DECISION",
+		Detail: "Kendi dosyanıza karar veremezsiniz; başka bir değerlendirici karar vermeli.",
+	})
+}

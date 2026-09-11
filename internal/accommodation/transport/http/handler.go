@@ -114,6 +114,8 @@ func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) 
 	var unpriceable *application.QuoteUnavailable
 	var checkInWindow *application.CheckInWindowClosed
 	switch {
+	case errors.Is(err, identity.ErrOwnFile):
+		h.deny.Deny(w, r, err, "accommodation.no_show.review")
 	case errors.As(err, &ve):
 		writeValidation(w, r, ve.Fields)
 	case errors.As(err, &below):

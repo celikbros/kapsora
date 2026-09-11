@@ -272,6 +272,10 @@ func (s *Service) reviewNoShow(ctx context.Context, tx pgx.Tx, rc identity.Reque
 		*report.ReportedByActorID == rc.Principal.ActorID {
 		return NoShowView{}, ErrNoShowSameActor
 	}
+	// Nor may a reviewer decide what their own no-show costs them.
+	if err := identity.RefuseOwnFile(rc, record.PersonID); err != nil {
+		return NoShowView{}, err
+	}
 
 	consumed := 0
 	if in.Status == NoShowConfirmed {

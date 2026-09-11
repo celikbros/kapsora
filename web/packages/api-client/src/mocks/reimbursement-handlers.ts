@@ -43,6 +43,7 @@ import {
   type FieldError,
   type MockApi,
   type Schemas,
+  ownFile,
 } from './handlers';
 import { NO_STORE } from './health-handlers';
 
@@ -545,6 +546,8 @@ export function reimbursementHandlers(api: MockApi): HttpHandler[] {
         if (missing) return missing;
         const row = rowOf(g.tenantId, pathParam(params, 'reimbursementId'));
         if (!row) return notFoundProblem();
+        const own = ownFile(api, g.session, g.tenantId, row.personId);
+        if (own) return own;
         const expected = requireIfMatch(api, request);
         if (expected instanceof Response) return expected;
         if (expected !== row.rowVersion) {

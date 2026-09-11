@@ -46,6 +46,10 @@ func (s *Service) Return(ctx context.Context, rc identity.RequestContext, id uui
 		if err != nil {
 			return err
 		}
+		// A reviewer may not decide a file that belongs to their own person.
+		if err := identity.RefuseOwnFile(rc, current.PersonID); err != nil {
+			return err
+		}
 		submitted, err := s.repo.GetVersionByNo(ctx, tx, rc.TenantID, id, current.CurrentVersionNo)
 		if err != nil {
 			return err
@@ -112,6 +116,10 @@ func (s *Service) Reject(ctx context.Context, rc identity.RequestContext, id uui
 	err := s.withTx(ctx, rc, func(ctx context.Context, tx pgx.Tx) error {
 		current, err := s.lockFor(ctx, tx, rc, id, domain.CommandReject, in.ExpectedVersion)
 		if err != nil {
+			return err
+		}
+		// A reviewer may not decide a file that belongs to their own person.
+		if err := identity.RefuseOwnFile(rc, current.PersonID); err != nil {
 			return err
 		}
 		version, err := s.repo.GetVersionByNo(ctx, tx, rc.TenantID, id, current.CurrentVersionNo)
@@ -184,6 +192,10 @@ func (s *Service) decide(ctx context.Context, rc identity.RequestContext, id uui
 	err := s.withTx(ctx, rc, func(ctx context.Context, tx pgx.Tx) error {
 		current, err := s.lockFor(ctx, tx, rc, id, command, in.ExpectedVersion)
 		if err != nil {
+			return err
+		}
+		// A reviewer may not decide a file that belongs to their own person.
+		if err := identity.RefuseOwnFile(rc, current.PersonID); err != nil {
 			return err
 		}
 		version, err := s.repo.GetVersionByNo(ctx, tx, rc.TenantID, id, current.CurrentVersionNo)

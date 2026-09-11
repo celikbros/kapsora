@@ -960,3 +960,51 @@ func TestTheProgramIsTheEnrollmentsWhenTheCallerNamesNone(t *testing.T) {
 		t.Fatalf("error = %v, want ErrEnrollmentMismatch for a program the enrollment does not belong to", err)
 	}
 }
+
+// A reviewer who is also a member may not decide a request of their own person: every
+// decision command refuses with identity.ErrOwnFile and leaves the request as it was, and the
+// same request is decided by a reviewer who is somebody else.
+func TestAReviewerMayNotDecideTheirOwnRequest(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+	submitted := f.submit(t, f.create(t))
+	id, version := submitted.Request.ID, submitted.Request.RowVersion
+
+	own := f.rc()
+	own.SelfPersonID = uuid.NullUUID{UUID: f.person, Valid: true}
+
+	if _, err := f.svc.Approve(ctx, own, id, application.DecisionInput{
+		ReasonCode: "COVERED", ExpectedVersion: version,
+	}); !errors.Is(err, identity.ErrOwnFile) {
+		t.Fatalf("approve own: err = %v, want ErrOwnFile", err)
+	}
+	if _, err := f.svc.PartiallyApprove(ctx, own, id, application.DecisionInput{
+		ReasonCode: "LIMIT_APPLIED", ExpectedVersion: version,
+		Items: []domain.DecisionItem{{LineNo: 1, Status: domain.ItemRejected}},
+	}); !errors.Is(err, identity.ErrOwnFile) {
+		t.Fatalf("partially approve own: err = %v, want ErrOwnFile", err)
+	}
+	if _, err := f.svc.Reject(ctx, own, id, application.ReasonInput{
+		ReasonCode: "NOT_COVERED", ExpectedVersion: version,
+	}); !errors.Is(err, identity.ErrOwnFile) {
+		t.Fatalf("reject own: err = %v, want ErrOwnFile", err)
+	}
+	if _, err := f.svc.Return(ctx, own, id, application.ReasonInput{
+		ReasonCode: "MISSING_DOCUMENT", ExpectedVersion: version,
+	}); !errors.Is(err, identity.ErrOwnFile) {
+		t.Fatalf("return own: err = %v, want ErrOwnFile", err)
+	}
+
+	// Nothing moved: another reviewer finds it exactly where it was and decides it.
+	somebodyElse := f.rc()
+	somebodyElse.SelfPersonID = uuid.NullUUID{UUID: uuid.New(), Valid: true}
+	approved, err := f.svc.Approve(ctx, somebodyElse, id, application.DecisionInput{
+		ReasonCode: "COVERED", ExpectedVersion: version,
+	})
+	if err != nil {
+		t.Fatalf("approve by another reviewer: %v", err)
+	}
+	if approved.Request.Status != domain.StatusApproved {
+		t.Fatalf("status = %q, want APPROVED", approved.Request.Status)
+	}
+}

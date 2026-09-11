@@ -460,6 +460,10 @@ func (s *Service) DecideReimbursement(ctx context.Context, rc identity.RequestCo
 		if err != nil {
 			return err
 		}
+		// A reviewer may not decide a refund to their own person.
+		if err := identity.RefuseOwnFile(rc, record.PersonID); err != nil {
+			return err
+		}
 		if record.Status != domain.ReimbursementSubmitted &&
 			record.Status != domain.ReimbursementUnderReview {
 			return ErrReimbursementTransitionInvalid

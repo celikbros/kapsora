@@ -116,6 +116,7 @@ func TestSeedDemoBuildsTheGuideScenariosAndIsIdempotent(t *testing.T) {
 			t.Fatalf("pass %d: seed demo: %v", pass, err)
 		}
 		assertDemoAccounts(t, h)
+		assertStaffMember(t, h)
 		assertDemoScenarioStates(t, h, s)
 		counts := demoRowCounts(t, h)
 		if pass == 1 {
@@ -478,6 +479,8 @@ func demoRowCounts(t *testing.T, h *dbtest.Harness) map[string]int {
 		"iam.credential", "notification.template", "catalog.code_value",
 		"workflow.work_queue",
 		"health.health_case", "service.service_request",
+		"health.medical_report", "health.medical_report_service", "document.link",
+		"workflow.work_item",
 	}
 	out := make(map[string]int, len(tables))
 	for _, table := range tables {
@@ -508,8 +511,9 @@ func assertMemberFindsARoom(t *testing.T, h *dbtest.Harness, s *seeder, tenantA 
 		  JOIN iam.role r ON r.tenant_id = g.tenant_id AND r.id = g.role_id
 		  JOIN iam.tenant_membership m ON m.tenant_id = g.tenant_id AND m.id = g.tenant_membership_id
 		  JOIN iam.actor a ON a.id = m.actor_id
-		 WHERE g.tenant_id = $1 AND r.code = 'MEMBER' AND g.scope_type = 'PERSON'`,
-		tenantA).Scan(&personID, &memberActor)
+		 WHERE g.tenant_id = $1 AND r.code = 'MEMBER' AND g.scope_type = 'PERSON'
+		   AND a.identity_subject = $2`,
+		tenantA, demoMemberUsername).Scan(&personID, &memberActor)
 	if err != nil {
 		t.Fatalf("scenario 5: find the bound member: %v", err)
 	}

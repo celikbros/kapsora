@@ -1,5 +1,5 @@
 import type { MedicalReport } from '@kapsora/api-client';
-import { usePermission } from '@kapsora/auth';
+import { usePermission, useSelfPersonId } from '@kapsora/auth';
 import { formatDate, formatDateTime, formatMoney, useTranslation } from '@kapsora/i18n';
 import {
   Badge,
@@ -20,6 +20,7 @@ import {
   Table,
   Textarea,
   useToast,
+  OwnFileNotice,
 } from '@kapsora/ui';
 import { Link, useParams } from '@tanstack/react-router';
 import { useState } from 'react';
@@ -46,6 +47,7 @@ export function ReportReviewPage() {
   const access = accessFor(gate.state);
   const query = useReport(reportId, access);
   const canReview = usePermission('health.medical_report.review');
+  const self = useSelfPersonId();
   const commands = useReportCommands(reportId);
   const report: MedicalReport | undefined = query.data?.data;
   const personName = usePersonName(report?.personId);
@@ -85,8 +87,12 @@ export function ReportReviewPage() {
     );
   }
   const clinical = report.projection === 'CLINICAL';
-  const canStart = canReview && report.status === 'SUBMITTED';
-  const canDecide = canReview && clinical && report.status === 'UNDER_REVIEW';
+  // A reviewer's own report: they may read it, not start or decide its review.
+  const own = self !== null && report.personId === self;
+  const canStart = canReview && !own && report.status === 'SUBMITTED';
+  const canDecide = canReview && !own && clinical && report.status === 'UNDER_REVIEW';
+  const ownPending =
+    own && canReview && (report.status === 'SUBMITTED' || report.status === 'UNDER_REVIEW');
 
   function closeDialog() {
     setCommand(null);
@@ -155,6 +161,7 @@ export function ReportReviewPage() {
             <Badge tone={reportTone(report.status)} data-testid="report-status">
               {t(`health.reports.status.${report.status}`)}
             </Badge>
+            {ownPending ? <OwnFileNotice /> : null}
             {canStart ? (
               <Button
                 size="sm"

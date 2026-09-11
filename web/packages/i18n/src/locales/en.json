@@ -32,6 +32,10 @@
     "medicalReports": "Medical review",
     "billing": "Batches and payments"
   },
+  "ownFile": {
+    "title": "This file is yours.",
+    "body": "You cannot decide your own file; another reviewer has to decide it."
+  },
   "auth": {
     "loginTitle": "Sign in",
     "loginIntro": "Sign in with your KAPSORA account.",

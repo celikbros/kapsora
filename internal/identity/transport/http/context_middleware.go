@@ -67,6 +67,8 @@ func (m *Middleware) Deny(w http.ResponseWriter, r *http.Request, err error, per
 			reason := "PERMISSION_DENIED"
 			if errors.Is(err, identity.ErrStepUpRequired) {
 				reason = "STEP_UP_REQUIRED"
+			} else if errors.Is(err, identity.ErrOwnFile) {
+				reason = "OWN_FILE_DECISION"
 			}
 			m.authz.RecordDenied(r.Context(), rc, permission, reason)
 		}
@@ -91,6 +93,8 @@ func WriteAuthError(w http.ResponseWriter, r *http.Request, err error, logger *s
 		httpx.WritePersonScopeProblem(w, r)
 	case errors.Is(err, identity.ErrPersonBindingMissing):
 		httpx.WritePersonBindingMissingProblem(w, r)
+	case errors.Is(err, identity.ErrOwnFile):
+		httpx.WriteOwnFileProblem(w, r)
 	case errors.Is(err, application.ErrTenantMismatch):
 		problem(w, r, http.StatusForbidden, "identity/tenant-mismatch", "TENANT_MISMATCH", "Seçili kurum ile istek uyuşmuyor", "Önce kurumu değiştirin (switch-tenant).")
 	case errors.Is(err, application.ErrNoMembership):

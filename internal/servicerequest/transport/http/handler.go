@@ -114,6 +114,8 @@ func (h *Handler) require(w http.ResponseWriter, r *http.Request, permission str
 func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) {
 	var ve *domain.ValidationError
 	switch {
+	case errors.Is(err, identity.ErrOwnFile):
+		h.deny.Deny(w, r, err, "service_request.review")
 	case errors.As(err, &ve):
 		writeValidation(w, r, ve.Fields)
 	case errors.Is(err, application.ErrRequestNotFound):

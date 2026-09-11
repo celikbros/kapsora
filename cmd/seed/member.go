@@ -69,30 +69,37 @@ func (s *seeder) ensureDemoMember(ctx context.Context, tenantID uuid.UUID, demoP
 	return actorID, nil
 }
 
-// ensureDemoPerson finds the demo principal by name or creates it. Finding by name rather
-// than by identifier is deliberate: searching by identifier goes through the blind index
-// and audits a member identifier search, and a seed run should not leave a trail that looks
-// like somebody looking a person up.
+// ensureDemoPerson finds the demo principal by name or creates it.
 func (s *seeder) ensureDemoPerson(ctx context.Context, rc identity.RequestContext) (uuid.UUID, error) {
-	page, err := s.party.List(ctx, rc, partyapp.ListFilter{Query: demoMemberLastName, Limit: 50})
+	return s.ensurePerson(ctx, rc, demoMemberFirstName, demoMemberLastName, demoMemberTCKN)
+}
+
+// ensurePerson finds a demo person by name or creates it with the given synthetic TCKN.
+// Finding by name rather than by identifier is deliberate: searching by identifier goes
+// through the blind index and audits a member identifier search, and a seed run should not
+// leave a trail that looks like somebody looking a person up.
+func (s *seeder) ensurePerson(ctx context.Context, rc identity.RequestContext,
+	firstName, lastName, tckn string,
+) (uuid.UUID, error) {
+	want := firstName + " " + lastName
+	page, err := s.party.List(ctx, rc, partyapp.ListFilter{Query: lastName, Limit: 50})
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("look up the demo person: %w", err)
+		return uuid.Nil, fmt.Errorf("look up the demo person %s: %w", want, err)
 	}
-	want := demoMemberFirstName + " " + demoMemberLastName
 	for _, item := range page.Items {
 		if item.DisplayName == want {
 			return item.ID, nil
 		}
 	}
 	person, err := s.party.Create(ctx, rc, domain.NewPerson{
-		FirstName: demoMemberFirstName,
-		LastName:  demoMemberLastName,
+		FirstName: firstName,
+		LastName:  lastName,
 		Identifiers: []domain.SubmittedIdentifier{
-			{Type: "TCKN", Value: demoMemberTCKN, Primary: true},
+			{Type: "TCKN", Value: tckn, Primary: true},
 		},
 	})
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("create the demo person: %w", err)
+		return uuid.Nil, fmt.Errorf("create the demo person %s: %w", want, err)
 	}
 	return person.ID, nil
 }

@@ -399,6 +399,8 @@ func (h *EntitlementHandler) queryDate(w http.ResponseWriter, r *http.Request, n
 // shared mapping for everything else.
 func (h *EntitlementHandler) writeError(w http.ResponseWriter, r *http.Request, err error) {
 	switch {
+	case errors.Is(err, identity.ErrOwnFile):
+		h.deny.Deny(w, r, err, "entitlement.adjust")
 	case errors.Is(err, ledger.ErrAccountNotFound):
 		problem(w, r, http.StatusNotFound, "benefit/entitlement-account-not-found",
 			"ENTITLEMENT_ACCOUNT_NOT_FOUND", "Hak hesabı bulunamadı", "")

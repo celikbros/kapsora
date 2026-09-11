@@ -362,6 +362,15 @@ func (s *Service) ApproveAdjustment(ctx context.Context, rc identity.RequestCont
 			denied = &row
 			return ErrMakerCheckerSame
 		}
+		// Nor may anyone decide a change to their own person's balance. For an account the
+		// family shares this is the enrolment's person, the principal.
+		account, err := loadAccount(ctx, tx, rc.TenantID, current.AccountID)
+		if err != nil {
+			return err
+		}
+		if err := identity.RefuseOwnFile(rc, account.PersonID); err != nil {
+			return err
+		}
 		entry, err := s.ledger.Adjust(ctx, tx, AdjustInput{
 			TenantID: rc.TenantID, AccountID: current.AccountID, Delta: current.Delta,
 			Key:           "adjustment:" + current.ID.String(),
@@ -424,6 +433,15 @@ func (s *Service) RejectAdjustment(ctx context.Context, rc identity.RequestConte
 			row := current
 			denied = &row
 			return ErrMakerCheckerSame
+		}
+		// Nor may anyone decide a change to their own person's balance. For an account the
+		// family shares this is the enrolment's person, the principal.
+		account, err := loadAccount(ctx, tx, rc.TenantID, current.AccountID)
+		if err != nil {
+			return err
+		}
+		if err := identity.RefuseOwnFile(rc, account.PersonID); err != nil {
+			return err
 		}
 		comment := optString(strings.TrimSpace(reasonCode + " " + deref(reasonText)))
 		if err := decide(ctx, tx, rc.TenantID, current, AdjustmentRejected,

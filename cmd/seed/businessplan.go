@@ -453,43 +453,60 @@ func (s *seeder) findProgram(ctx context.Context, rc identity.RequestContext, co
 // into balances. The seed delivers that event to the same handler, with the payload the command
 // actually published, so a demo database's wallets were opened by the code that opens real ones.
 func (s *seeder) ensureDemoEnrollment(ctx context.Context, sc *scenario) error {
-	rc := rcTenant(sc.tenant, sc.admin)
 	personID, err := s.ensureDemoPerson(ctx, identity.RequestContext{TenantID: sc.tenant})
 	if err != nil {
 		return err
 	}
 	sc.person = personID
+	sc.membership, sc.enrollment, err = s.ensurePersonEnrollment(ctx, sc, personID, "")
+	return err
+}
+
+// ensurePersonEnrollment makes one demo person an employee of the demo sponsor, enrols them in
+// the demo plan and opens their entitlement accounts. It is the whole of ensureDemoEnrollment
+// for any person, so a second demo person is eligible for exactly what the first one is.
+//
+// who labels the step lines; empty keeps the labels the first demo person has always printed.
+func (s *seeder) ensurePersonEnrollment(ctx context.Context, sc *scenario, personID uuid.UUID,
+	who string,
+) (membershipID, enrollmentID uuid.UUID, err error) {
+	rc := rcTenant(sc.tenant, sc.admin)
+	label := func(what string) string {
+		if who == "" {
+			return what
+		}
+		return who + " " + what
+	}
 
 	memberships, err := s.party.ListMemberships(ctx, rc, personID)
 	if err != nil {
-		return fmt.Errorf("list the demo member's memberships: %w", err)
+		return uuid.Nil, uuid.Nil, fmt.Errorf("list the memberships of %s: %w", personID, err)
 	}
 	for _, m := range memberships {
 		if m.SponsorOrganizationID == sc.sponsorOrg {
-			sc.membership = m.ID
+			membershipID = m.ID
 		}
 	}
 	from := contractValidFrom(s.clock.at)
-	if sc.membership == uuid.Nil {
+	if membershipID == uuid.Nil {
 		membership, err := s.party.CreateMembership(ctx, rc, personID, partyapp.NewMembershipInput{
 			SponsorOrganizationID: sc.sponsorOrg, MembershipType: "EMPLOYEE",
 			Status: "ACTIVE", ValidFrom: from,
 		})
 		if err != nil {
-			return fmt.Errorf("make the demo member an employee of the sponsor: %w", err)
+			return uuid.Nil, uuid.Nil, fmt.Errorf("make %s an employee of the sponsor: %w", personID, err)
 		}
-		sc.membership = membership.ID
+		membershipID = membership.ID
 	}
 
 	enrollments, err := s.benefits.ListPersonEnrollments(ctx, rc, personID)
 	if err != nil {
-		return fmt.Errorf("list the demo member's enrollments: %w", err)
+		return uuid.Nil, uuid.Nil, fmt.Errorf("list the enrollments of %s: %w", personID, err)
 	}
 	for _, e := range enrollments {
 		if e.PlanID == sc.plan {
-			sc.enrollment = e.ID
-			step("member", "enrollment", "exists")
-			return s.openEntitlementAccounts(ctx, sc)
+			step("member", label("enrollment"), "exists")
+			return membershipID, e.ID, s.openEntitlementAccounts(ctx, sc.tenant, e.ID, label("entitlements"))
 		}
 	}
 	// The enrollment starts on the first day of the current calendar year rather than on the
@@ -497,30 +514,32 @@ func (s *seeder) ensureDemoEnrollment(ctx context.Context, sc *scenario) error {
 	// ledger opens cover the period containing the enrollment's start — so an enrollment dated
 	// a year back would give the member a wallet for last year and nothing to spend today.
 	enrollment, err := s.benefits.CreateEnrollment(ctx, rc, personID, benefitapp.NewEnrollmentInput{
-		SponsorMembershipID: sc.membership, PlanID: sc.plan, Status: "ACTIVE",
+		SponsorMembershipID: membershipID, PlanID: sc.plan, Status: "ACTIVE",
 		ValidFrom: startOfYear(s.clock.at),
 	})
 	if err != nil {
-		return fmt.Errorf("enrol the demo member: %w", err)
+		return uuid.Nil, uuid.Nil, fmt.Errorf("enrol %s: %w", personID, err)
 	}
-	sc.enrollment = enrollment.ID
-	step("member", "enrollment", "created")
-	return s.openEntitlementAccounts(ctx, sc)
+	step("member", label("enrollment"), "created")
+	return membershipID, enrollment.ID,
+		s.openEntitlementAccounts(ctx, sc.tenant, enrollment.ID, label("entitlements"))
 }
 
 // openEntitlementAccounts hands the enrollment's own `benefit.enrollment.created` event to the
 // handler the worker subscribes with. It is idempotent by design — the handler looks for the
 // accounts a first delivery opened — so running it on a second seed pass finds them already open.
-func (s *seeder) openEntitlementAccounts(ctx context.Context, sc *scenario) error {
-	delivery, err := s.readOutboxEvent(ctx, sc.tenant, sc.enrollment,
+func (s *seeder) openEntitlementAccounts(ctx context.Context, tenantID, enrollmentID uuid.UUID,
+	label string,
+) error {
+	delivery, err := s.readOutboxEvent(ctx, tenantID, enrollmentID,
 		benefitapp.EnrollmentCreatedEvent)
 	if err != nil {
 		return err
 	}
 	if err := s.biz.entitlements.HandleEnrollmentCreated(ctx, delivery); err != nil {
-		return fmt.Errorf("open the demo member's entitlement accounts: %w", err)
+		return fmt.Errorf("open the entitlement accounts of enrollment %s: %w", enrollmentID, err)
 	}
-	step("member", "entitlements", "accounts open")
+	step("member", label, "accounts open")
 	return nil
 }
 

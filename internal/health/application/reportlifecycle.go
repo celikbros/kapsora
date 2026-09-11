@@ -93,6 +93,10 @@ func (s *Service) StartReview(ctx context.Context, rc identity.RequestContext, i
 		if err != nil {
 			return err
 		}
+		// A reviewer may not decide a file that belongs to their own person.
+		if err := identity.RefuseOwnFile(rc, current.PersonID); err != nil {
+			return err
+		}
 		moved, err := s.reports.MarkReportUnderReview(ctx, tx, rc.TenantID, id,
 			actorPtr(rc.Principal.ActorID))
 		if err != nil {
@@ -153,6 +157,10 @@ func (s *Service) decideReport(ctx context.Context, rc identity.RequestContext, 
 	err := s.withTx(ctx, rc, func(ctx context.Context, tx pgx.Tx) error {
 		current, err := s.lockForCommand(ctx, tx, rc, id, command, expected)
 		if err != nil {
+			return err
+		}
+		// A reviewer may not decide a file that belongs to their own person.
+		if err := identity.RefuseOwnFile(rc, current.PersonID); err != nil {
 			return err
 		}
 		decision := ReportDecisionRow{

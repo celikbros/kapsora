@@ -44,6 +44,15 @@ export function useTenantId(): string {
   return tenant.tenant.id;
 }
 
+/**
+ * The person this account is in the active tenant (selfPersonId), whichever app it is in, or
+ * null. A reviewer's screens compare it with a file's person: a file of their own is one they
+ * may read but not decide.
+ */
+export function useSelfPersonId(): string | null {
+  return useSession((s) => s.activeTenant?.selfPersonId ?? null);
+}
+
 /** Whether the active tenant grants the permission. UI-only; the backend re-validates. */
 export function usePermission(permission: string): boolean {
   return useSession((s) => hasPermission(s, permission));

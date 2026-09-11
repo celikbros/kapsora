@@ -355,6 +355,14 @@ func (s *seeder) demo(ctx context.Context) error {
 		return err
 	}
 	actors[demoMemberUsername] = memberActor
+	// The staff member is a medical reviewer and a member at once: two grants on one account,
+	// the second binding her to a person of her own. The server applies whichever the app a
+	// request comes from calls for.
+	staffActor, err := s.ensureStaffMember(ctx, tenantA, demoPassword)
+	if err != nil {
+		return err
+	}
+	actors[staffMemberUsername] = staffActor
 
 	// The business world of WP-I7: the contract, the plan, the claims, the invoices, the
 	// icmals, the settlements, the member's reimbursement, the hotel's allotment and the
