@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KAPSORA Demo Rehberi</title>
+<style>
+  :root { --ink: #14202e; --muted: #4b5a6b; --line: #dce2ea; --paper: #f7f8fa; --card: #ffffff; --blue: #1f5fa8; --soft: #e3edf8; --warn: #fbf1d6; --warn-ink: #7a5200; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.55 system-ui, "Segoe UI", Arial, sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 32px 20px 64px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 18px; margin: 32px 0 10px; }
+  h3 { font-size: 15px; margin: 0 0 6px; }
+  p { margin: 6px 0; }
+  .lead { color: var(--muted); margin-bottom: 20px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; margin: 12px 0; }
+  .warn { background: var(--warn); border-color: #ecd9a4; color: var(--warn-ink); }
+  .apps { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+  .apps a { color: var(--blue); font-weight: 600; text-decoration: none; }
+  .apps a:hover { text-decoration: underline; }
+  table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: #eef1f5; font-size: 12px; text-transform: uppercase; letter-spacing: .02em; color: var(--muted); }
+  code, .mono { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; background: var(--soft); padding: 1px 6px; border-radius: 4px; }
+  ol { margin: 6px 0 0; padding-left: 22px; }
+  li { margin: 3px 0; }
+  .tag { display: inline-block; font-size: 12px; font-weight: 600; color: var(--blue); background: var(--soft); border-radius: 999px; padding: 1px 9px; margin-left: 6px; vertical-align: 2px; }
+  .table-wrap { overflow-x: auto; }
+</style>
+</head>
+<body>
+<main>
+  <h1>KAPSORA Demo Rehberi</h1>
+  <p class="lead">Üç uygulama bu bilgisayarda, örnek verilerle açılır. Sunucu ya da veritabanı gerekmez.</p>
+
+  <h2>Açmak ve kapatmak</h2>
+  <div class="card">
+    <p><strong>Açmak:</strong> masaüstündeki <strong>KAPSORA Demo Başlat</strong> dosyasına çift tıklayın. Arka planda üç küçük pencere açılır, on saniye kadar sonra tarayıcıda üç sekme ve bu rehber açılır. İlk açılışta sayfa birkaç saniye geç gelebilir.</p>
+    <p><strong>Kapatmak:</strong> <strong>KAPSORA Demo Durdur</strong> dosyasına çift tıklayın ya da o üç küçük pencereyi kapatın.</p>
+  </div>
+
+  <div class="apps">
+    <div class="card"><h3>Yönetim paneli</h3><p>Ödeyici kurumun ekranı: hak sahipleri, claim'ler, icmal ve ödeme.</p><a href="http://127.0.0.1:5181/">127.0.0.1:5181</a></div>
+    <div class="card"><h3>Sağlayıcı portalı</h3><p>Hastanenin, kliniğin, otelin ekranı: vaka, fatura, icmal, kontenjan.</p><a href="http://127.0.0.1:5182/">127.0.0.1:5182</a></div>
+    <div class="card"><h3>Üye uygulaması</h3><p>Hak sahibinin telefonu: kalan haklar, konaklama, geri ödeme.</p><a href="http://127.0.0.1:5183/">127.0.0.1:5183</a></div>
+  </div>
+
+  <h2>Bilmeniz gereken dört şey</h2>
+  <div class="card warn">
+    <ol>
+      <li><strong>Sayfayı yenilemeyin, adres çubuğuna adres yazmayın.</strong> Demo verisi tarayıcının içinde yaşar. Yenileyince her şey başa döner ve oturumunuz kapanır. Uygulamanın içinde menülerle ve bağlantılarla gezin.</li>
+      <li><strong>Her uygulamanın verisi ayrıdır.</strong> Sağlayıcı portalında gönderdiğiniz icmal yönetim panelinde görünmez. Üç uygulama birbirine bağlı değildir. Bu, gerçek sistemde olacak.</li>
+      <li><strong>Yüklenen dosyanın virüs taraması demoda bitmez.</strong> Üyenin geri ödeme başvurusu makbuz aşamasında "taranıyor" der ve orada bekler.</li>
+      <li><strong>Parola her yerde aynıdır:</strong> <span class="mono">demo parola 2026 kapsora</span>. Bir işlem parolanızı yeniden sorarsa aynısını yazın.</li>
+    </ol>
+  </div>
+
+  <h2>Hesaplar</h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Uygulama</th><th>Kullanıcı adı</th><th>Kim</th><th>Ne yapar</th></tr></thead>
+    <tbody>
+      <tr><td>Yönetim paneli</td><td><code>financial.reviewer</code></td><td>Fuat Mali Değerlendirici</td><td>İcmal kararı, geri ödeme kararı, günlük mutabakat, dışa aktarım, pano</td></tr>
+      <tr><td>Yönetim paneli</td><td><code>payer.approver</code></td><td>Pınar Ödeyici Onaylayıcı</td><td>Ödeme mutabakatını onaylar, ödemeyi kaydeder</td></tr>
+      <tr><td>Yönetim paneli</td><td><code>admin.a</code></td><td>Ayşe Yönetici</td><td>Hak sahipleri, programlar, sözleşmeler, katalog, konaklama</td></tr>
+      <tr><td>Yönetim paneli</td><td><code>doctor.a</code></td><td>Demet Tıbbi Değerlendirici</td><td>Tıbbi rapor ve claim'in tıbbi incelemesi</td></tr>
+      <tr><td>Yönetim paneli</td><td><code>sponsor.hr</code></td><td>Selin İnsan Kaynakları</td><td>Çalışanın durumunu tanı görmeden izler</td></tr>
+      <tr><td>Sağlayıcı portalı</td><td><code>billing.a</code></td><td>Burak Faturalama</td><td>Hakediş, fatura, icmal, cari ekstre</td></tr>
+      <tr><td>Sağlayıcı portalı</td><td><code>provider.a</code></td><td>Pelin Sağlayıcı</td><td>Uygunluk sorgusu, talep, vaka</td></tr>
+      <tr><td>Sağlayıcı portalı</td><td><code>reservation.a</code></td><td>Rezan Rezervasyon</td><td>Otel kontenjanı, gelen ve giden misafir</td></tr>
+      <tr><td>Üye uygulaması</td><td><code>member.a</code></td><td>Hak sahibi</td><td>Kalan haklar, konaklama, geri ödeme</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>Denemeniz için altı senaryo</h2>
+
+  <div class="card">
+    <h3>1. Sağlayıcı fatura ve icmal gönderir <span class="tag">Sağlayıcı · billing.a</span></h3>
+    <ol>
+      <li>Soldaki menüden <strong>Hakediş ve fatura</strong>'yı açın. Dönemin onaylı ve faturalanabilir tutarını görürsünüz.</li>
+      <li><strong>Faturalar</strong>'a geçin, Durum'u <strong>Taslak</strong> seçin, bir taslak açın.</li>
+      <li>Aşağıdaki claim dağıtımında <strong>Fark</strong> satırına bakın. Fark sıfır değilse <strong>Gönder</strong>'e basın: sistem faturayı reddeder ve nedenini yazar.</li>
+      <li><strong>İcmaller</strong>'e geçin, Durum'u <strong>Taslak</strong> seçin, icmali açın ve <strong>İcmali gönder</strong>'e basın. Faturalar artık "Karar bekliyor" görünür.</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h3>2. Ödeyici icmalde kesinti yapar <span class="tag">Yönetim · financial.reviewer</span></h3>
+    <ol>
+      <li>Menüden <strong>İcmal ve Ödeme</strong>'yi açın. Durum'u <strong>İncelemede</strong> seçip icmali açın.</li>
+      <li>"Karar bekliyor" yazan faturada <strong>Fatura kararı</strong>'na basın. Karar: <strong>Kesinti</strong>, tutar: <span class="mono">500</span>, gerekçe: <strong>Tarife aşımı</strong>. <strong>Kararı kaydet</strong>.</li>
+      <li>Bütün faturalar karara bağlanınca <strong>İcmali karara bağla</strong> düğmesi belirir. Basın ve toplamlar satırını okuyun.</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h3>3. Ödeme onaylanır ve ödenir <span class="tag">Yönetim · payer.approver</span></h3>
+    <ol>
+      <li>Menüden <strong>İcmal ve Ödeme</strong>'yi, sonra üstteki <strong>Ödeme mutabakatları</strong> sekmesini açın.</li>
+      <li><strong>Onay bekliyor</strong> olan mutabakatı açın. Onaylanan, mahsup edilen ve ödenecek tutarı görün. <strong>Onayla</strong>'ya basın.</li>
+      <li>Ödeme kaydında dış referans yazın (örneğin <span class="mono">EFT-2026-0001</span>), tutara ödenecek tutarı, tarihe bugünü girin. <strong>Ödeme kaydet</strong>: durum "Ödendi" olur.</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h3>4. Üyenin geri ödemesi karara bağlanır <span class="tag">Yönetim · financial.reviewer</span></h3>
+    <ol>
+      <li><strong>İcmal ve Ödeme</strong> içinde <strong>Geri ödeme incelemesi</strong> sekmesini açın. Durum'u <strong>Gönderildi</strong> seçip başvuruyu açın.</li>
+      <li>Hesap numarasının yalnızca son dört hanesini gördüğünüze dikkat edin.</li>
+      <li>Karar: <strong>Kısmen onayla</strong>, tutar: <span class="mono">100</span>, gerekçe: <span class="mono">CONTRACT_LIMIT</span>. <strong>Karara bağla</strong>. Ardından bir ödeme referansı girin: durum "Ödendi" olur.</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h3>5. Üye konaklama yapar, geri ödeme ister <span class="tag">Üye · member.a</span></h3>
+    <ol>
+      <li>Ana sayfada kalan haklarınızı görün, <strong>Konaklama ara</strong>'ya basın.</li>
+      <li>Giriş için bir ay sonrasını, çıkış için üç gün sonrasını seçin, bir yer seçin, <strong>Ara</strong>. Bir odada <strong>Seç</strong>, alttaki makbuzda ödeyeceğiniz tutarı görün, <strong>Odayı tut</strong>.</li>
+      <li><strong>Onayla</strong>'ya basın, ardından <strong>Kuponu göster</strong>.</li>
+      <li>Ana sayfaya dönüp <strong>Geri ödemelerim</strong>'i açın. <strong>Geri ödeme iste</strong> ile başvurunun ilk adımını doldurup bir dosya seçin. Makbuz "taranıyor" der; demoda burada durur.</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h3>6. Pano, mutabakat ve dışa aktarım <span class="tag">Yönetim · financial.reviewer</span></h3>
+    <ol>
+      <li>Girişte <strong>Ana Sayfa</strong>'daki operasyon panosunu okuyun. Mavi yazılı satırlar ilgili listeyi açar.</li>
+      <li><strong>İcmal ve Ödeme</strong> içinde <strong>Günlük mutabakat</strong>'ı açın, "Fark var" yazan günü açın ve farkların nedenini okuyun.</li>
+      <li><strong>Dışa aktarım</strong> sekmesinde <strong>Dışa aktar</strong>'a basın. Dosya "Hazır" olunca <strong>İndir</strong>'e basın: sistem neden indirdiğinizi sorar, sonra dosyadaki filigranı gösterir.</li>
+    </ol>
+  </div>
+
+  <p class="lead" style="margin-top:28px">Takıldığınız, garip bulduğunuz ya da beğenmediğiniz her şeyi not edin; hepsini düzeltirim.</p>
+</main>
+</body>
+</html>
