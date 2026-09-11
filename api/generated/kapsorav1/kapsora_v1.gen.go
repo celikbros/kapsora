@@ -4033,6 +4033,27 @@ func (e TaxBehaviour) Valid() bool {
 	}
 }
 
+// Defines values for TenantContextApps.
+const (
+	TenantContextAppsBackoffice TenantContextApps = "backoffice"
+	TenantContextAppsMember     TenantContextApps = "member"
+	TenantContextAppsProvider   TenantContextApps = "provider"
+)
+
+// Valid indicates whether the value is a known member of the TenantContextApps enum.
+func (e TenantContextApps) Valid() bool {
+	switch e {
+	case TenantContextAppsBackoffice:
+		return true
+	case TenantContextAppsMember:
+		return true
+	case TenantContextAppsProvider:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for TenantSummaryStatus.
 const (
 	TenantSummaryStatusACTIVE       TenantSummaryStatus = "ACTIVE"
@@ -4381,6 +4402,27 @@ func (e AccessPurposeHeader) Valid() bool {
 	case AccessPurposeHeaderPREAUTHORIZATION:
 		return true
 	case AccessPurposeHeaderTREATMENT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AppHeader.
+const (
+	AppHeaderBackoffice AppHeader = "backoffice"
+	AppHeaderMember     AppHeader = "member"
+	AppHeaderProvider   AppHeader = "provider"
+)
+
+// Valid indicates whether the value is a known member of the AppHeader enum.
+func (e AppHeader) Valid() bool {
+	switch e {
+	case AppHeaderBackoffice:
+		return true
+	case AppHeaderMember:
+		return true
+	case AppHeaderProvider:
 		return true
 	default:
 		return false
@@ -5350,6 +5392,27 @@ func (e PutStaySegmentsParamsXAccessProjection) Valid() bool {
 	}
 }
 
+// Defines values for GetCurrentUserContextParamsXKapsoraApp.
+const (
+	GetCurrentUserContextParamsXKapsoraAppBackoffice GetCurrentUserContextParamsXKapsoraApp = "backoffice"
+	GetCurrentUserContextParamsXKapsoraAppMember     GetCurrentUserContextParamsXKapsoraApp = "member"
+	GetCurrentUserContextParamsXKapsoraAppProvider   GetCurrentUserContextParamsXKapsoraApp = "provider"
+)
+
+// Valid indicates whether the value is a known member of the GetCurrentUserContextParamsXKapsoraApp enum.
+func (e GetCurrentUserContextParamsXKapsoraApp) Valid() bool {
+	switch e {
+	case GetCurrentUserContextParamsXKapsoraAppBackoffice:
+		return true
+	case GetCurrentUserContextParamsXKapsoraAppMember:
+		return true
+	case GetCurrentUserContextParamsXKapsoraAppProvider:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListMedicalReportsParamsXAccessPurpose.
 const (
 	ListMedicalReportsParamsXAccessPurposeAUDIT            ListMedicalReportsParamsXAccessPurpose = "AUDIT"
@@ -5509,6 +5572,27 @@ func (e ListProgramsParamsStatus) Valid() bool {
 	case ListProgramsParamsStatusDRAFT:
 		return true
 	case ListProgramsParamsStatusSUSPENDED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SwitchTenantParamsXKapsoraApp.
+const (
+	SwitchTenantParamsXKapsoraAppBackoffice SwitchTenantParamsXKapsoraApp = "backoffice"
+	SwitchTenantParamsXKapsoraAppMember     SwitchTenantParamsXKapsoraApp = "member"
+	SwitchTenantParamsXKapsoraAppProvider   SwitchTenantParamsXKapsoraApp = "provider"
+)
+
+// Valid indicates whether the value is a known member of the SwitchTenantParamsXKapsoraApp enum.
+func (e SwitchTenantParamsXKapsoraApp) Valid() bool {
+	switch e {
+	case SwitchTenantParamsXKapsoraAppBackoffice:
+		return true
+	case SwitchTenantParamsXKapsoraAppMember:
+		return true
+	case SwitchTenantParamsXKapsoraAppProvider:
 		return true
 	default:
 		return false
@@ -12099,7 +12183,10 @@ type TaxBehaviour string
 
 // TenantContext defines model for TenantContext.
 type TenantContext struct {
-	Permissions []string `json:"permissions"`
+	// Apps The apps the account has work in here, from all of its grants. The single
+	// sign-in sends a person straight to the one app, or offers the choice.
+	Apps        []TenantContextApps `json:"apps"`
+	Permissions []string            `json:"permissions"`
 
 	// PersonId The person this account acts for in this tenant, from its PERSON-scoped access
 	// grant (migration 000039). It is null for every actor that is not a member: a
@@ -12112,8 +12199,16 @@ type TenantContext struct {
 		Id   *openapi_types.UUID `json:"id,omitempty"`
 		Type string              `json:"type"`
 	} `json:"scopes,omitempty"`
-	Tenant TenantSummary `json:"tenant"`
+
+	// SelfPersonId The person this account is in this tenant, from its PERSON grant, whichever app
+	// is asking. Unlike personId it is also set while the account acts as staff: a
+	// reviewer who is also a member sees their own files marked and cannot decide them.
+	SelfPersonId *openapi_types.UUID `json:"selfPersonId,omitempty"`
+	Tenant       TenantSummary       `json:"tenant"`
 }
+
+// TenantContextApps defines model for TenantContext.Apps.
+type TenantContextApps string
 
 // TenantSummary defines model for TenantSummary.
 type TenantSummary struct {
@@ -12543,6 +12638,9 @@ type AccountId = openapi_types.UUID
 
 // AdjustmentId defines model for AdjustmentId.
 type AdjustmentId = openapi_types.UUID
+
+// AppHeader defines model for AppHeader.
+type AppHeader string
 
 // AuthorizationId defines model for AuthorizationId.
 type AuthorizationId = openapi_types.UUID
@@ -14856,6 +14954,18 @@ type ReleaseLegalHoldParams struct {
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
+// GetCurrentUserContextParams defines parameters for GetCurrentUserContext.
+type GetCurrentUserContextParams struct {
+	// XKapsoraApp The app the request comes from. It picks which of the account's grants apply: the
+	// backoffice gets the tenant-wide staff roles, the provider portal the ORGANIZATION
+	// grants, the member app the PERSON binding. It only narrows; without it every grant
+	// applies. An unknown value is 400 APP_HEADER_INVALID.
+	XKapsoraApp *GetCurrentUserContextParamsXKapsoraApp `json:"X-Kapsora-App,omitempty"`
+}
+
+// GetCurrentUserContextParamsXKapsoraApp defines parameters for GetCurrentUserContext.
+type GetCurrentUserContextParamsXKapsoraApp string
+
 // GetMyPersonParams defines parameters for GetMyPerson.
 type GetMyPersonParams struct {
 	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
@@ -16439,7 +16549,16 @@ type SwitchTenantJSONBody struct {
 type SwitchTenantParams struct {
 	// XCSRFToken Required when the request is authenticated with the BFF session cookie.
 	XCSRFToken *CsrfHeader `json:"X-CSRF-Token,omitempty"`
+
+	// XKapsoraApp The app the request comes from. It picks which of the account's grants apply: the
+	// backoffice gets the tenant-wide staff roles, the provider portal the ORGANIZATION
+	// grants, the member app the PERSON binding. It only narrows; without it every grant
+	// applies. An unknown value is 400 APP_HEADER_INVALID.
+	XKapsoraApp *SwitchTenantParamsXKapsoraApp `json:"X-Kapsora-App,omitempty"`
 }
+
+// SwitchTenantParamsXKapsoraApp defines parameters for SwitchTenant.
+type SwitchTenantParamsXKapsoraApp string
 
 // ListSettlementsParams defines parameters for ListSettlements.
 type ListSettlementsParams struct {
@@ -17730,7 +17849,7 @@ type ServerInterface interface {
 	ReleaseLegalHold(w http.ResponseWriter, r *http.Request, legalHoldId LegalHoldId, params ReleaseLegalHoldParams)
 
 	// (GET /api/v1/me)
-	GetCurrentUserContext(w http.ResponseWriter, r *http.Request)
+	GetCurrentUserContext(w http.ResponseWriter, r *http.Request, params GetCurrentUserContextParams)
 
 	// (GET /api/v1/me/person)
 	GetMyPerson(w http.ResponseWriter, r *http.Request, params GetMyPersonParams)
@@ -18962,7 +19081,7 @@ func (_ Unimplemented) ReleaseLegalHold(w http.ResponseWriter, r *http.Request, 
 }
 
 // (GET /api/v1/me)
-func (_ Unimplemented) GetCurrentUserContext(w http.ResponseWriter, r *http.Request) {
+func (_ Unimplemented) GetCurrentUserContext(w http.ResponseWriter, r *http.Request, params GetCurrentUserContextParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -32949,8 +33068,35 @@ func (siw *ServerInterfaceWrapper) ReleaseLegalHold(w http.ResponseWriter, r *ht
 // GetCurrentUserContext operation middleware
 func (siw *ServerInterfaceWrapper) GetCurrentUserContext(w http.ResponseWriter, r *http.Request) {
 
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetCurrentUserContextParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "X-Kapsora-App" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Kapsora-App")]; found {
+		var XKapsoraApp GetCurrentUserContextParamsXKapsoraApp
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Kapsora-App", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Kapsora-App", valueList[0], &XKapsoraApp, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Kapsora-App", Err: err})
+			return
+		}
+
+		params.XKapsoraApp = &XKapsoraApp
+
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetCurrentUserContext(w, r)
+		siw.Handler.GetCurrentUserContext(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -44420,6 +44566,25 @@ func (siw *ServerInterfaceWrapper) SwitchTenant(w http.ResponseWriter, r *http.R
 		}
 
 		params.XCSRFToken = &XCSRFToken
+
+	}
+
+	// ------------- Optional header parameter "X-Kapsora-App" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Kapsora-App")]; found {
+		var XKapsoraApp SwitchTenantParamsXKapsoraApp
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Kapsora-App", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Kapsora-App", valueList[0], &XKapsoraApp, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Kapsora-App", Err: err})
+			return
+		}
+
+		params.XKapsoraApp = &XKapsoraApp
 
 	}
 
@@ -60901,6 +61066,7 @@ func (response ReleaseLegalHold428ApplicationProblemPlusJSONResponse) VisitRelea
 }
 
 type GetCurrentUserContextRequestObject struct {
+	Params GetCurrentUserContextParams
 }
 
 type GetCurrentUserContextResponseObject interface {
@@ -81253,8 +81419,10 @@ func (sh *strictHandler) ReleaseLegalHold(w http.ResponseWriter, r *http.Request
 }
 
 // GetCurrentUserContext operation middleware
-func (sh *strictHandler) GetCurrentUserContext(w http.ResponseWriter, r *http.Request) {
+func (sh *strictHandler) GetCurrentUserContext(w http.ResponseWriter, r *http.Request, params GetCurrentUserContextParams) {
 	var request GetCurrentUserContextRequestObject
+
+	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.GetCurrentUserContext(ctx, request.(GetCurrentUserContextRequestObject))

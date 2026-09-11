@@ -12,6 +12,9 @@ info:
     niteliğindeki POST'larda (eligibility check, pricing quote) opsiyoneldir.
     İstemci X-Request-ID başlığında UUID gönderebilir; sunucu her yanıtta X-Request-ID döner.
     Çerez oturumuyla yapılan durum değiştiren çağrılar X-CSRF-Token başlığı taşır.
+    Tarayıcı uygulamaları her çağrıda X-Kapsora-App başlığında hangi uygulamadan geldiğini
+    (backoffice, provider, member) bildirir; sunucu hesabın yalnız o uygulamaya ait yetkilerini
+    uygular. Başlık yalnız daraltır; gönderilmezse hesabın tüm yetkileri geçerlidir.
   contact:
     name: KAPSORA Product Engineering
 servers:
@@ -106,6 +109,8 @@ paths:
       operationId: getCurrentUserContext
       security:
         - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/AppHeader'
       description: |
         The signed-in actor with one context per active membership: tenant summary, the
         permissions resolved from tenant-owned roles and access grants valid now, and any
@@ -296,6 +301,7 @@ paths:
         - sessionCookie: []
       parameters:
         - $ref: '#/components/parameters/CsrfHeader'
+        - $ref: '#/components/parameters/AppHeader'
       requestBody:
         required: true
         content:
@@ -13784,6 +13790,18 @@ components:
           scopes:
             kapsora.api: Call KAPSORA APIs
   parameters:
+    AppHeader:
+      name: X-Kapsora-App
+      in: header
+      required: false
+      description: |
+        The app the request comes from. It picks which of the account's grants apply: the
+        backoffice gets the tenant-wide staff roles, the provider portal the ORGANIZATION
+        grants, the member app the PERSON binding. It only narrows; without it every grant
+        applies. An unknown value is 400 APP_HEADER_INVALID.
+      schema:
+        type: string
+        enum: [backoffice, provider, member]
     TenantHeader:
       name: X-Tenant-ID
       in: header
@@ -14408,7 +14426,7 @@ components:
     TenantContext:
       type: object
       additionalProperties: false
-      required: [tenant, permissions]
+      required: [tenant, permissions, apps]
       properties:
         tenant:
           $ref: '#/components/schemas/TenantSummary'
@@ -14422,6 +14440,21 @@ components:
             organization, not for a person. A member client reads it to know it is bound;
             the server never trusts it back, and resolves the person from the grant on
             every call.
+        selfPersonId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            The person this account is in this tenant, from its PERSON grant, whichever app
+            is asking. Unlike personId it is also set while the account acts as staff: a
+            reviewer who is also a member sees their own files marked and cannot decide them.
+        apps:
+          type: array
+          description: |
+            The apps the account has work in here, from all of its grants. The single
+            sign-in sends a person straight to the one app, or offers the choice.
+          items:
+            type: string
+            enum: [backoffice, provider, member]
         permissions:
           type: array
           items:

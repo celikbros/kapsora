@@ -73,19 +73,22 @@ func (r *AuthorizationRepository) ListMemberships(ctx context.Context, actorID u
 func (r *AuthorizationRepository) ResolveGrants(ctx context.Context, tenantID, membershipID uuid.UUID) (application.Grants, error) {
 	var out application.Grants
 	err := db.WithTenantTx(ctx, r.pool, db.TenantContext{TenantID: tenantID}, func(ctx context.Context, tx pgx.Tx) error {
-		q := sqlcgen.New(tx)
-		perms, err := q.ListPermissionsForMembership(ctx, sqlcgen.ListPermissionsForMembershipParams{TenantID: tenantID, TenantMembershipID: membershipID})
+		rows, err := sqlcgen.New(tx).ListGrantsForMembership(ctx, sqlcgen.ListGrantsForMembershipParams{TenantID: tenantID, TenantMembershipID: membershipID})
 		if err != nil {
-			return fmt.Errorf("identity: list permissions: %w", err)
+			return fmt.Errorf("identity: list grants: %w", err)
 		}
-		scopes, err := q.ListScopesForMembership(ctx, sqlcgen.ListScopesForMembershipParams{TenantID: tenantID, TenantMembershipID: membershipID})
-		if err != nil {
-			return fmt.Errorf("identity: list scopes: %w", err)
-		}
-		out.Permissions = perms
-		out.Scopes = make([]identity.Scope, 0, len(scopes))
-		for _, s := range scopes {
-			out.Scopes = append(out.Scopes, identity.Scope{Type: s.ScopeType, ID: s.ScopeID})
+		// Rows arrive ordered by grant, one per permission of its role; fold them back into
+		// one Grant each so the scope stays attached to the permissions it came with.
+		var last uuid.UUID
+		for _, row := range rows {
+			if len(out.Items) == 0 || row.ID != last {
+				out.Items = append(out.Items, application.Grant{Scope: identity.Scope{Type: row.ScopeType, ID: row.ScopeID}})
+				last = row.ID
+			}
+			if row.PermissionCode != nil {
+				g := &out.Items[len(out.Items)-1]
+				g.Permissions = append(g.Permissions, *row.PermissionCode)
+			}
 		}
 		return nil
 	})

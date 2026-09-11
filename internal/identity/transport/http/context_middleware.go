@@ -45,7 +45,11 @@ func (m *Middleware) RequireTenantContext(next http.Handler) http.Handler {
 			})
 			return
 		}
-		rc, err := m.authz.ResolveTenantContext(r.Context(), session, tenantID, httpx.RequestIDFrom(r.Context()))
+		app, ok := appFromRequest(w, r)
+		if !ok {
+			return
+		}
+		rc, err := m.authz.ResolveTenantContext(r.Context(), session, tenantID, app, httpx.RequestIDFrom(r.Context()))
 		if err != nil {
 			WriteAuthError(w, r, err, m.logger)
 			return
@@ -122,4 +126,22 @@ func problem(w http.ResponseWriter, r *http.Request, status int, typ, code, titl
 		Code:   code,
 		Detail: detail,
 	})
+}
+
+// appFromRequest reads X-Kapsora-App. A missing header is identity.AppAny; an unknown value
+// is answered 400 here rather than ignored, because ignoring it would hand a client with a
+// typo every grant the account holds at once.
+func appFromRequest(w http.ResponseWriter, r *http.Request) (identity.App, bool) {
+	app, ok := identity.ParseApp(r.Header.Get(identity.AppHeader))
+	if !ok {
+		httpx.WriteProblem(w, r, httpx.Problem{
+			Type:   httpx.ProblemTypeBase + "identity/app-header-invalid",
+			Title:  "Uygulama başlığı geçersiz",
+			Status: http.StatusBadRequest,
+			Code:   "APP_HEADER_INVALID",
+			Detail: "X-Kapsora-App başlığı backoffice, provider veya member olmalıdır.",
+		})
+		return identity.AppAny, false
+	}
+	return app, true
 }

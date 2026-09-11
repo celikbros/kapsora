@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
@@ -255,4 +256,58 @@ func containsString(list []string, want string) bool {
 		}
 	}
 	return false
+}
+
+// The app a request names narrows the account to that app's grants, on /me and on every
+// tenant route; an app the server does not know is refused rather than ignored.
+func TestTheAppHeaderNarrowsWhatAnAccountMayDo(t *testing.T) {
+	s := newAuthzServer(t)
+	cookie, csrf := s.login(t)
+	if rec := s.do(call{method: http.MethodPost, path: "/api/v1/session/switch-tenant", cookie: cookie, csrf: csrf,
+		body: `{"tenantId":"` + s.tenantA.String() + `"}`}); rec.Code != http.StatusOK {
+		t.Fatalf("switch: %d %s", rec.Code, rec.Body.String())
+	}
+	get := func(path string, headers map[string]string) *httptest.ResponseRecorder {
+		return s.do(call{method: http.MethodGet, path: path, cookie: cookie, headers: headers})
+	}
+	probe := func(app string) *httptest.ResponseRecorder {
+		return get("/api/v1/probe", map[string]string{identityhttp.TenantHeader: s.tenantA.String(), identity.AppHeader: app})
+	}
+
+	for _, rec := range []*httptest.ResponseRecorder{
+		get("/api/v1/me", map[string]string{identity.AppHeader: "admin"}),
+		probe("admin"),
+	} {
+		if rec.Code != http.StatusBadRequest || decodeBody(t, rec)["code"] != "APP_HEADER_INVALID" {
+			t.Fatalf("unknown app: %d %s", rec.Code, rec.Body.String())
+		}
+	}
+
+	// The AUDITOR grant is tenant-wide, so it is the backoffice's: the backoffice may probe,
+	// the member app and the provider portal may not, and naming no app still may.
+	if rec := probe("backoffice"); rec.Code != http.StatusOK {
+		t.Fatalf("backoffice probe: %d %s", rec.Code, rec.Body.String())
+	}
+	for _, app := range []string{"member", "provider"} {
+		if rec := probe(app); rec.Code != http.StatusForbidden || decodeBody(t, rec)["code"] != "PERMISSION_DENIED" {
+			t.Fatalf("%s probe: %d %s", app, rec.Code, rec.Body.String())
+		}
+	}
+	if rec := probe(""); rec.Code != http.StatusOK {
+		t.Fatalf("probe naming no app: %d %s", rec.Code, rec.Body.String())
+	}
+
+	// /me answers for the asking app and lists, whichever app asks, where the account works.
+	rec := get("/api/v1/me", map[string]string{identity.AppHeader: "member"})
+	var me kapsorav1.UserContext
+	if err := json.Unmarshal(rec.Body.Bytes(), &me); err != nil || len(me.Tenants) != 1 {
+		t.Fatalf("/me as the member app = %s err=%v", rec.Body.String(), err)
+	}
+	tc := me.Tenants[0]
+	if len(tc.Permissions) != 0 {
+		t.Fatalf("the member app got permissions %v", tc.Permissions)
+	}
+	if len(tc.Apps) != 1 || string(tc.Apps[0]) != "backoffice" || tc.SelfPersonId != nil {
+		t.Fatalf("apps = %v self = %v, want [backoffice] and no person", tc.Apps, tc.SelfPersonId)
+	}
 }

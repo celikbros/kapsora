@@ -1,23 +1,12 @@
 /**
  * Which of the three KAPSORA apps an account has work in, tenant by tenant.
  *
- * The server does not know which app a request came from, and it does not need to: every
- * call is narrowed by the account's grants, so opening the wrong app shows nothing that
- * account could not read anyway. What it does not do is tell the person. A reviewer who
- * opens the member app would meet screens that answer "you are not bound to a person", and a
- * hospital clerk in the backoffice would meet a sidebar of pages that all refuse them. This
- * is the rule that turns both into one plain sentence.
- *
- * It mirrors how the server itself places a caller in a tenant, not a second opinion:
- *   - bound to a person (a PERSON grant, `personId` on the context) — the member app;
- *   - holding an ORGANIZATION grant — the provider portal, for that hospital or hotel;
- *   - neither, with permissions — the backoffice, for the tenant as a whole.
- *
- * The three are exclusive within one tenant because the server's narrowing is: a PERSON
- * grant makes every booking and reimbursement call a member's call, and an ORGANIZATION
- * grant narrows every provider-side read to that organization. An account that works in two
- * apps does so across tenants, and then each app lets it choose only among the tenants it
- * fits.
+ * The server decides it. Every tenant context carries `apps`: the apps the account's grants
+ * belong to — a PERSON grant is the member app's, an ORGANIZATION grant the provider
+ * portal's, a tenant-wide role the backoffice's. One account may hold all three kinds in one
+ * tenant, and each app asks the server under its own name (X-Kapsora-App), so each gets only
+ * its own grants. This file only reads the answer; there is no second rule on the client
+ * that could disagree with the server's.
  */
 import type { TenantContext } from '@kapsora/api-client';
 
@@ -25,26 +14,11 @@ export type KapsoraApp = 'backoffice' | 'provider' | 'member';
 
 export const KAPSORA_APPS: readonly KapsoraApp[] = ['backoffice', 'provider', 'member'];
 
-type Placement = Pick<TenantContext, 'permissions' | 'personId' | 'scopes'>;
+type Placement = Pick<TenantContext, 'apps'>;
 
-function boundToPerson(ctx: Placement): boolean {
-  return typeof ctx.personId === 'string' && ctx.personId !== '';
-}
-
-function holdsOrganization(ctx: Placement): boolean {
-  return (ctx.scopes ?? []).some((s) => s.type === 'ORGANIZATION' && !!s.id);
-}
-
-/** Whether this tenant context gives the account work in the app. */
+/** Whether the account has work in the app in this tenant. */
 export function fitsApp(ctx: Placement, app: KapsoraApp): boolean {
-  switch (app) {
-    case 'member':
-      return boundToPerson(ctx);
-    case 'provider':
-      return !boundToPerson(ctx) && holdsOrganization(ctx);
-    case 'backoffice':
-      return !boundToPerson(ctx) && !holdsOrganization(ctx) && ctx.permissions.length > 0;
-  }
+  return (ctx.apps ?? []).includes(app);
 }
 
 /** The apps an account has work in, across all of its tenants, in a fixed order. */

@@ -12651,6 +12651,11 @@ export interface components {
          */
         TaxBehaviour: "EXCLUSIVE" | "INCLUSIVE" | "EXEMPT";
         TenantContext: {
+            /**
+             * @description The apps the account has work in here, from all of its grants. The single
+             *     sign-in sends a person straight to the one app, or offers the choice.
+             */
+            apps: ("backoffice" | "provider" | "member")[];
             permissions: string[];
             /**
              * Format: uuid
@@ -12667,6 +12672,13 @@ export interface components {
                 id?: string | null;
                 type: string;
             }[];
+            /**
+             * Format: uuid
+             * @description The person this account is in this tenant, from its PERSON grant, whichever app
+             *     is asking. Unlike personId it is also set while the account acts as staff: a
+             *     reviewer who is also a member sees their own files marked and cannot decide them.
+             */
+            selfPersonId?: string | null;
             tenant: components["schemas"]["TenantSummary"];
         };
         TenantSummary: {
@@ -13163,6 +13175,13 @@ export interface components {
         AccessReasonHeader: string;
         AccountId: string;
         AdjustmentId: string;
+        /**
+         * @description The app the request comes from. It picks which of the account's grants apply: the
+         *     backoffice gets the tenant-wide staff roles, the provider portal the ORGANIZATION
+         *     grants, the member app the PERSON binding. It only narrows; without it every grant
+         *     applies. An unknown value is 400 APP_HEADER_INVALID.
+         */
+        AppHeader: "backoffice" | "provider" | "member";
         AuthorizationId: string;
         BatchId: string;
         BookingId: string;
@@ -13735,6 +13754,7 @@ export type ParameterAccessPurposeHeader = components['parameters']['AccessPurpo
 export type ParameterAccessReasonHeader = components['parameters']['AccessReasonHeader'];
 export type ParameterAccountId = components['parameters']['AccountId'];
 export type ParameterAdjustmentId = components['parameters']['AdjustmentId'];
+export type ParameterAppHeader = components['parameters']['AppHeader'];
 export type ParameterAuthorizationId = components['parameters']['AuthorizationId'];
 export type ParameterBatchId = components['parameters']['BatchId'];
 export type ParameterBookingId = components['parameters']['BookingId'];
@@ -21181,7 +21201,15 @@ export interface operations {
     getCurrentUserContext: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /**
+                 * @description The app the request comes from. It picks which of the account's grants apply: the
+                 *     backoffice gets the tenant-wide staff roles, the provider portal the ORGANIZATION
+                 *     grants, the member app the PERSON binding. It only narrows; without it every grant
+                 *     applies. An unknown value is 400 APP_HEADER_INVALID.
+                 */
+                "X-Kapsora-App"?: components["parameters"]["AppHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -27274,6 +27302,13 @@ export interface operations {
             header?: {
                 /** @description Required when the request is authenticated with the BFF session cookie. */
                 "X-CSRF-Token"?: components["parameters"]["CsrfHeader"];
+                /**
+                 * @description The app the request comes from. It picks which of the account's grants apply: the
+                 *     backoffice gets the tenant-wide staff roles, the provider portal the ORGANIZATION
+                 *     grants, the member app the PERSON binding. It only narrows; without it every grant
+                 *     applies. An unknown value is 400 APP_HEADER_INVALID.
+                 */
+                "X-Kapsora-App"?: components["parameters"]["AppHeader"];
             };
             path?: never;
             cookie?: never;

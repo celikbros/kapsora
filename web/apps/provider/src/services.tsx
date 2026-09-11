@@ -16,6 +16,7 @@ export function createServices(
   let store: SessionStore | null = null;
   const client = createKapsoraClient({
     baseUrl: options.baseUrl ?? '',
+    app: 'provider',
     ...(options.fetch ? { fetch: options.fetch } : {}),
     csrfToken: () => store?.getState().csrfToken ?? null,
   });

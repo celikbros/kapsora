@@ -66,6 +66,52 @@ export interface MockSession {
   csrfToken: string;
   expiresAt: string;
   stepUpExpiresAt: string | null;
+  /**
+   * The app the session signed in from (X-Kapsora-App), or null for a client that named
+   * none. The server reads the header on every request; the mock keeps it per session,
+   * because one browser tab is one app and every test drives one app at a time.
+   */
+  app: MockApp | null;
+}
+
+/** The three apps, in the order the server lists them. */
+export type MockApp = 'backoffice' | 'provider' | 'member';
+export const MOCK_APPS: readonly MockApp[] = ['backoffice', 'provider', 'member'];
+
+/**
+ * The app a grant belongs to, as the server decides it (identity.AppOfScope): a PERSON grant
+ * is the member app's, an ORGANIZATION or PROVIDER_LOCATION grant the provider portal's,
+ * anything else the backoffice's.
+ */
+export function appOfGrant(scopes: readonly { type: string }[] | undefined): MockApp {
+  if ((scopes ?? []).some((g) => g.type === 'PERSON')) return 'member';
+  if ((scopes ?? []).some((g) => g.type === 'ORGANIZATION' || g.type === 'PROVIDER_LOCATION'))
+    return 'provider';
+  return 'backoffice';
+}
+
+/** The app a request names, or null; an unknown value names none. */
+export function appOfRequest(request: Request): MockApp | null {
+  const raw = request.headers.get('X-Kapsora-App');
+  return raw === 'backoffice' || raw === 'provider' || raw === 'member' ? raw : null;
+}
+
+/**
+ * What the session may do in a tenant: the union of the account's grant sets there that
+ * belong to the session's app, or all of them when it named none — the server's rule.
+ */
+export function grantsFor(
+  session: MockSession,
+  tenantCode: string,
+): { permissions: string[]; scopes: { type: string; id: string | null }[] } {
+  const sets = session.account.memberships.filter(
+    (m) =>
+      m.tenantCode === tenantCode && (session.app === null || appOfGrant(m.scopes) === session.app),
+  );
+  return {
+    permissions: [...new Set(sets.flatMap((m) => m.permissions))],
+    scopes: sets.flatMap((m) => m.scopes ?? []),
+  };
 }
 
 export interface MockOptions {
@@ -107,7 +153,7 @@ export class MockApi {
     return `mock-${String(this.traceCounter).padStart(6, '0')}`;
   }
 
-  signIn(username: string): MockSession | null {
+  signIn(username: string, app: MockApp | null = null): MockSession | null {
     const account = this.world.accounts.find((a) => a.username === username);
     if (!account) return null;
     const memberships = account.memberships;
@@ -118,6 +164,7 @@ export class MockApi {
       csrfToken: `csrf-${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`,
       expiresAt: new Date(Date.now() + 8 * 3_600_000).toISOString(),
       stepUpExpiresAt: null,
+      app,
     };
     return this.session;
   }
@@ -126,22 +173,35 @@ export class MockApi {
     return this.world.tenants.find((t) => t.code === code);
   }
 
-  tenantContexts(account: MockAccount): Schemas['TenantContext'][] {
-    return account.memberships
-      .map((m) => ({
-        tenant: this.tenantByCode(m.tenantCode)!,
-        // The person this account acts for in this tenant, read from its PERSON grant
-        // (WP-I6-04 section 2.4). A member client reads it to know it is bound; nothing
-        // trusts it back, and every handler resolves the person from the grant again on
-        // every call — which is what makes a body naming somebody else a refusal rather
-        // than a different answer.
-        personId: (m.scopes ?? []).find((g) => g.type === 'PERSON')?.id ?? null,
-        permissions: m.permissions,
-        // The access grants that narrow the permissions above. A provider-side role is an
-        // ORGANIZATION grant, and it is what every provider boundary in the API is read
-        // from — there is no second, client-side rule that could disagree with it.
-        scopes: (m.scopes ?? []).map((g) => ({ type: g.type, id: g.id })),
-      }))
+  tenantContexts(account: MockAccount, app: MockApp | null = null): Schemas['TenantContext'][] {
+    const codes = [...new Set(account.memberships.map((m) => m.tenantCode))];
+    const personOf = (scopes: { type: string; id: string | null }[]) =>
+      scopes.find((g) => g.type === 'PERSON')?.id ?? null;
+    return codes
+      .map((code) => {
+        const all = account.memberships.filter((m) => m.tenantCode === code);
+        const lens = all.filter((m) => app === null || appOfGrant(m.scopes) === app);
+        const scopes = lens.flatMap((m) => m.scopes ?? []);
+        return {
+          tenant: this.tenantByCode(code)!,
+          // The person this account acts for, read from its PERSON grant (WP-I6-04 2.4), and
+          // only in the member app: a member who is also staff acts for nobody as staff. A
+          // member client reads it to know it is bound; every handler resolves the person
+          // from the grant again on every call, so nothing trusts it back.
+          personId: personOf(scopes),
+          // Who the account is, whichever app asks: what marks a reviewer's own file.
+          selfPersonId: personOf(all.flatMap((m) => m.scopes ?? [])),
+          // The apps the account has work in here, from all of its grant sets.
+          apps: MOCK_APPS.filter((a) =>
+            all.some((m) => appOfGrant(m.scopes) === a && m.permissions.length > 0),
+          ),
+          permissions: [...new Set(lens.flatMap((m) => m.permissions))],
+          // The access grants that narrow the permissions above. A provider-side role is an
+          // ORGANIZATION grant, and it is what every provider boundary in the API is read
+          // from — there is no second, client-side rule that could disagree with it.
+          scopes: scopes.map((g) => ({ type: g.type, id: g.id })),
+        };
+      })
       .sort((a, b) => a.tenant.displayName.localeCompare(b.tenant.displayName, 'tr'));
   }
 
@@ -271,7 +331,7 @@ export function guardTenant(
     return { error: problem(api, 403, 'TENANT_MISMATCH', 'Tenant başlığı oturumla uyuşmuyor') };
   }
   const tenant = api.world.tenants.find((t) => t.id === header)!;
-  const membership = session.account.memberships.find((m) => m.tenantCode === tenant.code);
+  const membership = grantsFor(session, tenant.code);
   if (!membership?.permissions.includes(permission)) {
     return {
       error: problem(api, 403, 'PERMISSION_DENIED', 'Bu işlem için yetkiniz yok', {
@@ -396,7 +456,7 @@ export function hasPermission(
 ): boolean {
   const tenant = api.world.tenants.find((t) => t.id === tenantId);
   if (!tenant) return false;
-  const membership = session.account.memberships.find((m) => m.tenantCode === tenant.code);
+  const membership = grantsFor(session, tenant.code);
   return membership?.permissions.includes(permission) ?? false;
 }
 
@@ -461,7 +521,7 @@ export function organizationScope(
 ): string[] | null {
   const tenant = api.world.tenants.find((t) => t.id === tenantId);
   if (!tenant) return [];
-  const membership = session.account.memberships.find((m) => m.tenantCode === tenant.code);
+  const membership = grantsFor(session, tenant.code);
   const grants = (membership?.scopes ?? []).filter((g) => g.type === 'ORGANIZATION');
   if (grants.length === 0) return null;
   return grants.filter((g) => g.id !== null).map((g) => g.id!);
@@ -476,7 +536,7 @@ export function organizationScope(
 export function personScope(api: MockApi, session: MockSession, tenantId: string): string | null {
   const tenant = api.world.tenants.find((t) => t.id === tenantId);
   if (!tenant) return null;
-  const membership = session.account.memberships.find((m) => m.tenantCode === tenant.code);
+  const membership = grantsFor(session, tenant.code);
   return (membership?.scopes ?? []).find((g) => g.type === 'PERSON')?.id ?? null;
 }
 
@@ -910,7 +970,7 @@ export function createHandlers(api: MockApi): HttpHandler[] {
           ? problem(api, 403, 'ACCOUNT_LOCKED', 'Hesap geçici olarak kilitlendi')
           : problem(api, 401, 'INVALID_CREDENTIALS', 'Kullanıcı adı veya parola hatalı');
       }
-      const session = api.signIn(body.username.trim().toLowerCase());
+      const session = api.signIn(body.username.trim().toLowerCase(), appOfRequest(request));
       if (!session)
         return problem(api, 401, 'INVALID_CREDENTIALS', 'Kullanıcı adı veya parola hatalı');
       return HttpResponse.json(api.sessionInfo());
@@ -930,15 +990,11 @@ export function createHandlers(api: MockApi): HttpHandler[] {
       if (s instanceof Response) return s;
       const body = await readJson<{ tenantId?: string }>(request);
       const tenant = api.world.tenants.find((t) => t.id === body?.tenantId);
-      const membership = tenant && s.account.memberships.find((m) => m.tenantCode === tenant.code);
-      if (!tenant || !membership)
+      const ctx =
+        tenant && api.tenantContexts(s.account, s.app).find((c) => c.tenant.id === tenant.id);
+      if (!tenant || !ctx)
         return problem(api, 403, 'TENANT_ACCESS_DENIED', 'Bu tenant için üyeliğiniz yok');
       s.activeTenantId = tenant.id;
-      const ctx: Schemas['TenantContext'] = {
-        tenant,
-        permissions: membership.permissions,
-        scopes: [],
-      };
       return HttpResponse.json(ctx);
     }),
 
@@ -974,7 +1030,7 @@ export function createHandlers(api: MockApi): HttpHandler[] {
         actorId: a.actorId,
         displayName: a.displayName,
         email: a.email,
-        tenants: api.tenantContexts(a),
+        tenants: api.tenantContexts(a, api.session.app),
       };
       return HttpResponse.json(body);
     }),

@@ -24,7 +24,7 @@ import {
   type StoredWorkItem,
   type StoredWorkQueue,
 } from './data';
-import type { MockApi, MockSession } from './handlers';
+import { grantsFor, type MockApi, type MockSession } from './handlers';
 import {
   ANY,
   decodeCursor,
@@ -108,7 +108,7 @@ function etagMismatch(api: MockApi): Response {
 function queueScope(api: MockApi, session: MockSession, tenantId: string): string[] | null {
   const tenant = api.world.tenants.find((t) => t.id === tenantId);
   if (!tenant) return [];
-  const membership = session.account.memberships.find((m) => m.tenantCode === tenant.code);
+  const membership = grantsFor(session, tenant.code);
   const grants = (membership?.scopes ?? []).filter((g) => g.type === 'WORK_QUEUE');
   if (grants.length === 0) return null;
   return grants.filter((g) => g.id !== null).map((g) => g.id!);

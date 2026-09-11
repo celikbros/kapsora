@@ -371,6 +371,56 @@ func (q *Queries) GetTenantIDByCode(ctx context.Context, code string) (uuid.UUID
 	return id, err
 }
 
+const listGrantsForMembership = `-- name: ListGrantsForMembership :many
+SELECT g.id, g.scope_type, g.scope_id, rp.permission_code
+  FROM iam.access_grant g
+  LEFT JOIN iam.role_permission rp ON rp.tenant_id = g.tenant_id AND rp.role_id = g.role_id
+ WHERE g.tenant_id = $1
+   AND g.tenant_membership_id = $2
+   AND g.valid_period @> clock_timestamp()
+ ORDER BY g.id, rp.permission_code
+`
+
+type ListGrantsForMembershipParams struct {
+	TenantID           uuid.UUID
+	TenantMembershipID uuid.UUID
+}
+
+type ListGrantsForMembershipRow struct {
+	ID             uuid.UUID
+	ScopeType      string
+	ScopeID        uuid.NullUUID
+	PermissionCode *string
+}
+
+// Every grant of the membership valid now, one row per permission of its role, so the caller
+// can tell which permissions came with which scope and apply only the grants of the app a
+// request comes from. A role with no permissions still yields its grant, with a null code.
+func (q *Queries) ListGrantsForMembership(ctx context.Context, arg ListGrantsForMembershipParams) ([]ListGrantsForMembershipRow, error) {
+	rows, err := q.db.Query(ctx, listGrantsForMembership, arg.TenantID, arg.TenantMembershipID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListGrantsForMembershipRow
+	for rows.Next() {
+		var i ListGrantsForMembershipRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ScopeType,
+			&i.ScopeID,
+			&i.PermissionCode,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listMembershipsForActor = `-- name: ListMembershipsForActor :many
 SELECT m.id, m.tenant_id, t.code, t.display_name, t.status, t.default_locale, t.default_time_zone
   FROM iam.tenant_membership m
@@ -437,82 +487,6 @@ func (q *Queries) ListPermissionCodes(ctx context.Context) ([]string, error) {
 			return nil, err
 		}
 		items = append(items, code)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listPermissionsForMembership = `-- name: ListPermissionsForMembership :many
-SELECT DISTINCT rp.permission_code
-  FROM iam.access_grant g
-  JOIN iam.role_permission rp ON rp.tenant_id = g.tenant_id AND rp.role_id = g.role_id
- WHERE g.tenant_id = $1
-   AND g.tenant_membership_id = $2
-   AND g.valid_period @> clock_timestamp()
- ORDER BY rp.permission_code
-`
-
-type ListPermissionsForMembershipParams struct {
-	TenantID           uuid.UUID
-	TenantMembershipID uuid.UUID
-}
-
-// Union of the permissions of every role granted to the membership and valid now.
-func (q *Queries) ListPermissionsForMembership(ctx context.Context, arg ListPermissionsForMembershipParams) ([]string, error) {
-	rows, err := q.db.Query(ctx, listPermissionsForMembership, arg.TenantID, arg.TenantMembershipID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []string
-	for rows.Next() {
-		var permission_code string
-		if err := rows.Scan(&permission_code); err != nil {
-			return nil, err
-		}
-		items = append(items, permission_code)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listScopesForMembership = `-- name: ListScopesForMembership :many
-SELECT DISTINCT g.scope_type, g.scope_id
-  FROM iam.access_grant g
- WHERE g.tenant_id = $1
-   AND g.tenant_membership_id = $2
-   AND g.scope_type <> 'TENANT'
-   AND g.valid_period @> clock_timestamp()
- ORDER BY g.scope_type, g.scope_id
-`
-
-type ListScopesForMembershipParams struct {
-	TenantID           uuid.UUID
-	TenantMembershipID uuid.UUID
-}
-
-type ListScopesForMembershipRow struct {
-	ScopeType string
-	ScopeID   uuid.NullUUID
-}
-
-func (q *Queries) ListScopesForMembership(ctx context.Context, arg ListScopesForMembershipParams) ([]ListScopesForMembershipRow, error) {
-	rows, err := q.db.Query(ctx, listScopesForMembership, arg.TenantID, arg.TenantMembershipID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListScopesForMembershipRow
-	for rows.Next() {
-		var i ListScopesForMembershipRow
-		if err := rows.Scan(&i.ScopeType, &i.ScopeID); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

@@ -14,6 +14,12 @@ export interface ClientOptions {
    * every state-changing request; null while anonymous.
    */
   csrfToken?: () => string | null;
+  /**
+   * The app this client belongs to, sent as X-Kapsora-App on every request. The server then
+   * applies only the account's grants of that app: a reviewer who is also a member is a
+   * reviewer in the backoffice and a member in the member app. It can only narrow.
+   */
+  app?: 'backoffice' | 'provider' | 'member';
 }
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
@@ -41,6 +47,9 @@ export function createKapsoraClient(options: ClientOptions = {}): KapsoraClient 
       }
       if (!request.headers.has('Accept')) {
         request.headers.set('Accept', 'application/json, application/problem+json');
+      }
+      if (options.app && !request.headers.has('X-Kapsora-App')) {
+        request.headers.set('X-Kapsora-App', options.app);
       }
       if (!SAFE_METHODS.has(request.method) && !request.headers.has('X-CSRF-Token')) {
         const token = options.csrfToken?.();

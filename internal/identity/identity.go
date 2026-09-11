@@ -79,6 +79,56 @@ type Scope struct {
 // value of the binding is that the account cannot choose whose it is.
 const ScopePerson = "PERSON"
 
+// App is the KAPSORA app a browser request comes from, named in the X-Kapsora-App header.
+//
+// One account may hold grants of three kinds in one tenant -- a tenant-wide staff role, an
+// ORGANIZATION grant at a hospital or hotel, a PERSON grant as a member -- and each kind
+// belongs to one app. The app a request names picks which of them apply to it: the
+// backoffice sees the staff roles and not the member binding, the member app sees the binding
+// and nothing else. Naming an app can only narrow what the account holds, never add to it,
+// which is why the header may be taken from the client.
+//
+// A request that names no app gets every grant at once. That is how every caller behaved
+// before the apps were told apart, and how a service client still does.
+type App string
+
+const (
+	AppAny        App = ""
+	AppBackoffice App = "backoffice"
+	AppProvider   App = "provider"
+	AppMember     App = "member"
+)
+
+// AppHeader names the app of a browser request.
+const AppHeader = "X-Kapsora-App"
+
+// Apps are the three apps in the order they are offered to a person.
+var Apps = []App{AppBackoffice, AppProvider, AppMember}
+
+// ParseApp reads the header value. An empty value is AppAny; an unknown one is refused, so
+// a client with a typo is told rather than silently handed every grant at once.
+func ParseApp(raw string) (App, bool) {
+	switch app := App(raw); app {
+	case AppAny, AppBackoffice, AppProvider, AppMember:
+		return app, true
+	}
+	return AppAny, false
+}
+
+// AppOfScope is the app a grant of this scope type belongs to. A PERSON grant is the member
+// app's; an ORGANIZATION or PROVIDER_LOCATION grant is the provider portal's; a tenant-wide
+// grant and the staff-side narrowing scopes (PROGRAM, WORK_QUEUE) are the backoffice's.
+func AppOfScope(scopeType string) App {
+	switch scopeType {
+	case ScopePerson:
+		return AppMember
+	case "ORGANIZATION", "PROVIDER_LOCATION":
+		return AppProvider
+	default:
+		return AppBackoffice
+	}
+}
+
 // ClientType distinguishes browser sessions from machine clients.
 type ClientType string
 
@@ -96,15 +146,23 @@ type RequestContext struct {
 	ClientType   ClientType
 	TenantID     uuid.UUID
 	MembershipID uuid.UUID
+	// App is the app the request came from; AppAny when it named none. Only the grants that
+	// belong to it made the permissions and scopes below.
+	App App
 	// PersonID is the person this caller acts for, from its PERSON scope. It is set for a
 	// member account and unset for every other actor: a reviewer, a provider clerk and an
-	// administrator act for the tenant or for an organization, never for a person.
-	PersonID    uuid.NullUUID
-	Permissions map[string]struct{}
-	Scopes      []Scope
-	Locale      string
-	TimeZone    string
-	StepUpValid bool
+	// administrator act for the tenant or for an organization, never for a person. A member
+	// account that is also staff has it only in the member app.
+	PersonID uuid.NullUUID
+	// SelfPersonID is the person this account is in the tenant, from its PERSON grant,
+	// whichever app the request came from. PersonID says whom the caller acts for; this says
+	// who the caller is, and it is what refuses a reviewer a decision on their own file.
+	SelfPersonID uuid.NullUUID
+	Permissions  map[string]struct{}
+	Scopes       []Scope
+	Locale       string
+	TimeZone     string
+	StepUpValid  bool
 }
 
 // Has reports whether the permission code is granted.

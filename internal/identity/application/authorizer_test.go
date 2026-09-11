@@ -150,7 +150,7 @@ func TestResolveTenantContextUnionsRolesAndIgnoresExpiredGrants(t *testing.T) {
 		  FROM iam.tenant_membership m JOIN iam.role r ON r.tenant_id = m.tenant_id
 		 WHERE m.tenant_id = $1 AND m.actor_id = $2 AND r.code = 'PROGRAM_MANAGER'`, f.tenantA, actor)
 
-	rc, err := f.authz.ResolveTenantContext(ctx, sessionFor(actor, f.tenantA), f.tenantA, "req-1")
+	rc, err := f.authz.ResolveTenantContext(ctx, sessionFor(actor, f.tenantA), f.tenantA, identity.AppAny, "req-1")
 	if err != nil {
 		t.Fatalf("resolve: %v", err)
 	}
@@ -173,7 +173,7 @@ func TestResolveTenantContextUnionsRolesAndIgnoresExpiredGrants(t *testing.T) {
 	}
 	stepped := sessionFor(actor, f.tenantA)
 	stepped.StepUpUntil = time.Now().Add(time.Minute)
-	if rc, _ := f.authz.ResolveTenantContext(ctx, stepped, f.tenantA, ""); !rc.StepUpValid {
+	if rc, _ := f.authz.ResolveTenantContext(ctx, stepped, f.tenantA, identity.AppAny, ""); !rc.StepUpValid {
 		t.Fatal("step-up window not reflected")
 	}
 }
@@ -185,20 +185,20 @@ func TestResolveTenantContextRejectsMismatchMissingAndSuspendedMembership(t *tes
 	f.grant(t, f.tenantA, actor, "AUDITOR")
 
 	// Header names B while the session is on A.
-	if _, err := f.authz.ResolveTenantContext(ctx, sessionFor(actor, f.tenantA), f.tenantB, ""); !errors.Is(err, application.ErrTenantMismatch) {
+	if _, err := f.authz.ResolveTenantContext(ctx, sessionFor(actor, f.tenantA), f.tenantB, identity.AppAny, ""); !errors.Is(err, application.ErrTenantMismatch) {
 		t.Fatalf("mismatch: %v", err)
 	}
 	// No active tenant on the session at all.
-	if _, err := f.authz.ResolveTenantContext(ctx, sessionFor(actor, uuid.Nil), f.tenantA, ""); !errors.Is(err, application.ErrTenantMismatch) {
+	if _, err := f.authz.ResolveTenantContext(ctx, sessionFor(actor, uuid.Nil), f.tenantA, identity.AppAny, ""); !errors.Is(err, application.ErrTenantMismatch) {
 		t.Fatalf("no active tenant: %v", err)
 	}
 	// Session claims B but the actor has no membership there.
-	if _, err := f.authz.ResolveTenantContext(ctx, sessionFor(actor, f.tenantB), f.tenantB, ""); !errors.Is(err, application.ErrNoMembership) {
+	if _, err := f.authz.ResolveTenantContext(ctx, sessionFor(actor, f.tenantB), f.tenantB, identity.AppAny, ""); !errors.Is(err, application.ErrNoMembership) {
 		t.Fatalf("no membership: %v", err)
 	}
 	// A suspended membership is as good as none.
 	f.h.AdminExec(`UPDATE iam.tenant_membership SET membership_status = 'SUSPENDED' WHERE tenant_id = $1 AND actor_id = $2`, f.tenantA, actor)
-	if _, err := f.authz.ResolveTenantContext(ctx, sessionFor(actor, f.tenantA), f.tenantA, ""); !errors.Is(err, application.ErrNoMembership) {
+	if _, err := f.authz.ResolveTenantContext(ctx, sessionFor(actor, f.tenantA), f.tenantA, identity.AppAny, ""); !errors.Is(err, application.ErrNoMembership) {
 		t.Fatalf("suspended membership: %v", err)
 	}
 	tenants, err := f.authz.ListTenants(ctx, actor)
@@ -228,7 +228,7 @@ func TestListTenantsAndContextsSeeOnlyOwnMemberships(t *testing.T) {
 		t.Fatalf("bob tenants = %v err=%v", bobTenants, err)
 	}
 
-	contexts, err := f.authz.TenantContexts(ctx, alice)
+	contexts, err := f.authz.TenantContexts(ctx, alice, identity.AppAny)
 	if err != nil || len(contexts) != 2 {
 		t.Fatalf("contexts = %v err=%v", contexts, err)
 	}
@@ -259,7 +259,7 @@ func TestSwitchTenantUpdatesSessionAndReturnsScopes(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tc, err := f.authz.SwitchTenant(ctx, session, f.tenantA)
+	tc, err := f.authz.SwitchTenant(ctx, session, f.tenantA, identity.AppAny)
 	if err != nil {
 		t.Fatalf("switch: %v", err)
 	}
@@ -270,10 +270,10 @@ func TestSwitchTenantUpdatesSessionAndReturnsScopes(t *testing.T) {
 	if err != nil || !stored.ActiveTenantID.Valid || stored.ActiveTenantID.UUID != f.tenantA {
 		t.Fatalf("active tenant not stored: %+v err=%v", stored, err)
 	}
-	if _, err := f.authz.SwitchTenant(ctx, session, f.tenantB); !errors.Is(err, application.ErrNoMembership) {
+	if _, err := f.authz.SwitchTenant(ctx, session, f.tenantB, identity.AppAny); !errors.Is(err, application.ErrNoMembership) {
 		t.Fatalf("switch to a tenant without membership: %v", err)
 	}
-	if _, err := f.authz.SwitchTenant(ctx, session, uuid.New()); !errors.Is(err, application.ErrNoMembership) {
+	if _, err := f.authz.SwitchTenant(ctx, session, uuid.New(), identity.AppAny); !errors.Is(err, application.ErrNoMembership) {
 		t.Fatalf("switch to an unknown tenant must look identical: %v", err)
 	}
 }

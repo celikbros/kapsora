@@ -22,24 +22,17 @@ SELECT m.id, m.tenant_id, t.code, t.display_name, t.status, t.default_locale, t.
    AND t.status = 'ACTIVE'
  ORDER BY t.display_name, t.id;
 
--- name: ListPermissionsForMembership :many
--- Union of the permissions of every role granted to the membership and valid now.
-SELECT DISTINCT rp.permission_code
+-- name: ListGrantsForMembership :many
+-- Every grant of the membership valid now, one row per permission of its role, so the caller
+-- can tell which permissions came with which scope and apply only the grants of the app a
+-- request comes from. A role with no permissions still yields its grant, with a null code.
+SELECT g.id, g.scope_type, g.scope_id, rp.permission_code
   FROM iam.access_grant g
-  JOIN iam.role_permission rp ON rp.tenant_id = g.tenant_id AND rp.role_id = g.role_id
+  LEFT JOIN iam.role_permission rp ON rp.tenant_id = g.tenant_id AND rp.role_id = g.role_id
  WHERE g.tenant_id = $1
    AND g.tenant_membership_id = $2
    AND g.valid_period @> clock_timestamp()
- ORDER BY rp.permission_code;
-
--- name: ListScopesForMembership :many
-SELECT DISTINCT g.scope_type, g.scope_id
-  FROM iam.access_grant g
- WHERE g.tenant_id = $1
-   AND g.tenant_membership_id = $2
-   AND g.scope_type <> 'TENANT'
-   AND g.valid_period @> clock_timestamp()
- ORDER BY g.scope_type, g.scope_id;
+ ORDER BY g.id, rp.permission_code;
 
 -- name: ListPermissionCodes :many
 SELECT code FROM iam.permission ORDER BY code;

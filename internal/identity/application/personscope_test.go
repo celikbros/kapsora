@@ -51,7 +51,7 @@ func TestPersonScopeGrantBindsTheContextToOnePerson(t *testing.T) {
 	f.grant(t, f.tenantA, reviewer, "MEDICAL_REVIEWER")
 
 	// The request context of a member carries the person.
-	rc, err := f.authz.ResolveTenantContext(ctx, sessionFor(member, f.tenantA), f.tenantA, "req-1")
+	rc, err := f.authz.ResolveTenantContext(ctx, sessionFor(member, f.tenantA), f.tenantA, identity.AppAny, "req-1")
 	if err != nil {
 		t.Fatalf("resolve the member context: %v", err)
 	}
@@ -67,7 +67,7 @@ func TestPersonScopeGrantBindsTheContextToOnePerson(t *testing.T) {
 
 	// Every other actor has none. This is the assertion that would go red if PersonID were
 	// filled from, say, the first scope of any kind.
-	reviewerRC, err := f.authz.ResolveTenantContext(ctx, sessionFor(reviewer, f.tenantA), f.tenantA, "req-2")
+	reviewerRC, err := f.authz.ResolveTenantContext(ctx, sessionFor(reviewer, f.tenantA), f.tenantA, identity.AppAny, "req-2")
 	if err != nil {
 		t.Fatalf("resolve the reviewer context: %v", err)
 	}
@@ -76,7 +76,7 @@ func TestPersonScopeGrantBindsTheContextToOnePerson(t *testing.T) {
 	}
 
 	// /me says the same thing as the request context, for the same actor.
-	contexts, err := f.authz.TenantContexts(ctx, member)
+	contexts, err := f.authz.TenantContexts(ctx, member, identity.AppAny)
 	if err != nil {
 		t.Fatalf("tenant contexts: %v", err)
 	}
@@ -95,7 +95,7 @@ func TestPersonScopeGrantBindsTheContextToOnePerson(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("create session: %v", err)
 	}
-	switched, err := f.authz.SwitchTenant(ctx, identity.Session{ID: sessionID, ActorID: member}, f.tenantA)
+	switched, err := f.authz.SwitchTenant(ctx, identity.Session{ID: sessionID, ActorID: member}, f.tenantA, identity.AppAny)
 	if err != nil {
 		t.Fatalf("switch tenant: %v", err)
 	}

@@ -48,6 +48,12 @@ type tenantContextJSON struct {
 	PersonID    *string     `json:"personId"`
 	Permissions []string    `json:"permissions"`
 	Scopes      []scopeJSON `json:"scopes"`
+	// Apps are the apps the account has work in here, whichever app is asking; the single
+	// sign-in reads them to know where to send a person.
+	Apps []string `json:"apps"`
+	// SelfPersonID is the person this account is in this tenant, even while it acts as
+	// staff. A reviewer's screens compare it with a file's person to say "this one is yours".
+	SelfPersonID *string `json:"selfPersonId"`
 }
 
 type userContextJSON struct {
@@ -69,7 +75,11 @@ func (h *ContextHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 		WriteAuthError(w, r, err, h.logger)
 		return
 	}
-	contexts, err := h.authz.TenantContexts(r.Context(), session.ActorID)
+	app, ok := appFromRequest(w, r)
+	if !ok {
+		return
+	}
+	contexts, err := h.authz.TenantContexts(r.Context(), session.ActorID, app)
 	if err != nil {
 		WriteAuthError(w, r, err, h.logger)
 		return
@@ -126,7 +136,11 @@ func (h *ContextHandler) SwitchTenant(w http.ResponseWriter, r *http.Request) {
 		WriteAuthError(w, r, application.ErrNoMembership, h.logger)
 		return
 	}
-	tc, err := h.authz.SwitchTenant(r.Context(), session, tenantID)
+	app, ok := appFromRequest(w, r)
+	if !ok {
+		return
+	}
+	tc, err := h.authz.SwitchTenant(r.Context(), session, tenantID, app)
 	if err != nil {
 		WriteAuthError(w, r, err, h.logger)
 		return
@@ -158,6 +172,14 @@ func tenantContextBody(c application.TenantContext) tenantContextJSON {
 	if c.PersonID.Valid {
 		v := c.PersonID.UUID.String()
 		out.PersonID = &v
+	}
+	out.Apps = make([]string, 0, len(c.Apps))
+	for _, a := range c.Apps {
+		out.Apps = append(out.Apps, string(a))
+	}
+	if c.SelfPersonID.Valid {
+		v := c.SelfPersonID.UUID.String()
+		out.SelfPersonID = &v
 	}
 	return out
 }
