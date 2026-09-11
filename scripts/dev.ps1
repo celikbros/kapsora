@@ -3,7 +3,7 @@
 param(
     [Parameter(Mandatory = $true)]
     [ValidateSet("build", "vet", "fmt", "lint", "test-unit", "test-db", "db-init", "migrate-up", "migrate-version",
-                 "run-api", "run-worker", "run-scheduler", "openapi-generate", "sqlc",
+                 "run-api", "run-worker", "run-scheduler", "seed-demo", "openapi-generate", "sqlc",
                  "native-install", "native-up", "native-down", "native-status", "web-ci", "web-dev")]
     [string]$Target
 )
@@ -36,6 +36,10 @@ switch ($Target) {
     "run-api"          { go run ./cmd/api }
     "run-worker"       { go run ./cmd/worker }
     "run-scheduler"    { go run ./cmd/scheduler }
+    # The demo tenants, accounts and the WP-I7 business scenario. It runs as the application
+    # role: .env was just reloaded above, so a migrate-up earlier in this terminal (which points
+    # KAPSORA_DATABASE_URL at the schema owner) cannot leak into it. Needs native-up first.
+    "seed-demo"        { if (-not $env:KAPSORA_SEED_DEMO_PASSWORD) { $env:KAPSORA_SEED_DEMO_PASSWORD = "demo parola 2026 kapsora" }; go run ./cmd/seed demo }
     "openapi-generate" { Push-Location api/openapi; try { & (Join-Path $gobin "oapi-codegen.exe") -config oapi-codegen.yaml kapsora-v1.yaml } finally { Pop-Location } }
     "sqlc"             { & (Join-Path $gobin "sqlc.exe") generate }
     "native-install"   { & (Join-Path $PSScriptRoot "native\install.ps1") }

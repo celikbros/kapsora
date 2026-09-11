@@ -64,6 +64,10 @@ go run ./cmd/seed demo   # DEMO_A / DEMO_B ve demo kullanıcılar (parola için 
 
 Windows'ta GNU make yoksa `.\scripts\dev.ps1 db-init` vb. aynı hedefleri çalıştırır.
 
+Windows'ta demo verisi için `.\scripts\dev.ps1 seed-demo` kullanın: `.env`'i yeniden yükler, böylece aynı terminalde daha önce çalışan `migrate-up`'ın şema sahibi bağlantısı sızmaz ve seed uygulama rolüyle (RLS açık) çalışır; `KAPSORA_SEED_DEMO_PASSWORD` verilmemişse demo parolasını kullanır. Belge adımları için önce `native-up` gerekir.
+
+8080 bu makinede başka bir uygulamadaysa `.env` içinde `KAPSORA_HTTP_ADDR=:8090` yazın ve web uygulamalarını `VITE_API_MOCK=false`, `VITE_API_BASE_URL=http://127.0.0.1:8090` ile başlatın.
+
 ## 5. Servisleri başlatma
 
 ```powershell
