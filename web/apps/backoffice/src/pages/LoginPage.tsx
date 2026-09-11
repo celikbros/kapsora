@@ -1,5 +1,5 @@
 import type { ApiError } from '@kapsora/api-client';
-import { safeReturnTo, useSessionStore } from '@kapsora/auth';
+import { afterSignIn, browser, safeReturnTo, useSessionStore } from '@kapsora/auth';
 import { useTranslation } from '@kapsora/i18n';
 import {
   Button,
@@ -12,6 +12,7 @@ import {
   type DemoAccount,
 } from '@kapsora/ui';
 import { useNavigate, useSearch } from '@tanstack/react-router';
+import { APP_URLS } from '../appUrls';
 import { problemOf } from '../problems';
 import { useState, type FormEvent } from 'react';
 
@@ -47,6 +48,11 @@ const DEMO_ACCOUNTS: DemoAccount[] = [
     name: 'Selin İnsan Kaynakları',
     role: 'Çalışan görünümü, tanı görmeden',
   },
+  {
+    username: 'staff.member',
+    name: 'Deniz Çalışan',
+    role: 'Tıbbi değerlendirici; aynı zamanda üye (iki uygulama)',
+  },
 ];
 
 /** Own-credentials login (ADR-022): username + password to POST /api/v1/session/login. */
@@ -76,6 +82,17 @@ export function LoginPage() {
         return;
       }
       const target = safeReturnTo(search.returnTo, '/');
+      // The single sign-in: an account whose only app is another one goes there, one with
+      // several chooses, one with none is told (APP_CHOOSER_PATH).
+      const next = afterSignIn(state.me?.tenants ?? [], 'backoffice');
+      if (next.kind === 'go') {
+        browser.assign(APP_URLS[next.app]);
+        return;
+      }
+      if (next.kind !== 'stay') {
+        await navigate({ href: `/auth/apps?returnTo=${encodeURIComponent(target)}` });
+        return;
+      }
       if (!state.activeTenant) {
         // The server never picks a tenant; one active membership is selected here, several
         // go to the picker (the app-route guard applies the same rule on deep links).

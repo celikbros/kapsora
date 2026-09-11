@@ -156,8 +156,10 @@ export class MockApi {
   signIn(username: string, app: MockApp | null = null): MockSession | null {
     const account = this.world.accounts.find((a) => a.username === username);
     if (!account) return null;
-    const memberships = account.memberships;
-    const single = memberships.length === 1 ? this.tenantByCode(memberships[0]!.tenantCode) : null;
+    // An account may hold several grant sets in one tenant (one per app); what counts here is
+    // how many tenants, as on the server.
+    const codes = [...new Set(account.memberships.map((m) => m.tenantCode))];
+    const single = codes.length === 1 ? this.tenantByCode(codes[0]!) : null;
     this.session = {
       account,
       activeTenantId: single?.id ?? null,

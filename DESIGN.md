@@ -668,14 +668,16 @@ reimbursement list alike — and so does an ERP total that has not arrived. A ze
 decision: printed for an undecided line it tells a provider their invoice was refused. Where
 the server sends a real zero, the zero is printed.
 
-**An account meets only the apps it has work in.** Each app admits a tenant context by how the
-server places it: bound to a person is the member app, an ORGANIZATION grant is the provider
-portal, neither with permissions is the backoffice. The tenant picker lists only the tenants
-that fit the app. An account with no fitting tenant lands on one card — "Hesabınızın bu
-uygulamada bir görevi yok" — that names, as a plain list, the apps it can use (or says it has
-none) and offers one secondary action, signing in as somebody else. Nothing of the app renders
-behind it: no shell, no sidebar, no data. The server still narrows every call; the card is the
-sentence the refusals would otherwise leave unsaid.
+**One sign-in, and the account goes where it has work.** The server lists, per tenant, the apps an
+account's grants belong to (`apps`: a PERSON grant is the member app, an ORGANIZATION grant the
+provider portal, a tenant-wide role the backoffice), and each app asks under its own name, so it
+gets only its own grants. Whichever sign-in screen a person uses: one app is where they land, a
+plain page load away if it is another app; several apps open the chooser — one card, "Nereden
+devam etmek istersiniz?", the current app first with a primary "Devam et" and the others as quiet
+"Aç" links; no app says so and offers only signing in as somebody else. An account with no work
+in the app it opened by address meets the same card, forwarded when it has exactly one app.
+Nothing of an app renders for an account with no work in it. The tenant picker lists only the
+tenants that fit the app.
 
 ## Motion
 

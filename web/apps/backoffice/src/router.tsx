@@ -72,7 +72,7 @@ import { PersonListPage, type PersonListSearch } from './people/PersonListPage';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { LogoutPage } from './pages/LogoutPage';
-import { NotForAppPage } from './pages/NotForAppPage';
+import { AppChooserPage } from './pages/AppChooserPage';
 import { PasswordPage } from './pages/PasswordPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { SoonPage } from './pages/SoonPage';
@@ -127,16 +127,17 @@ const passwordRoute = createRoute({
   component: PasswordPage,
 });
 
-/** An account with no work in the backoffice is told which app it is for. */
-const notForAppRoute = createRoute({
+/** The single sign-in's chooser: where an account with several apps, or none here, goes. */
+const appChooserRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/auth/not-for-app',
+  path: '/auth/apps',
+  validateSearch: returnToSearch,
   beforeLoad: ({ context, location }) =>
     requireAuthenticated(context.services.store, {
       pathname: location.pathname,
       searchStr: location.searchStr,
     }),
-  component: NotForAppPage,
+  component: AppChooserPage,
 });
 
 /** Everything under the shell needs a session and an active tenant. */
@@ -580,7 +581,7 @@ const routeTree = rootRoute.addChildren([
   logoutRoute,
   tenantRoute,
   passwordRoute,
-  notForAppRoute,
+  appChooserRoute,
   appRoute.addChildren([
     homeRoute,
     profileRoute,

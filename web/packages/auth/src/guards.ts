@@ -9,8 +9,8 @@ import type { SessionState, SessionStore } from './store';
 export const LOGIN_PATH = '/auth/login';
 export const TENANT_PICKER_PATH = '/auth/tenant';
 export const PASSWORD_PATH = '/auth/password';
-/** Where an account with no work in this app is told which app it is for. */
-export const NOT_FOR_APP_PATH = '/auth/not-for-app';
+/** Where a person chooses among the apps their account has work in, or is told it has none. */
+export const APP_CHOOSER_PATH = '/auth/apps';
 
 /** The part of the router location the guards need. */
 export interface GuardLocation {
@@ -72,7 +72,7 @@ export async function requireTenant(
     (t) => t.tenant.status === 'ACTIVE' && (!app || fitsApp(t, app)),
   );
   if (app && tenants.length === 0) {
-    redirectTo(NOT_FOR_APP_PATH);
+    redirectTo(APP_CHOOSER_PATH);
   }
   if (tenants.length === 1) {
     await store.switchTenant(tenants[0]!.tenant.id);

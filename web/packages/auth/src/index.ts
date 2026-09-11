@@ -2,9 +2,11 @@ export { createSessionStore } from './store';
 export type { SessionActions, SessionState, SessionStatus, SessionStore } from './store';
 export { KAPSORA_APPS, appsFor, fitsApp } from './apps';
 export type { KapsoraApp } from './apps';
+export { afterSignIn, appUrlsFrom, browser } from './signin';
+export type { AfterSignIn, AppUrls } from './signin';
 export {
   LOGIN_PATH,
-  NOT_FOR_APP_PATH,
+  APP_CHOOSER_PATH,
   PASSWORD_PATH,
   TENANT_PICKER_PATH,
   hasPermission,

@@ -3,7 +3,7 @@ import { createMockServer } from '@kapsora/api-client/mocks/node';
 import { isRedirect } from '@tanstack/react-router';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import {
-  NOT_FOR_APP_PATH,
+  APP_CHOOSER_PATH,
   hasPermission,
   redirectIfAuthenticated,
   requireAuthenticated,
@@ -102,10 +102,10 @@ describe('guards', () => {
     await store.login('provider.a', 'demo parola 2026 kapsora');
     expect((await requireTenant(store, { pathname: '/' }, 'provider')).activeTenant).not.toBeNull();
     const r = await redirectOf(requireTenant(store, { pathname: '/claims' }, 'backoffice'));
-    expect(r?.to).toBe(NOT_FOR_APP_PATH);
+    expect(r?.to).toBe(APP_CHOOSER_PATH);
     expect(r?.search).toEqual({});
     expect((await redirectOf(requireTenant(store, { pathname: '/' }, 'member')))?.to).toBe(
-      NOT_FOR_APP_PATH,
+      APP_CHOOSER_PATH,
     );
   });
 
@@ -113,7 +113,7 @@ describe('guards', () => {
     const staff = makeStore();
     await staff.login('admin.a', 'demo parola 2026 kapsora');
     expect((await redirectOf(requireTenant(staff, { pathname: '/' }, 'member')))?.to).toBe(
-      NOT_FOR_APP_PATH,
+      APP_CHOOSER_PATH,
     );
     expect(
       (await requireTenant(staff, { pathname: '/' }, 'backoffice')).activeTenant,
@@ -125,7 +125,7 @@ describe('guards', () => {
       (await requireTenant(member, { pathname: '/' }, 'member')).activeTenant?.personId,
     ).toBeTruthy();
     expect((await redirectOf(requireTenant(member, { pathname: '/' }, 'backoffice')))?.to).toBe(
-      NOT_FOR_APP_PATH,
+      APP_CHOOSER_PATH,
     );
   });
 

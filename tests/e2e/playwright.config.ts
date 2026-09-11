@@ -8,6 +8,12 @@ const MEMBER_PORT = 5197;
 // E2E_REAL_API=1 turns the mock worker off and proxies /api to KAPSORA_API_URL.
 const REAL = process.env['E2E_REAL_API'] === '1';
 const API_URL = process.env['KAPSORA_API_URL'] ?? 'http://127.0.0.1:8080';
+// Where each app lives on these ports, for the single sign-in's hand-over between them.
+const APP_URLS = {
+  VITE_BACKOFFICE_URL: `http://127.0.0.1:${PORT}/`,
+  VITE_PROVIDER_URL: `http://127.0.0.1:${PROVIDER_PORT}/`,
+  VITE_MEMBER_URL: `http://127.0.0.1:${MEMBER_PORT}/`,
+};
 
 export default defineConfig({
   testDir: '.',
@@ -52,8 +58,8 @@ export default defineConfig({
       reuseExistingServer: !process.env['CI'],
       timeout: 120_000,
       env: REAL
-        ? { VITE_API_MOCK: 'false', VITE_API_BASE_URL: API_URL }
-        : { VITE_API_MOCK: 'true' },
+        ? { ...APP_URLS, VITE_API_MOCK: 'false', VITE_API_BASE_URL: API_URL }
+        : { ...APP_URLS, VITE_API_MOCK: 'true' },
     },
     {
       command: `pnpm --filter @kapsora/provider exec vite --port ${PROVIDER_PORT} --strictPort --host 127.0.0.1`,
@@ -61,8 +67,8 @@ export default defineConfig({
       reuseExistingServer: !process.env['CI'],
       timeout: 120_000,
       env: REAL
-        ? { VITE_API_MOCK: 'false', VITE_API_BASE_URL: API_URL }
-        : { VITE_API_MOCK: 'true' },
+        ? { ...APP_URLS, VITE_API_MOCK: 'false', VITE_API_BASE_URL: API_URL }
+        : { ...APP_URLS, VITE_API_MOCK: 'true' },
     },
     {
       command: `pnpm --filter @kapsora/member exec vite --port ${MEMBER_PORT} --strictPort --host 127.0.0.1`,
@@ -70,8 +76,8 @@ export default defineConfig({
       reuseExistingServer: !process.env['CI'],
       timeout: 120_000,
       env: REAL
-        ? { VITE_API_MOCK: 'false', VITE_API_BASE_URL: API_URL }
-        : { VITE_API_MOCK: 'true' },
+        ? { ...APP_URLS, VITE_API_MOCK: 'false', VITE_API_BASE_URL: API_URL }
+        : { ...APP_URLS, VITE_API_MOCK: 'true' },
     },
   ],
 });

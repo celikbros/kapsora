@@ -1,5 +1,7 @@
 import {
   SessionProvider,
+  afterSignIn,
+  browser,
   fitsApp,
   requireAuthenticated,
   requireTenant,
@@ -58,7 +60,8 @@ import { StatementPage } from './billing/StatementPage';
 import { DeskPage } from './lodging/DeskPage';
 import { InventoryPage } from './lodging/InventoryPage';
 import { ServicesProvider, type AppServices } from './services';
-import { NotForAppPage } from './NotForAppPage';
+import { APP_URLS } from './appUrls';
+import { AppChooserPage } from './AppChooserPage';
 
 /** Provider portal shell: routing, session bootstrap, tenant header, the desk's rail. */
 
@@ -114,9 +117,21 @@ function LoginPage() {
     setBusy(true);
     setProblem(null);
     try {
-      await store.login(user, pass);
+      const state = await store.login(user, pass);
       setPassword('');
-      await navigate({ href: safeReturnTo(search.returnTo, '/') });
+      const target = safeReturnTo(search.returnTo, '/');
+      // The single sign-in: an account whose only app is another one goes there, one with
+      // several chooses, one with none is told (APP_CHOOSER_PATH).
+      const next = afterSignIn(state.me?.tenants ?? [], 'provider');
+      if (next.kind === 'go') {
+        browser.assign(APP_URLS[next.app]);
+        return;
+      }
+      if (next.kind !== 'stay') {
+        await navigate({ href: `/auth/apps?returnTo=${encodeURIComponent(target)}` });
+        return;
+      }
+      await navigate({ href: target });
     } catch (err) {
       const p = (err as { problem?: ProblemView }).problem;
       setProblem(p ?? { code: 'UNKNOWN', title: '', status: 0, traceId: '' });
@@ -315,15 +330,16 @@ const tenantRoute = createRoute({
   validateSearch: returnToSearch,
   component: TenantPage,
 });
-const notForAppRoute = createRoute({
+const appChooserRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/auth/not-for-app',
+  path: '/auth/apps',
+  validateSearch: returnToSearch,
   beforeLoad: ({ context, location }) =>
     requireAuthenticated(context.services.store, {
       pathname: location.pathname,
       searchStr: location.searchStr,
     }),
-  component: NotForAppPage,
+  component: AppChooserPage,
 });
 const appRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -474,7 +490,7 @@ const statementRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   loginRoute,
   tenantRoute,
-  notForAppRoute,
+  appChooserRoute,
   appRoute.addChildren([
     homeRoute,
     myRequestsRoute,

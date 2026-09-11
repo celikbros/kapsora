@@ -7241,6 +7241,24 @@ export function buildWorld(
   );
   seedExport('CLAIMS', 'EXPIRED', 12, { rowCount: 42, downloadCount: 2 });
 
+  // One account, two apps: a medical reviewer who is also a member of the programme, bound to
+  // the demo principal. The backoffice sees the reviewer, the member app the member, and the
+  // single sign-in lets her choose. Appended last so no id drawn above moves.
+  accounts.push({
+    actorId: nextId(),
+    username: 'staff.member',
+    displayName: 'Deniz Çalışan',
+    email: 'staff.member@example.invalid',
+    memberships: [
+      { tenantCode: 'DEMO_A', permissions: MEDICAL_REVIEWER_PERMISSIONS },
+      {
+        tenantCode: 'DEMO_A',
+        permissions: MEMBER_PERMISSIONS,
+        scopes: [{ type: 'PERSON', id: familyPrincipal.id }],
+      },
+    ],
+  });
+
   return {
     tenants,
     accounts,

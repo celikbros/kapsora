@@ -1,5 +1,7 @@
 import {
   SessionProvider,
+  afterSignIn,
+  browser,
   fitsApp,
   requireAuthenticated,
   requireTenant,
@@ -45,7 +47,8 @@ import { NewReimbursementPage } from './reimbursement/NewReimbursementPage';
 import { ReimbursementPage } from './reimbursement/ReimbursementPage';
 import { ReimbursementsPage } from './reimbursement/ReimbursementsPage';
 import { ServicesProvider, type AppServices } from './services';
-import { NotForAppPage } from './NotForAppPage';
+import { APP_URLS } from './appUrls';
+import { AppChooserPage } from './AppChooserPage';
 
 /**
  * Member PWA shell (mobile-first): routing, session bootstrap, the tenant header and the
@@ -78,6 +81,11 @@ const DEMO_LOGIN = import.meta.env.DEV && import.meta.env['VITE_API_MOCK'] !== '
 const DEMO_PASSWORD = 'demo parola 2026 kapsora';
 const DEMO_ACCOUNTS: DemoAccount[] = [
   { username: 'member.a', name: 'Hak sahibi', role: 'Kalan haklar, konaklama, geri ödeme' },
+  {
+    username: 'staff.member',
+    name: 'Deniz Çalışan',
+    role: 'Üye; aynı zamanda tıbbi değerlendirici (iki uygulama)',
+  },
 ];
 
 function LoginPage() {
@@ -99,9 +107,21 @@ function LoginPage() {
     setBusy(true);
     setProblem(null);
     try {
-      await store.login(user, pass);
+      const state = await store.login(user, pass);
       setPassword('');
-      await navigate({ href: safeReturnTo(search.returnTo, '/') });
+      const target = safeReturnTo(search.returnTo, '/');
+      // The single sign-in: an account whose only app is another one goes there, one with
+      // several chooses, one with none is told (APP_CHOOSER_PATH).
+      const next = afterSignIn(state.me?.tenants ?? [], 'member');
+      if (next.kind === 'go') {
+        browser.assign(APP_URLS[next.app]);
+        return;
+      }
+      if (next.kind !== 'stay') {
+        await navigate({ href: `/auth/apps?returnTo=${encodeURIComponent(target)}` });
+        return;
+      }
+      await navigate({ href: target });
     } catch (err) {
       const p = (err as { problem?: ProblemView }).problem;
       setProblem(p ?? { code: 'UNKNOWN', title: '', status: 0, traceId: '' });
@@ -308,15 +328,16 @@ const tenantRoute = createRoute({
   validateSearch: returnToSearch,
   component: TenantPage,
 });
-const notForAppRoute = createRoute({
+const appChooserRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/auth/not-for-app',
+  path: '/auth/apps',
+  validateSearch: returnToSearch,
   beforeLoad: ({ context, location }) =>
     requireAuthenticated(context.services.store, {
       pathname: location.pathname,
       searchStr: location.searchStr,
     }),
-  component: NotForAppPage,
+  component: AppChooserPage,
 });
 const appRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -366,7 +387,7 @@ const reimbursementRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   loginRoute,
   tenantRoute,
-  notForAppRoute,
+  appChooserRoute,
   appRoute.addChildren([
     homeRoute,
     searchRoute,
