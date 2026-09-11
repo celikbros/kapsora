@@ -34,6 +34,7 @@ export function OrganizationDetailPage() {
   if (query.error) {
     return (
       <ProblemAlert
+        page
         problem={problemOf(query.error)}
         actions={
           <Button size="sm" variant="secondary" onClick={() => void query.refetch()}>

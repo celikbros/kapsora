@@ -77,4 +77,22 @@ describe('session store', () => {
     await expect(broken.logout()).rejects.toBeDefined();
     expect(broken.getState().status).toBe('anonymous');
   });
+
+  it('notices when another tab signed out or signed in as somebody else', async () => {
+    const store = makeStore();
+    expect(await store.checkAccount()).toBe('same');
+    await store.login('admin.a', 'demo parola 2026 kapsora');
+    expect(await store.checkAccount()).toBe('same');
+
+    // Another tab signs in as somebody else: the session is shared, so this one now is theirs.
+    api.signIn('member.a');
+    expect(await store.checkAccount()).toBe('changed');
+    expect(store.getState().me?.displayName).not.toBe('Ayşe Yönetici');
+    expect(await store.checkAccount()).toBe('same');
+
+    // And another tab signs out.
+    api.session = null;
+    expect(await store.checkAccount()).toBe('signed-out');
+    expect(store.getState().status).toBe('anonymous');
+  });
 });

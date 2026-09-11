@@ -164,6 +164,7 @@ export function PersonListPage() {
       </form>
 
       <ProblemAlert
+        page
         problem={problem}
         className="mb-4"
         actions={

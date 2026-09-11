@@ -69,6 +69,7 @@ export function MyRequestsPage() {
         description={t('provider.myRequests.intro')}
       />
       <ProblemAlert
+        page
         problem={query.error ? problemOf(query.error) : null}
         className="mb-4"
         actions={

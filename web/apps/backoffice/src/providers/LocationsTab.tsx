@@ -190,6 +190,7 @@ export function LocationsTab({ providerId }: { providerId: string }) {
       </div>
 
       <ProblemAlert
+        page
         problem={problem ?? (locations.error ? problemOf(locations.error) : null)}
         className="mt-4"
         actions={

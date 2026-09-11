@@ -81,6 +81,8 @@
     "noAppTitle": "Hesabınıza henüz bir uygulama tanımlanmamış",
     "notForAppNone": "Hesabınıza henüz hiçbir uygulamada görev tanımlanmamış. Yöneticinizle görüşün.",
     "notForAppSignOut": "Başka bir hesapla giriş yap",
+    "accountChanged": "Bu sekmede başka bir hesap açılmış; o hesabın ana sayfasına geçildi.",
+    "signedOutElsewhere": "Oturum başka bir sekmede kapatıldı. Yeniden giriş yapın.",
     "apps": {
       "backoffice": "Yönetim paneli",
       "provider": "Sağlayıcı portalı",
@@ -193,6 +195,7 @@
     "sharedReadOnly": "Bu kurum birden fazla kurumla paylaşılıyor; görünen adı yalnız ilişkiye özel alanlarla birlikte değiştirilemez."
   },
   "common": {
+    "home": "Ana sayfaya dön",
     "save": "Kaydet",
     "saving": "Kaydediliyor…",
     "cancel": "Vazgeç",
@@ -223,6 +226,8 @@
     "CSRF_TOKEN_INVALID": "Güvenlik doğrulaması başarısız oldu. Sayfayı yenileyip yeniden deneyin.",
     "STEP_UP_REQUIRED": "Bu işlem için parolanızı yeniden girmeniz gerekiyor.",
     "PERMISSION_DENIED": "Bu işlem için yetkiniz yok.",
+    "PAGE_FORBIDDEN": "Bu sayfayı görme yetkiniz yok.",
+    "PAGE_FORBIDDEN_DETAIL": "Hesabınızın bu kayda erişimi yok. Başka bir hesapla girdiyseniz ana sayfadan devam edin.",
     "TENANT_ACCESS_DENIED": "Bu kuruma erişiminiz yok.",
     "TENANT_HEADER_REQUIRED": "Aktif kurum seçilmeden istek gönderildi. Kurum seçin.",
     "TENANT_MISMATCH": "Seçili kurum oturumla uyuşmuyor. Sayfayı yenileyin.",

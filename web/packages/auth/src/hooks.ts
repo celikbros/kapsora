@@ -1,4 +1,4 @@
-import { createContext, createElement, useContext, type ReactNode } from 'react';
+import { createContext, createElement, useContext, useEffect, useRef, type ReactNode } from 'react';
 import { useStore } from 'zustand';
 import type { TenantContext } from '@kapsora/api-client';
 import { hasPermission } from './guards';
@@ -56,4 +56,39 @@ export function useSelfPersonId(): string | null {
 /** Whether the active tenant grants the permission. UI-only; the backend re-validates. */
 export function usePermission(permission: string): boolean {
   return useSession((s) => hasPermission(s, permission));
+}
+
+/**
+ * Re-checks whose session this is whenever the tab comes back to the front, and calls
+ * `onChange` when another tab signed out or signed in as somebody else. Without it a page
+ * left open would go on showing — and acting on — the previous account's screen with the new
+ * account's session behind it.
+ */
+export function useAccountWatch(onChange: (result: 'changed' | 'signed-out') => void): void {
+  const store = useSessionStore();
+  const latest = useRef(onChange);
+  useEffect(() => {
+    latest.current = onChange;
+  }, [onChange]);
+  useEffect(() => {
+    let checking = false;
+    const check = () => {
+      if (document.visibilityState !== 'visible' || checking) return;
+      checking = true;
+      void store
+        .checkAccount()
+        .then((result) => {
+          if (result !== 'same') latest.current(result);
+        })
+        .finally(() => {
+          checking = false;
+        });
+    };
+    document.addEventListener('visibilitychange', check);
+    window.addEventListener('focus', check);
+    return () => {
+      document.removeEventListener('visibilitychange', check);
+      window.removeEventListener('focus', check);
+    };
+  }, [store]);
 }

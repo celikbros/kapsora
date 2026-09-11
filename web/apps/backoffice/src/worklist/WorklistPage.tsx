@@ -252,6 +252,7 @@ export function WorklistPage() {
       </div>
 
       <ProblemAlert
+        page
         problem={items.error ? problemOf(items.error) : null}
         className="mb-4"
         actions={

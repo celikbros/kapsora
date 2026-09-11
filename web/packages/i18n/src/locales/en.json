@@ -76,6 +76,8 @@
     "noAppTitle": "Your account has no app yet",
     "notForAppNone": "Your account has no role in any app yet. Contact your administrator.",
     "notForAppSignOut": "Sign in with another account",
+    "accountChanged": "Another account was signed in in this tab; you are on its home page.",
+    "signedOutElsewhere": "The session was signed out in another tab. Sign in again.",
     "apps": {
       "backoffice": "backoffice",
       "provider": "provider portal",
@@ -188,6 +190,7 @@
     "sharedReadOnly": "This organization is shared with other tenants; its display name cannot be changed here."
   },
   "common": {
+    "home": "Back to home",
     "save": "Save",
     "saving": "Saving…",
     "cancel": "Cancel",
@@ -215,6 +218,8 @@
     "INVALID_CREDENTIALS": "User name or password is wrong.",
     "ACCOUNT_LOCKED": "The account is temporarily locked after too many failed attempts.",
     "PERMISSION_DENIED": "You are not allowed to do this.",
+    "PAGE_FORBIDDEN": "You are not allowed to see this page.",
+    "PAGE_FORBIDDEN_DETAIL": "Your account has no access to this record. If you signed in with another account, continue from the home page.",
     "VALIDATION_FAILED": "Some fields need attention.",
     "RESOURCE_NOT_FOUND": "The record was not found.",
     "ETAG_MISMATCH": "The record changed while you were editing.",

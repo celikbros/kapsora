@@ -216,6 +216,7 @@ export function ImportDetailPage() {
   if (!batch || !counters) {
     return (
       <ProblemAlert
+        page
         problem={problemOf(batchQuery.error)}
         actions={
           <Button size="sm" variant="secondary" onClick={() => void batchQuery.refetch()}>
@@ -319,6 +320,7 @@ export function ImportDetailPage() {
       </div>
 
       <ProblemAlert
+        page
         problem={problem ?? (rowsQuery.error ? problemOf(rowsQuery.error) : null)}
         className="mb-4"
         actions={

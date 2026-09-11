@@ -2,6 +2,7 @@ import {
   SessionProvider,
   afterSignIn,
   browser,
+  useAccountWatch,
   fitsApp,
   requireAuthenticated,
   requireTenant,
@@ -22,6 +23,7 @@ import {
   PasswordInput,
   ProblemAlert,
   ToastProvider,
+  useToast,
   useMinWidth,
   DEMO_ACCOUNTS,
   DEMO_PASSWORD,
@@ -254,6 +256,18 @@ function Shell() {
   const { t } = useTranslation();
   const store = useSessionStore();
   const navigate = useNavigate();
+  // The session is shared by every tab and app: when this tab comes back to the front, make
+  // sure it is still the same account's before it shows or does anything more.
+  const toast = useToast();
+  useAccountWatch((result) => {
+    if (result === 'changed') {
+      toast.notify({ tone: 'info', title: t('auth.accountChanged') });
+      void navigate({ to: '/' });
+    } else {
+      toast.notify({ tone: 'info', title: t('auth.signedOutElsewhere') });
+      void navigate({ to: '/auth/login', search: {} });
+    }
+  });
   const wide = useMinWidth(768);
   const active = useSession((s) => s.activeTenant);
   const color = active ? tenantColor(active.tenant.code) : null;

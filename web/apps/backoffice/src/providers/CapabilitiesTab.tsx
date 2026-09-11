@@ -115,6 +115,7 @@ function CapabilitySet({ location }: { location: ProviderLocation }) {
   if (capabilities.error || !capabilities.data) {
     return (
       <ProblemAlert
+        page
         problem={problemOf(capabilities.error)}
         className="mt-4"
         actions={

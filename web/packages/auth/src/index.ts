@@ -18,6 +18,7 @@ export {
 export type { GuardLocation } from './guards';
 export {
   SessionProvider,
+  useAccountWatch,
   usePermission,
   useSelfPersonId,
   useSession,

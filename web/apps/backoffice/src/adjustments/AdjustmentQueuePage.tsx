@@ -182,6 +182,7 @@ export function AdjustmentQueuePage() {
       <PageHeader title={t('entitlements.adjustments.queueTitle')} />
 
       <ProblemAlert
+        page
         problem={problem}
         className="mb-4"
         actions={

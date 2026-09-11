@@ -187,6 +187,7 @@ export function OrganizationListPage() {
       </form>
 
       <ProblemAlert
+        page
         problem={problem}
         actions={
           <Button size="sm" variant="secondary" onClick={() => void query.refetch()}>

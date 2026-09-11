@@ -12,8 +12,17 @@ export interface ProblemLike {
   errors?: Array<{ field: string; code: string; message?: string }>;
 }
 
+/** Refusals a retry cannot change: the account may not read this at all. */
+const FORBIDDEN = new Set(['PERMISSION_DENIED', 'TENANT_ACCESS_DENIED']);
+
 export interface ProblemAlertProps {
   problem: ProblemLike | null | undefined;
+  /**
+   * The problem is why the page itself could not load. A refusal then says the page cannot be
+   * shown and offers the app's home instead of `actions`: retrying a refusal changes nothing,
+   * and the usual way to meet one is a page left open while the tab changed accounts.
+   */
+  page?: boolean;
   /** Field errors already shown next to inputs are hidden from the list. */
   hideFieldErrors?: boolean;
   actions?: ReactNode;
@@ -29,12 +38,17 @@ export function ProblemAlert({
   hideFieldErrors = false,
   actions,
   className,
+  page = false,
 }: ProblemAlertProps) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   if (!problem) return null;
 
-  const message = problemMessage(t, problem.code, problem.title);
+  const forbiddenPage = page && FORBIDDEN.has(problem.code);
+  const message = forbiddenPage
+    ? t('problems.PAGE_FORBIDDEN')
+    : problemMessage(t, problem.code, problem.title);
+  const detail = forbiddenPage ? t('problems.PAGE_FORBIDDEN_DETAIL') : problem.detail;
   const tone =
     problem.status >= 500 || problem.status === 0
       ? 'bg-danger-soft border-danger/40'
@@ -57,7 +71,7 @@ export function ProblemAlert({
       data-problem-code={problem.code}
     >
       <p className="font-medium">{message}</p>
-      {problem.detail ? <p className="mt-1">{problem.detail}</p> : null}
+      {detail ? <p className="mt-1">{detail}</p> : null}
       {!hideFieldErrors && problem.errors && problem.errors.length > 0 ? (
         <ul className="mt-2 list-disc pl-5">
           {problem.errors.map((e, i) => (
@@ -77,7 +91,16 @@ export function ProblemAlert({
             </button>
           </span>
         ) : null}
-        {actions}
+        {forbiddenPage ? (
+          <a
+            href={import.meta.env.BASE_URL}
+            className="border-line bg-surface-raised hover:bg-surface-sunken focus-visible:outline-primary rounded-md border px-3 py-1.5 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            {t('common.home')}
+          </a>
+        ) : (
+          actions
+        )}
       </div>
     </div>
   );

@@ -173,6 +173,7 @@ export function CodeSystemListPage() {
       </form>
 
       <ProblemAlert
+        page
         problem={query.error ? problemOf(query.error) : null}
         className="mb-4"
         actions={

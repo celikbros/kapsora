@@ -109,6 +109,7 @@ export function CategoryTreePage() {
       />
 
       <ProblemAlert
+        page
         problem={tree.error ? problemOf(tree.error) : null}
         className="mb-4"
         actions={

@@ -70,6 +70,7 @@ export function CodeSystemDetailPage() {
   if (query.error || !query.data) {
     return (
       <ProblemAlert
+        page
         problem={problemOf(query.error)}
         actions={
           <Button size="sm" variant="secondary" onClick={() => void query.refetch()}>
@@ -337,6 +338,7 @@ function CodeValuesPanel({
       </form>
 
       <ProblemAlert
+        page
         problem={query.error ? problemOf(query.error) : null}
         className="mb-4"
         actions={

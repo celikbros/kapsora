@@ -38,6 +38,12 @@ export interface SessionActions {
   stepUp(password: string): Promise<void>;
   /** Drops to anonymous without calling the server (e.g. after a 401 elsewhere). */
   invalidate(): void;
+  /**
+   * Asks the server whose session this is now. The session is shared by every tab and every
+   * app, so another tab may have signed out or signed in as somebody else since this one last
+   * looked. "changed" has already reloaded the new account's context.
+   */
+  checkAccount(): Promise<'same' | 'changed' | 'signed-out'>;
 }
 
 export type SessionStore = StoreApi<SessionState> & SessionActions;
@@ -156,6 +162,28 @@ export function createSessionStore(ops: Operations): SessionStore {
     },
     invalidate() {
       store.setState({ ...initial, status: 'anonymous' });
+    },
+    async checkAccount() {
+      const before = store.getState().session?.actorId ?? null;
+      if (!before) return 'same';
+      try {
+        const session = await ops.session.get();
+        if (session.actorId === before) return 'same';
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 401) {
+          store.setState({ ...initial, status: 'anonymous' });
+          return 'signed-out';
+        }
+        // A network hiccup says nothing about whose session it is: leave the page alone.
+        return 'same';
+      }
+      if (!inflight) {
+        inflight = load().finally(() => {
+          inflight = null;
+        });
+      }
+      await inflight;
+      return 'changed';
     },
   };
 

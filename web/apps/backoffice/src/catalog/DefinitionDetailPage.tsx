@@ -66,6 +66,7 @@ export function DefinitionDetailPage() {
   if (query.error || !query.data) {
     return (
       <ProblemAlert
+        page
         problem={problemOf(query.error)}
         actions={
           <Button size="sm" variant="secondary" onClick={() => void query.refetch()}>
@@ -359,6 +360,7 @@ function MappingsTab({
   if (mappings.error || !mappings.data) {
     return (
       <ProblemAlert
+        page
         problem={problemOf(mappings.error)}
         actions={
           <Button size="sm" variant="secondary" onClick={() => void mappings.refetch()}>

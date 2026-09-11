@@ -571,6 +571,7 @@ export function ClaimDetailPage() {
   if (query.error || !claim) {
     return (
       <ProblemAlert
+        page
         problem={problemOf(query.error)}
         actions={
           <Button size="sm" variant="secondary" onClick={() => void query.refetch()}>

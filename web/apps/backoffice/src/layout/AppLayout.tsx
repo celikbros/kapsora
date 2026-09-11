@@ -1,6 +1,6 @@
-import { tenantColor, useSession, useSessionStore } from '@kapsora/auth';
+import { tenantColor, useAccountWatch, useSession, useSessionStore } from '@kapsora/auth';
 import { useTranslation } from '@kapsora/i18n';
-import { AppShell, Badge, Button, DropdownMenu, cn } from '@kapsora/ui';
+import { AppShell, Badge, Button, DropdownMenu, cn, useToast } from '@kapsora/ui';
 import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
 import { useState } from 'react';
 import { NAV_ENTRIES } from '../nav';
@@ -38,6 +38,18 @@ export function AppLayout() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const store = useSessionStore();
+  // The session is shared by every tab and app: when this tab comes back to the front, make
+  // sure it is still the same account's before it shows or does anything more.
+  const toast = useToast();
+  useAccountWatch((result) => {
+    if (result === 'changed') {
+      toast.notify({ tone: 'info', title: t('auth.accountChanged') });
+      void navigate({ to: '/' });
+    } else {
+      toast.notify({ tone: 'info', title: t('auth.signedOutElsewhere') });
+      void navigate({ to: '/auth/login', search: {} });
+    }
+  });
   const me = useSession((s) => s.me);
   const active = useSession((s) => s.activeTenant);
   const [theme, setTheme] = useState(() => currentTheme());

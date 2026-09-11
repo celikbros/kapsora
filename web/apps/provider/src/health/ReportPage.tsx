@@ -338,6 +338,7 @@ export function ReportPage() {
   if (query.error || !query.data) {
     return (
       <ProblemAlert
+        page
         problem={problemOf(query.error)}
         actions={
           <Button size="sm" variant="secondary" onClick={() => void query.refetch()}>

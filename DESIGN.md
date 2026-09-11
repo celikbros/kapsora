@@ -680,6 +680,19 @@ in the app it opened by address meets the same card, forwarded when it has exact
 Nothing of an app renders for an account with no work in it. The tenant picker lists only the
 tenants that fit the app.
 
+**A page the account may not see says so, and offers the way home.** When the load of a page
+itself is refused (PERMISSION_DENIED, TENANT_ACCESS_DENIED) the alert reads "Bu sayfayı görme
+yetkiniz yok.", one line says why and that a person who signed in with another account should
+continue from home, and the only action is "Ana sayfaya dön" to the app's own root — never
+"Yeniden dene", because retrying a refusal changes nothing. A refused action keeps "Bu işlem
+için yetkiniz yok."; every other failure of a page keeps its retry.
+
+**A tab notices when its account changed.** The session is shared by every tab and app. When a
+tab comes back to the front it asks whose session it is: if another tab signed in as somebody
+else it goes to that account's home with an info toast, and if the session ended it goes to
+sign-in with one. A page left open never goes on showing one account's screen with another
+account's session behind it.
+
 **Your own file is readable, never decidable.** When a file's person is the reviewer's own
 (`selfPersonId` on the tenant context — a reviewer who is also a member), the decision controls
 are absent, not disabled, and one quiet note stands where they would be: "Bu dosya size ait.

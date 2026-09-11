@@ -244,6 +244,7 @@ export function PractitionersTab({ providerId }: { providerId: string }) {
       </form>
 
       <ProblemAlert
+        page
         problem={problem ?? (practitioners.error ? problemOf(practitioners.error) : null)}
         className="mt-4"
         actions={
