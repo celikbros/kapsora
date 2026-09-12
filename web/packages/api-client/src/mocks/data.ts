@@ -6028,9 +6028,14 @@ export function buildWorld(
     const memberMicros = percentOfMicros(unitMicros, toMicros('15.000000'));
     const payerMicros = unitMicros - memberMicros;
     const bookingId = nextId();
+    // A hold's quote is checked for freshness on confirm (60-minute TTL); one seeded 20 days
+    // in the past like every other snapshot would fail that check the moment the world loads,
+    // no matter when someone looks — the same trap holdExpiresAt below already avoids.
+    const quotedAt =
+      status === 'HOLD' ? new Date(Date.now() - 5 * 60_000).toISOString() : isoDaysAgo(base, 20);
     const quoteSnapshot: Schemas['BookingQuoteSnapshot'] = {
       version: 1,
-      quotedAt: isoDaysAgo(base, 20),
+      quotedAt,
       evaluationId: null,
       propertyId: room.propertyId,
       roomTypeId: room.id,
