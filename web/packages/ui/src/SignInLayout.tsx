@@ -22,6 +22,10 @@ export interface SignInLayoutProps {
  * screen belongs to, so a person handed here by the single sign-in can see where they are
  * before they type anything.
  *
+ * Both columns start at the same top edge. The card grows with the demo list and the panel
+ * does not, so centring them against each other would push the product name half a screen
+ * down and leave the first thing a person reads below a void.
+ *
  * Narrow screens keep the answer and drop the rest: only the app this screen belongs to
  * stays, with its mark. The member app's first viewport is a 390px phone, so the sentence
  * "which app am I in" may not be the one that falls off the bottom.
@@ -30,7 +34,7 @@ export function SignInLayout({ app, children }: SignInLayoutProps) {
   const { t } = useTranslation();
   return (
     <main id="main" className="flex min-h-dvh items-center justify-center p-4 sm:p-6 lg:p-10">
-      <div className="mx-auto grid w-full max-w-sm items-center gap-10 lg:max-w-5xl lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-16">
+      <div className="mx-auto grid w-full max-w-sm items-start gap-10 lg:max-w-5xl lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-16">
         <section className="min-w-0">
           <h1 className="text-fg text-2xl font-semibold tracking-tight lg:text-3xl">
             {t('app.name')}

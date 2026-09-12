@@ -661,7 +661,9 @@ name as the page's one h1, "Hak ve fayda defteri" under it, one 16px sentence of
 keeps, and the three apps as a 1px-ruled definition list. The app this screen belongs to carries
 "Buradasınız" in primary, and it is the row a narrow screen keeps when the other two fall away —
 the member app's first viewport is a phone, and "which app am I in" may not be what drops. The
-sign-in card sits beside it, is the only raised surface, and holds the h2. No gradient, no
+sign-in card sits beside it, is the only raised surface, and holds the h2. Both columns start at
+the same top edge: the card grows with the demo list and the panel does not, so centring them
+against each other would push the product name half a screen down. No gradient, no
 illustration, no hero number: a ledger introduces itself by saying what it holds. The three apps
 share the layout, so whichever door the single sign-in hands a person to looks like the one they
 left.
