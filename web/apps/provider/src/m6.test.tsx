@@ -83,12 +83,19 @@ describe('the allotment', () => {
 describe('the door', () => {
   it('checks a guest in by their token, refuses a wrong one, and checks them out', async () => {
     // The seeded stays lie weeks ahead; the door only opens inside the check-in window, so
-    // one confirmed booking is moved to arrive today before the desk is opened.
+    // one confirmed booking is moved to arrive today before the desk is opened. The window is
+    // anchored to the property's own zone (Europe/Istanbul), not UTC: a plain
+    // `toISOString().slice(0, 10)` reads "today" as the UTC calendar date, which is already
+    // yesterday's Istanbul date for three hours of every day (21:00-24:00 UTC) — a check-in
+    // right then found itself past the window's Istanbul-midnight close. Read "today" in the
+    // same zone the check confirms it in instead.
     const booking = api.world.bookings.find((b) => b.status === 'CONFIRMED')!;
-    const today = new Date();
-    const iso = (d: Date) => d.toISOString().slice(0, 10);
-    booking.checkIn = iso(today);
-    booking.checkOut = iso(new Date(today.getTime() + booking.nights * 86_400_000));
+    const zone = 'Europe/Istanbul';
+    const todayInZone = new Intl.DateTimeFormat('en-CA', { timeZone: zone }).format(new Date());
+    booking.checkIn = todayInZone;
+    const checkOut = new Date(`${todayInZone}T00:00:00Z`);
+    checkOut.setUTCDate(checkOut.getUTCDate() + booking.nights);
+    booking.checkOut = checkOut.toISOString().slice(0, 10);
     const reference = booking.reference;
 
     mount('/lodging/desk');
