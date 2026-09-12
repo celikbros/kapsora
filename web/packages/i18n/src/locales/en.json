@@ -39,6 +39,14 @@
   "auth": {
     "loginTitle": "Sign in",
     "loginIntro": "Sign in with your KAPSORA account.",
+    "tagline": "The benefits ledger",
+    "welcome": "KAPSORA keeps what an organization grants, the people who use it, the providers who deliver it and what was paid, in one record. Which organization you act for is named on every screen.",
+    "youAreHere": "You are here",
+    "appLines": {
+      "backoffice": "The organization's staff: programmes and plans, review, batches, payment, reports.",
+      "provider": "Hospitals, hotels and other providers: eligibility, requests, invoices.",
+      "member": "The member: remaining entitlements, bookings, reimbursements, notifications."
+    },
     "username": "User name",
     "password": "Password",
     "submit": "Sign in",
@@ -62,8 +70,7 @@
     "showPassword": "Show",
     "hidePassword": "Hide",
     "demoTitle": "Demo accounts",
-    "demoIntro": "This setup runs on sample data. Choose an account to sign in as it.",
-    "demoSignInAs": "Sign in as {{name}}",
+    "demoIntro": "Development server. Choose an account to sign in as it.",
     "notForAppTitle": "Your account has no work in this app",
     "notForAppBody": "You are signed in, but your account has no role in this app. Open one of these:",
     "notForAppFits": "Your account can use:",
@@ -79,9 +86,10 @@
     "accountChanged": "Another account was signed in in this tab; you are on its home page.",
     "signedOutElsewhere": "The session was signed out in another tab. Sign in again.",
     "apps": {
-      "backoffice": "backoffice",
-      "provider": "provider portal",
-      "member": "member app"
+      "backoffice": "Backoffice",
+      "provider": "Provider portal",
+      "member": "Member app",
+      "both": "Backoffice and member app"
     }
   },
   "header": {

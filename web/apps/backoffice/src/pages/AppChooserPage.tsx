@@ -2,6 +2,12 @@ import { appsFor, browser, safeReturnTo, useSession, useSessionStore } from '@ka
 import { AppChooser } from '@kapsora/ui';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
+
+// The hand-over between apps is a page load into another origin, and it only means anything
+// where they share a session. The demo launcher runs the three apps on their own in-browser
+// worlds and sets VITE_SINGLE_SIGN_IN=false, so there an account stays where it signed in and
+// the chooser does the telling instead.
+const HANDS_OVER = import.meta.env['VITE_SINGLE_SIGN_IN'] !== 'false';
 import { APP_URLS } from '../appUrls';
 
 /**
@@ -19,7 +25,7 @@ export function AppChooserPage() {
   const [signingOut, setSigningOut] = useState(false);
   const fits = appsFor((me?.tenants ?? []).filter((t) => t.tenant.status === 'ACTIVE'));
   const here = fits.includes('backoffice');
-  const only = !here && fits.length === 1 ? fits[0]! : null;
+  const only = HANDS_OVER && !here && fits.length === 1 ? fits[0]! : null;
 
   useEffect(() => {
     if (only) browser.assign(APP_URLS[only]);

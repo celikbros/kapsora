@@ -85,4 +85,20 @@
     outline: 2px solid var(--color-focus);
     outline-offset: 2px;
   }
+  /* The surfaces the browser draws for us still belong to the palette: a selection, a caret,
+     a checkbox and a scrollbar in default blue would be the one part of every screen nobody
+     designed. */
+  ::selection {
+    background: var(--color-primary-soft);
+    color: var(--color-fg);
+  }
+  html {
+    accent-color: var(--color-primary);
+    scrollbar-color: var(--color-line-strong) transparent;
+    scrollbar-width: thin;
+  }
+  input,
+  textarea {
+    caret-color: var(--color-primary);
+  }
 }

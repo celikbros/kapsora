@@ -44,6 +44,14 @@
   "auth": {
     "loginTitle": "Oturum aç",
     "loginIntro": "KAPSORA hesabınızla giriş yapın.",
+    "tagline": "Hak ve fayda defteri",
+    "welcome": "KAPSORA, kurumun tanımladığı hakları, bu hakları kullanan kişileri, hizmeti veren sağlayıcıları ve ödenen tutarları tek bir kayıtta tutar. Hangi kurum adına çalıştığınız her ekranda yazar.",
+    "youAreHere": "Buradasınız",
+    "appLines": {
+      "backoffice": "Kurumun ekibi: program ve plan, inceleme, icmal, ödeme, rapor.",
+      "provider": "Hastane, otel ve diğer sağlayıcılar: hak sorgusu, talep, fatura.",
+      "member": "Hak sahibi: kalan haklar, rezervasyon, geri ödeme, bildirimler."
+    },
     "username": "Kullanıcı adı",
     "password": "Parola",
     "submit": "Giriş yap",
@@ -67,8 +75,7 @@
     "showPassword": "Göster",
     "hidePassword": "Gizle",
     "demoTitle": "Demo hesapları",
-    "demoIntro": "Bu kurulum örnek verilerle çalışıyor. Bir hesaba dokunun, o hesapla girilir.",
-    "demoSignInAs": "{{name}} olarak gir",
+    "demoIntro": "Geliştirme sunucusu. Bir hesaba dokunun, o hesapla girilir.",
     "notForAppTitle": "Hesabınızın bu uygulamada bir görevi yok",
     "notForAppBody": "Giriş başarılı, ancak hesabınıza bu uygulamada bir görev tanımlanmamış. Şu uygulamalardan birini açın:",
     "notForAppFits": "Hesabınızla şunları kullanabilirsiniz:",
@@ -86,7 +93,8 @@
     "apps": {
       "backoffice": "Yönetim paneli",
       "provider": "Sağlayıcı portalı",
-      "member": "Üye uygulaması"
+      "member": "Üye uygulaması",
+      "both": "Yönetim paneli ve üye uygulaması"
     }
   },
   "header": {

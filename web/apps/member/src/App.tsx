@@ -22,6 +22,7 @@ import {
   Input,
   PasswordInput,
   ProblemAlert,
+  SignInLayout,
   ToastProvider,
   useToast,
   useMinWidth,
@@ -81,6 +82,18 @@ function returnToSearch(raw: Record<string, unknown>): { returnTo?: string } {
  * has DEV false, so the list below never reaches a real deployment, whether it talks to the sample data or to a local API.
  */
 const DEMO_LOGIN = import.meta.env.DEV;
+// The hand-over between apps is a page load into another origin, and it only means anything
+// where they share a session. The demo launcher runs the three apps on their own in-browser
+// worlds and sets VITE_SINGLE_SIGN_IN=false, so there an account stays where it signed in and
+// the chooser does the telling instead.
+const HANDS_OVER = import.meta.env['VITE_SINGLE_SIGN_IN'] !== 'false';
+
+// With the hand-over off every app is its own world, so the list offers only the accounts that
+// can work in this one: tapping somebody else's account would sign in and then be told it is the
+// wrong app, which is a dead end this screen invited.
+const DEMO_LIST = HANDS_OVER
+  ? DEMO_ACCOUNTS
+  : DEMO_ACCOUNTS.filter((account) => account.app === 'member' || account.app === 'both');
 
 function LoginPage() {
   const { t } = useTranslation();
@@ -106,7 +119,9 @@ function LoginPage() {
       const target = safeReturnTo(search.returnTo, '/');
       // The single sign-in: an account whose only app is another one goes there, one with
       // several chooses, one with none is told (APP_CHOOSER_PATH).
-      const next = afterSignIn(state.me?.tenants ?? [], 'member');
+      const next = HANDS_OVER
+        ? afterSignIn(state.me?.tenants ?? [], 'member')
+        : ({ kind: 'stay' } as const);
       if (next.kind === 'go') {
         browser.assign(APP_URLS[next.app]);
         return;
@@ -125,9 +140,9 @@ function LoginPage() {
   }
 
   return (
-    <main id="main" className="flex min-h-dvh items-center justify-center p-4">
-      <Card className="w-full max-w-sm">
-        <h1 className="text-xl font-semibold">{t('auth.loginTitle')}</h1>
+    <SignInLayout app="member">
+      <Card className="w-full">
+        <h2 className="text-xl font-semibold">{t('auth.loginTitle')}</h2>
         <form onSubmit={submit} className="mt-6 grid gap-4" noValidate>
           <FormField label={t('auth.username')} required requiredLabel={t('common.requiredMark')}>
             <Input
@@ -154,7 +169,8 @@ function LoginPage() {
         </form>
         {DEMO_LOGIN ? (
           <DemoAccounts
-            accounts={DEMO_ACCOUNTS}
+            accounts={DEMO_LIST}
+            app="member"
             busy={busy}
             onPick={(user) => {
               setUsername(user);
@@ -163,7 +179,7 @@ function LoginPage() {
           />
         ) : null}
       </Card>
-    </main>
+    </SignInLayout>
   );
 }
 

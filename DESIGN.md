@@ -656,12 +656,26 @@ field's own label already says what is shown and a second control called "Parola
 would be two things answering to one name. Showing changes the type and nothing else; the
 value never leaves the input. The sign-in screens and the step-up dialog use it.
 
+**The way in says what this is.** The sign-in page is two columns on a wide screen: the product
+name as the page's one h1, "Hak ve fayda defteri" under it, one 16px sentence of what KAPSORA
+keeps, and the three apps as a 1px-ruled definition list. The app this screen belongs to carries
+"Buradasınız" in primary, and it is the row a narrow screen keeps when the other two fall away —
+the member app's first viewport is a phone, and "which app am I in" may not be what drops. The
+sign-in card sits beside it, is the only raised surface, and holds the h2. No gradient, no
+illustration, no hero number: a ledger introduces itself by saying what it holds. The three apps
+share the layout, so whichever door the single sign-in hands a person to looks like the one they
+left.
+
 **A demo account list exists only where the demo does.** On a development server — with the
-in-browser sample data or against a local API loaded by the demo seed — every sign-in screen lists
-all the demo accounts under the form, whichever app they belong to: name, "app · what the account
-does", the username in mono. One press signs in, and the single sign-in takes the account to its
-app. The list is gated on the development build, so no built bundle carries it and a real
-deployment can never show who may sign in.
+in-browser sample data or against a local API loaded by the demo seed — every sign-in screen
+lists all the demo accounts under the form, grouped by the app they work in, this screen's own
+app first (the fourth group is the account that works in two, named by both apps rather than
+counted): the name, what the account does, the username in mono. The app is said once, in the
+group heading — muted rather than subtle, because it is the meaning now and not a placeholder —
+and never again on every row. A row names itself from its own content, so a reader hears the
+person, the work and the username rather than a label that replaces them. One press signs in, and the single
+sign-in takes the account to its app. The list is gated on the development build, so no built
+bundle carries it and a real deployment can never show who may sign in.
 
 **An amount not yet decided is "—", never "0,00".** An invoice whose icmal has not reached a
 decision shows its onaylanan as a dash — on the cari ekstre, the icmal review and the

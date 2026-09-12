@@ -18,6 +18,8 @@ export type { PasswordInputProps } from './PasswordInput';
 export { DEMO_ACCOUNTS, DEMO_PASSWORD, DemoAccounts } from './DemoAccounts';
 export type { DemoAccount } from './DemoAccounts';
 export { AppChooser } from './AppChooser';
+export { SignInLayout } from './SignInLayout';
+export type { SignInLayoutProps } from './SignInLayout';
 export { OwnFileNotice } from './OwnFileNotice';
 export type { AppChooserProps, AppKind } from './AppChooser';
 export { AppShell, Breadcrumb, Card, PageHeader } from './PageShell';

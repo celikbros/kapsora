@@ -2,7 +2,11 @@
 rem KAPSORA demo: the three web apps on this computer, each with its own sample data in the
 rem browser. No server and no database are needed. KAPSORA-Demo-Durdur.cmd stops them.
 rem Ports 5173 and 8080 belong to another project on this computer; the demo keeps clear of them.
+rem Each app carries its own sample world here, so the single sign-in must not hand an account
+rem from one app to another: it would land on a stranger's sign-in screen. The apps say which
+rem app an account is for instead.
 setlocal
+set "VITE_SINGLE_SIGN_IN=false"
 title KAPSORA baslatiliyor
 cd /d "C:\CELIKBROS PROJECTS\kapsora"
 

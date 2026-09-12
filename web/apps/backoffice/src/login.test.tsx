@@ -47,11 +47,9 @@ describe('the sign-in screen', () => {
     const list = await screen.findByTestId('demo-accounts');
     // One sign-in for all three apps: the list names every demo account, not only this app's.
     for (const name of ['Burak Faturalama', 'Hak sahibi', 'Deniz Çalışan']) {
-      expect(within(list).getByRole('button', { name: `${name} olarak gir` })).toBeInTheDocument();
+      expect(within(list).getByRole('button', { name: new RegExp(name) })).toBeInTheDocument();
     }
-    await user.click(
-      within(list).getByRole('button', { name: 'Fuat Mali Değerlendirici olarak gir' }),
-    );
+    await user.click(within(list).getByRole('button', { name: /Fuat Mali Değerlendirici/ }));
     expect(await screen.findByTestId('dashboard')).toBeInTheDocument();
   });
 });

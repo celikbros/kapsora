@@ -46,13 +46,14 @@
     <div class="card"><h3>Üye uygulaması</h3><p>Hak sahibinin telefonu: kalan haklar, konaklama, geri ödeme.</p><a href="http://127.0.0.1:5183/">127.0.0.1:5183</a></div>
   </div>
 
-  <h2>Bilmeniz gereken dört şey</h2>
+  <h2>Bilmeniz gereken beş şey</h2>
   <div class="card warn">
     <ol>
       <li><strong>Sayfayı yenilemeyin, adres çubuğuna adres yazmayın.</strong> Demo verisi tarayıcının içinde yaşar. Yenileyince her şey başa döner ve oturumunuz kapanır. Uygulamanın içinde menülerle ve bağlantılarla gezin.</li>
-      <li><strong>Her uygulamanın verisi ayrıdır.</strong> Sağlayıcı portalında gönderdiğiniz icmal yönetim panelinde görünmez. Üç uygulama birbirine bağlı değildir. Bu, gerçek sistemde olacak.</li>
+      <li><strong>Her uygulamanın verisi ayrıdır.</strong> Sağlayıcı portalında gönderdiğiniz icmal yönetim panelinde görünmez. Üç uygulama birbirine bağlı değildir. Bu, yalnızca bu demoya özgüdür; gerçek kurulumda üçü tek veritabanını paylaşır.</li>
+      <li><strong>Her uygulamaya kendi sekmesinden girin.</strong> Gerçek kurulumda bir kez giriş yapmak yeter: sistem sizi hesabınızın uygulamasına kendisi götürür, iki uygulamada göreviniz varsa hangisinden devam edeceğinizi sorar. Bu demoda uygulamalar ayrı çalıştığı için her sekmede kendi hesabınızla girersiniz.</li>
       <li><strong>Yüklenen dosyanın virüs taraması demoda bitmez.</strong> Üyenin geri ödeme başvurusu makbuz aşamasında "taranıyor" der ve orada bekler.</li>
-      <li><strong>Giriş için giriş ekranının altındaki "Demo hesapları" listesinden bir kişiye dokunmanız yeter.</strong> Elle girmek isterseniz kullanıcı adını aşağıdaki tablodan alın; parola her yerde aynıdır: <span class="mono">demo parola 2026 kapsora</span>. Parola kutusundaki göz simgesiyle yazdığınızı görebilirsiniz. Bir işlem parolanızı yeniden sorarsa aynısını yazın.</li>
+      <li><strong>Giriş için giriş ekranının altındaki "Demo hesapları" listesinden bir kişiye dokunmanız yeter.</strong> Liste uygulamaya göre gruplanmıştır; o uygulamanın grubundaki bir hesabı seçin. Elle girmek isterseniz kullanıcı adını aşağıdaki tablodan alın; parola her yerde aynıdır: <span class="mono">demo parola 2026 kapsora</span>. Parola kutusundaki göz simgesiyle yazdığınızı görebilirsiniz. Bir işlem parolanızı yeniden sorarsa aynısını yazın.</li>
     </ol>
   </div>
 
@@ -70,8 +71,18 @@
       <tr><td>Sağlayıcı portalı</td><td><code>provider.a</code></td><td>Pelin Sağlayıcı</td><td>Uygunluk sorgusu, talep, vaka</td></tr>
       <tr><td>Sağlayıcı portalı</td><td><code>reservation.a</code></td><td>Rezan Rezervasyon</td><td>Otel kontenjanı, gelen ve giden misafir</td></tr>
       <tr><td>Üye uygulaması</td><td><code>member.a</code></td><td>Hak sahibi</td><td>Kalan haklar, konaklama, geri ödeme</td></tr>
+      <tr><td>İki uygulama</td><td><code>staff.member</code></td><td>Deniz Çalışan</td><td>Tıbbi değerlendirici; aynı zamanda hak sahibi. Kendi dosyasına karar veremez.</td></tr>
     </tbody>
   </table>
+  </div>
+
+  <h2>Yetki üç yerde kendini gösterir</h2>
+  <div class="card">
+    <ol>
+      <li><strong>İş Listem yalnızca sizin yapabileceğiniz işleri gösterir.</strong> Her kuyruk, işini yapmak için gereken yetkiyi taşır: tıbbi değerlendirme kuyruğundaki bir rapor mali değerlendiricinin listesinde görünmez ve o kişi tarafından üstlenilemez.</li>
+      <li><strong>Kendi dosyanıza karar veremezsiniz.</strong> <code>staff.member</code> hem tıbbi değerlendirici hem hak sahibi. Kendi dosyasını açtığında karar düğmeleri yerine "Bu dosya size ait" notunu görür; kararı başka bir değerlendirici verir.</li>
+      <li><strong>Yetkiniz olmayan bir sayfa bunu söyler.</strong> "Bu sayfayı görme yetkiniz yok" der ve ana sayfaya dönüş bağlantısı verir; boşuna yeniden denetmez.</li>
+    </ol>
   </div>
 
   <h2>Denemeniz için altı senaryo</h2>
