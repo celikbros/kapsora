@@ -26,7 +26,8 @@ test('member: the page help drawer and the entitlements mark on a phone', async 
   for (const theme of ['light', 'dark'] as const) {
     await page.emulateMedia({ colorScheme: theme });
 
-    await page.getByRole('button', { name: 'Yardım' }).click();
+    // Exact: the mark on the page is "Yardım: Hak cüzdanı", and the header button is not.
+    await page.getByRole('button', { name: 'Yardım', exact: true }).click();
     const drawer = page.getByRole('dialog', { name: 'Ana sayfa' });
     await expect(drawer).toBeVisible();
     await page.screenshot({ path: `${OUT}/member-help-drawer-phone-${theme}.png` });

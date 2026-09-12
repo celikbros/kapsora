@@ -30,7 +30,8 @@ test('backoffice: the page help drawer and a help mark on the worklist', async (
       [390, 844, 'phone'],
     ] as const) {
       await page.setViewportSize({ width, height });
-      await page.getByRole('button', { name: 'Yardım' }).click();
+      // Exact: the marks on the page are "Yardım: <term>", and the header button is not.
+      await page.getByRole('button', { name: 'Yardım', exact: true }).click();
       const drawer = page.getByRole('dialog', { name: 'İş listem' });
       await expect(drawer).toBeVisible();
       await expect(drawer.getByRole('heading', { level: 3, name: 'Durumlar' })).toBeVisible();
