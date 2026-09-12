@@ -30,14 +30,20 @@ test('member: the page help drawer and the entitlements mark on a phone', async 
     await page.getByRole('button', { name: 'Yardım', exact: true }).click();
     const drawer = page.getByRole('dialog', { name: 'Ana sayfa' });
     await expect(drawer).toBeVisible();
-    await page.screenshot({ path: `${OUT}/member-help-drawer-phone-${theme}.png` });
+    await page.screenshot({
+      path: `${OUT}/member-help-drawer-phone-${theme}.png`,
+      animations: 'disabled',
+    });
     await page.keyboard.press('Escape');
     await expect(drawer).toBeHidden();
 
     await page.getByRole('button', { name: 'Yardım: Hak cüzdanı' }).click();
     const hint = page.getByRole('dialog');
     await expect(hint).toBeVisible();
-    await page.screenshot({ path: `${OUT}/member-help-hint-phone-${theme}.png` });
+    await page.screenshot({
+      path: `${OUT}/member-help-hint-phone-${theme}.png`,
+      animations: 'disabled',
+    });
     await page.keyboard.press('Escape');
     await expect(hint).toBeHidden();
   }

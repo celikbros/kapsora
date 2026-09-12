@@ -35,7 +35,10 @@ test('backoffice: the page help drawer and a help mark on the worklist', async (
       const drawer = page.getByRole('dialog', { name: 'İş listem' });
       await expect(drawer).toBeVisible();
       await expect(drawer.getByRole('heading', { level: 3, name: 'Durumlar' })).toBeVisible();
-      await page.screenshot({ path: `${OUT}/help-drawer-${label}-${theme}.png` });
+      await page.screenshot({
+        path: `${OUT}/help-drawer-${label}-${theme}.png`,
+        animations: 'disabled',
+      });
       await page.keyboard.press('Escape');
       await expect(drawer).toBeHidden();
     }
@@ -46,7 +49,10 @@ test('backoffice: the page help drawer and a help mark on the worklist', async (
     await mark.click();
     const hint = page.getByRole('dialog');
     await expect(hint).toBeVisible();
-    await page.screenshot({ path: `${OUT}/help-hint-desktop-${theme}.png` });
+    await page.screenshot({
+      path: `${OUT}/help-hint-desktop-${theme}.png`,
+      animations: 'disabled',
+    });
     await page.keyboard.press('Escape');
     await expect(hint).toBeHidden();
   }
