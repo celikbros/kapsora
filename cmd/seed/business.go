@@ -146,6 +146,14 @@ func (c *seedClock) now() time.Time { return c.at }
 // day in this file is expressed at.
 func day(t time.Time) time.Time { return t.UTC().Truncate(24 * time.Hour) }
 
+// today is the day the business scenario is written against, truncated to midnight UTC.
+func (s *seeder) today() time.Time {
+	if s.nowFn != nil {
+		return day(s.nowFn())
+	}
+	return day(time.Now())
+}
+
 // rcTenant is a tenant-wide caller acting as one actor. It carries no organization scope, so the
 // services read it as unrestricted — which is what a payer-side role is.
 //

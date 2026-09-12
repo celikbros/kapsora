@@ -60,7 +60,10 @@ const (
 // an icmal decided with a settlement waiting), then the one that is already finished and paid,
 // which is what gives the reconciliation of scenario 6 a day that balanced.
 func (s *seeder) ensureBillingStory(ctx context.Context, sc *scenario) error {
-	today := day(time.Now())
+	today := s.today()
+	// The icmals are anchored to the month rather than to the day this runs, so a second run on
+	// another day finds the icmals the first one opened instead of opening a month of its own.
+	month := monthStart(today)
 	if err := s.ensureDemoHealthCase(ctx, sc); err != nil {
 		return err
 	}
@@ -72,14 +75,14 @@ func (s *seeder) ensureBillingStory(ctx context.Context, sc *scenario) error {
 	if err := s.ensureDraftInvoiceWithGap(ctx, sc); err != nil {
 		return err
 	}
-	if err := s.ensureDraftBatch(ctx, sc, today); err != nil {
+	if err := s.ensureDraftBatch(ctx, sc, month); err != nil {
 		return err
 	}
 
 	// Scenario 2. An icmal already under review: three invoices, two of them answered by the
 	// financial reviewer and one still saying "Karar bekliyor".
 	s.clock.at = today.AddDate(0, 0, -5)
-	if err := s.ensureBatchUnderReview(ctx, sc, today.AddDate(0, -1, 0)); err != nil {
+	if err := s.ensureBatchUnderReview(ctx, sc, month.AddDate(0, -1, 0)); err != nil {
 		return err
 	}
 
@@ -87,7 +90,7 @@ func (s *seeder) ensureBillingStory(ctx context.Context, sc *scenario) error {
 	// is still waiting for the approver.
 	s.clock.at = today.AddDate(0, 0, -30)
 	if err := s.ensureSettledBatch(ctx, sc, settledBatchSpec{
-		Period: today.AddDate(0, -2, 0), Invoice: invoiceSettling, Amount: amountSettling,
+		Period: month.AddDate(0, -2, 0), Invoice: invoiceSettling, Amount: amountSettling,
 	}); err != nil {
 		return err
 	}
@@ -97,7 +100,7 @@ func (s *seeder) ensureBillingStory(ctx context.Context, sc *scenario) error {
 	// that has a difference on it.
 	s.clock.at = today.AddDate(0, 0, -37)
 	if err := s.ensureSettledBatch(ctx, sc, settledBatchSpec{
-		Period: today.AddDate(0, -3, 0), Invoice: invoicePaid, Amount: amountPaid,
+		Period: month.AddDate(0, -3, 0), Invoice: invoicePaid, Amount: amountPaid,
 		Approve: true, Pay: true,
 	}); err != nil {
 		return err
@@ -385,25 +388,10 @@ func (s *seeder) ensureSubmittedInvoice(ctx context.Context, sc *scenario,
 	return submitted.Invoice, nil
 }
 
-// findBatch looks an icmal up by the period it collects over. The reference is generated, so the
-// period is the only natural key this file can be idempotent on — which is why every batch below
-// covers a month of its own.
-func (s *seeder) findBatch(ctx context.Context, sc *scenario, periodFrom time.Time,
-) (billingapp.BatchRecord, bool, error) {
-	rc := rcOrganization(sc.tenant, sc.billing, sc.hospitalOrg, billingapp.PermissionRead)
-	provider := sc.hospitalOrg
-	page, err := s.biz.billing.ListBatches(ctx, rc, billingapp.BatchFilter{
-		ProviderOrganizationID: &provider, Limit: 200,
-	})
-	if err != nil {
-		return billingapp.BatchRecord{}, false, fmt.Errorf("list icmals: %w", err)
-	}
-	for _, item := range page.Items {
-		if day(item.PeriodFrom).Equal(day(periodFrom)) {
-			return item, true, nil
-		}
-	}
-	return billingapp.BatchRecord{}, false, nil
+// monthStart is the first day of the month t falls in.
+func monthStart(t time.Time) time.Time {
+	t = day(t)
+	return t.AddDate(0, 0, 1-t.Day())
 }
 
 // ensureBatch opens an icmal over one month and puts the given invoices in it, leaving it DRAFT.
@@ -413,10 +401,14 @@ func (s *seeder) ensureBatch(ctx context.Context, sc *scenario, periodFrom time.
 	rc := rcOrganization(sc.tenant, sc.billing, sc.hospitalOrg,
 		billingapp.PermissionRead, billingapp.PermissionManage,
 		billingapp.PermissionBatchCreate, billingapp.PermissionBatchSubmit)
-	if existing, found, err := s.findBatch(ctx, sc, periodFrom); err != nil {
+	// An icmal is recognised by the invoices in it, not by the period it covers. The periods
+	// move with the month the seed runs in, so a second run on another day would otherwise look
+	// for this step's icmal where the previous run put a different one -- and submit the draft
+	// icmal as if it were the one under review. An invoice lives in exactly one live icmal.
+	if view, found, err := s.batchHolding(ctx, sc, invoiceIDs); err != nil {
 		return billingapp.BatchView{}, err
 	} else if found {
-		return s.biz.billing.GetBatch(ctx, rc, existing.ID)
+		return view, nil
 	}
 	payer := sc.payerOrg
 	from := day(periodFrom)
@@ -436,6 +428,38 @@ func (s *seeder) ensureBatch(ctx context.Context, sc *scenario, periodFrom time.
 			from.Format(time.DateOnly), err)
 	}
 	return filled, nil
+}
+
+// batchHolding finds the icmal one of these invoices already sits in. An invoice may be in
+// exactly one live icmal, so finding it is what lets a second run of the seed on another day
+// reuse what the first run opened instead of opening a second icmal for the same invoice — the
+// failure a demo database met the morning after it was seeded.
+func (s *seeder) batchHolding(ctx context.Context, sc *scenario, invoiceIDs []uuid.UUID,
+) (billingapp.BatchView, bool, error) {
+	rc := rcOrganization(sc.tenant, sc.billing, sc.hospitalOrg, billingapp.PermissionRead)
+	provider := sc.hospitalOrg
+	page, err := s.biz.billing.ListBatches(ctx, rc, billingapp.BatchFilter{
+		ProviderOrganizationID: &provider, Limit: 200,
+	})
+	if err != nil {
+		return billingapp.BatchView{}, false, fmt.Errorf("list icmals: %w", err)
+	}
+	wanted := make(map[uuid.UUID]struct{}, len(invoiceIDs))
+	for _, id := range invoiceIDs {
+		wanted[id] = struct{}{}
+	}
+	for _, record := range page.Items {
+		view, err := s.biz.billing.GetBatch(ctx, rc, record.ID)
+		if err != nil {
+			return billingapp.BatchView{}, false, fmt.Errorf("read an icmal: %w", err)
+		}
+		for _, member := range view.Invoices {
+			if _, ok := wanted[member.InvoiceID]; ok {
+				return view, true, nil
+			}
+		}
+	}
+	return billingapp.BatchView{}, false, nil
 }
 
 // ensureDraftBatch is the last step of scenario 1: an icmal still in draft, carrying one

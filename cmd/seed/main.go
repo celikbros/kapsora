@@ -83,6 +83,10 @@ type seeder struct {
 	// biz are the verticals the WP-I7 business scenario is driven through. It is nil in a
 	// seeder built for the reference-data steps alone.
 	biz *verticals
+	// nowFn is what the business scenario reads as "today"; nil means the wall clock. A test
+	// moves it to prove that a second run on another day finds what the first one opened
+	// instead of opening a second icmal for the same invoice.
+	nowFn func() time.Time
 	// clock is what every dated row the business scenario writes is stamped with. The steps
 	// move it, so a demo database reads like a few weeks of business rather than one instant.
 	clock *seedClock

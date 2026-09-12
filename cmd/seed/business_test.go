@@ -130,6 +130,22 @@ func TestSeedDemoBuildsTheGuideScenariosAndIsIdempotent(t *testing.T) {
 			}
 		}
 	}
+
+	// And a run on another day. The icmal periods no longer land where the first run put them
+	// and the invoices are already in the icmals it opened, which is exactly the failure a demo
+	// database met the morning after it was seeded: the step tried to open a second icmal for an
+	// invoice that already had one. Nothing new may be opened, and nothing may fail.
+	later := newDemoSeeder(t, h.App)
+	later.nowFn = func() time.Time { return time.Now().AddDate(0, 1, 5) }
+	if err := later.demo(ctx); err != nil {
+		t.Fatalf("seed demo on a later day: %v", err)
+	}
+	after := demoRowCounts(t, h)
+	for _, what := range []string{"billing.batch", "billing.batch_invoice", "billing.invoice", "billing.settlement"} {
+		if after[what] != first[what] {
+			t.Errorf("%s: %d rows after one run, %d after a run on another day", what, first[what], after[what])
+		}
+	}
 }
 
 // assertDemoAccounts checks that every account the guide names exists in DEMO_A with the role
