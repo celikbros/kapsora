@@ -10,9 +10,9 @@ Status legend: `DONE` verified and merged · `ACTIVE` work packages issued · `R
 issued next · `PLANNED` designed, not yet broken into work packages · `BLOCKED` waiting on an
 external input.
 
-Authoritative sources: [docs/plan/KAPSORA_Master_Plan_v2.0.md](docs/plan/KAPSORA_Master_Plan_v2.0.md)
-(Turkish, normative), [docs/adr](docs/adr/README.md), the frozen v1.2 specification under
-[docs/baseline-v1.2](docs/baseline-v1.2/). When they disagree, the master plan and ADRs win.
+Authoritative sources: [docs/plan/KAPSORA_Master_Plan_v2.0.md](KAPSORA_Master_Plan_v2.0.md)
+(Turkish, normative), [docs/adr](../adr/README.md), the frozen v1.2 specification under
+[docs/baseline-v1.2](../baseline-v1.2/). When they disagree, the master plan and ADRs win.
 
 ## Working model
 
@@ -24,7 +24,7 @@ Authoritative sources: [docs/plan/KAPSORA_Master_Plan_v2.0.md](docs/plan/KAPSORA
 
 Every work package (WP) is self-contained: goal, scope, interfaces to respect, tests required,
 acceptance criteria and the report format. Delegates never need the conversation history.
-See [docs/delegation/README.md](docs/delegation/README.md).
+See [docs/delegation/README.md](../delegation/README.md).
 
 ## Milestones
 
@@ -50,12 +50,12 @@ milestones close when their exit criteria are verified by the integrator.
 
 | WP                                                                        | Title                                                                                                            | Depends on    | Parallel with      | Size | Owner                                  |
 | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------- | ------------------ | ---- | -------------------------------------- |
-| [WP-I1-01](docs/delegation/WP-I1-01-identity-oidc-bff-session.md)         | Identity: login, PostgreSQL sessions, CSRF, step-up                                                              | ports in repo | 02, 03, 04, 05, 06 | L    | Claude · **DONE**                      |
-| [WP-I1-02](docs/delegation/WP-I1-02-authorization-tenant-context.md)      | Authorization: tenant context, permissions, /me, /tenants, switch-tenant, role templates, seed                   | ports in repo | 01, 03, 04, 05, 06 | L    | Claude · **DONE**                      |
-| [WP-I1-03](docs/delegation/WP-I1-03-organizations.md)                     | Organizations: directory CRUD, VKN/TCKN validation, blind-index dedup, ETag, cursor paging                       | ports in repo | 01, 02, 04, 05, 06 | M    | Claude · **DONE**                      |
-| [WP-I1-04](docs/delegation/WP-I1-04-platform-audit-outbox-idempotency.md) | Platform services: audit recorder, outbox dispatcher, idempotency middleware, rate limit, scheduler jobs, keygen | ports in repo | 01, 02, 03, 05, 06 | L    | Claude · **DONE**                      |
-| [WP-I1-05](docs/delegation/WP-I1-05-frontend-foundation.md)               | Frontend foundation: pnpm workspace, three app shells, generated client, first screens with mocks                | OpenAPI only  | all                | L    | Claude · **DONE**                      |
-| [WP-I1-06](docs/delegation/WP-I1-06-native-environment-ops.md)            | Native environment and ops: install/run scripts for MinIO, ClamAV, Mailpit; systemd units; runbooks              | none          | all                | M    | Claude · **DONE** (Ubuntu VM run open) |
+| [WP-I1-01](../delegation/WP-I1-01-identity-oidc-bff-session.md)         | Identity: login, PostgreSQL sessions, CSRF, step-up                                                              | ports in repo | 02, 03, 04, 05, 06 | L    | Claude · **DONE**                      |
+| [WP-I1-02](../delegation/WP-I1-02-authorization-tenant-context.md)      | Authorization: tenant context, permissions, /me, /tenants, switch-tenant, role templates, seed                   | ports in repo | 01, 03, 04, 05, 06 | L    | Claude · **DONE**                      |
+| [WP-I1-03](../delegation/WP-I1-03-organizations.md)                     | Organizations: directory CRUD, VKN/TCKN validation, blind-index dedup, ETag, cursor paging                       | ports in repo | 01, 02, 04, 05, 06 | M    | Claude · **DONE**                      |
+| [WP-I1-04](../delegation/WP-I1-04-platform-audit-outbox-idempotency.md) | Platform services: audit recorder, outbox dispatcher, idempotency middleware, rate limit, scheduler jobs, keygen | ports in repo | 01, 02, 03, 05, 06 | L    | Claude · **DONE**                      |
+| [WP-I1-05](../delegation/WP-I1-05-frontend-foundation.md)               | Frontend foundation: pnpm workspace, three app shells, generated client, first screens with mocks                | OpenAPI only  | all                | L    | Claude · **DONE**                      |
+| [WP-I1-06](../delegation/WP-I1-06-native-environment-ops.md)            | Native environment and ops: install/run scripts for MinIO, ClamAV, Mailpit; systemd units; runbooks              | none          | all                | M    | Claude · **DONE** (Ubuntu VM run open) |
 
 Integration order once packages return: 04 → 01 → 02 → 03 → 05 (06 any time). The
 integrator wires middlewares and routes in `cmd/api` and runs the full test suite before
@@ -65,12 +65,12 @@ closing M1.
 
 | WP                                                                | Title                                                                                            | Depends on           | Parallel with | Size | Owner             |
 | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | -------------------- | ------------- | ---- | ----------------- |
-| [WP-I2-01](docs/delegation/WP-I2-01-persons.md)                   | Persons: registry, encrypted identifiers, blind-index search, relationships, sponsor memberships | M1                   | 02            | L    | Claude · **DONE** |
-| [WP-I2-02](docs/delegation/WP-I2-02-programs-plans-enrollment.md) | Programs, plans, plan versions (maker-checker), entitlement definitions, enrollments             | M1, 01 (enrollments) | 01            | L    | Claude · **DONE** |
-| [WP-I2-03](docs/delegation/WP-I2-03-entitlement-ledger.md)        | Entitlement accounts, ledger, reservations, adjustments, reconciliation                          | 02                   | 01            | L    | Claude · **DONE** |
-| [WP-I2-04](docs/delegation/WP-I2-04-eligibility.md)               | Eligibility API with as-of resolution, explanations, evaluation snapshots                        | 01, 02, 03           | 05            | M    | Claude · **DONE** |
-| [WP-I2-05](docs/delegation/WP-I2-05-member-import.md)             | Member import: staging, validation, matching, review, idempotent apply                           | 01, 02               | 04            | L    | Claude · **DONE** |
-| [WP-I2-06](docs/delegation/WP-I2-06-frontend-people-plans.md)     | Backoffice screens: people, memberships, programs/plans, entitlements, eligibility, import       | contracts of 01-05   | all           | L    | Claude · **DONE** |
+| [WP-I2-01](../delegation/WP-I2-01-persons.md)                   | Persons: registry, encrypted identifiers, blind-index search, relationships, sponsor memberships | M1                   | 02            | L    | Claude · **DONE** |
+| [WP-I2-02](../delegation/WP-I2-02-programs-plans-enrollment.md) | Programs, plans, plan versions (maker-checker), entitlement definitions, enrollments             | M1, 01 (enrollments) | 01            | L    | Claude · **DONE** |
+| [WP-I2-03](../delegation/WP-I2-03-entitlement-ledger.md)        | Entitlement accounts, ledger, reservations, adjustments, reconciliation                          | 02                   | 01            | L    | Claude · **DONE** |
+| [WP-I2-04](../delegation/WP-I2-04-eligibility.md)               | Eligibility API with as-of resolution, explanations, evaluation snapshots                        | 01, 02, 03           | 05            | M    | Claude · **DONE** |
+| [WP-I2-05](../delegation/WP-I2-05-member-import.md)             | Member import: staging, validation, matching, review, idempotent apply                           | 01, 02               | 04            | L    | Claude · **DONE** |
+| [WP-I2-06](../delegation/WP-I2-06-frontend-people-plans.md)     | Backoffice screens: people, memberships, programs/plans, entitlements, eligibility, import       | contracts of 01-05   | all           | L    | Claude · **DONE** |
 
 Integration order: 01 → 02 → 03 → 04 → 05 → 06 (06 starts on mocks as soon as each
 contract lands). Migrations: 000014 (01, relationship versioning), 000015 (02), 000016 (03), 000017 (04), 000018 (05).
@@ -79,12 +79,12 @@ contract lands). Migrations: 000014 (01, relationship versioning), 000015 (02), 
 
 | WP                                                                           | Title                                                                                       | Depends on         | Parallel with | Size | Owner             |
 | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------ | ------------- | ---- | ----------------- |
-| [WP-I3-01](docs/delegation/WP-I3-01-catalog-and-code-systems.md)             | Service catalog API, external code systems, service code mapping                            | M2                 | 02            | M    | Claude · **DONE** |
-| [WP-I3-02](docs/delegation/WP-I3-02-provider-network.md)                     | Provider profiles, locations, capabilities, practitioners, provider search                  | 01                 | 01            | L    | Claude · **DONE** |
-| [WP-I3-03](docs/delegation/WP-I3-03-contracts-and-prices.md)                 | Contracts, versions (maker-checker), price lists, packages, quotas, deterministic selection | 01, 02             | 04            | L    | Claude · **DONE** |
-| [WP-I3-04](docs/delegation/WP-I3-04-rule-engine.md)                          | Rule sets, CEL rules, test cases, publish gate, immutable evaluations                       | M2, 01             | 03            | L    | Claude · **DONE** |
-| [WP-I3-05](docs/delegation/WP-I3-05-pricing-quote.md)                        | Pricing quote composing eligibility, price selection, rules and balances                    | 01-04              | 06            | M    | Claude · **DONE** |
-| [WP-I3-06](docs/delegation/WP-I3-06-frontend-catalog-providers-contracts.md) | Backoffice screens: catalog, providers, contracts, rules, quote                             | contracts of 01-05 | all           | L    | Claude            |
+| [WP-I3-01](../delegation/WP-I3-01-catalog-and-code-systems.md)             | Service catalog API, external code systems, service code mapping                            | M2                 | 02            | M    | Claude · **DONE** |
+| [WP-I3-02](../delegation/WP-I3-02-provider-network.md)                     | Provider profiles, locations, capabilities, practitioners, provider search                  | 01                 | 01            | L    | Claude · **DONE** |
+| [WP-I3-03](../delegation/WP-I3-03-contracts-and-prices.md)                 | Contracts, versions (maker-checker), price lists, packages, quotas, deterministic selection | 01, 02             | 04            | L    | Claude · **DONE** |
+| [WP-I3-04](../delegation/WP-I3-04-rule-engine.md)                          | Rule sets, CEL rules, test cases, publish gate, immutable evaluations                       | M2, 01             | 03            | L    | Claude · **DONE** |
+| [WP-I3-05](../delegation/WP-I3-05-pricing-quote.md)                        | Pricing quote composing eligibility, price selection, rules and balances                    | 01-04              | 06            | M    | Claude · **DONE** |
+| [WP-I3-06](../delegation/WP-I3-06-frontend-catalog-providers-contracts.md) | Backoffice screens: catalog, providers, contracts, rules, quote                             | contracts of 01-05 | all           | L    | Claude            |
 
 Integration order: 01 → 02 → 03 → 04 → 05 → 06 (06 starts on mocks as soon as each
 contract lands). Migrations: 000019 (01), 000020 (02), 000021 (03), 000022 (04), 000023 (05).
@@ -94,23 +94,23 @@ ADR-023 fixes the rule expression language (CEL); ADR-022 was already taken by t
 
 | WP                                                                                   | Title                                                                                        | Depends on                        | Parallel with | Size | Owner  |
 | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- | --------------------------------- | ------------- | ---- | ------ |
-| [WP-I5-01](docs/delegation/WP-I5-01-health-case-encounter-visibility.md)             | Health case, encounter, diagnosis; the clinical/financial visibility split; sensitive access | M2, M3, M4                        | 05            | L    | Claude |
-| [WP-I5-02](docs/delegation/WP-I5-02-medical-report.md)                               | Medical report: submit, medical review, approved scope, versions                             | 01, WP-I4-03, WP-I4-04            | 03            | M    | Claude |
-| [WP-I5-03](docs/delegation/WP-I5-03-inpatient-preauthorization.md)                   | Inpatient stay: preauthorization, extension, segments, discharge reconciliation              | 01, WP-I4-01, WP-I4-02            | 02            | L    | Claude |
-| [WP-I5-04](docs/delegation/WP-I5-04-health-claim.md)                                 | Health claim: versions, lines, auto-adjudication, medical and financial review               | 01, 02, 03, WP-I3-04/05, WP-I4-02 | 06            | L    | Claude |
-| [WP-I5-05](docs/delegation/WP-I5-05-cross-cutting-mapping-notifications-contacts.md) | Service→entitlement mapping, check candidates, ICD-10, notification wiring, contacts, names  | M2, M3, M4                        | 01            | M    | Claude |
-| [WP-I5-06](docs/delegation/WP-I5-06-frontend-health.md)                              | Screens: case, medical/financial review, stay, claim — and what HR never sees                | contracts of 01-05                | all           | L    | Claude |
+| [WP-I5-01](../delegation/WP-I5-01-health-case-encounter-visibility.md)             | Health case, encounter, diagnosis; the clinical/financial visibility split; sensitive access | M2, M3, M4                        | 05            | L    | Claude |
+| [WP-I5-02](../delegation/WP-I5-02-medical-report.md)                               | Medical report: submit, medical review, approved scope, versions                             | 01, WP-I4-03, WP-I4-04            | 03            | M    | Claude |
+| [WP-I5-03](../delegation/WP-I5-03-inpatient-preauthorization.md)                   | Inpatient stay: preauthorization, extension, segments, discharge reconciliation              | 01, WP-I4-01, WP-I4-02            | 02            | L    | Claude |
+| [WP-I5-04](../delegation/WP-I5-04-health-claim.md)                                 | Health claim: versions, lines, auto-adjudication, medical and financial review               | 01, 02, 03, WP-I3-04/05, WP-I4-02 | 06            | L    | Claude |
+| [WP-I5-05](../delegation/WP-I5-05-cross-cutting-mapping-notifications-contacts.md) | Service→entitlement mapping, check candidates, ICD-10, notification wiring, contacts, names  | M2, M3, M4                        | 01            | M    | Claude |
+| [WP-I5-06](../delegation/WP-I5-06-frontend-health.md)                              | Screens: case, medical/financial review, stay, claim — and what HR never sees                | contracts of 01-05                | all           | L    | Claude |
 
 ## M7 work packages (issued 2026-09-07)
 
 | WP                                                                               | Title                                                                                          | Depends on             | Parallel with | Size | Owner  |
 | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ---------------------- | ------------- | ---- | ------ |
-| [WP-I7-01](docs/delegation/WP-I7-01-claims-across-verticals-and-adjustments.md)  | The lodging claim from the door, adjustments as ledger lines, the provider's earnings view     | WP-I5-04, WP-I6-03     | 02            | M    | Claude |
-| [WP-I7-02](docs/delegation/WP-I7-02-invoice-manual-entry-and-allocation.md)      | The invoice as entered, allocation validated, immutable once submitted, corrected by supersede | 01, WP-I3-03, WP-I4-04 | 01, 05        | L    | Claude |
-| [WP-I7-03](docs/delegation/WP-I7-03-batch-and-review.md)                         | The batch: immutable once submitted, decided invoice by invoice with reasons and adjustments   | 02, WP-I4-03           | 05            | L    | Claude |
-| [WP-I7-04](docs/delegation/WP-I7-04-settlement-payment-records-reimbursement.md) | Settlement never above the approved total, payment records, the member's reimbursement         | 03, WP-I2-03, WP-I4-01 | 05            | L    | Claude |
-| [WP-I7-05](docs/delegation/WP-I7-05-reconciliation-reports-and-exports.md)       | Provider statement, daily reconciliation, the dashboard, watermarked and audited exports       | 02, 03, 04             | 03, 04        | M    | Claude |
-| [WP-I7-06](docs/delegation/WP-I7-06-frontend-billing.md)                         | Screens: earnings, invoice, batch, review, settlement, payments, reimbursement, statement      | contracts of 01-05     | all           | L    | Claude |
+| [WP-I7-01](../delegation/WP-I7-01-claims-across-verticals-and-adjustments.md)  | The lodging claim from the door, adjustments as ledger lines, the provider's earnings view     | WP-I5-04, WP-I6-03     | 02            | M    | Claude |
+| [WP-I7-02](../delegation/WP-I7-02-invoice-manual-entry-and-allocation.md)      | The invoice as entered, allocation validated, immutable once submitted, corrected by supersede | 01, WP-I3-03, WP-I4-04 | 01, 05        | L    | Claude |
+| [WP-I7-03](../delegation/WP-I7-03-batch-and-review.md)                         | The batch: immutable once submitted, decided invoice by invoice with reasons and adjustments   | 02, WP-I4-03           | 05            | L    | Claude |
+| [WP-I7-04](../delegation/WP-I7-04-settlement-payment-records-reimbursement.md) | Settlement never above the approved total, payment records, the member's reimbursement         | 03, WP-I2-03, WP-I4-01 | 05            | L    | Claude |
+| [WP-I7-05](../delegation/WP-I7-05-reconciliation-reports-and-exports.md)       | Provider statement, daily reconciliation, the dashboard, watermarked and audited exports       | 02, 03, 04             | 03, 04        | M    | Claude |
+| [WP-I7-06](../delegation/WP-I7-06-frontend-billing.md)                         | Screens: earnings, invoice, batch, review, settlement, payments, reimbursement, statement      | contracts of 01-05     | all           | L    | Claude |
 
 Order of work: 01 → 02 → 03 → 04 → 05 → 06. Migrations 000043–000047, assigned in landing
 order (the M6 lesson: a lower number assigned later never runs on an upgraded database).
@@ -119,11 +119,11 @@ order (the M6 lesson: a lower number assigned later never runs on an upgraded da
 
 | WP                                                                                 | Title                                                                                       | Depends on                 | Parallel with | Size | Owner  |
 | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | -------------------------- | ------------- | ---- | ------ |
-| [WP-I6-01](docs/delegation/WP-I6-01-property-room-inventory-availability.md)       | Property, room type, daily inventory with the balance CHECK, availability search, the quote | M2, M3, WP-I5-05           | 04            | M    | Claude |
-| [WP-I6-02](docs/delegation/WP-I6-02-hold-and-booking.md)                           | Hold under the lock, expiry that releases, confirmation that reserves once, the voucher     | 01, WP-I2-03, WP-I4-01/02  | 04            | L    | Claude |
-| [WP-I6-03](docs/delegation/WP-I6-03-cancel-noshow-checkin-checkout-waitlist.md)    | Cancellation by policy snapshot, no-show under review, check-in/out, waitlist               | 02, 04, WP-I4-02/03/04     | 05            | L    | Claude |
-| [WP-I6-04](docs/delegation/WP-I6-04-lodging-terms-member-binding-notifications.md) | Lodging terms on the contract, the member's PERSON scope, tenant settings, booking messages | M1, M3, WP-I4-05, WP-I5-05 | 01, 02        | M    | Claude |
-| [WP-I6-05](docs/delegation/WP-I6-05-frontend-lodging-member-pwa.md)                | Screens: the member PWA's first product, the property's desk, the payer's bookings          | contracts of 01-04         | all           | L    | Claude |
+| [WP-I6-01](../delegation/WP-I6-01-property-room-inventory-availability.md)       | Property, room type, daily inventory with the balance CHECK, availability search, the quote | M2, M3, WP-I5-05           | 04            | M    | Claude |
+| [WP-I6-02](../delegation/WP-I6-02-hold-and-booking.md)                           | Hold under the lock, expiry that releases, confirmation that reserves once, the voucher     | 01, WP-I2-03, WP-I4-01/02  | 04            | L    | Claude |
+| [WP-I6-03](../delegation/WP-I6-03-cancel-noshow-checkin-checkout-waitlist.md)    | Cancellation by policy snapshot, no-show under review, check-in/out, waitlist               | 02, 04, WP-I4-02/03/04     | 05            | L    | Claude |
+| [WP-I6-04](../delegation/WP-I6-04-lodging-terms-member-binding-notifications.md) | Lodging terms on the contract, the member's PERSON scope, tenant settings, booking messages | M1, M3, WP-I4-05, WP-I5-05 | 01, 02        | M    | Claude |
+| [WP-I6-05](../delegation/WP-I6-05-frontend-lodging-member-pwa.md)                | Screens: the member PWA's first product, the property's desk, the payer's bookings          | contracts of 01-04         | all           | L    | Claude |
 
 Order of work: 04 → 01 → 02 → 03 → 05 (the member binding and the terms first, so every
 later package is built against the real scope and the real snapshot rather than a stub).
@@ -132,12 +132,12 @@ later package is built against the real scope and the real snapshot rather than 
 
 | WP                                                                                 | Title                                                                                 | Depends on                            | Parallel with | Size | Owner         |
 | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------- | ------------- | ---- | ------------- |
-| [WP-I4-01](docs/delegation/WP-I4-01-service-requests.md)                           | Service requests: versions, items, explicit transitions, the submit gate              | M2, M3                                | 04            | L    | **delivered** |
-| [WP-I4-02](docs/delegation/WP-I4-02-authorization-and-fulfilment.md)               | Authorization reserving entitlement, fulfilment consuming it, vouchers                | 01, WP-I2-03                          | 03            | L    | **delivered** |
-| [WP-I4-03](docs/delegation/WP-I4-03-workflow-and-worklist.md)                      | Work queues, work items, SLA snapshot and escalation, approval policy                 | 01                                    | 02            | L    | **delivered** |
-| [WP-I4-04](docs/delegation/WP-I4-04-document-pipeline.md)                          | Documents: upload, quarantine, ClamAV scan, secure storage, legal hold                | M1 (native ClamAV and object storage) | 01            | L    | **delivered** |
-| [WP-I4-05](docs/delegation/WP-I4-05-notifications.md)                              | Notification templates, messages, delivery, preferences                               | 01, WP-I1-04 outbox                   | 03            | M    | **delivered** |
-| [WP-I4-06](docs/delegation/WP-I4-06-frontend-requests-worklist-provider-portal.md) | Screens: requests, worklist, documents, notifications — and the first provider portal | contracts of 01-05                    | all           | L    | **delivered** |
+| [WP-I4-01](../delegation/WP-I4-01-service-requests.md)                           | Service requests: versions, items, explicit transitions, the submit gate              | M2, M3                                | 04            | L    | **delivered** |
+| [WP-I4-02](../delegation/WP-I4-02-authorization-and-fulfilment.md)               | Authorization reserving entitlement, fulfilment consuming it, vouchers                | 01, WP-I2-03                          | 03            | L    | **delivered** |
+| [WP-I4-03](../delegation/WP-I4-03-workflow-and-worklist.md)                      | Work queues, work items, SLA snapshot and escalation, approval policy                 | 01                                    | 02            | L    | **delivered** |
+| [WP-I4-04](../delegation/WP-I4-04-document-pipeline.md)                          | Documents: upload, quarantine, ClamAV scan, secure storage, legal hold                | M1 (native ClamAV and object storage) | 01            | L    | **delivered** |
+| [WP-I4-05](../delegation/WP-I4-05-notifications.md)                              | Notification templates, messages, delivery, preferences                               | 01, WP-I1-04 outbox                   | 03            | M    | **delivered** |
+| [WP-I4-06](../delegation/WP-I4-06-frontend-requests-worklist-provider-portal.md) | Screens: requests, worklist, documents, notifications — and the first provider portal | contracts of 01-05                    | all           | L    | **delivered** |
 
 Integration order: 01 → 02 → 03 → 04 → 05 → 06 (06 starts on mocks as soon as each
 contract lands). Migrations: 000025 (01), 000026 (02), 000027 (03), 000028 (04), 000029 (05).
@@ -148,7 +148,7 @@ empty shell since M1.
 
 | WP                                                          | Title                                                                                        | Depends on              | Parallel with | Size | Owner  |
 | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ----------------------- | ------------- | ---- | ------ |
-| [WP-X1-01](docs/delegation/WP-X1-01-in-product-help.md)     | In-product help: the unfamiliar explained where it stands, and every page says what it is for | the three shells, `ui`  | anything      | M    | Claude |
+| [WP-X1-01](../delegation/WP-X1-01-in-product-help.md)     | In-product help: the unfamiliar explained where it stands, and every page says what it is for | the three shells, `ui`  | anything      | M    | Claude |
 
 ## Cross-cutting tracks
 
@@ -258,5 +258,5 @@ empty shell since M1.
 - 2026-09-03 · WP-I1-05 delivered: pnpm workspace with `api-client` (types generated from the contract, openapi-fetch wrapper adding request id, CSRF, tenant and idempotency headers, problem+json parsing, MSW mocks for every operation), `auth` (in-memory session store, route guards, tenant colour), `i18n` (Turkish complete, English skeleton, tenant-zone dates, ISO-code money), `ui` (Radix + Tailwind v4 design system) and three apps: backoffice (login, tenant picker, shell with the full v1.2 navigation, profile, organization list/detail/create/edit with ETag conflict dialog), provider and member shells. 45 unit tests, 3 Playwright smoke tests on the mock API, same screens verified against the Go API through the Vite proxy. Storybook deferred.
 - 2026-09-03 · WP-I1-03 delivered: organization directory with global dedup by tax-number blind index (one legal entity, one relationship per tenant), VKN/TCKN checksum validation, masked identifiers, keyset cursor pagination (signed cursors), merge-patch update with ETag/If-Match, shared-name protection (migration 000013), audited create/update; first tenant-scoped module wired behind RequireTenantContext + idempotency.
 - 2026-09-03 · WP-I1-02 delivered: request context from session + validated X-Tenant-ID + live membership, permission union over valid grants with scopes, `/me`, `/tenants`, `switch-tenant`, 16 system role templates, tenant provisioning with baseline catalogs, audited denials, `seed demo` (DEMO_A/DEMO_B, five demo users, idempotent). No migration needed. Verified end to end.
-- 2026-09-03 · WP-I1-01 delivered, with a scope change the owner made: KAPSORA authenticates its own users, no Keycloak and no JDK ([ADR-022](docs/adr/ADR-022.md) supersedes ADR-005). Argon2id credentials, opaque session cookie whose digest is what the database stores, derived CSRF token, per-account lockout plus per-address rate limit, step-up and password change. Verified end to end against the running API. Migration 000012; schema version 12.
+- 2026-09-03 · WP-I1-01 delivered, with a scope change the owner made: KAPSORA authenticates its own users, no Keycloak and no JDK ([ADR-022](../adr/ADR-022.md) supersedes ADR-005). Argon2id credentials, opaque session cookie whose digest is what the database stores, derived CSRF token, per-account lockout plus per-address rate limit, step-up and password change. Verified end to end against the running API. Migration 000012; schema version 12.
 - 2026-09-02 · WP-I1-04 delivered in-house: audit recorder, outbox dispatcher (exactly-once under two concurrent dispatchers, retries, dead-letter, stale recovery), idempotency middleware, PostgreSQL rate limiter, scheduler job runner with four standard jobs, keygen. Found and fixed a baseline schema defect: the outbox dedupe constraint blocked every second event of a type (migration 000011).

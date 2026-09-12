@@ -56,7 +56,7 @@ and a reverse proxy, without Docker or Kubernetes.
   equivalent as `deploy/caddy/Caddyfile`.
 - `deploy/install.sh`: places binaries from the CI artefact (`kapsora-binaries-*`) under
   `/opt/kapsora/bin`, config under `/etc/kapsora`, enables units, runs migrate.
-- `deploy/README.md`: single-server reference layout, ports, firewall rules, backup hooks
+- `docs/runbooks/deployment-layout.md`: single-server reference layout, ports, firewall rules, backup hooks
   (pgBackRest and MinIO replication pointers), upgrade procedure (stop api → migrate →
   start), rollback = forward-fix (ADR-016).
 

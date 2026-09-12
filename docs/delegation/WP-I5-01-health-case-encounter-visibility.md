@@ -8,7 +8,7 @@
 | Runs in parallel with      | WP-I5-05                                                                                                                                                                                                                                                                                           |
 | Migration numbers assigned | `000031_health_case.up.sql`                                                                                                                                                                                                                                                                        |
 | OpenAPI operations owned   | `listHealthCases`, `createHealthCase`, `getHealthCase`, `closeHealthCase`, `createEncounter`, `getEncounter`, `listEncounterDiagnoses`, `putEncounterDiagnoses`, `listHealthAccessLog`                                                                                                             |
-| Read first                 | v1.2 9.12, 10.3, 11.10, 16.7 (`health.*` rows), 16.14; ADR-015; WP-I4-01 as delivered (`internal/servicerequest`), WP-I4-04 (`audit.access_event` for HEALTH downloads); `internal/audit/audit.go` (`RecordAccess`, `SanitizeDetail`); the M4 lesson in ROADMAP.md about mock-versus-server divergence |
+| Read first                 | v1.2 9.12, 10.3, 11.10, 16.7 (`health.*` rows), 16.14; ADR-015; WP-I4-01 as delivered (`internal/servicerequest`), WP-I4-04 (`audit.access_event` for HEALTH downloads); `internal/audit/audit.go` (`RecordAccess`, `SanitizeDetail`); the M4 lesson in docs/plan/ROADMAP.md about mock-versus-server divergence |
 
 ## 1. Goal
 

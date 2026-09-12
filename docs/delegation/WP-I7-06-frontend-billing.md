@@ -8,7 +8,7 @@
 | Runs in parallel with      | all M7 packages                                                                                                                                                                                                                                                                                 |
 | Migration numbers assigned | none                                                                                                                                                                                                                                                                                            |
 | OpenAPI operations owned   | none (consumes)                                                                                                                                                                                                                                                                                 |
-| Read first                 | `DESIGN.md` (all settled patterns — fifty-five entries after M6) and `PRODUCT.md`; WP-I5-06 and WP-I6-05 as delivered and their finish-review notes in ROADMAP.md; the three surface briefs under `web/apps/*/.impeccable/surfaces/`; the claim screens (`web/apps/*/src/claims/`) which these extend |
+| Read first                 | `DESIGN.md` (all settled patterns — fifty-five entries after M6) and `PRODUCT.md`; WP-I5-06 and WP-I6-05 as delivered and their finish-review notes in docs/plan/ROADMAP.md; the three surface briefs under `web/apps/*/.impeccable/surfaces/`; the claim screens (`web/apps/*/src/claims/`) which these extend |
 
 ## 1. Goal
 

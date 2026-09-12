@@ -1,7 +1,7 @@
 # Tek sunucuya kurulum (Ubuntu 24.04 LTS, konteynersiz)
 
 Boş bir sunucudan çalışan sisteme. Komutlar `root` ya da `sudo` ile çalıştırılır. Bu
-kılavuz `deploy/README.md` içindeki yerleşimi uygular; dosyalar `deploy/` altındadır.
+kılavuz `docs/runbooks/deployment-layout.md` içindeki yerleşimi uygular; dosyalar `deploy/` altındadır.
 
 ## 0. Ön koşullar
 

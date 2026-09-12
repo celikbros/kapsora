@@ -24,7 +24,7 @@ ClamAV and Mailpit.
 | `deploy/nginx/kapsora.conf` + `snippets/kapsora-proxy.conf` | TLS 1.2/1.3, HSTS, CSP (no inline scripts), frame/referrer/permissions headers, `X-Request-ID` passthrough, rate-limit zones (API 30 r/s, login 5 r/min), 25 MB body limit, health endpoints localhost-only, SPA + immutable assets caching |
 | `deploy/caddy/Caddyfile` | Same policy for Caddy with automatic TLS |
 | `deploy/install.sh` | Creates the `kapsora` user and layout, installs binaries and web builds from the CI artefact, writes env templates on first run, installs units, `systemd-analyze verify`, upgrade order stop → migrate → start, readiness check |
-| `deploy/README.md` | Layout, ports and firewall, install/upgrade, dependencies, backups |
+| `docs/runbooks/deployment-layout.md` | Layout, ports and firewall, install/upgrade, dependencies, backups |
 | `docs/runbooks/local-native-environment.md` | Rewritten complete guide (Turkish) |
 | `docs/runbooks/local-accounts.md` | Replaces `keycloak-local.md`: keys, `seed demo`, single accounts, unlock |
 | `docs/runbooks/deploy-single-server.md` | Blank Ubuntu 24.04 to running system |

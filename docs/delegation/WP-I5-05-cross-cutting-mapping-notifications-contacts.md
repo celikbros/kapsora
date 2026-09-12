@@ -8,7 +8,7 @@
 | Runs in parallel with      | WP-I5-01                                                                                                                                                                                                                                                                 |
 | Migration numbers assigned | `000035_service_entitlement_mapping_and_contacts.up.sql`                                                                                                                                                                                                                 |
 | OpenAPI operations owned   | `listEntitlementMappings`, `putEntitlementMappings`, `listPersonContacts`, `putPersonContacts`; changes `EligibilityCheckResult` (adds `enrollmentCandidates`) and `ServiceRequest`/`WorkItem` (adds display names) — additive only                                        |
-| Read first                 | ROADMAP.md, every "Open" entry dated 2026-09-04/05 — this package is those entries; `internal/benefit/eligibility/resolver.go` (`SERVICE_MAPPING_PENDING`); `internal/notification/application` (`Publish`, the safe-variable catalogue); WP-I4-01/02 command paths |
+| Read first                 | docs/plan/ROADMAP.md, every "Open" entry dated 2026-09-04/05 — this package is those entries; `internal/benefit/eligibility/resolver.go` (`SERVICE_MAPPING_PENDING`); `internal/notification/application` (`Publish`, the safe-variable catalogue); WP-I4-01/02 command paths |
 
 ## 1. Goal
 

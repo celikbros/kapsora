@@ -91,7 +91,7 @@ No Redux, no other state or UI library. `pnpm-lock.yaml` pins the full tree.
 - The mock chunk (`browser-*.js`) is emitted by the production build but loaded only when
   `VITE_API_MOCK` is not `false`; production deployments set it to `false`.
 - Windows: `corepack` needed admin rights, so pnpm is installed with
-  `npm install -g pnpm` into the user prefix (documented in `web/README.md`).
+  `npm install -g pnpm` into the user prefix (documented in `docs/development/frontend.md`).
 
 ## 7. How to run
 

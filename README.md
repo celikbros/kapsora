@@ -5,9 +5,8 @@ müşteri, sigortalı, öğrenci ve diğer hak sahibi gruplarına sunduğu sağl
 hizmetleri; hak cüzdanı, kural, sağlayıcı sözleşmesi, talep, claim, e-Belge, icmal, settlement ve
 muhasebe kaydına kadar tek platformda yönetir.
 
-- Master plan: [docs/plan/KAPSORA_Master_Plan_v2.0.md](docs/plan/KAPSORA_Master_Plan_v2.0.md)
-- Dondurulmuş baseline (v1.2 şartname, sunum, ilk şema/OpenAPI): [docs/baseline-v1.2/](docs/baseline-v1.2/)
-- Mimari kararlar: [docs/adr/](docs/adr/README.md)
+- Başlangıç ve mevcut durum: [Devir notu](docs/HANDOVER.md)
+- Tüm proje belgeleri: [Dokümantasyon dizini](docs/README.md)
 - API sözleşmesi: [api/openapi/kapsora-v1.yaml](api/openapi/kapsora-v1.yaml)
 
 ## Teknoloji
@@ -30,7 +29,7 @@ Giriş için ayrı bir sunucu gerekmez; hesaplar `go run ./cmd/seed account ...`
 cp .env.example .env            # CHANGE_ME değerlerini kendi PostgreSQL bilgilerinizle doldurun
 make tools                      # sqlc, oapi-codegen, oasdiff, golangci-lint, govulncheck
 make db-init                    # kapsora_app rolü + kapsora veritabanı
-make migrate-up                 # şema sürüm 8
+make migrate-up                 # şemayı son sürüme yükseltir
 make test-db                    # gerçek PostgreSQL üzerinde şema testleri
 make run-api                    # http://localhost:8080/health/ready
 make web-install && make web-dev # http://127.0.0.1:5173 (mock API ile; gerçek API için VITE_API_MOCK=false)
@@ -42,7 +41,7 @@ Windows'ta GNU make yoksa: `.\scripts\dev.ps1 <hedef>` aynı hedefleri çalışt
 
 ## Yol haritası ve delegasyon
 
-- [ROADMAP.md](ROADMAP.md): kilometre taşları, durum ve iş paketleri.
+- [docs/plan/ROADMAP.md](docs/plan/ROADMAP.md): kilometre taşları, durum ve iş paketleri.
 - [docs/delegation/](docs/delegation/README.md): dış geliştiriciler için el kitabı, iş paketleri (WP) ve rapor şablonu (İngilizce).
 
 ## Sık kullanılan hedefler

@@ -8,7 +8,7 @@
 | Runs in parallel with      | WP-I5-06 (mock first)                                                                                                                                                                                                                                                                                                  |
 | Migration numbers assigned | `000034_health_claim.up.sql`                                                                                                                                                                                                                                                                                           |
 | OpenAPI operations owned   | `listClaims`, `createClaim`, `getClaim`, `patchClaimDraft`, `putClaimLines`, `submitClaim`, `returnClaim`, `decideClaimLines`, `approveClaim`, `rejectClaim`, `cancelClaim`, `listClaimVersions`, `getClaimVersion`, `getClaimInvoiceReadiness`                                                                            |
-| Read first                 | v1.2 9.14 (claim part only), 10.3 steps 5–7, 12.5, 16.8 (`claim.*` rows), 11.10; WP-I4-01 (the version model to copy), WP-I4-02 (`Consume`), WP-I3-05 (`internal/pricing` — the quote arithmetic, `AccountKey`), WP-I4-03 §2.4 (approval policy lookup); ROADMAP.md's M4 notes on the mock and on names being ids |
+| Read first                 | v1.2 9.14 (claim part only), 10.3 steps 5–7, 12.5, 16.8 (`claim.*` rows), 11.10; WP-I4-01 (the version model to copy), WP-I4-02 (`Consume`), WP-I3-05 (`internal/pricing` — the quote arithmetic, `AccountKey`), WP-I4-03 §2.4 (approval policy lookup); docs/plan/ROADMAP.md's M4 notes on the mock and on names being ids |
 
 ## 1. Goal
 

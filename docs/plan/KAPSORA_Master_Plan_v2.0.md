@@ -2,7 +2,7 @@
 
 | Alan | Değer |
 |---|---|
-| Durum | Onaylandı (iş sahibi, 02.09.2026). Ad: KAPSORA. I0 tamamlandı 02.09.2026: migration, 16 şema testi, sağlık uç noktaları yerelde; CI GitHub'da yeşil (`github.com/celikbros/kapsora`). Docker kaldırıldı (ADR-021). I1 iş paketleri delegasyona açıldı (ROADMAP.md, issues #1-#6). |
+| Durum | Onaylandı (iş sahibi, 02.09.2026). Ad: KAPSORA. I0 tamamlandı 02.09.2026: migration, 16 şema testi, sağlık uç noktaları yerelde; CI GitHub'da yeşil (`github.com/celikbros/kapsora`). Docker kaldırıldı (ADR-021). I1 iş paketleri delegasyona açıldı (docs/plan/ROADMAP.md, issues #1-#6). |
 | Tarih | 02.09.2026 |
 | Önceki baseline | Teknik Proje Şartnamesi v1.2 (08.08.2026) |
 | Bu planın rolü | v1.2 üzerine yazılan kapsam değişikliği ve düzeltme kaydı. Çelişki halinde bu plan geçerlidir; v1.2 dosyaları dondurulmuş tarihsel baseline olarak kalır. |
@@ -27,7 +27,7 @@
    sayaçlar. Ayrıntı ADR-021. I0 satırındaki Compose kalemi geçersizdir.
 7. **Delegasyon modeli (02.09.2026).** Artımlar iş paketlerine (WP) bölünür; dış geliştiriciler
    İngilizce iş paketi ve rapor şablonuyla çalışır, iş sahibi kurye rolündedir, Claude mimar,
-   entegratör ve reviewer'dır. Ayrıntı `ROADMAP.md` ve `docs/delegation/`.
+   entegratör ve reviewer'dır. Ayrıntı `docs/plan/ROADMAP.md` ve `docs/delegation/`.
 
 ## 2. Mali entegrasyon: GİB e-Belge ve muhasebe
 

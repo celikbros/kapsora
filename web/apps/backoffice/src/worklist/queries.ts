@@ -99,7 +99,7 @@ export function useWorkItemCommands() {
  * Who an actor id is, as far as this screen can say. The contract carries no actor
  * directory, so the only name the screen knows is the operator's own; every other actor
  * is shown by id, truthfully, rather than by a name the screen would have to invent.
- * A display name on the work item is the contract change that fixes this (ROADMAP.md).
+ * A display name on the work item is the contract change that fixes this (docs/plan/ROADMAP.md).
  */
 /**
  * How an assignee is named on the worklist. The wire carries the name with the row now

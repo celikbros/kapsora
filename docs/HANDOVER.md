@@ -1,5 +1,9 @@
 # KAPSORA — Project Handover
 
+[Documentation index](README.md) · [Roadmap](plan/ROADMAP.md)
+
+Paths in code spans and command examples are relative to the repository root.
+
 Written 2026-09-13, at the point the previous team stops. `main` is clean, CI is green on the
 last commit (`7f69e26`), nothing is in flight. This file is the fastest path from zero to
 working on this codebase as if you had built it. Read it once, fully, before touching code.
@@ -23,14 +27,14 @@ Three people use it, each in their own app, behind one API:
 - **Member PWA** — the entitled person, on a phone: remaining entitlements, search and book,
   apply, upload a document, ask for reimbursement.
 
-Read `PRODUCT.md` for the full user/purpose/brand brief and `DESIGN.md` for every settled UI
+Read [PRODUCT.md](../PRODUCT.md) for the full user/purpose/brand brief and [DESIGN.md](../DESIGN.md) for every settled UI
 pattern (colors, components, copy rules) — both are living documents, not historical notes;
 keep them current as you build.
 
 ## 2. Where things stand
 
 **M1 through M7 are DONE.** Schema is at migration `000048` (`db/migrations/`). Every
-milestone's exit criteria were verified by the integrator before closing (see `ROADMAP.md`
+milestone's exit criteria were verified by the integrator before closing (see `docs/plan/ROADMAP.md`
 § Status log for the full narrative, milestone by milestone — it is long, but it is the real
 history of every non-obvious decision, and reading the last 10–15 entries will save you from
 relearning lessons the hard way). On top of the milestone plan, one cross-cutting increment
@@ -65,7 +69,7 @@ something else the owner names. Ask before assuming.
   "Parola doğrulaması" (step-up), "Dört göz kuralı" (maker-checker), "Oda tutma" (a room
   hold). Confirm the wording with the owner if it matters to them —
   `web/packages/i18n/src/locales/help/tr/terms.json`.
-- A handful of older, smaller wire/UI gaps are listed at the end of their own `ROADMAP.md`
+- A handful of older, smaller wire/UI gaps are listed at the end of their own `docs/plan/ROADMAP.md`
   status-log entries (grep the file for `Open:`) — none block anything, all are candidates
   for a quiet afternoon.
 
@@ -155,7 +159,7 @@ This project is planned as **work packages (WP)**, one file per package under
 `docs/delegation/WP-<id>-<slug>.md`: a fixed goal, scope, interfaces, migration numbers,
 required tests, and acceptance criteria, self-contained enough that whoever implements it
 needs nothing beyond the file. `docs/delegation/REPORT_TEMPLATE.md` is the report format that
-comes back. `ROADMAP.md` is the index: milestones, which WPs make up each one, and the
+comes back. `docs/plan/ROADMAP.md` is the index: milestones, which WPs make up each one, and the
 status log. To plan the next slice of work, write the WP file the same way the ~40 already in
 that folder are written — read a couple of recent ones (`WP-I7-06`, `WP-X1-01`) as models
 before writing a new one.
@@ -221,7 +225,7 @@ English — that split is deliberate and consistent across ~50 commits; don't mi
    differs from what CI assumes; fix that before writing code.
 2. Run the backend-free demo (`KAPSORA-Demo-Baslat.cmd`) and click through the six scenarios
    in its guide page. It's the fastest way to see the whole product's shape.
-3. Read `docs/delegation/README.md` fully, then `ROADMAP.md`'s status log from the bottom up
+3. Read `docs/delegation/README.md` fully, then `docs/plan/ROADMAP.md`'s status log from the bottom up
    (oldest first) through at least M5 — the decisions compound.
 4. Read `DESIGN.md` top to bottom once. You will not remember all of it; you will remember
    enough to know when to go back and check it.

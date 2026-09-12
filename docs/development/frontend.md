@@ -1,6 +1,7 @@
 # KAPSORA web workspace
 
-pnpm workspace (WP-I1-05). Packages under `packages/`, apps under `apps/`.
+pnpm workspace (WP-I1-05). Packages under [web/packages/](../../web/packages/), apps under
+[web/apps/](../../web/apps/). See the [documentation index](../README.md) for the other guides.
 
 | Package / app         | Purpose                                                                                                                                          |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -26,7 +27,7 @@ E2E_REAL_API=1 KAPSORA_API_URL=http://127.0.0.1:8080 pnpm e2e         # same scr
 ```
 
 Mock users: `admin.a`, `reviewer.a`, `admin.b`, `both.ab` with any password of 12+ characters.
-Real API demo users come from `go run ./cmd/seed demo` (see the repository README).
+Real API demo users come from `go run ./cmd/seed demo` (see the [handover](../HANDOVER.md)).
 
 ## Rules
 

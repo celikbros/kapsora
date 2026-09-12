@@ -8,7 +8,7 @@
 | Runs in parallel with      | all M5 packages                                                                                                                                                                           |
 | Migration numbers assigned | none                                                                                                                                                                                      |
 | OpenAPI operations owned   | none (consumes)                                                                                                                                                                           |
-| Read first                 | `DESIGN.md` (all of **Patterns settled while building**) and `PRODUCT.md`; WP-I4-06 as delivered and its finish-review notes in ROADMAP.md (2026-09-05); the provider surface brief under `web/apps/provider/.impeccable/surfaces/` |
+| Read first                 | `DESIGN.md` (all of **Patterns settled while building**) and `PRODUCT.md`; WP-I4-06 as delivered and its finish-review notes in docs/plan/ROADMAP.md (2026-09-05); the provider surface brief under `web/apps/provider/.impeccable/surfaces/` |
 
 ## 1. Goal
 

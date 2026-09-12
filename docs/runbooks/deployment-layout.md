@@ -2,7 +2,7 @@
 
 Reference layout for one Linux server (Ubuntu 24.04 LTS or Debian 12); larger setups run
 the same units on more hosts behind the same reverse proxy (ADR-021). Turkish operator
-guide: [docs/runbooks/deploy-single-server.md](../docs/runbooks/deploy-single-server.md).
+guide: [docs/runbooks/deploy-single-server.md](deploy-single-server.md).
 
 ## Layout
 
@@ -65,7 +65,7 @@ redeploy binaries if needed.
 
 PostgreSQL PITR with pgBackRest, MinIO versioning + replication or `mc mirror` to a second
 site; procedure and restore drill in
-[docs/runbooks/backup-restore.md](../docs/runbooks/backup-restore.md).
+[docs/runbooks/backup-restore.md](backup-restore.md).
 
 ## Observability
 

@@ -35,7 +35,7 @@ import { problemOf } from './problems';
  * PUT to the signed quarantine URL, complete, link — and so are the rules: the state is
  * shown as it is, and the download exists only where the server says `downloadable`.
  * Sharing one component across the apps needs a services abstraction the packages do not
- * have yet; that extraction is noted in ROADMAP.md rather than faked here.
+ * have yet; that extraction is noted in docs/plan/ROADMAP.md rather than faked here.
  */
 
 async function sha256Hex(file: File): Promise<string> {

@@ -1,5 +1,8 @@
 # systemd units
 
+Unit files live in [deploy/systemd/](../../deploy/systemd/). See the
+[deployment layout](deployment-layout.md) for installation paths and configuration.
+
 | Unit | Role |
 |---|---|
 | `kapsora-migrate.service` | oneshot; applies migrations with the owner role before the API starts |
