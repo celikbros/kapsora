@@ -17,16 +17,17 @@ import (
 // another — every row is narrowed to one shape here and mapped once.
 
 type queue struct {
-	ID                uuid.UUID
-	Code              string
-	Name              string
-	DomainCode        string
-	AssignmentPolicy  string
-	SlaMinutes        *int32
-	EscalationQueueID uuid.NullUUID
-	Active            bool
-	CreatedAt         time.Time
-	RowVersion        int64
+	ID                 uuid.UUID
+	Code               string
+	Name               string
+	DomainCode         string
+	AssignmentPolicy   string
+	SlaMinutes         *int32
+	EscalationQueueID  uuid.NullUUID
+	Active             bool
+	RequiredPermission string
+	CreatedAt          time.Time
+	RowVersion         int64
 }
 
 func queueRow(r sqlcgen.GetWorkQueueRow) queue         { return queue(r) }
@@ -37,7 +38,8 @@ func queueOf(r queue) application.QueueRecord {
 		ID: r.ID, Code: r.Code, Name: r.Name, DomainCode: r.DomainCode,
 		AssignmentPolicy: r.AssignmentPolicy, SLAMinutes: intPtr(r.SlaMinutes),
 		EscalationQueueID: uuidPtr(r.EscalationQueueID), Active: r.Active,
-		CreatedAt: r.CreatedAt, RowVersion: r.RowVersion,
+		RequiredPermission: r.RequiredPermission,
+		CreatedAt:          r.CreatedAt, RowVersion: r.RowVersion,
 	}
 }
 

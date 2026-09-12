@@ -4250,6 +4250,7 @@ export function buildWorld(
     id: nextId(),
     tenantId: demoA.id,
     code: 'HEALTH_ESCALATION',
+    requiredPermission: 'worklist.read',
     name: 'Sağlık Eskalasyon',
     domainCode: 'HEALTH',
     assignmentPolicy: 'MANUAL',
@@ -4263,6 +4264,7 @@ export function buildWorld(
     id: nextId(),
     tenantId: demoA.id,
     code: 'HEALTH_REVIEW',
+    requiredPermission: 'worklist.read',
     name: 'Sağlık İncelemesi',
     domainCode: 'HEALTH',
     assignmentPolicy: 'MANUAL',
@@ -4276,6 +4278,7 @@ export function buildWorld(
     id: nextId(),
     tenantId: demoA.id,
     code: 'DOC_CHECK',
+    requiredPermission: 'worklist.read',
     name: 'Belge Kontrolü (kapalı)',
     domainCode: 'GENERIC',
     assignmentPolicy: 'ROUND_ROBIN',
@@ -5019,6 +5022,9 @@ export function buildWorld(
     tenantId: demoA.id,
     code: 'MEDICAL_REVIEW',
     name: 'Tıbbi Değerlendirme',
+    // The permission this queue's work takes: a medical report is only shown to, and only
+    // claimable by, somebody who may review one (migration 000048).
+    requiredPermission: 'health.medical_report.review',
     domainCode: 'HEALTH',
     assignmentPolicy: 'MANUAL',
     slaMinutes: 480,

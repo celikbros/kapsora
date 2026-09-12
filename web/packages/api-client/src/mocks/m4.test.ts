@@ -1373,3 +1373,56 @@ describe('notifications', () => {
     expect(denied.detail).toBe('notification.manage');
   });
 });
+
+describe('worklist: the permission a queue names', () => {
+  it('shows a queue only to the people who can do its work, and lets only them claim it', async () => {
+    // The tenant points the review queue at the permission its work actually takes
+    // (migration 000048). Before it did, a financial reviewer saw the clinical queue in the
+    // morning list, could open work they may not read, and could take it off the doctors.
+    const queue = api.world.workQueues.find((q) => q.code === 'HEALTH_REVIEW')!;
+    queue.requiredPermission = 'health.medical_report.review';
+    const open = itemByTitle('Bekleyen inceleme');
+
+    const clerk = await signIn('financial.reviewer');
+    const clerkList = await unwrap(
+      clerk.c.GET('/api/v1/work-items', {
+        params: { header: tenant(clerk), query: { queueId: queue.id } },
+      }),
+    );
+    expect(clerkList.data.items).toHaveLength(0);
+
+    // Not shown is not found: neither opening the item nor claiming it is a way in.
+    const hidden = await refusal(
+      unwrap(
+        clerk.c.GET('/api/v1/work-items/{workItemId}', {
+          params: { header: tenant(clerk), path: { workItemId: open.id } },
+        }),
+      ),
+    );
+    expect(hidden.status).toBe(404);
+    const refused = await refusal(
+      unwrap(
+        clerk.c.POST('/api/v1/work-items/{workItemId}/claim', {
+          params: {
+            header: {
+              ...tenant(clerk),
+              'Idempotency-Key': key(),
+              'If-Match': `"${open.rowVersion}"`,
+            },
+            path: { workItemId: open.id },
+          },
+        }),
+      ),
+    );
+    expect(refused.status).toBe(404);
+
+    // The reviewer who can do the work still has it in their list.
+    const reviewer = await signIn('doctor.a');
+    const seen = await unwrap(
+      reviewer.c.GET('/api/v1/work-items', {
+        params: { header: tenant(reviewer), query: { queueId: queue.id } },
+      }),
+    );
+    expect(seen.data.items.map((i) => i.id)).toContain(open.id);
+  });
+});

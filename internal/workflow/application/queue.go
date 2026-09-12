@@ -20,6 +20,9 @@ type NewQueueInput struct {
 	SLAMinutes        *int
 	EscalationQueueID *uuid.UUID
 	Active            *bool
+	// RequiredPermission is the permission this queue's work takes; empty means PermissionRead,
+	// which is every worklist reader.
+	RequiredPermission string
 }
 
 // CreateQueue defines a place work waits and the clock it waits against.
@@ -30,10 +33,14 @@ func (s *Service) CreateQueue(ctx context.Context, rc identity.RequestContext,
 	if in.Active != nil {
 		active = *in.Active
 	}
+	required := in.RequiredPermission
+	if required == "" {
+		required = PermissionRead
+	}
 	command := domain.NewQueue{
 		Code: in.Code, Name: in.Name, DomainCode: in.DomainCode,
 		AssignmentPolicy: policyOrDefault(in.AssignmentPolicy),
-		SLAMinutes:       in.SLAMinutes, Active: active,
+		SLAMinutes:       in.SLAMinutes, Active: active, RequiredPermission: required,
 	}
 	if err := command.Validate(); err != nil {
 		return QueueRecord{}, err
@@ -53,7 +60,8 @@ func (s *Service) CreateQueue(ctx context.Context, rc identity.RequestContext,
 			Code: command.Code, Name: command.Name, DomainCode: command.DomainCode,
 			AssignmentPolicy: command.AssignmentPolicy, SLAMinutes: command.SLAMinutes,
 			EscalationQueueID: in.EscalationQueueID, Active: command.Active,
-			ActorID: actorPtr(rc.Principal.ActorID),
+			RequiredPermission: command.RequiredPermission,
+			ActorID:            actorPtr(rc.Principal.ActorID),
 		})
 		if err != nil {
 			return err
@@ -62,6 +70,7 @@ func (s *Service) CreateQueue(ctx context.Context, rc identity.RequestContext,
 		return s.record(ctx, tx, rc, "work_queue.create", "WORK_QUEUE", record.ID, map[string]any{
 			"queue_code": record.Code, "domain_code": record.DomainCode,
 			"assignment_policy": record.AssignmentPolicy, "sla_minutes": slaValue(record.SLAMinutes),
+			"required_permission": record.RequiredPermission,
 		})
 	})
 	if err != nil {
@@ -98,7 +107,8 @@ func (s *Service) PatchQueue(ctx context.Context, rc identity.RequestContext,
 		if err := s.repo.UpdateQueue(ctx, tx, rc.TenantID, id, QueueUpdateRow{
 			Name: next.Name, AssignmentPolicy: next.AssignmentPolicy,
 			SLAMinutes: next.SLAMinutes, EscalationQueueID: next.EscalationQueueID,
-			Active: next.Active, ActorID: actorPtr(rc.Principal.ActorID),
+			Active: next.Active, RequiredPermission: next.RequiredPermission,
+			ActorID: actorPtr(rc.Principal.ActorID),
 		}, expected); err != nil {
 			return err
 		}
@@ -108,7 +118,7 @@ func (s *Service) PatchQueue(ctx context.Context, rc identity.RequestContext,
 		}
 		return s.record(ctx, tx, rc, "work_queue.update", "WORK_QUEUE", id, map[string]any{
 			"queue_code": updated.Code, "sla_minutes": slaValue(updated.SLAMinutes),
-			"active": updated.Active,
+			"active": updated.Active, "required_permission": updated.RequiredPermission,
 		})
 	})
 	if err != nil {
@@ -178,6 +188,9 @@ func applyQueuePatch(current QueueRecord, patch domain.QueuePatch) QueueRecord {
 	}
 	if patch.Active != nil {
 		next.Active = *patch.Active
+	}
+	if patch.RequiredPermission != nil {
+		next.RequiredPermission = *patch.RequiredPermission
 	}
 	return next
 }

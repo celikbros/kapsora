@@ -118,6 +118,24 @@ function inQueueScope(scope: string[] | null, queueId: string): boolean {
   return scope === null || scope.includes(queueId);
 }
 
+/**
+ * The permission a queue's work takes (migration 000048). An item is listed to, and claimable
+ * by, only a caller who holds it: a worklist that showed every queue would put the medical
+ * review queue in front of somebody who cannot read a report, and let them take the work off
+ * the people who can.
+ */
+function canWorkQueue(
+  api: MockApi,
+  session: MockSession,
+  tenantId: string,
+  queueId: string,
+): boolean {
+  const queue = api.world.workQueues.find((q) => q.id === queueId && q.tenantId === tenantId);
+  const tenant = api.world.tenants.find((t) => t.id === tenantId);
+  if (!queue || !tenant) return false;
+  return grantsFor(session, tenant.code).permissions.includes(queue.requiredPermission);
+}
+
 export function workflowHandlers(api: MockApi): HttpHandler[] {
   const world = (): MockWorld => api.world;
 
@@ -155,7 +173,11 @@ export function workflowHandlers(api: MockApi): HttpHandler[] {
   ): StoredWorkItem | undefined => {
     const scope = queueScope(api, session, tenantId);
     const row = world().workItems.find((i) => i.id === id && i.tenantId === tenantId);
-    return row && inQueueScope(scope, row.queueId) ? row : undefined;
+    return row &&
+      inQueueScope(scope, row.queueId) &&
+      canWorkQueue(api, session, tenantId, row.queueId)
+      ? row
+      : undefined;
   };
 
   const answerItem = (item: StoredWorkItem): Response =>
@@ -280,6 +302,7 @@ export function workflowHandlers(api: MockApi): HttpHandler[] {
         slaMinutes: body!.slaMinutes ?? null,
         escalationQueueId: body!.escalationQueueId ?? null,
         active: body!.active ?? true,
+        requiredPermission: body!.requiredPermission ?? 'worklist.read',
         rowVersion: 1,
         createdAt: new Date().toISOString(),
       };
@@ -306,6 +329,7 @@ export function workflowHandlers(api: MockApi): HttpHandler[] {
         'slaMinutes',
         'escalationQueueId',
         'active',
+        'requiredPermission',
       ]);
       // The code and the domain are what other rows already point at; changing them in
       // place would silently repoint them.
@@ -352,6 +376,8 @@ export function workflowHandlers(api: MockApi): HttpHandler[] {
         }
       }
       if (typeof patch['name'] === 'string') queue.name = patch['name'];
+      if (typeof patch['requiredPermission'] === 'string')
+        queue.requiredPermission = patch['requiredPermission'];
       if (patch['assignmentPolicy'] !== undefined) {
         queue.assignmentPolicy = patch['assignmentPolicy'] as Schemas['AssignmentPolicy'];
       }
@@ -388,6 +414,7 @@ export function workflowHandlers(api: MockApi): HttpHandler[] {
       const rows = world()
         .workItems.filter((i) => {
           if (i.tenantId !== g.tenantId || !inQueueScope(scope, i.queueId)) return false;
+          if (!canWorkQueue(api, g.session, g.tenantId, i.queueId)) return false;
           if (queueId && i.queueId !== queueId) return false;
           if (status && i.status !== status) return false;
           if (aggregateType && i.aggregateType !== aggregateType) return false;

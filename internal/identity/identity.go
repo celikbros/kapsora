@@ -7,6 +7,7 @@ package identity
 import (
 	"context"
 	"errors"
+	"sort"
 	"time"
 
 	"github.com/google/uuid"
@@ -163,6 +164,18 @@ type RequestContext struct {
 	Locale       string
 	TimeZone     string
 	StepUpValid  bool
+}
+
+// PermissionCodes are the permissions this caller holds, sorted. It is what a query that
+// filters rows by the permission their work takes is given: the set is small, it is already
+// resolved, and passing it is what keeps that decision in one place rather than in a join.
+func (rc RequestContext) PermissionCodes() []string {
+	out := make([]string, 0, len(rc.Permissions))
+	for code := range rc.Permissions {
+		out = append(out, code)
+	}
+	sort.Strings(out)
+	return out
 }
 
 // Has reports whether the permission code is granted.

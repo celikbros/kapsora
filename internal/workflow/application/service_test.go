@@ -714,3 +714,66 @@ func containsField(err error, field, code string) bool {
 	}
 	return false
 }
+
+// TestQueuePermissionDecidesWhoSeesAndClaimsTheWork is migration 000048's rule in one test.
+// A queue names the permission its work takes, and the worklist applies it on both sides: a
+// caller who cannot do the work is not shown it, and cannot take it off the people who can.
+// A queue that names nothing keeps the old meaning — every worklist reader.
+func TestQueuePermissionDecidesWhoSeesAndClaimsTheWork(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+
+	clinical := f.mustQueue(t, application.NewQueueInput{
+		Code: "CLINICAL_REVIEW", Name: "Klinik inceleme", DomainCode: "HEALTH",
+		RequiredPermission: "health.medical_report.review",
+	})
+	clinicalItem := f.raise(t, clinical, "Tıbbi rapor MR-1")
+	openItem := f.raise(t, f.reviewQueue, "İncelenecek talep")
+
+	reviewer := f.rcFor(f.actor)
+	reviewer.Permissions["health.medical_report.review"] = struct{}{}
+
+	titles := func(rc identity.RequestContext) map[string]bool {
+		t.Helper()
+		page, err := f.svc.ListItems(ctx, rc, application.ItemFilter{Limit: 50})
+		if err != nil {
+			t.Fatalf("list items: %v", err)
+		}
+		out := map[string]bool{}
+		for _, item := range page.Items {
+			out[item.Title] = true
+		}
+		return out
+	}
+
+	if seen := titles(reviewer); !seen[clinicalItem.Title] || !seen[openItem.Title] {
+		t.Fatalf("the reviewer's worklist = %v, want both items", seen)
+	}
+	clerk := titles(f.rc())
+	if clerk[clinicalItem.Title] {
+		t.Fatalf("a caller without the permission saw the clinical queue's work: %v", clerk)
+	}
+	if !clerk[openItem.Title] {
+		t.Fatalf("a queue that names no permission stopped being every reader's: %v", clerk)
+	}
+
+	// Not shown is not found: neither opening the item nor claiming it is a way in.
+	if _, err := f.svc.GetItem(ctx, f.rc(), clinicalItem.ID); !errors.Is(err, application.ErrWorkItemNotFound) {
+		t.Fatalf("get without the permission = %v, want not found", err)
+	}
+	if _, err := f.svc.ClaimItem(ctx, f.rc(), clinicalItem.ID, clinicalItem.RowVersion); !errors.Is(err, application.ErrWorkItemNotFound) {
+		t.Fatalf("claim without the permission = %v, want not found", err)
+	}
+	if f.get(t, openItem.ID).Status != domain.StatusOpen {
+		t.Fatal("the refused claim moved another queue's item")
+	}
+
+	// And the person who can do the work still takes it.
+	claimed, err := f.svc.ClaimItem(ctx, reviewer, clinicalItem.ID, clinicalItem.RowVersion)
+	if err != nil {
+		t.Fatalf("claim by the reviewer: %v", err)
+	}
+	if claimed.Status != domain.StatusClaimed {
+		t.Fatalf("claimed status = %s", claimed.Status)
+	}
+}

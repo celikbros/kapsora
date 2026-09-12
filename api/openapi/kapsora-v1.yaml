@@ -19712,7 +19712,7 @@ components:
     WorkQueue:
       type: object
       additionalProperties: false
-      required: [id, code, name, domainCode, assignmentPolicy, active, rowVersion, createdAt]
+      required: [id, code, name, domainCode, assignmentPolicy, active, requiredPermission, rowVersion, createdAt]
       properties:
         id:
           type: string
@@ -19729,6 +19729,13 @@ components:
           $ref: '#/components/schemas/WorkQueueDomain'
         assignmentPolicy:
           $ref: '#/components/schemas/AssignmentPolicy'
+        requiredPermission:
+          type: string
+          description: |
+            The permission this queue's work takes. The worklist shows an item only to a
+            caller who holds it, and a claim is refused without it, so a queue is visible to
+            the people who can do its work rather than to everybody who can read a worklist.
+            Defaults to `worklist.read`, which is every worklist reader.
         slaMinutes:
           type: [integer, 'null']
           minimum: 1
@@ -19783,6 +19790,9 @@ components:
         escalationQueueId:
           type: [string, 'null']
           format: uuid
+        requiredPermission:
+          type: string
+          description: The permission this queue's work takes; defaults to `worklist.read`.
         active:
           type: boolean
           default: true
@@ -19808,6 +19818,9 @@ components:
         escalationQueueId:
           type: [string, 'null']
           format: uuid
+        requiredPermission:
+          type: string
+          description: The permission this queue's work takes.
         active:
           type: boolean
     WorkItemStatus:

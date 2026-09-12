@@ -7638,7 +7638,10 @@ type CreateWorkQueue struct {
 	DomainCode        WorkQueueDomain     `json:"domainCode"`
 	EscalationQueueId *openapi_types.UUID `json:"escalationQueueId,omitempty"`
 	Name              string              `json:"name"`
-	SlaMinutes        *int                `json:"slaMinutes,omitempty"`
+
+	// RequiredPermission The permission this queue's work takes; defaults to `worklist.read`.
+	RequiredPermission *string `json:"requiredPermission,omitempty"`
+	SlaMinutes         *int    `json:"slaMinutes,omitempty"`
 }
 
 // DashboardAgingFigure defines model for DashboardAgingFigure.
@@ -9860,6 +9863,9 @@ type PatchWorkQueue struct {
 	AssignmentPolicy  *AssignmentPolicy   `json:"assignmentPolicy,omitempty"`
 	EscalationQueueId *openapi_types.UUID `json:"escalationQueueId,omitempty"`
 	Name              *string             `json:"name,omitempty"`
+
+	// RequiredPermission The permission this queue's work takes.
+	RequiredPermission *string `json:"requiredPermission,omitempty"`
 
 	// SlaMinutes Null stops new items being given a clock; existing items keep theirs.
 	SlaMinutes *int `json:"slaMinutes,omitempty"`
@@ -12607,7 +12613,13 @@ type WorkQueue struct {
 	EscalationQueueId *openapi_types.UUID `json:"escalationQueueId,omitempty"`
 	Id                openapi_types.UUID  `json:"id"`
 	Name              string              `json:"name"`
-	RowVersion        int64               `json:"rowVersion"`
+
+	// RequiredPermission The permission this queue's work takes. The worklist shows an item only to a
+	// caller who holds it, and a claim is refused without it, so a queue is visible to
+	// the people who can do its work rather than to everybody who can read a worklist.
+	// Defaults to `worklist.read`, which is every worklist reader.
+	RequiredPermission string `json:"requiredPermission"`
+	RowVersion         int64  `json:"rowVersion"`
 
 	// SlaMinutes How long an item raised into this queue has. It is copied onto the item at that
 	// moment and never read again: changing it here leaves every existing item on the

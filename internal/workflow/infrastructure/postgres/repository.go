@@ -53,7 +53,7 @@ func (Repository) CreateQueue(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID
 		TenantID: tenantID, Code: in.Code, Name: in.Name, DomainCode: in.DomainCode,
 		AssignmentPolicy: in.AssignmentPolicy, SlaMinutes: int32Ptr(in.SLAMinutes),
 		EscalationQueueID: optUUID(in.EscalationQueueID), Active: in.Active,
-		ActorID: optUUID(in.ActorID),
+		RequiredPermission: in.RequiredPermission, ActorID: optUUID(in.ActorID),
 	})
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -67,7 +67,8 @@ func (Repository) CreateQueue(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID
 		ID: row.ID, Code: in.Code, Name: in.Name, DomainCode: in.DomainCode,
 		AssignmentPolicy: in.AssignmentPolicy, SLAMinutes: in.SLAMinutes,
 		EscalationQueueID: in.EscalationQueueID, Active: in.Active,
-		CreatedAt: row.CreatedAt, RowVersion: row.RowVersion,
+		RequiredPermission: in.RequiredPermission,
+		CreatedAt:          row.CreatedAt, RowVersion: row.RowVersion,
 	}, nil
 }
 
@@ -119,7 +120,8 @@ func (Repository) UpdateQueue(ctx context.Context, tx pgx.Tx, tenantID, id uuid.
 	affected, err := sqlcgen.New(tx).UpdateWorkQueue(ctx, sqlcgen.UpdateWorkQueueParams{
 		TenantID: tenantID, ID: id, Name: in.Name, AssignmentPolicy: in.AssignmentPolicy,
 		SlaMinutes: int32Ptr(in.SLAMinutes), EscalationQueueID: optUUID(in.EscalationQueueID),
-		Active: in.Active, ActorID: optUUID(in.ActorID), RowVersion: expected,
+		Active: in.Active, RequiredPermission: in.RequiredPermission,
+		ActorID: optUUID(in.ActorID), RowVersion: expected,
 	})
 	if err != nil {
 		return fmt.Errorf("workflow: update work queue: %w", err)
@@ -162,7 +164,7 @@ func (Repository) GetItem(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID
 	scope application.Scope,
 ) (application.ItemRecord, error) {
 	row, err := sqlcgen.New(tx).GetWorkItem(ctx, sqlcgen.GetWorkItemParams{
-		TenantID: tenantID, ID: id, ScopeIds: scope.QueueIDs,
+		TenantID: tenantID, ID: id, ScopeIds: scope.QueueIDs, Permissions: scope.Permissions,
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return application.ItemRecord{}, application.ErrWorkItemNotFound
@@ -179,8 +181,9 @@ func (Repository) ListItems(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
 ) ([]application.ItemRecord, error) {
 	asOf := q.AsOf
 	params := sqlcgen.ListWorkItemsParams{
-		TenantID: tenantID, ScopeIds: q.Scope.QueueIDs, QueueID: optUUID(q.QueueID),
-		Status: optionalString(q.Status), AssigneeActorID: optUUID(q.AssigneeActorID),
+		TenantID: tenantID, ScopeIds: q.Scope.QueueIDs, Permissions: q.Scope.Permissions,
+		QueueID: optUUID(q.QueueID),
+		Status:  optionalString(q.Status), AssigneeActorID: optUUID(q.AssigneeActorID),
 		AggregateType: optionalString(q.AggregateType), AggregateID: optUUID(q.AggregateID),
 		Overdue: q.Overdue, AsOf: &asOf, PageSize: pageSize(q.PageSize),
 	}
@@ -202,11 +205,14 @@ func (Repository) ListItems(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
 
 // ClaimItem implements application.Repository.
 func (Repository) ClaimItem(ctx context.Context, tx pgx.Tx, tenantID, id, actorID uuid.UUID,
-	expected int64,
+	scope application.Scope, expected int64,
 ) (bool, error) {
 	affected, err := sqlcgen.New(tx).ClaimWorkItem(ctx, sqlcgen.ClaimWorkItemParams{
 		TenantID: tenantID, ID: id, AssigneeActorID: uuid.NullUUID{UUID: actorID, Valid: true},
 		ActorID: uuid.NullUUID{UUID: actorID, Valid: true}, RowVersion: expected,
+		// The same rule as the read: work in a queue this caller could not be shown is work
+		// they cannot take off the people who can do it.
+		Permissions: scope.Permissions,
 	})
 	if err != nil {
 		return false, fmt.Errorf("workflow: claim work item: %w", err)

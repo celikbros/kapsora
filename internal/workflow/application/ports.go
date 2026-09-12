@@ -97,8 +97,12 @@ func (e *AlreadyClaimedError) Is(target error) bool { return target == ErrWorkIt
 // Scope is the caller's queue boundary. A nil slice means "no restriction"; an empty
 // non-nil slice restricts the caller to nothing, which is the safe reading of a grant that
 // names no queue.
+// Scope is what a caller may see of the worklist: the queues their grants bind them to, and
+// the permissions they hold, because a queue names the permission its work takes and shows its
+// items to nobody else (migration 000048).
 type Scope struct {
-	QueueIDs []uuid.UUID
+	QueueIDs    []uuid.UUID
+	Permissions []string
 }
 
 // Restricted reports whether the caller is bound to a set of queues.
@@ -118,7 +122,7 @@ func scopeOf(rc identity.RequestContext) Scope {
 			ids = append(ids, s.ID.UUID)
 		}
 	}
-	return Scope{QueueIDs: ids}
+	return Scope{QueueIDs: ids, Permissions: rc.PermissionCodes()}
 }
 
 // QueueRecord is one workflow.work_queue row.
@@ -131,32 +135,36 @@ type QueueRecord struct {
 	SLAMinutes        *int
 	EscalationQueueID *uuid.UUID
 	Active            bool
-	CreatedAt         time.Time
-	RowVersion        int64
+	// RequiredPermission is the permission this queue's work takes.
+	RequiredPermission string
+	CreatedAt          time.Time
+	RowVersion         int64
 }
 
 // NewQueueRow is the insert payload of a queue.
 type NewQueueRow struct {
-	Code              string
-	Name              string
-	DomainCode        string
-	AssignmentPolicy  string
-	SLAMinutes        *int
-	EscalationQueueID *uuid.UUID
-	Active            bool
-	ActorID           *uuid.UUID
+	Code               string
+	Name               string
+	DomainCode         string
+	AssignmentPolicy   string
+	SLAMinutes         *int
+	EscalationQueueID  *uuid.UUID
+	Active             bool
+	RequiredPermission string
+	ActorID            *uuid.UUID
 }
 
 // QueueUpdateRow is the whole mutable half of a queue, after the merge patch has been
 // applied to the row that was read. The code and the domain are not here: they are what
 // other rows point at.
 type QueueUpdateRow struct {
-	Name              string
-	AssignmentPolicy  string
-	SLAMinutes        *int
-	EscalationQueueID *uuid.UUID
-	Active            bool
-	ActorID           *uuid.UUID
+	Name               string
+	AssignmentPolicy   string
+	SLAMinutes         *int
+	EscalationQueueID  *uuid.UUID
+	Active             bool
+	RequiredPermission string
+	ActorID            *uuid.UUID
 }
 
 // QueueQuery is the repository-level queue filter.
@@ -327,7 +335,7 @@ type Repository interface {
 	// ClaimItem is the whole of claiming: one UPDATE whose predicate carries the status
 	// and the row_version the caller read. It reports whether it took the item, and a
 	// false is never a partial write.
-	ClaimItem(ctx context.Context, tx pgx.Tx, tenantID, id, actorID uuid.UUID, expected int64) (bool, error)
+	ClaimItem(ctx context.Context, tx pgx.Tx, tenantID, id, actorID uuid.UUID, scope Scope, expected int64) (bool, error)
 	ReleaseItem(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID, actorID *uuid.UUID, expected int64) (bool, error)
 	ReassignItem(ctx context.Context, tx pgx.Tx, tenantID, id, assigneeID uuid.UUID, actorID *uuid.UUID, expected int64) (bool, error)
 	CompleteItem(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID, outcomeCode string, actorID *uuid.UUID, expected int64) (bool, error)

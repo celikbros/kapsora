@@ -23,6 +23,7 @@ import (
 	providerapp "github.com/celikbros/kapsora/internal/provider/application"
 	providerdomain "github.com/celikbros/kapsora/internal/provider/domain"
 	workflowapp "github.com/celikbros/kapsora/internal/workflow/application"
+	workflowdomain "github.com/celikbros/kapsora/internal/workflow/domain"
 )
 
 // The demo business world (WP-I7-01..06), built entirely through the application services the
@@ -261,42 +262,57 @@ func (s *seeder) ensureBusinessScenario(ctx context.Context, tenantID uuid.UUID,
 func (s *seeder) ensureWorkQueues(ctx context.Context, sc *scenario) error {
 	rc := rcTenant(sc.tenant, sc.admin, workflowapp.PermissionQueueManage,
 		workflowapp.PermissionRead)
-	queues := []struct{ code, name, domain string }{
-		{"MEDICAL_REVIEW", "Tıbbi değerlendirme", "HEALTH"},
-		{"FINANCIAL_REVIEW", "Mali değerlendirme", "HEALTH"},
-		{"BATCH_REVIEW", "İcmal incelemesi", "GENERIC"},
-		{"RECONCILIATION_DIFFERENCE", "Mutabakat farkı", "GENERIC"},
-		{"RESERVATION_REVIEW", "Rezervasyon incelemesi", "ACCOMMODATION"},
+	// Each queue names the permission its work takes, so the worklist shows it to the people
+	// who can do that work and to nobody else (migration 000048).
+	queues := []struct{ code, name, domain, permission string }{
+		{"MEDICAL_REVIEW", "Tıbbi değerlendirme", "HEALTH", "health.medical_report.review"},
+		{"FINANCIAL_REVIEW", "Mali değerlendirme", "HEALTH", "claim.financial.review"},
+		{"BATCH_REVIEW", "İcmal incelemesi", "GENERIC", "batch.review"},
+		{"RECONCILIATION_DIFFERENCE", "Mutabakat farkı", "GENERIC", "settlement.read"},
+		{"RESERVATION_REVIEW", "Rezervasyon incelemesi", "ACCOMMODATION", "accommodation.booking.manage"},
 	}
 	page, err := s.biz.workflows.ListQueues(ctx, rc, workflowapp.QueueFilter{Limit: 200})
 	if err != nil {
 		return fmt.Errorf("list queues: %w", err)
 	}
-	opened := 0
+	opened, repermissioned := 0, 0
 	for _, q := range queues {
-		if queueWithCode(page.Items, q.code) {
+		if existing, ok := queueByCode(page.Items, q.code); ok {
+			// A queue opened before migration 000048 carries the default permission, which
+			// shows its work to every worklist reader. Give it the one its work takes.
+			if existing.RequiredPermission == q.permission {
+				continue
+			}
+			permission := q.permission
+			if _, err := s.biz.workflows.PatchQueue(ctx, rc, existing.ID,
+				workflowdomain.QueuePatch{RequiredPermission: &permission}, existing.RowVersion); err != nil {
+				return fmt.Errorf("set the permission of queue %s: %w", q.code, err)
+			}
+			repermissioned++
 			continue
 		}
 		sla := 1440
 		if _, err := s.biz.workflows.CreateQueue(ctx, rc, workflowapp.NewQueueInput{
 			Code: q.code, Name: q.name, DomainCode: q.domain,
 			AssignmentPolicy: "MANUAL", SLAMinutes: &sla,
+			RequiredPermission: q.permission,
 		}); err != nil {
 			return fmt.Errorf("create queue %s: %w", q.code, err)
 		}
 		opened++
 	}
-	step("queue", "work queues", fmt.Sprintf("%d opened, %d already there", opened, len(queues)-opened))
+	step("queue", "work queues", fmt.Sprintf("%d opened, %d already there, %d re-permissioned",
+		opened, len(queues)-opened, repermissioned))
 	return nil
 }
 
-func queueWithCode(items []workflowapp.QueueRecord, code string) bool {
+func queueByCode(items []workflowapp.QueueRecord, code string) (workflowapp.QueueRecord, bool) {
 	for _, item := range items {
 		if item.Code == code {
-			return true
+			return item, true
 		}
 	}
-	return false
+	return workflowapp.QueueRecord{}, false
 }
 
 // ensureServiceCatalogue writes the four services the demo world sells: three health services

@@ -19,10 +19,13 @@ UPDATE workflow.work_item
        assignee_actor_id = $1,
        assigned_at       = now(),
        updated_by        = $2
- WHERE tenant_id = $3
-   AND id = $4
-   AND status = 'OPEN'
-   AND row_version = $5
+ WHERE work_item.tenant_id = $3
+   AND work_item.id = $4
+   AND work_item.status = 'OPEN'
+   AND work_item.row_version = $5
+   AND EXISTS (SELECT 1 FROM workflow.work_queue q
+                WHERE q.tenant_id = work_item.tenant_id AND q.id = work_item.queue_id
+                  AND q.required_permission = ANY($6::text[]))
 `
 
 type ClaimWorkItemParams struct {
@@ -31,6 +34,7 @@ type ClaimWorkItemParams struct {
 	TenantID        uuid.UUID
 	ID              uuid.UUID
 	RowVersion      int64
+	Permissions     []string
 }
 
 // The whole precondition is in the predicate: this item, this tenant, still OPEN, still at
@@ -45,6 +49,7 @@ func (q *Queries) ClaimWorkItem(ctx context.Context, arg ClaimWorkItemParams) (i
 		arg.TenantID,
 		arg.ID,
 		arg.RowVersion,
+		arg.Permissions,
 	)
 	if err != nil {
 		return 0, err
@@ -410,24 +415,25 @@ const createWorkQueue = `-- name: CreateWorkQueue :one
 
 INSERT INTO workflow.work_queue (
     tenant_id, code, name, domain_code, assignment_policy, sla_minutes,
-    escalation_queue_id, active, created_by, updated_by)
+    escalation_queue_id, active, required_permission, created_by, updated_by)
 VALUES ($1, $2, $3, $4,
         $5, $6,
-        $7, $8, $9,
-        $9)
+        $7, $8,
+        $9, $10, $10)
 RETURNING id, created_at, row_version
 `
 
 type CreateWorkQueueParams struct {
-	TenantID          uuid.UUID
-	Code              string
-	Name              string
-	DomainCode        string
-	AssignmentPolicy  string
-	SlaMinutes        *int32
-	EscalationQueueID uuid.NullUUID
-	Active            bool
-	ActorID           uuid.NullUUID
+	TenantID           uuid.UUID
+	Code               string
+	Name               string
+	DomainCode         string
+	AssignmentPolicy   string
+	SlaMinutes         *int32
+	EscalationQueueID  uuid.NullUUID
+	Active             bool
+	RequiredPermission string
+	ActorID            uuid.NullUUID
 }
 
 type CreateWorkQueueRow struct {
@@ -467,6 +473,7 @@ func (q *Queries) CreateWorkQueue(ctx context.Context, arg CreateWorkQueueParams
 		arg.SlaMinutes,
 		arg.EscalationQueueID,
 		arg.Active,
+		arg.RequiredPermission,
 		arg.ActorID,
 	)
 	var i CreateWorkQueueRow
@@ -539,12 +546,16 @@ SELECT i.id, i.queue_id, i.aggregate_type, i.aggregate_id, i.title, i.priority,
  WHERE i.tenant_id = $1
    AND i.id = $2
    AND ($3::uuid[] IS NULL OR i.queue_id = ANY($3::uuid[]))
+   AND EXISTS (SELECT 1 FROM workflow.work_queue q
+                WHERE q.tenant_id = i.tenant_id AND q.id = i.queue_id
+                  AND q.required_permission = ANY($4::text[]))
 `
 
 type GetWorkItemParams struct {
-	TenantID uuid.UUID
-	ID       uuid.UUID
-	ScopeIds []uuid.UUID
+	TenantID    uuid.UUID
+	ID          uuid.UUID
+	ScopeIds    []uuid.UUID
+	Permissions []string
 }
 
 type GetWorkItemRow struct {
@@ -570,7 +581,12 @@ type GetWorkItemRow struct {
 }
 
 func (q *Queries) GetWorkItem(ctx context.Context, arg GetWorkItemParams) (GetWorkItemRow, error) {
-	row := q.db.QueryRow(ctx, getWorkItem, arg.TenantID, arg.ID, arg.ScopeIds)
+	row := q.db.QueryRow(ctx, getWorkItem,
+		arg.TenantID,
+		arg.ID,
+		arg.ScopeIds,
+		arg.Permissions,
+	)
 	var i GetWorkItemRow
 	err := row.Scan(
 		&i.ID,
@@ -598,7 +614,7 @@ func (q *Queries) GetWorkItem(ctx context.Context, arg GetWorkItemParams) (GetWo
 
 const getWorkQueue = `-- name: GetWorkQueue :one
 SELECT q.id, q.code, q.name, q.domain_code, q.assignment_policy, q.sla_minutes,
-       q.escalation_queue_id, q.active, q.created_at, q.row_version
+       q.escalation_queue_id, q.active, q.required_permission, q.created_at, q.row_version
   FROM workflow.work_queue q
  WHERE q.tenant_id = $1
    AND q.id = $2
@@ -612,16 +628,17 @@ type GetWorkQueueParams struct {
 }
 
 type GetWorkQueueRow struct {
-	ID                uuid.UUID
-	Code              string
-	Name              string
-	DomainCode        string
-	AssignmentPolicy  string
-	SlaMinutes        *int32
-	EscalationQueueID uuid.NullUUID
-	Active            bool
-	CreatedAt         time.Time
-	RowVersion        int64
+	ID                 uuid.UUID
+	Code               string
+	Name               string
+	DomainCode         string
+	AssignmentPolicy   string
+	SlaMinutes         *int32
+	EscalationQueueID  uuid.NullUUID
+	Active             bool
+	RequiredPermission string
+	CreatedAt          time.Time
+	RowVersion         int64
 }
 
 func (q *Queries) GetWorkQueue(ctx context.Context, arg GetWorkQueueParams) (GetWorkQueueRow, error) {
@@ -636,6 +653,7 @@ func (q *Queries) GetWorkQueue(ctx context.Context, arg GetWorkQueueParams) (Get
 		&i.SlaMinutes,
 		&i.EscalationQueueID,
 		&i.Active,
+		&i.RequiredPermission,
 		&i.CreatedAt,
 		&i.RowVersion,
 	)
@@ -887,27 +905,33 @@ SELECT i.id, i.queue_id, i.aggregate_type, i.aggregate_id, i.title, i.priority,
   LEFT JOIN iam.actor a ON a.id = i.assignee_actor_id
  WHERE i.tenant_id = $1
    AND ($2::uuid[] IS NULL OR i.queue_id = ANY($2::uuid[]))
-   AND ($3::uuid IS NULL OR i.queue_id = $3::uuid)
-   AND ($4::text IS NULL OR i.status = $4::text)
-   AND ($5::uuid IS NULL
-        OR i.assignee_actor_id = $5::uuid)
-   AND ($6::text IS NULL
-        OR i.aggregate_type = $6::text)
-   AND ($7::uuid IS NULL OR i.aggregate_id = $7::uuid)
-   AND ($8::boolean IS NULL
-        OR ($8::boolean
-            AND i.due_at IS NOT NULL AND i.due_at < $9)
-        OR (NOT $8::boolean
-            AND (i.due_at IS NULL OR i.due_at >= $9)))
-   AND ($10::timestamptz IS NULL
-        OR (i.created_at, i.id) < ($10::timestamptz, $11::uuid))
+   -- The work a queue holds is only for the people who can do it: the queue names the
+   -- permission, and a caller without it is not shown the item at all.
+   AND EXISTS (SELECT 1 FROM workflow.work_queue q
+                WHERE q.tenant_id = i.tenant_id AND q.id = i.queue_id
+                  AND q.required_permission = ANY($3::text[]))
+   AND ($4::uuid IS NULL OR i.queue_id = $4::uuid)
+   AND ($5::text IS NULL OR i.status = $5::text)
+   AND ($6::uuid IS NULL
+        OR i.assignee_actor_id = $6::uuid)
+   AND ($7::text IS NULL
+        OR i.aggregate_type = $7::text)
+   AND ($8::uuid IS NULL OR i.aggregate_id = $8::uuid)
+   AND ($9::boolean IS NULL
+        OR ($9::boolean
+            AND i.due_at IS NOT NULL AND i.due_at < $10)
+        OR (NOT $9::boolean
+            AND (i.due_at IS NULL OR i.due_at >= $10)))
+   AND ($11::timestamptz IS NULL
+        OR (i.created_at, i.id) < ($11::timestamptz, $12::uuid))
  ORDER BY i.created_at DESC, i.id DESC
- LIMIT $12
+ LIMIT $13
 `
 
 type ListWorkItemsParams struct {
 	TenantID        uuid.UUID
 	ScopeIds        []uuid.UUID
+	Permissions     []string
 	QueueID         uuid.NullUUID
 	Status          *string
 	AssigneeActorID uuid.NullUUID
@@ -949,6 +973,7 @@ func (q *Queries) ListWorkItems(ctx context.Context, arg ListWorkItemsParams) ([
 	rows, err := q.db.Query(ctx, listWorkItems,
 		arg.TenantID,
 		arg.ScopeIds,
+		arg.Permissions,
 		arg.QueueID,
 		arg.Status,
 		arg.AssigneeActorID,
@@ -1000,7 +1025,7 @@ func (q *Queries) ListWorkItems(ctx context.Context, arg ListWorkItemsParams) ([
 
 const listWorkQueues = `-- name: ListWorkQueues :many
 SELECT q.id, q.code, q.name, q.domain_code, q.assignment_policy, q.sla_minutes,
-       q.escalation_queue_id, q.active, q.created_at, q.row_version
+       q.escalation_queue_id, q.active, q.required_permission, q.created_at, q.row_version
   FROM workflow.work_queue q
  WHERE q.tenant_id = $1
    AND ($2::uuid[] IS NULL OR q.id = ANY($2::uuid[]))
@@ -1023,16 +1048,17 @@ type ListWorkQueuesParams struct {
 }
 
 type ListWorkQueuesRow struct {
-	ID                uuid.UUID
-	Code              string
-	Name              string
-	DomainCode        string
-	AssignmentPolicy  string
-	SlaMinutes        *int32
-	EscalationQueueID uuid.NullUUID
-	Active            bool
-	CreatedAt         time.Time
-	RowVersion        int64
+	ID                 uuid.UUID
+	Code               string
+	Name               string
+	DomainCode         string
+	AssignmentPolicy   string
+	SlaMinutes         *int32
+	EscalationQueueID  uuid.NullUUID
+	Active             bool
+	RequiredPermission string
+	CreatedAt          time.Time
+	RowVersion         int64
 }
 
 // Keyset pagination on (created_at DESC, id DESC); the caller asks for limit+1 rows to
@@ -1063,6 +1089,7 @@ func (q *Queries) ListWorkQueues(ctx context.Context, arg ListWorkQueuesParams) 
 			&i.SlaMinutes,
 			&i.EscalationQueueID,
 			&i.Active,
+			&i.RequiredPermission,
 			&i.CreatedAt,
 			&i.RowVersion,
 		); err != nil {
@@ -1268,26 +1295,28 @@ func (q *Queries) ResolveApprovalPolicy(ctx context.Context, arg ResolveApproval
 const updateWorkQueue = `-- name: UpdateWorkQueue :execrows
 UPDATE workflow.work_queue
    SET name                = $1,
-       assignment_policy   = $2,
-       sla_minutes         = $3,
-       escalation_queue_id = $4,
-       active              = $5,
-       updated_by          = $6
- WHERE tenant_id = $7
-   AND id = $8
-   AND row_version = $9
+       required_permission = $2,
+       assignment_policy   = $3,
+       sla_minutes         = $4,
+       escalation_queue_id = $5,
+       active              = $6,
+       updated_by          = $7
+ WHERE tenant_id = $8
+   AND id = $9
+   AND row_version = $10
 `
 
 type UpdateWorkQueueParams struct {
-	Name              string
-	AssignmentPolicy  string
-	SlaMinutes        *int32
-	EscalationQueueID uuid.NullUUID
-	Active            bool
-	ActorID           uuid.NullUUID
-	TenantID          uuid.UUID
-	ID                uuid.UUID
-	RowVersion        int64
+	Name               string
+	RequiredPermission string
+	AssignmentPolicy   string
+	SlaMinutes         *int32
+	EscalationQueueID  uuid.NullUUID
+	Active             bool
+	ActorID            uuid.NullUUID
+	TenantID           uuid.UUID
+	ID                 uuid.UUID
+	RowVersion         int64
 }
 
 // The expected row_version is part of the predicate, so a stale If-Match updates nothing.
@@ -1296,6 +1325,7 @@ type UpdateWorkQueueParams struct {
 func (q *Queries) UpdateWorkQueue(ctx context.Context, arg UpdateWorkQueueParams) (int64, error) {
 	result, err := q.db.Exec(ctx, updateWorkQueue,
 		arg.Name,
+		arg.RequiredPermission,
 		arg.AssignmentPolicy,
 		arg.SlaMinutes,
 		arg.EscalationQueueID,

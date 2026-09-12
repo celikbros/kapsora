@@ -56,6 +56,9 @@ func (h *Handler) CreateWorkQueue(w http.ResponseWriter, r *http.Request) {
 		SLAMinutes: body.SlaMinutes, EscalationQueueID: body.EscalationQueueId,
 		Active: body.Active,
 	}
+	if body.RequiredPermission != nil {
+		in.RequiredPermission = *body.RequiredPermission
+	}
 	if body.AssignmentPolicy != nil {
 		in.AssignmentPolicy = string(*body.AssignmentPolicy)
 	}
@@ -110,6 +113,8 @@ func (h *Handler) PatchWorkQueue(w http.ResponseWriter, r *http.Request) {
 			patch.EscalationQueueID = decodeNullableUUID(value, key, &fields)
 		case "active":
 			patch.Active = decodeBool(value, key, &fields)
+		case "requiredPermission":
+			patch.RequiredPermission = decodeString(value, key, &fields)
 		case "code", "domainCode", "id", "rowVersion", "createdAt":
 			fields = append(fields, domain.FieldError{
 				Field: key, Code: "IMMUTABLE", Message: "bu alan değiştirilemez",
@@ -140,6 +145,7 @@ func queueView(q application.QueueRecord) kapsorav1.WorkQueue {
 		DomainCode:       kapsorav1.WorkQueueDomain(q.DomainCode),
 		AssignmentPolicy: kapsorav1.AssignmentPolicy(q.AssignmentPolicy),
 		SlaMinutes:       q.SLAMinutes, EscalationQueueId: q.EscalationQueueID,
-		Active: q.Active, RowVersion: q.RowVersion, CreatedAt: q.CreatedAt.UTC(),
+		Active: q.Active, RequiredPermission: q.RequiredPermission,
+		RowVersion: q.RowVersion, CreatedAt: q.CreatedAt.UTC(),
 	}
 }

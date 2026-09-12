@@ -24,6 +24,13 @@ decided what.
 (`MANUAL`,`ROUND_ROBIN`,`LEAST_LOADED`), `sla_minutes` int NULL, `escalation_queue_id`
 (self composite FK), `active`. Unique `(tenant_id, code)`.
 
+**`required_permission`** (migration 000048, NOT NULL, defaults to `worklist.read`, FK to
+`iam.permission`): the permission this queue's work takes. `listWorkItems`, `getWorkItem` and
+`claimWorkItem` all apply it, so a queue is seen by the people who can do its work rather than
+by everybody who can read a worklist — and nobody can claim work off the people who can do it.
+The five queues the platform raises work into carry the permission that work actually takes
+(medical review, financial review, batch review, reconciliation, reservation review).
+
 `workflow.work_item`: id, tenant_id, queue_id, `aggregate_type` text, `aggregate_id` uuid,
 `title`, `priority` int NOT NULL DEFAULT 100, `assignee_actor_id` NULL,
 `assigned_at`, `due_at`, `sla_minutes_snapshot` int, `status`

@@ -23,16 +23,16 @@
 -- name: CreateWorkQueue :one
 INSERT INTO workflow.work_queue (
     tenant_id, code, name, domain_code, assignment_policy, sla_minutes,
-    escalation_queue_id, active, created_by, updated_by)
+    escalation_queue_id, active, required_permission, created_by, updated_by)
 VALUES (sqlc.arg('tenant_id'), sqlc.arg('code'), sqlc.arg('name'), sqlc.arg('domain_code'),
         sqlc.arg('assignment_policy'), sqlc.narg('sla_minutes'),
-        sqlc.narg('escalation_queue_id'), sqlc.arg('active'), sqlc.narg('actor_id'),
-        sqlc.narg('actor_id'))
+        sqlc.narg('escalation_queue_id'), sqlc.arg('active'),
+        sqlc.arg('required_permission'), sqlc.narg('actor_id'), sqlc.narg('actor_id'))
 RETURNING id, created_at, row_version;
 
 -- name: GetWorkQueue :one
 SELECT q.id, q.code, q.name, q.domain_code, q.assignment_policy, q.sla_minutes,
-       q.escalation_queue_id, q.active, q.created_at, q.row_version
+       q.escalation_queue_id, q.active, q.required_permission, q.created_at, q.row_version
   FROM workflow.work_queue q
  WHERE q.tenant_id = sqlc.arg('tenant_id')
    AND q.id = sqlc.arg('id')
@@ -53,7 +53,7 @@ SELECT q.id, q.code, q.name, q.domain_code, q.sla_minutes, q.active
 -- Keyset pagination on (created_at DESC, id DESC); the caller asks for limit+1 rows to
 -- learn whether a next page exists.
 SELECT q.id, q.code, q.name, q.domain_code, q.assignment_policy, q.sla_minutes,
-       q.escalation_queue_id, q.active, q.created_at, q.row_version
+       q.escalation_queue_id, q.active, q.required_permission, q.created_at, q.row_version
   FROM workflow.work_queue q
  WHERE q.tenant_id = sqlc.arg('tenant_id')
    AND (sqlc.narg('scope_ids')::uuid[] IS NULL OR q.id = ANY(sqlc.narg('scope_ids')::uuid[]))
@@ -70,6 +70,7 @@ SELECT q.id, q.code, q.name, q.domain_code, q.assignment_policy, q.sla_minutes,
 -- because they are what other rows already point at by name.
 UPDATE workflow.work_queue
    SET name                = sqlc.arg('name'),
+       required_permission = sqlc.arg('required_permission'),
        assignment_policy   = sqlc.arg('assignment_policy'),
        sla_minutes         = sqlc.narg('sla_minutes'),
        escalation_queue_id = sqlc.narg('escalation_queue_id'),
@@ -107,7 +108,10 @@ SELECT i.id, i.queue_id, i.aggregate_type, i.aggregate_id, i.title, i.priority,
   LEFT JOIN iam.actor a ON a.id = i.assignee_actor_id
  WHERE i.tenant_id = sqlc.arg('tenant_id')
    AND i.id = sqlc.arg('id')
-   AND (sqlc.narg('scope_ids')::uuid[] IS NULL OR i.queue_id = ANY(sqlc.narg('scope_ids')::uuid[]));
+   AND (sqlc.narg('scope_ids')::uuid[] IS NULL OR i.queue_id = ANY(sqlc.narg('scope_ids')::uuid[]))
+   AND EXISTS (SELECT 1 FROM workflow.work_queue q
+                WHERE q.tenant_id = i.tenant_id AND q.id = i.queue_id
+                  AND q.required_permission = ANY(sqlc.arg('permissions')::text[]));
 
 -- name: ListWorkItems :many
 -- `assigned_to_me` and `overdue` are the two questions the morning list is: what is mine,
@@ -122,6 +126,11 @@ SELECT i.id, i.queue_id, i.aggregate_type, i.aggregate_id, i.title, i.priority,
   LEFT JOIN iam.actor a ON a.id = i.assignee_actor_id
  WHERE i.tenant_id = sqlc.arg('tenant_id')
    AND (sqlc.narg('scope_ids')::uuid[] IS NULL OR i.queue_id = ANY(sqlc.narg('scope_ids')::uuid[]))
+   -- The work a queue holds is only for the people who can do it: the queue names the
+   -- permission, and a caller without it is not shown the item at all.
+   AND EXISTS (SELECT 1 FROM workflow.work_queue q
+                WHERE q.tenant_id = i.tenant_id AND q.id = i.queue_id
+                  AND q.required_permission = ANY(sqlc.arg('permissions')::text[]))
    AND (sqlc.narg('queue_id')::uuid IS NULL OR i.queue_id = sqlc.narg('queue_id')::uuid)
    AND (sqlc.narg('status')::text IS NULL OR i.status = sqlc.narg('status')::text)
    AND (sqlc.narg('assignee_actor_id')::uuid IS NULL
@@ -150,10 +159,13 @@ UPDATE workflow.work_item
        assignee_actor_id = sqlc.arg('assignee_actor_id'),
        assigned_at       = now(),
        updated_by        = sqlc.narg('actor_id')
- WHERE tenant_id = sqlc.arg('tenant_id')
-   AND id = sqlc.arg('id')
-   AND status = 'OPEN'
-   AND row_version = sqlc.arg('row_version');
+ WHERE work_item.tenant_id = sqlc.arg('tenant_id')
+   AND work_item.id = sqlc.arg('id')
+   AND work_item.status = 'OPEN'
+   AND work_item.row_version = sqlc.arg('row_version')
+   AND EXISTS (SELECT 1 FROM workflow.work_queue q
+                WHERE q.tenant_id = work_item.tenant_id AND q.id = work_item.queue_id
+                  AND q.required_permission = ANY(sqlc.arg('permissions')::text[]));
 
 -- name: ReleaseWorkItem :execrows
 -- Back to the queue, owner cleared. due_at is untouched: putting work down does not buy

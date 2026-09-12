@@ -8425,6 +8425,8 @@ export interface components {
             /** Format: uuid */
             escalationQueueId?: string | null;
             name: string;
+            /** @description The permission this queue's work takes; defaults to `worklist.read`. */
+            requiredPermission?: string;
             slaMinutes?: number | null;
         };
         DashboardAgingFigure: {
@@ -10496,6 +10498,8 @@ export interface components {
             /** Format: uuid */
             escalationQueueId?: string | null;
             name?: string;
+            /** @description The permission this queue's work takes. */
+            requiredPermission?: string;
             /** @description Null stops new items being given a clock; existing items keep theirs. */
             slaMinutes?: number | null;
         };
@@ -13119,6 +13123,13 @@ export interface components {
             /** Format: uuid */
             id: string;
             name: string;
+            /**
+             * @description The permission this queue's work takes. The worklist shows an item only to a
+             *     caller who holds it, and a claim is refused without it, so a queue is visible to
+             *     the people who can do its work rather than to everybody who can read a worklist.
+             *     Defaults to `worklist.read`, which is every worklist reader.
+             */
+            requiredPermission: string;
             /** Format: int64 */
             rowVersion: number;
             /**

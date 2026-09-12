@@ -146,7 +146,7 @@ func (s *Service) ClaimItem(ctx context.Context, rc identity.RequestContext,
 		if _, err := s.repo.GetItem(ctx, tx, rc.TenantID, id, scope); err != nil {
 			return err
 		}
-		took, err := s.repo.ClaimItem(ctx, tx, rc.TenantID, id, rc.Principal.ActorID, expected)
+		took, err := s.repo.ClaimItem(ctx, tx, rc.TenantID, id, rc.Principal.ActorID, scope, expected)
 		if err != nil {
 			return err
 		}

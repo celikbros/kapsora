@@ -2286,4 +2286,6 @@ type WorkflowWorkQueue struct {
 	UpdatedAt         time.Time
 	UpdatedBy         uuid.NullUUID
 	RowVersion        int64
+	// The permission this queue's work takes; the worklist and the claim apply it.
+	RequiredPermission string
 }

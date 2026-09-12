@@ -187,6 +187,9 @@ type NewQueue struct {
 	SLAMinutes        *int
 	EscalationQueueID string
 	Active            bool
+	// RequiredPermission is the permission this queue's work takes; empty means the default
+	// the application fills in.
+	RequiredPermission string
 }
 
 // Validate checks a new queue.
@@ -199,6 +202,9 @@ func (q NewQueue) Validate() error {
 	requireOneOf(ve, "domainCode", q.DomainCode, DomainCodes)
 	requireOneOf(ve, "assignmentPolicy", q.AssignmentPolicy, AssignmentPolicies)
 	validateSLA(ve, "slaMinutes", q.SLAMinutes)
+	if q.RequiredPermission != "" {
+		validatePermissionCode(ve, "requiredPermission", q.RequiredPermission)
+	}
 	return ve.OrNil()
 }
 
@@ -214,6 +220,9 @@ type QueuePatch struct {
 	SLAMinutes        **int
 	EscalationQueueID **string
 	Active            *bool
+	// RequiredPermission is the permission the queue's work takes. It is a plain pointer: it
+	// cannot be cleared, because a queue everybody sees is not a state to patch into.
+	RequiredPermission *string
 }
 
 // Validate checks a queue patch.
@@ -227,6 +236,9 @@ func (p QueuePatch) Validate() error {
 	}
 	if p.SLAMinutes != nil {
 		validateSLA(ve, "slaMinutes", *p.SLAMinutes)
+	}
+	if p.RequiredPermission != nil {
+		validatePermissionCode(ve, "requiredPermission", *p.RequiredPermission)
 	}
 	return ve.OrNil()
 }
@@ -457,4 +469,16 @@ func requireOneOf(ve *ValidationError, field, value string, allowed []string) {
 		}
 	}
 	ve.Add(field, "ENUM", "geçersiz değer: "+strings.Join(allowed, ", "))
+}
+
+// permissionCodePattern is iam.permission.code as migration 000002 spells it. A queue names
+// the permission its work takes, and a name no permission has would make a queue nobody can
+// see rather than a queue the right people see. An empty name is not checked here: it means
+// "the default", and the application fills it in before the row is written.
+var permissionCodePattern = regexp.MustCompile(`^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*){1,3}$`)
+
+func validatePermissionCode(ve *ValidationError, field, code string) {
+	if !permissionCodePattern.MatchString(strings.TrimSpace(code)) {
+		ve.Add(field, "FORMAT", "yetki kodu biçimi geçersiz (ör. worklist.read)")
+	}
 }
