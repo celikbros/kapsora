@@ -1,0 +1,182 @@
+{
+  "icmal": {
+    "title": "İcmal",
+    "body": "İcmal, bir sağlayıcının tek dönem, tek ödeyen, tek alan ve tek para birimi için gönderdiği faturaları bir arada taşır. Ödeyen kurum faturaları tek tek karara bağlar; hepsi kararlandığında icmal karara bağlanır ve ondan bir ödeme mutabakatı açılır."
+  },
+  "mutabakat": {
+    "title": "Ödeme mutabakatı",
+    "body": "Karara bağlanan icmalden açılan ödeme tutarıdır; onaylı toplamı hiçbir zaman aşmaz. Vadesi sözleşmenin ödeme koşullarından gelir ve onayı, eşik üstünde icmali karara bağlayan kişiden başka bir yetkili verir. Onaydan sonra ödeme kayıtları girilir; kalan tutarı sunucu hesaplar."
+  },
+  "hakedis": {
+    "title": "Hakediş",
+    "body": "Hakediş, bir dönemde karara bağlanan claim'lerin toplamı ile bunların henüz faturalanmamış kısmıdır. Sağlayıcı faturasını bu rakama karşı düzenler; claim dağıtımı onaylı toplamın üstüne çıkamaz."
+  },
+  "kesinti": {
+    "title": "Kesinti",
+    "body": "Kesinti, faturanın istenen tutarının bir bölümünün onaylanmaması kararıdır ve gerekçe ister. Onaylanan tutar faturaya yazılır, fatura kısmen onaylandı olur ve kalan fark ödemeye girmez."
+  },
+  "iade": {
+    "title": "İade",
+    "body": "İade, faturanın düzeltilmek üzere sağlayıcıya geri gönderilmesidir ve gerekçe ister. Sağlayıcı düzeltmeyi yeni bir faturayla yapar; iade edilen fatura sürüm zincirinde olduğu gibi kalır."
+  },
+  "red": {
+    "title": "Red",
+    "body": "Red, faturanın hiçbir tutarının onaylanmaması kararıdır ve gerekçe ister. Karar kesindir; aynı hizmet için ödeme isteniyorsa yeni bir fatura düzenlenmesi gerekir."
+  },
+  "mahsup": {
+    "title": "Mahsup",
+    "body": "Mahsup, daha önce fazla ödenmiş tutarların geri alınması için ödeme mutabakatından tutulan kısımdır. Mutabakatın ödenecek tutarı bu kadar azalır; hangi tahsilatların mahsup edildiği mutabakatın altında satır satır durur."
+  },
+  "hakCuzdani": {
+    "title": "Hak cüzdanı",
+    "body": "Hak cüzdanı, kişinin plan sürümünden açılan hak hesaplarıdır: kullanılabilir, bloke ve kullanılan miktarlarıyla. Her hareket — tanımlama, bloke, kullanım, ters kayıt, düzeltme — hesabın hareket listesine yazılır ve silinmez. Aile ile paylaşımlı hesap asıl üyenin kaydında açılır, aynı bakiyeyi aile bireyleri kullanır."
+  },
+  "onOnay": {
+    "title": "Ön onay",
+    "body": "Ön onay, hizmet verilmeden önce ödeyen kurumun kararını almaktır; bir talep olarak incelemeye gider. Hangi hizmetlerde gerekli olduğunu kural setleri belirler. Karar gelene kadar talep incelemede kalır."
+  },
+  "uygunluk": {
+    "title": "Uygunluk",
+    "body": "Uygunluk sorgusu, hizmet tarihinde kişinin hakkı olup olmadığını, hangi plan sürümüne göre ve neden olduğunu söyler. Sonuç değiştirilemez biçimde saklanır ve talebe bağlanır. Sorgu hiçbir hak ayırmaz ve hiçbir bakiyeyi değiştirmez; kararı talep verir."
+  },
+  "talep": {
+    "title": "Talep",
+    "body": "Talep, bir hak sahibi için bir hizmetin istenmesidir: ne istendi, sistem ne dedi, kim ne karar verdi, hâlâ ne eksik. Gönderilen sürüm değiştirilemez; düzeltme için talebin iade edilmesi gerekir ve o zaman yeni bir sürüm açılır. Kararı ödeyen kurumun incelemesi verir."
+  },
+  "claim": {
+    "title": "Claim",
+    "body": "Claim, sağlayıcının teslim ettiği hizmetlerin beyanı ve ödeyenin satır satır cevabıdır; her satır kendi kararını ve gerekçesini taşır. Tıbbi aşama yalnızca onay ya da red der, tutarlar mali aşamada belirlenir. Karara bağlanan claim'ler hakedişe girer ve oradan faturalanır."
+  },
+  "fatura": {
+    "title": "Fatura",
+    "body": "Fatura, sağlayıcının karara bağlanmış claim'leri için düzenlediği belgedir; claim dağıtımı fatura toplamıyla tenant toleransı içinde eşleşmelidir. Gönderilen fatura bir icmale alınır ve orada onay, kesinti, iade ya da red kararını görür."
+  },
+  "cariEkstre": {
+    "title": "Cari ekstre",
+    "body": "Cari ekstre, bir sağlayıcının seçilen dönemde faturalanan, karara bağlanan, mutabakata bağlanan ve ödenen tutarlarını gösterir. Açık bakiye, mutabakata bağlanmış ama henüz ödenmemiş kısımdır. Rakamlar sunucunundur; ekran toplamaz."
+  },
+  "gunlukMutabakat": {
+    "title": "Günlük mutabakat",
+    "body": "Günlük mutabakat, KAPSORA'nın ödeme mutabakatlarıyla girilen ödeme kayıtlarını karşılaştıran koşudur. Koşu ya dengede çıkar ya da farkları tek tek sayar: vadesi geçmiş eksik ödeme, ödeme toplamı uyuşmazlığı, ERP farkı. Fark çıkan satırı operatör ilgili mutabakattan düzeltir."
+  },
+  "geriOdeme": {
+    "title": "Geri ödeme",
+    "body": "Geri ödeme, hak sahibinin kendi ödediği bir hizmet için makbuzuyla yaptığı başvurudur. İnceleyen tam onay, kısmi onay ya da red verir; onaylanan tutar hak cüzdanından düşer. Ödeme, hak sahibinin bir kez yazdığı hesaba yapılır ve referansıyla kaydedilir."
+  },
+  "vade": {
+    "title": "Vade",
+    "body": "Vade, bir ödeme mutabakatının ödenmesi gereken son tarihtir. Sözleşme sürümündeki ödeme koşullarının vade gününden hesaplanır. Vadesi yaklaşan ve geçen mutabakatlar operasyon panosunda ayrıca sayılır."
+  },
+  "kupon": {
+    "title": "Kupon",
+    "body": "Kupon, onaylanan rezervasyonun tesiste gösterilen kodudur. Kod yalnızca istendiğinde gösterilir, e-postayla gönderilmez ve hiçbir yere kaydedilmez. Yeniden üretildiğinde eski kod geçersiz olur."
+  },
+  "tutma": {
+    "title": "Oda tutma",
+    "body": "Tutma, rezervasyon onaylanmadan önce odanın hak sahibi için kısa süre ayrılmasıdır. Kalan süreyi sunucunun verdiği son onay zamanı belirler. Süre dolduğunda oda başkasına açılır ve yeniden arama yapmak gerekir."
+  },
+  "kontenjan": {
+    "title": "Kontenjan",
+    "body": "Kontenjan, bir oda tipinin bir gece için açılan oda sayısıdır; tesis kendi masasından yazar. Tutulmuş ya da onaylanmış oda sayısının altına indirilemez; sunucu uymayan ilk geceyi söyler."
+  },
+  "gelmeme": {
+    "title": "Gelmeme bildirimi",
+    "body": "Gelmeme bildirimi, onaylı bir rezervasyona gelinmediğinin tesis tarafından kanıt belgesiyle bildirilmesidir. Ödeyen kurumdan ikinci bir kişi onaylayana kadar kayıt incelemede kalır ve hak sahibine hiçbir şey yansımaz. Onaylanınca iptal koşulundaki gelmeme yüzdesine göre ücret hesaplanır."
+  },
+  "tibbiRapor": {
+    "title": "Tedavi raporu",
+    "body": "Tedavi raporu, sağlayıcının düzenlediği ve raporun kapsadığı hizmetlerle limitleri taşıyan belgedir; claim'ler bu satırlara karşı kontrol edilir. Gönderilen rapor tıbbi inceleme kuyruğuna girer ve onaylanan sürüme claim'ler dayanabilir. Karara bağlanan sürüm değişmez; düzeltme yeni bir sürümdür."
+  },
+  "vaka": {
+    "title": "Vaka",
+    "body": "Vaka, bir hak sahibinin bir sağlayıcıdaki dosyasıdır; muayeneler, tanılar, tedavi raporları, yatış ve claim'ler ona bağlı yürür. Vaka bir plan kaydına açılır. Her muayene sonlandırıldığında kapatılır ve kapandıktan sonra muayene eklenemez."
+  },
+  "yatis": {
+    "title": "Yatış",
+    "body": "Yatış, hastanın hastanede kaldığı dönemin kaydıdır; ön onayla başlar ve onaylanan gün sayısını taşır. Segmentler hastanın nerede yattığını söyler, uzatma ek günler için yeni bir ön onay açar. Taburcuda gerçekleşen günler kesinleşir ve onaylanıp kullanılmayan günler serbest bırakılır."
+  },
+  "muayene": {
+    "title": "Muayene",
+    "body": "Muayene, vakadaki tek bir karşılaşmanın kaydıdır: türü, başlangıcı, bitişi, branşı, klinik notu ve tanıları. Sonlandırılmamış muayene varken vaka kapatılamaz."
+  },
+  "tani": {
+    "title": "Tanı",
+    "body": "Tanı, muayeneye ICD-10 kod sisteminden seçilen koddur; bir muayenede yalnızca bir birincil tanı olabilir. Hassas kategoride bir tanı seçilirse vaka hassas sayılır ve klinik yarısını yalnızca ek yetkisi olan hesaplar görür."
+  },
+  "isKuyrugu": {
+    "title": "İş kuyruğu",
+    "body": "İş kuyruğu, aynı türden işlerin düştüğü ve bir ekibin çalıştığı listedir; kuyruk işin süresini ve yükseltme yolunu belirler. Bir kalemi üstlenen kişi onu tamamlar ya da bırakır; üstlenilmemiş kalemler sahipsiz kuyrukta bekler."
+  },
+  "sla": {
+    "title": "SLA",
+    "body": "SLA, bir iş kaleminin tamamlanması için verilen süredir ve kalemin terminini belirler. Kalem, açıldığı gün kuyruğun verdiği süreye göre değerlendirilir; kuyruğun sonradan değişen süresi bunu değiştirmez. Termini geçen kalemler geciken listesinde toplanır."
+  },
+  "adimDogrulama": {
+    "title": "Parola doğrulaması",
+    "body": "Hassas bir işlemden önce parolanızı yeniden girmeniz istenir; bu doğrulama kısa süre geçerlidir. Kimlik numarasıyla arama, sürüm yayınlama ve ödeme mutabakatı onayı gibi işlemler bunu ister. Parolanın sorulması yetkinizin eksik olduğu anlamına gelmez."
+  },
+  "dortGoz": {
+    "title": "Dört göz kuralı",
+    "body": "Bir işi yapan kişi aynı işi onaylayamaz: gönderen ile yayınlayan, talep eden ile karar veren aynı kişi olamaz. Kural sürüm yayınlamada, hak düzeltmelerinde, icmal kararında ve ödeme mutabakatı onayında uygulanır. Adımın kime kaldığını ekran, komutun yerinde yazar."
+  },
+  "surum": {
+    "title": "Sürüm",
+    "body": "Sözleşme, plan, kural seti, talep, claim ve tedavi raporu sürümlerle çalışır: yayınlanan ya da karara bağlanan sürüm bir daha değiştirilemez. Değişiklik yeni bir taslak sürümde yapılır. Geçmişte hangi sürüme göre işlem yapıldıysa o kayıt olduğu gibi kalır."
+  },
+  "kurum": {
+    "title": "Kurum",
+    "body": "Kurum, şu anda adına çalıştığınız tüzel kişidir; başlıkta her ekranda yazar ve gördüğünüz bütün kayıtlar onun içindedir. Birden fazla kurumda üyeliğiniz varsa kurum değiştirmek kendi sayfasında yapılan ayrı bir işlemdir."
+  },
+  "program": {
+    "title": "Program",
+    "body": "Program, sponsor ile ödeyici arasındaki fayda çatısıdır. Planlar programın altında yaşar, hak tanımları da plan sürümünün içindedir. Program askıya alınırsa ya da kapanırsa altındaki planlardan yeni hak verilmez."
+  },
+  "plan": {
+    "title": "Plan",
+    "body": "Plan, bir programın altında sunulan hak paketidir; içeriği plan sürümlerinde yazılır. Kişi plana bir plan kaydıyla bağlanır ve hakları, o tarihte yayında olan plan sürümüne göre açılır."
+  },
+  "uyelik": {
+    "title": "Sponsor üyeliği",
+    "body": "Sponsor üyeliği, bir kişinin sponsor kurumla ilişkisidir: üyelik türü, üye numarası ve geçerlilik tarihleriyle. Plan kayıtları bu üyeliğin altına açılır. Üyelik askıya alınmışsa ya da sona ermişse o tarihte uygunluk sorgusu hak bulmaz."
+  },
+  "hakDuzeltme": {
+    "title": "Hak düzeltmesi",
+    "body": "Hak düzeltmesi, bir hak hesabının bakiyesini artıran ya da azaltan taleptir; sebep zorunludur ve değişim sıfır olamaz. Kendi talebinizi onaylayamazsınız; başka bir yetkili karar verir. Onaylanan düzeltme bakiyeye bir hareket olarak işlenir."
+  },
+  "sozlesme": {
+    "title": "Sözleşme",
+    "body": "Sözleşme, bir hizmetin sağlayıcıya ne ödendiğini ve bunun ne kadarını hak sahibinin taşıdığını yazar. İçeriği sürümlerde yaşar: fiyat cetvelleri, paketler, kotalar ve ödeme koşulları. Yayınlanan sürüm değiştirilemez ve o tarihten sonraki fiyatlar ona göre hesaplanır."
+  },
+  "fiyatCetveli": {
+    "title": "Fiyat cetveli",
+    "body": "Fiyat cetveli, bir sözleşme sürümünün içinde fiyat satırlarını toplar; sezonu, günleri ve önceliği vardır. Fiyat satırı hizmetin tutarını, alt ve üst sınırını ve hak sahibi payını taşır. Aynı özgüllükte iki satır eşleşir ve öncelikleri de eşitse sistem seçim yapmaz, inceleme ister."
+  },
+  "kural": {
+    "title": "Kural seti",
+    "body": "Kural seti, müşteriden müşteriye değişen kararları taşır: hangi belge zorunlu, ne zaman ön onay gerekir, hangi limit uygulanır, kim kapsamdadır. Kurallar sürümlerde yazılır ve yalnızca yayınlanmış bir sürüm karar kaydı üretir; taslak için simülasyon kullanılır."
+  },
+  "kodSistemi": {
+    "title": "Kod sistemi",
+    "body": "Kod sistemi, kurumun hizmetlerinin dış dünyada hangi kodla anıldığını tutar: SUT, HUV, ICD-10 ve kurum içi listeler. Kodların geçerlilik tarihleri vardır; geçmiş bir claim, o gün geçerli olan kodlara göre çözümlenir. Lisanslı içerik kurum dışına aktarılamaz."
+  },
+  "hizmetKatalogu": {
+    "title": "Hizmet kataloğu",
+    "body": "Hizmet kataloğu sistemin ortak sözlüğüdür: talep, fiyat, claim ve kural hep bir hizmet tanımını gösterir. Bir hizmet tanımının kodu oluşturulduktan sonra değiştirilemez; yanlış kod pasife alınır ve yerine yenisi tanımlanır."
+  },
+  "erisimKaydi": {
+    "title": "Erişim kaydı",
+    "body": "Erişim kaydı, bir kişinin klinik verisine kimin, ne zaman ve hangi amaçla baktığını ya da bakmayı denediğini gösterir. Görüntüleme, arama, indirme, dışa aktarma ve acil erişim ayrı ayrı yazılır; reddedilen denemeler de kayda geçer. Kayıt silinmez."
+  },
+  "gizlilik": {
+    "title": "Gizlilik",
+    "body": "Gizlilik, bir belgenin hangi sınıfta olduğunu söyler: iç kullanım, gizli, kişisel veri ya da sağlık verisi. Sınıf belgeyi kimin açabileceğini belirler; sağlık verisi taşıyan bir belgeyi indirmeniz ayrıca kayda geçer."
+  },
+  "tarama": {
+    "title": "Tarama",
+    "body": "Yüklenen her belge zararlı yazılıma karşı taranır; tarama bitmeden dosya indirilemez ve bağlı olduğu kayıt ilerleyemez. Temiz çıkan dosya kullanılabilir olur. Zararlı bulunan dosyanın içeriği silinir, kaydı olay kaydı olarak durur."
+  },
+  "disaAktarim": {
+    "title": "Dışa aktarım",
+    "body": "Dışa aktarım, kapsamdaki kayıtların dosya olarak hazırlanmasıdır; istek önce sıraya alınır, sonra hazırlanır ve hazır olduğunda indirilebilir. İndir yalnızca hazır durumda vardır, her indirme amacıyla birlikte denetim kaydına yazılır ve dosya filigranlı çıkar. Geçerlilik süresi dolan dosya bir daha indirilemez."
+  }
+}

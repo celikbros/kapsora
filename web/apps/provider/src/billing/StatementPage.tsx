@@ -5,6 +5,7 @@ import {
   Button,
   Card,
   FormField,
+  HelpHint,
   Input,
   PageHeader,
   ProblemAlert,
@@ -297,7 +298,11 @@ export function StatementPage() {
           </Card>
 
           <Card className="min-w-0">
-            <h2 className="text-base font-semibold">{t('billing.report.settlements')}</h2>
+            {/* The mark sits beside the heading, not inside it: it is not part of the name. */}
+            <div className="flex items-baseline gap-1.5">
+              <h2 className="text-base font-semibold">{t('billing.report.settlements')}</h2>
+              <HelpHint term="mutabakat" />
+            </div>
             {data.settlements.length === 0 ? (
               <p className="text-fg-muted mt-2 text-sm">{t('billing.report.statementEmpty')}</p>
             ) : !wide ? (

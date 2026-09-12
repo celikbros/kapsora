@@ -44,6 +44,34 @@
   --shadow-card: 0 1px 2px rgb(20 32 46 / 0.06), 0 1px 3px rgb(20 32 46 / 0.08);
 }
 
+/* The one authored moment of the help surfaces: a card that settles in from a hair below,
+   and a drawer that arrives from the right. Exponential ease-out from a visible default;
+   nothing moves for a person who asked their machine for less motion. */
+@keyframes fade-up-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+}
+@keyframes slide-in-right {
+  from {
+    transform: translateX(1.5rem);
+    opacity: 0;
+  }
+}
+@utility fade-up-in {
+  animation: fade-up-in 120ms cubic-bezier(0.16, 1, 0.3, 1);
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+@utility slide-in-right {
+  animation: slide-in-right 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
 @layer base {
   :root {
     color-scheme: light;

@@ -6,6 +6,7 @@ import {
   Button,
   Card,
   FormField,
+  HelpHint,
   Input,
   PageHeader,
   ProblemAlert,
@@ -169,8 +170,16 @@ export function ReimbursementPage() {
           <dd className="text-right font-mono tabular-nums" data-testid="requested">
             {formatMoney(record.requestedAmount, record.currencyCode)}
           </dd>
-          <dt className={record.approvedAmount ? 'font-medium' : 'text-fg-muted'}>
+          <dt
+            className={`flex items-center gap-1.5 ${
+              record.approvedAmount ? 'font-medium' : 'text-fg-muted'
+            }`}
+          >
             {t('billing.office.approved')}
+            <HelpHint
+              title="Onaylanan"
+              body="Finansın bu başvuru için uygun gördüğü tutardır; talep edilenin tamamı, bir bölümü ya da sıfır olabilir. Onayla birlikte kişinin hak cüzdanından tam olarak bu tutar düşülür ve maskeli hesaba ödenmek üzere talimata bağlanır."
+            />
           </dt>
           <dd
             className={

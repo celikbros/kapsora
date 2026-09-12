@@ -16,6 +16,7 @@ import {
   Card,
   Dialog,
   FormField,
+  HelpHint,
   Input,
   PageHeader,
   ProblemAlert,
@@ -96,7 +97,14 @@ function Exceptions({ items }: { items: ClaimException[] }) {
   const { t } = useTranslation();
   return (
     <Card data-testid="claim-exceptions">
-      <h2 className="text-base font-semibold">{t('claims.exceptions.title')}</h2>
+      {/* The mark sits beside the heading, not inside it: it is not part of the name. */}
+      <div className="flex items-baseline gap-1.5">
+        <h2 className="text-base font-semibold">{t('claims.exceptions.title')}</h2>
+        <HelpHint
+          title="İstisna"
+          body="Gönderim sırasında sistemin kendi başına karara bağlamayıp bir kişiye bıraktığı nokta. Her istisna bir kural, bir fiyat sorunu ya da bir şüphe yüzünden doğar ve claim'in neden sizin önünüzde olduğunu söyler."
+        />
+      </div>
       {items.length === 0 ? (
         <p className="text-fg-muted mt-1 text-sm">{t('claims.exceptions.none')}</p>
       ) : (
@@ -372,7 +380,17 @@ function Lines({
           {!clinical ? <TH className="text-right">{t('claims.lines.contract')}</TH> : null}
           {!clinical ? <TH className="text-right">{t('claims.lines.approvedAmount')}</TH> : null}
           {!clinical ? <TH className="text-right">{t('claims.lines.payer')}</TH> : null}
-          {!clinical ? <TH className="text-right">{t('claims.lines.member')}</TH> : null}
+          {!clinical ? (
+            <TH className="text-right">
+              <span className="inline-flex items-center gap-1.5">
+                {t('claims.lines.member')}
+                <HelpHint
+                  title="Üye payı"
+                  body="Onaylanan tutarın hak sahibine kalan kısmı. Ödeyen payı ile üye payının toplamı onaylanan tutara eşit olmalıdır; ekran bu toplamı yapmaz, sunucu denetler."
+                />
+              </span>
+            </TH>
+          ) : null}
           <TH>{t('claims.lines.decision')}</TH>
         </TR>
       </THead>

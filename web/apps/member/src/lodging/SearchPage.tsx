@@ -4,6 +4,7 @@ import {
   Button,
   Card,
   FormField,
+  HelpHint,
   Input,
   ProblemAlert,
   Select,
@@ -141,6 +142,12 @@ export function SearchPage() {
                   label: t('lodging.receipt.plan'),
                   value: money(chosen.quote.payerAmount, chosen.quote.currencyCode),
                   mono: true,
+                  help: (
+                    <HelpHint
+                      title={t('lodging.receipt.plan')}
+                      body="Konaklamanın planınızın karşıladığı bölümü. Toplam tutardan plan payı düşülür, kalanı size kalır. Bu rakamı sunucu hesaplar; ekran toplama yapmaz."
+                    />
+                  ),
                 },
               ]
             : []),

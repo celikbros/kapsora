@@ -1,6 +1,6 @@
 import type { EligibilityCheckResult } from '@kapsora/api-client';
 import { useTranslation } from '@kapsora/i18n';
-import { Badge, ProblemAlert, Spinner } from '@kapsora/ui';
+import { Badge, HelpHint, ProblemAlert, Spinner } from '@kapsora/ui';
 
 import { problemOf } from './problems';
 
@@ -56,9 +56,13 @@ export function EligibilityPane({ check }: { check: LiveCheck }) {
       className="bg-surface-raised border-line rounded-md border p-4"
       data-testid="eligibility-pane"
     >
-      <h2 id="eligibility-pane" className="text-base font-semibold">
-        {t('provider.newRequest.resultTitle')}
-      </h2>
+      {/* The mark sits beside the heading, not inside it: the aside is named by this h2. */}
+      <div className="flex items-center gap-1.5">
+        <h2 id="eligibility-pane" className="text-base font-semibold">
+          {t('provider.newRequest.resultTitle')}
+        </h2>
+        <HelpHint term="uygunluk" />
+      </div>
       {!check.asked ? (
         <p className="text-fg-muted mt-2 text-sm">{t('provider.newRequest.resultEmpty')}</p>
       ) : check.isPending ? (

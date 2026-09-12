@@ -1,0 +1,1292 @@
+{
+  "app": {
+    "title": "Sağlayıcı portalı",
+    "purpose": "Bu portal, kurumunuzun verdiği hizmeti ve karşılığında alacağı parayı tek kayıt üzerinde tutar. Uygunluk sorgusundan hakedişe kadar her adım aynı defterde yürür; rakamları sunucu hesaplar.",
+    "sections": [
+      {
+        "label": "Yeni talep",
+        "body": "Hak sahibini ve hizmeti seçersiniz, uygunluk siz yazarken hesaplanır ve talep ödeyen kuruma gider."
+      },
+      {
+        "label": "Taleplerim",
+        "body": "Kurumunuzun gönderdiği talepler ve her birinin neyi beklediği. Sırası sizde olan talepler buradan görünür."
+      },
+      {
+        "label": "Uygunluk sorgusu",
+        "body": "Talep açmadan, bir kişinin bir hizmeti belirli bir tarihte alıp alamayacağını sorar."
+      },
+      {
+        "label": "Vakalar",
+        "body": "Sağlık tarafının defteri. Muayene, tanı, tedavi raporu, yatış ve claim bir vakadan yürür."
+      },
+      {
+        "label": "Claim'ler",
+        "body": "Verdiğiniz hizmetin beyanı ve ödeyen kurumun satır satır cevabı. Fatura yalnızca karara bağlanmış claim'lere dayanır."
+      },
+      {
+        "label": "Kontenjan",
+        "body": "Konaklama tarafında bir oda tipinin gecelik kontenjanı buradan açılır ve değiştirilir."
+      },
+      {
+        "label": "Gelenler / Gidenler",
+        "body": "Kapıdaki gün: misafirin kupon koduyla girişi, çıkışı ve gelmeyen misafirin bildirimi."
+      },
+      {
+        "label": "Hakediş ve fatura",
+        "body": "Dönemde karara bağlanan tutar, kestiğiniz faturalar ve gönderdiğiniz icmaller."
+      },
+      {
+        "label": "Cari ekstre",
+        "body": "Faturalanan, karara bağlanan, mutabakata bağlanan ve ödenen tutarlar ile açık bakiyeniz."
+      }
+    ]
+  },
+
+  "newRequest": {
+    "title": "Yeni talep",
+    "purpose": "Bir hak sahibi için hizmet talebi açıp doğrudan ödeyen kuruma gönderirsiniz. Uygunluk cevabı, siz formu doldururken sağda hesaplanır.",
+    "sections": [
+      {
+        "label": "Hak sahibi",
+        "body": "Kişiyi adıyla arayın. Kimlik numarasıyla arama parola ister; numara yalnızca o aramada kullanılır, ekranda maskeli görünür ve hiçbir yerde saklanmaz."
+      },
+      {
+        "label": "Hizmet",
+        "body": "Hizmet kataloğundan seçilir. Miktarın birimi seçtiğiniz hizmete göre değişir."
+      },
+      {
+        "label": "Hizmet tarihi",
+        "body": "Hizmetin verildiği ya da verileceği gün. Uygunluk bu tarihe göre hesaplanır."
+      },
+      {
+        "label": "Tutar",
+        "body": "İstediğiniz tutarı yazabilirsiniz. Fiyatlandırma sunucunundur; burada yazdığınız rakam bir talep, bir sonuç değildir."
+      },
+      {
+        "label": "Uygunluk",
+        "body": "Sunucunun cevabı ve gerekçe satırları. Bu bir ön bilgidir; karar, talep gönderildikten sonra ödeyen kurumca verilir."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Gönder",
+        "body": "Talebi oluşturur ve aynı anda gönderir. Gönderilen sürüm değiştirilemez; düzeltme için talebin iade edilmesi gerekir. Düğme, uygunluk cevabı plan kaydını bulana kadar görünmez."
+      }
+    ],
+    "statuses": [
+      {
+        "label": "Uygun",
+        "body": "Sunucu bu tarihte bu hizmet için hak buldu. Karar yine de talep gönderildiğinde verilir."
+      },
+      {
+        "label": "İnceleme gerekli",
+        "body": "Kesin bir engel yok, ama cevap otomatik verilemiyor. Talep ödeyen kurumdaki bir kişiye gider."
+      },
+      {
+        "label": "Uygun değil",
+        "body": "Sunucu kapsam dışı buldu. Altındaki gerekçe satırları neyin eksik olduğunu söyler."
+      }
+    ]
+  },
+
+  "requests": {
+    "title": "Taleplerim",
+    "purpose": "Kurumunuzun talepleri ve her birinin neyi beklediği. Liste sunucu tarafından kurumunuza göre sınırlanır; ekranda ayrıca bir süzgeç yoktur.",
+    "sections": [
+      {
+        "label": "Talep no",
+        "body": "Talebin referansı. Üzerine basınca talebin ayrıntısı açılır."
+      },
+      {
+        "label": "Durum",
+        "body": "Sıranın kimde olduğunu söyler: sizde, ödeyen kurumda ya da hiçbirinde."
+      },
+      { "label": "Hak sahibi", "body": "Hizmeti alan kişi." },
+      { "label": "Hizmet", "body": "Talebin ilk satırındaki hizmet." },
+      {
+        "label": "Hizmet tarihi",
+        "body": "Hizmetin verildiği ya da verileceği gün."
+      }
+    ],
+    "statuses": [
+      {
+        "label": "Gönderilmeyi bekliyor",
+        "body": "Talep henüz taslak; ödeyen kuruma ulaşmadı."
+      },
+      {
+        "label": "Sizden belge bekliyor",
+        "body": "Sıra sizde. İstenen belgeler yüklenip temiz taranmadan talep incelemeye geçmez."
+      },
+      {
+        "label": "Ödeyicinin kararını bekliyor",
+        "body": "Talep incelemede. Yapmanız gereken bir şey yok; karar geldiğinde durum değişir."
+      },
+      {
+        "label": "Kapsam dışı; yeni talep gerekir",
+        "body": "Sistem talebi kapsam dışı buldu ve kimse karar vermedi. Bu talep açılmaz; koşullar değiştiyse yeni bir talep gerekir."
+      },
+      {
+        "label": "Onaylandı",
+        "body": "Talebin tamamı istendiği gibi onaylandı. Hizmeti verip claim açabilirsiniz."
+      },
+      {
+        "label": "Kısmen onaylandı",
+        "body": "Bazı satırlar onaylandı, bazıları değil. Onaylanmayan satırın karşılığı ödenmez."
+      },
+      {
+        "label": "Reddedildi",
+        "body": "Karar kesindir ve talep kapanmıştır. Yeni bir durum varsa yeni bir talep açılması gerekir."
+      },
+      { "label": "İptal edildi", "body": "Talep iptal edildi; iptal geri alınamaz." },
+      {
+        "label": "Süresi doldu",
+        "body": "Talep zamanında sonuçlanmadı ve kapandı. Hizmet hâlâ gerekiyorsa yeni talep açılır."
+      },
+      {
+        "label": "Kapandı",
+        "body": "Talebin işi bitti; üzerinde yapılacak bir şey kalmadı."
+      },
+      {
+        "label": "Gönderildi",
+        "body": "Talep ödeyen kuruma ulaştı ve sıraya girdi."
+      }
+    ]
+  },
+
+  "request": {
+    "title": "Talep ayrıntısı",
+    "purpose": "Tek bir talebin neyi beklediğini gösterir ve belge bekliyorsa yükleme yerini verir. Başlıkta talebin referansı ve durumu durur.",
+    "sections": [
+      {
+        "label": "Beklenen",
+        "body": "Talebin şu anda neyi beklediği, tek cümleyle. Sıra sizdeyse satır kalın yazılır."
+      },
+      {
+        "label": "Hizmet tarihi",
+        "body": "Hizmetin verildiği ya da verileceği gün."
+      },
+      { "label": "Gönderim", "body": "Talebin ödeyen kuruma ulaştığı an." },
+      {
+        "label": "Gerekçe kodu",
+        "body": "İade ya da red kararının kodu. Kalıcı olarak kayda geçer."
+      },
+      {
+        "label": "Belge yükle",
+        "body": "Talebin beklediği belgeler ve yükleme alanı. Dosya önce taranır; temiz çıkmadan indirilemez ve talep incelemeye geçmez."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Vaka aç",
+        "body": "Onaylanmış ya da kısmen onaylanmış bir talepten sağlık vakası açar; kişi ve plan kaydı talepten gelir. Yalnızca vaka yetkisi olan hesaplarda görünür."
+      }
+    ],
+    "statuses": [
+      { "label": "Taslak", "body": "Talep henüz gönderilmedi." },
+      {
+        "label": "Gönderildi",
+        "body": "Talep ödeyen kuruma ulaştı ve sıraya girdi."
+      },
+      {
+        "label": "Kapsam dışı",
+        "body": "Sistem talebi kapsam dışı buldu; kişi karar vermedi."
+      },
+      {
+        "label": "Belge bekliyor",
+        "body": "Sıra sizde. Aşağıdaki belgeler temiz taranmadan talep incelemeye geçmez."
+      },
+      {
+        "label": "İncelemede",
+        "body": "Talep ödeyen kurumdaki bir kişinin kararını bekliyor."
+      },
+      {
+        "label": "Onaylandı",
+        "body": "Talebin tamamı istendiği gibi onaylandı."
+      },
+      {
+        "label": "Kısmen onaylandı",
+        "body": "Satır kararları farklı; onaylanmayanın karşılığı ödenmez."
+      },
+      {
+        "label": "Reddedildi",
+        "body": "Karar kesindir ve talep kapanmıştır. Yeni bir talep açılması gerekir."
+      },
+      { "label": "İptal edildi", "body": "Talep iptal edildi; geri alınamaz." },
+      { "label": "Süresi doldu", "body": "Talep zamanında sonuçlanmadı ve kapandı." },
+      { "label": "Kapandı", "body": "Talebin işi bitti; belge de eklenemez." }
+    ]
+  },
+
+  "eligibility": {
+    "title": "Uygunluk sorgusu",
+    "purpose": "Talep açmadan, kişinin bu hizmeti bu tarihte alıp alamayacağını sorar. Cevap siz yazarken gelir; ayrı bir gönderme adımı yoktur.",
+    "sections": [
+      {
+        "label": "Hak sahibi",
+        "body": "Kişiyi adıyla arayın. Kimlik numarasıyla arama parola ister ve kayda geçer."
+      },
+      {
+        "label": "Hizmet tarihi",
+        "body": "Sorgu bu tarihe göre yapılır. Üyelik, plan kaydı ve bakiye o günkü hâliyle değerlendirilir."
+      },
+      {
+        "label": "Uygunluk",
+        "body": "Sunucunun cevabı ve gerekçe satırları. Her sorgu değiştirilemez biçimde saklanır; sonradan hangi cevabın verildiği tartışılmaz."
+      }
+    ],
+    "statuses": [
+      {
+        "label": "Uygun",
+        "body": "Bu tarihte bu hizmet için hak bulundu. Karar için yine de talep açılması gerekir."
+      },
+      {
+        "label": "İnceleme gerekli",
+        "body": "Kesin bir engel yok, ama cevabı bir kişinin vermesi gerekiyor. Talep açabilirsiniz; incelemeye gider."
+      },
+      {
+        "label": "Uygun değil",
+        "body": "Kapsam dışı. Gerekçe satırları hangi koşulun tutmadığını söyler."
+      }
+    ]
+  },
+
+  "cases": {
+    "title": "Vakalar",
+    "purpose": "Sağlayıcınızın açtığı vakalar. Bir vaka; muayeneleri, tanıları, tedavi raporunu, yatışı ve claim'leri bir arada tutar.",
+    "sections": [
+      {
+        "label": "Hak sahibi",
+        "body": "Vakanın kime ait olduğu. Vakanın kendi referansı yoktur; satır kişiyle anılır."
+      },
+      { "label": "Durum", "body": "Vakanın açık mı kapalı mı olduğu." },
+      {
+        "label": "Tür",
+        "body": "Bakımın cinsi: ayakta, yatan, kronik, doğum ya da diğer."
+      },
+      { "label": "Açılış", "body": "Vakanın açıldığı gün." },
+      {
+        "label": "Muayene",
+        "body": "Vakaya kaç muayene kaydedildiği."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Vaka aç",
+        "body": "Yeni vaka formunu açar. Vaka bir talepten de açılabilir."
+      }
+    ],
+    "statuses": [
+      {
+        "label": "Açık",
+        "body": "Vakaya muayene, rapor, yatış ve claim eklenebilir."
+      },
+      {
+        "label": "Kapandı",
+        "body": "Vakaya yeni muayene eklenemez. Kapatma için her muayenenin sonlandırılmış olması gerekir."
+      }
+    ]
+  },
+
+  "caseNew": {
+    "title": "Vaka aç",
+    "purpose": "Vakanın kimin ve hangi plan kaydının üstüne açılacağını belirler. Muayene ve tanı, vaka açıldıktan sonra vakanın kendi sayfasında girilir.",
+    "sections": [
+      {
+        "label": "Hak sahibi",
+        "body": "Kişiyi adıyla arayın. Bir talepten geliniyorsa kişi talepten gelir ve değiştirilemez."
+      },
+      {
+        "label": "Açılış tarihi",
+        "body": "Vakanın açıldığı gün. Plan kaydı bu tarihe göre aranır."
+      },
+      {
+        "label": "İlgili hizmet",
+        "body": "Yalnızca plan kaydını bulmak için sorulur; vakaya yazılmaz. Sağlayıcı bir kişinin plan kayıtlarını listeleyemez, bu yüzden kayıt uygunluk cevabından gelir."
+      },
+      {
+        "label": "Plan kaydı",
+        "body": "Kişinin birden fazla geçerli plan kaydı varsa hangisine bağlanacağını seçersiniz. Tek kayıt varsa bu alan görünmez."
+      },
+      {
+        "label": "Vaka türü",
+        "body": "Bakımın cinsi. Yatış yapılacaksa bile tür sonradan yatışı engellemez."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Vakayı aç",
+        "body": "Vakayı oluşturur ve vakanın sayfasına götürür. Düğme, kişi ve plan kaydı belli olana kadar görünmez."
+      }
+    ]
+  },
+
+  "case": {
+    "title": "Vaka",
+    "purpose": "Vakanın tamamı: ne oldu, ne yazıldı, kim yatırıldı, ne faturalandı. Her bölüm başlığı kendi durumunu taşır, böylece hangi bölümün iş beklediği ilk bakışta görünür.",
+    "sections": [
+      {
+        "label": "Muayeneler",
+        "body": "Vakadaki görüşmeler: başlangıç, bitiş, tür, branş ve birincil tanı. Bitişi girilmemiş muayene devam ediyor sayılır ve vaka kapanmasını engeller."
+      },
+      {
+        "label": "Belgeler",
+        "body": "Vakaya bağlı dosyalar. Her dosya taranır; taranmadan indirilemez."
+      },
+      {
+        "label": "Tedavi raporları",
+        "body": "Vakanın raporları ve en yenisinin durumu başlıkta. Claim'ler onaylı bir rapora dayanabilir."
+      },
+      {
+        "label": "Yatış",
+        "body": "Vakanın yatışları ve açık olanın durumu başlıkta. Gün sütunu onaylı ve gerçekleşen günü yan yana gösterir."
+      },
+      {
+        "label": "Claim'ler",
+        "body": "Vakadan açılan claim'ler ve kaçının hâlâ açık olduğu. Claim bir vakadan açılır; kişi ve plan kaydını vakadan alır."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Muayene ekle",
+        "body": "Vakaya yeni bir muayene kaydeder. Yalnızca açık vakada ve klinik yetkisi olan hesapta görünür."
+      },
+      {
+        "label": "Tanıları düzenle",
+        "body": "Bir muayenenin ICD-10 tanılarını değiştirir. Hassas kategoride bir tanı seçilirse vaka hassas sayılır ve klinik yarısını yalnızca ek yetkisi olan hesaplar görür."
+      },
+      {
+        "label": "Rapor oluştur",
+        "body": "Rapor türü ve geçerlilik tarihleriyle taslak açar ve raporun sayfasına götürür."
+      },
+      {
+        "label": "Yatış talebi",
+        "body": "Ön onay isteyen bir yatış açar. Onay gelene kadar hasta yatırılmış sayılmaz."
+      },
+      {
+        "label": "Yatışa git",
+        "body": "Vakanın açık yatışının sayfasını açar."
+      },
+      {
+        "label": "Yeni claim",
+        "body": "Bu vakadan claim taslağı açar."
+      },
+      {
+        "label": "Vakayı kapat",
+        "body": "Her muayene sonlandırıldıysa vakayı kapatır. Kapandıktan sonra muayene eklenemez."
+      }
+    ],
+    "statuses": [
+      { "label": "Açık", "body": "Vakaya kayıt eklenebilir." },
+      { "label": "Kapandı", "body": "Vakaya yeni muayene eklenemez." },
+      {
+        "label": "Hassas",
+        "body": "Vaka hassas bir tanı kategorisi taşıyor. Klinik detayı yalnızca ek yetkisi olan hesaplar görür ve her bakış kayda geçer."
+      }
+    ]
+  },
+
+  "report": {
+    "title": "Tedavi raporu",
+    "purpose": "Bir hekimin bu kişi için neyin, ne kadar süreyle gerektiğini yazdığı belge. Taslakken düzenlenir; gönderildikten sonra inceleyenin gördüğü hâliyle donar ve değişiklik yeni bir sürüm olur.",
+    "sections": [
+      {
+        "label": "İnceleme sonucu",
+        "body": "Karara bağlanmış raporun sonucu, gerekçe kodu, inceleyen notu ve karar zamanı. Onaylı rapora claim dayanabilir."
+      },
+      {
+        "label": "Rapor bilgileri",
+        "body": "Rapor türü, düzenlenme günü ve geçerlilik aralığı. Claim'in hizmet tarihi bu aralığın dışına düşerse claim istisna taşır."
+      },
+      {
+        "label": "Hizmetler ve limitler",
+        "body": "Raporun kapsadığı hizmetler, kapsanan miktar ve tutar. Claim bu satırlara karşı kontrol edilir; kapsamda olmayan hizmet incelemeye düşer."
+      },
+      {
+        "label": "Rapor dosyası",
+        "body": "Raporun kendi dosyası. Dosya temiz taranmadan rapor gönderilemez."
+      },
+      {
+        "label": "Sürümler",
+        "body": "Aynı raporun sürümleri. Karara bağlanan sürüm olduğu gibi durur; düzeltme onun yanına yeni sürüm olarak gelir."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Kaydet",
+        "body": "Rapor başlığını kaydeder. Yalnızca taslakta ve klinik yetkisi olan hesapta görünür."
+      },
+      {
+        "label": "Hizmetleri kaydet",
+        "body": "Hizmet satırlarının tamamını birden kaydeder; kaydedilen set, o anda tabloda duranın aynısıdır."
+      },
+      {
+        "label": "Gönder",
+        "body": "Raporu tıbbi inceleme kuyruğuna alır. Gönderdikten sonra bu sürüm değiştirilemez."
+      },
+      {
+        "label": "İptal et",
+        "body": "Taslağı ya da gönderilmiş raporu iptal eder. İptal edilen rapora claim dayandırılamaz."
+      },
+      {
+        "label": "Düzeltme oluştur",
+        "body": "Karara bağlanmış rapordan yeni bir sürüm açar. Eski sürüm zincirde olduğu gibi kalır."
+      }
+    ],
+    "statuses": [
+      { "label": "Taslak", "body": "Rapor düzenlenebilir; henüz kimseye gitmedi." },
+      {
+        "label": "Gönderildi",
+        "body": "Rapor tıbbi inceleme kuyruğunda. Bu sürüm artık değiştirilemez."
+      },
+      {
+        "label": "İncelemede",
+        "body": "Bir tıbbi değerlendirici raporu okuyor."
+      },
+      {
+        "label": "Onaylandı",
+        "body": "Claim'ler bu sürüme dayanabilir. Rapor geçerlilik aralığı içindeki hizmetleri kapsar."
+      },
+      {
+        "label": "Reddedildi",
+        "body": "Bu sürüme claim dayandırılamaz. Gerekçe yukarıda; düzeltme yeni bir sürümdür."
+      },
+      {
+        "label": "İptal edildi",
+        "body": "Rapor geri çekildi; hiçbir claim'e dayanak olmaz."
+      },
+      {
+        "label": "Süresi doldu",
+        "body": "Geçerlilik aralığı geçti. Sonraki hizmetler için yeni rapor gerekir."
+      },
+      {
+        "label": "Yerini yenisi aldı",
+        "body": "Daha yeni bir onaylı sürüm var; claim'ler artık ona dayanır."
+      }
+    ]
+  },
+
+  "stay": {
+    "title": "Yatış",
+    "purpose": "Bir yatışın ön onayı, günleri ve hastanın nerede yattığı. Onaylı, gerçekleşen ve serbest bırakılan günleri sunucu hesaplar; ekran toplamaz.",
+    "sections": [
+      {
+        "label": "Günler",
+        "body": "Yatış ve beklenen taburcu zamanı ile tahmini, onaylı, gerçekleşen ve serbest bırakılan gün sayıları. Onayın üstüne çıkılırsa claim bunu istisna olarak taşır ve hiçbir gün geri dönmez."
+      },
+      {
+        "label": "Mutabakat",
+        "body": "Taburcudan sonra sunucunun kesin rakamları: onaylanan, gerçekleşen ve hak sahibine geri dönen günler."
+      },
+      {
+        "label": "Segmentler",
+        "body": "Hastanın nerede yattığı: servis, yoğun bakım, ameliyathane, gözlem, refakatçi. İlk segment yatışı başlatır."
+      },
+      {
+        "label": "Uzatmalar",
+        "body": "İstenen ek günler ve her birinin kararı. Karara bağlanmamış bir uzatma varken yenisi istenemez."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Uzat",
+        "body": "Ek günler için yeni bir ön onay talebi açar. Gerekçe kodu zorunludur; ödeyen kurum karar verene kadar ek günler onaylı sayılmaz."
+      },
+      {
+        "label": "Taburcu et",
+        "body": "Açık segmentleri kapatır ve yatışı bitirir. Onaylanıp kullanılmayan günler hak sahibine geri döner."
+      },
+      {
+        "label": "İptal et",
+        "body": "Henüz başlamamış yatışı iptal eder; gerekçe kodu ister."
+      },
+      {
+        "label": "Segmentleri kaydet",
+        "body": "Segmentlerin tamamını birden kaydeder. Yalnızca yatış sürerken düzenlenebilir."
+      }
+    ],
+    "statuses": [
+      {
+        "label": "Ön onay bekliyor",
+        "body": "Talep ödeyen kuruma gitti. Onay gelmeden yatırılan gün, claim'de istisna olur."
+      },
+      {
+        "label": "Onaylandı",
+        "body": "Gün sayısı onaylandı; hasta yatırılabilir."
+      },
+      { "label": "Yatan", "body": "Hasta yatışta; segment ve uzatma girilebilir." },
+      {
+        "label": "Taburcu",
+        "body": "Yatış bitti. Gerçekleşen gün sayısı sabitlendi ve mutabakat bölümü açıldı."
+      },
+      {
+        "label": "İptal edildi",
+        "body": "Yatış gerçekleşmedi; onaylı günler geri döndü."
+      },
+      {
+        "label": "Reddedildi",
+        "body": "Ön onay verilmedi. Bu yatışın günleri ödenmez."
+      }
+    ]
+  },
+
+  "claims": {
+    "title": "Claim'ler",
+    "purpose": "Verdiğiniz hizmetlerin beyanı ve ödeyen kurumun satır satır cevabı. Faturanız yalnızca karara bağlanmış claim'lere dayanabilir.",
+    "sections": [
+      {
+        "label": "Referans",
+        "body": "Claim'in numarası. Üzerine basınca satırları ve kararları açılır."
+      },
+      {
+        "label": "Durum",
+        "body": "Claim'in nerede durduğu ve paranın hangi aşamada olduğu."
+      },
+      { "label": "Hak sahibi", "body": "Hizmeti alan kişi." },
+      {
+        "label": "Hizmet tarihi",
+        "body": "Claim'in kapsadığı hizmet aralığı."
+      },
+      { "label": "Satır", "body": "Claim'deki hizmet satırı sayısı." },
+      {
+        "label": "Sürüm",
+        "body": "Kaçıncı sürümün geçerli olduğu. İade edilen her claim yeni bir sürüm açar."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Yeni claim",
+        "body": "Vakalar listesine götürür; claim bir vakadan açılır, çünkü kimin ve hangi plan altında olduğunu vaka taşır."
+      }
+    ],
+    "statuses": [
+      { "label": "Taslak", "body": "Claim düzenlenebilir; henüz gönderilmedi." },
+      {
+        "label": "Gönderildi",
+        "body": "Claim ödeyen kuruma ulaştı ve değerlendirmeye girdi."
+      },
+      {
+        "label": "Otomatik değerlendirildi",
+        "body": "Sistem itiraz etmedi; satırlar kişi eli değmeden karara bağlandı."
+      },
+      {
+        "label": "Tıbbi incelemede",
+        "body": "Bir tıbbi değerlendirici satırlara bakıyor. Bu aşamada tutar değil, hizmetin gerekliliği tartışılır."
+      },
+      {
+        "label": "Mali incelemede",
+        "body": "Tutarlar inceleniyor: onaylanan, ödeyen ve üye payı bu aşamada yazılır."
+      },
+      {
+        "label": "İade edildi",
+        "body": "Sıra sizde. Düzeltme sürümü açıldı; eksiği tamamlayıp yeniden gönderdiğinizde inceleme kaldığı yerden sürer."
+      },
+      {
+        "label": "Kısmen onaylandı",
+        "body": "Bazı satırlar kesildi ya da reddedildi. Yalnızca onaylanan tutar faturalanabilir."
+      },
+      {
+        "label": "Onaylandı",
+        "body": "Satırların tamamı onaylandı. Tutar hakedişinize girer."
+      },
+      {
+        "label": "Reddedildi",
+        "body": "Karar kesindir; bu claim faturalanamaz."
+      },
+      {
+        "label": "Faturalandı",
+        "body": "Claim bir faturaya dağıtıldı; artık başka bir faturaya dağıtılamaz."
+      },
+      {
+        "label": "Partiye alındı",
+        "body": "Claim'in faturası bir icmale girdi ve ödeyen kurumun incelemesini bekliyor."
+      },
+      {
+        "label": "Ödendi",
+        "body": "Claim'in karşılığı ödeme mutabakatıyla ödendi."
+      },
+      {
+        "label": "İptal edildi",
+        "body": "Claim geri çekildi; ödeme doğurmaz."
+      },
+      {
+        "label": "Ödenmeden kapandı",
+        "body": "Claim üzerinde yapılacak bir şey kalmadı ve ödeme doğurmadı."
+      }
+    ]
+  },
+
+  "claimNew": {
+    "title": "Yeni claim",
+    "purpose": "Bir vakadan claim taslağı açar. Burada yalnızca ne yaptığınızı ve ne istediğinizi yazarsınız; fiyatlandırma gönderimde sunucuda yapılır.",
+    "sections": [
+      {
+        "label": "Hak sahibi",
+        "body": "Vakadan gelir ve değiştirilemez. Claim'in plan ve program bilgisi de vakadan gelir."
+      },
+      {
+        "label": "Hizmet başlangıcı",
+        "body": "Claim'in kapsadığı ilk hizmet günü."
+      },
+      {
+        "label": "Hizmet bitişi",
+        "body": "Claim'in kapsadığı son hizmet günü. Onaylı bir rapora dayanıyorsanız bu aralık raporun geçerlilik aralığına düşmelidir."
+      },
+      {
+        "label": "Satırlar",
+        "body": "Hizmet, açıklama, miktar ve istediğiniz tutar. Sözleşme fiyatını, plan payını ve üye payını sunucu gönderimde koyar."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Satır ekle",
+        "body": "Tabloya boş bir satır ekler."
+      },
+      {
+        "label": "Kaldır",
+        "body": "O satırı taslaktan çıkarır."
+      },
+      {
+        "label": "Taslağı oluştur",
+        "body": "Claim'i taslak olarak kaydeder ve sayfasına götürür. Gönderim ayrı bir adımdır. Düğme, her satır tamamlanana kadar görünmez."
+      },
+      {
+        "label": "Vakalara git",
+        "body": "Vaka seçilmeden gelindiğinde vakalar listesine götürür."
+      }
+    ]
+  },
+
+  "claim": {
+    "title": "Claim",
+    "purpose": "Tek bir claim: satırları, aldığı kararlar ve faturaya hazır olup olmadığı. Bütün tutarlar sunucunun; ekran hiçbir toplam hesaplamaz.",
+    "sections": [
+      {
+        "label": "Neden inceleniyor",
+        "body": "Gönderimde sistemin bir kişiye bıraktığı noktalar ve hangi satırı ilgilendirdiği. Buradaki her madde kararı geciktiren bir sebeptir."
+      },
+      {
+        "label": "Satırlar",
+        "body": "Her satır kendi kararını, gerekçesini ve tutarlarını taşır: istenen, onaylanan, ödeyen ve üye payı."
+      },
+      {
+        "label": "Düzeltme sürümü",
+        "body": "İade edilen claim'de karara bağlanan sürüm üstte, düzeltilen taslak altında durur. Aynı sütunlar aynı yerde olduğu için satırlar aşağı bakarak karşılaştırılır."
+      },
+      {
+        "label": "Faturaya hazırlık",
+        "body": "Sunucunun cevabı: onaylanan, ödeyen ve üye payı toplamları, kaç satırın karara bağlandığı ve varsa faturayı engelleyen sebepler."
+      },
+      {
+        "label": "Sürümler",
+        "body": "Claim'in sürümleri, gönderim ve iade zamanlarıyla."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Gönder",
+        "body": "Claim'i ödeyen kuruma gönderir. Sunucu fiyatlandırmayı ve kuralları gönderimde çalıştırır; sonuç satır satır geri gelir."
+      },
+      {
+        "label": "Satırları kaydet",
+        "body": "Satırların tamamını birden kaydeder. Yalnızca taslak ve iade edilen claim'de görünür."
+      },
+      {
+        "label": "İptal et",
+        "body": "Claim'i geri çeker; gerekçe kodu ister. İptal edilen claim faturalanamaz."
+      }
+    ],
+    "statuses": [
+      { "label": "Taslak", "body": "Satırlar düzenlenebilir; claim gönderilmedi." },
+      {
+        "label": "Gönderildi",
+        "body": "Claim ödeyen kuruma ulaştı ve değerlendirmeye girdi. Sıra ödeyendedir; sizin yapmanız gereken bir şey yok."
+      },
+      {
+        "label": "Otomatik değerlendirildi",
+        "body": "Sistem itiraz etmedi; satırlar kişi eli değmeden karara bağlandı. Ödeme, ödeyen kurum claim'i onayladıktan sonra doğar."
+      },
+      {
+        "label": "Tıbbi incelemede",
+        "body": "Klinik gerekçe inceleniyor; bu aşamada tutar yazılmaz."
+      },
+      {
+        "label": "Mali incelemede",
+        "body": "Tutarlar inceleniyor; kesinti bu aşamada uygulanır."
+      },
+      {
+        "label": "İade edildi",
+        "body": "Sıra sizde. Düzeltme sürümünü tamamlayıp yeniden gönderin."
+      },
+      {
+        "label": "Kısmen onaylandı",
+        "body": "Yalnızca onaylanan tutar faturalanabilir; kesilen kısım ödenmez."
+      },
+      {
+        "label": "Onaylandı",
+        "body": "Bütün satırlar onaylandı; tutar faturalanabilir."
+      },
+      {
+        "label": "Reddedildi",
+        "body": "Karar kesindir; bu claim faturalanamaz."
+      },
+      {
+        "label": "Faturalandı",
+        "body": "Claim bir faturanıza dağıtıldı ve başka bir faturaya dağıtılamaz. Ödeme, fatura bir icmale girip karara bağlandıktan sonra doğar."
+      },
+      {
+        "label": "Partiye alındı",
+        "body": "Claim'in faturası bir icmale girdi ve ödeyen kurumun kararını bekliyor. Ödeme, icmal karara bağlanıp ödeme mutabakatı açıldığında yapılır."
+      },
+      {
+        "label": "Ödendi",
+        "body": "Claim'in karşılığı bir ödeme mutabakatı üzerinden hesabınıza ödendi. Bu claim üzerinde yapılacak bir şey kalmaz."
+      },
+      {
+        "label": "İptal edildi",
+        "body": "Claim geri çekildi; ödeme doğurmaz."
+      },
+      {
+        "label": "Ödenmeden kapandı",
+        "body": "Claim'i toplayan icmal faturası ödeyen kurumca reddedildi. Kararlar yerinde durur ama bu claim'in karşılığı ödenmez ve yeniden faturalanamaz."
+      }
+    ]
+  },
+
+  "inventory": {
+    "title": "Kontenjan",
+    "purpose": "Bir oda tipinin geceye göre kontenjanını açar ve değiştirir. Tutulan ve onaylı sayıları sunucudan gelir; kontenjan bunların altına indirilemez.",
+    "sections": [
+      {
+        "label": "Sezonu aç",
+        "body": "Bir tarih aralığının tamamına tek seferde kontenjan yazar. Bitiş tarihi aralığa dahil değildir."
+      },
+      {
+        "label": "Günler",
+        "body": "Seçilen aydaki her gece bir satır. Satırı düzenleyip tek geceye ayrı kontenjan verebilirsiniz."
+      },
+      {
+        "label": "Tutulan",
+        "body": "O gece için geçici olarak tutulmuş oda sayısı. Tutma süresi dolarsa oda kendiliğinden serbest kalır."
+      },
+      {
+        "label": "Onaylı",
+        "body": "O gece için rezervasyonu kesinleşmiş oda sayısı."
+      },
+      {
+        "label": "Boş",
+        "body": "Kontenjandan tutulan ve onaylı düşüldükten sonra kalan; sunucunun hesabıdır."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Aç",
+        "body": "Aralığın tamamına yazılan kontenjanı kaydeder. Zaten tutulmuş veya onaylanmış odaların altına inen bir sayı reddedilir ve sunucu ilk uymayan geceyi söyler."
+      },
+      {
+        "label": "Düzenle",
+        "body": "Tek bir gecenin kontenjanını değiştirmek için satırı açar."
+      }
+    ],
+    "statuses": [
+      {
+        "label": "Açılmadı",
+        "body": "Bu gece için hiç kontenjan yazılmadı; oda hak sahiplerine açık değildir."
+      }
+    ]
+  },
+
+  "desk": {
+    "title": "Gelenler / Gidenler",
+    "purpose": "Kapıdaki gün: onaylı rezervasyonların girişi, konaklayanların çıkışı ve gelmeyen misafirin bildirimi. Gece sayısını ve ücreti sunucu hesaplar.",
+    "sections": [
+      {
+        "label": "Gelenler",
+        "body": "Girişi bekleyen onaylı rezervasyonlar, geliş gününe göre sıralı."
+      },
+      {
+        "label": "Gidenler",
+        "body": "Hâlen konaklayan misafirler. Her satır girişin ne zaman yapıldığını gösterir."
+      },
+      {
+        "label": "Kupon kodu",
+        "body": "Misafirin getirdiği kod. Başka bir rezervasyona ait kod reddedilir ve sunucu kimin olduğunu söyler."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Giriş yap",
+        "body": "Kupon kodunu doğrulayıp misafiri içeri alır. Rezervasyon bundan sonra Gidenler listesinde görünür."
+      },
+      {
+        "label": "Çıkış yap",
+        "body": "Konaklamayı bitirir. Kalınan gece sayısını sunucu hesaplar; kullanılmayan geceler hak sahibine geri döner."
+      },
+      {
+        "label": "Gelmedi",
+        "body": "Gelmeme bildirimi formunu açar."
+      },
+      {
+        "label": "Gelmediğini bildir",
+        "body": "Temiz taranmış bir kanıt belgesi olmadan çalışmaz. Bildirimden sonra sunucu ücreti hesaplar, ama ödeyen kurumdan ikinci bir kişi onaylayana kadar hak sahibine hiçbir şey yansımaz."
+      }
+    ],
+    "statuses": [
+      {
+        "label": "Onaylandı",
+        "body": "Rezervasyon kesin; misafir bekleniyor."
+      },
+      {
+        "label": "Giriş yapıldı",
+        "body": "Misafir içeride. Sırada çıkış var."
+      },
+      {
+        "label": "Gelinmedi",
+        "body": "Gelmeme bildirildi. Kayıt, ikinci kişinin onayına kadar incelemede kalır."
+      }
+    ]
+  },
+
+  "earnings": {
+    "title": "Hakediş",
+    "purpose": "Seçtiğiniz dönemde karara bağlanan claim'ler ve bunların henüz faturalanmamış kısmı, para birimi başına. Faturanız bu rakama karşı doğrulanır.",
+    "sections": [
+      {
+        "label": "Duruma göre",
+        "body": "Dönemdeki claim'ler durumlarına göre: adet ve onaylanan tutar. Her satır sunucunun sayımıdır."
+      },
+      {
+        "label": "Onaylanan",
+        "body": "Dönemde karara bağlanan claim'lerin onaylanan toplamı."
+      },
+      {
+        "label": "Kesintiler",
+        "body": "Onaylanan tutardan düşülen düzeltmeler. Bir kesinti, istediğiniz tutarın bir kısmının ödenmeyeceği anlamına gelir."
+      },
+      {
+        "label": "Faturalanabilir",
+        "body": "Şu anda fatura kesebileceğiniz tutar: onaylanmış ve henüz bir faturaya dağıtılmamış kısım. Sunucunun rakamıdır; ekran toplamaz."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Yeni fatura",
+        "body": "O para birimindeki faturalanabilir claim'lerle yeni fatura formunu açar."
+      },
+      {
+        "label": "Faturalar",
+        "body": "Kestiğiniz faturaların listesine gider."
+      },
+      {
+        "label": "İcmaller",
+        "body": "Gönderdiğiniz icmallerin listesine gider."
+      },
+      {
+        "label": "Cari ekstre",
+        "body": "Dönemin faturalanan, karara bağlanan ve ödenen tutarlarına gider."
+      }
+    ]
+  },
+
+  "invoices": {
+    "title": "Faturalar",
+    "purpose": "Kurumunuzun kestiği faturalar, en yenisi üstte, her birinin hangi icmalde olduğuyla birlikte.",
+    "sections": [
+      {
+        "label": "Fatura no",
+        "body": "Faturanın kendi numarası. Üzerine basınca faturanın sayfası açılır."
+      },
+      {
+        "label": "Fatura tarihi",
+        "body": "Faturanın düzenlendiği gün."
+      },
+      {
+        "label": "Durum",
+        "body": "Faturanın nerede olduğu ve karşılığının ödenip ödenmediği."
+      },
+      {
+        "label": "Ödenecek toplam",
+        "body": "Faturanın kendi toplamı; matrah ve KDV dahil yazdığınız tutardır."
+      },
+      {
+        "label": "Dağıtım toplamı",
+        "body": "Faturaya bağladığınız claim tutarlarının toplamı. Sunucu hesaplar ve fatura toplamıyla tolerans içinde eşleşmesi gerekir."
+      },
+      {
+        "label": "İcmal",
+        "body": "Faturanın içinde bulunduğu icmal. Bir icmale girmemiş fatura karara bağlanmaz."
+      }
+    ],
+    "statuses": [
+      { "label": "Taslak", "body": "Fatura düzenlenebilir; henüz gönderilmedi." },
+      {
+        "label": "Gönderildi",
+        "body": "Fatura ödeyen kuruma ulaştı ve bir icmale alınmayı bekliyor."
+      },
+      {
+        "label": "İcmalde",
+        "body": "Fatura bir icmalin içinde ve icmalin kararını bekliyor."
+      },
+      {
+        "label": "İade edildi",
+        "body": "Sıra sizde. Fatura düzeltilerek yeniden kesilir; eskisi zincirde kalır."
+      },
+      {
+        "label": "Onaylandı",
+        "body": "Fatura tamamıyla kabul edildi; tutar ödeme mutabakatına girer."
+      },
+      {
+        "label": "Kısmen onaylandı",
+        "body": "Faturaya kesinti uygulandı. Yalnızca onaylanan tutar ödenir."
+      },
+      {
+        "label": "Reddedildi",
+        "body": "Fatura kabul edilmedi; karşılığı ödenmez."
+      },
+      {
+        "label": "Ödendi",
+        "body": "Faturanın onaylanan tutarı ödendi."
+      },
+      {
+        "label": "İptal edildi",
+        "body": "Fatura geri çekildi; ödeme doğurmaz."
+      }
+    ]
+  },
+
+  "invoiceNew": {
+    "title": "Yeni fatura",
+    "purpose": "Faturanın başlığını girersiniz: numara, tarih, matrah, KDV ve ödenecek toplam. Claim dağıtımı ve fatura görseli, fatura oluştuktan sonra kendi sayfasında yapılır.",
+    "sections": [
+      {
+        "label": "Fatura no",
+        "body": "Kendi sisteminizde kestiğiniz faturanın numarası. Aynı numara ikinci kez kullanılamaz."
+      },
+      {
+        "label": "Fatura tarihi",
+        "body": "Faturanın düzenlendiği gün."
+      },
+      {
+        "label": "KDV oranı",
+        "body": "Faturaya uygulanan oran. Zorunlu değildir; tutarlar buradan hesaplanmaz."
+      },
+      {
+        "label": "Matrah",
+        "body": "Vergi öncesi tutar, faturanızda yazdığı gibi."
+      },
+      {
+        "label": "KDV",
+        "body": "Vergi tutarı, faturanızda yazdığı gibi. Ekran bunu hesaplamaz."
+      },
+      {
+        "label": "Ödenecek toplam",
+        "body": "Faturanın toplamı. Claim dağıtımınızın bu tutarla tolerans içinde eşleşmesi gerekir."
+      },
+      {
+        "label": "Not",
+        "body": "Faturaya iliştirmek istediğiniz açıklama."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Kaydet",
+        "body": "Faturayı taslak olarak oluşturur ve sayfasına götürür. Gönderim ayrı bir adımdır."
+      }
+    ]
+  },
+
+  "invoice": {
+    "title": "Fatura",
+    "purpose": "Tek bir fatura: başlığı, görseli, hangi claim'lere dağıtıldığı ve gönderimi. Dağıtım toplamı ile farkı sunucu hesaplar; ekran toplamaz.",
+    "sections": [
+      {
+        "label": "Fatura",
+        "body": "Faturanın başlığı. Yalnızca taslakken düzenlenebilir; gönderildikten sonra alanlar kapanır."
+      },
+      {
+        "label": "Fatura görseli",
+        "body": "Faturanın dosyası. Dosya taranır; ödeyen kurum görseli zorunlu tutuyorsa gönderim onu ister."
+      },
+      {
+        "label": "Claim dağıtımı",
+        "body": "Faturanızı hangi claim'lere, ne kadar dağıttığınız. Bir claim'in onaylı toplamının üstünde dağıtım sunucu tarafından reddedilir."
+      },
+      {
+        "label": "Fark",
+        "body": "Ödenecek toplam ile dağıtım toplamı arasındaki fark. Sunucu hesaplar ve ödeyen kurumun toleransı içinde kalması gerekir."
+      },
+      {
+        "label": "Sürüm zinciri",
+        "body": "Aynı faturanın düzeltme zinciri. Eski fatura silinmez; zincirde durur."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Başlığı kaydet",
+        "body": "Fatura başlığındaki değişiklikleri kaydeder. Yalnızca taslakta görünür."
+      },
+      {
+        "label": "Dağıtımı kaydet",
+        "body": "Claim dağıtımının tamamını birden kaydeder. Kaydettikten sonra dağıtım toplamı ve fark yenilenir."
+      },
+      {
+        "label": "Gönder",
+        "body": "Faturayı ödeyen kuruma gönderir. Gönderilen fatura düzenlenemez; bir icmale alınmayı bekler."
+      },
+      {
+        "label": "Düzelt",
+        "body": "İade edilen faturanın yerine, aynı rakamlarla yeni bir taslak açar. Eskisi zincirde kalır."
+      },
+      {
+        "label": "İptal et",
+        "body": "Taslak ya da iade edilmiş faturayı geri çeker. Dağıtılan claim'ler yeniden faturalanabilir hâle gelir."
+      }
+    ],
+    "statuses": [
+      { "label": "Taslak", "body": "Fatura düzenlenebilir; henüz gönderilmedi." },
+      {
+        "label": "Gönderildi",
+        "body": "Fatura ödeyen kurumda; bir icmale alınmayı bekliyor."
+      },
+      {
+        "label": "İcmalde",
+        "body": "Fatura bir icmalin içinde ve kararını bekliyor."
+      },
+      {
+        "label": "İade edildi",
+        "body": "Sıra sizde. Düzelt ile yeni bir fatura açıp gönderin."
+      },
+      { "label": "Onaylandı", "body": "Fatura kabul edildi; ödemeye gider." },
+      {
+        "label": "Kısmen onaylandı",
+        "body": "Kesinti uygulandı; yalnızca onaylanan tutar ödenir."
+      },
+      { "label": "Reddedildi", "body": "Fatura kabul edilmedi; ödenmez." },
+      { "label": "Ödendi", "body": "Onaylanan tutar ödendi." },
+      { "label": "İptal edildi", "body": "Fatura geri çekildi." }
+    ]
+  },
+
+  "batches": {
+    "title": "İcmaller",
+    "purpose": "Kurumunuzun ödeyen kuruma gönderdiği icmaller: hangi dönemi kapsıyor, kaç fatura taşıyor ve ne karar aldı.",
+    "sections": [
+      {
+        "label": "Referans",
+        "body": "İcmalin numarası. Üzerine basınca içindeki faturalar ve kararları açılır."
+      },
+      { "label": "Dönem", "body": "İcmalin kapsadığı tarih aralığı." },
+      {
+        "label": "Durum",
+        "body": "İcmalin nerede olduğu ve kararın verilip verilmediği."
+      },
+      {
+        "label": "Faturalar",
+        "body": "İcmaldeki fatura sayısı."
+      },
+      {
+        "label": "Gönderilen",
+        "body": "İcmaldeki faturaların gönderim toplamı."
+      },
+      {
+        "label": "Onaylanan",
+        "body": "Karar verilmiş icmallerde ödeyen kurumun kabul ettiği toplam. Karar verilmeden bu sütun tire gösterir, sıfır değil."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Yeni icmal",
+        "body": "Dönem, alan ve para birimi seçerek boş bir icmal açar."
+      }
+    ],
+    "statuses": [
+      { "label": "Taslak", "body": "İcmalin içeriği değiştirilebilir; gönderilmedi." },
+      {
+        "label": "Gönderildi",
+        "body": "İcmal ödeyen kuruma ulaştı ve inceleme sırasına girdi."
+      },
+      {
+        "label": "İncelemede",
+        "body": "Faturalar tek tek karara bağlanıyor."
+      },
+      {
+        "label": "Kararlaştırıldı",
+        "body": "Her fatura karara bağlandı. Onaylanan toplam üzerinden ödeme mutabakatı açılır."
+      },
+      {
+        "label": "Ödemede",
+        "body": "Ödeme mutabakatı yürüyor; ödeme kayıtları işleniyor."
+      },
+      {
+        "label": "Kapandı",
+        "body": "İcmalin işi bitti."
+      },
+      {
+        "label": "İptal edildi",
+        "body": "İcmal geri çekildi; içindeki faturalar yeniden icmale alınabilir."
+      }
+    ]
+  },
+
+  "batchNew": {
+    "title": "Yeni icmal",
+    "purpose": "Bir icmal tek bir dönemi, tek bir alanı ve tek bir para birimini kapsar. Faturalar icmal oluştuktan sonra kendi sayfasında seçilir.",
+    "sections": [
+      {
+        "label": "Dönem başı",
+        "body": "İcmalin kapsadığı ilk gün."
+      },
+      {
+        "label": "Dönem sonu",
+        "body": "İcmalin kapsadığı son gün."
+      },
+      {
+        "label": "Alan",
+        "body": "Sağlık mı konaklama mı. Bir icmal iki alanı birden taşıyamaz."
+      },
+      {
+        "label": "Para birimi",
+        "body": "İcmalin para birimi. Yalnızca aynı para birimindeki faturalar bu icmale alınabilir."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Kaydet",
+        "body": "İcmali taslak olarak oluşturur ve sayfasına götürür."
+      }
+    ]
+  },
+
+  "batch": {
+    "title": "İcmal",
+    "purpose": "Tek bir icmal: taslakken içindeki faturalar seçilir ve gönderilir; sonrasında her faturanın kararı, gerekçesi ve sunucunun hesapladığı toplamlar görünür.",
+    "sections": [
+      {
+        "label": "İcmaldeki faturalar",
+        "body": "İcmale alınabilecek gönderilmiş faturalar ve şu anda içeride olanlar. Yalnızca tek ödeyen, tek alan ve tek para birimi bir icmalde birleşebilir."
+      },
+      {
+        "label": "Kararlar",
+        "body": "Her fatura için ödeyen kurumun kararı, onaylanan tutarı ve gerekçesi."
+      },
+      {
+        "label": "Gönderilen",
+        "body": "İcmalde gönderdiğiniz toplam."
+      },
+      {
+        "label": "Onaylanan",
+        "body": "Kabul edilen toplam. Ödeme bu rakamın üstüne çıkmaz."
+      },
+      {
+        "label": "Kesinti",
+        "body": "Onaylanandan düşülen toplam; bu tutar size ödenmez."
+      },
+      {
+        "label": "İade",
+        "body": "Düzeltilmek üzere size geri gönderilen faturaların toplamı. Düzeltip yeniden gönderirseniz yeniden değerlendirilir."
+      },
+      {
+        "label": "Red",
+        "body": "Kabul edilmeyen faturaların toplamı. Bu tutar ödenmez ve düzeltmeyle geri gelmez."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Faturaları kaydet",
+        "body": "İcmalin içeriğini kaydeder. Yalnızca taslakta yapılabilir."
+      },
+      {
+        "label": "İcmali gönder",
+        "body": "İcmali ödeyen kuruma gönderir ve parolanızı yeniden ister. Gönderilen icmalin içeriği değişmez."
+      }
+    ],
+    "statuses": [
+      { "label": "Taslak", "body": "İçerik değiştirilebilir; icmal gönderilmedi." },
+      {
+        "label": "Gönderildi",
+        "body": "İcmal ödeyen kurumda; fatura kararları bekleniyor."
+      },
+      { "label": "İncelemede", "body": "Faturalar tek tek karara bağlanıyor." },
+      {
+        "label": "Kararlaştırıldı",
+        "body": "Her fatura karara bağlandı ve toplamlar sabitlendi."
+      },
+      { "label": "Ödemede", "body": "Ödeme mutabakatı yürüyor." },
+      { "label": "Kapandı", "body": "İcmalin işi bitti." },
+      { "label": "İptal edildi", "body": "İcmal geri çekildi." }
+    ]
+  },
+
+  "statement": {
+    "title": "Cari ekstre",
+    "purpose": "Seçtiğiniz dönemde ne faturaladığınız, üzerine ne karar verildiği, neyin mutabakata bağlandığı ve ne ödendiği. İtiraz ederken dayanacağınız rakamlar bunlardır ve hepsi sunucunundur.",
+    "sections": [
+      {
+        "label": "Faturalanan",
+        "body": "Dönemde kestiğiniz faturaların toplamı."
+      },
+      {
+        "label": "Onaylanan",
+        "body": "Ödeyen kurumun kabul ettiği toplam."
+      },
+      {
+        "label": "Kesinti",
+        "body": "Onaylanandan düşülen toplam; ödenmeyecek kısımdır."
+      },
+      {
+        "label": "İade",
+        "body": "Düzeltilmek üzere size geri gönderilenlerin toplamı."
+      },
+      {
+        "label": "Red",
+        "body": "Kabul edilmeyenlerin toplamı."
+      },
+      {
+        "label": "Mutabakata bağlanan",
+        "body": "Ödeme mutabakatı açılmış tutar; ödeme sırasına girmiş demektir."
+      },
+      { "label": "Ödenen", "body": "Hesabınıza geçmiş toplam." },
+      {
+        "label": "Açık bakiye",
+        "body": "Mutabakata bağlanmış ama henüz ödenmemiş tutar. Sunucunun hesabıdır; ekran toplamaz."
+      },
+      {
+        "label": "Faturalar",
+        "body": "Dönemin faturaları: her birinin durumu, hangi icmalde olduğu, aldığı karar, onaylanan tutarı, mutabakatı ve ödeneni."
+      },
+      {
+        "label": "Ödeme mutabakatları",
+        "body": "Açılan ödeme mutabakatları: vadesi, ödenecek, ödenen ve açık tutarı ile son ödeme zamanı."
+      },
+      {
+        "label": "Vade",
+        "body": "Ödemenin yapılacağı tarih. Bu tarih geçip açık tutar kaldıysa günlük mutabakat farkı görür."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Dışa aktar",
+        "body": "Aynı ekstreyi dosya olarak sıraya alır. Dosya hazır olunca durumu ve geçerlilik sonu burada yazar."
+      },
+      {
+        "label": "İndir",
+        "body": "Hazır dosyayı yeni sekmede açar. Kendi ekstrenizi indirdiğiniz için amaç sorulmaz; dosya filigranlıdır ve indirme denetim kaydına yazılır."
+      }
+    ],
+    "statuses": [
+      { "label": "Sırada", "body": "Dosya isteği alındı; henüz hazırlanmaya başlamadı." },
+      { "label": "Hazırlanıyor", "body": "Dosya oluşturuluyor." },
+      {
+        "label": "Hazır",
+        "body": "Dosya indirilebilir. Geçerlilik sonundan sonra bağlantı çalışmaz."
+      },
+      {
+        "label": "Başarısız",
+        "body": "Dosya oluşturulamadı. Yeniden isteyebilirsiniz."
+      },
+      {
+        "label": "Süresi doldu",
+        "body": "Dosyanın geçerliliği bitti; yeniden istemeniz gerekir."
+      }
+    ]
+  }
+}

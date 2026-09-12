@@ -91,6 +91,15 @@
       "both": "Backoffice and member app"
     }
   },
+  "help": {
+    "about": "About",
+    "open": "Help",
+    "pageHelp": "Page help",
+    "sections": "Sections",
+    "actions": "What you can do",
+    "statuses": "Statuses",
+    "none": "No help has been written for this page yet."
+  },
   "header": {
     "userMenu": "User menu",
     "tenantBadge": "Active tenant: {{name}} ({{code}})",

@@ -1,0 +1,1163 @@
+{
+  "people": {
+    "title": "Hak Sahipleri",
+    "purpose": "Bu kurumun hizmet verdiği kişilerin listesidir. Kişiyi adıyla arar, durumuna göre süzer ve kaydını buradan açarsınız.",
+    "sections": [
+      {
+        "label": "Ad veya soyad ara",
+        "body": "En az iki karakter yazıp arayın. Bu alan yalnızca ad ve soyadda arar; kimlik numarası buradan aranmaz."
+      },
+      {
+        "label": "Durum",
+        "body": "Listeyi kayıt durumuna göre daraltır. Seçim yapılmazsa tüm durumlar listelenir."
+      },
+      {
+        "label": "Ad soyad",
+        "body": "Kişinin görünen adı. Ada dokununca kişinin kaydı açılır."
+      },
+      {
+        "label": "Birincil kimlik",
+        "body": "Kişinin birincil tanımlayıcısı, maskelenmiş biçimde. Tam numara hiçbir listede gösterilmez."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Kimlik ile ara",
+        "body": "Kimlik numarasıyla tek bir kişiyi bulur. Ayrı bir yetki ister, her sorgu denetim kaydına yazılır ve numara ne saklanır ne de adres çubuğunda görünür."
+      },
+      {
+        "label": "Yeni hak sahibi",
+        "body": "Yeni bir kişi kaydı açar. Yalnızca hak sahibi yönetme yetkisi olanlarda görünür."
+      }
+    ],
+    "statuses": [
+      { "label": "Aktif", "body": "Kişi kayıtlıdır ve üzerine işlem yapılabilir." },
+      { "label": "Pasif", "body": "Kayıt kullanımda değildir; yeni işlem açılmaz." },
+      {
+        "label": "Vefat",
+        "body": "Kişinin vefatı kayda işlenmiştir. Geçmiş kayıtlar olduğu gibi kalır."
+      },
+      {
+        "label": "Birleştirildi",
+        "body": "Bu kayıt aynı kişinin başka bir kaydıyla birleştirildi. Kaydın üstündeki bağlantı güncel kayda götürür."
+      }
+    ]
+  },
+  "personNew": {
+    "title": "Yeni hak sahibi",
+    "purpose": "Yeni bir hak sahibi kaydı açar. Üyelik, plan kaydı ve haklar sonradan bu kayda bağlanır.",
+    "sections": [
+      {
+        "label": "Doğum tarihi",
+        "body": "Zorunlu değildir. Girildiğinde aynı adı taşıyan kayıtların ayırt edilmesinde kullanılır."
+      },
+      {
+        "label": "Tanımlayıcılar",
+        "body": "Kişinin numaraları. TCKN 11 hane olarak kontrol basamağıyla doğrulanır ve bir türden yalnız bir numara tutulur; yeni değer eskisinin yerine geçer."
+      },
+      {
+        "label": "Birincil",
+        "body": "Listelerde maskeli olarak gösterilecek numarayı seçer. Numaranın tamamı bir daha ekranda görünmez."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Tanımlayıcı ekle",
+        "body": "Forma yeni bir tanımlayıcı satırı ekler. En fazla on satır girilebilir."
+      },
+      {
+        "label": "Kaydet",
+        "body": "Kayıt oluşturulur ve kişinin sayfası açılır. Sunucu numaraları yeniden doğrular; kabul etmediği alan formun üzerinde işaretlenir."
+      }
+    ]
+  },
+  "person": {
+    "title": "Hak sahibi",
+    "purpose": "Bir kişinin kaydı: kimliği, ailesi, üyelikleri, plan kayıtları, hakları ve geçmişi. Her konu kendi sekmesindedir ve yetkinizin yetmediği sekme hiç görünmez.",
+    "sections": [
+      {
+        "label": "Kimlik",
+        "body": "Kişinin adı, doğum tarihi ve tanımlayıcıları. Numaralar yalnız maskeli gösterilir."
+      },
+      {
+        "label": "Aile",
+        "body": "Kişinin diğer hak sahipleriyle ilişkileri ve bu ilişkilerin geçerlilik dönemleri. Aile ile paylaşımlı bir hak bu ilişkiler üzerinden kullanılır."
+      },
+      {
+        "label": "Üyelikler",
+        "body": "Kişinin sponsor kurumlardaki üyelikleri: üye numarası, tür ve geçerlilik. Bir plan kaydı her zaman bir üyeliğe bağlanır."
+      },
+      {
+        "label": "Kayıtlar",
+        "body": "Kişinin hangi plana, hangi üyelik üzerinden ve hangi tarihler arasında kayıtlı olduğu. Hak hesapları bu kayıttan açılır."
+      },
+      {
+        "label": "Haklar",
+        "body": "Seçilen tarihte açık olan hak hesapları ve arkalarındaki hareketler. Rakamlar sunucunundur; ekran toplamaz."
+      },
+      {
+        "label": "Uygunluk",
+        "body": "Bir hizmet tarihinde kişinin hakkı olup olmadığını, hangi plan sürümüne göre ve neden olduğunu sorgular. Sonuç değiştirilemez biçimde saklanır."
+      },
+      {
+        "label": "Sağlık",
+        "body": "Kişinin sağlık vakaları ve claim'leri: referans, tarih, tutar ve durum. Bu görünümde tanı yer almaz."
+      },
+      { "label": "Konaklama", "body": "Kişinin rezervasyonları ve bekleme listesi kayıtları." },
+      { "label": "Geri ödemeler", "body": "Kişinin geri ödeme başvuruları ve bunların durumu." },
+      {
+        "label": "Erişim kaydı",
+        "body": "Bu kişinin klinik verisine kimin, ne zaman ve hangi amaçla baktığı ya da bakmayı denediği. Denetim okuma yetkisi ister."
+      }
+    ],
+    "statuses": [
+      { "label": "Aktif", "body": "Kişi kayıtlıdır ve üzerine işlem yapılabilir." },
+      { "label": "Pasif", "body": "Kayıt kullanımda değildir; yeni işlem açılmaz." },
+      {
+        "label": "Vefat",
+        "body": "Kişinin vefatı kayda işlenmiştir. Geçmiş kayıtlar olduğu gibi kalır."
+      },
+      {
+        "label": "Birleştirildi",
+        "body": "Bu kayıt başka bir kayda taşındı. Sayfanın üstündeki bağlantı güncel kayda götürür."
+      }
+    ]
+  },
+  "programs": {
+    "title": "Programlar ve Planlar",
+    "purpose": "Bir program, sponsor ile ödeyici arasındaki fayda çatısıdır. Planlar programın altında, hak tanımları da plan sürümünün içinde yaşar.",
+    "sections": [
+      { "label": "Kod veya ad ara", "body": "Listeyi program koduna ya da adına göre süzer." },
+      { "label": "Durum", "body": "Listeyi programın durumuna göre daraltır." },
+      {
+        "label": "Kod",
+        "body": "Programın kısa kodu. Aynı kod bu kurumda ikinci kez kullanılamaz."
+      },
+      { "label": "Sponsor", "body": "Faydayı üyelerine sağlayan kurum." },
+      {
+        "label": "Ödeyici",
+        "body": "Bedeli ödeyen kurum. Sponsor ile aynı kurum olabilir, olmak zorunda değildir."
+      },
+      { "label": "Plan", "body": "Programın altındaki plan sayısı." }
+    ],
+    "actions": [
+      {
+        "label": "Yeni program",
+        "body": "Yeni bir program açar. Program taslak olarak başlar; altındaki bir planın yayınlanmış sürümü olana kadar kimseye hak verilmez."
+      }
+    ],
+    "statuses": [
+      { "label": "Taslak", "body": "Program hazırlanıyor. Bu durumdayken kimseye hak verilmez." },
+      { "label": "Aktif", "body": "Program yürürlüktedir; planlarına kayıt açılabilir." },
+      {
+        "label": "Askıda",
+        "body": "Program geçici olarak durduruldu. Yeni işlem yapılmaz, geçmiş kayıtlar olduğu gibi kalır."
+      },
+      { "label": "Kapalı", "body": "Program sona erdi. Yeni kayıt açılmaz." }
+    ]
+  },
+  "programNew": {
+    "title": "Yeni program",
+    "purpose": "Sponsor ile ödeyici arasındaki fayda çatısını tanımlar. Program taslak olarak açılır; hak dağıtımı ancak altındaki bir planın sürümü yayınlandığında başlar.",
+    "sections": [
+      {
+        "label": "Kod",
+        "body": "Programın kısa kodu. Aynı kod bu kurumda ikinci kez kullanılamaz."
+      },
+      {
+        "label": "Sponsor kurum",
+        "body": "Faydayı üyelerine sağlayan kurum. Listede yalnızca sponsor rolüyle tanımlı kurumlar görünür."
+      },
+      {
+        "label": "Ödeyici kurum",
+        "body": "Sağlayıcıya ödemeyi yapacak kurum. Listede yalnızca ödeyici rolüyle tanımlı kurumlar görünür."
+      },
+      {
+        "label": "Başlangıç",
+        "body": "Programın yürürlüğe gireceği tarih. Boş bırakılabilir."
+      },
+      {
+        "label": "Bitiş",
+        "body": "Programın sona ereceği tarih. Boş bırakılırsa program süresizdir."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Kaydet",
+        "body": "Program taslak olarak oluşturulur ve programın sayfası açılır."
+      }
+    ]
+  },
+  "program": {
+    "title": "Program",
+    "purpose": "Bir programın tarafları, dönemi ve altındaki planlar. Hak tanımları programda değil, plan sürümlerinde tutulur.",
+    "sections": [
+      {
+        "label": "Program",
+        "body": "Program türü, sponsor kurum, ödeyici kurum ve geçerlilik dönemi."
+      },
+      {
+        "label": "Planlar",
+        "body": "Programın altındaki planlar: kod, ad, sürüm sayısı ve durum. Plan adına dokununca planın sayfası açılır."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Durumu değiştir…",
+        "body": "Programı bir sonraki duruma geçirir. Yalnızca sunucunun kabul ettiği geçişler listelenir."
+      },
+      {
+        "label": "Yeni plan",
+        "body": "Programın altında yeni bir plan açar. Plan taslak olarak başlar ve hak tanımları ilk sürümünde girilir."
+      }
+    ],
+    "statuses": [
+      { "label": "Taslak", "body": "Program hazırlanıyor. Bu durumdayken kimseye hak verilmez." },
+      { "label": "Aktif", "body": "Program yürürlüktedir; planlarına kayıt açılabilir." },
+      { "label": "Askıda", "body": "Program geçici olarak durduruldu. Yeni işlem yapılmaz." },
+      { "label": "Kapalı", "body": "Program sona erdi. Yeni kayıt açılmaz." }
+    ]
+  },
+  "plan": {
+    "title": "Plan",
+    "purpose": "Bir planın sürüm geçmişi. Hak tanımları sürümün içinde yaşar ve yalnızca yayınlanmış bir sürüm hak dağıtır.",
+    "sections": [
+      {
+        "label": "Plan sürümleri",
+        "body": "Sürümler yeniden eskiye sıralanır: sürüm numarası, geçerlilik dönemi, yayın tarihi ve durum. Sürüm numarasına dokununca sürüm açılır."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Yeni sürüm",
+        "body": "Yeni bir taslak sürüm açar. Başlangıç tarihi zorunludur ve var olan bir sürümü kopyalayarak başlayabilirsiniz; aynı tarih aralığında yayında ikinci bir sürüm olamaz."
+      },
+      {
+        "label": "Durumu değiştir…",
+        "body": "Planı bir sonraki duruma geçirir. Kullanımdan çıkan bir plana yeni kayıt açılmaz; yayınlanmış sürümlerine göre verilmiş haklar olduğu gibi kalır."
+      }
+    ],
+    "statuses": [
+      { "label": "Taslak", "body": "Sürüm düzenlenebilir ve henüz kimseye hak vermez." },
+      {
+        "label": "İncelemede",
+        "body": "Sürüm gönderildi ve artık değiştirilemez. Başka bir yetkilinin yayınlaması beklenir."
+      },
+      {
+        "label": "Yayında",
+        "body": "Sürüm yürürlüktedir. Bu dönemdeki haklar bu sürüme göre verilir."
+      },
+      {
+        "label": "Kullanımdan çıktı",
+        "body": "Sürüm yürürlükten kaldırıldı. Daha önce bu sürüme göre verilmiş haklar olduğu gibi kalır."
+      }
+    ]
+  },
+  "planVersion": {
+    "title": "Plan sürümü",
+    "purpose": "Bir planın belirli bir dönemde geçerli olan hali. Taslak düzenlenir, incelemeye gönderilir ve başka bir yetkili yayınlar; yayınlanan sürüm bir daha değişmez.",
+    "sections": [
+      {
+        "label": "Plan sürümü",
+        "body": "Sürümün geçerlilik dönemi ve notları. Yalnız taslakken düzenlenebilir; gönderen ve yayınlayan bilgisini sunucu yazar."
+      },
+      {
+        "label": "Yapılandırma özeti",
+        "body": "Sürümün yayınlandığı andaki içeriğinden sunucunun ürettiği özettir. Aynı özet aynı yapılandırma demektir; sizin doldurduğunuz bir alan değildir."
+      },
+      {
+        "label": "Hak tanımları",
+        "body": "Bu sürümün dağıttığı haklar: kod, ad, birim, dönem ve başlangıç miktarı. Sürüm yayınlandığında bu tanımlardan hak hesapları açılır; yayınlamak için en az bir tanım gerekir."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Tanım ekle",
+        "body": "Yeni bir hak tanımı satırı ekler. Tanımların tamamı tek seferde kaydedilir."
+      },
+      {
+        "label": "İncelemeye gönder",
+        "body": "Sürümü incelemeye alır. Bundan sonra sürüm değiştirilemez ve yayına almayı başka bir yetkili onaylar."
+      },
+      {
+        "label": "Yayınla",
+        "body": "Sürümü yayına alır: bu tarihten sonraki haklar buna göre verilir ve sürüm bir daha değiştirilemez. Parola doğrulaması ister ve sürümü gönderen kişi kendi gönderdiğini yayınlayamaz."
+      },
+      {
+        "label": "Kullanımdan çıkar",
+        "body": "Yayındaki sürümü yürürlükten kaldırır. Bir sebep kodu ve parola doğrulaması ister; geçmişte bu sürüme göre verilmiş haklar olduğu gibi kalır."
+      }
+    ],
+    "statuses": [
+      { "label": "Taslak", "body": "Sürüm düzenlenebilir ve henüz kimseye hak vermez." },
+      {
+        "label": "İncelemede",
+        "body": "Sürüm gönderildi ve artık değiştirilemez. Başka bir yetkilinin yayınlaması beklenir."
+      },
+      {
+        "label": "Yayında",
+        "body": "Sürüm yürürlüktedir. Bu dönemdeki haklar buna göre verilir ve sürüm değiştirilemez."
+      },
+      {
+        "label": "Kullanımdan çıktı",
+        "body": "Sürüm yürürlükten kaldırıldı. Daha önce bu sürüme göre verilmiş haklar olduğu gibi kalır."
+      }
+    ]
+  },
+  "adjustments": {
+    "title": "Onay bekleyen düzeltmeler",
+    "purpose": "Elle açılmış hak düzeltmelerinin onay kuyruğudur. Her satır hangi hesabı, ne kadar ve neden değiştireceğini gösterir; kararı talebi açandan başka bir yetkili verir.",
+    "sections": [
+      {
+        "label": "Hesap",
+        "body": "Düzeltmenin işleneceği hak hesabı: hakkın adı, kodu ve o andaki kullanılabilir bakiyesi."
+      },
+      {
+        "label": "Değişim",
+        "body": "Bakiyeye eklenecek ya da bakiyeden düşülecek miktar. Artı değer hak ekler, eksi değer düşer ve sıfır olamaz."
+      },
+      { "label": "Sebep", "body": "Talebi açan kişinin girdiği sebep kodu ve açıklaması." },
+      { "label": "Talep eden", "body": "Talebi açan kullanıcı ve talebin açıldığı an." }
+    ],
+    "actions": [
+      {
+        "label": "Onayla",
+        "body": "Düzeltmeyi onaylar ve bakiyeye işler. Parola doğrulaması ister; kendi açtığınız talebi ve kendi dosyanızı karara bağlayamazsınız."
+      },
+      {
+        "label": "Reddet",
+        "body": "Düzeltmeyi reddeder. Bakiye değişmez ve karar kalıcı olarak kayda geçer."
+      }
+    ],
+    "statuses": [
+      {
+        "label": "Onay bekliyor",
+        "body": "Talep açıldı ama karara bağlanmadı. Bakiyeye hiçbir şey işlenmedi."
+      },
+      { "label": "Onaylandı", "body": "Düzeltme onaylandı ve hak hesabına işlendi." },
+      { "label": "Reddedildi", "body": "Düzeltme reddedildi; bakiye değişmedi." }
+    ]
+  },
+  "imports": {
+    "title": "Üye içe aktarma",
+    "purpose": "Sponsorların üye dosyalarıyla açılan içe aktarmaların listesidir. Satırlar önce ayrı bir alanda doğrulanır; hiçbir şey onaylanmadan canlı kayıtlara yazılmaz.",
+    "sections": [
+      { "label": "Durum", "body": "Listeyi içe aktarmanın durumuna göre daraltır." },
+      {
+        "label": "Dosya",
+        "body": "Yüklenen dosyanın adı. Ada dokununca içe aktarmanın ayrıntısı açılır."
+      },
+      {
+        "label": "Kaynak",
+        "body": "Dosyanın geldiği sistem ve kaynak sürümü. Aynı sistem ve sürüm çifti ikinci kez yüklenemez."
+      },
+      { "label": "Satır", "body": "Dosyada okunan satır sayısı." },
+      { "label": "Yüklendi", "body": "Dosyanın sunucuya ulaştığı an." }
+    ],
+    "actions": [
+      {
+        "label": "Yeni içe aktarma",
+        "body": "Dosya yükleme formunu açar. Üye içe aktarma yetkisi ister."
+      }
+    ],
+    "statuses": [
+      { "label": "Alındı", "body": "Dosya sunucuya ulaştı ve doğrulama sırasında bekliyor." },
+      {
+        "label": "Doğrulanıyor",
+        "body": "Satırlar okunuyor ve mevcut kayıtlarla eşleştiriliyor."
+      },
+      {
+        "label": "İnceleme bekliyor",
+        "body": "Hatalı ya da çakışan satırlar var. Uygulamadan önce bir kişinin bu satırlara karar vermesi gerekir."
+      },
+      {
+        "label": "Uygulanmaya hazır",
+        "body": "Karar bekleyen satır kalmadı; içe aktarma uygulanabilir."
+      },
+      { "label": "Uygulanıyor", "body": "Kabul edilen satırlar canlı kayıtlara yazılıyor." },
+      {
+        "label": "Uygulandı",
+        "body": "Yazma tamamlandı. Oluşturulan, güncellenen ve atlanan satır sayıları özet bölümüne eklenir."
+      },
+      {
+        "label": "Başarısız",
+        "body": "İçe aktarma tamamlanamadı. Sebebi sayfanın üstünde yazar; düzeltilmiş dosyayı yeni bir kaynak sürümüyle yükleyin."
+      },
+      {
+        "label": "İptal edildi",
+        "body": "İçe aktarma bir sebep koduyla durduruldu. Hiçbir satır uygulanmaz."
+      }
+    ]
+  },
+  "importNew": {
+    "title": "Dosya yükle",
+    "purpose": "Sponsorun üye dosyasını sisteme alır. Dosya canlı kayıtlara yazılmaz; ayrı bir alanda tutulup doğrulanır ve siz uygulayana kadar hiçbir kayıt değişmez.",
+    "sections": [
+      {
+        "label": "Dosya (CSV)",
+        "body": "Dosyanın başlık satırı beklenen sütunlarla uyuşmalıdır. Uyuşmazsa hiçbir satır alınmaz."
+      },
+      {
+        "label": "Sponsor kurum",
+        "body": "Dosyadaki üyelerin bağlanacağı sponsor. Yalnızca ilişkisi aktif olan sponsorlar listelenir."
+      },
+      {
+        "label": "Kaynak sistem",
+        "body": "Dosyayı üreten sistemin adı. Aynı dosyanın ikinci kez yüklenip yüklenmediği bu ad ile kaynak sürümünden anlaşılır."
+      },
+      {
+        "label": "Kaynak sürümü",
+        "body": "Bu dosyanın sürümü. Aynı kaynak sürümü ikinci kez yüklenemez; aynı dosyanın iki kez işlenmesi böyle engellenir."
+      },
+      {
+        "label": "Varsayılan plan",
+        "body": "Satırında plan kodu olmayan kayıtlar bu plana yazılır. Plan seçebilmek için önce program seçin."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Kaydet",
+        "body": "Dosya alınır, doğrulama başlar ve içe aktarmanın sayfası açılır. İşlem parola doğrulaması ister."
+      }
+    ]
+  },
+  "import": {
+    "title": "İçe aktarma",
+    "purpose": "Bir dosyanın içe aktarma kaydı: dosyada ne geldiği, doğrulama ve eşleştirmenin ne bulduğu, hangi satırların karar beklediği ve işi bitiren iki komut.",
+    "sections": [
+      {
+        "label": "Özet",
+        "body": "Dosyadaki satır, geçerli, eşleşen, çakışan ve hatalı sayıları. Uygulandıktan sonra oluşturulan, güncellenen ve atlanan sayıları da eklenir; sayılar sunucunundur."
+      },
+      {
+        "label": "Satırlar",
+        "body": "Satırlar duruma göre süzülür. Filtre karar bekleyen satırlarla açılır: önce çakışanlar, yoksa hatalılar."
+      },
+      {
+        "label": "Karar",
+        "body": "Satır için verilmiş karar ve verilebilecek kararlar. Çakışan bir satırda hangi kaydın güncelleneceğini seçmeniz gerekir; hatalı bir satır yalnızca atlanabilir."
+      }
+    ],
+    "actions": [
+      { "label": "Yeni kayıt", "body": "Satırdaki kişiyi yeni bir hak sahibi olarak açar." },
+      {
+        "label": "Güncelle",
+        "body": "Satırı, seçtiğiniz mevcut hak sahibi kaydına işler. Aday seçilmeden kullanılamaz."
+      },
+      { "label": "Atla", "body": "Satırı uygulamanın dışında bırakır." },
+      {
+        "label": "Uygula",
+        "body": "Kabul edilen satırları canlı kayıtlara yazar. Hatalı ve atlanan satırlar atlanır, işlem geri alınamaz ve parola doğrulaması ister."
+      },
+      {
+        "label": "İptal et",
+        "body": "İçe aktarmayı durdurur. Bir sebep kodu zorunludur ve hiçbir satır uygulanmaz."
+      }
+    ],
+    "statuses": [
+      { "label": "Bekliyor", "body": "Satır henüz doğrulanmadı." },
+      {
+        "label": "Geçerli",
+        "body": "Satır doğrulandı ve üzerinde düzeltilecek bir alan bulunmadı."
+      },
+      {
+        "label": "Hatalı",
+        "body": "Satırda kabul edilmeyen alanlar var. Hangi alanın neden geçersiz olduğu satırın altında yazar ve bu satır yalnızca atlanabilir."
+      },
+      {
+        "label": "Eşleşti",
+        "body": "Satır kayıtlı bir hak sahibiyle eşleşti; uygulandığında o kayıt güncellenir."
+      },
+      {
+        "label": "Çakışma",
+        "body": "Birden fazla aday kayıt bulundu. Hangi kaydın güncelleneceğini seçmeniz, satırı yeni kayıt olarak açmanız ya da atlamanız gerekir."
+      },
+      { "label": "Uygulandı", "body": "Satır canlı kayıtlara yazıldı." },
+      { "label": "Atlandı", "body": "Satır uygulamanın dışında bırakıldı." }
+    ]
+  },
+  "catalogCategories": {
+    "title": "Kategoriler",
+    "purpose": "Hizmet kataloğunun ağacıdır. Her hizmet tanımı bir kategorinin altında yaşar; bir fiyat ya da yetkinlik kategoriye verildiğinde, sonradan o kategoriye eklenen hizmetler de kapsanır.",
+    "sections": [
+      {
+        "label": "Kod",
+        "body": "Kategorinin değişmeyen kodu. Koddaki girinti, kategorinin ağaçtaki derinliğini gösterir."
+      },
+      {
+        "label": "Alan",
+        "body": "Kategorinin ait olduğu hizmet alanı: sağlık, konaklama ve diğerleri."
+      },
+      { "label": "Aktif", "body": "Kategorinin kullanımda olup olmadığını gösterir." }
+    ],
+    "actions": [
+      {
+        "label": "Yeni kategori",
+        "body": "Yeni bir kategori açar. Kod oluşturulduktan sonra değiştirilemez."
+      },
+      {
+        "label": "Düzenle",
+        "body": "Kategorinin adını, üst kategorisini ve aktifliğini değiştirir. Bir kategori kendi alt ağacına taşınamaz ve ağaç en fazla altı seviye olabilir; sunucu ikisini de reddeder."
+      }
+    ]
+  },
+  "catalogDefinitions": {
+    "title": "Hizmet tanımları",
+    "purpose": "Kurumun hizmet sözlüğüdür. Talep, fiyat, claim ve kural hep bir hizmet tanımını gösterir, bu yüzden liste tek bir tanımı hızlı bulmak için kurulmuştur.",
+    "sections": [
+      { "label": "Ad veya kod ara", "body": "Listeyi hizmetin adına ya da koduna göre süzer." },
+      {
+        "label": "Kategori",
+        "body": "Hizmetin ağaçtaki yeri. Hem filtre hem de sütun olarak kategorinin kodunu gösterir."
+      },
+      { "label": "Alan", "body": "Hizmetin ait olduğu alan: sağlık, konaklama ve diğerleri." },
+      { "label": "Durum", "body": "Yalnız aktif ya da yalnız pasif tanımları listeler." },
+      {
+        "label": "Kod",
+        "body": "Hizmetin değişmeyen kodu. Sözleşmeler ve claim kayıtları bu kodu gösterir."
+      },
+      {
+        "label": "Karşılama biçimi",
+        "body": "Hizmetin nasıl verildiği: randevu, rezervasyon, seans, kupon, geri ödeme ya da doğrudan."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Yeni hizmet",
+        "body": "Yeni bir hizmet tanımı açar. Katalog yönetme yetkisi ister."
+      }
+    ]
+  },
+  "catalogDefinitionNew": {
+    "title": "Yeni hizmet tanımı",
+    "purpose": "Kataloğa yeni bir hizmet ekler. Kod bir kez yazılır ve bir daha değiştirilemez; sözleşmeler, fiyat satırları ve claim'ler bu kodu gösterir.",
+    "sections": [
+      {
+        "label": "Kod",
+        "body": "Oluşturulduktan sonra değiştirilemez. Yanlış bir kod pasife alınır ve yerine yenisi tanımlanır."
+      },
+      {
+        "label": "Kategori",
+        "body": "Hizmetin ağaçtaki yeri. Kategoriye verilen fiyat ve yetkinlikler bu hizmeti de kapsar."
+      },
+      {
+        "label": "Karşılama biçimi",
+        "body": "Hizmetin nasıl verildiği. Talep ve karşılama akışları bu seçime göre işler."
+      },
+      {
+        "label": "Varsayılan birim",
+        "body": "Hizmetin sayıldığı birim: adet, gece, seans, saat ya da tutar."
+      },
+      {
+        "label": "Sağlayıcı gerekir",
+        "body": "İşaretlenirse bu hizmet, bir sağlayıcı seçilmeden istenemez."
+      }
+    ],
+    "actions": [
+      { "label": "Kaydet", "body": "Hizmet tanımı oluşturulur ve tanımın sayfası açılır." }
+    ]
+  },
+  "catalogDefinition": {
+    "title": "Hizmet tanımı",
+    "purpose": "Bir hizmetin ne olduğu ve dış dünyada hangi kodlarla anıldığı. İki konu ayrı ayrı kaydedilir, bu yüzden ayrı sekmelerdedir.",
+    "sections": [
+      {
+        "label": "Hizmet tanımı",
+        "body": "Hizmetin alanları. Kod salt okunurdur; kalan alanlar değiştirilebilir."
+      },
+      {
+        "label": "Dış kod eşleştirmeleri",
+        "body": "Bu hizmetin SUT, HUV ya da kurum içi bir kod sistemindeki karşılıkları ve geçerlilik dönemleri. Aynı kod için çakışan dönem verilemez."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Kaydet",
+        "body": "Yalnızca değiştirdiğiniz alanlar gönderilir; kod hiçbir zaman gönderilmez."
+      },
+      {
+        "label": "Eşleştirme ekle",
+        "body": "Yeni bir dış kod satırı ekler. Satırların tamamı tek seferde kaydedilir."
+      }
+    ],
+    "statuses": [
+      {
+        "label": "Aktif",
+        "body": "Hizmet kullanımdadır; yeni talep ve fiyat satırlarında seçilebilir."
+      },
+      {
+        "label": "Pasif",
+        "body": "Hizmet artık sunulmuyor. Geçmiş kayıtlar bu kodu göstermeye devam eder."
+      }
+    ]
+  },
+  "codeSystems": {
+    "title": "Kod sistemleri",
+    "purpose": "Kurumun hizmetlerinin dış dünyada hangi kodla anıldığı: SUT, HUV, ICD-10 ve kurum içi listeler. Bir sistem kodu ile sürümü birlikte tanımlanır.",
+    "sections": [
+      { "label": "Ad veya kod ara", "body": "Listeyi sistemin adına ya da koduna göre süzer." },
+      {
+        "label": "Yayınlayan",
+        "body": "Kod listesini yayımlayan otorite: SGK, Sağlık Bakanlığı, WHO ya da kurum içi."
+      },
+      {
+        "label": "Sürüm",
+        "body": "Yayınlayanın baskısı. Aynı kod sistemi her yıl yeniden yayımlanabilir ve geçmiş bir claim kendi yılının baskısına göre okunur."
+      },
+      { "label": "Başlangıç", "body": "Sistemin geçerlilik dönemi." }
+    ],
+    "actions": [
+      {
+        "label": "Yeni kod sistemi",
+        "body": "Yeni bir kod sistemi tanımlar. Kod ile sürüm birlikte benzersizdir; aynı çift ikinci kez kaydedilemez."
+      }
+    ],
+    "statuses": [
+      { "label": "Aktif", "body": "Sistem kullanımdadır ve eşleştirmelerde seçilebilir." },
+      {
+        "label": "Pasif",
+        "body": "Sistem artık kullanılmıyor. Geçmiş eşleştirmeler olduğu gibi kalır."
+      }
+    ]
+  },
+  "codeSystem": {
+    "title": "Kod sistemi",
+    "purpose": "Bir kod sisteminin bilgileri ve verdiğiniz tarihte geçerli olan kodları. Tarih bu sayfanın aslıdır: yayınlayan bir kodu yıl sonunda kaldırıp yerine yenisini verir, geçmiş bir claim de o günün listesine göre okunur.",
+    "sections": [
+      {
+        "label": "Lisanslı içerik",
+        "body": "İşaretliyse sistemin içeriği lisanslıdır ve kurum dışına aktarılamaz."
+      },
+      { "label": "Kodlar", "body": "Sistemin kodları: kod, açıklama ve geçerlilik dönemi." },
+      {
+        "label": "Şu tarihte geçerli",
+        "body": "Listeyi verdiğiniz tarihte geçerli olan kodlara daraltır. Bugünün listesi geçmiş bir claim için doğru liste olmayabilir."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Kaydet",
+        "body": "Ad, yayınlayan, lisans, durum ve bitiş tarihi güncellenir. Kod, sürüm ve başlangıç tarihi değiştirilemez."
+      },
+      {
+        "label": "Kod yükle",
+        "body": "Yapıştırılan listeden kod ekler ya da günceller. Her çağrıda en fazla 5.000 satır işlenir ve bir satır hatalıysa hiçbiri yazılmaz; hata, satır numarasıyla bildirilir."
+      }
+    ]
+  },
+  "contracts": {
+    "title": "Sözleşmeler",
+    "purpose": "Sağlayıcılarla yapılan sözleşmelerin listesidir. Bir sözleşme, bir hizmetin sağlayıcıya ne ödendiğini ve bunun ne kadarını hak sahibinin taşıdığını belirler.",
+    "sections": [
+      { "label": "Ad veya kod ara", "body": "Listeyi sözleşmenin adına ya da koduna göre süzer." },
+      { "label": "Durum", "body": "Listeyi sözleşmenin durumuna göre daraltır." },
+      { "label": "Kod", "body": "Sözleşmenin kodu. Aynı kod bu kurumda ikinci kez kullanılamaz." },
+      { "label": "Sağlayıcı", "body": "Hizmeti veren taraf." },
+      { "label": "Ödeyici", "body": "Sağlayıcıya ödemeyi yapan kurum." }
+    ],
+    "actions": [
+      {
+        "label": "Yeni sözleşme",
+        "body": "Yeni bir sözleşme açar. Sözleşme taslak olarak başlar ve bir sürümü yayınlanana kadar hiçbir fiyat hesaplanmaz."
+      }
+    ],
+    "statuses": [
+      { "label": "Taslak", "body": "Sözleşme hazırlanıyor; buna göre fiyat hesaplanmaz." },
+      {
+        "label": "Aktif",
+        "body": "Sözleşme yürürlüktedir; yayındaki sürümüne göre fiyat hesaplanır."
+      },
+      { "label": "Askıda", "body": "Sözleşme geçici olarak durduruldu." },
+      { "label": "Kapalı", "body": "Sözleşme sona erdi." }
+    ]
+  },
+  "contractNew": {
+    "title": "Yeni sözleşme",
+    "purpose": "Bir sağlayıcı ile ödeyici arasında yeni bir sözleşme açar. Sözleşme taslak olarak başlar; fiyatlar ilk sürümü yayınlanana kadar kimseye uygulanmaz.",
+    "sections": [
+      {
+        "label": "Kod",
+        "body": "Sözleşmenin kısa kodu. Aynı kod bu kurumda ikinci kez kullanılamaz."
+      },
+      {
+        "label": "Sağlayıcı",
+        "body": "Sözleşmenin bağlanacağı sağlayıcı profili. Listede yalnızca aktif sağlayıcılar görünür."
+      },
+      { "label": "Ödeyici kurum", "body": "Sağlayıcıya ödemeyi yapacak kurum." },
+      {
+        "label": "Sponsor kurum",
+        "body": "Sözleşme belirli bir sponsora aitse seçilir; zorunlu değildir."
+      },
+      { "label": "Alan", "body": "Sözleşmenin kapsadığı hizmet alanı." }
+    ],
+    "actions": [
+      {
+        "label": "Kaydet",
+        "body": "Sözleşme taslak olarak oluşturulur ve sözleşmenin sayfası açılır."
+      }
+    ]
+  },
+  "contract": {
+    "title": "Sözleşme",
+    "purpose": "Bir sözleşmenin tarafları ve sürüm geçmişi. Fiyatlar sürümlerde yaşar ve yalnızca yayınlanmış bir sürüme göre fiyat hesaplanır.",
+    "sections": [
+      {
+        "label": "Sözleşme sürümleri",
+        "body": "Sürümler yeniden eskiye sıralanır: sürüm numarası, geçerlilik dönemi, para birimi, yayın tarihi ve durum."
+      },
+      { "label": "Sözleşme", "body": "Sağlayıcı, ödeyici kurum, sponsor kurum ve alan." }
+    ],
+    "actions": [
+      {
+        "label": "Yeni sürüm",
+        "body": "Yeni bir taslak sürüm açar. Başlangıç tarihi ve para birimi istenir; var olan bir sürümü kopyalayarak başlayabilirsiniz."
+      },
+      {
+        "label": "Durumu değiştir…",
+        "body": "Sözleşmeyi bir sonraki duruma geçirir. Yalnızca sunucunun kabul ettiği geçişler listelenir."
+      }
+    ],
+    "statuses": [
+      { "label": "Taslak", "body": "Sürüm düzenlenebilir ve buna göre fiyat hesaplanmaz." },
+      {
+        "label": "İncelemede",
+        "body": "Sürüm gönderildi ve artık değiştirilemez. Başka bir yetkilinin yayınlaması beklenir."
+      },
+      {
+        "label": "Yayında",
+        "body": "Sürüm yürürlüktedir. Bu dönemdeki fiyatlar buna göre hesaplanır."
+      },
+      {
+        "label": "Kullanımdan çıktı",
+        "body": "Sürüm yürürlükten kaldırıldı. Bu sürüme göre hesaplanmış geçmiş kayıtlar olduğu gibi kalır."
+      }
+    ]
+  },
+  "contractVersion": {
+    "title": "Sözleşme sürümü",
+    "purpose": "Bir teklifin, bir ön onayın ve bir claim'in fiyatlandığı cetveldir. Taslak düzenlenir, incelemeye gönderilir ve başka bir yetkili yayınlar; yayınlanan sürüm bir daha değişmez.",
+    "sections": [
+      {
+        "label": "Sözleşme sürümü",
+        "body": "Sürümün notları, gönderen ve yayınlayan bilgisi ile yapılandırma özeti. Özet, yayın anındaki içerikten sunucunun ürettiği damgadır."
+      },
+      {
+        "label": "Fiyat cetvelleri",
+        "body": "Sürümün cetvelleri: kod, ad, öncelik, sezon ve günler. Bir hizmete birden fazla cetvel uyarsa büyük öncelikli olan kazanır."
+      },
+      {
+        "label": "Fiyat satırları",
+        "body": "Seçili cetveldeki satırlar: kapsam, lokasyon, yöntem, tutar, alt ve üst sınır, hak sahibi payı, geçerlilik ve öncelik. Satırların tamamı tek seferde kaydedilir."
+      }
+    ],
+    "actions": [
+      {
+        "label": "İncelemeye gönder",
+        "body": "Sürümü incelemeye alır. En az bir fiyat satırı gerekir, bundan sonra sürüm değiştirilemez ve yayına almayı başka bir yetkili onaylar."
+      },
+      {
+        "label": "Yayınla",
+        "body": "Sürümü yayına alır: bu tarihten sonraki fiyatlar buna göre hesaplanır ve sürüm bir daha değiştirilemez. Parola doğrulaması ister ve sürümü gönderen kişi kendi gönderdiğini yayınlayamaz."
+      },
+      {
+        "label": "Kullanımdan çıkar",
+        "body": "Yayındaki sürümü yürürlükten kaldırır. Bir sebep kodu ister; bu sürüme göre hesaplanmış geçmiş kayıtlar olduğu gibi kalır."
+      }
+    ],
+    "statuses": [
+      { "label": "Taslak", "body": "Sürüm düzenlenebilir ve buna göre fiyat hesaplanmaz." },
+      {
+        "label": "İncelemede",
+        "body": "Sürüm gönderildi ve artık değiştirilemez. Başka bir yetkilinin yayınlaması beklenir."
+      },
+      {
+        "label": "Yayında",
+        "body": "Sürüm yürürlüktedir ve değiştirilemez. Bu dönemdeki fiyatlar buna göre hesaplanır."
+      },
+      {
+        "label": "Kullanımdan çıktı",
+        "body": "Sürüm yürürlükten kaldırıldı. Bu sürüme göre hesaplanmış geçmiş kayıtlar olduğu gibi kalır."
+      }
+    ]
+  },
+  "ruleSets": {
+    "title": "Kurallar",
+    "purpose": "Müşteriden müşteriye değişen kararların tutulduğu yerdir: hangi belge zorunlu, ne zaman ön onay gerekir, kim kapsamda. Her kural seti tek bir amaca hizmet eder.",
+    "sections": [
+      { "label": "Ad veya kod ara", "body": "Listeyi setin adına ya da koduna göre süzer." },
+      {
+        "label": "Amaç",
+        "body": "Setin hangi kararı verdiği. Bir çağrı yalnızca kendi amacındaki setleri okur, bu yüzden listeyi asıl daraltan filtre budur."
+      },
+      { "label": "Alan", "body": "Setin kapsadığı hizmet alanı." },
+      { "label": "Sürüm", "body": "Setin sürüm sayısı." }
+    ],
+    "actions": [
+      {
+        "label": "Yeni kural seti",
+        "body": "Yeni bir kural seti açar. Kod, ad, amaç ve alan istenir; kuralların kendisi setin sürümlerinde yazılır."
+      }
+    ],
+    "statuses": [
+      { "label": "Aktif", "body": "Set kullanımdadır; yayındaki sürümü karar üretir." },
+      { "label": "Pasif", "body": "Set kullanım dışıdır." }
+    ]
+  },
+  "ruleSet": {
+    "title": "Kural seti",
+    "purpose": "Bir kural setinin bilgileri ve sürüm geçmişi. Kurallar sürümlerde yazılır ve yalnızca yayınlanmış bir sürüm karar üretir.",
+    "sections": [
+      {
+        "label": "Kural seti",
+        "body": "Setin kodu, amacı ve alanı. Bunlar değişmez; ad ve durum düzenlenebilir."
+      },
+      {
+        "label": "Kural sürümleri",
+        "body": "Sürümler yeniden eskiye sıralanır: sürüm numarası, geçerlilik dönemi, kural sayısı ve durum."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Yeni sürüm",
+        "body": "Yeni bir taslak sürüm açar. Var olan bir sürümü kopyalayarak başlayabilirsiniz."
+      },
+      { "label": "Kaydet", "body": "Setin adını ve durumunu günceller; kuralları değiştirmez." }
+    ],
+    "statuses": [
+      { "label": "Aktif", "body": "Set kullanımdadır; yayındaki sürümü karar üretir." },
+      { "label": "Pasif", "body": "Set kullanım dışıdır." }
+    ]
+  },
+  "ruleSetVersion": {
+    "title": "Kural sürümü",
+    "purpose": "Bir kural setinin belirli bir dönemde geçerli olan hali: girdi değişkenleri, kurallar, test senaryoları ve simülasyon. Yayınlanan sürüm bir daha değişmez.",
+    "sections": [
+      {
+        "label": "Kural sürümü",
+        "body": "Sürümün geçerlilik dönemi ve notları. Yalnız taslakken düzenlenebilir."
+      },
+      {
+        "label": "Girdi değişkenleri",
+        "body": "Bu sürümün kurallarına verilecek değişkenlerin adı ve türü, JSON olarak. Bir koşul yalnız burada tanımlı değişkenleri kullanabilir."
+      },
+      {
+        "label": "Kurallar",
+        "body": "Sıra, kod, koşul, aksiyon ve açıklama kodu. Kurallar sıraya göre küçükten büyüğe çalışır ve iki kural aynı sırayı paylaşamaz; koşul bir CEL ifadesidir ve derlenmezse sunucu derleyicinin kendi mesajını döndürür."
+      },
+      {
+        "label": "Test senaryoları",
+        "body": "Bir girdiyi beklenen sonuçla eşleyen senaryolar. En az bir senaryo yoksa ya da biri geçmiyorsa sürüm incelemeye gönderilemez."
+      },
+      {
+        "label": "Simülasyon",
+        "body": "Bir girdiyi bu sürüme karşı çalıştırır ve hangi kuralın eşleştiğini iz olarak gösterir. Hiçbir kayıt yazılmaz, hiçbir bakiye değişmez."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Testleri çalıştır",
+        "body": "Senaryoları bu sürüme karşı çalıştırır ve hangilerinin geçtiğini gösterir. Hiçbir kayıt yazılmaz."
+      },
+      {
+        "label": "Çalıştır",
+        "body": "Yazdığınız girdiyi bu sürüme karşı değerlendirir. Taslak bir sürümü denemenin yolu budur; karar kaydı üretmez."
+      },
+      {
+        "label": "İncelemeye gönder",
+        "body": "Sürümü incelemeye alır. Yalnız senaryoların tamamı geçiyorsa görünür ve gönderildikten sonra sürüm değiştirilemez."
+      },
+      {
+        "label": "Yayınla",
+        "body": "Sürümü yayına alır: bu tarihten sonraki kararlar buna göre verilir ve sürüm değiştirilemez. Parola doğrulaması ister ve sürümü gönderen kişi kendi gönderdiğini yayınlayamaz."
+      },
+      {
+        "label": "Kullanımdan çıkar",
+        "body": "Yayındaki sürümü yürürlükten kaldırır. Bir sebep kodu ister; bu sürüme göre verilmiş geçmiş kararlar olduğu gibi kalır."
+      }
+    ],
+    "statuses": [
+      { "label": "Taslak", "body": "Sürüm düzenlenebilir ve hiçbir karar üretmez." },
+      {
+        "label": "İncelemede",
+        "body": "Sürüm gönderildi ve artık değiştirilemez. Başka bir yetkilinin yayınlaması beklenir."
+      },
+      {
+        "label": "Yayında",
+        "body": "Sürüm yürürlüktedir ve değiştirilemez. Bu dönemdeki kararlar buna göre verilir."
+      },
+      {
+        "label": "Kullanımdan çıktı",
+        "body": "Sürüm yürürlükten kaldırıldı. Bu sürüme göre verilmiş geçmiş kararlar olduğu gibi kalır."
+      }
+    ]
+  },
+  "pricing": {
+    "title": "Fiyat sorgusu",
+    "purpose": "Bir hizmetin, bir sağlayıcıda, bir tarihte ne tutacağını hesaplar: ne kadarını plan karşılar, ne kadarını hak sahibi öder. Bu bir fiyat bilgisidir, ön onay değildir.",
+    "sections": [
+      {
+        "label": "Hak sahibi",
+        "body": "Kişi adıyla seçilir. Listeyi daraltmak için arama kutusuna en az iki karakter yazın."
+      },
+      {
+        "label": "Satır",
+        "body": "Sorgulanan her hizmet bir satırdır. Satırın altında, o satırın tutarını neyin değiştirdiği yazar."
+      },
+      {
+        "label": "Bu sonuç neye dayanıyor",
+        "body": "Hesabın kaynakları: sözleşme sürümü, plan sürümü, kural sürümleri ve uygunluk değerlendirmesi. Sözleşme sürümüne dokununca cetvel açılır."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Hesapla",
+        "body": "Teklifi hesaplar ve saklar. Hiçbir hak ayrılmaz ve hiçbir bakiye değişmez."
+      },
+      { "label": "Satır ekle", "body": "Sorguya yeni bir hizmet satırı ekler." }
+    ],
+    "statuses": [
+      { "label": "Fiyatlandı", "body": "Satırın tamamı fiyatlandı ve paylara ayrıldı." },
+      {
+        "label": "Kısmen kapsanıyor",
+        "body": "Tutarın bir bölümü plan kapsamındadır; kalanı hak sahibine aittir."
+      },
+      {
+        "label": "İnceleme gerekiyor",
+        "body": "Hangi fiyatın geçerli olduğu belirsiz olduğu için bir tutar gösterilmez. Çakışan fiyat satırlarından biri düzeltilmelidir."
+      },
+      {
+        "label": "Kapsam dışı",
+        "body": "Hak sahibi bu tarihte kapsamda değildir; tutarın tamamı kendisine aittir."
+      }
+    ]
+  },
+  "providers": {
+    "title": "Sağlayıcılar",
+    "purpose": "Kurumun anlaşmalı ağıdır: hizmeti kimin, nerede verdiği. Sözleşmeler fiyatı bu kayıtlara bağlar.",
+    "sections": [
+      { "label": "Ad ara", "body": "Listeyi sağlayıcı kurumun adına göre süzer." },
+      { "label": "Sağlayıcı türü", "body": "Hastane, klinik, otel gibi türlere göre daraltır." },
+      {
+        "label": "Ağ kademesi",
+        "body": "Sağlayıcının ağ içindeki kademesi. Kurumun kendi kodudur; listede Kademe sütununda görünür."
+      },
+      { "label": "Durum", "body": "Listeyi sağlayıcı profilinin durumuna göre daraltır." }
+    ],
+    "actions": [
+      {
+        "label": "Yeni sağlayıcı",
+        "body": "Var olan bir sağlayıcı kuruma profil açar. Profil beklemede başlar."
+      }
+    ],
+    "statuses": [
+      { "label": "Beklemede", "body": "Profil açıldı ama henüz aktifleştirilmedi." },
+      {
+        "label": "Aktif",
+        "body": "Sağlayıcı hizmet verebilir; sözleşme ve fiyat bu kayda bağlanır."
+      },
+      { "label": "Askıda", "body": "Sağlayıcı geçici olarak durduruldu." },
+      {
+        "label": "Sonlandırıldı",
+        "body": "Anlaşma bitti. Bu kayıt bir daha aktifleştirilemez; yeniden çalışılacaksa yeni bir kayıt açılır."
+      }
+    ]
+  },
+  "providerNew": {
+    "title": "Yeni sağlayıcı",
+    "purpose": "Var olan bir sağlayıcı kuruma profil açar. Profil beklemede başlar ve evrak tamamlandığında sağlayıcının kendi sayfasından aktifleştirilir.",
+    "sections": [
+      {
+        "label": "Kurum",
+        "body": "Profilin bağlanacağı kurum. Listede yalnızca sağlayıcı rolüyle tanımlı kurumlar görünür; kurum burada oluşturulmaz."
+      },
+      {
+        "label": "Sağlayıcı türü",
+        "body": "Hastane, klinik, otel gibi. Tür, sağlayıcıdan hangi hizmetlerin beklendiğini söyler."
+      },
+      { "label": "Ağ kademesi", "body": "Kurumun kendi kademe kodu; zorunlu değildir." },
+      {
+        "label": "Anlaşma başlangıcı",
+        "body": "Profilin kendi dönemidir. Fiyatların geçerlilik dönemi sözleşme sürümünde ayrıca tutulur."
+      },
+      { "label": "Anlaşma bitişi", "body": "Boş bırakılırsa profil süresizdir." }
+    ],
+    "actions": [
+      {
+        "label": "Kaydet",
+        "body": "Sağlayıcı profili beklemede oluşturulur ve sağlayıcının sayfası açılır."
+      }
+    ]
+  },
+  "provider": {
+    "title": "Sağlayıcı",
+    "purpose": "Bir sağlayıcının profili ve altındaki ağ: lokasyonlar, yetkinlikler ve uygulayıcılar.",
+    "sections": [
+      {
+        "label": "Profil",
+        "body": "Sağlayıcı türü, ağ kademesi, anlaşma dönemi ve notlar. Kurum adı bu ekrandan değişmez."
+      },
+      {
+        "label": "Lokasyonlar",
+        "body": "Hizmetin verildiği yerler: kod, ad, şehir ve durum. Yetkinlikler ve fiyatlar lokasyona bağlanabilir."
+      },
+      {
+        "label": "Yetkinlikler",
+        "body": "Bir lokasyonda hangi hizmetin verilebildiği. Kapsam tek bir hizmet ya da bir kategori olabilir; kategori seçilirse sonradan o kategoriye eklenen hizmetler de kapsanır."
+      },
+      {
+        "label": "Uygulayıcılar",
+        "body": "Sağlayıcıda görevli kişiler: unvan, branş, sicil ve görev yerleri. Sicil numarası şifreli saklanır, yalnız maskeli gösterilir ve oluşturulduktan sonra değiştirilemez."
+      }
+    ],
+    "actions": [
+      { "label": "Aktifleştir", "body": "Sağlayıcıyı aktif duruma geçirir." },
+      {
+        "label": "Askıya al",
+        "body": "Sağlayıcıyı geçici olarak durdurur. Bir sebep kodu zorunludur ve sağlayıcı sonradan yeniden aktifleştirilebilir."
+      },
+      {
+        "label": "Sonlandır",
+        "body": "Anlaşmayı bitirir. Geri alınamaz: sağlayıcı bir daha aktifleştirilemez, yeniden çalışılacaksa yeni bir kayıt açılır."
+      }
+    ],
+    "statuses": [
+      { "label": "Beklemede", "body": "Profil açıldı ama henüz aktifleştirilmedi." },
+      { "label": "Aktif", "body": "Sağlayıcı hizmet verebilir." },
+      { "label": "Askıda", "body": "Sağlayıcı geçici olarak durduruldu." },
+      {
+        "label": "Sonlandırıldı",
+        "body": "Anlaşma bitti ve bu kayıt bir daha aktifleştirilemez."
+      }
+    ]
+  },
+  "organizations": {
+    "title": "Kurumlar",
+    "purpose": "Bu kurumun ilişkide olduğu tüzel kişiler: ödeyiciler, sponsorlar, sağlayıcılar ve tedarikçiler. Program, sözleşme ve sağlayıcı kayıtları kurumunu bu listeden seçer.",
+    "sections": [
+      { "label": "Ad veya kod ara", "body": "Listeyi kurumun adına ya da koduna göre süzer." },
+      {
+        "label": "İlişki rolü",
+        "body": "Kurumun sizinle olan ilişkisindeki rolü. Aynı kurumla farklı rollerde ayrı ilişkiler kurulabilir."
+      },
+      { "label": "Görünen ad", "body": "Kurumun listelerde ve formlarda kullanılan kısa adı." },
+      {
+        "label": "Tür",
+        "body": "Kurumun tüzel kişilik türü: banka, sigorta, sponsor, sağlayıcı ve diğerleri."
+      },
+      {
+        "label": "Durum",
+        "body": "İlişkinin durumu. Kurumun kendi kayıt durumu ayrı bir alandır ve kurumun sayfasında görünür."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Yeni kurum",
+        "body": "Yeni bir kurum ve onunla kurulan ilişkiyi oluşturur. Kurum yönetme yetkisi ister."
+      }
+    ],
+    "statuses": [
+      { "label": "Beklemede", "body": "İlişki açıldı ama henüz yürürlüğe girmedi." },
+      { "label": "Aktif", "body": "İlişki yürürlüktedir." },
+      { "label": "Askıda", "body": "İlişki geçici olarak durduruldu." },
+      { "label": "Sonlandırıldı", "body": "İlişki bitti." },
+      { "label": "Birleştirildi", "body": "Kurum başka bir kurum kaydıyla birleştirildi." },
+      { "label": "Pasif", "body": "Kayıt kullanımda değildir." }
+    ]
+  },
+  "organizationNew": {
+    "title": "Yeni kurum",
+    "purpose": "Yeni bir tüzel kişiyi ve onunla kurulan ilişkiyi kaydeder. Aynı tanımlayıcıyı taşıyan kurum, sunucuda tek kayıtta birleştirilir.",
+    "sections": [
+      {
+        "label": "Ticari unvan",
+        "body": "Kurumun resmî unvanı. Görünen ad ise ekranlarda kullanılan kısa addır."
+      },
+      {
+        "label": "İlişki rolü",
+        "body": "Kurumun sizinle olan ilişkisindeki rolü. Aynı kurumla aynı rolde ikinci bir ilişki kurulamaz."
+      },
+      {
+        "label": "Kurum kodu (iç)",
+        "body": "Kendi sisteminizdeki kod; boş bırakılabilir. Aynı kod bu kurumda ikinci kez kullanılamaz."
+      },
+      {
+        "label": "Tanımlayıcılar",
+        "body": "Türkiye için bir VKN, şahıs işletmesi için TCKN zorunludur. Sunucu numarayı doğrular ve aynı numarayı taşıyan kurumları tek kayıtta birleştirir."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Tanımlayıcı ekle",
+        "body": "Yeni bir tanımlayıcı satırı ekler. En fazla on satır girilebilir."
+      },
+      {
+        "label": "Kaydet",
+        "body": "Kurum ve ilişkisi oluşturulur, ardından kurumun sayfası açılır."
+      }
+    ]
+  },
+  "organization": {
+    "title": "Kurum detayı",
+    "purpose": "Bir kurumun bilgileri, sizinle olan ilişkisi ve tanımlayıcıları.",
+    "sections": [
+      {
+        "label": "İlişki durumu",
+        "body": "Kurumun sizinle olan ilişkisinin durumu. Yalnız sizi ilgilendirir ve buradan değiştirilebilir."
+      },
+      {
+        "label": "Kayıt durumu",
+        "body": "Kurumun küresel kaydının durumu. Kurum birden fazla kurumla paylaşılıyorsa bu alan hepsi için aynıdır."
+      },
+      {
+        "label": "Küresel kayıt",
+        "body": "Kurumun sistemdeki kimliği. Aynı tanımlayıcıyı taşıyan kayıtlar bu kimlikte birleşir."
+      },
+      {
+        "label": "Sürüm",
+        "body": "Kaydın satır sürümü. Düzenleme ekranı bu sürümü gönderir; siz düzenlerken kayıt değiştiyse sunucu üzerine yazmaz."
+      },
+      {
+        "label": "Tanımlayıcılar",
+        "body": "Kurumun numaraları, maskelenmiş biçimde. Birincil olan ayrıca işaretlidir."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Düzenle",
+        "body": "Görünen adı, ilişki durumunu ve iç kodu değiştirmeye açar. Kurum yönetme yetkisi ister."
+      }
+    ]
+  },
+  "organizationEdit": {
+    "title": "Kurumu düzenle",
+    "purpose": "Bir kurumun görünen adını, ilişki durumunu ve iç kodunu değiştirir. Ticari unvan ve tanımlayıcılar bu ekrandan değişmez.",
+    "sections": [
+      {
+        "label": "Görünen ad",
+        "body": "Ekranlarda kullanılan kısa ad. Kurum birden fazla kurumla paylaşılıyorsa buradan değiştirilemez."
+      },
+      {
+        "label": "İlişki durumu",
+        "body": "Kurumun sizinle olan ilişkisinin durumu. Kurumun küresel kayıt durumu buradan değişmez."
+      },
+      {
+        "label": "Kurum kodu (iç)",
+        "body": "Kendi sisteminizdeki kod; boş bırakılabilir ve aynı kod ikinci kez kullanılamaz."
+      },
+      {
+        "label": "Sürüm",
+        "body": "Formu açtığınızda okunan satır sürümü. Kaydederken bu sürüm sunucuya gönderilir."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Kaydet",
+        "body": "Yalnızca değiştirdiğiniz alanlar gönderilir. Siz düzenlerken kayıt başka biri tarafından güncellendiyse sessiz üzerine yazma yapılmaz; iki değer yan yana gösterilir."
+      },
+      {
+        "label": "Güncel sürümü yükle",
+        "body": "Sunucudaki güncel değerleri forma yükler. Değişikliğinizi bunların üzerine yeniden uygulayın."
+      }
+    ]
+  }
+}

@@ -9,6 +9,7 @@ import {
   Dialog,
   EmptyState,
   FormField,
+  HelpHint,
   Input,
   PageHeader,
   ProblemAlert,
@@ -285,7 +286,13 @@ export function ImportDetailPage() {
       ) : null}
 
       <Card className="mb-4">
-        <h2 className="text-base font-semibold">{t('imports.counters.title')}</h2>
+        <div className="flex items-baseline gap-1.5">
+          <h2 className="text-base font-semibold">{t('imports.counters.title')}</h2>
+          <HelpHint
+            title="Eşleşen ve çakışan"
+            body="Sayıları sunucu, doğrulama sırasında üretir. Eşleşen satır kayıtlı tek bir hak sahibine denk geldi ve uygulandığında o kayıt güncellenir; çakışan satır için birden fazla aday bulundu ve hangisinin güncelleneceğine bir kişinin karar vermesi gerekir."
+          />
+        </div>
         <dl
           className="mt-3 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4 lg:grid-cols-8"
           data-testid="import-counters"

@@ -3,6 +3,7 @@ import {
   Button,
   Card,
   FormField,
+  HelpHint,
   Input,
   PageHeader,
   ProblemAlert,
@@ -182,6 +183,7 @@ function SeasonForm({ roomTypeId }: { roomTypeId: string }) {
           label={t('provider.lodging.inventory.capacity')}
           required
           requiredLabel={t('common.requiredMark')}
+          help={<HelpHint term="kontenjan" />}
         >
           <Input
             type="number"

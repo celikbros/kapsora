@@ -9,6 +9,7 @@ import {
   Button,
   Card,
   FormField,
+  HelpHint,
   Input,
   PageHeader,
   ProblemAlert,
@@ -116,6 +117,7 @@ export function RequestCreatePage() {
               label={t('enrollments.title')}
               required
               requiredLabel={t('common.requiredMark')}
+              help={<HelpHint term="plan" />}
             >
               <Select
                 name="enrollmentId"

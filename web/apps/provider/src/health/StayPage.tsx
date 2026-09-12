@@ -8,6 +8,7 @@ import {
   Card,
   Dialog,
   FormField,
+  HelpHint,
   Input,
   PageHeader,
   ProblemAlert,
@@ -366,7 +367,10 @@ export function StayPage() {
             ) : null}
             <dt className="text-fg-muted">{t('health.stays.figures.estimated')}</dt>
             <dd className="font-mono">{stay.estimatedDays}</dd>
-            <dt className="text-fg-muted">{t('health.stays.figures.authorized')}</dt>
+            <dt className="text-fg-muted inline-flex items-center gap-1.5">
+              {t('health.stays.figures.authorized')}
+              <HelpHint term="onOnay" />
+            </dt>
             <dd className="font-mono">{qty(stay.authorizedDays)}</dd>
             {stay.actualDays ? (
               <>

@@ -1,0 +1,430 @@
+{
+  "app": {
+    "title": "Üye uygulaması",
+    "purpose": "Planınızın size tanıdığı hakları görmeniz ve kullanmanız içindir. Konaklama arayıp rezervasyon yapabilir, kendi ödediğiniz hizmetler için geri ödeme isteyebilirsiniz.",
+    "sections": [
+      {
+        "label": "Ana sayfa",
+        "body": "Bu dönem kalan haklarınızı, yaklaşan konaklamanızı ve geri ödemelerinize giden bağlantıyı gösterir."
+      },
+      {
+        "label": "Ara",
+        "body": "Tarihlerinize ve kişi sayınıza uygun odaları listeler. Her oda için ödeyeceğiniz tutar listede yazar."
+      },
+      {
+        "label": "Rezervasyonlarım",
+        "body": "Bütün rezervasyonlarınız ve bekleme listesi kayıtlarınız burada durur."
+      },
+      {
+        "label": "Geri ödemelerim",
+        "body": "Kendi ödediğiniz hizmetler için yaptığınız başvurular ve sonuçları burada durur."
+      }
+    ]
+  },
+  "home": {
+    "title": "Ana sayfa",
+    "purpose": "Elinizde ne kaldığını ilk bakışta gösterir: bu dönem kalan haklarınız, yaklaşan konaklamanız ve bir sonraki adım.",
+    "sections": [
+      {
+        "label": "Kalan haklarınız",
+        "body": "Planınızın bu dönem için size ayırdığı, henüz kullanmadığınız haklar. Her satırda hakkın adı, kalan miktarı ve birimi yazar. Geceler en üstte durur. Alt satır dönemi ve hakkın aile ile paylaşımlı olup olmadığını söyler."
+      },
+      {
+        "label": "Yaklaşan konaklama",
+        "body": "Sıradaki konaklamanız: tesis, tarihler, gece sayısı ve ödeyeceğiniz tutar. Sağdaki etiket rezervasyonun durumunu söyler. Üzerine dokunduğunuzda rezervasyonun kendisi açılır. Onay bekleyen bir seçiminiz varsa bağlantısı hemen altında çıkar."
+      },
+      {
+        "label": "Geri ödemelerim",
+        "body": "Kendi ödediğiniz bir hizmet için başvuru yapabileceğiniz bölüme götürür."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Konaklama ara",
+        "body": "Arama ekranını açar. Tarihlerinizi ve kişi sayısını girerek uygun oda ararsınız."
+      }
+    ]
+  },
+  "search": {
+    "title": "Konaklama ara",
+    "purpose": "Tarihlerinizi ve kişi sayınızı girip uygun odaları görürsünüz. Her oda için ödeyeceğiniz tutar hesaplanmış olarak listede yazar.",
+    "sections": [
+      {
+        "label": "Nerede",
+        "body": "Tek bir tesiste ya da bir bölgedeki tüm tesislerde arayabilirsiniz."
+      },
+      {
+        "label": "Uygun odalar",
+        "body": "Aramanın sonucu. Her satırda tesis, oda tipi, kapasite ve boş oda sayısı yazar. Altındaki satır planınızın kaç geceyi karşıladığını söyler. Sağdaki tutar, o odayı seçerseniz ödeyeceğiniz tutardır. Fiyat verilemeyen odada nedeni satırın altında yazar."
+      },
+      {
+        "label": "Kalan hakkınız",
+        "body": "Bu arama için elinizde kalan hak. Sonuçların üstünde durur ve sunucudan gelir."
+      },
+      {
+        "label": "Makbuz",
+        "body": "Bir oda seçtiğinizde dolar: tarihler, oda, gece sayısı, toplam, plan payı ve en altta ödeyeceğiniz tutar. Telefonda ekranın altına sabitlenir. Rakamları sunucu hesaplar; ekran toplama yapmaz."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Ara",
+        "body": "Girdiğiniz tarih ve kişi sayısı için uygun odaları listeler."
+      },
+      {
+        "label": "Seç",
+        "body": "Odayı makbuza taşır. Bu adımda henüz hiçbir şey tutulmaz."
+      },
+      {
+        "label": "Bekleme listesine yazıl",
+        "body": "Dolu bir oda için sıraya girersiniz. Oda boşalırsa sizin için tutulur ve size haber verilir."
+      },
+      {
+        "label": "Odayı tut",
+        "body": "Odayı kısa bir süre için size ayırır ve rezervasyon sayfasını açar. O sürede fiyat dondurulur. Süre dolmadan onaylamazsanız oda başkasına açılır. Tutmak onaylamak değildir; ücret alınmaz."
+      }
+    ]
+  },
+  "bookings": {
+    "title": "Rezervasyonlarım",
+    "purpose": "Bütün rezervasyonlarınız, en yeni tarihli üstte. Altında bekleme listesi kayıtlarınız durur.",
+    "sections": [
+      {
+        "label": "Rezervasyonlarım",
+        "body": "Her satırda tesis, durum, tarihler, referans numarası ve ödeyeceğiniz tutar yazar. Satıra dokunduğunuzda rezervasyonun kendisi açılır."
+      },
+      {
+        "label": "Bekleme listesi",
+        "body": "Dolu tarihler için sıraya girdiğiniz kayıtlar. Oda boşalırsa size teklif edilir ve teklif burada görünür."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Teklifi kabul et",
+        "body": "Boşalan odayı size alır ve rezervasyona çevirir. Rezervasyon sayfasında onaylamanız gerekir."
+      },
+      {
+        "label": "Listeden çık",
+        "body": "Bekleme listesindeki kaydınızı siler. Oda boşalsa da size haber verilmez."
+      }
+    ],
+    "statuses": [
+      {
+        "label": "Tutuldu",
+        "body": "Oda kısa bir süre için size ayrıldı. Süre dolmadan onaylamanız gerekir."
+      },
+      {
+        "label": "Onay bekliyor",
+        "body": "Talebiniz inceleniyor. Sonuç size bildirilir; oda bu sürede sizin için tutulur."
+      },
+      {
+        "label": "Onaylandı",
+        "body": "Rezervasyonunuz kesinleşti. Girişte kuponunuzu gösterirsiniz."
+      },
+      {
+        "label": "Giriş yapıldı",
+        "body": "Tesise giriş yaptığınız kaydedildi."
+      },
+      {
+        "label": "Tamamlandı",
+        "body": "Konaklama bitti ve kayıt kapandı. Kalınan gece sayısı rezervasyon sayfasında yazar."
+      },
+      {
+        "label": "İptal edildi",
+        "body": "Rezervasyon iptal edildi; oda artık sizin değil. Varsa iptal ücreti iptal anında size bildirilir."
+      },
+      {
+        "label": "Gelinmedi",
+        "body": "Tesis geldiğinizi kaydetmedi. Koşullara göre ücret alınabilir ve hakkınızdan gece düşebilir."
+      },
+      {
+        "label": "Süresi doldu",
+        "body": "Tutma süresi onay verilmeden doldu; oda başkasına açıldı. Yeniden arayabilirsiniz."
+      },
+      {
+        "label": "Bekliyor",
+        "body": "Bekleme listesinde sıradasınız. Oda boşalırsa size teklif edilir."
+      },
+      {
+        "label": "Teklif edildi",
+        "body": "Boşalan bir oda size teklif edildi. Teklifi kabul etmek için süreniz sınırlıdır."
+      }
+    ]
+  },
+  "booking": {
+    "title": "Rezervasyon",
+    "purpose": "Tek bir rezervasyon: makbuzu, içinde bulunduğu durum ve o durumda yapabilecekleriniz.",
+    "sections": [
+      {
+        "label": "Onay için kalan süre",
+        "body": "Tutma süresinin bitmesine kalan zaman. Sayaç sunucunun verdiği son onay zamanını gösterir; bu zaman tarih ve saat olarak hemen altında yazar. Süre dolduğunda oda serbest kalır."
+      },
+      {
+        "label": "Kupon",
+        "body": "Onaylanan rezervasyonun girişte gösterdiğiniz kodu. Kod yalnızca siz istediğinizde ekranda gösterilir, kaydedilmez ve e-postayla gönderilmez. Geçerlilik tarihleri kodun altında yazar."
+      },
+      {
+        "label": "İptal et",
+        "body": "Onaylanmış bir rezervasyonu iptal edebileceğiniz bölüm. Önce iptalin size neye mal olacağı gösterilir; iptal ancak ondan sonra onaylanır."
+      },
+      {
+        "label": "Ne oldu",
+        "body": "Kapanmış bir rezervasyonda sırasıyla ne olduğu: onay, giriş, çıkış, iptal; her biri tarih ve saatiyle."
+      },
+      {
+        "label": "Makbuz",
+        "body": "Tarihler, oda, gece sayısı, kişi, toplam tutar ve plan payı; en altta ödeyeceğiniz tutar. Gece satırının altında planınızın kaç geceyi karşıladığı yazar. Rakamları sunucu hesaplar; ekran toplama yapmaz."
+      },
+      {
+        "label": "İptal koşulu",
+        "body": "Onay anında geçerli olan koşulların bu rezervasyona alınmış kopyası. Girişten kaç saat öncesine kadar ücretsiz iptal edebileceğinizi, sonrasında kaç gece ücreti ya da ödeyeceğiniz tutarın yüzde kaçı kadar ceza alınacağını ve gelmediğinizde ne ödeyeceğinizi söyler."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Onayla",
+        "body": "Tutulan odayı kesinleştirir. Düğmenin üzerinde ödeyeceğiniz tutar yazar. Parolanız yeniden sorulabilir. Onaydan sonra iptal koşulları bu rezervasyon için kesinleşir."
+      },
+      {
+        "label": "Odayı bırak",
+        "body": "Tutmayı sonlandırır ve odayı serbest bırakır. Ücret alınmaz."
+      },
+      {
+        "label": "Aramaya dön",
+        "body": "Süresi dolmuş bir tutmadan sonra yeniden aramanız için arama ekranını açar."
+      },
+      {
+        "label": "Kuponu göster",
+        "body": "Kupon kodunu ekranda gösterir. Kod bu sırada sunucudan istenir."
+      },
+      {
+        "label": "Kodu gizle",
+        "body": "Kodu ekrandan kaldırır. Kod cihazınızda hiçbir yere kaydedilmez."
+      },
+      {
+        "label": "Kuponu yeniden üret",
+        "body": "Yeni bir kupon kodu üretir. Eski kod o anda geçersiz olur."
+      },
+      {
+        "label": "İptal edersem ne öderim?",
+        "body": "İptalin şu an size neye mal olacağını gösterir: ücretsiz mi, değilse iptal ücreti ne kadar, hakkınızdan kaç gece düşer, kaç gece hakkınıza geri döner. Bu adımda hiçbir şey iptal edilmez."
+      },
+      {
+        "label": "İptali onayla",
+        "body": "Rezervasyonu iptal eder. Varsa iptal ücreti kaydedilir ve tutarıyla size bildirilir."
+      },
+      {
+        "label": "Vazgeç",
+        "body": "İptalden vazgeçer; rezervasyon olduğu gibi kalır."
+      }
+    ],
+    "statuses": [
+      {
+        "label": "Tutuldu",
+        "body": "Oda kısa bir süre için size ayrıldı ve fiyat donduruldu. Süre dolmadan onaylamanız gerekir."
+      },
+      {
+        "label": "Onay bekliyor",
+        "body": "Talebiniz inceleniyor. Sonuç size bildirilir; oda bu sürede sizin için tutulur."
+      },
+      {
+        "label": "Onaylandı",
+        "body": "Rezervasyonunuz kesinleşti. Girişte kuponunuzu gösterirsiniz."
+      },
+      {
+        "label": "Giriş yapıldı",
+        "body": "Tesise giriş yaptığınız kaydedildi."
+      },
+      {
+        "label": "Tamamlandı",
+        "body": "Konaklama bitti ve kayıt kapandı."
+      },
+      {
+        "label": "İptal edildi",
+        "body": "Rezervasyon iptal edildi; oda artık sizin değil."
+      },
+      {
+        "label": "Gelinmedi",
+        "body": "Tesis geldiğinizi kaydetmedi. Koşullara göre ücret alınabilir ve hakkınızdan gece düşebilir."
+      },
+      {
+        "label": "Süresi doldu",
+        "body": "Tutma süresi onay verilmeden doldu; oda başkasına açıldı."
+      }
+    ]
+  },
+  "reimbursements": {
+    "title": "Geri ödemelerim",
+    "purpose": "Kendi ödediğiniz hizmetler için yaptığınız geri ödeme başvuruları, en yenisi üstte.",
+    "sections": [
+      {
+        "label": "Geri ödemelerim",
+        "body": "Her satırda başvurunun referans numarası, durumu, hizmet tarihi ve tutarı yazar. Karar verilmişse tutar onaylanan tutardır, verilmemişse istediğiniz tutardır. Satıra dokunduğunuzda başvurunun kendisi açılır."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Geri ödeme iste",
+        "body": "Yeni bir başvuru başlatır: talep, makbuz ve hesap adımları."
+      }
+    ],
+    "statuses": [
+      {
+        "label": "Taslak",
+        "body": "Başvuru oluşturuldu ama henüz gönderilmedi. Makbuz taraması temiz çıktığında gönderebilirsiniz."
+      },
+      {
+        "label": "Gönderildi",
+        "body": "Başvurunuz kuruma ulaştı ve sıraya alındı."
+      },
+      {
+        "label": "İncelemede",
+        "body": "Başvurunuz inceleniyor. Sonuç size bildirilir."
+      },
+      {
+        "label": "Onaylandı",
+        "body": "İstediğiniz tutar kabul edildi. Ödeme emri verildikten sonra hesabınıza gönderilir."
+      },
+      {
+        "label": "Kısmen onaylandı",
+        "body": "Tutarın bir bölümü kabul edildi. Onaylanan tutar ve gerekçe başvurunun sayfasında yazar."
+      },
+      {
+        "label": "Reddedildi",
+        "body": "Başvuru için ödeme yapılmayacak. Gerekçe başvurunun sayfasında yazar."
+      },
+      {
+        "label": "Ödeme emri verildi",
+        "body": "Onaylanan tutar için ödeme talimatı hazırlandı. Para henüz hesabınıza geçmedi."
+      },
+      {
+        "label": "Ödendi",
+        "body": "Onaylanan tutar bildirdiğiniz hesaba gönderildi. Ödeme tarihi ve referansı başvurunun sayfasında yazar."
+      },
+      {
+        "label": "İptal edildi",
+        "body": "Başvuru işlemden kaldırıldı; ödeme yapılmaz."
+      }
+    ]
+  },
+  "reimbursementNew": {
+    "title": "Geri ödeme iste",
+    "purpose": "Kendi ödediğiniz bir hizmeti üç adımda bildirirsiniz: talep, makbuz, hesap. Ekranın yanındaki ya da altındaki özet, o ana kadar girdiklerinizi geri okur.",
+    "sections": [
+      {
+        "label": "1. Talep",
+        "body": "Hizmeti, hizmet tarihini, sağlayıcıyı ve ödediğiniz tutarı yazarsınız. Devam ettiğinizde bu bilgiler kaydedilir ve bu ekranda değiştirilemez."
+      },
+      {
+        "label": "2. Makbuz",
+        "body": "Makbuzun fotoğrafını ya da PDF dosyasını yüklersiniz. Yüklenen dosya zararlı yazılıma karşı taranır; tarama bitmeden sonraki adım açılmaz."
+      },
+      {
+        "label": "3. Hesap",
+        "body": "Paranın gönderileceği IBAN'ı bir kez yazarsınız. Sonrasında yalnızca son dört hanesi görünür."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Devam et",
+        "body": "Talebinizi kaydeder ve makbuz adımını açar."
+      },
+      {
+        "label": "Dosya seç",
+        "body": "Taranamayan ya da zararlı çıkan dosyanın yerine başka bir dosya seçmenizi sağlar."
+      },
+      {
+        "label": "Başvuruyu oluştur",
+        "body": "Başvurunuzu taslak olarak oluşturur ve başvurunun sayfasını açar. Göndermek ayrı bir adımdır."
+      }
+    ],
+    "statuses": [
+      {
+        "label": "Makbuz taranıyor",
+        "body": "Yüklediğiniz dosya taranıyor. Tarama bitene kadar hesap adımı açılmaz."
+      },
+      {
+        "label": "Makbuz hazır",
+        "body": "Dosya temiz çıktı. Hesap adımına geçebilirsiniz."
+      },
+      {
+        "label": "Zararlı yazılım bulundu",
+        "body": "Dosyada zararlı yazılım bulundu ve içeriği silindi. Başka bir dosya seçmeniz gerekir."
+      },
+      {
+        "label": "Taranamadı",
+        "body": "Dosya taranamadığı için kullanılamaz. Başka bir dosya seçebilirsiniz."
+      }
+    ]
+  },
+  "reimbursement": {
+    "title": "Geri ödeme başvurusu",
+    "purpose": "Tek bir başvuru: ne istediğiniz, ne onaylandığı, paranın hangi hesaba ve ne zaman gittiği.",
+    "sections": [
+      {
+        "label": "Mükerrer uyarısı",
+        "body": "Aynı makbuzun daha önce gönderildiği görülürse eski başvurunun referans numarasıyla birlikte burada uyarılırsınız. Başvurunuz yine de incelenir."
+      },
+      {
+        "label": "İstenen",
+        "body": "Başvuruda bildirdiğiniz, hizmet için kendi ödediğiniz tutar."
+      },
+      {
+        "label": "IBAN",
+        "body": "Paranın gönderileceği hesabın yalnızca son dört hanesi. Hesap numarasının tamamı hiçbir ekranda gösterilmez."
+      },
+      {
+        "label": "Onaylanan",
+        "body": "Kararla kabul edilen ve hesabınıza gönderilecek tutar. Bu tutarı kurum belirler; ekran hesap yapmaz."
+      },
+      {
+        "label": "Ne oldu",
+        "body": "Başvurunun sırası: oluşturma, gönderim, karar ve ödeme; her biri tarih ve saatiyle. Ödeme satırında ödemenin referansı da yazar."
+      }
+    ],
+    "actions": [
+      {
+        "label": "Gönder",
+        "body": "Taslak başvuruyu kuruma iletir. Makbuz taraması temiz olmadan gönderilemez. Gönderdikten sonra başvuru incelemeye girer."
+      }
+    ],
+    "statuses": [
+      {
+        "label": "Taslak",
+        "body": "Başvuru oluşturuldu ama henüz gönderilmedi. Gönderene kadar hiçbir inceleme başlamaz."
+      },
+      {
+        "label": "Gönderildi",
+        "body": "Başvurunuz kuruma ulaştı ve sıraya alındı."
+      },
+      {
+        "label": "İncelemede",
+        "body": "Başvurunuz inceleniyor. Sonuç size bildirilir."
+      },
+      {
+        "label": "Onaylandı",
+        "body": "İstediğiniz tutar kabul edildi. Ödeme emri verildikten sonra hesabınıza gönderilir."
+      },
+      {
+        "label": "Kısmen onaylandı",
+        "body": "Tutarın bir bölümü kabul edildi. Onaylanan tutar makbuzda, gerekçe ise gerekçe satırında yazar."
+      },
+      {
+        "label": "Reddedildi",
+        "body": "Başvuru için ödeme yapılmayacak. Gerekçe gerekçe satırında yazar."
+      },
+      {
+        "label": "Ödeme emri verildi",
+        "body": "Onaylanan tutar için ödeme talimatı hazırlandı. Para henüz hesabınıza geçmedi."
+      },
+      {
+        "label": "Ödendi",
+        "body": "Onaylanan tutar bildirdiğiniz hesaba gönderildi. Tarihi ve ödeme referansı Ne oldu bölümünde yazar."
+      },
+      {
+        "label": "İptal edildi",
+        "body": "Başvuru işlemden kaldırıldı; ödeme yapılmaz."
+      }
+    ]
+  }
+}

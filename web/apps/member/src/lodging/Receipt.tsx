@@ -8,6 +8,8 @@ export interface ReceiptLine {
   mono?: boolean;
   /** A line that explains the one above it, in the muted voice. */
   note?: string;
+  /** A `HelpHint` beside the label, for a figure whose arithmetic is the server's. */
+  help?: ReactNode;
 }
 
 /**
@@ -68,7 +70,10 @@ export function Receipt({
               settling && 'receipt-line',
             )}
           >
-            <dt className="text-fg-muted text-sm">{line.label}</dt>
+            <dt className="text-fg-muted flex items-center gap-1.5 text-sm">
+              {line.label}
+              {line.help}
+            </dt>
             <dd
               className={cn(
                 'text-right text-sm',

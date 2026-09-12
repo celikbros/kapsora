@@ -20,11 +20,14 @@ import {
   Card,
   DemoAccounts,
   FormField,
+  HelpButton,
+  HelpDrawer,
   Input,
   PasswordInput,
   ProblemAlert,
   SignInLayout,
   ToastProvider,
+  pageHelpFor,
   useToast,
   DEMO_ACCOUNTS,
   DEMO_PASSWORD,
@@ -39,10 +42,12 @@ import {
   createRouter,
   redirect,
   useNavigate,
+  useRouterState,
   useSearch,
   type RouterHistory,
 } from '@tanstack/react-router';
 import { useMemo, useState, type FormEvent } from 'react';
+import { HELP_ROUTES } from './help';
 import { EligibilityPage } from './EligibilityPage';
 import { MyRequestsPage } from './MyRequestsPage';
 import { NewRequestPage } from './NewRequestPage';
@@ -249,6 +254,12 @@ function Shell() {
   const canRunDesk = usePermission('accommodation.booking.manage');
   const canBill = usePermission('invoice.read');
   const color = active ? tenantColor(active.tenant.code) : null;
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const [helpOpen, setHelpOpen] = useState(false);
+  const help = pageHelpFor('provider', pathname, HELP_ROUTES, {
+    title: t('help.open'),
+    purpose: t('help.none'),
+  });
   const header = (
     <div className="flex h-14 min-w-0 items-center gap-2 px-3 sm:gap-3 sm:px-4">
       <Link to="/" className="shrink-0 font-semibold">
@@ -267,9 +278,14 @@ function Shell() {
           {active.tenant.displayName}
         </Badge>
       ) : null}
-      <span className="text-fg-muted ml-auto hidden truncate text-sm sm:inline">
-        {me?.displayName}
-      </span>
+      <HelpButton
+        label={t('help.open')}
+        expanded={helpOpen}
+        className="ml-auto"
+        onClick={() => setHelpOpen(true)}
+      />
+      <HelpDrawer open={helpOpen} onOpenChange={setHelpOpen} page={help} />
+      <span className="text-fg-muted hidden truncate text-sm sm:inline">{me?.displayName}</span>
       <Button
         size="sm"
         variant="secondary"

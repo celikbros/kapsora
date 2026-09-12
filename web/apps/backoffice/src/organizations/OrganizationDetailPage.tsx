@@ -5,6 +5,7 @@ import {
   Breadcrumb,
   Button,
   Card,
+  HelpHint,
   PageHeader,
   ProblemAlert,
   Spinner,
@@ -102,7 +103,13 @@ export function OrganizationDetailPage() {
                 {t(`organizations.statuses.${org.relationshipStatus}`)}
               </Badge>
             </dd>
-            <dt className="text-fg-muted">{t('organizations.fields.organizationStatus')}</dt>
+            <dt className="text-fg-muted flex items-center gap-1.5">
+              {t('organizations.fields.organizationStatus')}
+              <HelpHint
+                title="Kayıt durumu"
+                body="Kurumun küresel kaydının durumudur; yukarıdaki ilişki durumu ise yalnız sizinle olan ilişkisini anlatır. Kurum birden fazla kurumla paylaşılıyorsa kayıt durumu hepsi için aynıdır ve buradan değiştirilemez."
+              />
+            </dt>
             <dd>
               <Badge tone={statusTone(org.organizationStatus)}>
                 {t(`organizations.statuses.${org.organizationStatus}`)}

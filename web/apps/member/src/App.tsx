@@ -19,11 +19,14 @@ import {
   Card,
   DemoAccounts,
   FormField,
+  HelpButton,
+  HelpDrawer,
   Input,
   PasswordInput,
   ProblemAlert,
   SignInLayout,
   ToastProvider,
+  pageHelpFor,
   useToast,
   useMinWidth,
   DEMO_ACCOUNTS,
@@ -39,10 +42,12 @@ import {
   createRouter,
   redirect,
   useNavigate,
+  useRouterState,
   useSearch,
   type RouterHistory,
 } from '@tanstack/react-router';
 import { useMemo, useState, type FormEvent } from 'react';
+import { HELP_ROUTES } from './help';
 import { BookingPage } from './lodging/BookingPage';
 import { BookingsPage } from './lodging/BookingsPage';
 import { HomePage } from './lodging/HomePage';
@@ -287,6 +292,12 @@ function Shell() {
   const wide = useMinWidth(768);
   const active = useSession((s) => s.activeTenant);
   const color = active ? tenantColor(active.tenant.code) : null;
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const [helpOpen, setHelpOpen] = useState(false);
+  const help = pageHelpFor('member', pathname, HELP_ROUTES, {
+    title: t('help.open'),
+    purpose: t('help.none'),
+  });
   const header = (
     <div className="flex h-14 items-center gap-3 px-4">
       <Link to="/" className="font-semibold">
@@ -308,10 +319,16 @@ function Shell() {
           <Tabs wide />
         </div>
       ) : null}
+      <HelpButton
+        label={t('help.open')}
+        expanded={helpOpen}
+        className="ml-auto"
+        onClick={() => setHelpOpen(true)}
+      />
+      <HelpDrawer open={helpOpen} onOpenChange={setHelpOpen} page={help} />
       <Button
         size="sm"
         variant="secondary"
-        className="ml-auto"
         onClick={() => {
           void store.logout().finally(() => navigate({ to: '/auth/login', search: {} }));
         }}

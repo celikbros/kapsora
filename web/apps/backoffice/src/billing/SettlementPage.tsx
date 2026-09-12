@@ -6,6 +6,7 @@ import {
   Button,
   Card,
   FormField,
+  HelpHint,
   Input,
   PageHeader,
   ProblemAlert,
@@ -136,7 +137,10 @@ export function SettlementPage() {
           <dd className="text-right font-mono tabular-nums">
             {formatMoney(record.approvedAmount, record.currencyCode)}
           </dd>
-          <dt className="text-fg-muted">{t('billing.totals.withheld')}</dt>
+          <dt className="text-fg-muted flex items-center gap-1.5">
+            {t('billing.totals.withheld')}
+            <HelpHint term="mahsup" />
+          </dt>
           <dd className="text-right font-mono tabular-nums">
             {formatMoney(record.withheldAmount, record.currencyCode)}
           </dd>

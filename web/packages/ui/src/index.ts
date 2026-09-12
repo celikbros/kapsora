@@ -11,6 +11,15 @@ export { EmptyState } from './EmptyState';
 export type { EmptyStateProps } from './EmptyState';
 export { FormField } from './FormField';
 export type { FormFieldProps } from './FormField';
+export {
+  HelpButton,
+  HelpDrawer,
+  HelpHint,
+  PageHelpContent,
+  matchHelpKey,
+  pageHelpFor,
+} from './Help';
+export type { HelpButtonProps, HelpDrawerProps, HelpHintProps } from './Help';
 export { Input, Textarea } from './Input';
 export type { InputProps, TextareaProps } from './Input';
 export { PasswordInput } from './PasswordInput';

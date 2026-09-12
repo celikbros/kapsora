@@ -1,6 +1,6 @@
 import { useSession } from '@kapsora/auth';
 import { formatDate, useTranslation } from '@kapsora/i18n';
-import { Badge, Card, ProblemAlert } from '@kapsora/ui';
+import { Badge, Card, HelpHint, ProblemAlert } from '@kapsora/ui';
 import { Link } from '@tanstack/react-router';
 
 import { problemOf } from '../problems';
@@ -42,7 +42,10 @@ export function HomePage() {
         </Card>
       ) : (
         <Card>
-          <h2 className="text-base font-semibold">{t('lodging.home.remaining')}</h2>
+          <div className="flex items-center gap-1.5">
+            <h2 className="text-base font-semibold">{t('lodging.home.remaining')}</h2>
+            <HelpHint term="hakCuzdani" />
+          </div>
           <p className="text-fg-muted mt-1 text-xs">{t('lodging.home.remainingHint')}</p>
           {entitlements.isPending ? (
             <Loading />

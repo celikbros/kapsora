@@ -12,6 +12,7 @@ import {
   Card,
   Dialog,
   FormField,
+  HelpHint,
   Input,
   PageHeader,
   ProblemAlert,
@@ -266,7 +267,11 @@ export function PlanVersionPage() {
 
       <div className="grid gap-4">
         <Card>
-          <h2 className="text-base font-semibold">{t('plans.versions.detailTitle')}</h2>
+          {/* The mark sits beside the heading, not inside it: it is not part of the name. */}
+          <div className="flex items-baseline gap-1.5">
+            <h2 className="text-base font-semibold">{t('plans.versions.detailTitle')}</h2>
+            <HelpHint term="surum" />
+          </div>
           {isDraft && canManage ? (
             <form
               onSubmit={periodForm.handleSubmit(savePeriod)}

@@ -7,6 +7,7 @@ import {
   Card,
   EmptyState,
   FormField,
+  HelpHint,
   Input,
   PageHeader,
   ProblemAlert,
@@ -292,7 +293,15 @@ function QuoteResult({ quote }: { quote: PriceQuote }) {
                 <th className="px-3 py-2 text-right font-medium">
                   {t('pricing.columns.contract')}
                 </th>
-                <th className="px-3 py-2 text-right font-medium">{t('pricing.columns.covered')}</th>
+                <th className="px-3 py-2 text-right font-medium">
+                  <span className="inline-flex items-center gap-1.5">
+                    {t('pricing.columns.covered')}
+                    <HelpHint
+                      title="Kapsanan"
+                      body="Sözleşme tutarının, planın kapsamına giren bölümüdür. Ödeyici ve hak sahibi payları bu tutarın içinden ayrılır; kapsam dışında kalan kısım doğrudan hak sahibine aittir."
+                    />
+                  </span>
+                </th>
                 <th className="px-3 py-2 text-right font-medium">{t('pricing.columns.payer')}</th>
                 <th className="px-3 py-2 text-right font-medium">{t('pricing.columns.member')}</th>
               </tr>

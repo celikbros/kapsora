@@ -13,6 +13,7 @@ import {
   Card,
   Dialog,
   FormField,
+  HelpHint,
   Input,
   PageHeader,
   ProblemAlert,
@@ -400,7 +401,11 @@ export function RuleSetVersionPage() {
         </Card>
 
         <Card>
-          <h2 className="mb-3 text-base font-semibold">{t('rules.items.title')}</h2>
+          {/* The mark sits beside the heading, not inside it: it is not part of the name. */}
+          <div className="mb-3 flex items-baseline gap-1.5">
+            <h2 className="text-base font-semibold">{t('rules.items.title')}</h2>
+            <HelpHint term="kural" />
+          </div>
           {editable ? (
             <RulesEditor
               rules={row.rules}

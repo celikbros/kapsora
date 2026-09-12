@@ -13,6 +13,7 @@ import {
   Button,
   Card,
   FormField,
+  HelpHint,
   PageHeader,
   ProblemAlert,
   Spinner,
@@ -250,7 +251,10 @@ function NoShowReview({ booking, result }: { booking: Booking; result: NoShowRes
 
   return (
     <>
-      <dt className="text-fg-muted">{t('lodging.office.noShow.title')}</dt>
+      <dt className="text-fg-muted flex items-center gap-1.5">
+        {t('lodging.office.noShow.title')}
+        <HelpHint term="gelmeme" />
+      </dt>
       <dd>
         <Badge tone={noShowTone(report.status)} data-testid="no-show-status">
           {t(`lodging.office.noShow.status.${report.status}`)}

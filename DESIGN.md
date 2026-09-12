@@ -674,6 +674,31 @@ illustration, no hero number: a ledger introduces itself by saying what it holds
 share the layout, so whichever door the single sign-in hands a person to looks like the one they
 left.
 
+**Help explains the unfamiliar, never the obvious.** A circled question drawn in the icon
+stroke, 18px in a 24px box, muted (`fg-muted`, never `fg-subtle`: 2.97:1 on white is under
+the 3:1 a control needs) until hovered or focused, sits after a label, a heading or a column
+header — beside the heading, never inside it, because a button inside a heading is read as
+part of its name — only where a reader would otherwise have to ask someone: a domain term (icmal,
+mahsup, kontenjan), a figure the server computed, a field whose consequence its label does
+not carry. It never sits on a control that names its own action, and it never carries a
+refusal's reason — that stays inline in the product's own sentence, per the rule above. A
+press, Enter, Space or a mouse hover opens a 20rem raised card with the term in the label
+weight and one to three sentences in muted 14px; a finger has no hover, so the press is the
+way in on a phone. A hover-opened card leaves focus where it was; a pressed one takes it.
+The terms live once, under `help:terms`, shared by the three apps; a `FormField` takes the
+mark through `help`, beside the label and never inside it, because a button inside a label
+would answer to the field's name.
+
+**Every page says what it is for.** The "?" in every app header — a ghost icon button
+between the theme control and the account — opens a drawer from the right, 26rem and full
+width below 640px, one scroll, closed by Escape, the backdrop or its own mark. It carries
+the page's name, one paragraph of purpose, then its sections, actions and statuses as
+1px-ruled definition lists in page order: what each shows, what each does and who may, what
+each status means and what happens next. The content is data, not code: one `help` locale
+file per app plus the shared terms, keyed by route through each app's `help.ts`, and a test
+in each app fails when a route has no page written. When nothing is written for a route the
+drawer shows the app's own help rather than nothing.
+
 **A demo account list exists only where the demo does.** On a development server — with the
 in-browser sample data or against a local API loaded by the demo seed — every sign-in screen
 lists all the demo accounts under the form, grouped by the app they work in, this screen's own

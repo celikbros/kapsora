@@ -3,6 +3,7 @@ import { formatDate, formatMoney, useTranslation } from '@kapsora/i18n';
 import {
   Badge,
   FormField,
+  HelpHint,
   PageHeader,
   ProblemAlert,
   Select,
@@ -102,7 +103,12 @@ export function SettlementListPage() {
               <TR>
                 <TH>{t('billing.office.reference')}</TH>
                 <TH>{t('billing.office.provider')}</TH>
-                <TH>{t('billing.office.batch')}</TH>
+                <TH>
+                  <span className="inline-flex items-center gap-1.5">
+                    {t('billing.office.batch')}
+                    <HelpHint term="icmal" />
+                  </span>
+                </TH>
                 <TH>{t('billing.office.status')}</TH>
                 <TH>{t('billing.office.due')}</TH>
                 <TH className="text-right">{t('billing.totals.payable')}</TH>

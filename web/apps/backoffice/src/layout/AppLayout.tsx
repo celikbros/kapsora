@@ -1,8 +1,19 @@
 import { tenantColor, useAccountWatch, useSession, useSessionStore } from '@kapsora/auth';
 import { useTranslation } from '@kapsora/i18n';
-import { AppShell, Badge, Button, DropdownMenu, cn, useToast } from '@kapsora/ui';
+import {
+  AppShell,
+  Badge,
+  Button,
+  DropdownMenu,
+  HelpButton,
+  HelpDrawer,
+  cn,
+  pageHelpFor,
+  useToast,
+} from '@kapsora/ui';
 import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
 import { useState } from 'react';
+import { HELP_ROUTES } from '../help';
 import { NAV_ENTRIES } from '../nav';
 import { currentTheme, toggleTheme } from '../theme';
 
@@ -54,6 +65,11 @@ export function AppLayout() {
   const active = useSession((s) => s.activeTenant);
   const [theme, setTheme] = useState(() => currentTheme());
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const [helpOpen, setHelpOpen] = useState(false);
+  const help = pageHelpFor('backoffice', pathname, HELP_ROUTES, {
+    title: t('help.open'),
+    purpose: t('help.none'),
+  });
 
   const color = active ? tenantColor(active.tenant.code) : null;
   const multiTenant = (me?.tenants.length ?? 0) > 1;
@@ -104,6 +120,8 @@ export function AppLayout() {
         >
           {theme === 'dark' ? <MoonIcon /> : <SunIcon />}
         </Button>
+        <HelpButton label={t('help.open')} expanded={helpOpen} onClick={() => setHelpOpen(true)} />
+        <HelpDrawer open={helpOpen} onOpenChange={setHelpOpen} page={help} />
         <DropdownMenu
           trigger={
             <Button variant="secondary" size="sm" aria-label={t('header.userMenu')}>

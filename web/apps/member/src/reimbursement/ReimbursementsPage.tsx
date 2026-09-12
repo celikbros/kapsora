@@ -1,5 +1,5 @@
 import { formatDate, useTranslation } from '@kapsora/i18n';
-import { Badge, Card, ProblemAlert } from '@kapsora/ui';
+import { Badge, Card, HelpHint, ProblemAlert } from '@kapsora/ui';
 import { Link } from '@tanstack/react-router';
 
 import { Loading } from '../lodging/Loading';
@@ -22,7 +22,10 @@ export function ReimbursementsPage() {
       <Link to="/" className="text-primary text-sm underline-offset-4 hover:underline">
         ← {t('billing.member.back')}
       </Link>
-      <h1 className="text-xl font-semibold">{t('billing.member.title')}</h1>
+      <div className="flex items-center gap-1.5">
+        <h1 className="text-xl font-semibold">{t('billing.member.title')}</h1>
+        <HelpHint term="geriOdeme" />
+      </div>
       <p className="text-fg-muted text-sm">{t('billing.member.intro')}</p>
       <Link
         to="/reimbursements/new"

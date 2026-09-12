@@ -14,6 +14,7 @@ import {
   Card,
   Dialog,
   FormField,
+  HelpHint,
   Input,
   PageHeader,
   ProblemAlert,
@@ -595,14 +596,16 @@ export function CasePage() {
 
         <Card>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="flex flex-wrap items-center gap-2 text-base font-semibold">
-              {t('health.case.sections.reports')}
+            {/* The mark and the badge sit beside the heading, not inside it: neither is its name. */}
+            <div className="flex flex-wrap items-baseline gap-2">
+              <h2 className="text-base font-semibold">{t('health.case.sections.reports')}</h2>
+              <HelpHint term="tibbiRapor" />
               {latestReport ? (
                 <Badge tone={reportTone(latestReport.status)}>
                   {t(`health.reports.status.${latestReport.status}`)}
                 </Badge>
               ) : null}
-            </h2>
+            </div>
             {open && canReport && clinical && !creatingReport ? (
               <Button size="sm" variant="secondary" onClick={() => setCreatingReport(true)}>
                 {t('health.reports.create')}
@@ -664,14 +667,16 @@ export function CasePage() {
 
         <Card>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="flex flex-wrap items-center gap-2 text-base font-semibold">
-              {t('health.case.sections.stays')}
+            {/* The mark and the badge sit beside the heading, not inside it: neither is its name. */}
+            <div className="flex flex-wrap items-baseline gap-2">
+              <h2 className="text-base font-semibold">{t('health.case.sections.stays')}</h2>
+              <HelpHint term="yatis" />
               {openStay ? (
                 <Badge tone={stayTone(openStay.status)}>
                   {t(`health.stays.status.${openStay.status}`)}
                 </Badge>
               ) : null}
-            </h2>
+            </div>
             {openStay ? (
               <Link to="/stays/$stayId" params={{ stayId: openStay.id }}>
                 <Button size="sm" variant="secondary">

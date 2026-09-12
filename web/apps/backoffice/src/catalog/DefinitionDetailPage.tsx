@@ -12,6 +12,7 @@ import {
   Button,
   Card,
   FormField,
+  HelpHint,
   Input,
   PageHeader,
   ProblemAlert,
@@ -373,7 +374,11 @@ function MappingsTab({
 
   return (
     <Card>
-      <h2 className="mb-4 text-base font-semibold">{t('catalog.mappings.title')}</h2>
+      {/* The mark sits beside the heading, not inside it: it is not part of the name. */}
+      <div className="mb-4 flex items-baseline gap-1.5">
+        <h2 className="text-base font-semibold">{t('catalog.mappings.title')}</h2>
+        <HelpHint term="kodSistemi" />
+      </div>
       {canManage ? (
         <CodeMappingsEditor
           // Remounts on a new version so the rows come from the set the server now holds.

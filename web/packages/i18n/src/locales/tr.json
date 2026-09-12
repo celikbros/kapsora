@@ -96,6 +96,15 @@
       "both": "Yönetim paneli ve üye uygulaması"
     }
   },
+  "help": {
+    "about": "Açıklama",
+    "open": "Yardım",
+    "pageHelp": "Sayfa yardımı",
+    "sections": "Bölümler",
+    "actions": "Yapabilecekleriniz",
+    "statuses": "Durumlar",
+    "none": "Bu sayfa için henüz yardım yazılmadı."
+  },
   "header": {
     "userMenu": "Kullanıcı menüsü",
     "tenantBadge": "Aktif kurum: {{name}} ({{code}})",

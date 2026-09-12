@@ -14,6 +14,7 @@ import {
   Card,
   Dialog,
   FormField,
+  HelpHint,
   Input,
   PageHeader,
   ProblemAlert,
@@ -529,7 +530,11 @@ function SystemSaid({ request }: { request: ServiceRequest }) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <div>
-        <h3 className="text-sm font-medium">{t('requests.eligibility.title')}</h3>
+        {/* The mark sits beside the heading, not inside it: it is not part of the name. */}
+        <div className="flex items-baseline gap-1.5">
+          <h3 className="text-sm font-medium">{t('requests.eligibility.title')}</h3>
+          <HelpHint term="uygunluk" />
+        </div>
         {!request.eligibilityEvaluationId ? (
           <p className="text-fg-muted mt-1 text-sm">{t('requests.eligibility.none')}</p>
         ) : eligibility.isPending ? (
@@ -540,7 +545,7 @@ function SystemSaid({ request }: { request: ServiceRequest }) {
           <div className="mt-1 grid gap-2 text-sm">
             <Badge tone={eligibility.data.result.eligible ? 'success' : 'danger'}>
               {t(
-                `eligibility.outcomes.${eligibility.data.result.eligible ? 'ELIGIBLE' : 'NOT_ELIGIBLE'}`,
+                `eligibility.outcomes.${eligibility.data.result.eligible ? 'ELIGIBLE' : 'INELIGIBLE'}`,
               )}
             </Badge>
             <ul className="grid gap-1">
@@ -564,7 +569,11 @@ function SystemSaid({ request }: { request: ServiceRequest }) {
         )}
       </div>
       <div>
-        <h3 className="text-sm font-medium">{t('requests.rules.title')}</h3>
+        {/* The mark sits beside the heading, not inside it: it is not part of the name. */}
+        <div className="flex items-baseline gap-1.5">
+          <h3 className="text-sm font-medium">{t('requests.rules.title')}</h3>
+          <HelpHint term="kural" />
+        </div>
         {!request.ruleEvaluationId ? (
           <p className="text-fg-muted mt-1 text-sm">{t('requests.rules.none')}</p>
         ) : rules.isPending ? (

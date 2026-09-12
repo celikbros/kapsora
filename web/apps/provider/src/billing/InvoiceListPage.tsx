@@ -3,6 +3,7 @@ import { formatDate, formatMoney, useTranslation } from '@kapsora/i18n';
 import {
   Badge,
   FormField,
+  HelpHint,
   PageHeader,
   ProblemAlert,
   Select,
@@ -110,7 +111,12 @@ export function InvoiceListPage() {
                 <TH>{t('billing.provider.status')}</TH>
                 <TH className="text-right">{t('billing.provider.payable')}</TH>
                 <TH className="text-right">{t('billing.provider.allocationTotal')}</TH>
-                <TH>{t('billing.provider.batch')}</TH>
+                <TH>
+                  <span className="inline-flex items-center gap-1.5">
+                    {t('billing.provider.batch')}
+                    <HelpHint term="icmal" />
+                  </span>
+                </TH>
               </TR>
             </THead>
             <TBody>

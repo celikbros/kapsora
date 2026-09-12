@@ -5,6 +5,7 @@ import {
   Badge,
   Button,
   Card,
+  HelpHint,
   ProblemAlert,
   Spinner,
   StepUpDialog,
@@ -191,8 +192,11 @@ function HoldPanel({ record, onExpired }: { record: Booking; onExpired: () => vo
           label={t('lodging.receipt.expiresIn')}
         />
       ) : null}
-      <p className="text-fg-muted mt-1 text-xs">
-        {t('lodging.receipt.expiresAt')}: {formatDateTime(record.holdExpiresAt ?? null)}
+      <p className="text-fg-muted mt-1 flex items-center gap-1.5 text-xs">
+        <span>
+          {t('lodging.receipt.expiresAt')}: {formatDateTime(record.holdExpiresAt ?? null)}
+        </span>
+        <HelpHint term="tutma" />
       </p>
       <p className="text-fg-muted mt-3 text-sm">{t('lodging.receipt.policyAtConfirm')}</p>
       <ProblemAlert problem={confirm.isError ? problemOf(confirm.error) : null} />
@@ -252,7 +256,10 @@ function ConfirmedPanel({ record }: { record: Booking }) {
       </Card>
 
       <Card>
-        <h2 className="text-base font-semibold">{t('lodging.booking.voucher')}</h2>
+        <div className="flex items-center gap-1.5">
+          <h2 className="text-base font-semibold">{t('lodging.booking.voucher')}</h2>
+          <HelpHint term="kupon" />
+        </div>
         <p className="text-fg-muted mt-1 text-sm">{t('lodging.booking.voucherOnce')}</p>
         <ProblemAlert problem={voucher.isError ? problemOf(voucher.error) : null} />
         {voucher.data && shown ? (

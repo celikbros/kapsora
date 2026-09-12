@@ -8,6 +8,7 @@ import {
   Dialog,
   EmptyState,
   FormField,
+  HelpHint,
   Input,
   ProblemAlert,
   Spinner,
@@ -79,7 +80,11 @@ export function EntitlementsTab({ personId }: { personId: string }) {
   return (
     <Card>
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <h2 className="text-base font-semibold">{t('entitlements.title')}</h2>
+        {/* The mark sits beside the heading, not inside it: it is not part of the name. */}
+        <div className="flex items-baseline gap-1.5">
+          <h2 className="text-base font-semibold">{t('entitlements.title')}</h2>
+          <HelpHint term="hakCuzdani" />
+        </div>
         <label className="grid gap-1 text-sm">
           <span className="font-medium">{t('entitlements.asOf')}</span>
           <Input
@@ -112,7 +117,15 @@ export function EntitlementsTab({ personId }: { personId: string }) {
                 <TH>{t('entitlements.columns.definition')}</TH>
                 <TH>{t('entitlements.columns.period')}</TH>
                 <TH>{t('entitlements.columns.available')}</TH>
-                <TH>{t('entitlements.columns.reserved')}</TH>
+                <TH>
+                  <span className="inline-flex items-center gap-1.5">
+                    {t('entitlements.columns.reserved')}
+                    <HelpHint
+                      title="Bloke"
+                      body="Ön onay ya da rezervasyonla ayrılmış, henüz kullanılmamış miktardır. Kullanılabilir bakiyeden düşülmüştür: işlem gerçekleşince kullanılana geçer, iptal edilirse bakiyeye döner."
+                    />
+                  </span>
+                </TH>
                 <TH>{t('entitlements.columns.consumed')}</TH>
                 <TH>{t('entitlements.columns.status')}</TH>
               </TR>

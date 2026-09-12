@@ -3,6 +3,7 @@ import {
   Button,
   Card,
   FormField,
+  HelpHint,
   Input,
   PageHeader,
   ProblemAlert,
@@ -137,7 +138,10 @@ export function EarningsPage() {
               <dd className="text-right font-mono tabular-nums">
                 {formatMoney(c.approvedTotal, c.currencyCode)}
               </dd>
-              <dt className="text-fg-muted">{t('billing.provider.adjustments')}</dt>
+              <dt className="text-fg-muted inline-flex items-center gap-1.5">
+                {t('billing.provider.adjustments')}
+                <HelpHint term="kesinti" />
+              </dt>
               <dd className="text-right font-mono tabular-nums">
                 {formatMoney(c.adjustmentTotal, c.currencyCode)}
               </dd>

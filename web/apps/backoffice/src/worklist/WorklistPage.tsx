@@ -13,6 +13,7 @@ import {
   Dialog,
   EmptyState,
   FormField,
+  HelpHint,
   Input,
   PageHeader,
   ProblemAlert,
@@ -291,9 +292,19 @@ export function WorklistPage() {
                   <span className="sr-only">{t('common.actions')}</span>
                 </TH>
                 <TH>{t('worklist.columns.status')}</TH>
-                <TH>{t('worklist.columns.dueAt')}</TH>
+                <TH>
+                  <span className="inline-flex items-center gap-1.5">
+                    {t('worklist.columns.dueAt')}
+                    <HelpHint term="sla" />
+                  </span>
+                </TH>
                 <TH>{t('worklist.columns.assignee')}</TH>
-                <TH>{t('worklist.columns.queue')}</TH>
+                <TH>
+                  <span className="inline-flex items-center gap-1.5">
+                    {t('worklist.columns.queue')}
+                    <HelpHint term="isKuyrugu" />
+                  </span>
+                </TH>
                 <TH className="text-right">{t('worklist.columns.priority')}</TH>
               </TR>
             </THead>

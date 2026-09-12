@@ -7,6 +7,7 @@ import {
   Button,
   Card,
   FormField,
+  HelpHint,
   Input,
   PageHeader,
   ProblemAlert,
@@ -420,7 +421,10 @@ function DecisionsCard({ record }: { record: Batch }) {
           <dd className="font-mono tabular-nums">
             {formatMoney(record.cutTotal, record.currencyCode)}
           </dd>
-          <dt className="text-fg-muted">{t('billing.totals.returned')}</dt>
+          <dt className="text-fg-muted inline-flex items-center gap-1.5">
+            {t('billing.totals.returned')}
+            <HelpHint term="iade" />
+          </dt>
           <dd className="font-mono tabular-nums">
             {formatMoney(record.returnedTotal, record.currencyCode)}
           </dd>

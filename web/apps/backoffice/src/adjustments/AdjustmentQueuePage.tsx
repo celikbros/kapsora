@@ -5,6 +5,7 @@ import {
   Badge,
   Button,
   EmptyState,
+  HelpHint,
   PageHeader,
   ProblemAlert,
   Spinner,
@@ -204,8 +205,11 @@ export function AdjustmentQueuePage() {
             <THead>
               <TR>
                 <TH>{t('entitlements.adjustments.columns.account')}</TH>
-                <TH title={t('entitlements.adjustments.deltaHint')}>
-                  {t('entitlements.adjustments.columns.delta')}
+                <TH>
+                  <span className="inline-flex items-center gap-1.5">
+                    {t('entitlements.adjustments.columns.delta')}
+                    <HelpHint term="hakDuzeltme" />
+                  </span>
                 </TH>
                 <TH>{t('entitlements.adjustments.columns.reason')}</TH>
                 <TH>{t('entitlements.adjustments.columns.requestedBy')}</TH>

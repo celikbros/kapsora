@@ -6,6 +6,7 @@ import {
   Button,
   Card,
   FormField,
+  HelpHint,
   Input,
   PageHeader,
   ProblemAlert,
@@ -345,7 +346,11 @@ export function BatchReviewPage() {
 
       {reviewable ? (
         <Card>
-          <h2 className="text-base font-semibold">{t('billing.office.decideBatch')}</h2>
+          {/* The mark sits beside the heading, not inside it: it is not part of the name. */}
+          <div className="flex items-baseline gap-1.5">
+            <h2 className="text-base font-semibold">{t('billing.office.decideBatch')}</h2>
+            <HelpHint term="dortGoz" />
+          </div>
           <p className="text-fg-muted mt-1 text-sm">{t('billing.office.decideBatchHint')}</p>
           <ProblemAlert
             problem={decide.isError ? problemOf(decide.error) : null}

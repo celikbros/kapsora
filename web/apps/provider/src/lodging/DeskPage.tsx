@@ -4,6 +4,7 @@ import {
   Badge,
   Button,
   FormField,
+  HelpHint,
   Input,
   PageHeader,
   ProblemAlert,
@@ -127,7 +128,11 @@ function ArrivalRow({ booking, propertyName }: { booking: Booking; propertyName:
     <li className="bg-surface-raised border-line rounded-lg border p-3" data-testid="arrival-row">
       <BookingHead booking={booking} propertyName={propertyName} />
       <form onSubmit={submit} className="mt-3 flex flex-wrap items-end gap-2" noValidate>
-        <FormField label={t('provider.lodging.desk.token')} className="min-w-0 flex-1">
+        <FormField
+          label={t('provider.lodging.desk.token')}
+          className="min-w-0 flex-1"
+          help={<HelpHint term="kupon" />}
+        >
           <Input
             name={`token-${booking.id}`}
             value={token}
