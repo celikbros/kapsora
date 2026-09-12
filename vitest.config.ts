@@ -15,6 +15,14 @@ export default defineConfig({
       },
       {
         test: {
+          name: 'theme',
+          root: 'web/packages/config',
+          environment: 'node',
+          include: ['*.test.ts'],
+        },
+      },
+      {
+        test: {
           name: 'i18n',
           root: 'web/packages/i18n',
           environment: 'node',

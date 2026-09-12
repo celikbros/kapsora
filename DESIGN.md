@@ -213,8 +213,14 @@ serif headlines, vague headings like "Welcome back").
 tokens). The frontmatter mirrors the light values in hex; **if they disagree,
 `theme.css` wins** — update it first, then this file.
 
-Light and dark are two value sets of the same names; `data-theme="dark"` on `<html>`
-redefines the tokens.
+Light and dark are two value sets of the same names, and dark is reached two ways:
+`data-theme="dark"` written on `<html>` by the theme button, and — for a person who never
+pressed it — `prefers-color-scheme: dark`, the preference their machine already carries. A
+screen nobody asked about should arrive in the theme its owner set everywhere else, so the
+operating system is the default and the button is an override in both directions: choosing
+light keeps light on a dark machine. The value set is written twice in `theme.css` because
+CSS cannot share a declaration block between a selector and a media query; `theme.test.ts`
+fails if the two copies ever stop matching.
 
 | Role                                      | Light                                         | Dark                                          | Use                                                           |
 | ----------------------------------------- | --------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------- |

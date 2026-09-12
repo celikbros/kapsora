@@ -1,6 +1,9 @@
 /**
  * Light/dark theme. The choice lives in memory for the tab; the OS preference is the
- * default. Nothing is written to browser storage (lint forbids setItem anyway).
+ * default, and theme.css paints that default itself through prefers-color-scheme, so a
+ * first paint needs no script and cannot flash the wrong theme. This file only reads what
+ * is showing and writes an override over it. Nothing is written to browser storage (lint
+ * forbids setItem anyway).
  */
 export type Theme = 'light' | 'dark';
 

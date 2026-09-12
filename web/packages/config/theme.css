@@ -1,7 +1,9 @@
 /* KAPSORA design tokens for Tailwind CSS v4 — the normative source for DESIGN.md.
    Apps import this file once; components use the semantic names (bg-surface, text-fg,
-   border-line, bg-primary ...). Light and dark are two value sets of the same names;
-   data-theme="dark" on <html> redefines them. Contrast pairs meet WCAG 2.2 AA. */
+   border-line, bg-primary ...). Light and dark are two value sets of the same names.
+   Dark is reached two ways: data-theme="dark" written on <html> by the theme button, and
+   the operating system's own preference for a person who never pressed it. Contrast pairs
+   meet WCAG 2.2 AA in both sets. */
 @import 'tailwindcss';
 
 @theme {
@@ -46,6 +48,11 @@
   :root {
     color-scheme: light;
   }
+  /* The dark value set is written twice: once for the explicit choice, once for the
+     operating system's. CSS cannot share one declaration block between a selector and a
+     media query, so theme.test.ts fails if the two ever stop matching. The media rule comes
+     second and both selectors weigh the same, so a person who chose light keeps light on a
+     dark machine: :not([data-theme='light']) refuses to match their choice. */
   :root[data-theme='dark'] {
     color-scheme: dark;
     --color-surface: #0f1620;
@@ -70,6 +77,33 @@
     --color-info: #6fa3e8;
     --color-info-soft: #1e3552;
     --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      color-scheme: dark;
+      --color-surface: #0f1620;
+      --color-surface-raised: #172130;
+      --color-surface-sunken: #1f2b3d;
+      --color-surface-deep: #2a3850;
+      --color-fg: #eef2f7;
+      --color-fg-muted: #a6b3c4;
+      --color-fg-subtle: #6e7e93;
+      --color-line: #2a3850;
+      --color-line-strong: #3b4c66;
+      --color-primary: #6fa3e8;
+      --color-primary-strong: #8db8f0;
+      --color-primary-fg: #0b1a2c;
+      --color-primary-soft: #1e3552;
+      --color-success: #4cc38a;
+      --color-success-soft: #14382a;
+      --color-warning: #e5b546;
+      --color-warning-soft: #3a2f10;
+      --color-danger: #f0736a;
+      --color-danger-soft: #3f1c19;
+      --color-info: #6fa3e8;
+      --color-info-soft: #1e3552;
+      --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
+    }
   }
   html {
     font-family: var(--font-sans);
