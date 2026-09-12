@@ -4,7 +4,8 @@ param(
     [Parameter(Mandatory = $true)]
     [ValidateSet("build", "vet", "fmt", "lint", "test-unit", "test-db", "db-init", "migrate-up", "migrate-version",
                  "run-api", "run-worker", "run-scheduler", "seed-demo", "openapi-generate", "sqlc",
-                 "native-install", "native-up", "native-down", "native-status", "web-ci", "web-dev")]
+                 "native-install", "native-up", "native-down", "native-status", "web-ci", "web-dev",
+                 "up", "down")]
     [string]$Target
 )
 
@@ -51,6 +52,10 @@ switch ($Target) {
     "native-status"    { & (Join-Path $PSScriptRoot "native\status.ps1") }
     "web-ci"           { pnpm generate; pnpm format; pnpm lint; pnpm typecheck; pnpm test; pnpm build }
     "web-dev"          { pnpm dev }
+    # One command, one window, one address: the API, the worker, the scheduler and the three
+    # apps behind the door on 5181 (see scripts/dev-up.ps1).
+    "up"               { & (Join-Path $PSScriptRoot "dev-up.ps1") }
+    "down"             { & (Join-Path $PSScriptRoot "dev-down.ps1") }
     "db-init"          {
         $psql = Get-Command psql -ErrorAction SilentlyContinue
         if (-not $psql) { $psql = "C:\Program Files\PostgreSQL\18\bin\psql.exe" }

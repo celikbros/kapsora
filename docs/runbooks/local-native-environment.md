@@ -99,6 +99,20 @@ sürümlemeli).
 
 ## 6. Uygulamayı çalıştırma
 
+Tek komut, tek pencere, tek adres (Windows):
+
+```powershell
+.\scripts\dev.ps1 up      # API, worker, scheduler ve üç uygulama; hepsi http://127.0.0.1:5181
+.\scripts\dev.ps1 down    # arkada kalan süreçleri durdurur
+```
+
+`up` üç uygulamayı tek kapının arkasına koyar: yönetim paneli `/`, sağlayıcı portalı `/portal/`,
+üye uygulaması `/uye/`. Sağlayıcı ve üye sunucuları kendi portlarında (5182, 5183) çalışır, ama
+adresleri kapıdan geçer; kurulumdaki tek alan adının aynısı. Tek köken tek oturum çerezi
+demektir, tek giriş de bu yüzden tek kalır. Ctrl+C hepsini durdurur.
+
+Parçaları ayrı ayrı çalıştırmak isterseniz:
+
 ```sh
 make run-api        # veya .\scripts\dev.ps1 run-api
 make run-worker
