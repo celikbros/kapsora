@@ -43,7 +43,6 @@
   },
   "auth": {
     "loginTitle": "Oturum aç",
-    "loginIntro": "KAPSORA hesabınızla giriş yapın.",
     "tagline": "Hak ve fayda defteri",
     "welcome": "KAPSORA, kurumun tanımladığı hakları, bu hakları kullanan kişileri, hizmeti veren sağlayıcıları ve ödenen tutarları tek bir kayıtta tutar. Hangi kurum adına çalıştığınız her ekranda yazar.",
     "youAreHere": "Buradasınız",

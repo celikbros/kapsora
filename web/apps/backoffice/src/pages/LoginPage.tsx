@@ -99,7 +99,6 @@ export function LoginPage() {
     <SignInLayout app="backoffice">
       <Card className="w-full">
         <h2 className="text-xl font-semibold">{t('auth.loginTitle')}</h2>
-        <p className="text-fg-muted mt-1 text-sm">{t('auth.loginIntro')}</p>
         <form onSubmit={submit} className="mt-6 grid gap-4" noValidate>
           <FormField label={t('auth.username')} required requiredLabel={t('common.requiredMark')}>
             <Input

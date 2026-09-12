@@ -38,7 +38,6 @@
   },
   "auth": {
     "loginTitle": "Sign in",
-    "loginIntro": "Sign in with your KAPSORA account.",
     "tagline": "The benefits ledger",
     "welcome": "KAPSORA keeps what an organization grants, the people who use it, the providers who deliver it and what was paid, in one record. Which organization you act for is named on every screen.",
     "youAreHere": "You are here",
