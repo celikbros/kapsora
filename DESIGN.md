@@ -687,7 +687,9 @@ weight and one to three sentences in muted 14px; a finger has no hover, so the p
 way in on a phone. A hover-opened card leaves focus where it was; a pressed one takes it.
 The terms live once, under `help:terms`, shared by the three apps; a `FormField` takes the
 mark through `help`, beside the label and never inside it, because a button inside a label
-would answer to the field's name.
+would answer to the field's name. The mark's own name is "Yardım: <term>", never
+"Açıklama": that is the product's word for a claim line's description, and a guard that
+looks for the description column must not find a help mark instead.
 
 **Every page says what it is for.** The "?" in every app header — a ghost icon button
 between the theme control and the account — opens a drawer from the right, 26rem and full

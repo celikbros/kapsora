@@ -28,7 +28,8 @@ a column header. Opening it shows a short explanation: a title and one to three 
 
 - Opens on press, on Enter or Space, and on hover from a mouse; never on touch-hover,
   because the member app is a phone. Escape closes it; focus returns to the mark.
-- The mark is a real button whose accessible name is "Açıklama: <title>". The popover is a
+- The mark is a real button whose accessible name is "Yardım: <title>" — not "Açıklama",
+  which is the product's own word for a claim line's description. The popover is a
   dialog labelled by its title.
 - It explains **concepts**: a domain term (icmal, mutabakat, hakediş, kesinti, mahsup, hak
   cüzdanı, ön onay), a figure whose arithmetic is the server's, a field whose consequence

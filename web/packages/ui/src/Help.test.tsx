@@ -39,7 +39,7 @@ beforeAll(() => {
 describe('the help mark', () => {
   it('opens on press with the term explained, and closes on Escape', async () => {
     render(<HelpHint term="mahsup" />);
-    const mark = screen.getByRole('button', { name: 'Açıklama: Mahsup' });
+    const mark = screen.getByRole('button', { name: 'Yardım: Mahsup' });
     await userEvent.click(mark);
     const popover = await screen.findByRole('dialog');
     expect(within(popover).getByText('Mahsup')).toBeInTheDocument();
@@ -51,7 +51,7 @@ describe('the help mark', () => {
   it('opens from the keyboard with the explanation written in place', async () => {
     render(<HelpHint title="Onaylanan" body="Sunucunun karar verdiği tutar." />);
     await userEvent.tab();
-    expect(screen.getByRole('button', { name: 'Açıklama: Onaylanan' })).toHaveFocus();
+    expect(screen.getByRole('button', { name: 'Yardım: Onaylanan' })).toHaveFocus();
     await userEvent.keyboard('{Enter}');
     expect(await screen.findByRole('dialog')).toHaveTextContent('Sunucunun karar verdiği tutar.');
   });
@@ -65,7 +65,7 @@ describe('the help mark', () => {
     );
     const input = screen.getByRole('textbox', { name: 'Not' });
     input.focus();
-    const mark = screen.getByRole('button', { name: 'Açıklama: Vade' });
+    const mark = screen.getByRole('button', { name: 'Yardım: Vade' });
 
     const pointer = (type: string, pointerType: string) =>
       new window.PointerEvent(type, { pointerType, bubbles: true, cancelable: true });
@@ -86,7 +86,7 @@ describe('the help mark', () => {
 
   it('pins open on a press after a hover, and a second press closes it', async () => {
     render(<HelpHint title="Vade" body="Ödemenin son günü." />);
-    const mark = screen.getByRole('button', { name: 'Açıklama: Vade' });
+    const mark = screen.getByRole('button', { name: 'Yardım: Vade' });
     const pointer = (type: string, pointerType: string) =>
       new window.PointerEvent(type, { pointerType, bubbles: true, cancelable: true });
 
@@ -117,7 +117,7 @@ describe('a field with help', () => {
     );
     const input = screen.getByLabelText('Mahsup');
     expect(input).toHaveAttribute('name', 'offset');
-    const mark = screen.getByRole('button', { name: 'Açıklama: Mahsup' });
+    const mark = screen.getByRole('button', { name: 'Yardım: Mahsup' });
     expect(mark.closest('label')).toBeNull();
     await userEvent.click(mark);
     expect(await screen.findByRole('dialog')).toBeInTheDocument();

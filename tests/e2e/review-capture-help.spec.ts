@@ -41,7 +41,7 @@ test('backoffice: the page help drawer and a help mark on the worklist', async (
 
     // The mark on the "Termin" column header, opened by a press so a phone can follow.
     await page.setViewportSize({ width: 1440, height: 900 });
-    const mark = page.getByRole('button', { name: /^Açıklama: / }).first();
+    const mark = page.getByRole('button', { name: /^Yardım: / }).first();
     await mark.click();
     const hint = page.getByRole('dialog');
     await expect(hint).toBeVisible();

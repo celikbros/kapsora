@@ -55,7 +55,8 @@ test('sponsor HR opens the same member and finds no diagnosis anywhere on the pa
   // The claim HR reaches from here is the financial projection: no description column.
   await page.getByTestId('person-claims').getByRole('link').first().click();
   await expect(page.getByTestId('claim-lines')).toHaveAttribute('data-projection', 'FINANCIAL');
-  await expect(page.getByRole('columnheader', { name: 'Açıklama' })).toHaveCount(0);
+  // Exact: a help mark in another header carries its own name, and that is not the column.
+  await expect(page.getByRole('columnheader', { name: 'Açıklama', exact: true })).toHaveCount(0);
   const claimBody = await page.locator('body').innerText();
   for (const word of CLINICAL)
     expect(claimBody, `HR claim page carries "${word}"`).not.toContain(word);

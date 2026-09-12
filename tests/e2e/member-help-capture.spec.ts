@@ -33,7 +33,7 @@ test('member: the page help drawer and the entitlements mark on a phone', async 
     await page.keyboard.press('Escape');
     await expect(drawer).toBeHidden();
 
-    await page.getByRole('button', { name: 'Açıklama: Hak cüzdanı' }).click();
+    await page.getByRole('button', { name: 'Yardım: Hak cüzdanı' }).click();
     const hint = page.getByRole('dialog');
     await expect(hint).toBeVisible();
     await page.screenshot({ path: `${OUT}/member-help-hint-phone-${theme}.png` });
