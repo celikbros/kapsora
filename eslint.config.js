@@ -15,4 +15,8 @@ export default [
     ],
   },
   ...kapsora,
+  {
+    files: ['tests/load/*.js'],
+    languageOptions: { globals: { __ENV: 'readonly', open: 'readonly' } },
+  },
 ];

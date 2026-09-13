@@ -10,6 +10,11 @@
     "pnpm": ">=10"
   },
   "scripts": {
+    "load:install": "node scripts/load/install.mjs",
+    "load:prepare": "node scripts/load/prepare-demo.mjs",
+    "load:smoke": "node scripts/load/run.mjs smoke",
+    "load:run": "node scripts/load/run.mjs load",
+    "load:test": "node --test tests/load/model.test.mjs",
     "dev": "pnpm --filter @kapsora/backoffice dev",
     "dev:provider": "pnpm --filter @kapsora/provider dev",
     "dev:member": "pnpm --filter @kapsora/member dev",

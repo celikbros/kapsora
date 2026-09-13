@@ -168,6 +168,11 @@ jobs:
         run: pnpm lint
       - name: typecheck
         run: pnpm typecheck
+      - name: load test tooling
+        run: |
+          pnpm load:test
+          pnpm exec eslint scripts/load tests/load --max-warnings 0
+          pnpm exec prettier --check "scripts/load/*.mjs" "tests/load/*.{js,mjs}"
       - name: unit tests
         run: pnpm test
       - name: build

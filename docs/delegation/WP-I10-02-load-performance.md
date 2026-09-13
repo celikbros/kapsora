@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Milestone | M10 |
-| Status | READY for workload specification and test tooling |
+| Status | ACTIVE — tooling and four real-API smoke flows verified; full acceptance open |
 | Depends on | M1–M7; I10-01 for its final import workload |
 | Migration numbers | None assigned; index changes require forward migrations |
 | API ownership | Existing operations; any contract change is reviewed first |
@@ -41,3 +41,24 @@ specified capacity, and fix the measured bottlenecks without weakening tenant bo
 - Record baseline, corrections and final results with reproducible commands in the report.
   Unmet thresholds remain open, with measured causes and next actions.
 - Performance environment and its resource budget must be named before the full run.
+
+## Delivery status — 2026-09-13
+
+The first tooling slice adds pinned k6 installation, local synthetic fixture discovery,
+five workflows, a deliberately small smoke mode and a bounded load profile. Session/CSRF,
+step-up, idempotency, cleanup and exact final balance/inventory reconciliation are exercised.
+The model tests run in CI. See the [load-testing runbook](../runbooks/load-testing.md).
+
+Real API evidence: read, draft-write/cancel, eligibility and hold/release pass; final room
+inventory and exact entitlement balances match the initial snapshot. This is four-flow
+functional evidence, not a latency or capacity acceptance result.
+
+Import staging is implemented but not yet accepted against the real API: no standard role
+currently grants `import.execute`, while the browser demo grants it to its administrator.
+The role-owner decision is pending. Required grants are checked before workload mutations;
+the harness does not add a permission to make the scenario pass. An explicitly reduced smoke
+reports its omitted workflow; load mode requires all five.
+
+Full-capacity data/session provisioning, import apply/adapter coverage, server telemetry,
+designated-environment load execution and measured performance corrections remain open.
+No M10 exit criterion is closed by the local smoke alone.
