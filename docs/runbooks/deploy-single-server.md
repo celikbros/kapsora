@@ -158,3 +158,34 @@ When updating an existing installation, restart the API through the operator's n
 deployment procedure before expecting the additional checks. No database migration or
 new configuration variable is needed. This probe does not prove that the worker is
 draining jobs; monitor outbox age and scan backlog separately during M10.
+
+## I10-03 preparation findings
+
+The Ubuntu execution target is still pending. These findings came from repository review,
+not a completed installation or restore drill. Resolve them before using the commands
+above for pilot acceptance:
+
+- The CI `release-binaries` job currently uploads a directory containing prefixed
+  `kapsora-*` executables for four commands. `deploy/install.sh` expects a tar archive
+  with six unprefixed commands (`api`, `worker`, `scheduler`, `migrate`, `seed`, `keygen`)
+  and the three web builds. The current CI artifact cannot be passed directly to it.
+  Release packaging and a clean-target installation check remain open.
+- The installer suppresses `systemd-analyze verify` failure. Run verification explicitly
+  and require exit 0 before starting services; installer success does not prove unit validity.
+- The generated runtime environment template omits the object-store credentials required
+  by API/worker startup. Supply target-specific document storage configuration using the
+  current configuration contract before startup; readiness must cover both actual buckets.
+- The restore target needs the original encryption key and matching application/schema.
+  The fresh-install `keygen`, seed and automatic migration steps must not be applied to
+  a restored database. Follow [isolated recovery](backup-restore.md) instead.
+- Avoid the historical `env $(grep ... | xargs)` examples: they do not preserve environment
+  file quoting and can place secrets in process arguments. Run administrative commands via
+  an operator-reviewed systemd unit with `EnvironmentFile=` and the intended `User=`;
+  record the command and exit code, not its secret environment.
+- The seed tool refuses production-like environments. Its demo command is not a production
+  administrator provisioning procedure; do not weaken its environment check for deployment.
+- CPU/memory/disk figures above are an initial sizing example. Pilot capacity and recovery
+  times remain unmeasured until I10-02/I10-03 evidence exists.
+
+Acceptance uses RPO <=5 minutes and RTO <=2 hours (baseline section 30.4), including object
+and key recovery. The previous backup guide's 15-minute /4-hour targets are superseded.

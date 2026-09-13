@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Milestone | M10 |
-| Status | READY for procedure preparation; environment required for execution |
+| Status | ACTIVE: procedure prepared; isolated Ubuntu execution target pending |
 | Depends on | Existing native deployment, document storage and encrypted fields |
 | Migration numbers | None |
 | API ownership | Existing health probes; no new operation planned |
@@ -31,8 +31,9 @@ measured data loss and elapsed recovery time.
 
 ## Targets and known document discrepancy
 
-Baseline §30.4 specifies RPO ≤5 minutes and RTO ≤2 hours. The existing backup runbook says
+Baseline §30.4 specifies RPO ≤5 minutes and RTO ≤2 hours. The former backup runbook said
 15 minutes /4 hours while attributing them to §31, which does not state those values.
+The preparation slice corrects those values; no measured recovery claim is made.
 Use the stricter normative targets for acceptance and correct that runbook in this package.
 A different contractual target requires an explicit recorded owner decision.
 
@@ -45,3 +46,19 @@ A different contractual target requires an explicit recorded owner decision.
 - Operator-reviewed runbook and unresolved findings. Store captures and raw logs outside
   tracked documentation; keep only concise reports and reproducible commands in git.
 - Execution requires designated source/restore environments and backup destinations.
+
+## Preparation evidence — 2026-09-13
+
+Updated the existing backup runbook in place with the normative targets, isolated PITR,
+document version/hash reconciliation, recovered-key dependencies, session revocation,
+outbox replay checks and an RPO/RTO evidence table. Source services and data were not touched.
+
+Repository review found an incompatible CI artifact/installer layout, suppressed unit
+verification errors, incomplete runtime environment templates and unsafe historical
+environment-loading examples. These are recorded in the deployment runbook for correction;
+this documentation slice does not claim to fix or validate the installer.
+
+Validation: checked schema/configuration references and official PostgreSQL/pgBackRest
+recovery guidance, local Markdown links and diff formatting. No Ubuntu installation,
+systemd verification, backup transfer or restore was executed. The target, repository,
+synthetic checkpoint and operator-reviewed execution window remain external inputs.
