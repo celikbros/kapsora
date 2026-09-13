@@ -96,7 +96,22 @@ export function LoginPage() {
   }
 
   return (
-    <SignInLayout app="backoffice">
+    <SignInLayout
+      app="backoffice"
+      demoAccounts={
+        DEMO_LOGIN ? (
+          <DemoAccounts
+            accounts={DEMO_LIST}
+            app="backoffice"
+            busy={busy}
+            onPick={(user) => {
+              setUsername(user);
+              void signIn(user, DEMO_PASSWORD);
+            }}
+          />
+        ) : null
+      }
+    >
       <Card className="w-full">
         <h2 className="text-xl font-semibold">{t('auth.loginTitle')}</h2>
         <form onSubmit={submit} className="mt-6 grid gap-4" noValidate>
@@ -124,17 +139,6 @@ export function LoginPage() {
             {busy ? t('auth.submitting') : t('auth.submit')}
           </Button>
         </form>
-        {DEMO_LOGIN ? (
-          <DemoAccounts
-            accounts={DEMO_LIST}
-            app="backoffice"
-            busy={busy}
-            onPick={(user) => {
-              setUsername(user);
-              void signIn(user, DEMO_PASSWORD);
-            }}
-          />
-        ) : null}
       </Card>
     </SignInLayout>
   );

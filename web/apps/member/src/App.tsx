@@ -145,7 +145,22 @@ function LoginPage() {
   }
 
   return (
-    <SignInLayout app="member">
+    <SignInLayout
+      app="member"
+      demoAccounts={
+        DEMO_LOGIN ? (
+          <DemoAccounts
+            accounts={DEMO_LIST}
+            app="member"
+            busy={busy}
+            onPick={(user) => {
+              setUsername(user);
+              void signIn(user, DEMO_PASSWORD);
+            }}
+          />
+        ) : null
+      }
+    >
       <Card className="w-full">
         <h2 className="text-xl font-semibold">{t('auth.loginTitle')}</h2>
         <form onSubmit={submit} className="mt-6 grid gap-4" noValidate>
@@ -172,17 +187,6 @@ function LoginPage() {
             {t('auth.submit')}
           </Button>
         </form>
-        {DEMO_LOGIN ? (
-          <DemoAccounts
-            accounts={DEMO_LIST}
-            app="member"
-            busy={busy}
-            onPick={(user) => {
-              setUsername(user);
-              void signIn(user, DEMO_PASSWORD);
-            }}
-          />
-        ) : null}
       </Card>
     </SignInLayout>
   );

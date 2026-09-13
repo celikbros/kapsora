@@ -1,6 +1,7 @@
 import { useTranslation } from '@kapsora/i18n';
 
 import type { AppKind } from './AppChooser';
+import { cn } from './cn';
 
 /** Which app an account works in; `both` is an account that works in two of them. */
 export type DemoAccountApp = AppKind | 'both';
@@ -95,7 +96,7 @@ function groupsFor(app: DemoAccountApp | undefined): readonly DemoAccountApp[] {
 }
 
 /**
- * The sample accounts under the sign-in form, each signing in with one press. An app renders it
+ * The sample accounts beside the sign-in form, each signing in with one press. An app renders it
  * only on the development server (import.meta.env.DEV), with the sample data or against a local
  * API loaded by the demo seed: a built bundle never carries it, so a real deployment cannot show
  * a list of who may sign in.
@@ -113,41 +114,54 @@ export function DemoAccounts({
   onPick: (username: string) => void;
 }) {
   const { t } = useTranslation();
+  const groups = groupsFor(app).filter((group) =>
+    accounts.some((account) => account.app === group),
+  );
   return (
     <section
       aria-labelledby="demo-accounts-heading"
-      className="border-line mt-6 border-t pt-4"
+      className="border-line border-t pt-4"
       data-testid="demo-accounts"
     >
-      <h3 id="demo-accounts-heading" className="text-sm font-semibold">
+      <h2 id="demo-accounts-heading" className="text-base font-semibold">
         {t('auth.demoTitle', { defaultValue: 'Demo hesapları' })}
-      </h3>
+      </h2>
       <p className="text-fg-muted mt-1 text-xs">
         {t('auth.demoIntro', {
           defaultValue: 'Geliştirme sunucusu. Bir hesaba dokunun, o hesapla girilir.',
         })}
       </p>
-      <div className="mt-4 grid gap-4">
-        {groupsFor(app).map((group) => {
+      <div className="mt-4 grid items-start gap-x-6 gap-y-4 sm:grid-cols-2">
+        {groups.map((group) => {
           const rows = accounts.filter((account) => account.app === group);
-          if (rows.length === 0) return null;
           return (
-            <div key={group}>
-              <h4 className="text-fg text-xs font-semibold">{t(`auth.apps.${group}`)}</h4>
-              <ul className="mt-1.5 grid gap-0.5">
+            <div
+              key={group}
+              className={cn(
+                '@container min-w-0',
+                groups.length === 4 && group === 'backoffice' && 'sm:row-span-3',
+              )}
+            >
+              <div className="border-line flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b pb-2">
+                <h3 className="text-fg text-sm font-semibold">{t(`auth.apps.${group}`)}</h3>
+                {group === app ? (
+                  <span className="text-primary text-xs font-medium">{t('auth.youAreHere')}</span>
+                ) : null}
+              </div>
+              <ul className="mt-2 grid gap-0.5">
                 {rows.map((account) => (
                   <li key={account.username}>
                     <button
                       type="button"
                       disabled={busy}
                       onClick={() => onPick(account.username)}
-                      className="hover:bg-surface-sunken focus-visible:outline-focus flex w-full items-baseline justify-between gap-3 rounded-md px-2 py-1.5 text-left text-sm transition-colors focus-visible:outline-2 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="hover:bg-surface-sunken focus-visible:outline-focus grid min-h-12 w-full items-baseline gap-x-3 gap-y-0.5 rounded-md px-2 py-1 text-left text-sm transition-colors focus-visible:outline-2 disabled:cursor-not-allowed disabled:opacity-60 @xs:grid-cols-[minmax(0,1fr)_auto]"
                     >
                       <span className="min-w-0">
                         <span className="font-medium">{account.name}</span>
                         <span className="text-fg-muted block text-xs">{account.role}</span>
                       </span>
-                      <span className="text-fg-muted shrink-0 font-mono text-xs">
+                      <span className="text-fg-muted min-w-0 font-mono text-xs break-all">
                         {account.username}
                       </span>
                     </button>

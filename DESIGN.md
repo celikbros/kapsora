@@ -668,8 +668,9 @@ keeps, and the three apps as a 1px-ruled definition list. The app this screen be
 "Buradasınız" in primary, and it is the row a narrow screen keeps when the other two fall away —
 the member app's first viewport is a phone, and "which app am I in" may not be what drops. The
 sign-in card sits beside it, is the only raised surface, and holds the h2. Both columns start at
-the same top edge: the card grows with the demo list and the panel does not, so centring them
-against each other would push the product name half a screen down. No gradient, no
+the same top edge. On a development server the account shortcuts occupy the left column below
+the introduction, and the form keeps its own height on the right. The development layout grows
+to 80rem, while the production introduction keeps its 64rem measure. No gradient, no
 illustration, no hero number: a ledger introduces itself by saying what it holds. The three apps
 share the layout, so whichever door the single sign-in hands a person to looks like the one they
 left.
@@ -703,10 +704,14 @@ drawer shows the app's own help rather than nothing.
 
 **A demo account list exists only where the demo does.** On a development server — with the
 in-browser sample data or against a local API loaded by the demo seed — every sign-in screen
-lists all the demo accounts under the form, grouped by the app they work in, this screen's own
-app first (the fourth group is the account that works in two, named by both apps rather than
-counted): the name, what the account does, the username in mono. The app is said once, in the
-group heading — muted rather than subtle, because it is the meaning now and not a placeholder —
+lists all the demo accounts in the left column beneath the introduction, grouped by the app
+they work in, this screen's own app first. The groups replace the repeated app descriptions in
+this layout, and the current group carries "Buradasınız". The four groups use two columns from
+640px, with the five-account management group spanning three rows and the other groups stacked
+alongside it. Rows keep the name, purpose and monospace username; in a narrow group the username
+wraps below the other text. The form and shortcuts each render once: DOM order is introduction,
+form, shortcuts, and below 1024px the page follows that order in a single column. The app is said
+once in a distinct group heading, because it is the meaning now and not a placeholder,
 and never again on every row. A row names itself from its own content, so a reader hears the
 person, the work and the username rather than a label that replaces them. One press signs in, and the single
 sign-in takes the account to its app. The list is gated on the development build, so no built
