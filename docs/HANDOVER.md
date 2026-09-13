@@ -52,8 +52,10 @@ initiative — that decision belongs to the business owner.** See ADR-017, ADR-0
 the integration model those two milestones will implement.
 
 The owner approved closing the small readiness gaps and preparing M10 next. M10 now has
-five work packages under `docs/delegation/WP-I10-*`; implementation and pilot acceptance
-remain pending. M11 is PLANNED. M8/M9 remain deferred.
+five work packages under `docs/delegation/WP-I10-*`. I10-02 implementation has started: the
+k6 harness and four real-API smoke workflows pass; full load and pilot acceptance remain open.
+See `docs/runbooks/load-testing.md`. Import testing awaits the role-owner decision because
+no real role template grants `import.execute`; the harness does not change grants. M11 is PLANNED. M8/M9 remain deferred.
 
 Pilot customer, program, beneficiary group and HR/policy source formats are still external
 inputs. Technical preparation can proceed without them; customer-specific integration and

@@ -1,0 +1,7 @@
+{
+  "read": { "rate": 180, "maxVUs": 60 },
+  "write": { "rate": 40, "maxVUs": 40 },
+  "eligibility": { "rate": 30, "maxVUs": 30 },
+  "hold": { "rate": 5, "maxVUs": 15 },
+  "import": { "rate": 1, "maxVUs": 5 }
+}

@@ -22,6 +22,7 @@ work package or historical specification is not required to get started.
 | Single-server installation | [Deployment procedure](runbooks/deploy-single-server.md) |
 | Server layout, ports and release procedure | [Deployment layout](runbooks/deployment-layout.md) |
 | Service units and hardening | [systemd reference](runbooks/systemd.md) |
+| Load tooling, smoke coverage and performance evidence | [Load testing](runbooks/load-testing.md) |
 | Backup and recovery | [Backup and restore](runbooks/backup-restore.md) |
 | Original specification and historical artifacts | [Frozen v1.2 baseline](baseline-v1.2/) |
 | API contract | [OpenAPI](../api/openapi/kapsora-v1.yaml) |
