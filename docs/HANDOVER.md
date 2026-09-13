@@ -4,8 +4,9 @@
 
 Paths in code spans and command examples are relative to the repository root.
 
-Written 2026-09-13, at the point the previous team stops. `main` is clean, CI is green on the
-last commit (`7f69e26`), nothing is in flight. This file is the fastest path from zero to
+Originally written 2026-09-13 at the previous team handover; updated with the approved
+readiness corrections and M10 work-package preparation. The original baseline CI was green
+on `7f69e26`; use the current branch and CI for the latest delivery status. This file is the fastest path from zero to
 working on this codebase as if you had built it. Read it once, fully, before touching code.
 
 ## 1. What this is
@@ -50,18 +51,19 @@ without rework. **Do not chase the Nettefatura NDA or an accounting-program name
 initiative — that decision belongs to the business owner.** See ADR-017, ADR-018, ADR-019 for
 the integration model those two milestones will implement.
 
-M10 (integrations, hardening, pilot) and M11 (MVP+1) are PLANNED, not started.
+The owner approved closing the small readiness gaps and preparing M10 next. M10 now has
+five work packages under `docs/delegation/WP-I10-*`; implementation and pilot acceptance
+remain pending. M11 is PLANNED. M8/M9 remain deferred.
 
-**The single most important open decision:** which increment is next — M8, M9, M10, or
-something else the owner names. Ask before assuming.
+Pilot customer, program, beneficiary group and HR/policy source formats are still external
+inputs. Technical preparation can proceed without them; customer-specific integration and
+signed acceptance cannot.
 
 ### Smaller open items worth knowing about
 
-- The mock world's `SPONSOR_HR_PERMISSIONS` in
-  `web/packages/api-client/src/mocks/data.ts` is missing `accommodation.property.read`,
-  which the real `internal/identity/application/roles.go` grants SPONSOR_HR. A five-minute
-  fix; nobody has gotten to it. Whenever you touch a role's permission list, diff it against
-  `roles.go` by hand — the mock and the real grants are two independent lists (see §6).
+- The mock world's `SPONSOR_HR_PERMISSIONS` now matches the real role, including
+  `accommodation.property.read`; the mock test compares it with `roles.go`. Keep both
+  permission lists aligned whenever a role changes (see §6).
 - No theme (light/dark) toggle exists in the provider or member app headers — only the
   backoffice has one. The apps already follow the OS's `prefers-color-scheme` by default
   (`web/packages/config/theme.css`), so this is a nice-to-have, not a defect.
@@ -177,7 +179,7 @@ purpose** — never commit them.
 - **A permission exists in two places, and they can drift.** The real grant is
   `internal/identity/application/roles.go`; the browser demo's mirror is
   `web/packages/api-client/src/mocks/data.ts`. Changing one without the other is a silent
-  bug — the current SPONSOR_HR gap above is exactly that. `db/tests` has equality tests
+  bug — the repaired SPONSOR_HR gap above was exactly that. `db/tests` has equality tests
   pinning some of these; run `go test ./db/tests/ -run 'Permission|Grant|Role'` after any
   `roles.go` change, with `.env` loaded (`set -a; . ./.env; set +a` first, or the DB tests
   skip silently and prove nothing).
@@ -231,5 +233,5 @@ English — that split is deliberate and consistent across ~50 commits; don't mi
    enough to know when to go back and check it.
 5. Get the real system running end to end (`.\scripts\dev.ps1 up`, seeded), and sign in as
    two or three different demo accounts to feel the permission boundaries first-hand.
-6. Talk to the business owner about what's next — M8, M9, M10, or a cross-cutting piece like
-   WP-X1-01 was. That choice is theirs, not inferred from this file.
+6. Continue with the approved M10 packages in `docs/plan/ROADMAP.md`. Collect the missing
+   pilot/source inputs for customer-specific work; M8/M9 remain deferred by the owner.

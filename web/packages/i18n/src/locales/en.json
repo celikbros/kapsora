@@ -228,6 +228,12 @@
     "continue": "Continue"
   },
   "problems": {
+    "PERSON_NOT_FOUND": "The member could not be found.",
+    "PLAN_NOT_FOUND": "The plan could not be found.",
+    "ENROLLMENT_NOT_FOUND": "The enrollment could not be found.",
+    "RATE_LIMITED": "Too many requests. Please wait and try again.",
+    "TENANT_CODE_EXISTS": "This tenant code is already in use. Enter a different code.",
+    "SERVICE_NOT_READY": "The service is currently unavailable. Please try again later.",
     "UNKNOWN": "Something unexpected happened. If it persists, contact support with the trace id.",
     "NETWORK_ERROR": "The server could not be reached. Check your connection and retry.",
     "UNAUTHENTICATED": "Your session was not found or has expired. Sign in again.",

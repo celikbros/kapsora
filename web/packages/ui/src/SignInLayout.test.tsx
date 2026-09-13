@@ -40,7 +40,7 @@ describe('the demo account list', () => {
     const list = screen.getByTestId('demo-accounts');
 
     const groups = within(list)
-      .getAllByRole('heading', { level: 4 })
+      .getAllByRole('heading', { level: 3 })
       .map((heading) => heading.textContent);
     expect(groups).toEqual([
       'Yönetim paneli',
@@ -66,13 +66,13 @@ describe('the demo account list', () => {
       />,
     );
     const list = screen.getByTestId('demo-accounts');
-    expect(within(list).getAllByRole('heading', { level: 4 })).toHaveLength(1);
-    expect(within(list).getByRole('heading', { level: 4 })).toHaveTextContent('Üye uygulaması');
+    expect(within(list).getAllByRole('heading', { level: 3 })).toHaveLength(1);
+    expect(within(list).getByRole('heading', { level: 3 })).toHaveTextContent('Üye uygulaması');
   });
   it("puts the screen's own app first", () => {
     render(<DemoAccounts accounts={DEMO_ACCOUNTS} app="member" onPick={() => {}} />);
     const groups = within(screen.getByTestId('demo-accounts'))
-      .getAllByRole('heading', { level: 4 })
+      .getAllByRole('heading', { level: 3 })
       .map((heading) => heading.textContent);
     expect(groups[0]).toBe('Üye uygulaması');
   });

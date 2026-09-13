@@ -103,6 +103,15 @@ func NewS3(o S3Options) (*S3, error) {
 
 var _ Store = (*S3)(nil)
 
+// CheckBucket verifies authenticated access to a required bucket without reading or writing objects.
+func (s *S3) CheckBucket(ctx context.Context, bucket string) error {
+	resp, err := s.doRequest(ctx, http.MethodHead, bucket, "", nil)
+	if err != nil {
+		return err
+	}
+	return resp.Body.Close()
+}
+
 // PresignPut implements Store. The content type and the content length are signed
 // headers, which is what turns them into a limit rather than a suggestion: the store
 // rejects a body of any other size, so the size cap holds without the API ever seeing a
@@ -298,9 +307,21 @@ func (s *S3) do(ctx context.Context, method, bucket, key string, headers map[str
 	if bucket == "" || key == "" {
 		return nil, errors.New("objectstore: bucket and key are required")
 	}
-	path := "/" + bucket + "/" + escapePath(key)
+	return s.doRequest(ctx, method, bucket, key, headers)
+}
+
+// doRequest also supports a bucket-level HEAD for readiness.
+func (s *S3) doRequest(ctx context.Context, method, bucket, key string, headers map[string]string) (*http.Response, error) {
+	if bucket == "" {
+		return nil, errors.New("objectstore: bucket is required")
+	}
+	path := "/" + bucket
 	target := *s.endpoint
-	target.Path = "/" + bucket + "/" + key
+	target.Path = path
+	if key != "" {
+		path += "/" + escapePath(key)
+		target.Path += "/" + key
+	}
 	target.RawPath = path
 
 	req, err := http.NewRequestWithContext(ctx, method, target.String(), nil)

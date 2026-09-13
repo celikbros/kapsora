@@ -1540,6 +1540,7 @@ const SPONSOR_HR_PERMISSIONS = [
   'invoice.read',
   'entitlement.read',
   'report.read',
+  'accommodation.property.read',
 ];
 
 /**

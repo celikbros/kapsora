@@ -140,6 +140,10 @@ function permissionsOf(username: string): string[] {
 }
 
 describe('the M5 review and billing accounts', () => {
+  it('grants sponsor.hr exactly the Go SPONSOR_HR list', () => {
+    expect(permissionsOf('sponsor.hr')).toEqual(goRolePermissions('SPONSOR_HR'));
+  });
+
   it('grants financial.reviewer exactly the Go FINANCIAL_REVIEWER list', () => {
     expect(permissionsOf('financial.reviewer')).toEqual(goRolePermissions('FINANCIAL_REVIEWER'));
   });
