@@ -142,3 +142,19 @@ ileri yönlüdür (ADR-016); sorun çıkarsa düzeltme yeni bir sürümle ileriy
 | Migration sürümü | `sudo -u kapsora env $(grep -v '^#' /etc/kapsora/migrate.env \| xargs) /opt/kapsora/bin/migrate version` |
 | Yedek | [backup-restore.md](backup-restore.md) |
 | Güvenlik güncellemeleri | `unattended-upgrades` açık; PostgreSQL büyük sürüm geçişi planlı yapılır |
+
+## Readiness after dependency failures
+
+`GET /health/live` checks that the API process can answer HTTP. `GET /health/ready`
+checks PostgreSQL, authenticated HEAD access to both configured document buckets, and
+clamd PING concurrently within a two-second budget. Bucket probes do not read or write
+documents. A missing/inaccessible bucket or unavailable scanner returns 503 with
+`SERVICE_NOT_READY` and the failed dependency names; credentials and upstream errors are
+not returned. Restoring the dependency restores readiness on the next probe.
+
+Use readiness for traffic admission and liveness for process supervision. Do not restart
+an otherwise live API repeatedly because its scanner or storage service is unavailable.
+When updating an existing installation, restart the API through the operator's normal
+deployment procedure before expecting the additional checks. No database migration or
+new configuration variable is needed. This probe does not prove that the worker is
+draining jobs; monitor outbox age and scan backlog separately during M10.

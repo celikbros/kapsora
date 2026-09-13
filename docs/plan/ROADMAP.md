@@ -150,6 +150,36 @@ empty shell since M1.
 | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ----------------------- | ------------- | ---- | ------ |
 | [WP-X1-01](../delegation/WP-X1-01-in-product-help.md)     | In-product help: the unfamiliar explained where it stands, and every page says what it is for | the three shells, `ui`  | anything      | M    | Claude |
 
+## M10 work packages (prepared 2026-09-13)
+
+The owner approved the readiness corrections and M10 preparation. The milestone is still
+PLANNED: packages are specified, but implementation and acceptance have not been completed.
+M8/M9 remain deferred. Start with the source contract for 01; 02–04 can be prepared without
+customer data, and 05 closes only against a named pilot and completed evidence.
+
+| WP | Scope | Status / external input |
+| --- | --- | --- |
+| [WP-I10-01](../delegation/WP-I10-01-imports-webhooks.md) | HR/policy import adapters and webhooks | PLANNED; source format and consumer to be named |
+| [WP-I10-02](../delegation/WP-I10-02-load-performance.md) | k6 workloads, measured load and corrections | READY for tooling; full-capacity environment required |
+| [WP-I10-03](../delegation/WP-I10-03-operations-recovery.md) | Ubuntu deployment verification, backup and restore drill | READY for preparation; execution target required |
+| [WP-I10-04](../delegation/WP-I10-04-security.md) | Security review, negative tests and finding closure | READY for local review; external test scope to be named |
+| [WP-I10-05](../delegation/WP-I10-05-pilot-acceptance.md) | Pilot data reconciliation and signed UAT | PLANNED; pilot institution, program and users required |
+
+### Readiness corrections delivered with this preparation
+
+- The API probes PostgreSQL, both required object-store buckets and clamd. Dependency
+  failure produces 503; recovery restores readiness. Liveness remains independent.
+- The demo SPONSOR_HR grant matches the server and is compared with it in the mock tests.
+- Added 94 Turkish problem messages: the six recorded in September 4's note plus 88 later
+  literal response codes found by a Go AST-based coverage test. The latter keep the existing
+  server wording except two implementation terms replaced with product-facing wording.
+  The guard covers literal `Problem.Code` values and package-local problem-helper calls;
+  dynamically computed domain codes still require their own mapping tests.
+- The three sign-in screens place grouped demo accounts beside the form on desktop.
+
+The older status-log entries below are historical. Their readiness, SPONSOR_HR and literal
+problem-message gaps are closed by these changes; other recorded gaps are not implicitly closed.
+
 ## Cross-cutting tracks
 
 - **Security and privacy:** every WP carries the non-negotiable rules from the handbook

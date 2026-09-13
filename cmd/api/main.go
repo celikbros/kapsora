@@ -413,8 +413,10 @@ func run() error {
 		return err
 	}
 
-	checker := health.NewChecker(2 * time.Second)
-	checker.Add("postgresql", health.PostgresCheck(pool))
+	checker, err := newReadiness(health.PostgresCheck(pool), cfg.Documents)
+	if err != nil {
+		return err
+	}
 
 	router := newRouter(routerDeps{
 		cfg:            cfg,
