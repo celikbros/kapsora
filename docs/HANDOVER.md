@@ -34,6 +34,14 @@ keep them current as you build.
 
 ## 2. Where things stand
 
+**Current owner priority (2026-09-13): complete the product and make its everyday flows
+work against the real API.** Recovery work is deferred by explicit owner instruction.
+Do not request an Ubuntu recovery target or continue I10-03 now. Focus on sign-in and
+role access, member/import operations, eligibility and service requests, accommodation,
+and claims/invoice/payment flows. Close observed functional gaps before operations/pilot
+preparation. Full-capacity benchmarking and deployment preparation are not the next task.
+
+
 **M1 through M7 are DONE.** Schema is at migration `000048` (`db/migrations/`). Every
 milestone's exit criteria were verified by the integrator before closing (see `docs/plan/ROADMAP.md`
 § Status log for the full narrative, milestone by milestone — it is long, but it is the real

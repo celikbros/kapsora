@@ -161,7 +161,7 @@ customer data, and 05 closes only against a named pilot and completed evidence.
 | --- | --- | --- |
 | [WP-I10-01](../delegation/WP-I10-01-imports-webhooks.md) | HR/policy import adapters and webhooks | PLANNED; source format and consumer to be named |
 | [WP-I10-02](../delegation/WP-I10-02-load-performance.md) | k6 workloads, measured load and corrections | ACTIVE: harness and four-flow API smoke; import role and full-capacity evidence pending |
-| [WP-I10-03](../delegation/WP-I10-03-operations-recovery.md) | Ubuntu deployment verification, backup and restore drill | READY for preparation; execution target required |
+| [WP-I10-03](../delegation/WP-I10-03-operations-recovery.md) | Ubuntu deployment verification, backup and restore drill | DEFERRED by owner; finish working product first |
 | [WP-I10-04](../delegation/WP-I10-04-security.md) | Security review, negative tests and finding closure | READY for local review; external test scope to be named |
 | [WP-I10-05](../delegation/WP-I10-05-pilot-acceptance.md) | Pilot data reconciliation and signed UAT | PLANNED; pilot institution, program and users required |
 
@@ -202,6 +202,12 @@ problem-message gaps are closed by these changes; other recorded gaps are not im
 | M10       | Pilot customer, program and beneficiary group; HR/policy source formats         | open                                                                                                                                                                                                               |
 
 ## Status log
+
+- 2026-09-13 ? Owner reprioritization: stop recovery work and complete the working product
+  first. I10-03 is deferred; do not request a recovery server now. Next work addresses
+  observed real-API functional gaps in everyday user flows, beginning with role/access
+  consistency and member/import operations, then service, booking and financial flows.
+  Operations preparation and full-capacity benchmarking must not displace product completion.
 
 - 2026-09-13 · I10-02 tooling started: pinned k6 2.2.0 installation, local synthetic fixture discovery, read/write/eligibility/hold/import workflows, one-iteration smoke and a bounded arrival-rate load profile. Four real-API workflows and final inventory/exact-balance reconciliation pass. Import staging requires a role decision: the real templates grant no `import.execute`, although the browser demo administrator has it. No grants were changed. Partial smoke explicitly lists omitted coverage; full load requires all five. Full-capacity provisioning, import apply/adapter coverage, server telemetry and measured load acceptance remain open. See `docs/runbooks/load-testing.md` and WP-I10-02.
 
