@@ -57,6 +57,11 @@ k6 harness and four real-API smoke workflows pass; full load and pilot acceptanc
 See `docs/runbooks/load-testing.md`. Import testing awaits the role-owner decision because
 no real role template grants `import.execute`; the harness does not change grants. M11 is PLANNED. M8/M9 remain deferred.
 
+I10-03 recovery preparation is documented in `docs/runbooks/backup-restore.md`: RPO <=5
+minutes, RTO <=2 hours, isolated target and database/document/key reconciliation. No restore
+drill has run. Deployment packaging and installer findings are recorded at the end of
+`docs/runbooks/deploy-single-server.md`; a named Ubuntu target is still required.
+
 Pilot customer, program, beneficiary group and HR/policy source formats are still external
 inputs. Technical preparation can proceed without them; customer-specific integration and
 signed acceptance cannot.
