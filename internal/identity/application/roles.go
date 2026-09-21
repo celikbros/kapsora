@@ -42,7 +42,7 @@ func RoleTemplates() []RoleTemplate {
 			Description: "Program, plan taslağı, hak sahibi ve enrollment yönetimi.",
 			Permissions: []string{"organization.read", "member.read", "member.manage", "member.relationship.manage", "membership.manage",
 				"member.contact.read", "member.contact.manage",
-				"enrollment.manage", "eligibility.check", "program.read", "program.manage", "plan.manage",
+				"enrollment.manage", "import.execute", "eligibility.check", "program.read", "program.manage", "plan.manage",
 				"entitlement.read", "entitlement.mapping.manage",
 				"catalog.read", "catalog.manage", "pricing.quote", "authorization.manage", "fulfilment.record",
 				"voucher.redeem", "claim.read", "report.read", "report.export",

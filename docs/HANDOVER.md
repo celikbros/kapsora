@@ -42,7 +42,7 @@ and claims/invoice/payment flows. Close observed functional gaps before operatio
 preparation. Full-capacity benchmarking and deployment preparation are not the next task.
 
 
-**M1 through M7 are DONE.** Schema is at migration `000048` (`db/migrations/`). Every
+**M1 through M7 are DONE.** Schema is at migration `000049` (`db/migrations/`). Every
 milestone's exit criteria were verified by the integrator before closing (see `docs/plan/ROADMAP.md`
 § Status log for the full narrative, milestone by milestone — it is long, but it is the real
 history of every non-obvious decision, and reading the last 10–15 entries will save you from
@@ -62,8 +62,13 @@ the integration model those two milestones will implement.
 The owner approved closing the small readiness gaps and preparing M10 next. M10 now has
 five work packages under `docs/delegation/WP-I10-*`. I10-02 implementation has started: the
 k6 harness and four real-API smoke workflows pass; full load and pilot acceptance remain open.
-See `docs/runbooks/load-testing.md`. Import testing awaits the role-owner decision because
-no real role template grants `import.execute`; the harness does not change grants. M11 is PLANNED. M8/M9 remain deferred.
+See `docs/runbooks/load-testing.md`. The owner approved import access for the existing
+PROGRAM_MANAGER role in current and new tenants (2026-09-21). Migration 000049 updates
+existing system roles; provisioning supplies the same permission to new tenants. Custom
+roles and other standard roles are unchanged. Password step-up remains required.
+Real PostgreSQL/HTTP integration tests cover upload, apply, worker redelivery and duplicate
+refusal. The local database is at 49; live browser confirmation awaits operator-started
+API/web/dependency services. M11 is PLANNED. M8/M9 remain deferred.
 
 Pilot customer, program, beneficiary group and HR/policy source formats are still external
 inputs. Technical preparation can proceed without them; customer-specific integration and
@@ -94,7 +99,7 @@ cp .env.example .env              # fill CHANGE_ME with your local PostgreSQL cr
 make tools                        # sqlc, oapi-codegen, oasdiff, golangci-lint, govulncheck
 make native-install && make native-up   # MinIO, ClamAV, Mailpit as native processes
 make db-init                      # role kapsora_app + database kapsora
-make migrate-up                   # schema to 000048
+make migrate-up                   # schema to 000049
 make test-unit && make test-db    # should both be green before you write anything
 ```
 

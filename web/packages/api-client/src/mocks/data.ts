@@ -1431,6 +1431,7 @@ const ADMIN_PERMISSIONS = [
   'rule.draft',
   'rule.publish',
   'pricing.quote',
+  // admin.a also holds PROGRAM_MANAGER on the real server; bulk membership is its job.
   'import.execute',
   // M4 (migrations 000027-000029).
   'worklist.read',

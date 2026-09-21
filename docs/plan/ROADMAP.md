@@ -160,7 +160,7 @@ customer data, and 05 closes only against a named pilot and completed evidence.
 | WP | Scope | Status / external input |
 | --- | --- | --- |
 | [WP-I10-01](../delegation/WP-I10-01-imports-webhooks.md) | HR/policy import adapters and webhooks | PLANNED; source format and consumer to be named |
-| [WP-I10-02](../delegation/WP-I10-02-load-performance.md) | k6 workloads, measured load and corrections | ACTIVE: harness and four-flow API smoke; import role and full-capacity evidence pending |
+| [WP-I10-02](../delegation/WP-I10-02-load-performance.md) | k6 workloads, measured load and corrections | ACTIVE: harness and four-flow API smoke; import role corrected; live five-flow smoke and full-capacity evidence pending |
 | [WP-I10-03](../delegation/WP-I10-03-operations-recovery.md) | Ubuntu deployment verification, backup and restore drill | DEFERRED by owner; finish working product first |
 | [WP-I10-04](../delegation/WP-I10-04-security.md) | Security review, negative tests and finding closure | READY for local review; external test scope to be named |
 | [WP-I10-05](../delegation/WP-I10-05-pilot-acceptance.md) | Pilot data reconciliation and signed UAT | PLANNED; pilot institution, program and users required |
@@ -202,6 +202,15 @@ problem-message gaps are closed by these changes; other recorded gaps are not im
 | M10       | Pilot customer, program and beneficiary group; HR/policy source formats         | open                                                                                                                                                                                                               |
 
 ## Status log
+
+- 2026-09-21 · Product completion, import access: owner approved `import.execute` on
+  PROGRAM_MANAGER for existing/new tenants. Migration 000049 updates only existing system
+  roles; the provisioning template and demo parity checks match. Authorization tests prove
+  step-up, app and tenant boundaries and no grant to other roles. A PostgreSQL-backed HTTP
+  test uploads/applies a member, executes worker redelivery without duplication and refuses
+  duplicate upload. The earlier CSV test fixture now uses PRINCIPAL as the API requires.
+  Local migration applied at schema 49. Live browser confirmation remains pending while
+  API/web/dependencies are stopped; recovery and deployment preparation remain deferred.
 
 - 2026-09-13 ? Owner reprioritization: stop recovery work and complete the working product
   first. I10-03 is deferred; do not request a recovery server now. Next work addresses
