@@ -203,6 +203,16 @@ problem-message gaps are closed by these changes; other recorded gaps are not im
 
 ## Status log
 
+- 2026-09-21 · Real browser import testing exposed a password-step-up retry failure.
+  Upload now checks current authorization before the idempotency middleware, so challenges
+  are not cached and cached successes cannot bypass step-up. Multipart hashes preserve
+  file bytes, fields and headers while ignoring transport boundaries; changed-content
+  reuse remains a conflict. The HTTP integration test now includes real idempotency,
+  replay and expired-step-up coverage. The middleware upload ceiling matches the existing
+  20 MiB file limit plus 8 MiB envelope allowance. Both affected Go test packages, vet,
+  scoped lint and the new Playwright test's lint pass. Live browser retest awaits the
+  operator restarting the API. Recovery and full-load work remain deferred.
+
 - 2026-09-21 · Product completion, import access: owner approved `import.execute` on
   PROGRAM_MANAGER for existing/new tenants. Migration 000049 updates only existing system
   roles; the provisioning template and demo parity checks match. Authorization tests prove

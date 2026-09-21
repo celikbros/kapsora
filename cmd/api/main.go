@@ -1097,7 +1097,7 @@ func newRouter(d routerDeps) http.Handler {
 			// retried browser submit cannot create a second batch.
 			importHandler := partyhttp.NewImportHandler(d.imports, sessions, d.logger)
 			tenant.Route("/imports/members", func(r chi.Router) {
-				importHandler.Routes(r, d.idempotent("member_import.create"))
+				importHandler.Routes(r, d.idempotentLarge("member_import.create", 28<<20))
 			})
 		})
 	})

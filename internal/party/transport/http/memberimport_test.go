@@ -24,6 +24,7 @@ import (
 	"github.com/celikbros/kapsora/internal/platform/crypto/localkey"
 	"github.com/celikbros/kapsora/internal/platform/dbtest"
 	"github.com/celikbros/kapsora/internal/platform/httpx"
+	"github.com/celikbros/kapsora/internal/platform/idempotency"
 )
 
 // Real provisioned grants, HTTP parsing, PostgreSQL staging and worker apply share one
@@ -71,8 +72,16 @@ func TestProgramManagerImportsMembersThroughHTTP(t *testing.T) {
 			next.ServeHTTP(w, r.WithContext(identity.WithRequestContext(r.Context(), rc)))
 		})
 	})
-	router.Route("/api/v1/imports/members", func(r chi.Router) { handler.Routes(r, nil) })
+	router.Route("/api/v1/imports/members", func(r chi.Router) {
+		handler.Routes(r, idempotency.Middleware(h.App, idempotency.Options{
+			CommandCode: "member_import.create",
+			Scope: func(r *http.Request) (idempotency.Scope, bool) {
+				return idempotency.Scope{TenantID: tenant, ActorID: actor}, true
+			},
+		}))
+	})
 
+	key := uuid.NewString()
 	var payload bytes.Buffer
 	form := multipart.NewWriter(&payload)
 	must(form.WriteField("sponsorOrganizationId", sponsor.String()))
@@ -87,6 +96,7 @@ func TestProgramManagerImportsMembersThroughHTTP(t *testing.T) {
 	call := func(method, path, etag string, body io.Reader, contentType string) *httptest.ResponseRecorder {
 		t.Helper()
 		req := httptest.NewRequest(method, path, body).WithContext(ctx)
+		req.Header.Set(idempotency.KeyHeader, key)
 		if etag != "" {
 			req.Header.Set("If-Match", etag)
 		}
@@ -98,7 +108,10 @@ func TestProgramManagerImportsMembersThroughHTTP(t *testing.T) {
 		return rec
 	}
 	upload := func() *httptest.ResponseRecorder {
-		return call(http.MethodPost, "/api/v1/imports/members/", "", bytes.NewReader(payload.Bytes()), form.FormDataContentType())
+		// Browsers choose a new boundary for each serialization of the same FormData.
+		boundary := "boundary-" + uuid.NewString()
+		body := strings.ReplaceAll(payload.String(), form.Boundary(), boundary)
+		return call(http.MethodPost, "/api/v1/imports/members/", "", strings.NewReader(body), "multipart/form-data; boundary="+boundary)
 	}
 	denied := upload()
 	if denied.Code != http.StatusForbidden || !strings.Contains(denied.Body.String(), "STEP_UP_REQUIRED") {
@@ -109,6 +122,25 @@ func TestProgramManagerImportsMembersThroughHTTP(t *testing.T) {
 	if created.Code != http.StatusCreated {
 		t.Fatalf("upload: %d %s", created.Code, created.Body.String())
 	}
+	replay := upload()
+	if replay.Code != http.StatusCreated || replay.Header().Get(idempotency.ReplayedHeader) != "true" || replay.Body.String() != created.Body.String() {
+		t.Fatalf("same multipart upload must replay: %d %s", replay.Code, replay.Body.String())
+	}
+	stepped = false
+	denied = upload()
+	if denied.Code != http.StatusForbidden || denied.Header().Get(idempotency.ReplayedHeader) != "" {
+		t.Fatalf("replay without step-up: %d", denied.Code)
+	}
+	stepped = true
+	original := append([]byte(nil), payload.Bytes()...)
+	payload.Reset()
+	payload.Write(bytes.Replace(original, []byte("MEMBER1"), []byte("MEMBER2"), 1))
+	changed := upload()
+	if changed.Code != http.StatusConflict || !strings.Contains(changed.Body.String(), "IDEMPOTENCY_KEY_REUSED") {
+		t.Fatalf("changed upload must conflict: %d %s", changed.Code, changed.Body.String())
+	}
+	payload.Reset()
+	payload.Write(original)
 	var batch struct {
 		ID       uuid.UUID                             `json:"id"`
 		Status   string                                `json:"status"`
@@ -152,6 +184,7 @@ func TestProgramManagerImportsMembersThroughHTTP(t *testing.T) {
 	if members != 1 {
 		t.Fatalf("imported memberships = %d, want 1", members)
 	}
+	key = uuid.NewString()
 	duplicate := upload()
 	if duplicate.Code != http.StatusConflict || !strings.Contains(duplicate.Body.String(), "IMPORT_DUPLICATE") {
 		t.Fatalf("duplicate upload: %d %s", duplicate.Code, duplicate.Body.String())

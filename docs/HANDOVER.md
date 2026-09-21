@@ -67,8 +67,13 @@ PROGRAM_MANAGER role in current and new tenants (2026-09-21). Migration 000049 u
 existing system roles; provisioning supplies the same permission to new tenants. Custom
 roles and other standard roles are unchanged. Password step-up remains required.
 Real PostgreSQL/HTTP integration tests cover upload, apply, worker redelivery and duplicate
-refusal. The local database is at 49; live browser confirmation awaits operator-started
-API/web/dependency services. M11 is PLANNED. M8/M9 remain deferred.
+refusal. The local database is at 49. The first live browser run found an upload retry
+defect after password step-up: the challenge was cached and the multipart boundary changed
+the request hash. Import authorization now runs before idempotency (including replays),
+and multipart hashing ignores only its transport boundary. Integration tests cover the
+challenge, retry, replay, expired step-up and changed-content refusal. The upload middleware
+also honors the existing 20 MiB file allowance plus 8 MiB multipart overhead instead of
+the default 1 MiB request ceiling. Final browser confirmation awaits an operator API restart. M11 is PLANNED. M8/M9 remain deferred.
 
 Pilot customer, program, beneficiary group and HR/policy source formats are still external
 inputs. Technical preparation can proceed without them; customer-specific integration and
@@ -112,6 +117,20 @@ all three web apps behind one door on port 5181, so the single sign-in's shared 
 exactly as it will in production. `... down` stops everything it started. Seed demo data
 first with `.\scripts\dev.ps1 seed-demo` (needs `native-up` running; password
 `demo parola 2026 kapsora` unless `KAPSORA_SEED_DEMO_PASSWORD` is set).
+
+To run the real member-import browser regression against that already running system:
+
+```powershell
+$env:E2E_REAL_API = '1'
+$env:E2E_EXISTING_UI_URL = 'http://127.0.0.1:5181'
+pnpm e2e real-import.spec.ts --project chromium --trace off
+```
+
+This command starts no servers. It uploads two synthetic rows in DEMO_A, skips the invalid
+row, waits for the worker to apply the valid row, checks the member list and signs out.
+It creates one synthetic member per successful run; use the demo database only. The
+existing-UI option is for backoffice tests. Trace capture is disabled in this command
+because authentication requests contain credentials.
 
 **A backend-free demo** (in-browser mock data, nothing to install): double-click
 `scripts\demo\KAPSORA-Demo-Baslat.cmd`. It opens the three apps on ports 5181–5183 against
