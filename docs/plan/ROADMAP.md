@@ -42,7 +42,7 @@ the existing work-package contracts rather than starting their implementation ag
 | --- | --- | --- | --- | --- |
 | PC-01 | Member import | VERIFIED locally; PR open | Existing identity/member setup | Upload → password step-up → invalid-row skip → one created member → search → logout; no duplicate effect |
 | PC-02 | Eligibility, service request and authorization | ACTIVE; provider-to-medical approval verified, remaining gates open | Verified member/scenario prerequisites | A real provider can request covered care; approvals/refusals and the authorization/entitlement effects agree |
-| PC-03 | Outpatient care, reports and health claims | QUEUED | PC-02 | Real case → encounter/diagnosis → clean report → review → claim ready for invoicing |
+| PC-03 | Outpatient care, reports and health claims | ACTIVE; first hybrid browser/API checkpoint passed; billing UI handoff open | PC-02 | Real case → encounter/diagnosis → clean report → review → claim ready for invoicing |
 | PC-04 | Inpatient care | QUEUED | PC-03 and admission configuration | Preauthorization → admission → extension → discharge → invoice-ready claim; entitlement reconciles |
 | PC-05 | Invoice, batch, settlement and payment | QUEUED | An invoice-ready health claim from PC-03/04 | The same episode reaches invoice, payer decision and a reconciled local payment record |
 | PC-06 | Accommodation and combined product acceptance | QUEUED | PC-05; existing lodging implementation | Booking and its financial consequences work; cross-app regression and owner walkthrough complete |
@@ -132,14 +132,14 @@ evidence; race, duplicate-delivery and ledger invariants may use focused databas
 | --- | --- | --- | --- |
 | H01 | Provider finds a member, selects service/enrollment and gets the correct eligibility result | PC-02 | Verified for demo: single and real multiple-enrollment selection passed |
 | H02 | Invalid date/enrollment or insufficient balance is explained; ambiguous enrollment is selectable | PC-02 | Verified for demo: insufficient quantity, real ambiguity and exclusive enrollment end passed |
-| H03 | Automatic/manual request decision and return/correct/resubmit reach the provider | PC-02 | Partial: live approval/correction/rejection/cancellation and combined document gate passed; live scoped automatic decision passed; queue own-file fix awaits restart |
+| H03 | Automatic/manual request decision and return/correct/resubmit reach the provider | PC-02 | Partial: live approval/correction/rejection/cancellation and combined document gate passed; live scoped automatic decision passed; queue own-file fix confirmed live after restart |
 | H04 | Authorization/fulfillment and exact entitlement effects agree; retries do not duplicate | PC-02 | Generic path verified: live reserve/record/complete/replay/release; clinical claim consumption remains PC-03 |
-| H05 | Same episode reaches case, encounter and valid diagnosis | PC-03 | Pending |
-| H06 | Browser-uploaded evidence is scanned CLEAN; missing/unsafe evidence cannot pass submission | PC-03 | Partial: real PDF/ClamAV and missing/unscanned request gate passed; clinical report and infected-file acceptance remain |
-| H07 | Report review, coverage and immutable correction history work | PC-03 | Pending |
-| H08 | Clinical provider → billing → medical → financial handoff reaches invoice-ready claim | PC-03 | Pending |
+| H05 | Same episode reaches case, encounter and valid diagnosis | PC-03 | Partial: live browser case → ended encounter → primary ICD-10 diagnosis → case closure passed; primary/closure refusal cases remain |
+| H06 | Browser-uploaded evidence is scanned CLEAN; missing/unsafe evidence cannot pass submission | PC-03 | Partial: real PDF/ClamAV and missing/unscanned request gate passed; real case-linked report upload/scan and missing-file refusal passed; infected-file acceptance remains |
+| H07 | Report review, coverage and immutable correction history work | PC-03 | Partial: browser approval, queue completion and one linked claim usage/replay passed; correction history and coverage exceptions remain |
+| H08 | Clinical provider → billing → medical → financial handoff reaches invoice-ready claim | PC-03 | Partial: API-created linked claim auto-approves at 400/400/0 TRY and browser readiness passes; billing UI creation and medical/financial review path remain |
 | H09 | Duplicate/report/authorization blockers and corrected claim history are accurate | PC-03 | Pending |
-| H10 | HR/financial projections exclude forbidden clinical fields in API and DOM | PC-03/04 | Pending |
+| H10 | HR/financial projections exclude forbidden clinical fields in API and DOM | PC-03/04 | Partial: billing claim API hides diagnosis/report/description; clinical marker absent in billing claim DOM; HR and other projections remain |
 | H11 | Sensitive purpose, access audit, self-review and other-provider/tenant boundaries hold | PC-03/04 | Pending |
 | H12 | Admission approval advances the stay once and refuses duplicate open admission | PC-04 | Pending |
 | H13 | Extension and segment rules hold; refusal leaves balances correct | PC-04 | Pending |
@@ -563,12 +563,39 @@ rule changes or genuinely new access decisions are brought back with a concrete 
   Refusal rolls back assignment, work-item row version/status/events and report transition;
   another reviewer still succeeds. Full health HTTP (112.0 s), workflow application
   (57.6 s)/HTTP (34.6 s), seed (29.7 s), scoped lint/vet/API build and harness checks pass.
-- **Restart boundary:** the baseline live queue run deliberately omitted the new own-file
-  assertions while the old API was running. The committed harness always includes them;
-  final live confirmation awaits the operator's `dev.ps1 up` restart. Schema stays 51.
-  All six CI checks on preceding `2c60a2b` passed. Rerun/fixture cleanup in HANDOVER section 3.
-- **Next:** confirm own-file fix live, finish outstanding scoped provider/tenant/audit gates,
-  then PC-03 outpatient care. H03 is substantially verified; PC-02 remains active.
+- **Restart confirmation:** after the operator restarted `dev.ps1 up`, the complete queue
+  test passed (10.6 s), including own-file refusal before review and after release, rollback
+  checks and unchanged accounts. Report `01a0cb59-f6ed-7c58-981b-901fd9d1bfa4` ended
+  REJECTED; work item `01a0cb5a-0fb7-7c71-83d3-a56669a0c45b` ended COMPLETED. Schema
+  stays 51. All six CI checks passed on `2b394cd`. Rerun/cleanup in HANDOVER section 3.
+- **Next:** first PC-03 outpatient checkpoint, with outstanding scoped provider/tenant/audit
+  gates still tracked. H03 is substantially verified; PC-02 remains active.
+
+### PC-03 first outpatient checkpoint — 2026-09-23
+
+- **Live test passed (25.6 s):** fresh synthetic person/enrollment, request review and
+  one-session authorization; provider browser case opening from the same request, ended
+  encounter, primary ICD-10 diagnosis, case-linked report header/service, missing-document
+  refusal and actual PDF upload/ClamAV. Doctor work-item claim, browser report approval,
+  queue completion, provider follow-up and final browser case closure passed.
+- **Billing/ledger:** linked claim created and submitted through the billing API, then read
+  in the real billing browser. Exact AUTO_APPROVED contract/approved/payer/member amounts
+  400/400/400/0 TRY; invoice readiness true with no blockers. Available/reserved/consumed
+  19/0/1; exactly one RESERVE and one CONSUME with correct deltas, one report usage, identical
+  submit replay with unchanged account/version/usage. The reviewer sees linked clinical
+  references; billing projection drops them and direct diagnosis/case reads return 403.
+- **Boundary:** no invoice/payment, claim medical/financial exception review, HR/sensitive
+  or cross-tenant sign-off. H05/H06/H07/H08/H10 now have partial live evidence, not closure.
+  Claim `01a0cb69-162b-7713-be62-f79acb2696ba`, case `01a0cb68-dfc2-7b47-b6ad-16606a1ca8b2`.
+  The fixture's decided history is retained; no existing member/account/grants were changed.
+- **Confirmed next defect:** billing has no case-read grant but ClaimNewPage requires one;
+  clinical provider cannot create claims. The form also omits authorization/report links.
+  Deliver a financial handoff preserving those associations without broadening clinical
+  access, then make this scenario create its claim through the UI. The current passing
+  harness explicitly labels that boundary API, so it does not hide the missing user path.
+- **Checks:** `real-outpatient.spec.ts` live Chromium, scoped TypeScript and ESLint passed.
+  No application code/schema change and no restart needed. Existing six CI checks passed
+  on `2b394cd`. Rerun/fixture lifespan/cleanup are documented in HANDOVER section 3.
 
 ### Progress, evidence and timing
 

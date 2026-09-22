@@ -37,8 +37,10 @@ keep them current as you build.
 **Current owner priority (reconfirmed 2026-09-22): complete the running product, with
 health first.** The detailed plan for the approved sequence is the
 [PC-01–PC-06 product completion roadmap](plan/ROADMAP.md#current-product-completion-roadmap-2026-09-22).
-Member import is locally verified. PC-02 eligibility/request/authorization is active, then
-PC-03 outpatient and PC-04 inpatient health, PC-05 invoice/batch/payment, and PC-06
+Member import is locally verified. PC-02 eligibility/request/authorization has substantial
+live evidence with scoped gates still open; the first PC-03 outpatient checkpoint passed.
+Next are the remaining PC-03 handoff/exception gates, PC-04 inpatient health,
+PC-05 invoice/batch/payment, and PC-06
 accommodation plus combined acceptance. The roadmap records task dependencies, 15 health
 acceptance scenarios, role handoffs, evidence gates and confirmed source/fixture gaps.
 The first live health checkpoint passed: provider catalog access, single-enrollment
@@ -244,7 +246,7 @@ balances/versions were unchanged. Report `01a0cb07-f05d-7be5-a5f1-7b05a29f6f57`,
 PC-03 case/encounter/claim chain. Requests use their request list; no automatic request-to-
 work-item routing is implemented or claimed.
 
-**New blocker fixed, live confirmation pending operator restart:** claiming one's own
+**Own-file fix confirmed live after the operator restart (2026-09-23):** claiming one's own
 medical report from the worklist bypassed StartReview's own-file guard (reproduced 200).
 The claim hook now refuses the same subject and the workflow handler returns the existing
 403 OWN_FILE_DECISION. The PostgreSQL/HTTP regression verifies the work item, version,
@@ -252,9 +254,45 @@ assignment, status events and report all remain unchanged; a different reviewer 
 Full health HTTP, workflow application/HTTP and seed tests pass (112.0/57.6/34.6/29.7 s),
 as do scoped Go lint/vet/API build and harness TypeScript/ESLint. Schema remains 51.
 The final `real-health-worklist.spec.ts` always checks own-file refusal both before review
-and after release; this last check needs the operator to restart `dev.ps1 up`.
-After that confirmation, finish remaining provider/tenant/audit boundaries and move to
-PC-03 outpatient case/encounter/report/claim. No PC-02 or complete-health closure is claimed.
+and after release. The complete live test passed (10.6 s total), including both own-file
+refusals with unchanged work item/report and ledger balances. Report
+`01a0cb59-f6ed-7c58-981b-901fd9d1bfa4` ended REJECTED and work item
+`01a0cb5a-0fb7-7c71-83d3-a56669a0c45b` ended COMPLETED. All six CI checks passed
+on `2b394cd`. Remaining provider/tenant/audit boundaries stay open alongside the first
+PC-03 outpatient case/encounter/report/claim checkpoint. No PC-02 or complete-health closure
+is claimed.
+
+**First PC-03 outpatient checkpoint (2026-09-23):** the live test passed (25.6 s total).
+It uses a fresh synthetic person/enrollment under the bounded PC-02 fixture plan and creates
+a fresh reviewed request/one-session authorization. The provider browser opens the case
+from that request, preserving person/enrollment/program/provider, records an ended encounter
+and primary J06.9 diagnosis, then creates the case-linked treatment report and its one-service
+scope. Missing evidence refuses submission. A real browser PDF upload passes ClamAV; queue
+claim starts review and the doctor approves through the real screen. Queue completion and
+the provider's approval status pass. The case is finally closed through the provider UI.
+
+The billing actor creates the linked claim through the public API (case, authorization,
+diagnosis and approved report references), then submits it and reads invoice readiness in
+the real browser. One AUTO_APPROVED line is contract/approved/payer/member 400/400/400/0 TRY.
+Its account ends available 19/reserved 0/consumed 1; exactly GRANT, RESERVE and CONSUME exist,
+with the expected one-unit ledger deltas. Identical submit replay preserves the response,
+account version and single report usage. The clinical reviewer sees the claim's references;
+the billing API omits diagnosis/report/description fields and refuses direct diagnosis and
+case access. This verifies billing projection only, not HR/sensitive/cross-tenant acceptance.
+Case `01a0cb68-dfc2-7b47-b6ad-16606a1ca8b2`, report `01a0cb68-e345-74cc-ba5b-ed10eaaba36d`,
+claim `01a0cb69-162b-7713-be62-f79acb2696ba`, authorization
+`01a0cb68-db40-7703-8fcb-acfc4e8d2e8c`. The claim is invoice-ready but no invoice/payment was made.
+Test source: `tests/e2e/real-outpatient.spec.ts`; TypeScript and ESLint pass.
+
+**Next confirmed product gap:** the provider claim creation page requires a case read that
+PROVIDER_BILLING cannot perform, while PROVIDER_STAFF has no claim-create permission.
+That form also does not carry authorization/report links. Therefore the API-created claim
+above is not proof of a complete browser handoff. Implement a scoped financial handoff that
+retains the case/authorization/report association without giving billing clinical access,
+then replace this harness's API creation with the real UI path. Claim medical/financial
+exceptions, report correction/history, unsafe files and remaining privacy boundaries stay
+open before PC-03 closure; proceed to PC-04/05 afterward. No new restart or migration is needed
+for this test/documentation checkpoint; current API schema remains 51.
 
 Recovery, deployment and full-capacity benchmarking remain deferred. Do not request an
 Ubuntu recovery target or continue I10-03. Clinical/health-claim completion requires
@@ -437,7 +475,7 @@ If interrupted, use `go run ./cmd/seed automatic-program <dedicated-program-id> 
 to restore manual review for only that program. No public settings write API exists; the
 offline seed merges just that program's setting and refuses malformed configuration.
 
-For medical queue/own-file acceptance after the API restart, set
+For medical queue/own-file acceptance, set
 `$env:E2E_HEALTH_WORKLIST = '1'`, then run
 `pnpm e2e real-health-worklist.spec.ts --project chromium --trace off`.
 Remove the flag afterward. It creates only a new synthetic report/file on staff.member's
@@ -447,6 +485,20 @@ draft/submitted reports are cancelled and an in-review test report is rejected; 
 work item is completed. No health coverage or entitlement consumption is left behind.
 The browser shares the provider's authenticated cookie jar, avoiding an unnecessary extra
 login that could hit the development login rate limit. Authentication traces stay disabled.
+
+For the first outpatient checkpoint, use the existing-UI variables and set
+`$env:E2E_OUTPATIENT_SOURCE_REQUEST = '01a0cafa-9412-75b5-98f0-764cfdc43a4e'`, then run
+`pnpm e2e real-outpatient.spec.ts --project chromium --trace off`.
+Remove the variable afterward. The source must be an approved request from the short-lived
+`real-automatic-request.spec.ts` fixture with its program returned to manual review and still
+valid. If expired, run that fixture again and use its new approved request ID. The outpatient
+test creates a fresh person/enrollment in that plan per run, waits for worker funding and
+uses only those new records. Successful runs leave a closed case, approved report and
+invoice-ready claim with one consumed session as auditable synthetic history. Failed runs
+release unused authorization holds and cancel/reject undecided reports and complete known
+work items; decided claims/usage remain. Safe IDs are attached even on failures. Review those
+IDs before rerunning an interrupted process. This test deliberately uses API claim creation
+until the financial handoff gap above is fixed; no grant or program setting is changed.
 
 Set `$env:E2E_HEALTH_CORRECTION = '1'` for the real return/correct/resubmit extension:
 the reviewer returns the request, the provider changes quantity from one to two, the test
