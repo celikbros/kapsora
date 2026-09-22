@@ -35,8 +35,8 @@ the existing work-package contracts rather than starting their implementation ag
   submission, medical approval, then provider follow-up. This is partial PC-02 evidence,
   not complete health-chain acceptance. See the checkpoint below.
 - Quantity/money pricing passes local regression and live confirmation after the operator's
-  2026-09-22 restart. All six CI jobs passed on code head `9b50aa7`. Next complete authorization
-  and close enrollment choice, request correction and retry coverage.
+  2026-09-22 restart. All six CI jobs passed on code head `9b50aa7`. Authorization, enrollment choice, request correction and retry coverage now have live
+  evidence; document/automatic gate and remaining scoped acceptance are tracked below.
 
 | Order | Stage | Current status | Depends on | Result required to close |
 | --- | --- | --- | --- | --- |
@@ -132,7 +132,7 @@ evidence; race, duplicate-delivery and ledger invariants may use focused databas
 | --- | --- | --- | --- |
 | H01 | Provider finds a member, selects service/enrollment and gets the correct eligibility result | PC-02 | Verified for demo: single and real multiple-enrollment selection passed |
 | H02 | Invalid date/enrollment or insufficient balance is explained; ambiguous enrollment is selectable | PC-02 | Verified for demo: insufficient quantity, real ambiguity and exclusive enrollment end passed |
-| H03 | Automatic/manual request decision and return/correct/resubmit reach the provider | PC-02 | Partial: live medical approval and return/correct/resubmit passed; automatic/document gates pending |
+| H03 | Automatic/manual request decision and return/correct/resubmit reach the provider | PC-02 | Partial: live approval/correction/rejection/cancellation passed; document and automatic gates pass PostgreSQL tests, real upload/gate still pending |
 | H04 | Authorization/fulfillment and exact entitlement effects agree; retries do not duplicate | PC-02 | Generic path verified: live reserve/record/complete/replay/release; clinical claim consumption remains PC-03 |
 | H05 | Same episode reaches case, encounter and valid diagnosis | PC-03 | Pending |
 | H06 | Browser-uploaded evidence is scanned CLEAN; missing/unsafe evidence cannot pass submission | PC-03 | Pending |
@@ -440,6 +440,38 @@ rule changes or genuinely new access decisions are brought back with a concrete 
 - **Next:** remaining automatic/document/rejection/cancellation request gates and scoped
   acceptance, then PC-03 clinical case/report/claim. H01/H02 now have real demo evidence;
   H04 has generic API evidence. PC-02 is still active, not a complete-health sign-off.
+
+### PC-02 document gate and negative transitions — 2026-09-22
+
+- **Fixed:** a DOCUMENT rule no longer requests an already supplied clean attachment on
+  every resubmit. Matching type, SERVICE_REQUEST aggregate/ID, tenant, provider boundary,
+  CLEAN verdict, secure bucket and retained bytes are required. A duplicate's canonical
+  object must also be retained. The complete type requirements stay on the request, and
+  accepted attachment IDs/types are frozen into the version for later explanation.
+- **Lifecycle:** existing reviewer return → provider resubmit opens a new immutable
+  submission; upload completion alone does not change PENDING_DOCUMENT. No endpoint,
+  status transition, role grant, schema change or automatic scan-event consumer was added.
+- **PostgreSQL proof:** 14 boundary cases plus return/resubmit/history/unlink, configured
+  automatic approval and PREAUTH precedence passed. Full service-request application and
+  HTTP suites passed in 110.2 s / 54.0 s with database tests enabled. Entitlement accounts
+  and ledger stay untouched. These disposable database fixtures seed scan verdicts;
+  real upload/ClamAV acceptance is still pending.
+- **Live negative proof:** `real-request-lifecycle.spec.ts` passed in 5.1 s. Provider
+  cannot review (403); empty rejection reason fails (422), stale ETag fails (412), valid
+  medical rejection closes every line. Provider can cancel draft and pending-review
+  requests. Same-key replay preserves the exact response/ETag; closed requests refuse
+  further transitions (409). Fresh provider UI shows the rejection reason without an
+  editor. All member account balances and row versions are unchanged. Rejected request
+  `01a0ca50-ed16-70b8-a1a5-c29e8b48766b`; cancellations
+  `01a0ca50-edfe-7f6c-a774-a6fcfe83ddcd`, `01a0ca50-ee51-704f-a82b-1ed6c6ed3aaa`.
+- **Regression/delivery:** real and mock gates match; 50 focused frontend tests pass,
+  as do TypeScript, ESLint and scoped Go lint. The repository-wide Go lint command hits
+  pre-existing duplicate main functions in ignored `tmp` utilities, so lint was run on
+  `./internal/servicerequest/...` successfully. All six preceding CI checks passed on
+  `3563eb7`. Schema 51; operator restart needed to load the new Go document gate.
+- **Next:** provider request cancellation control (API proven, portal action absent),
+  actual upload/scan plus gate acceptance and remaining scoped queue checks, then PC-03.
+  H03/PC-02 remain open; no complete-health claim and no demo configuration/grants changed.
 
 ### Progress, evidence and timing
 

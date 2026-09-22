@@ -735,6 +735,23 @@ func (Repository) CreateRuleEvaluation(ctx context.Context, tx pgx.Tx, tenantID 
 	return header.ID, nil
 }
 
+// ListDocumentEvidence implements application.Repository.
+func (Repository) ListDocumentEvidence(ctx context.Context, tx pgx.Tx, tenantID, requestID uuid.UUID,
+	providerID *uuid.UUID, requiredTypes []string,
+) ([]application.DocumentEvidence, error) {
+	rows, err := sqlcgen.New(tx).ListServiceRequestDocumentEvidence(ctx, sqlcgen.ListServiceRequestDocumentEvidenceParams{
+		TenantID: tenantID, RequestID: requestID, ProviderID: optUUID(providerID), RequiredTypes: requiredTypes,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("servicerequest: read document evidence: %w", err)
+	}
+	out := make([]application.DocumentEvidence, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, application.DocumentEvidence{DocumentID: row.ID, DocumentTypeCode: row.DocumentTypeCode})
+	}
+	return out, nil
+}
+
 // reviewSetting is the shape of the platform.tenant_setting document. A program named in
 // `programs` overrides the tenant default; anything absent falls back to `default`, and an
 // absent default means a person reviews it.

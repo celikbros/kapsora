@@ -133,10 +133,36 @@ Each run creates one test person, two memberships and two enrollments; do not ru
 the demo environment. The tested authorization is cancelled, so PC-03 must start with a
 fresh episode/hold. Do not bill the two generic fulfilment units again as new claim usage.
 
-Next close the remaining automatic/document/negative request transitions, then run PC-03
-outpatient acceptance. PC-02 remains active. Schema is still 51; no restart is required.
-All six CI checks passed on `2a046fd`. The new selection-reset fix passes 13 focused tests,
-provider typecheck/build and lint; the new browser harness also passes its TypeScript check.
+**Document and negative-transition checkpoint (2026-09-22):** all six CI checks passed
+on preceding head `3563eb7`. The next gate defect is fixed: a REQUIRE_DOCUMENT rule
+previously blocked every submit even after the required file was attached. The gate now
+accepts only matching SERVICE_REQUEST links to CLEAN, secure, retained objects in the
+same tenant and the request's provider boundary. Duplicate objects also require retained
+canonical bytes. Required type codes remain visible; accepted document IDs/types are
+frozen into the version's gate snapshot so unlinking cannot erase the decision evidence.
+
+The existing explicit flow remains reviewer return → provider resubmit. Upload/scan alone
+does not move PENDING_DOCUMENT, and no new transition/permission was introduced. The new
+PostgreSQL tests verify 14 document boundary cases, preserved history, unlink/recheck,
+automatic approval when configured, and mandatory PREAUTH review even with clean files.
+They seed scan verdicts in disposable databases; they do not prove real ClamAV upload.
+All service-request application/HTTP database tests pass (110.2 s / 54.0 s), as do 50
+focused frontend/mock tests, scoped Go/ESLint checks and TypeScript checks.
+
+The real API/browser negative test passed (5.1 s total): provider review commands 403,
+empty rejection reason 422, stale ETag 412, medical rejection and provider cancellation
+of both draft and submitted requests, stable same-key replays and 409 on reopening a
+closed request. The provider sees the rejection reason and no draft editor. All member
+account balances and versions stay unchanged. Rejected request:
+`01a0ca50-ed16-70b8-a1a5-c29e8b48766b`. Each run leaves three closed synthetic requests;
+failure cleanup cancels any still-undecided request it created.
+
+PC-02 remains active: actual upload/scan with the revised gate, scoped queue acceptance
+and the missing provider request-cancel control remain before PC-03 case/report/claim.
+The provider cancellation API is proven; the portal still has no cancellation action.
+Schema remains 51. The running operator-started API has not been restarted for the new
+Go document-gate code; that live check must follow the operator's next restart. Do not
+claim this database-tested fix is already running in the API.
 
 Recovery, deployment and full-capacity benchmarking remain deferred. Do not request an
 Ubuntu recovery target or continue I10-03. Clinical/health-claim completion requires
@@ -277,6 +303,12 @@ existing-UI variables for real ambiguous-enrollment, expiry and generic consumpt
 The operator's worker must be running: this test waits for enrollment events to fund the
 accounts. It creates only synthetic demo records and consumes two sessions on its own
 new account. The request/authorization/fulfilment/account IDs are attached to the test result.
+
+Run `pnpm e2e real-request-lifecycle.spec.ts --project chromium --trace off` with the same
+existing-UI variables for live rejection/cancellation/replay proof. It uses Melis Üye's
+existing demo enrollment, creates three new requests, closes them and makes no hold or
+consumption. It does not edit existing requests. The API actor helper shared with the
+entitlement harness isolates sessions and never attaches credentials or response bodies.
 
 Set `$env:E2E_HEALTH_CORRECTION = '1'` for the real return/correct/resubmit extension:
 the reviewer returns the request, the provider changes quantity from one to two, the test

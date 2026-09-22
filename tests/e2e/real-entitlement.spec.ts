@@ -1,85 +1,16 @@
 import { randomUUID } from 'node:crypto';
-import { expect, request as apiRequest, test, type APIRequestContext } from '@playwright/test';
+import { expect, request as apiRequest, test } from '@playwright/test';
 import type { components } from '../../web/packages/api-client/src/generated/kapsora-v1';
 
 type Schema<K extends keyof components['schemas']> = components['schemas'][K];
 type Account = Schema<'EntitlementAccount'>;
+import { Actor } from './real-api-actor';
 const base = process.env['E2E_EXISTING_UI_URL'] ?? '';
 const password = process.env['KAPSORA_SEED_DEMO_PASSWORD'] ?? 'demo parola 2026 kapsora';
 test.skip(
   process.env['E2E_REAL_API'] !== '1' || !base,
   'requires operator-started demo API, UI and worker',
 );
-
-/** Separate cookie jars for the real actors. Credentials/bodies never enter test attachments. */
-class Actor {
-  private csrf = '';
-  private cookie = '';
-  private tenant = '';
-  constructor(
-    private context: APIRequestContext,
-    private app: string,
-  ) {}
-  async call<T>(
-    method: string,
-    path: string,
-    body?: unknown,
-    options: {
-      expected?: number;
-      etag?: string;
-      key?: string;
-    } = {},
-  ) {
-    const response = await this.context.fetch(base + path, {
-      method,
-      maxRedirects: 0,
-      headers: {
-        'X-Kapsora-App': this.app,
-        ...(this.cookie ? { Cookie: this.cookie } : {}),
-        ...(this.csrf ? { 'X-CSRF-Token': this.csrf } : {}),
-        ...(this.tenant ? { 'X-Tenant-ID': this.tenant } : {}),
-        ...(method !== 'GET' ? { 'Idempotency-Key': options.key ?? randomUUID() } : {}),
-        ...(options.etag ? { 'If-Match': options.etag } : {}),
-        ...(method === 'PATCH' ? { 'Content-Type': 'application/merge-patch+json' } : {}),
-      },
-      ...(body === undefined ? {} : { data: body }),
-    });
-    const cookie = response
-      .headersArray()
-      .find((h) => h.name.toLowerCase() === 'set-cookie' && !h.value.startsWith('__Host-csrf'));
-    if (cookie) this.cookie = cookie.value.split(';')[0]!;
-    // Do not include response bodies: a failed auth request may carry sensitive detail.
-    expect(response.status(), `${method} ${path.split('?')[0]}`).toBe(options.expected ?? 200);
-    const data = response.status() === 204 ? null : await response.json();
-    return { data: data as T, etag: response.headers()['etag'] ?? '' };
-  }
-  async login(username: string) {
-    const login = await this.call<{ csrfToken: string }>('POST', '/api/v1/session/login', {
-      username,
-      password,
-    });
-    this.csrf = login.data.csrfToken;
-    const tenants = await this.call<{ items: { id: string; code: string }[] }>(
-      'GET',
-      '/api/v1/tenants',
-    );
-    this.tenant = tenants.data.items.find((t) => t.code === 'DEMO_A')!.id;
-    const switched = await this.call<{ csrfToken: string }>(
-      'POST',
-      '/api/v1/session/switch-tenant',
-      { tenantId: this.tenant },
-    );
-    if (switched.data.csrfToken) this.csrf = switched.data.csrfToken;
-  }
-  async close() {
-    try {
-      if (this.csrf)
-        await this.call('POST', '/api/v1/session/logout', undefined, { expected: 204 });
-    } finally {
-      await this.context.dispose();
-    }
-  }
-}
 
 function whole(value: number | string): bigint {
   const text = String(value);

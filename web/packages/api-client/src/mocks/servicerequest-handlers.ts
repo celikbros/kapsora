@@ -355,7 +355,42 @@ function runGate(
     eligibility.eligible,
   );
 
-  if (documents.length > 0) {
+  const satisfied = new Set(
+    world.documentLinks
+      .filter((link) => {
+        if (
+          link.tenantId !== tenantId ||
+          link.aggregateType !== 'SERVICE_REQUEST' ||
+          link.aggregateId !== request.id ||
+          !documents.includes(link.documentTypeCode)
+        )
+          return false;
+        const doc = world.documents.find(
+          (d) => d.tenantId === tenantId && d.id === link.documentId,
+        );
+        if (!doc || doc.scanStatus !== 'CLEAN' || doc.bucket !== 'secure' || doc.purgedAt)
+          return false;
+        if (
+          request.providerOrganizationId &&
+          doc.ownerOrganizationId &&
+          doc.ownerOrganizationId !== request.providerOrganizationId
+        )
+          return false;
+        const stored = doc.duplicateOfDocumentId
+          ? world.documents.find(
+              (d) => d.tenantId === tenantId && d.id === doc.duplicateOfDocumentId,
+            )
+          : doc;
+        return (
+          !!stored &&
+          stored.scanStatus === 'CLEAN' &&
+          stored.bucket === 'secure' &&
+          !stored.purgedAt
+        );
+      })
+      .map((link) => link.documentTypeCode),
+  );
+  if (documents.some((code) => !satisfied.has(code))) {
     return {
       status: 'PENDING_DOCUMENT',
       reasonCode: 'DOCUMENT_REQUIRED',
@@ -368,7 +403,7 @@ function runGate(
     return {
       status: 'PENDING_REVIEW',
       reasonCode: 'RULE_REVIEW_REQUIRED',
-      requiredDocumentTypes: null,
+      requiredDocumentTypes: documents,
       eligibilityEvaluationId: evaluationId,
       ruleEvaluationId,
     };
@@ -379,7 +414,7 @@ function runGate(
     return {
       status: 'PENDING_REVIEW',
       reasonCode: 'ELIGIBILITY_REVIEW_REQUIRED',
-      requiredDocumentTypes: null,
+      requiredDocumentTypes: documents,
       eligibilityEvaluationId: evaluationId,
       ruleEvaluationId,
     };
@@ -393,7 +428,7 @@ function runGate(
   return {
     status: reviewRequired ? 'PENDING_REVIEW' : 'APPROVED',
     reasonCode: reviewRequired ? 'PROGRAM_REVIEW_REQUIRED' : 'AUTO_APPROVED',
-    requiredDocumentTypes: [],
+    requiredDocumentTypes: documents,
     eligibilityEvaluationId: evaluationId,
     ruleEvaluationId,
   };
