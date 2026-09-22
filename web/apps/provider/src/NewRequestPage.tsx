@@ -120,7 +120,13 @@ export function NewRequestPage() {
       <div className="grid gap-6 lg:grid-cols-[3fr_2fr]">
         <form onSubmit={submit} className="grid gap-4" noValidate data-testid="new-request-form">
           <ProblemAlert problem={submitAll.error ? problemOf(submitAll.error) : null} />
-          <MemberPicker member={member} onPick={setMember} />
+          <MemberPicker
+            member={member}
+            onPick={(picked) => {
+              setMember(picked);
+              setSelection({ scope: '', id: '' });
+            }}
+          />
           <div className="grid gap-4 md:grid-cols-2">
             <FormField
               label={t('provider.newRequest.service')}
@@ -132,6 +138,7 @@ export function NewRequestPage() {
                 value={definitionId}
                 onChange={(e) => {
                   setDefinitionId(e.target.value);
+                  setSelection({ scope: '', id: '' });
                   const picked = definitions.data?.find((d) => d.value === e.target.value);
                   if (picked) setUnitType(picked.unitType);
                 }}
@@ -148,7 +155,10 @@ export function NewRequestPage() {
                 name="serviceDate"
                 type="date"
                 value={serviceDate}
-                onChange={(e) => setServiceDate(e.target.value)}
+                onChange={(e) => {
+                  setServiceDate(e.target.value);
+                  setSelection({ scope: '', id: '' });
+                }}
               />
             </FormField>
             <FormField

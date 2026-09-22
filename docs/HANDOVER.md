@@ -106,11 +106,37 @@ full frontend suite passed (494 tests); the subsequent validation fix passed fou
 tests and another live correction run (9.9 s). Invalid fields now explain how to correct them,
 and comma decimals are normalized without floating point conversion.
 
-Next close the real multiple-enrollment/date gates, remaining automatic/document/negative
-request transitions and fulfilment/consumption evidence before PC-03 outpatient acceptance.
-PC-02 remains active. Local schema is still 51; these changes require no server restart.
-All six CI checks passed on the preceding retry commit `8589fc7`; current validation is
-recorded in the roadmap's latest checkpoint.
+**Real enrollment and consumption checkpoint (2026-09-22):**
+`real-entitlement.spec.ts` now prepares a separate synthetic person through public APIs,
+with EMPLOYEE and MEMBER memberships in the existing sponsor and two enrollments in the
+same published DEMO_STANDARD plan (distinct start dates). The real worker opens both sets
+of accounts. No existing person, published plan or permission grant is changed.
+
+The browser requires an explicit choice, selects the second enrollment, refuses service
+on the exclusive enrollment end date and requires a fresh choice after returning to today.
+This last check reproduced a defect: a scope-keyed old selection reappeared when the form
+returned to its previous date. Member/service/date handlers now clear selection explicitly;
+the focused regression verifies the round trip.
+
+The selected enrollment alone funds the live three-session authorization. Recording a
+two-session fulfilment does not consume; completing it moves the account from 17/3/0 to
+17/1/2 (available/reserved/consumed). Replayed record/complete commands do not change
+balances or versions; a fresh duplicate complete returns 409, over-fulfilment 422, and a
+reviewer without fulfilment.record gets 403. Cancellation releases only the unused one:
+final 18/0/2, conservation intact, all other accounts unchanged. The account has exactly
+GRANT, RESERVE, CONSUME and RELEASE entries. The test passed twice (7.8 s then 9.3 s total).
+
+This proves generic fulfilment through the public API, not the clinical case/report/claim
+journey. Completed consumption remains recorded on the synthetic test account. The harness
+releases its unused hold even after an assertion failure when its authorization ID is known.
+Each run creates one test person, two memberships and two enrollments; do not run outside
+the demo environment. The tested authorization is cancelled, so PC-03 must start with a
+fresh episode/hold. Do not bill the two generic fulfilment units again as new claim usage.
+
+Next close the remaining automatic/document/negative request transitions, then run PC-03
+outpatient acceptance. PC-02 remains active. Schema is still 51; no restart is required.
+All six CI checks passed on `2a046fd`. The new selection-reset fix passes 13 focused tests,
+provider typecheck/build and lint; the new browser harness also passes its TypeScript check.
 
 Recovery, deployment and full-capacity benchmarking remain deferred. Do not request an
 Ubuntu recovery target or continue I10-03. Clinical/health-claim completion requires
@@ -245,6 +271,12 @@ after the operator restart on 2026-09-22. If interrupted after creation, reconci
 test authorization before rerunning. To include a simulated first-submit network failure,
 also set `$env:E2E_HEALTH_SUBMIT_RETRY = '1'`; the harness verifies one create and two submit
 attempts with identical request URL and key. Remove that environment variable after the run.
+
+Run `pnpm e2e real-entitlement.spec.ts --project chromium --trace off` with the same
+existing-UI variables for real ambiguous-enrollment, expiry and generic consumption proof.
+The operator's worker must be running: this test waits for enrollment events to fund the
+accounts. It creates only synthetic demo records and consumes two sessions on its own
+new account. The request/authorization/fulfilment/account IDs are attached to the test result.
 
 Set `$env:E2E_HEALTH_CORRECTION = '1'` for the real return/correct/resubmit extension:
 the reviewer returns the request, the provider changes quantity from one to two, the test

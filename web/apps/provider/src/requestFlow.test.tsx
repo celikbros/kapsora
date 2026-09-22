@@ -77,6 +77,14 @@ it('requires an explicit plan and waits for its check; a failed check never subm
   await screen.findByRole('alert');
   expect(screen.queryByRole('button', { name: 'Gönder' })).toBeNull();
   await user.selectOptions(choice, second.id);
+  const date = screen.getByLabelText(/^Hizmet tarihi/);
+  const originalDate = (date as HTMLInputElement).value;
+  await user.clear(date);
+  await user.type(date, originalDate);
+  const resetChoice = await screen.findByRole('combobox', { name: /^Plan/ });
+  expect(resetChoice).toHaveValue('');
+  expect(screen.queryByRole('button', { name: /^G.*nder$/ })).toBeNull();
+  await user.selectOptions(resetChoice, second.id);
   const create = vi.spyOn(services.ops.requests, 'create');
   await user.click(await screen.findByRole('button', { name: 'Gönder' }));
   await waitFor(() => expect(create).toHaveBeenCalledOnce());

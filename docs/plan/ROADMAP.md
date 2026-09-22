@@ -130,10 +130,10 @@ evidence; race, duplicate-delivery and ledger invariants may use focused databas
 
 | ID | Scenario | Stage | State |
 | --- | --- | --- | --- |
-| H01 | Provider finds a member, selects service/enrollment and gets the correct eligibility result | PC-02 | Partial: single-enrollment browser path passed |
-| H02 | Invalid date/enrollment or insufficient balance is explained; ambiguous enrollment is selectable | PC-02 | Partial: insufficient quantity and candidate-selection UI passed; real dates/ambiguity fixture pending |
+| H01 | Provider finds a member, selects service/enrollment and gets the correct eligibility result | PC-02 | Verified for demo: single and real multiple-enrollment selection passed |
+| H02 | Invalid date/enrollment or insufficient balance is explained; ambiguous enrollment is selectable | PC-02 | Verified for demo: insufficient quantity, real ambiguity and exclusive enrollment end passed |
 | H03 | Automatic/manual request decision and return/correct/resubmit reach the provider | PC-02 | Partial: live medical approval and return/correct/resubmit passed; automatic/document gates pending |
-| H04 | Authorization/fulfillment and exact entitlement effects agree; retries do not duplicate | PC-02 | Partial: mapped ledger regressions and live reservation/provider/cancel pass; remaining fulfilment gates open |
+| H04 | Authorization/fulfillment and exact entitlement effects agree; retries do not duplicate | PC-02 | Generic path verified: live reserve/record/complete/replay/release; clinical claim consumption remains PC-03 |
 | H05 | Same episode reaches case, encounter and valid diagnosis | PC-03 | Pending |
 | H06 | Browser-uploaded evidence is scanned CLEAN; missing/unsafe evidence cannot pass submission | PC-03 | Pending |
 | H07 | Report review, coverage and immutable correction history work | PC-03 | Pending |
@@ -220,10 +220,10 @@ backend change is concrete and locally checked.
 | --- | --- | --- |
 | Import and initial health request/medical approval are verified; remaining health chain is not | Two live import runs and the new real health-entry regression | Preserve regressions; close remaining H01–H15 gates |
 | Provider catalog 403 fixed; broader mock billing grants still differ from real clinical staff | Live reproduction; migration 000050 and provisioning fix; positive/negative role tests and browser catalog 200 | Catalog portion of PC-02.2 verified; retain separate billing role and reconcile remaining mock drift |
-| Candidate selection and draft correction/resubmit are implemented | Live return/correction passed; ambiguity browser responses intercepted | Finish real multiple-enrollment fixture and remaining PC-02.4/5 gates |
-| Generic request approval has no authorization handoff in the request screens | Live approved request has zero authorizations on API inspection; source has a separate createAuthorization command which reserves entitlement, and no generic approval consumer creates it | PC-02.6 implement an explicit permitted handoff and verify reservation/retry/release effects |
-| Session quantity capped the quote as money; local correction verified | Live PHYSIO_SESSION quote: contract 400 TRY, payer 20, member 380, PARTIAL/BALANCE_INSUFFICIENT; seeded entitlement is 20 SESSION. Resolver passes AvailableQuantity into the money cap | Unit-aware pricing and mapping regression pass locally and live after restart; continue authorization |
-| Generic authorization still uses service-code fallback rather than published mappings | Source inspection of `accountsFor`/`holdFor`: mapping factor is not applied to the reservation; current demo uses matching codes/factor 1 | Verify and correct mapping/reserve/consume units before broader authorization acceptance; adding a button alone is insufficient |
+| Candidate selection, date reset and correction/resubmit verified | Real two-enrollment browser path and return/correction passed | Remaining automatic/document/negative PC-02.5 gates |
+| Explicit request authorization handoff is implemented and verified | Real provider visibility and reserve/consume/release checks pass; approval and reservation remain separate commands | Verify clinical episode/claim usage at PC-03 |
+| Session quantity no longer caps money | Live PHYSIO_SESSION quote is contract/payer/member 400/400/0 TRY with unchanged balances | Preserve regression; verify same-episode claim pricing at PC-03 |
+| Mapping-aware authorization is implemented | Factor-2 and fractional integration tests pass; real selected-enrollment factor-1 reserve/consume/release passes | Keep clinical usage and inpatient partial release acceptance separate |
 | Checked-in seed lacks admission service; seeded CLEAN report bypasses upload scanning | `cmd/seed/business.go`, `businessplan.go`, `staffmember.go`; current DB configuration not audited | PC-04.1 admission fixtures; PC-03.2 genuine upload/scan |
 | Dedicated provider/member projects still use their test ports; single-door provider/backoffice handoff now works | `real-health.spec.ts` runs under chromium with explicit `/portal/` routes and logout between actors | PC-02.3 partially verified; member handoff and dedicated-project URL generalization remain pending |
 | `invoice.submitted` has no consumer; `settlement.approved` is the deferred M9 posting boundary | Observed startup warnings plus worker/port inspection; settlement notification is published separately, so local failure is not established | PC-05.6 document event handling policy and test required local effects; do not invent automatic batch creation |
@@ -404,6 +404,42 @@ rule changes or genuinely new access decisions are brought back with a concrete 
 - **Next:** real multi-enrollment/invalid-date fixtures, automatic/document/negative
   lifecycle gates and live fulfilment/consumption. H02/H03 and PC-02 remain partial;
   PC-03 clinical acceptance is still queued.
+
+### PC-02 real enrollment selection and generic consumption — 2026-09-22
+
+- **Real fixture:** public person/membership/enrollment APIs create a unique synthetic person
+  with EMPLOYEE and MEMBER memberships under the existing sponsor, each enrolled in the
+  same published DEMO_STANDARD plan with distinct start dates. The actual worker funds
+  both account sets. This is real ambiguous enrollment, not two newly published plans;
+  existing configuration and existing people's balances are untouched.
+- **Browser/date proof:** provider sees both candidates, chooses the second, cannot submit
+  on the exclusive enrollment end date, then must choose again on returning to the original
+  date. This reproduced and fixed selection resurrecting from the earlier scope: member,
+  service and date changes now explicitly clear it. The request stores the chosen enrollment.
+  Eligibility and request submission leave every balance and row version unchanged.
+- **Ledger proof:** medical reviewer approves and creates a three-session authorization;
+  the provider sees it in request detail. Only the chosen account changes from 20/0/0 to
+  17/3/0. Provider records two sessions through the fulfilment API with no balance effect,
+  then completes them, leaving 17/1/2. Same-key create/complete replays preserve IDs,
+  balances and versions. Fresh duplicate complete is 409; over-fulfilment is 422; medical
+  reviewer without fulfilment.record is 403. Cancelling the authorization releases only
+  the unused session: 18/0/2, conservation true. All other accounts are byte-for-byte
+  unchanged, and the selected account has one GRANT, RESERVE, CONSUME and RELEASE.
+- **Evidence:** `real-entitlement.spec.ts` passed twice (7.8 s and 9.3 s total), without
+  intercepted responses. Latest request `01a0c9b8-9d26-7d79-8347-46027d2eb335`,
+  authorization `01a0c9b8-9daa-7897-9b36-fdee8a3994c2`,
+  fulfilment `01a0c9b8-a0d2-7220-914f-08648b743ba8`,
+  account `01a0c9b8-95b2-7e2b-8999-e275aa28cffa`. The 13 focused provider tests,
+  provider typecheck/build, lint and harness TypeScript check pass. All six preceding
+  CI checks on `2a046fd` passed. Current code change is frontend-only; schema remains 51.
+- **Boundary/cleanup:** no clinical case, medical report or claim was created. Generic
+  fulfilment and claim submission are distinct consumption commands; the consumed units
+  are not reusable as new claim usage. Each run leaves synthetic person/membership/enrollment
+  records and its completed consumption, while cancelling the remaining hold. A known hold
+  is also cancelled in failure cleanup. PC-03 needs a fresh episode with an active hold.
+- **Next:** remaining automatic/document/rejection/cancellation request gates and scoped
+  acceptance, then PC-03 clinical case/report/claim. H01/H02 now have real demo evidence;
+  H04 has generic API evidence. PC-02 is still active, not a complete-health sign-off.
 
 ### Progress, evidence and timing
 
