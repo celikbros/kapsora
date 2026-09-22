@@ -132,10 +132,10 @@ evidence; race, duplicate-delivery and ledger invariants may use focused databas
 | --- | --- | --- | --- |
 | H01 | Provider finds a member, selects service/enrollment and gets the correct eligibility result | PC-02 | Verified for demo: single and real multiple-enrollment selection passed |
 | H02 | Invalid date/enrollment or insufficient balance is explained; ambiguous enrollment is selectable | PC-02 | Verified for demo: insufficient quantity, real ambiguity and exclusive enrollment end passed |
-| H03 | Automatic/manual request decision and return/correct/resubmit reach the provider | PC-02 | Partial: live approval/correction/rejection/cancellation passed; document and automatic gates pass PostgreSQL tests, real upload/gate still pending |
+| H03 | Automatic/manual request decision and return/correct/resubmit reach the provider | PC-02 | Partial: live approval/correction/rejection/cancellation and combined document gate passed; automatic decision has PostgreSQL evidence |
 | H04 | Authorization/fulfillment and exact entitlement effects agree; retries do not duplicate | PC-02 | Generic path verified: live reserve/record/complete/replay/release; clinical claim consumption remains PC-03 |
 | H05 | Same episode reaches case, encounter and valid diagnosis | PC-03 | Pending |
-| H06 | Browser-uploaded evidence is scanned CLEAN; missing/unsafe evidence cannot pass submission | PC-03 | Partial: real PDF upload/ClamAV/secure download passed; clinical report and live missing/unsafe gate remain |
+| H06 | Browser-uploaded evidence is scanned CLEAN; missing/unsafe evidence cannot pass submission | PC-03 | Partial: real PDF/ClamAV and missing/unscanned request gate passed; clinical report and infected-file acceptance remain |
 | H07 | Report review, coverage and immutable correction history work | PC-03 | Pending |
 | H08 | Clinical provider → billing → medical → financial handoff reaches invoice-ready claim | PC-03 | Pending |
 | H09 | Duplicate/report/authorization blockers and corrected claim history are accurate | PC-03 | Pending |
@@ -504,6 +504,39 @@ rule changes or genuinely new access decisions are brought back with a concrete 
   overflow; detector []; independent finish review: ship. Existing Vite chunk-size advisory.
 - **Next:** remaining live rule/document and scoped queue acceptance, then PC-03 outpatient
   case/report/claim. Frontend-only delivery needs no new restart. PC-02 remains active.
+
+### PC-02 combined live document rule and upload — 2026-09-22
+
+- **Live proof:** `real-document-gate.spec.ts` passed (11.1 s test / 12.7 s total).
+  A dedicated synthetic person receives one enrollment/funded account set. The exact-person
+  DOCUMENT/INVOICE rule leaves another person's control request at PENDING_REVIEW.
+  Missing evidence and a real unscanned quarantine PDF both remain PENDING_DOCUMENT after
+  submit; medical approval and unscanned download are refused. The browser's completion
+  command is delayed, not mocked; the real worker/ClamAV later produces CLEAN/secure bytes
+  with matching SHA-256. Upload alone does not transition the request. Reviewer return
+  then provider browser resubmit reaches PENDING_REVIEW/version 3. Version 1 and required
+  type are preserved; all synthetic member account balances/versions stay unchanged.
+- **Fixture boundary:** opt-in `seed document-rule <dedicated-person-id> [retire]` uses
+  application services with distinct existing maker/checker identities, following the
+  plan/contract seed. It is local-only, requires a dedicated synthetic name/UUID marker,
+  scopes the predicate to one person, has positive/negative publication cases and expiry,
+  reuses the same version on repeat, and refuses reactivation after retirement. No human
+  grants or existing published plan changed. This provisions test data offline; it does
+  not certify authenticated rule author/publisher permissions.
+- **Cleanup/evidence:** both created requests were cancelled and the rule version retired.
+  Test person/enrollment, clean file and rule history remain; no hold or consumption.
+  Request `01a0cadc-7edc-7875-b0ef-fca22b43230e`, document
+  `01a0cadc-8362-78c3-8dec-9b2ee8ad9e3a`, rule version
+  `01a0cadc-7a46-75f7-9c1f-47a3440b3e5c`. Rerun and interruption cleanup commands
+  are in HANDOVER section 3; result attachments contain safe IDs only.
+- **Checks:** the full seed package passed with PostgreSQL enabled (13.0 s), including repeat publication,
+  positive/negative cases, repeated retirement, invalid identities and no new grants.
+  Scoped Go lint/vet/build and E2E TypeScript/ESLint pass. All six CI jobs on prior head
+  `23ecc5d` passed. Shared synthetic PDF helper extracted without changing its bytes format.
+- **Next:** automatic-decision live acceptance and scoped queue/ownership/role checks,
+  then PC-03 outpatient case/report/claim. The live scenario proves mandatory PREAUTH
+  review; automatic decisions still have isolated database evidence. Clinical report and
+  infected-file acceptance remain open. PC-02 active, schema 51, no restart required.
 
 ### Progress, evidence and timing
 

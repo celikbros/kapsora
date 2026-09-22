@@ -3,6 +3,7 @@
 //
 //	seed account <username> <display name> [email]   one login with a random password
 //	seed demo                                        tenants DEMO_A / DEMO_B, demo users, grants
+//	seed document-rule <dedicated-person-id> [retire]  scoped local acceptance fixture
 //
 // Generated passwords are printed once and never stored in plaintext. Set
 // KAPSORA_SEED_DEMO_PASSWORD to give every demo user the same known password (local only).
@@ -12,6 +13,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base32"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -98,7 +100,7 @@ type seeder struct {
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("usage: seed account <username> <display name> [email] | seed demo")
+		return fmt.Errorf("usage: seed account <username> <display name> [email] | seed demo | seed document-rule <dedicated-person-id> [retire]")
 	}
 	cfg, err := config.Load("kapsora-seed")
 	if err != nil {
@@ -168,6 +170,19 @@ func run(args []string) error {
 	}
 
 	switch args[0] {
+	case "document-rule":
+		if len(args) < 2 || len(args) > 3 || (len(args) == 3 && args[2] != "retire") {
+			return fmt.Errorf("usage: seed document-rule <dedicated-person-id> [retire]")
+		}
+		personID, err := uuid.Parse(args[1])
+		if err != nil {
+			return fmt.Errorf("invalid fixture person id")
+		}
+		result, err := s.documentRule(ctx, personID, len(args) == 3)
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(os.Stdout).Encode(result)
 	case "account":
 		if len(args) < 3 {
 			return fmt.Errorf("usage: seed account <username> <display name> [email]")
@@ -193,7 +208,7 @@ func run(args []string) error {
 		}
 		return s.demo(ctx)
 	default:
-		return fmt.Errorf("unknown command %q; use account or demo", args[0])
+		return fmt.Errorf("unknown command %q; use account, demo or document-rule", args[0])
 	}
 }
 

@@ -186,11 +186,39 @@ API-client typecheck, harness TypeScript and lint pass. Desktop/mobile normal an
 captures at 1440/390 have no overflow; detector returned []; fresh finish reviewer: ship.
 Frontend/mock-only change after the operator restart; schema 51, no further restart needed.
 
-PC-02 remains active: combine actual upload/scan with a narrowly scoped published document
-rule, verify the remaining scoped queue cases, then proceed to PC-03 case/report/claim.
-The current seed has no RULE_AUTHOR/RULE_APPROVER demo actors (cmd/seed/main.go); do not
-silently widen existing human grants or publish a tenant-wide requirement for a test.
-Real document upload/download itself and the provider cancellation control are now proven.
+**Live document-rule checkpoint (2026-09-22):** all six CI checks on `23ecc5d`
+passed. The new opt-in `real-document-gate.spec.ts` passed against the operator's running
+system (11.1 s test / 12.7 s total). Its separate synthetic person gets one enrollment in
+the existing published plan; the real worker funds that person's accounts. A time-bounded
+DOCUMENT rule requires INVOICE only for that exact person. Another person's control
+request still reaches PENDING_REVIEW, and repeating setup creates no duplicate version.
+
+Missing evidence blocks submission at PENDING_DOCUMENT and prevents medical approval.
+The browser uploads a real PDF to MinIO; the harness pauses only the completion command
+to test a genuinely unscanned object. Download is refused, and return/resubmit still
+stays PENDING_DOCUMENT. After actual worker/ClamAV processing, CLEAN/secure bytes match
+the uploaded SHA-256. Upload alone leaves the status unchanged. Reviewer return followed
+by provider browser resubmit reaches PENDING_REVIEW at version 3, preserving version 1
+and the required type. All funded account balances/versions remain unchanged.
+
+Request `01a0cadc-7edc-7875-b0ef-fca22b43230e`, document
+`01a0cadc-8362-78c3-8dec-9b2ee8ad9e3a`, rule version
+`01a0cadc-7a46-75f7-9c1f-47a3440b3e5c`. Cleanup cancelled both created requests and
+retired the rule version. The synthetic person, enrollment, clean file and rule history
+remain as evidence; there was no reservation or consumption.
+
+Fixture setup is the new local-only `seed document-rule` command, using existing
+application services with distinct maker/checker identities, as the plan/contract seed
+does. It refuses ordinary people, changes no human grants and never reactivates a retired
+version. This is offline fixture provisioning, not authenticated rule-author/publisher UI
+permission proof. The full seed package passes with PostgreSQL enabled (13.0 s), including publish-gate
+positive/negative cases, repeated setup/retirement and unchanged grants. Scoped Go lint,
+vet/build, harness TypeScript and ESLint pass. Schema remains 51; no server restart needed.
+
+PC-02 remains active: finish automatic-decision and scoped queue/ownership/role acceptance,
+then proceed to PC-03 case/report/claim. Automatic decisions have isolated PostgreSQL
+evidence; this live run proves mandatory PREAUTH review. Clinical reports and infected
+file refusal are not certified by the synthetic INVOICE test.
 
 Recovery, deployment and full-capacity benchmarking remain deferred. Do not request an
 Ubuntu recovery target or continue I10-03. Clinical/health-claim completion requires
@@ -342,6 +370,27 @@ secure download and byte/hash comparison before cancellation. Remove the flag af
 It leaves one synthetic clean document attached to that closed request. Screenshots under
 `.impeccable/review/request-cancel*.png` are ignored; result attachments contain safe IDs
 only, never signed storage URLs. This upload scenario does not add a rule or clinical claim.
+
+For combined live rule/upload acceptance, load the local `.env` into the test process
+without printing it, then use the existing-UI variables above and explicit opt-in:
+
+```powershell
+Get-Content -LiteralPath .env | ForEach-Object {
+  if ($_ -cmatch '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$') {
+    [Environment]::SetEnvironmentVariable($matches[1], $matches[2])
+  }
+}
+$env:E2E_DOCUMENT_GATE = '1'
+pnpm e2e real-document-gate.spec.ts --project chromium --trace off
+Remove-Item Env:E2E_DOCUMENT_GATE
+```
+
+This requires Go and the operator-started worker/MinIO/ClamAV. It creates one synthetic
+person/membership/enrollment, two requests, one PDF and one scoped rule version. It closes
+the requests and retires the rule in cleanup. If interrupted, use the person ID from the
+result with `go run ./cmd/seed document-rule <dedicated-person-id> retire`; the version also
+has an expiry. Setup accepts only the dedicated synthetic name/UUID marker and DEMO_A.
+No human role is broadened and no tenant-wide document requirement is introduced.
 
 Set `$env:E2E_HEALTH_CORRECTION = '1'` for the real return/correct/resubmit extension:
 the reviewer returns the request, the provider changes quantity from one to two, the test
