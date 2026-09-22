@@ -4,6 +4,7 @@
 //	seed account <username> <display name> [email]   one login with a random password
 //	seed demo                                        tenants DEMO_A / DEMO_B, demo users, grants
 //	seed document-rule <dedicated-person-id> [retire]  scoped local acceptance fixture
+//	seed automatic-program <dedicated-program-id> [disable]  isolated automatic decision fixture
 //
 // Generated passwords are printed once and never stored in plaintext. Set
 // KAPSORA_SEED_DEMO_PASSWORD to give every demo user the same known password (local only).
@@ -170,6 +171,19 @@ func run(args []string) error {
 	}
 
 	switch args[0] {
+	case "automatic-program":
+		if len(args) < 2 || len(args) > 3 || (len(args) == 3 && args[2] != "disable") {
+			return fmt.Errorf("usage: seed automatic-program <dedicated-program-id> [disable]")
+		}
+		id, err := uuid.Parse(args[1])
+		if err != nil {
+			return fmt.Errorf("invalid fixture program id")
+		}
+		result, err := s.automaticProgram(ctx, id, len(args) == 3)
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(os.Stdout).Encode(result)
 	case "document-rule":
 		if len(args) < 2 || len(args) > 3 || (len(args) == 3 && args[2] != "retire") {
 			return fmt.Errorf("usage: seed document-rule <dedicated-person-id> [retire]")
@@ -208,7 +222,7 @@ func run(args []string) error {
 		}
 		return s.demo(ctx)
 	default:
-		return fmt.Errorf("unknown command %q; use account, demo or document-rule", args[0])
+		return fmt.Errorf("unknown command %q; use account, demo, document-rule or automatic-program", args[0])
 	}
 }
 

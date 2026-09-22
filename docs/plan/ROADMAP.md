@@ -132,7 +132,7 @@ evidence; race, duplicate-delivery and ledger invariants may use focused databas
 | --- | --- | --- | --- |
 | H01 | Provider finds a member, selects service/enrollment and gets the correct eligibility result | PC-02 | Verified for demo: single and real multiple-enrollment selection passed |
 | H02 | Invalid date/enrollment or insufficient balance is explained; ambiguous enrollment is selectable | PC-02 | Verified for demo: insufficient quantity, real ambiguity and exclusive enrollment end passed |
-| H03 | Automatic/manual request decision and return/correct/resubmit reach the provider | PC-02 | Partial: live approval/correction/rejection/cancellation and combined document gate passed; automatic decision has PostgreSQL evidence |
+| H03 | Automatic/manual request decision and return/correct/resubmit reach the provider | PC-02 | Partial: live approval/correction/rejection/cancellation and combined document gate passed; live scoped automatic decision passed; queue own-file fix awaits restart |
 | H04 | Authorization/fulfillment and exact entitlement effects agree; retries do not duplicate | PC-02 | Generic path verified: live reserve/record/complete/replay/release; clinical claim consumption remains PC-03 |
 | H05 | Same episode reaches case, encounter and valid diagnosis | PC-03 | Pending |
 | H06 | Browser-uploaded evidence is scanned CLEAN; missing/unsafe evidence cannot pass submission | PC-03 | Partial: real PDF/ClamAV and missing/unscanned request gate passed; clinical report and infected-file acceptance remain |
@@ -534,9 +534,41 @@ rule changes or genuinely new access decisions are brought back with a concrete 
   Scoped Go lint/vet/build and E2E TypeScript/ESLint pass. All six CI jobs on prior head
   `23ecc5d` passed. Shared synthetic PDF helper extracted without changing its bytes format.
 - **Next:** automatic-decision live acceptance and scoped queue/ownership/role checks,
-  then PC-03 outpatient case/report/claim. The live scenario proves mandatory PREAUTH
+  then PC-03 outpatient case/report/claim. The live scenario preserves the demo program's manual
   review; automatic decisions still have isolated database evidence. Clinical report and
   infected-file acceptance remain open. PC-02 active, schema 51, no restart required.
+
+### PC-02 automatic decisions and medical queue ownership — 2026-09-23
+
+- **Automatic decision passed live (8.7 s):** new short-lived synthetic program/plan and
+  enrollment, exact program setting, approved request/items, identical replay and 409 on a
+  fresh second submit. Excess quantity refuses; the existing demo program remains manual.
+  Provider sees approval; funded account balances/versions unchanged. Local fixture uses
+  application-service publication with distinct maker/checker, never broadens grants or
+  edits existing published plans, and preserves unrelated settings/defaults. Cleanup returns
+  only the new program to manual review. Approved request `01a0cafa-9412-75b5-98f0-764cfdc43a4e`
+  is available for PC-03 while its two-day fixture remains valid; no hold/usage yet.
+- **Medical queue baseline passed live (9.2 s):** new standalone report on staff.member's
+  existing person, missing-file refusal, real HEALTH PDF upload/ClamAV and browser submit
+  create exactly one work item. Queue payload excludes clinical marker/type/person name.
+  Financial reviewer list/detail/claim boundaries and provider role refusal pass. Claim
+  moves the report to UNDER_REVIEW; same-key replay, stale versions, rival claim, non-owner
+  release/completion, preserved SLA after release and completion replay pass. Report
+  `01a0cb07-f05d-7be5-a5f1-7b05a29f6f57` ended REJECTED; work item
+  `01a0cb08-06a2-725d-999c-1f71822af03e` ended COMPLETED. Accounts unchanged. This
+  does not certify the case/encounter/claim chain or invent request-to-worklist routing.
+- **Own-file defect:** direct StartReview refused the subject but worklist claim returned
+  200 and started review. New real PostgreSQL/HTTP regression reproduced this; claim hook
+  now applies RefuseOwnFile and workflow transport uses the existing 403 OWN_FILE_DECISION.
+  Refusal rolls back assignment, work-item row version/status/events and report transition;
+  another reviewer still succeeds. Full health HTTP (112.0 s), workflow application
+  (57.6 s)/HTTP (34.6 s), seed (29.7 s), scoped lint/vet/API build and harness checks pass.
+- **Restart boundary:** the baseline live queue run deliberately omitted the new own-file
+  assertions while the old API was running. The committed harness always includes them;
+  final live confirmation awaits the operator's `dev.ps1 up` restart. Schema stays 51.
+  All six CI checks on preceding `2c60a2b` passed. Rerun/fixture cleanup in HANDOVER section 3.
+- **Next:** confirm own-file fix live, finish outstanding scoped provider/tenant/audit gates,
+  then PC-03 outpatient care. H03 is substantially verified; PC-02 remains active.
 
 ### Progress, evidence and timing
 

@@ -217,8 +217,44 @@ vet/build, harness TypeScript and ESLint pass. Schema remains 51; no server rest
 
 PC-02 remains active: finish automatic-decision and scoped queue/ownership/role acceptance,
 then proceed to PC-03 case/report/claim. Automatic decisions have isolated PostgreSQL
-evidence; this live run proves mandatory PREAUTH review. Clinical reports and infected
+evidence; this live run proves the demo program retains manual review. Clinical reports and infected
 file refusal are not certified by the synthetic INVOICE test.
+
+**Automatic decision and worklist checkpoint (2026-09-23):** all six CI checks passed
+on `2c60a2b`. The live automatic-request test passed (8.7 s total): a new short-lived
+program/plan and synthetic enrollment alone enable automatic approval. The ordinary demo
+program still requires review; excessive quantity fails eligibility; identical submit
+replays preserve the response/ETag, approved line quantity and all account balances/versions.
+The provider sees approval. Offline fixture setup uses distinct maker/checker identities
+and preserves other program settings/defaults and grants; cleanup restores this program
+to manual review. Approved input for PC-03: request `01a0cafa-9412-75b5-98f0-764cfdc43a4e`,
+person `01a0cafa-8bbf-7c58-95bb-96a0e521c32c`, enrollment
+`01a0cafa-8be2-72ea-aefa-55155cf276d1`. There is no authorization/consumption yet;
+the fixture's plan/program expires after two days, so recheck validity before using it.
+
+The real medical-worklist baseline passed (9.2 s total): a new standalone synthetic report
+for the existing staff/member account is blocked without evidence, then a real browser PDF
+upload/ClamAV scan lets it submit and raise one work item. Clinical text, report type and
+person name are absent from its title/payload. Financial reviewers cannot see or claim it;
+providers lack worklist access. Claim/replay, stale ETags, competing claims, non-owner
+release/complete refusal, unchanged SLA after release and completion/replay all passed.
+Claim starts report review. The test report was rejected and its work item completed;
+balances/versions were unchanged. Report `01a0cb07-f05d-7be5-a5f1-7b05a29f6f57`, work item
+`01a0cb08-06a2-725d-999c-1f71822af03e`. This is standalone report/queue evidence, not the
+PC-03 case/encounter/claim chain. Requests use their request list; no automatic request-to-
+work-item routing is implemented or claimed.
+
+**New blocker fixed, live confirmation pending operator restart:** claiming one's own
+medical report from the worklist bypassed StartReview's own-file guard (reproduced 200).
+The claim hook now refuses the same subject and the workflow handler returns the existing
+403 OWN_FILE_DECISION. The PostgreSQL/HTTP regression verifies the work item, version,
+assignment, status events and report all remain unchanged; a different reviewer can claim.
+Full health HTTP, workflow application/HTTP and seed tests pass (112.0/57.6/34.6/29.7 s),
+as do scoped Go lint/vet/API build and harness TypeScript/ESLint. Schema remains 51.
+The final `real-health-worklist.spec.ts` always checks own-file refusal both before review
+and after release; this last check needs the operator to restart `dev.ps1 up`.
+After that confirmation, finish remaining provider/tenant/audit boundaries and move to
+PC-03 outpatient case/encounter/report/claim. No PC-02 or complete-health closure is claimed.
 
 Recovery, deployment and full-capacity benchmarking remain deferred. Do not request an
 Ubuntu recovery target or continue I10-03. Clinical/health-claim completion requires
@@ -391,6 +427,26 @@ the requests and retires the rule in cleanup. If interrupted, use the person ID 
 result with `go run ./cmd/seed document-rule <dedicated-person-id> retire`; the version also
 has an expiry. Setup accepts only the dedicated synthetic name/UUID marker and DEMO_A.
 No human role is broadened and no tenant-wide document requirement is introduced.
+
+For automatic-request acceptance, load `.env` as above and set
+`$env:E2E_AUTOMATIC_REQUEST = '1'`, then run
+`pnpm e2e real-automatic-request.spec.ts --project chromium --trace off`.
+Remove the flag afterward. Each run creates one bounded synthetic program/plan/person/
+enrollment, one approved request and two cancelled controls. It leaves no hold or usage.
+If interrupted, use `go run ./cmd/seed automatic-program <dedicated-program-id> disable`
+to restore manual review for only that program. No public settings write API exists; the
+offline seed merges just that program's setting and refuses malformed configuration.
+
+For medical queue/own-file acceptance after the API restart, set
+`$env:E2E_HEALTH_WORKLIST = '1'`, then run
+`pnpm e2e real-health-worklist.spec.ts --project chromium --trace off`.
+Remove the flag afterward. It creates only a new synthetic report/file on staff.member's
+existing person; it does not edit the person's existing report, case, grants or enrollment.
+Successful cleanup rejects the test report and completes its work item. On failed runs,
+draft/submitted reports are cancelled and an in-review test report is rejected; any known
+work item is completed. No health coverage or entitlement consumption is left behind.
+The browser shares the provider's authenticated cookie jar, avoiding an unnecessary extra
+login that could hit the development login rate limit. Authentication traces stay disabled.
 
 Set `$env:E2E_HEALTH_CORRECTION = '1'` for the real return/correct/resubmit extension:
 the reviewer returns the request, the provider changes quantity from one to two, the test
