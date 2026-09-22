@@ -3,7 +3,7 @@ import { initI18n } from '@kapsora/i18n';
 import { createMemoryHistory } from '@tanstack/react-router';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { createServices } from './services';
 
@@ -99,11 +99,14 @@ describe('provider portal', () => {
     expect(personCalls, 'the list read a person per row').toBe(0);
   });
 
-  it(
-    'checks eligibility live while the form is filled, then submits',
+  it.each([false, true])(
+    'checks eligibility and submits without duplicate drafts (first submit fails: %s)',
     { timeout: 20_000 },
-    async () => {
-      const { history } = mount('/');
+    async (failFirstSubmit) => {
+      const { history, services: appServices } = mount('/');
+      const create = vi.spyOn(appServices.ops.requests, 'create');
+      const submit = vi.spyOn(appServices.ops.requests, 'submit');
+      if (failFirstSubmit) submit.mockRejectedValueOnce(new Error('connection lost'));
       await login('provider.a');
       await screen.findByRole('heading', { name: 'Yeni talep' });
       const pane = screen.getByTestId('eligibility-pane');
@@ -147,6 +150,11 @@ describe('provider portal', () => {
       // Gönder exists only once the check found the enrollment; its absence is the diagnosis.
       const send = await screen.findByRole('button', { name: 'Gönder' }, { timeout: 5_000 });
       await user.click(send);
+      if (failFirstSubmit) {
+        await screen.findByRole('alert');
+        await waitFor(() => expect(send).toBeEnabled());
+        await user.click(send);
+      }
       await waitFor(
         () => {
           const alert = screen.queryByRole('alert');
@@ -162,6 +170,9 @@ describe('provider portal', () => {
       expect(stored.status).not.toBe('SUBMITTED');
       expect(stored.channel).toBe('PROVIDER_PORTAL');
       expect(stored.providerOrganizationId).toBe(providerOrganizationId());
+      expect(create).toHaveBeenCalledTimes(1);
+      expect(submit).toHaveBeenCalledTimes(failFirstSubmit ? 2 : 1);
+      if (failFirstSubmit) expect(submit.mock.calls[1]).toEqual(submit.mock.calls[0]);
     },
   );
 

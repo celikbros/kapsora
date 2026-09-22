@@ -24,7 +24,7 @@ the existing work-package contracts rather than starting their implementation ag
 
 ### Baseline and delivery sequence
 
-- Local schema: 000051 (dirty=false); authorization Go changes await operator restart. API, worker, scheduler and the three apps run through the
+- Local schema: 000051 (dirty=false); operator restart and live authorization confirmation passed. API, worker, scheduler and the three apps run through the
   operator's single door at `http://127.0.0.1:5181`; API port 8090. PostgreSQL, MinIO,
   ClamAV and Mailpit are the existing native dependencies.
 - PC-01 passed twice in the real browser on 2026-09-22 (15.8 s total). All six GitHub
@@ -133,7 +133,7 @@ evidence; race, duplicate-delivery and ledger invariants may use focused databas
 | H01 | Provider finds a member, selects service/enrollment and gets the correct eligibility result | PC-02 | Partial: single-enrollment browser path passed |
 | H02 | Invalid date/enrollment or insufficient balance is explained; ambiguous enrollment is selectable | PC-02 | Partial: insufficient-quantity refusal passed; dates/ambiguity pending |
 | H03 | Automatic/manual request decision and return/correct/resubmit reach the provider | PC-02 | Partial: manual medical approval and provider follow-up passed; automatic/return paths pending |
-| H04 | Authorization/fulfillment and exact entitlement effects agree; retries do not duplicate | PC-02 | Partial: mapped ledger regressions and intercepted UI pass; restarted real handoff pending |
+| H04 | Authorization/fulfillment and exact entitlement effects agree; retries do not duplicate | PC-02 | Partial: mapped ledger regressions and live reservation/provider/cancel pass; remaining fulfilment gates open |
 | H05 | Same episode reaches case, encounter and valid diagnosis | PC-03 | Pending |
 | H06 | Browser-uploaded evidence is scanned CLEAN; missing/unsafe evidence cannot pass submission | PC-03 | Pending |
 | H07 | Report review, coverage and immutable correction history work | PC-03 | Pending |
@@ -340,6 +340,35 @@ rule changes or genuinely new access decisions are brought back with a concrete 
   executed against the new running Go code. No PC-02 or complete-health closure is claimed.
 - **Next:** restart/live confirmation, then enrollment selection, returned-request correction
   and failed-submit recovery before proceeding to PC-03 outpatient care.
+
+### PC-02 live authorization and submit retry — 2026-09-22
+
+- **Live handoff passed:** after the operator restart, the real provider/medical reviewer
+  browser test reserves one session, displays the authorization to a fresh provider login,
+  then cancels it through the public API (10.1 s total). Authorization `AUT-20260922-SAVI7HNY`
+  is CANCELLED; its hold is RELEASED with quantity 1, consumed 0, released 1. A tenant-scoped
+  read-only query confirms exactly one RESERVE and one RELEASE, net zero deltas, account
+  available/reserved/consumed 20/0/0 and conservation true.
+- **CI:** all six checks passed at `68ba0d5`, including the complete PostgreSQL schema suite.
+  This resolves the uncertainty left by the prior local 10-minute timeout; it does not
+  certify the remaining PC-02 product gates.
+- **Retry defect fixed:** provider `useCreateAndSubmit` previously created a new draft on
+  every retry. The form now retains the draft/ETag and separate create/submit idempotency
+  keys per actor, tenant and input; concurrent identical clicks share one request. An
+  uncertain create retries its original body/key. A known successful submit stays confirmed.
+  Changing and returning to earlier input reuses that input's attempt. The cache is local
+  to the mounted form; reload recovery and stale-version editing remain separate work.
+- **Retry evidence:** four coordinator cases plus the provider screen regression pass
+  (nine tests across two files). The real browser run with
+  `E2E_HEALTH_AUTHORIZATION=1 E2E_HEALTH_SUBMIT_RETRY=1` passed in 7.9 s: first submit is
+  deliberately aborted, the retry uses the same URL/key and exactly one draft is created.
+  The remainder of the real medical/authorization/provider/cancel flow passes. Its
+  `AUT-20260922-IGYTFDAM` hold also has exactly one reserve and one release, net zero,
+  final account 20/0/0 and conservation true. Provider typecheck, lint and build pass.
+- **Next confirmed gaps:** `NewRequestPage` does not offer the server's enrollment
+  candidates; provider `RequestPage` shows return reasons without correction/resubmit
+  controls. Complete these PC-02.4/PC-02.5 paths before PC-03 outpatient care. The successful
+  test holds were cancelled deliberately; no live clinical consumption is claimed.
 
 ### Progress, evidence and timing
 

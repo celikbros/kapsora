@@ -66,11 +66,25 @@ validation, identical uncertain retries, stale-list success, list failure and pr
 states; this is not live-ledger proof. The full database test package hit its 10-minute timeout;
 the focused clean migration test passed separately.
 
-**Restart checkpoint:** local schema is 51, dirty=false; the operator-owned API/worker/scheduler
-still need `dev.ps1 up` restarted to load this Go change. No server was restarted by the agent.
-After restart, run the opt-in real authorization flow below (including cancellation of its
-synthetic hold). H04 and PC-02 remain open until this live handoff and the remaining enrollment,
-return/correction and retry gates pass.
+**Live checkpoint (2026-09-22):** the operator restarted the system and the real
+provider → medical approval → authorization → provider follow-up → cancellation test passed
+(10.1 s total). A read-only ledger check confirmed one RESERVE and one RELEASE, net zero
+deltas; the test's 1-unit hold was fully released and the account ended available 20,
+reserved 0, consumed 0 with conservation intact. All six CI checks on `68ba0d5` passed,
+including the full schema suite that exceeded the local timeout. Local schema remains 51.
+
+The next confirmed PC-02 defect is fixed too: retrying a failed provider submission now
+reuses the same draft, ETag and command keys instead of creating another draft. Uncertain
+create responses reuse the create key; simultaneous clicks share the same in-flight request.
+Attempts are kept only in the current form session, isolated by actor, tenant and input.
+The real test with its first submit aborted passed (7.9 s): one create, two identical submit
+attempts, then medical approval, reservation, provider visibility and cancellation. The
+second hold also has exactly one reserve/release pair and zero net balance change.
+
+Next close multiple-enrollment selection, returned-request correction/resubmission and
+the remaining recovery/fulfilment gates. A full browser reload is outside the in-memory
+retry fix. H04 and PC-02 are still partial; PC-03 outpatient acceptance has not started.
+No additional server restart is needed for this frontend-only retry correction.
 See the roadmap's dated checkpoints for evidence and remaining gates.
 
 Recovery, deployment and full-capacity benchmarking remain deferred. Do not request an
@@ -192,7 +206,7 @@ DEMO_A. It checks service access, eligible/insufficient quantity, submission, me
 approval and provider follow-up. It creates no authorization, case or claim and does not
 certify reservation, consumption or financial correctness. Member-app acceptance is pending.
 
-After the authorization-code restart, enable the opt-in extension of that same real flow:
+Enable the verified authorization extension of that same real flow:
 
 ```powershell
 $env:E2E_HEALTH_AUTHORIZATION = '1'
@@ -201,9 +215,11 @@ Remove-Item Env:E2E_HEALTH_AUTHORIZATION
 ```
 
 This creates one real synthetic hold, verifies the provider sees it, then cancels it through
-the public API as the medical reviewer to return the unused entitlement. Its first live run
-is pending the operator restart. If interrupted after creation, use the attached authorization
-reference to reconcile the hold before rerunning.
+the public API as the medical reviewer to return the unused entitlement. This path passed
+after the operator restart on 2026-09-22. If interrupted after creation, reconcile the
+test authorization before rerunning. To include a simulated first-submit network failure,
+also set `$env:E2E_HEALTH_SUBMIT_RETRY = '1'`; the harness verifies one create and two submit
+attempts with identical request URL and key. Remove that environment variable after the run.
 
 `pnpm e2e authorization-ui.spec.ts --project chromium --trace off` reuses the same existing
 UI but intercepts only authorization responses; it reads an existing approved demo request

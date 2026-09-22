@@ -12,6 +12,24 @@ test('real health request: clinical provider eligibility, medical decision and p
 }) => {
   test.setTimeout(60_000);
   let authorization: Authorization | undefined;
+  const retrySubmit = process.env['E2E_HEALTH_SUBMIT_RETRY'] === '1';
+  const submitAttempts: { url: string; key: string | undefined }[] = [];
+  let creates = 0;
+  page.on('request', (r) => {
+    if (new URL(r.url()).pathname === '/api/v1/service-requests' && r.method() === 'POST')
+      creates += 1;
+  });
+  if (retrySubmit) {
+    await page.route('**/api/v1/service-requests/*/submit', async (route) => {
+      submitAttempts.push({
+        url: route.request().url(),
+        key: route.request().headers()['idempotency-key'],
+      });
+      if (submitAttempts.length === 1) await route.abort('failed');
+      else await route.continue();
+    });
+  }
+
   const portal = new URL('/portal/', EXISTING!).href;
   await page.goto(portal);
   await page.getByLabel(/Kullanıcı adı/).fill('provider.a');
@@ -60,11 +78,22 @@ test('real health request: clinical provider eligibility, medical decision and p
       response.request().method() === 'POST',
   );
   await page.getByRole('button', { name: 'Gönder', exact: true }).click();
+  if (retrySubmit) {
+    await expect(page.getByRole('alert')).toBeVisible();
+    await page.getByRole('button', { name: 'Gönder', exact: true }).click();
+  }
+
   const response = await submitted;
   expect(response.status()).toBe(200);
   const request = await response.json();
   expect(request.status).toBe('PENDING_REVIEW');
   expect(request.enrollmentId).toBe(initialResult.enrollmentId);
+  expect(creates).toBe(1);
+  if (retrySubmit) {
+    expect(submitAttempts).toHaveLength(2);
+    expect(submitAttempts[1]).toEqual(submitAttempts[0]);
+  }
+
   await expect(page).toHaveURL(new RegExp(`/portal/requests/${request.id}$`));
   await expect(page.getByRole('heading', { name: request.reference, exact: true })).toBeVisible();
   await test.info().attach('submitted-request', {
