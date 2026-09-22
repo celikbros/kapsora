@@ -203,6 +203,17 @@ problem-message gaps are closed by these changes; other recorded gaps are not im
 
 ## Status log
 
+- 2026-09-22 · Real member-import browser acceptance passed twice consecutively (15.8 s
+  total) on the operator's single-door server with the real API and worker. Both runs
+  signed in as admin.a in DEMO_A, completed password step-up, uploaded two synthetic
+  rows, skipped the invalid row, applied one member, verified exactly one created and
+  one skipped, found the member by name, signed out and proved a protected page returns
+  to login. Test source record IDs are unique per run, matching the server's source-based
+  update semantics. The test locators now match the search field and logout confirmation.
+  All six CI jobs passed on the backend correction `da15390`. Startup warnings for
+  unhandled `invoice.submitted` and `settlement.approved` remain for the financial-flow
+  review. Next product flow: real eligibility and service-request submission.
+
 - 2026-09-21 · Real browser import testing exposed a password-step-up retry failure.
   Upload now checks current authorization before the idempotency middleware, so challenges
   are not cached and cached successes cannot bypass step-up. Multipart hashes preserve

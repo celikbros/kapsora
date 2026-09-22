@@ -73,13 +73,21 @@ the request hash. Import authorization now runs before idempotency (including re
 and multipart hashing ignores only its transport boundary. Integration tests cover the
 challenge, retry, replay, expired step-up and changed-content refusal. The upload middleware
 also honors the existing 20 MiB file allowance plus 8 MiB multipart overhead instead of
-the default 1 MiB request ceiling. Final browser confirmation awaits an operator API restart. M11 is PLANNED. M8/M9 remain deferred.
+the default 1 MiB request ceiling. Real browser confirmation passed twice consecutively on 2026-09-22 against the
+operator-started API and worker: password step-up, upload, invalid-row skip, one created
+member, one skipped row, name search, logout and protected-page redirect. The test uses
+unique source record IDs per run so it cannot update a previous test's member. M11 is PLANNED. M8/M9 remain deferred.
 
 Pilot customer, program, beneficiary group and HR/policy source formats are still external
 inputs. Technical preparation can proceed without them; customer-specific integration and
 signed acceptance cannot.
 
 ### Smaller open items worth knowing about
+
+- The 2026-09-22 startup log reports no worker handler for `invoice.submitted` and
+  `settlement.approved`; those events are deferred one hour. Member-import worker
+  processing passed independently. Track these warnings in the invoice/payment flow
+  review; this import correction does not resolve them.
 
 - The mock world's `SPONSOR_HR_PERMISSIONS` now matches the real role, including
   `accommodation.property.read`; the mock test compares it with `roles.go`. Keep both
@@ -128,7 +136,7 @@ pnpm e2e real-import.spec.ts --project chromium --trace off
 
 This command starts no servers. It uploads two synthetic rows in DEMO_A, skips the invalid
 row, waits for the worker to apply the valid row, checks the member list and signs out.
-It creates one synthetic member per successful run; use the demo database only. The
+Each run that reaches apply creates one synthetic member; use the demo database only. The
 existing-UI option is for backoffice tests. Trace capture is disabled in this command
 because authentication requests contain credentials.
 

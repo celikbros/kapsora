@@ -12,10 +12,11 @@ test('real member import: step-up, invalid row review, apply and member list', a
   const surname = `Deneme${run.replace(/[^a-f]/g, '')}`;
   const columns =
     'source_record_id,first_name,middle_name,last_name,birth_date,sex_at_birth,tckn,member_no,employee_no,membership_type,principal_member_no,relationship,valid_from,valid_to,plan_code';
+  // Source record IDs must be unique too: reusing one updates its existing member.
   const content =
     `${columns}\n` +
-    `R1,Sentetik,,${surname},1990-01-01,FEMALE,,${run}A,,PRINCIPAL,,,2026-01-01,,\n` +
-    `R2,Hatali,,${surname},1990-01-01,FEMALE,,${run}B,,EMPLOYEE,,,2026-01-01,,\n`;
+    `R1-${run},Sentetik,,${surname},1990-01-01,FEMALE,,${run}A,,PRINCIPAL,,,2026-01-01,,\n` +
+    `R2-${run},Hatali,,${surname},1990-01-01,FEMALE,,${run}B,,EMPLOYEE,,,2026-01-01,,\n`;
 
   await page.goto('/imports/new');
   await page.getByLabel(/Kullanıcı adı/).fill('admin.a');
@@ -66,12 +67,15 @@ test('real member import: step-up, invalid row review, apply and member list', a
     .getByRole('navigation', { name: 'Ana menü' })
     .getByRole('link', { name: 'Hak Sahipleri', exact: true })
     .click();
-  await page.getByLabel('Ad veya soyad ara', { exact: true }).fill(surname);
+  await page.getByRole('textbox', { name: /^Ad veya soyad ara/ }).fill(surname);
   await page.getByRole('button', { name: 'Ara', exact: true }).click();
   await expect(page.getByRole('link', { name: `Sentetik ${surname}`, exact: true })).toHaveCount(1);
   await expect(page.getByRole('link', { name: `Hatali ${surname}`, exact: true })).toHaveCount(0);
   await page.screenshot({ path: '.impeccable/review/import-member-real.png', fullPage: true });
   await page.getByRole('button', { name: 'Kullanıcı menüsü', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Çıkış yap', exact: true }).click();
+  await expect(page).toHaveURL(/\/auth\/logout/);
+  await expect(page.getByRole('heading', { name: 'Oturum kapatıldı', exact: true })).toBeVisible();
+  await page.goto('/people');
   await expect(page).toHaveURL(/\/auth\/login/);
 });
