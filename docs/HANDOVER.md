@@ -37,12 +37,17 @@ keep them current as you build.
 **Current owner priority (reconfirmed 2026-09-22): complete the running product, with
 health first.** The detailed plan for the approved sequence is the
 [PC-01–PC-06 product completion roadmap](plan/ROADMAP.md#current-product-completion-roadmap-2026-09-22).
-Member import is locally verified. Next: PC-02 eligibility/request/authorization, then
+Member import is locally verified. PC-02 eligibility/request/authorization is active, then
 PC-03 outpatient and PC-04 inpatient health, PC-05 invoice/batch/payment, and PC-06
 accommodation plus combined acceptance. The roadmap records task dependencies, 15 health
 acceptance scenarios, role handoffs, evidence gates and confirmed source/fixture gaps.
-The detailed plan is ready; live health acceptance remains pending. Start with PC-02.1
-scenario prerequisites and PC-02.2 real/mock role parity, not a new feature or recovery task.
+The first live health checkpoint passed: provider catalog access, single-enrollment
+eligibility, insufficient-quantity refusal, request submission, medical approval and the
+provider's updated status. Migration 000050 fixes the reproduced catalog 403 for system
+PROVIDER_STAFF in current/new tenants; no catalog maintenance or billing grant was added.
+PC-02 is not complete. Next resolve quantity-versus-money pricing and the explicit
+authorization handoff, then enrollment choice, return/correction and retry paths. See the
+roadmap's dated checkpoint for evidence and remaining gates.
 
 Recovery, deployment and full-capacity benchmarking remain deferred. Do not request an
 Ubuntu recovery target or continue I10-03. Clinical/health-claim completion requires
@@ -50,7 +55,7 @@ PC-02–PC-04 to pass; the health episode's local financial journey closes at PC
 
 **M1 through M7 are recorded as DONE for original implementation delivery.** This does
 not certify the current real-browser health chain; its acceptance is tracked separately
-in PC-02–PC-04. Schema is at migration `000049` (`db/migrations/`). Every
+in PC-02–PC-04. Schema is at migration `000050` (`db/migrations/`). Every
 milestone's exit criteria were verified by the integrator before closing (see `docs/plan/ROADMAP.md`
 § Status log for the full narrative, milestone by milestone — it is long, but it is the real
 history of every non-obvious decision, and reading the last 10–15 entries will save you from
@@ -75,7 +80,7 @@ PROGRAM_MANAGER role in current and new tenants (2026-09-21). Migration 000049 u
 existing system roles; provisioning supplies the same permission to new tenants. Custom
 roles and other standard roles are unchanged. Password step-up remains required.
 Real PostgreSQL/HTTP integration tests cover upload, apply, worker redelivery and duplicate
-refusal. The local database is at 49. The first live browser run found an upload retry
+refusal. The local database is now at 50 (dirty=false). The first live browser run found an upload retry
 defect after password step-up: the challenge was cached and the multipart boundary changed
 the request hash. Import authorization now runs before idempotency (including replays),
 and multipart hashing ignores only its transport boundary. Integration tests cover the
@@ -120,7 +125,7 @@ cp .env.example .env              # fill CHANGE_ME with your local PostgreSQL cr
 make tools                        # sqlc, oapi-codegen, oasdiff, golangci-lint, govulncheck
 make native-install && make native-up   # MinIO, ClamAV, Mailpit as native processes
 make db-init                      # role kapsora_app + database kapsora
-make migrate-up                   # schema to 000049
+make migrate-up                   # schema to 000050
 make test-unit && make test-db    # should both be green before you write anything
 ```
 
@@ -147,6 +152,18 @@ row, waits for the worker to apply the valid row, checks the member list and sig
 Each run that reaches apply creates one synthetic member; use the demo database only. The
 existing-UI option is for backoffice tests. Trace capture is disabled in this command
 because authentication requests contain credentials.
+
+With the same environment variables, run the health-entry regression:
+
+```powershell
+pnpm e2e real-health.spec.ts --project chromium --trace off
+```
+
+It uses `/portal/` and backoffice on the existing single door, signing out between clinical
+provider and medical reviewer. Each run creates and approves one synthetic request in
+DEMO_A. It checks service access, eligible/insufficient quantity, submission, medical
+approval and provider follow-up. It creates no authorization, case or claim and does not
+certify reservation, consumption or financial correctness. Member-app acceptance is pending.
 
 **A backend-free demo** (in-browser mock data, nothing to install): double-click
 `scripts\demo\KAPSORA-Demo-Baslat.cmd`. It opens the three apps on ports 5181–5183 against
@@ -284,5 +301,5 @@ English — that split is deliberate and consistent across ~50 commits; don't mi
 5. Get the real system running end to end (`.\scripts\dev.ps1 up`, seeded), and sign in as
    two or three different demo accounts to feel the permission boundaries first-hand.
 6. Follow the current PC-01–PC-06 execution sequence in `docs/plan/ROADMAP.md`; the next
-   task is PC-02.1. Resume M10/pilot work only after product completion is reprioritized;
+   task is the remaining PC-02 checkpoint blockers. Resume M10/pilot work only after product completion is reprioritized;
    M8/M9 remain deferred by the owner.

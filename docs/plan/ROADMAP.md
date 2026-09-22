@@ -24,21 +24,23 @@ the existing work-package contracts rather than starting their implementation ag
 
 ### Baseline and delivery sequence
 
-- Local schema: 000049. API, worker, scheduler and the three apps run through the
+- Local schema: 000050 (dirty=false). API, worker, scheduler and the three apps run through the
   operator's single door at `http://127.0.0.1:5181`; API port 8090. PostgreSQL, MinIO,
   ClamAV and Mailpit are the existing native dependencies.
 - PC-01 passed twice in the real browser on 2026-09-22 (15.8 s total). All six GitHub
   checks passed on `fe89f12`. [PR #11](https://github.com/celikbros/kapsora/pull/11) is
   still a draft, stacked on `wp/I10-02-load-performance`; local acceptance is not a
   merge or production release. Recovery PR #10 is outside this work.
-- No live health-chain acceptance is claimed. Existing health database tests and mock
-  browser tests are useful foundations, but they do not replace real multi-role use.
-- The immediate deliverable is this detailed plan. The next execution task is PC-02.1.
+- The first live health-entry browser path passed on 2026-09-22: provider eligibility and
+  submission, medical approval, then provider follow-up. This is partial PC-02 evidence,
+  not complete health-chain acceptance. See the checkpoint below.
+- Next: resolve the observed quantity/money pricing mismatch and the explicit authorization
+  handoff, then close enrollment choice, request correction and retry coverage.
 
 | Order | Stage | Current status | Depends on | Result required to close |
 | --- | --- | --- | --- | --- |
 | PC-01 | Member import | VERIFIED locally; PR open | Existing identity/member setup | Upload → password step-up → invalid-row skip → one created member → search → logout; no duplicate effect |
-| PC-02 | Eligibility, service request and authorization | NEXT; source review started, live chain pending | Verified member/scenario prerequisites | A real provider can request covered care; approvals/refusals and the authorization/entitlement effects agree |
+| PC-02 | Eligibility, service request and authorization | ACTIVE; provider-to-medical approval verified, remaining gates open | Verified member/scenario prerequisites | A real provider can request covered care; approvals/refusals and the authorization/entitlement effects agree |
 | PC-03 | Outpatient care, reports and health claims | QUEUED | PC-02 | Real case → encounter/diagnosis → clean report → review → claim ready for invoicing |
 | PC-04 | Inpatient care | QUEUED | PC-03 and admission configuration | Preauthorization → admission → extension → discharge → invoice-ready claim; entitlement reconciles |
 | PC-05 | Invoice, batch, settlement and payment | QUEUED | An invoice-ready health claim from PC-03/04 | The same episode reaches invoice, payer decision and a reconciled local payment record |
@@ -127,9 +129,9 @@ evidence; race, duplicate-delivery and ledger invariants may use focused databas
 
 | ID | Scenario | Stage | State |
 | --- | --- | --- | --- |
-| H01 | Provider finds a member, selects service/enrollment and gets the correct eligibility result | PC-02 | Pending |
-| H02 | Invalid date/enrollment or insufficient balance is explained; ambiguous enrollment is selectable | PC-02 | Pending |
-| H03 | Automatic/manual request decision and return/correct/resubmit reach the provider | PC-02 | Pending |
+| H01 | Provider finds a member, selects service/enrollment and gets the correct eligibility result | PC-02 | Partial: single-enrollment browser path passed |
+| H02 | Invalid date/enrollment or insufficient balance is explained; ambiguous enrollment is selectable | PC-02 | Partial: insufficient-quantity refusal passed; dates/ambiguity pending |
+| H03 | Automatic/manual request decision and return/correct/resubmit reach the provider | PC-02 | Partial: manual medical approval and provider follow-up passed; automatic/return paths pending |
 | H04 | Authorization/fulfillment and exact entitlement effects agree; retries do not duplicate | PC-02 | Pending |
 | H05 | Same episode reaches case, encounter and valid diagnosis | PC-03 | Pending |
 | H06 | Browser-uploaded evidence is scanned CLEAN; missing/unsafe evidence cannot pass submission | PC-03 | Pending |
@@ -215,12 +217,13 @@ backend change is concrete and locally checked.
 
 | Finding as of 2026-09-22 | Evidence / confidence | Planned action |
 | --- | --- | --- |
-| Member import is verified; broader health browser chain is not | Two live import runs; existing health browser specs use mocks | Preserve PC-01, execute H01–H15 |
-| Provider catalog and billing permissions differ between real role and mock | Source inspection: `roles.go`, mock `data.ts`, provider queries; not a fresh live failure | PC-02.2 role matrix and intended API/role correction |
+| Import and initial health request/medical approval are verified; remaining health chain is not | Two live import runs and the new real health-entry regression | Preserve regressions; close remaining H01–H15 gates |
+| Provider catalog 403 fixed; broader mock billing grants still differ from real clinical staff | Live reproduction; migration 000050 and provisioning fix; positive/negative role tests and browser catalog 200 | Catalog portion of PC-02.2 verified; retain separate billing role and reconcile remaining mock drift |
 | Request form does not offer eligibility enrollment candidates; returned-request page lacks correction/resubmit controls | Source inspection of provider request pages; live behavior still to reproduce | PC-02.4/5 reproduce and close actual workflow gaps |
-| Generic request approval alone does not prove an authorization or fulfillment | Request decision code and existing consumers need a full path trace | PC-02.6 contract-to-runtime verification before changing ledger behavior |
+| Generic request approval has no authorization handoff in the request screens | Live approved request has zero authorizations on API inspection; source has a separate createAuthorization command which reserves entitlement, and no generic approval consumer creates it | PC-02.6 implement an explicit permitted handoff and verify reservation/retry/release effects |
+| Session quantity appears to cap the quote as money | Live PHYSIO_SESSION quote: contract 400 TRY, payer 20, member 380, PARTIAL/BALANCE_INSUFFICIENT; seeded entitlement is 20 SESSION. Resolver passes AvailableQuantity into the money cap | PC-02 prerequisite blocker: resolve unit-aware pricing with focused regression before certifying money or proceeding to billing |
 | Checked-in seed lacks admission service; seeded CLEAN report bypasses upload scanning | `cmd/seed/business.go`, `businessplan.go`, `staffmember.go`; current DB configuration not audited | PC-04.1 admission fixtures; PC-03.2 genuine upload/scan |
-| Existing-server browser option does not yet cover provider/member project URLs | `tests/e2e/playwright.config.ts` | PC-02.3 single-door multi-role test support |
+| Dedicated provider/member projects still use their test ports; single-door provider/backoffice handoff now works | `real-health.spec.ts` runs under chromium with explicit `/portal/` routes and logout between actors | PC-02.3 partially verified; member handoff and dedicated-project URL generalization remain pending |
 | `invoice.submitted` has no consumer; `settlement.approved` is the deferred M9 posting boundary | Observed startup warnings plus worker/port inspection; settlement notification is published separately, so local failure is not established | PC-05.6 document event handling policy and test required local effects; do not invent automatic batch creation |
 | Historical UI list/detail gaps may already have changed | Dated status-log notes are not current reproduction evidence | Check while exercising their scenario; create fixes only for reproduced gaps |
 
@@ -230,6 +233,36 @@ in parallel. If an external dependency blocks a path, name the exact blocker and
 independent work within the current stage; do not silently mark it complete or switch
 to recovery/deployment. Routine reversible fixes follow the approved scope. Business
 rule changes or genuinely new access decisions are brought back with a concrete proposal.
+
+### PC-02 checkpoint — 2026-09-22
+
+- **Delivered:** `PROVIDER_STAFF` can read service/diagnosis catalogs in the provider app.
+  Reproduced `GET /service-definitions` 403 before the fix, then 200 in the real browser.
+  Migration 000050 updates only existing system roles, idempotently and within each tenant;
+  provisioning matches. Custom roles, other app grants and billing/maintenance remain unchanged.
+- **Real browser:** [real-health.spec.ts](../../tests/e2e/real-health.spec.ts) passed
+  (one test, 6.1 s total) against the operator-started API/UI with local schema 50.
+  Provider selects the synthetic member and physiotherapy, obtains one eligible enrollment,
+  receives ineligible for quantity 100000, restores 1 and submits. The doctor approves;
+  a fresh provider login sees APPROVED and the case link. Reference: `SR-20260922-CNZOXYS7`.
+  Screenshots were reviewed and remain ignored under `.impeccable/review/`.
+- **Configuration:** supported APIs resolved the seeded active enrollment, mapped service,
+  hospital profile and a published contract price. The quote probe supplies HEALTH and the
+  eligibility result's entitlement codes as required by the pricing contract. It reproduced
+  the quantity/money mismatch above; a found contract is not financial acceptance.
+- **Regression:** provider new/existing tenant authorization and repeatable upgrade tests,
+  fresh migration-to-50 test, catalog read-versus-write HTTP tests, and all database
+  permission/grant/role tests passed (the latter 50.889 s, no skips). Mock M5 Vitest: 27 passed.
+  Go vet, scoped golangci-lint, ESLint, Prettier and diff checks passed for the changed scope.
+- **Still open:** unit-aware quote, explicit authorization/fulfillment UI and ledger evidence;
+  enrollment selection, date/automatic-decision branches, return/correction/resubmission,
+  failed-submit draft recovery, complete role parity, queue and cross-provider negatives.
+  PC-03–PC-06 have not started. An approval badge is not a reserved entitlement.
+- **Next work order:** fix pricing units with money/quantity regressions; expose and verify
+  the contracted authorization handoff; close remaining PC-02 exceptions, then begin PC-03.
+  The remaining list now has reproduced access and pricing evidence, but authorization UI
+  and outpatient fixtures still need their first execution. A calendar finish date would
+  be speculative; reassess health completion effort after PC-02 closure and the first PC-03 run.
 
 ### Progress, evidence and timing
 

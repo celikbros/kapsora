@@ -115,7 +115,8 @@ func RoleTemplates() []RoleTemplate {
 				"provider.practitioner.manage"}},
 		{Code: "PROVIDER_STAFF", Name: "Sağlayıcı Kayıt/Klinik", Scope: ScopeOrganization,
 			Description: "Hak sorgusu, hizmet talebi, sağlık vakası, belge ve hizmet kaydı.",
-			Permissions: []string{"member.read", "eligibility.check", "service_request.read", "service_request.create",
+			// Service selection and ICD-10 lookup need catalog read access; no maintenance grant.
+			Permissions: []string{"member.read", "eligibility.check", "catalog.read", "service_request.read", "service_request.create",
 				"service_request.submit", "service_request.cancel", "fulfilment.record", "voucher.redeem",
 				"health.case.read", "health.case.manage", "health.clinical.read", "health.medical_report.manage",
 				"document.upload", "document.read", "document.link", "pricing.quote"}},
