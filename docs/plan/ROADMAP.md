@@ -14,6 +14,249 @@ Authoritative sources: [docs/plan/KAPSORA_Master_Plan_v2.0.md](KAPSORA_Master_Pl
 (Turkish, normative), [docs/adr](../adr/README.md), the frozen v1.2 specification under
 [docs/baseline-v1.2](../baseline-v1.2/). When they disagree, the master plan and ADRs win.
 
+## Current product completion roadmap (2026-09-22)
+
+This is the owner's approved execution order: finish the running product, with health
+first. It takes precedence over the older "next" instructions below. The M0–M11 tables
+record original implementation deliveries; a historical `DONE` does not certify today's
+complete browser workflow. This section tracks that separate acceptance work. It reuses
+the existing work-package contracts rather than starting their implementation again.
+
+### Baseline and delivery sequence
+
+- Local schema: 000049. API, worker, scheduler and the three apps run through the
+  operator's single door at `http://127.0.0.1:5181`; API port 8090. PostgreSQL, MinIO,
+  ClamAV and Mailpit are the existing native dependencies.
+- PC-01 passed twice in the real browser on 2026-09-22 (15.8 s total). All six GitHub
+  checks passed on `fe89f12`. [PR #11](https://github.com/celikbros/kapsora/pull/11) is
+  still a draft, stacked on `wp/I10-02-load-performance`; local acceptance is not a
+  merge or production release. Recovery PR #10 is outside this work.
+- No live health-chain acceptance is claimed. Existing health database tests and mock
+  browser tests are useful foundations, but they do not replace real multi-role use.
+- The immediate deliverable is this detailed plan. The next execution task is PC-02.1.
+
+| Order | Stage | Current status | Depends on | Result required to close |
+| --- | --- | --- | --- | --- |
+| PC-01 | Member import | VERIFIED locally; PR open | Existing identity/member setup | Upload → password step-up → invalid-row skip → one created member → search → logout; no duplicate effect |
+| PC-02 | Eligibility, service request and authorization | NEXT; source review started, live chain pending | Verified member/scenario prerequisites | A real provider can request covered care; approvals/refusals and the authorization/entitlement effects agree |
+| PC-03 | Outpatient care, reports and health claims | QUEUED | PC-02 | Real case → encounter/diagnosis → clean report → review → claim ready for invoicing |
+| PC-04 | Inpatient care | QUEUED | PC-03 and admission configuration | Preauthorization → admission → extension → discharge → invoice-ready claim; entitlement reconciles |
+| PC-05 | Invoice, batch, settlement and payment | QUEUED | An invoice-ready health claim from PC-03/04 | The same episode reaches invoice, payer decision and a reconciled local payment record |
+| PC-06 | Accommodation and combined product acceptance | QUEUED | PC-05; existing lodging implementation | Booking and its financial consequences work; cross-app regression and owner walkthrough complete |
+
+**Health completion has two explicit checkpoints.** Clinical and health-claim acceptance
+closes after PC-02–PC-04 and all health privacy gates pass. The health episode's financial
+journey closes after PC-05. Neither checkpoint includes deferred fiscal/ERP integrations.
+
+### PC-01 — member import: completed evidence
+
+- [x] PROGRAM_MANAGER receives `import.execute` through provisioning and migration 000049;
+  tenant/app boundaries and password step-up are tested.
+- [x] Multipart retry after step-up succeeds, identical uploads replay, changed content
+  conflicts, and worker redelivery does not create duplicate members.
+- [x] The real browser uploads two synthetic rows, skips the invalid one, verifies one
+  created/one skipped, finds the member and signs out. Source IDs differ on every run.
+- Evidence: [real browser regression](../../tests/e2e/real-import.spec.ts),
+  [HTTP integration](../../internal/party/transport/http/memberimport_test.go),
+  [handover command](../HANDOVER.md#3-get-it-running). Keep this as a regression;
+  do not reopen its completed scope without a new failure.
+
+### PC-02 — eligibility, service request and authorization
+
+| Task | Work and acceptance |
+| --- | --- |
+| PC-02.1 | Establish a repeatable synthetic health scenario: active membership/enrollment (the import test did not create a plan enrollment), valid published plan, funded entitlement, mapped health service, provider scope/capability, valid contract/price, rules and review queue. Inspect existing data first; add only missing scenario configuration through supported services. Never edit published versions or reset the demo database. |
+| PC-02.2 | Reconcile the real role matrix with the mock. Verify provider access to member search and selectable services. Resolve the service-catalog permission mismatch using the intended least-privilege API/role design; test allowed and denied roles and keep mocks aligned. Do not grant every mock permission to provider staff. |
+| PC-02.3 | Extend the real browser harness to exercise backoffice, `/portal/` and `/uye/` on the existing server. Separate actors/sessions, use stable accessible selectors and unique synthetic source IDs, and avoid retaining credential-bearing traces. |
+| PC-02.4 | Query by member and service/date. Cover eligible, ineligible and review-required outcomes; expired enrollment, insufficient balance and multiple candidate enrollments. Let the operator choose a valid enrollment when ambiguous and re-run the check. |
+| PC-02.5 | Submit one request and follow it from provider to worklist. Exercise automatic and manual decisions, missing documents, return → correction → resubmission, rejection and cancellation. The provider must see the reason and next permitted action. |
+| PC-02.6 | Trace the actual request → authorization → fulfillment path. Prove when an entitlement is reserved, consumed or released according to the existing contract. Determine which action is automatic and which requires an explicit command; implement a missing handoff only after confirming that contract. An APPROVED badge alone is insufficient evidence. |
+| PC-02.7 | Retry submission/decision and stale edits, including create-success/submit-failure recovery without a second draft; verify no duplicate request, authorization or consumption. Test the queue's ownership and role rules, other-provider/tenant refusal, and audit/notification effects required by the scenario. |
+
+**Exit:** one complete successful real-provider path plus its rejection/return path;
+authorization provenance and before/after balances match; all newly found blocking defects
+have regression coverage. Keep the resulting request/authorization as PC-03's input.
+
+References: [eligibility](../delegation/WP-I2-04-eligibility.md), existing M4 packages,
+[provider flow](../../tests/e2e/provider.spec.ts),
+[request UI](../../web/apps/provider/src/NewRequestPage.tsx).
+
+### PC-03 — outpatient care, report and claim
+
+| Task | Work and acceptance |
+| --- | --- |
+| PC-03.1 | Provider opens the case from the accepted request, retaining the same member/enrollment/provider. Record an encounter and ICD-10 diagnosis; check primary-diagnosis rules and closure preconditions. |
+| PC-03.2 | Draft the medical report with its service/date/quantity scope. Upload a synthetic document through the actual browser path: quarantine → scanner worker → CLEAN → authorized access. Show a useful pending/rejected state; refuse submission without required clean evidence. Do not use a pre-seeded CLEAN file as proof of scanning. |
+| PC-03.3 | Medical reviewer takes the work item and approves or rejects. Verify approved coverage/usage; a correction creates a new draft version and preserves the decided version, reviewer and history. Report return is not a supported command; return/resubmit belongs to requests and claims. |
+| PC-03.4 | Hand off to the provider billing actor to create/submit the health claim using the case, authorization and report where required. Cover an automatic-priced case and a case needing medical then financial review. Verify per-line decisions, reasons, contract price, approved total and exact payer/member shares. |
+| PC-03.5 | Cover duplicate suspicion, insufficient authorization, expired/out-of-scope report, return/correction and stale versions. Readiness must name unresolved blockers and permit invoicing only after every required decision. No service, report usage or entitlement may be counted twice. |
+| PC-03.6 | Test clinical/financial projections and sensitive access with real roles at both API and DOM level. HR must receive no diagnosis/report narrative; cross-provider/tenant access is refused; purpose accept/decline and audited access work. Include a reviewer who is also the subject of the record. |
+
+**Exit:** a standard outpatient episode and a report-dependent episode reach invoice
+readiness through the real applications. All PC-03 exceptions/privacy gates pass. Save
+safe record IDs, totals and statuses for PC-05; a pre-existing invoice is not evidence
+that this newly tested episode flowed through billing.
+
+References: existing [M5 packages](#m5-work-packages-issued-2026-09-05),
+[report HTTP tests](../../internal/health/transport/http/report_test.go),
+[claim integration tests](../../internal/claim/application/claim_test.go),
+[current mock provider test](../../tests/e2e/provider-health.spec.ts).
+
+### PC-04 — inpatient care
+
+| Task | Work and acceptance |
+| --- | --- |
+| PC-04.1 | Verify live admission prerequisites. The checked-in demo seed has no `INPATIENT_DAY`; provide its appropriate health entitlement/mapping, unit and contract price through a new valid configuration if absent. Do not borrow the lodging allowance or mutate a published plan version. |
+| PC-04.2 | Open the inpatient case and admission preauthorization; review it and observe the worker's decision event advance the stay. Refuse a second open stay for the same case/provider; repeating the event must not reserve again. |
+| PC-04.3 | Record permitted bed/companion segments; refuse prohibited overlaps. Request an extension, prevent a second undecided extension, and exercise approval/refusal with the correct additional authorization. |
+| PC-04.4 | Discharge with actual dates. Verify partial-day calculation and unused reservation release across both original and extension authorizations. Verify consumption in the subsequent claim/fulfillment path. Overstay is surfaced for review. Repeated discharge/event delivery has no extra ledger effect. |
+| PC-04.5 | Exercise cancellation/date boundaries, preserve clinical privacy, and take the resulting inpatient claim through required review to invoice readiness. |
+
+**Exit:** admission with an approved extension and early discharge reconciles each
+authorization separately; a refused/invalid admission or extension behaves correctly;
+the inpatient claim is invoice-ready. PC-02–PC-04 health acceptance is then complete.
+
+References: [inpatient contract](../delegation/WP-I5-03-inpatient-preauthorization.md),
+[existing integration tests](../../internal/health/application/inpatientstay_test.go).
+
+### Health acceptance checklist
+
+These are planned checks, not claims of passing tests. A row closes only with linked
+real-system evidence and the relevant automated regression. UI paths require browser
+evidence; race, duplicate-delivery and ledger invariants may use focused database tests.
+
+| ID | Scenario | Stage | State |
+| --- | --- | --- | --- |
+| H01 | Provider finds a member, selects service/enrollment and gets the correct eligibility result | PC-02 | Pending |
+| H02 | Invalid date/enrollment or insufficient balance is explained; ambiguous enrollment is selectable | PC-02 | Pending |
+| H03 | Automatic/manual request decision and return/correct/resubmit reach the provider | PC-02 | Pending |
+| H04 | Authorization/fulfillment and exact entitlement effects agree; retries do not duplicate | PC-02 | Pending |
+| H05 | Same episode reaches case, encounter and valid diagnosis | PC-03 | Pending |
+| H06 | Browser-uploaded evidence is scanned CLEAN; missing/unsafe evidence cannot pass submission | PC-03 | Pending |
+| H07 | Report review, coverage and immutable correction history work | PC-03 | Pending |
+| H08 | Clinical provider → billing → medical → financial handoff reaches invoice-ready claim | PC-03 | Pending |
+| H09 | Duplicate/report/authorization blockers and corrected claim history are accurate | PC-03 | Pending |
+| H10 | HR/financial projections exclude forbidden clinical fields in API and DOM | PC-03/04 | Pending |
+| H11 | Sensitive purpose, access audit, self-review and other-provider/tenant boundaries hold | PC-03/04 | Pending |
+| H12 | Admission approval advances the stay once and refuses duplicate open admission | PC-04 | Pending |
+| H13 | Extension and segment rules hold; refusal leaves balances correct | PC-04 | Pending |
+| H14 | Early discharge, partial days and overstay reconcile original/extension authorizations | PC-04 | Pending |
+| H15 | Inpatient claim becomes invoice-ready without duplicate consumption | PC-04 | Pending |
+
+### PC-05 — health invoice, batch, settlement and payment
+
+1. Carry the accepted health claims into provider billing. Validate invoice header,
+   fiscal year/number, allocations, tolerance and required image; block an unready claim.
+   Submit once, freeze the submitted content, and verify correction/cancel rules.
+2. Create and submit a batch of compatible invoices. Financial review records approval,
+   cut, return and rejection with reasons and exact totals. Enforce reviewer/submitter
+   separation and any configured second-person threshold. Returned invoices release
+   their claims for supported correction, preserving the old record.
+3. Observe the real worker create one settlement from the batch decision (seed helpers do not prove this delivery). Check contract due date, then approve with password step-up and the required distinct approver.
+   Record partial then final payment; refuse overpayment and duplicate external reference.
+   The payable, paid and outstanding amounts reconcile without editing append-only history.
+4. Verify the member reimbursement branch with synthetic receipt/account information:
+   clean-document gate, duplicate/ceiling checks, review, approved-only entitlement
+   consumption and truthful local payment status. Actual bank transfer/ERP posting is deferred.
+5. Compare provider statement and daily reconciliation; verify permitted export generation,
+   download authorization, watermark/expiry and the corresponding audit record.
+6. Classify the observed `invoice.submitted` / `settlement.approved` no-handler warnings
+   against their contracts. Confirm required local actions and notifications work;
+   repair missing in-scope consumers if found. Keep deferred integration events visible
+   and documented rather than adding a discard handler just to remove a warning.
+
+**Exit:** the same health episode has traceable claim → invoice → batch → settlement →
+payment records, with exact reconciled totals and rejection/correction paths proven.
+This is local product financial acceptance, not a claim of fiscal submission or bank transfer.
+References: [M7 work packages](#m7-work-packages-issued-2026-09-07).
+
+### PC-06 — accommodation and combined acceptance
+
+1. Verify the member's person scope, property/room inventory, valid lodging terms and
+   explicit member contribution. Search → quote → hold → approval/confirmation → voucher.
+   Check stale quote/expiry, inventory bounds and single entitlement reservation.
+2. Exercise provider check-in/out, free/penalized cancellation, reviewed no-show and
+   waiting-list offer/expiry. Verify inventory and entitlement release/consumption once.
+3. Follow a completed stay and a chargeable cancellation/no-show into claims and the
+   accepted PC-05 billing path. Check a free cancellation creates no charge.
+4. Run selected import, health, billing, lodging and reimbursement regressions together
+   with isolated synthetic records. Check tenant switching, role-specific navigation,
+   shared sign-in/logout, useful error states and critical desktop/mobile actions.
+5. Finish an owner walkthrough using the same accepted scenarios. Update this roadmap
+   and HANDOVER with passed paths, remaining nonblocking issues and precise exclusions.
+   Keep merge/release status separate from local acceptance; do not merge automatically.
+
+**Exit:** all in-scope core journeys pass, no open blocker causes a dead end, wrong money/
+entitlement result, unauthorized clinical disclosure or duplicate operation. Record any
+accepted minor issue explicitly. References: [M6 packages](#m6-work-packages-issued-2026-09-06).
+
+### Roles and shared prerequisites
+
+| Actor | Responsibility in the live scenario | Boundary to verify |
+| --- | --- | --- |
+| `admin.a` | Program/member/scenario configuration | Administrative access is not automatic clinical review access |
+| `provider.a` | Hospital eligibility, requests, case, encounter and report | Only its provider scope; do not inherit mock billing powers |
+| `billing.a` | Hospital claim, invoice and batch | Same hospital, distinct billing role |
+| `doctor.a` | Medical review | Clinical purpose and self-review rules; no financial decision by this role alone |
+| `financial.reviewer` | Financial claim/invoice/batch review | Financial projection and decision limits |
+| `payer.approver` | Settlement approval/payment actions as permitted | Step-up, maker-checker and payable ceiling |
+| `sponsor.hr` | Sponsor's allowed member/financial view | No diagnosis or report narrative in response or DOM |
+| `staff.member` | Reviewer and beneficiary test case | Cannot decide own case even when a review grant exists |
+| `member.a` / `reservation.a` | Member journey / hotel desk | Person scope / hotel provider scope |
+
+Use synthetic data only. Do not print credentials, clinical payloads or identifiers in
+test output; keep screenshots/results ignored. Real business configuration and approvals
+stay in the application/API, never in direct database bypasses. Existing roles are the
+starting point; a permission change must be narrowly justified, with real/mock parity and
+negative tests. The operator owns long-running servers; request a restart only after a
+backend change is concrete and locally checked.
+
+### Known findings, uncertainty and scope control
+
+| Finding as of 2026-09-22 | Evidence / confidence | Planned action |
+| --- | --- | --- |
+| Member import is verified; broader health browser chain is not | Two live import runs; existing health browser specs use mocks | Preserve PC-01, execute H01–H15 |
+| Provider catalog and billing permissions differ between real role and mock | Source inspection: `roles.go`, mock `data.ts`, provider queries; not a fresh live failure | PC-02.2 role matrix and intended API/role correction |
+| Request form does not offer eligibility enrollment candidates; returned-request page lacks correction/resubmit controls | Source inspection of provider request pages; live behavior still to reproduce | PC-02.4/5 reproduce and close actual workflow gaps |
+| Generic request approval alone does not prove an authorization or fulfillment | Request decision code and existing consumers need a full path trace | PC-02.6 contract-to-runtime verification before changing ledger behavior |
+| Checked-in seed lacks admission service; seeded CLEAN report bypasses upload scanning | `cmd/seed/business.go`, `businessplan.go`, `staffmember.go`; current DB configuration not audited | PC-04.1 admission fixtures; PC-03.2 genuine upload/scan |
+| Existing-server browser option does not yet cover provider/member project URLs | `tests/e2e/playwright.config.ts` | PC-02.3 single-door multi-role test support |
+| `invoice.submitted` has no consumer; `settlement.approved` is the deferred M9 posting boundary | Observed startup warnings plus worker/port inspection; settlement notification is published separately, so local failure is not established | PC-05.6 document event handling policy and test required local effects; do not invent automatic batch creation |
+| Historical UI list/detail gaps may already have changed | Dated status-log notes are not current reproduction evidence | Check while exercising their scenario; create fixes only for reproduced gaps |
+
+One end-to-end journey is active at a time. Finish its blocking fixes and regression
+before starting the next stage. Read-only investigations and isolated tests may proceed
+in parallel. If an external dependency blocks a path, name the exact blocker and finish
+independent work within the current stage; do not silently mark it complete or switch
+to recovery/deployment. Routine reversible fixes follow the approved scope. Business
+rule changes or genuinely new access decisions are brought back with a concrete proposal.
+
+### Progress, evidence and timing
+
+- The coding agent implements, tests and records evidence; the operator controls servers;
+  the owner decides new business scope and reviews the finished journeys.
+- Each stage closes with: scenario IDs and date, tested commit/environment, safe record
+  IDs, expected/actual states and amounts, regression command/result, unresolved issues,
+  and the next task. Store the summary in this section/status log and link HANDOVER to it.
+- Use browser tests for actual handoffs, focused Go/PostgreSQL tests for authorization,
+  money, ledger and retry invariants, and Vitest for changed UI behavior. Run relevant
+  format/lint/type checks and inspect CI on the delivered head. Do not rerun unrelated
+  suites merely to fill time; UI design changes also follow the existing design workflow.
+- The first execution checkpoint is the PC-02 baseline: which of H01–H04 pass and which
+  concrete defects block them. At that checkpoint give a remaining-work estimate for
+  PC-03/04 based on the observed defect list and fixture readiness, then update it after
+  the first outpatient run. There is no defensible health finish date yet, and no
+  unmeasured percentage is reported as progress.
+- Health exit: PC-02–PC-04/H01–H15 verified. Financial exit: PC-05 verified. Product
+  acceptance: PC-06 verified. External customer sign-off is a later, separately named gate.
+- Deferred by the owner: recovery/restore work, deployment, full-capacity benchmarking,
+  fiscal/Nettefatura and ERP integration (M8/M9). Customer-specific import adapters and
+  signed pilot acceptance are outside this pass and still need external business inputs.
+  Routine negative authorization checks remain in every stage.
+  No Ubuntu target, vendor credentials or pilot data are prerequisites for this synthetic
+  product-completion plan; real customer onboarding will require those business inputs later.
+
+
 ## Working model
 
 | Role                              | Who                  | Responsibilities                                                                                                                                                          |
@@ -152,10 +395,11 @@ empty shell since M1.
 
 ## M10 work packages (prepared 2026-09-13)
 
-The owner approved the readiness corrections and M10 preparation. M10 implementation has started
-with the I10-02 tooling slice; milestone acceptance remains open.
-M8/M9 remain deferred. Start with the source contract for 01; 02–04 can be prepared without
-customer data, and 05 closes only against a named pilot and completed evidence.
+The owner approved the readiness corrections and M10 preparation. I10-02 tooling started;
+milestone acceptance remains open. This is historical preparation, not the current task
+queue: follow the [product completion roadmap](#current-product-completion-roadmap-2026-09-22)
+first. M8/M9 remain deferred. If M10 is resumed, 01 needs its source contract, and 05 closes
+only against a named pilot and completed evidence.
 
 | WP | Scope | Status / external input |
 | --- | --- | --- |
@@ -202,6 +446,15 @@ problem-message gaps are closed by these changes; other recorded gaps are not im
 | M10       | Pilot customer, program and beneficiary group; HR/policy source formats         | open                                                                                                                                                                                                               |
 
 ## Status log
+
+- 2026-09-22 · Owner approved the product-completion sequence; detailed PC-01–PC-06 plan prepared:
+  preserve verified import; eligibility/request/authorization; outpatient health;
+  inpatient health; health invoice/batch/payment; accommodation and combined acceptance.
+  Added task-level dependencies, 15 pending health acceptance scenarios, real role
+  handoffs, confirmed source/fixture findings, evidence gates and scope exclusions to
+  this roadmap. This was a planning/source-review update, not a new live health test.
+  All six CI jobs on the preceding implementation head `fe89f12` passed; PR #11 remains
+  draft/unmerged. Next execution task: PC-02.1 scenario prerequisites and PC-02.2 role parity.
 
 - 2026-09-22 · Real member-import browser acceptance passed twice consecutively (15.8 s
   total) on the operator's single-door server with the real API and worker. Both runs

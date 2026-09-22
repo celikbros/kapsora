@@ -9,6 +9,7 @@ work package or historical specification is not required to get started.
 | Need | Document |
 | --- | --- |
 | Project state, open decisions and working rules | [Handover](HANDOVER.md) |
+| Current execution order, health acceptance and completion criteria | [Product completion roadmap](plan/ROADMAP.md#current-product-completion-roadmap-2026-09-22) |
 | Milestones, work packages and delivery history | [Roadmap](plan/ROADMAP.md) |
 | Product scope, users and language | [Product brief](../PRODUCT.md) |
 | UI patterns and design rules | [Design system](../DESIGN.md) |

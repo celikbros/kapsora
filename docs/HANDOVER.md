@@ -34,15 +34,23 @@ keep them current as you build.
 
 ## 2. Where things stand
 
-**Current owner priority (2026-09-13): complete the product and make its everyday flows
-work against the real API.** Recovery work is deferred by explicit owner instruction.
-Do not request an Ubuntu recovery target or continue I10-03 now. Focus on sign-in and
-role access, member/import operations, eligibility and service requests, accommodation,
-and claims/invoice/payment flows. Close observed functional gaps before operations/pilot
-preparation. Full-capacity benchmarking and deployment preparation are not the next task.
+**Current owner priority (reconfirmed 2026-09-22): complete the running product, with
+health first.** The detailed plan for the approved sequence is the
+[PC-01–PC-06 product completion roadmap](plan/ROADMAP.md#current-product-completion-roadmap-2026-09-22).
+Member import is locally verified. Next: PC-02 eligibility/request/authorization, then
+PC-03 outpatient and PC-04 inpatient health, PC-05 invoice/batch/payment, and PC-06
+accommodation plus combined acceptance. The roadmap records task dependencies, 15 health
+acceptance scenarios, role handoffs, evidence gates and confirmed source/fixture gaps.
+The detailed plan is ready; live health acceptance remains pending. Start with PC-02.1
+scenario prerequisites and PC-02.2 real/mock role parity, not a new feature or recovery task.
 
+Recovery, deployment and full-capacity benchmarking remain deferred. Do not request an
+Ubuntu recovery target or continue I10-03. Clinical/health-claim completion requires
+PC-02–PC-04 to pass; the health episode's local financial journey closes at PC-05.
 
-**M1 through M7 are DONE.** Schema is at migration `000049` (`db/migrations/`). Every
+**M1 through M7 are recorded as DONE for original implementation delivery.** This does
+not certify the current real-browser health chain; its acceptance is tracked separately
+in PC-02–PC-04. Schema is at migration `000049` (`db/migrations/`). Every
 milestone's exit criteria were verified by the integrator before closing (see `docs/plan/ROADMAP.md`
 § Status log for the full narrative, milestone by milestone — it is long, but it is the real
 history of every non-obvious decision, and reading the last 10–15 entries will save you from
@@ -275,5 +283,6 @@ English — that split is deliberate and consistent across ~50 commits; don't mi
    enough to know when to go back and check it.
 5. Get the real system running end to end (`.\scripts\dev.ps1 up`, seeded), and sign in as
    two or three different demo accounts to feel the permission boundaries first-hand.
-6. Continue with the approved M10 packages in `docs/plan/ROADMAP.md`. Collect the missing
-   pilot/source inputs for customer-specific work; M8/M9 remain deferred by the owner.
+6. Follow the current PC-01–PC-06 execution sequence in `docs/plan/ROADMAP.md`; the next
+   task is PC-02.1. Resume M10/pilot work only after product completion is reprioritized;
+   M8/M9 remain deferred by the owner.
