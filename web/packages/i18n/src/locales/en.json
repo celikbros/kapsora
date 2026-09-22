@@ -617,6 +617,28 @@
         "assessedFee": "Assessed fee",
         "noShowReviewNote": "The record stays under review until a second person at the payer confirms it."
       }
+    },
+    "newRequest": {
+      "enrollmentHint": "Several valid plans are available. Choose a plan to check eligibility again."
+    },
+    "correction": {
+      "title": "Correct the request",
+      "intro": "Save your changes, then submit the request again.",
+      "draftTitle": "Complete the request",
+      "save": "Save changes",
+      "submit": "Submit request",
+      "saved": "Changes saved.",
+      "sent": "Request submitted.",
+      "reload": "Load current record",
+      "reloadHint": "The record may have changed or the operation may have completed. Load and review the current record. Unsaved changes will be discarded.",
+      "retryHint": "No submission result was received. Retry the same command or load the current record.",
+      "line": "Service {{number}}",
+      "currency": "Currency",
+      "dateError": "Choose a valid service date.",
+      "serviceError": "Choose a service.",
+      "quantityError": "Enter a quantity greater than zero, with at most 6 decimal places; for example 1.5.",
+      "amountError": "Enter a non-negative amount with at most 6 decimal places; for example 400.50.",
+      "currencyError": "Enter a three-letter currency code, for example TRY."
     }
   },
   "health": {

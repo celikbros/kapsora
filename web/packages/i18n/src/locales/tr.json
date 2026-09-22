@@ -2307,7 +2307,8 @@
       "eligible": "Uygun",
       "notEligible": "Uygun değil",
       "resultNote": "Bu bir ön bilgidir; karar, talep gönderildiğinde verilir.",
-      "reviewRequired": "İnceleme gerekli"
+      "reviewRequired": "İnceleme gerekli",
+      "enrollmentHint": "Birden fazla geçerli plan var. Kullanılacak planı seçiniz; uygunluk yeniden hesaplanır."
     },
     "myRequests": {
       "title": "Taleplerim",
@@ -2383,6 +2384,25 @@
         "assessedFee": "Hesaplanan ücret",
         "noShowReviewNote": "Ödeyen kurumdan ikinci bir kişi onaylayana kadar kayıt incelemede kalır."
       }
+    },
+    "correction": {
+      "title": "Talebi düzeltiniz",
+      "intro": "Değişiklikleri kaydediniz, ardından talebi yeniden gönderiniz.",
+      "draftTitle": "Talebi tamamlayınız",
+      "save": "Değişiklikleri kaydet",
+      "submit": "Talebi gönder",
+      "saved": "Değişiklikler kaydedildi.",
+      "sent": "Talep gönderildi.",
+      "reload": "Güncel kaydı yükle",
+      "reloadHint": "Kayıt değişmiş veya işlem tamamlanmış olabilir. Güncel kaydı yükleyip kontrol ediniz. Kaydedilmemiş değişiklikleriniz silinir.",
+      "retryHint": "Gönderim sonucu alınamadı. Aynı işlemi yeniden deneyebilir veya güncel kaydı yükleyebilirsiniz.",
+      "line": "Hizmet {{number}}",
+      "currency": "Para birimi",
+      "dateError": "Geçerli bir hizmet tarihi seçiniz.",
+      "serviceError": "Bir hizmet seçiniz.",
+      "quantityError": "Sıfırdan büyük bir miktar giriniz. En fazla 6 ondalık basamak kullanınız; örnek: 1,5.",
+      "amountError": "Sıfır veya daha büyük bir tutar giriniz. En fazla 6 ondalık basamak kullanınız; örnek: 400,50.",
+      "currencyError": "Üç harfli para birimi kodunu giriniz; örnek: TRY."
     }
   },
   "units": {

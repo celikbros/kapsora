@@ -110,6 +110,97 @@ test('real health request: clinical provider eligibility, medical decision and p
   await page.getByRole('button', { name: 'Giriş yap', exact: true }).click();
   await expect(page.getByRole('heading', { name: request.reference, exact: true })).toBeVisible();
   await expect(page.getByTestId('request-status')).toHaveText('İncelemede');
+  if (process.env['E2E_HEALTH_CORRECTION'] === '1') {
+    await page.getByRole('button', { name: 'İade et', exact: true }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByLabel(/Gerekçe kodu/).fill('DEMO_CORRECTION');
+    await dialog.getByLabel(/Açıklama/).fill('Seans miktarını iki olarak düzeltiniz.');
+    const returnedResponse = page.waitForResponse(
+      (r) => new URL(r.url()).pathname === `/api/v1/service-requests/${request.id}/return`,
+    );
+    await dialog.getByRole('button', { name: 'İade et', exact: true }).click();
+    const returned = await returnedResponse;
+    expect(returned.status()).toBe(200);
+    expect((await returned.json()).currentVersionNo).toBe(2);
+    await page.getByRole('button', { name: 'Kullanıcı menüsü', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'Çıkış yap', exact: true }).click();
+    await expect(
+      page.getByRole('heading', { name: 'Oturum kapatıldı', exact: true }),
+    ).toBeVisible();
+    await page.goto(new URL(`/portal/requests/${request.id}`, EXISTING!).href);
+    await page.getByLabel(/Kullanıcı adı/).fill('provider.a');
+    await page.getByLabel(/^Parola/).fill(PASSWORD);
+    await page.getByRole('button', { name: 'Giriş yap', exact: true }).click();
+    const correction = page.getByTestId('request-correction');
+    await expect(correction).toBeVisible();
+    await expect(
+      page.getByText('Seans miktarını iki olarak düzeltiniz.', { exact: true }),
+    ).toBeVisible();
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      await expect(
+        page.getByRole('heading', { name: 'Talebi düzeltiniz', exact: true }),
+      ).toBeVisible();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true,
+      );
+      await page.screenshot({
+        path: `.impeccable/review/request-correction-${width}.png`,
+        fullPage: true,
+      });
+    }
+    await correction.getByLabel(/^Miktar/).fill('0');
+    await expect(correction.getByLabel(/^Miktar/)).toHaveAttribute('aria-invalid', 'true');
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true,
+      );
+      await page.screenshot({
+        path: `.impeccable/review/request-correction-error-${width}.png`,
+        fullPage: true,
+      });
+    }
+    await correction.getByLabel(/^Miktar/).fill('2');
+    await expect(
+      correction.getByRole('button', { name: 'Talebi gönder', exact: true }),
+    ).toHaveCount(0);
+    const saved = page.waitForResponse(
+      (r) =>
+        new URL(r.url()).pathname === `/api/v1/service-requests/${request.id}/items` &&
+        r.request().method() === 'PUT',
+    );
+    await correction.getByRole('button', { name: 'Değişiklikleri kaydet', exact: true }).click();
+    expect((await saved).status()).toBe(200);
+    const resubmitted = page.waitForResponse(
+      (r) => new URL(r.url()).pathname === `/api/v1/service-requests/${request.id}/submit`,
+    );
+    await correction.getByRole('button', { name: 'Talebi gönder', exact: true }).click();
+    const resubmitResponse = await resubmitted;
+    expect(resubmitResponse.status()).toBe(200);
+    const corrected = await resubmitResponse.json();
+    expect(corrected.status).toBe('PENDING_REVIEW');
+    expect(corrected.currentVersionNo).toBe(2);
+    expect(corrected.items[0].requestedQuantity).toMatch(/^2(?:\.0+)?$/);
+    expect(creates).toBe(1);
+    // The old version remains available through the public history endpoint.
+    const prior = await page.evaluate(async (id) => {
+      const session = await (await fetch('/api/v1/session')).json();
+      const response = await fetch(`/api/v1/service-requests/${id}/versions/1`, {
+        headers: { 'X-Tenant-ID': session.activeTenantId, 'X-Kapsora-App': 'provider' },
+      });
+      return { status: response.status, body: await response.json() };
+    }, request.id);
+    expect(prior.status).toBe(200);
+    expect(prior.body.items[0].requestedQuantity).toMatch(/^1(?:\.0+)?$/);
+    await page.getByRole('button', { name: 'Çıkış yap', exact: true }).click();
+    await expect(page.getByLabel(/Kullanıcı adı/)).toBeVisible();
+    await page.goto(new URL(`/requests/${request.id}`, EXISTING!).href);
+    await page.getByLabel(/Kullanıcı adı/).fill('doctor.a');
+    await page.getByLabel(/^Parola/).fill(PASSWORD);
+    await page.getByRole('button', { name: 'Giriş yap', exact: true }).click();
+    await expect(page.getByTestId('request-status')).toHaveText('İncelemede');
+  }
   await page.getByRole('button', { name: 'Onayla', exact: true }).click();
   const approval = page.waitForResponse(
     (result) => new URL(result.url()).pathname === `/api/v1/service-requests/${request.id}/approve`,

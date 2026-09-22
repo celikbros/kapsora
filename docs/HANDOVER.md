@@ -81,11 +81,36 @@ The real test with its first submit aborted passed (7.9 s): one create, two iden
 attempts, then medical approval, reservation, provider visibility and cancellation. The
 second hold also has exactly one reserve/release pair and zero net balance change.
 
-Next close multiple-enrollment selection, returned-request correction/resubmission and
-the remaining recovery/fulfilment gates. A full browser reload is outside the in-memory
-retry fix. H04 and PC-02 are still partial; PC-03 outpatient acceptance has not started.
-No additional server restart is needed for this frontend-only retry correction.
-See the roadmap's dated checkpoints for evidence and remaining gates.
+**Request correction checkpoint (2026-09-22):** the provider now selects an enrollment
+from eligibility candidates, then waits for the selected enrollment's successful check.
+Changing member/service/date clears the selection; failed or ineligible checks cannot send.
+The candidate list stays available after selecting a plan. An ambiguous top-level
+REVIEW_REQUIRED result is no longer displayed as a final refusal.
+
+Provider draft detail now supports saving the service date and service lines, showing the
+reviewer's correction text and resubmitting the same request. ETag conflicts or uncertain
+saves require an explicit reload; unsaved input is not overwritten by background reads.
+An uncertain submit freezes edits and retries the same command key. This also lets a
+provider reopen a known draft from the request list after a reload, without another create.
+No draft body or patient data is persisted in browser storage.
+
+The live return/correct/resubmit test passed (9.0 s): request
+`SR-20260922-ZPT6KIUF` kept version 1 at one session, saved version 2 at two sessions,
+resubmitted and received medical approval, with exactly one create. No entitlement was
+reserved by this run. Twelve focused frontend tests passed, including explicit selection,
+delayed/failed recheck, unchanged submission retries, preserved history and a real mock
+ETag conflict. The plan-selection browser test passed (3.8 s) with intercepted ambiguity
+and failure responses; its chosen valid plan was rechecked by the live API. This does not
+certify a real multiple-enrollment database fixture. Both screens fit 390px and 1440px. The
+full frontend suite passed (494 tests); the subsequent validation fix passed four focused
+tests and another live correction run (9.9 s). Invalid fields now explain how to correct them,
+and comma decimals are normalized without floating point conversion.
+
+Next close the real multiple-enrollment/date gates, remaining automatic/document/negative
+request transitions and fulfilment/consumption evidence before PC-03 outpatient acceptance.
+PC-02 remains active. Local schema is still 51; these changes require no server restart.
+All six CI checks passed on the preceding retry commit `8589fc7`; current validation is
+recorded in the roadmap's latest checkpoint.
 
 Recovery, deployment and full-capacity benchmarking remain deferred. Do not request an
 Ubuntu recovery target or continue I10-03. Clinical/health-claim completion requires
@@ -220,6 +245,13 @@ after the operator restart on 2026-09-22. If interrupted after creation, reconci
 test authorization before rerunning. To include a simulated first-submit network failure,
 also set `$env:E2E_HEALTH_SUBMIT_RETRY = '1'`; the harness verifies one create and two submit
 attempts with identical request URL and key. Remove that environment variable after the run.
+
+Set `$env:E2E_HEALTH_CORRECTION = '1'` for the real return/correct/resubmit extension:
+the reviewer returns the request, the provider changes quantity from one to two, the test
+checks immutable version 1, and the reviewer approves version 2. It creates one synthetic
+request per run. Remove the variable afterward. Without the authorization extension it
+does not reserve any entitlement. `request-selection-ui.spec.ts` reads existing demo data
+and intercepts ambiguity/failure replies; it creates no requests or enrollments.
 
 `pnpm e2e authorization-ui.spec.ts --project chromium --trace off` reuses the same existing
 UI but intercepts only authorization responses; it reads an existing approved demo request

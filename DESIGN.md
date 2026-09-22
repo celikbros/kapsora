@@ -385,6 +385,16 @@ fix it. A rejected one is finished: it says why, and offers nothing but a new re
 Giving both the same red banner is how a correctable mistake gets read as a final refusal —
 and the person who reads it that way stops, which is the whole cost.
 
+**A provider chooses the entitlement and corrects the same request.** When several
+enrollments fit, the form asks explicitly for a plan, showing its code and validity dates;
+the candidates remain available after selection, and sending waits for a resolved check
+for the current choice. A returned request keeps its reason above the correction fields.
+The provider saves the service date and lines before submitting that same request again.
+Invalid fields explain the correction beside the input; quantities and amounts accept a
+decimal comma by normalizing the string to a dot. A stale version or uncertain save locks
+editing and offers an explicit reload, preserving local input until then. An uncertain
+submission keeps the editor frozen and retries with the same key and saved version.
+
 **A state is shown as it is, never as what it is about to be.** A file being scanned says
 "taranıyor" with a spinner; it does not say "yüklendi" because the upload finished. The
 download appears only where the server says `downloadable`, and where it is absent the

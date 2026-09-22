@@ -114,9 +114,8 @@ describe('provider portal', () => {
 
       const user = userEvent.setup();
       // The member by name: two letters narrow the list, a click picks. A person with exactly
-      // one active enrollment: with two, the check answers ENROLLMENT_MULTIPLE and the desk
-      // cannot choose, because it may read no enrollments — real, shown as the server said it,
-      // and not this flow.
+      // one active enrollment. The multiple-candidate path is covered in requestFlow.test.tsx;
+      // this case preserves direct single-plan submission.
       const person = api.world.people.find(
         (p) =>
           p.tenantId === api.world.tenants.find((t) => t.code === 'DEMO_A')!.id &&

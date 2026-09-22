@@ -131,8 +131,8 @@ evidence; race, duplicate-delivery and ledger invariants may use focused databas
 | ID | Scenario | Stage | State |
 | --- | --- | --- | --- |
 | H01 | Provider finds a member, selects service/enrollment and gets the correct eligibility result | PC-02 | Partial: single-enrollment browser path passed |
-| H02 | Invalid date/enrollment or insufficient balance is explained; ambiguous enrollment is selectable | PC-02 | Partial: insufficient-quantity refusal passed; dates/ambiguity pending |
-| H03 | Automatic/manual request decision and return/correct/resubmit reach the provider | PC-02 | Partial: manual medical approval and provider follow-up passed; automatic/return paths pending |
+| H02 | Invalid date/enrollment or insufficient balance is explained; ambiguous enrollment is selectable | PC-02 | Partial: insufficient quantity and candidate-selection UI passed; real dates/ambiguity fixture pending |
+| H03 | Automatic/manual request decision and return/correct/resubmit reach the provider | PC-02 | Partial: live medical approval and return/correct/resubmit passed; automatic/document gates pending |
 | H04 | Authorization/fulfillment and exact entitlement effects agree; retries do not duplicate | PC-02 | Partial: mapped ledger regressions and live reservation/provider/cancel pass; remaining fulfilment gates open |
 | H05 | Same episode reaches case, encounter and valid diagnosis | PC-03 | Pending |
 | H06 | Browser-uploaded evidence is scanned CLEAN; missing/unsafe evidence cannot pass submission | PC-03 | Pending |
@@ -220,7 +220,7 @@ backend change is concrete and locally checked.
 | --- | --- | --- |
 | Import and initial health request/medical approval are verified; remaining health chain is not | Two live import runs and the new real health-entry regression | Preserve regressions; close remaining H01–H15 gates |
 | Provider catalog 403 fixed; broader mock billing grants still differ from real clinical staff | Live reproduction; migration 000050 and provisioning fix; positive/negative role tests and browser catalog 200 | Catalog portion of PC-02.2 verified; retain separate billing role and reconcile remaining mock drift |
-| Request form does not offer eligibility enrollment candidates; returned-request page lacks correction/resubmit controls | Source inspection of provider request pages; live behavior still to reproduce | PC-02.4/5 reproduce and close actual workflow gaps |
+| Candidate selection and draft correction/resubmit are implemented | Live return/correction passed; ambiguity browser responses intercepted | Finish real multiple-enrollment fixture and remaining PC-02.4/5 gates |
 | Generic request approval has no authorization handoff in the request screens | Live approved request has zero authorizations on API inspection; source has a separate createAuthorization command which reserves entitlement, and no generic approval consumer creates it | PC-02.6 implement an explicit permitted handoff and verify reservation/retry/release effects |
 | Session quantity capped the quote as money; local correction verified | Live PHYSIO_SESSION quote: contract 400 TRY, payer 20, member 380, PARTIAL/BALANCE_INSUFFICIENT; seeded entitlement is 20 SESSION. Resolver passes AvailableQuantity into the money cap | Unit-aware pricing and mapping regression pass locally and live after restart; continue authorization |
 | Generic authorization still uses service-code fallback rather than published mappings | Source inspection of `accountsFor`/`holdFor`: mapping factor is not applied to the reservation; current demo uses matching codes/factor 1 | Verify and correct mapping/reserve/consume units before broader authorization acceptance; adding a button alone is insufficient |
@@ -369,6 +369,41 @@ rule changes or genuinely new access decisions are brought back with a concrete 
   candidates; provider `RequestPage` shows return reasons without correction/resubmit
   controls. Complete these PC-02.4/PC-02.5 paths before PC-03 outpatient care. The successful
   test holds were cancelled deliberately; no live clinical consumption is claimed.
+
+### PC-02 plan selection and returned-request correction — 2026-09-22
+
+- **Selection:** provider new-request keeps the eligibility candidate list, requires an
+  explicit choice when ambiguous and rechecks the selected enrollment before enabling
+  submission. Person/service/date changes discard the previous choice; pending, failed,
+  missing-data and ineligible results offer no submit. REVIEW_REQUIRED at result level
+  is displayed as review, including ambiguity, rather than a final refusal.
+- **Correction:** DRAFT request detail exposes the existing API's header and whole-line
+  editing commands, reviewer's return explanation, save then submit. Roles still gate
+  editing/submitting separately. Saved ETags chain across header/line writes; partial or
+  uncertain saves require an explicit current-record reload. Background changes do not
+  overwrite unsaved input. An uncertain submit retains its key and freezes edits. A known
+  draft can be reopened from the list after reload; no browser storage of draft/PII was added.
+- **Live evidence:** `E2E_HEALTH_CORRECTION=1` real browser test passed (9.0 s total).
+  `SR-20260922-ZPT6KIUF` travelled provider submit → medical return → provider save/resubmit
+  → medical approval → provider follow-up. Exactly one request was created; version 1 kept
+  quantity 1 while version 2 had quantity 2. No hold/case/claim was created by this run.
+- **UI/negative evidence:** 12 focused tests pass: two valid mock enrollment candidates,
+  explicit second choice, delayed and failed recheck, same-ID correction, unchanged history,
+  same-key submit retry and actual mock ETag refusal with explicit reload. The separate
+  `request-selection-ui.spec.ts` passed (3.8 s) against the running UI, intercepting only
+  ambiguity and failure replies while rechecking the valid choice against the real API.
+  It creates no enrollment/request and is not real multi-enrollment database acceptance.
+  Both changed screens were captured without page overflow at 390px and 1440px.
+- **Delivery:** frontend-only; schema 51, no permission/contract changes or new dependency.
+  Provider typecheck, lint and production build pass (existing Vite chunk-size advisory).
+  Prior commit `8589fc7` has all six CI checks green. Full frontend suite passed (494 tests);
+  after the field-validation review fix, all four request-flow tests, provider build/typecheck
+  and lint passed. The live correction run passed again (9.9 s), including invalid-field
+  feedback. The review fix adds accessible field errors and string-only comma decimal
+  normalization.
+- **Next:** real multi-enrollment/invalid-date fixtures, automatic/document/negative
+  lifecycle gates and live fulfilment/consumption. H02/H03 and PC-02 remain partial;
+  PC-03 clinical acceptance is still queued.
 
 ### Progress, evidence and timing
 
