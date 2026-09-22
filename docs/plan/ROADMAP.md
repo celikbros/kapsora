@@ -34,9 +34,9 @@ the existing work-package contracts rather than starting their implementation ag
 - The first live health-entry browser path passed on 2026-09-22: provider eligibility and
   submission, medical approval, then provider follow-up. This is partial PC-02 evidence,
   not complete health-chain acceptance. See the checkpoint below.
-- The quantity/money pricing correction passes local regression; live confirmation awaits
-  the operator's API restart. Next verify it, then complete authorization and close enrollment
-  choice, request correction and retry coverage.
+- Quantity/money pricing passes local regression and live confirmation after the operator's
+  2026-09-22 restart. All six CI jobs passed on code head `9b50aa7`. Next complete authorization
+  and close enrollment choice, request correction and retry coverage.
 
 | Order | Stage | Current status | Depends on | Result required to close |
 | --- | --- | --- | --- | --- |
@@ -222,7 +222,7 @@ backend change is concrete and locally checked.
 | Provider catalog 403 fixed; broader mock billing grants still differ from real clinical staff | Live reproduction; migration 000050 and provisioning fix; positive/negative role tests and browser catalog 200 | Catalog portion of PC-02.2 verified; retain separate billing role and reconcile remaining mock drift |
 | Request form does not offer eligibility enrollment candidates; returned-request page lacks correction/resubmit controls | Source inspection of provider request pages; live behavior still to reproduce | PC-02.4/5 reproduce and close actual workflow gaps |
 | Generic request approval has no authorization handoff in the request screens | Live approved request has zero authorizations on API inspection; source has a separate createAuthorization command which reserves entitlement, and no generic approval consumer creates it | PC-02.6 implement an explicit permitted handoff and verify reservation/retry/release effects |
-| Session quantity capped the quote as money; local correction verified | Live PHYSIO_SESSION quote: contract 400 TRY, payer 20, member 380, PARTIAL/BALANCE_INSUFFICIENT; seeded entitlement is 20 SESSION. Resolver passes AvailableQuantity into the money cap | Unit-aware pricing and mapping regression now pass locally; operator restart/live confirmation pending, then continue authorization |
+| Session quantity capped the quote as money; local correction verified | Live PHYSIO_SESSION quote: contract 400 TRY, payer 20, member 380, PARTIAL/BALANCE_INSUFFICIENT; seeded entitlement is 20 SESSION. Resolver passes AvailableQuantity into the money cap | Unit-aware pricing and mapping regression pass locally and live after restart; continue authorization |
 | Generic authorization still uses service-code fallback rather than published mappings | Source inspection of `accountsFor`/`holdFor`: mapping factor is not applied to the reservation; current demo uses matching codes/factor 1 | Verify and correct mapping/reserve/consume units before broader authorization acceptance; adding a button alone is insufficient |
 | Checked-in seed lacks admission service; seeded CLEAN report bypasses upload scanning | `cmd/seed/business.go`, `businessplan.go`, `staffmember.go`; current DB configuration not audited | PC-04.1 admission fixtures; PC-03.2 genuine upload/scan |
 | Dedicated provider/member projects still use their test ports; single-door provider/backoffice handoff now works | `real-health.spec.ts` runs under chromium with explicit `/portal/` routes and logout between actors | PC-02.3 partially verified; member handoff and dedicated-project URL generalization remain pending |
@@ -289,9 +289,21 @@ rule changes or genuinely new access decisions are brought back with a concrete 
   Go vet, scoped golangci-lint (0 issues), API build and diff checks pass.
 - **Delivery boundary:** no migration, new dependency or wire shape change. Existing stored
   quotes and idempotent replays retain their original immutable result; use a new quote to
-  verify the correction. Local schema remains 50. Live confirmation awaits the operator's
-  restart of `dev.ps1 up`; do not describe the running old API as already fixed.
-- **Next:** confirm a new live quote, then implement the authorization handoff together with
+  verify the correction. Local schema remains 50. The operator restarted `dev.ps1 up`
+  at 11:18 local time; the new live quote below verifies the running correction.
+- **Live confirmation:** on code head `9b50aa7`, a new PHYSIO_SESSION quote with quantity 1
+  and HEALTH context only (no entitlement-code hint) returns QUOTED, contract 400 TRY,
+  payer 400, member 0. Quote ID: `01a0c837-774a-7900-97d9-108a745248d5`.
+  Quantity 100000 returns NOT_ELIGIBLE/payer 0. Two lines of 11 share the existing 20-session
+  balance: the first is QUOTED, the second NOT_ELIGIBLE/BALANCE_INSUFFICIENT, total PARTIAL.
+  Every account's available/reserved/consumed/expired/total and row version is identical
+  before and after these three new quotes. This was checked through supported APIs.
+  The operator-server browser regression passed again (one test, 8.1 s total) for provider
+  eligibility/submission, medical approval and provider follow-up. All six CI jobs passed
+  on `9b50aa7`. The displayed terminal backlog was separately classified read-only:
+  seven invoice.submitted and two settlement.approved pending events, all deferred and none
+  due at inspection; retain these for PC-05 rather than marking them processed.
+- **Next:** implement the authorization handoff together with
   mapping-aware reservation/consumption and retry/release evidence. Source review found
   generic authorization still assumes matching service/entitlement codes and factor 1.
   No reservation UI or complete H04 acceptance is delivered by this pricing correction.

@@ -48,9 +48,13 @@ PROVIDER_STAFF in current/new tenants; no catalog maintenance or billing grant w
 PC-02 is not complete. The quantity-versus-money quote fix now passes local pricing,
 HTTP and eligibility regression tests: monetary entitlements cap money; session/night/count
 entitlements gate service quantity, including mapping factors and shared per-quote pools.
-It requires the operator to restart `dev.ps1 up` before live confirmation; no migration is
-needed. Next verify the live quote, then complete the explicit authorization handoff and
-its mapping/quantity semantics, enrollment choice, return/correction and retry paths.
+The operator restarted `dev.ps1 up` on 2026-09-22 and live confirmation passed: the 400 TRY
+physiotherapy quote is now payer 400/member 0. Excess quantity and shared-balance refusal
+pass, and quote calls leave account balances/row versions unchanged. The real health
+request/medical-approval browser regression passed again (8.1 s total); all six CI checks
+passed on pricing code head `9b50aa7`. No migration or another restart is needed for this
+checkpoint. Next complete the explicit authorization handoff and its mapping/quantity
+semantics, enrollment choice, return/correction and retry paths.
 See the roadmap's dated checkpoints for evidence and remaining gates.
 
 Recovery, deployment and full-capacity benchmarking remain deferred. Do not request an
@@ -104,7 +108,10 @@ signed acceptance cannot.
 - The 2026-09-22 startup log reports no worker handler for `invoice.submitted` and
   `settlement.approved`; those events are deferred one hour. Member-import worker
   processing passed independently. Track these warnings in the invoice/payment flow
-  review; this import correction does not resolve them.
+  review; this import correction does not resolve them. After the pricing restart on
+  2026-09-22, a read-only aggregate confirmed the nine pending rows are seven
+  `invoice.submitted` and two `settlement.approved`, all deferred (none currently due).
+  They were not deleted or marked as processed.
 
 - The mock world's `SPONSOR_HR_PERMISSIONS` now matches the real role, including
   `accommodation.property.read`; the mock test compares it with `roles.go`. Keep both
