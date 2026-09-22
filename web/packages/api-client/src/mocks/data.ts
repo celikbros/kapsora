@@ -1554,6 +1554,7 @@ const MEDICAL_REVIEWER_PERMISSIONS = [
   'member.read',
   'service_request.read',
   'service_request.review',
+  'authorization.manage',
   'health.case.read',
   'health.clinical.read',
   'health.sensitive.read',
@@ -1926,8 +1927,8 @@ export interface StoredClaimAdjustment {
 }
 
 /**
- * The hold a claim draws on, as much of it as the claim needs. WP-I4-02 has no mock surface of
- * its own — nothing in this file serves /api/v1/authorizations — so this is the smallest honest
+ * The hold a claim draws on, as much of it as the claim needs. The request authorization mock is separate from
+ * these historical claim fixtures, which retain their own small consumption
  * stand-in: an approved quantity per service and what has been drawn from it. It exists so the
  * one rule the claim owns can be exercised, which is that an over-consumption is an exception
  * and **nothing moves**, not even the part that was left.
@@ -5242,8 +5243,8 @@ export function buildWorld(
   const claimLineDecisions: StoredClaimLineDecision[] = [];
   const claimAdjustments: StoredClaimAdjustment[] = [];
 
-  // The hold two of the claims draw on. WP-I4-02 has no mock surface, so this is the claim's
-  // own minimal stand-in; see StoredClaimAuthorization.
+  // Historical hold used by two claim fixtures, independent of the request-screen mock;
+  // see StoredClaimAuthorization.
   const claimAuthorizations: StoredClaimAuthorization[] = [
     {
       id: nextId(-30 * 86_400_000),

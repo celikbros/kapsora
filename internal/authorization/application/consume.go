@@ -106,8 +106,12 @@ func (s *Service) Consume(ctx context.Context, tx pgx.Tx, in ConsumeInput) (Cons
 		if item.ReservationID == nil {
 			return ConsumeResult{}, ErrAccountNotFound
 		}
+		draw, err := entitlementConsumption(item, in.Quantity)
+		if err != nil {
+			return ConsumeResult{}, err
+		}
 		if _, err := s.ledger.Consume(ctx, tx, ledger.MovementInput{
-			TenantID: in.TenantID, ReservationID: *item.ReservationID, Quantity: in.Quantity,
+			TenantID: in.TenantID, ReservationID: *item.ReservationID, Quantity: draw,
 			Key: in.Key, ReasonCode: in.ReasonCode, ActorID: in.ActorID,
 		}); err != nil {
 			if errors.Is(err, ledger.ErrIdempotentReplay) {

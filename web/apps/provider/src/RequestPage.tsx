@@ -3,6 +3,7 @@ import { usePermission } from '@kapsora/auth';
 import { Badge, Breadcrumb, Button, Card, PageHeader, ProblemAlert, Spinner } from '@kapsora/ui';
 import { Link, useParams } from '@tanstack/react-router';
 
+import { RequestAuthorization } from './RequestAuthorization';
 import { DocumentsPanel } from './documents';
 import { useRequest, useServiceName } from './queries';
 import { problemOf } from './problems';
@@ -114,6 +115,9 @@ export function RequestPage() {
             ) : null}
           </dl>
         </Card>
+        {request.status === 'APPROVED' || request.status === 'PARTIALLY_APPROVED' || closed ? (
+          <RequestAuthorization key={request.id} requestId={request.id} />
+        ) : null}
         <Card>
           <h2 className="text-base font-semibold">{t('provider.upload.title')}</h2>
           {waiting ? (

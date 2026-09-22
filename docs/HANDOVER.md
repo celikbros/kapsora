@@ -52,9 +52,25 @@ The operator restarted `dev.ps1 up` on 2026-09-22 and live confirmation passed: 
 physiotherapy quote is now payer 400/member 0. Excess quantity and shared-balance refusal
 pass, and quote calls leave account balances/row versions unchanged. The real health
 request/medical-approval browser regression passed again (8.1 s total); all six CI checks
-passed on pricing code head `9b50aa7`. No migration or another restart is needed for this
-checkpoint. Next complete the explicit authorization handoff and its mapping/quantity
-semantics, enrollment choice, return/correction and retry paths.
+passed on pricing code head `9b50aa7`.
+
+The next PC-02 authorization slice is implemented and locally tested. The approved request
+now exposes an explicit "Hak ayır" action with an operator-chosen expiry; the provider sees
+the resulting reference/status. Published-plan mappings and their factors govern the hold,
+fulfilment/claim consumption and unused release. Migration 000051 stores the factor per item;
+old rows default to 1 to preserve their actual historical ledger units. Cancel/expiry read the
+remaining hold after earlier partial release, and create replays still enforce provider scope.
+Authorization application/HTTP tests, fractional rounding, clean migration, 486 frontend tests,
+typecheck, lint and all app builds pass. The intercepted-response UI browser test passes
+validation, identical uncertain retries, stale-list success, list failure and provider read-only
+states; this is not live-ledger proof. The full database test package hit its 10-minute timeout;
+the focused clean migration test passed separately.
+
+**Restart checkpoint:** local schema is 51, dirty=false; the operator-owned API/worker/scheduler
+still need `dev.ps1 up` restarted to load this Go change. No server was restarted by the agent.
+After restart, run the opt-in real authorization flow below (including cancellation of its
+synthetic hold). H04 and PC-02 remain open until this live handoff and the remaining enrollment,
+return/correction and retry gates pass.
 See the roadmap's dated checkpoints for evidence and remaining gates.
 
 Recovery, deployment and full-capacity benchmarking remain deferred. Do not request an
@@ -63,7 +79,7 @@ PC-02–PC-04 to pass; the health episode's local financial journey closes at PC
 
 **M1 through M7 are recorded as DONE for original implementation delivery.** This does
 not certify the current real-browser health chain; its acceptance is tracked separately
-in PC-02–PC-04. Schema is at migration `000050` (`db/migrations/`). Every
+in PC-02–PC-04. Schema is at migration `000051` (`db/migrations/`). Every
 milestone's exit criteria were verified by the integrator before closing (see `docs/plan/ROADMAP.md`
 § Status log for the full narrative, milestone by milestone — it is long, but it is the real
 history of every non-obvious decision, and reading the last 10–15 entries will save you from
@@ -88,7 +104,7 @@ PROGRAM_MANAGER role in current and new tenants (2026-09-21). Migration 000049 u
 existing system roles; provisioning supplies the same permission to new tenants. Custom
 roles and other standard roles are unchanged. Password step-up remains required.
 Real PostgreSQL/HTTP integration tests cover upload, apply, worker redelivery and duplicate
-refusal. The local database is now at 50 (dirty=false). The first live browser run found an upload retry
+refusal. The local database is now at 51 (dirty=false). The first live browser run found an upload retry
 defect after password step-up: the challenge was cached and the multipart boundary changed
 the request hash. Import authorization now runs before idempotency (including replays),
 and multipart hashing ignores only its transport boundary. Integration tests cover the
@@ -136,7 +152,7 @@ cp .env.example .env              # fill CHANGE_ME with your local PostgreSQL cr
 make tools                        # sqlc, oapi-codegen, oasdiff, golangci-lint, govulncheck
 make native-install && make native-up   # MinIO, ClamAV, Mailpit as native processes
 make db-init                      # role kapsora_app + database kapsora
-make migrate-up                   # schema to 000050
+make migrate-up                   # schema to 000051
 make test-unit && make test-db    # should both be green before you write anything
 ```
 
@@ -175,6 +191,25 @@ provider and medical reviewer. Each run creates and approves one synthetic reque
 DEMO_A. It checks service access, eligible/insufficient quantity, submission, medical
 approval and provider follow-up. It creates no authorization, case or claim and does not
 certify reservation, consumption or financial correctness. Member-app acceptance is pending.
+
+After the authorization-code restart, enable the opt-in extension of that same real flow:
+
+```powershell
+$env:E2E_HEALTH_AUTHORIZATION = '1'
+pnpm e2e real-health.spec.ts --project chromium --trace off
+Remove-Item Env:E2E_HEALTH_AUTHORIZATION
+```
+
+This creates one real synthetic hold, verifies the provider sees it, then cancels it through
+the public API as the medical reviewer to return the unused entitlement. Its first live run
+is pending the operator restart. If interrupted after creation, use the attached authorization
+reference to reconcile the hold before rerunning.
+
+`pnpm e2e authorization-ui.spec.ts --project chromium --trace off` reuses the same existing
+UI but intercepts only authorization responses; it reads an existing approved demo request
+and writes no real hold. It checks uncertain retry, stale-read success, invalid expiry,
+read failure, desktop/mobile layout and provider read-only behavior.
+
 
 **A backend-free demo** (in-browser mock data, nothing to install): double-click
 `scripts\demo\KAPSORA-Demo-Baslat.cmd`. It opens the three apps on ports 5181–5183 against

@@ -21,6 +21,21 @@ The ledger already knows how to reserve, release and consume without double spen
 (WP-I2-03, proven under 100 concurrent reserves). This package must use it and must never
 write a balance itself.
 
+### PC-02 clarification (2026-09-22)
+
+Generic request approval changes the decision; the explicit authorization command reserves
+entitlement. The request UI now exposes that command to `authorization.manage` and shows its
+reference/status to the provider. Migration 000051 adds internal `entitlement_unit_factor`
+(positive numeric(20,6), default 1). New holds resolve the request enrollment's published plan
+on its service date, using explicit mappings before the legacy service-code convention.
+Authorization counters keep service quantities; ledger reserve/consume/release use the stored
+factor. Cumulative rounding preserves fractional holds across split delivery/release, and
+cancel/expiry release the ledger's actual remainder after a prior partial release. Historical
+rows keep factor 1, matching the units actually reserved; no retrospective balance rewrite.
+Replay reads enforce provider scope. See the current roadmap checkpoint for test evidence and
+the still-pending restarted real-system handoff; the original acceptance checklist below is
+historical, not current PC-02 certification.
+
 ## 2. Scope
 
 ### 2.1 Schema (migration 000026)

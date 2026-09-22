@@ -3751,5 +3751,25 @@
       },
       "purposeRequired": "İndirmenin amacını seçin."
     }
+  },
+  "authorization": {
+    "title": "Hak ayırma",
+    "empty": "Talep onaylandı; henüz hak ayrılmadı.",
+    "none": "Bu talep için hak ayırma kaydı yok.",
+    "providerEmpty": "Bu talep için hak ayırma kaydı yok. Talep onayı, tek başına hak ayırmaz.",
+    "deadline": "Geçerlilik sonu",
+    "futureDate": "Şimdiden sonraki bir tarih ve saat seçin.",
+    "reserve": "Hak ayır",
+    "reserving": "Hak ayrılıyor…",
+    "retry": "Hak ayırmayı yeniden dene",
+    "effect": "Onaylanan hizmetler için hak ayrılır. Bu işlem hizmet kullanımı veya ödeme kaydı oluşturmaz. Tarih ve saat yerel saat diliminizdedir.",
+    "validUntil": "Geçerlilik sonu: {{date}}",
+    "status": {
+      "ACTIVE": "Ayrıldı",
+      "PARTIALLY_USED": "Kısmen kullanıldı",
+      "USED": "Kullanıldı",
+      "EXPIRED": "Süresi doldu",
+      "CANCELLED": "İptal edildi"
+    }
   }
 }

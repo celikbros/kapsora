@@ -162,16 +162,17 @@ type AuthorizationQuery struct {
 
 // AuthorizationItemRecord is one service.authorization_item row.
 type AuthorizationItemRecord struct {
-	ID                  uuid.UUID
-	AuthorizationID     uuid.UUID
-	RequestItemID       uuid.UUID
-	ServiceDefinitionID uuid.UUID
-	ApprovedQuantity    string
-	ApprovedAmount      *string
-	MemberAmount        string
-	ReservationID       *uuid.UUID
-	ConsumedQuantity    string
-	RowVersion          int64
+	ID                    uuid.UUID
+	AuthorizationID       uuid.UUID
+	RequestItemID         uuid.UUID
+	ServiceDefinitionID   uuid.UUID
+	EntitlementUnitFactor string
+	ApprovedQuantity      string
+	ApprovedAmount        *string
+	MemberAmount          string
+	ReservationID         *uuid.UUID
+	ConsumedQuantity      string
+	RowVersion            int64
 }
 
 // Remaining is what this line still holds: what was approved less what has been
@@ -191,12 +192,13 @@ func (r AuthorizationItemRecord) Remaining() (benefitdomain.Quantity, error) {
 
 // NewAuthorizationItemRow is one approved line of a new authorization.
 type NewAuthorizationItemRow struct {
-	AuthorizationID     uuid.UUID
-	RequestItemID       uuid.UUID
-	ServiceDefinitionID uuid.UUID
-	ApprovedQuantity    benefitdomain.Quantity
-	ApprovedAmount      *benefitdomain.Quantity
-	MemberAmount        benefitdomain.Quantity
+	AuthorizationID       uuid.UUID
+	RequestItemID         uuid.UUID
+	ServiceDefinitionID   uuid.UUID
+	EntitlementUnitFactor benefitdomain.Quantity
+	ApprovedQuantity      benefitdomain.Quantity
+	ApprovedAmount        *benefitdomain.Quantity
+	MemberAmount          benefitdomain.Quantity
 }
 
 // FulfilmentRecord is one service.fulfilment row.
@@ -319,6 +321,12 @@ type RequestItemRecord struct {
 	CurrencyCode        *string
 }
 
+// EntitlementTarget binds a service to a definition in the request's published plan.
+type EntitlementTarget struct {
+	DefinitionID uuid.UUID
+	Factor       benefitdomain.Quantity
+}
+
 // Repository is the persistence port; every method runs inside the caller's transaction,
 // which db.WithTenantTx has already bound to the tenant so RLS is active. The provider
 // boundary is a repository concern too: the scope is passed down rather than checked
@@ -327,6 +335,8 @@ type RequestItemRecord struct {
 // Nothing here writes benefit.entitlement_account or benefit.entitlement_ledger. The only
 // entitlement column this package's SQL touches is the reservation id it stores on a line.
 type Repository interface {
+	ReservationRemaining(ctx context.Context, tx pgx.Tx, tenantID, reservationID uuid.UUID) (benefitdomain.Quantity, error)
+	ResolveEntitlements(ctx context.Context, tx pgx.Tx, tenantID, enrollmentID uuid.UUID, day time.Time, services []uuid.UUID) (map[uuid.UUID]EntitlementTarget, error)
 	CreateAuthorization(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, in NewAuthorizationRow) (AuthorizationRecord, error)
 	GetAuthorization(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID, scope Scope) (AuthorizationRecord, error)
 	// LockAuthorization reads the row FOR UPDATE, so two commands on one authorization

@@ -2010,6 +2010,7 @@ type ServiceAuthorizationItem struct {
 	CreatedAt                time.Time
 	UpdatedAt                time.Time
 	RowVersion               int64
+	EntitlementUnitFactor    pgtype.Numeric
 }
 
 type ServiceCancellation struct {

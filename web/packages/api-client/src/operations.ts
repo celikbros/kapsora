@@ -1,3 +1,4 @@
+import { authorizationOperations } from './authorization';
 import { benefitOperations } from './benefit';
 import { catalogOperations } from './catalog';
 import type { KapsoraClient } from './client';
@@ -152,6 +153,7 @@ export function createOperations(client: KapsoraClient) {
     rules: ruleOperations(client),
     pricing: pricingOperations(client),
     requests: serviceRequestOperations(client),
+    authorizations: authorizationOperations(client),
     worklist: workflowOperations(client),
     documents: documentOperations(client),
     notifications: notificationOperations(client),

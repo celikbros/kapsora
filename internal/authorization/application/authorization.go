@@ -148,7 +148,7 @@ func (s *Service) create(ctx context.Context, tx pgx.Tx, rc identity.RequestCont
 ) (AuthorizationView, error) {
 	scope := scopeOf(rc)
 	if existing, err := s.repo.GetAuthorizationByKey(ctx, tx, rc.TenantID, in.IdempotencyKey); err == nil {
-		return s.loadAuthorization(ctx, tx, rc.TenantID, existing)
+		return s.reloadAuthorization(ctx, tx, rc.TenantID, existing.ID, scope)
 	} else if !errors.Is(err, ErrAuthorizationNotFound) {
 		return AuthorizationView{}, err
 	}
@@ -202,7 +202,8 @@ func (s *Service) create(ctx context.Context, tx pgx.Tx, rc identity.RequestCont
 			AuthorizationID: record.ID, RequestItemID: line.item.ID,
 			ServiceDefinitionID: line.item.ServiceDefinitionID,
 			ApprovedQuantity:    line.quantity, ApprovedAmount: line.amount,
-			MemberAmount: memberAmountOf(in.MemberAmounts, line.item.LineNo),
+			EntitlementUnitFactor: line.factor,
+			MemberAmount:          memberAmountOf(in.MemberAmounts, line.item.LineNo),
 		})
 		if err != nil {
 			return AuthorizationView{}, err
@@ -265,7 +266,7 @@ func (s *Service) holdFor(ctx context.Context, tx pgx.Tx, rc identity.RequestCon
 	// authorization may draw on the same account, and the ledger's uniqueness on
 	// (reference type, reference id, account) would fold them into a single hold.
 	reservation, err := s.ledger.Reserve(ctx, tx, ledger.ReserveInput{
-		TenantID: rc.TenantID, AccountID: accountID, Quantity: line.quantity,
+		TenantID: rc.TenantID, AccountID: accountID, Quantity: line.quantity.Mul(line.factor),
 		ReferenceType: ledger.ReferenceAuthorization, ReferenceID: itemID,
 		Key: reserveKey(itemID), ReasonCode: "AUTHORIZATION",
 		ActorID: rc.Principal.ActorID,
@@ -284,7 +285,7 @@ func (s *Service) replay(ctx context.Context, rc identity.RequestContext, key st
 		if err != nil {
 			return err
 		}
-		view, err := s.loadAuthorization(ctx, tx, rc.TenantID, record)
+		view, err := s.reloadAuthorization(ctx, tx, rc.TenantID, record.ID, scopeOf(rc))
 		out = view
 		return err
 	})
@@ -320,6 +321,7 @@ func (s *Service) createWithReference(ctx context.Context, tx pgx.Tx, rc identit
 type approvedLine struct {
 	item     RequestItemRecord
 	quantity benefitdomain.Quantity
+	factor   benefitdomain.Quantity
 	amount   *benefitdomain.Quantity
 }
 
@@ -342,7 +344,7 @@ func (s *Service) approvedLines(ctx context.Context, tx pgx.Tx, tenantID uuid.UU
 		if err != nil || !quantity.IsPositive() {
 			continue
 		}
-		line := approvedLine{item: item, quantity: quantity}
+		line := approvedLine{item: item, quantity: quantity, factor: benefitdomain.MustQuantity("1")}
 		if item.ApprovedAmount != "" {
 			amount, err := benefitdomain.ParseQuantity(item.ApprovedAmount)
 			if err != nil {
@@ -358,11 +360,9 @@ func (s *Service) approvedLines(ctx context.Context, tx pgx.Tx, tenantID uuid.UU
 	return out, nil
 }
 
-// accountsFor maps every line onto the entitlement account it will be held against. The
-// convention is the one WP-I4-01's submit gate already uses: the service definition's own
-// code names the entitlement, because there is no catalogue-to-entitlement table yet. A
-// line that maps onto nothing fails the whole authorization rather than being promised
-// against a balance nobody chose.
+// accountsFor selects the exact definition in the request's plan, then a spendable
+// account for that enrollment (or its principal's shared account). Service codes are
+// only a legacy fallback when the plan has no explicit mapping for the service.
 func (s *Service) accountsFor(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
 	request RequestRecord, lines []approvedLine,
 ) (map[uuid.UUID]uuid.UUID, error) {
@@ -370,7 +370,7 @@ func (s *Service) accountsFor(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID
 	for _, line := range lines {
 		ids = append(ids, line.item.ServiceDefinitionID)
 	}
-	codes, err := s.repo.ServiceDefinitionCodes(ctx, tx, tenantID, ids)
+	targets, err := s.repo.ResolveEntitlements(ctx, tx, tenantID, request.EnrollmentID, request.ServiceDate, ids)
 	if err != nil {
 		return nil, err
 	}
@@ -378,19 +378,29 @@ func (s *Service) accountsFor(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID
 	if err != nil {
 		return nil, err
 	}
-	byCode := make(map[string]uuid.UUID, len(accounts))
+	byDefinition := make(map[uuid.UUID]ledger.Account)
 	for _, account := range accounts {
-		if _, seen := byCode[account.Definition.Code]; !seen {
-			byCode[account.Definition.Code] = account.ID
+		if account.Status != ledger.AccountOpen || (account.EnrollmentID != request.EnrollmentID && !account.Shared) {
+			continue
+		}
+		best, ok := byDefinition[account.Definition.ID]
+		cmp := account.Balances.Available.Cmp(best.Balances.Available)
+		if !ok || cmp > 0 || (cmp == 0 && (best.Shared && !account.Shared || best.Shared == account.Shared && account.ID.String() < best.ID.String())) {
+			byDefinition[account.Definition.ID] = account
 		}
 	}
 	out := make(map[uuid.UUID]uuid.UUID, len(lines))
-	for _, line := range lines {
-		accountID, ok := byCode[codes[line.item.ServiceDefinitionID]]
+	for i := range lines {
+		target, ok := targets[lines[i].item.ServiceDefinitionID]
 		if !ok {
 			return nil, ErrAccountNotFound
 		}
-		out[line.item.ID] = accountID
+		account, ok := byDefinition[target.DefinitionID]
+		if !ok {
+			return nil, ErrAccountNotFound
+		}
+		lines[i].factor = target.Factor
+		out[lines[i].item.ID] = account.ID
 	}
 	return out, nil
 }
@@ -505,8 +515,22 @@ func (s *Service) releaseHolds(ctx context.Context, tx pgx.Tx, tenantID, actorID
 		if !remaining.IsPositive() {
 			continue
 		}
+		draw, err := entitlementConsumption(item, remaining)
+		if err != nil {
+			return benefitdomain.Quantity{}, err
+		}
+		// A discharge may already have returned part of this hold. Cancellation and
+		// expiry release only what the ledger still holds, in entitlement units.
+		held, err := s.repo.ReservationRemaining(ctx, tx, tenantID, *item.ReservationID)
+		if err != nil {
+			return benefitdomain.Quantity{}, err
+		}
+		draw = draw.Min(held)
+		if !draw.IsPositive() {
+			continue
+		}
 		_, err = s.ledger.Release(ctx, tx, ledger.MovementInput{
-			TenantID: tenantID, ReservationID: *item.ReservationID, Quantity: remaining,
+			TenantID: tenantID, ReservationID: *item.ReservationID, Quantity: draw,
 			Key: releaseKey(item.ID, reason), ReasonCode: reason, ActorID: actorID,
 		})
 		switch {

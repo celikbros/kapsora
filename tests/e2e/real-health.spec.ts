@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import type { Authorization } from '@kapsora/api-client';
 
 const REAL = process.env['E2E_REAL_API'] === '1';
 const EXISTING = process.env['E2E_EXISTING_UI_URL'];
@@ -10,6 +11,7 @@ test('real health request: clinical provider eligibility, medical decision and p
   page,
 }) => {
   test.setTimeout(60_000);
+  let authorization: Authorization | undefined;
   const portal = new URL('/portal/', EXISTING!).href;
   await page.goto(portal);
   await page.getByLabel(/Kullanıcı adı/).fill('provider.a');
@@ -91,6 +93,29 @@ test('real health request: clinical provider eligibility, medical decision and p
   expect(approved.status()).toBe(200);
   expect((await approved.json()).status).toBe('APPROVED');
   await expect(page.getByTestId('request-status')).toHaveText('Onaylandı');
+  if (process.env['E2E_HEALTH_AUTHORIZATION'] === '1') {
+    const panel = page.getByTestId('request-authorization');
+    const deadline = new Date(Date.now() + 2 * 86400000);
+    deadline.setMinutes(deadline.getMinutes() - deadline.getTimezoneOffset());
+    await panel.getByLabel(/Geçerlilik sonu/).fill(deadline.toISOString().slice(0, 16));
+    const reserved = page.waitForResponse(
+      (r) =>
+        new URL(r.url()).pathname === '/api/v1/authorizations' && r.request().method() === 'POST',
+    );
+    await panel.getByRole('button', { name: 'Hak ayır', exact: true }).click();
+    const result = await reserved;
+    expect(result.status()).toBe(201);
+    authorization = (await result.json()) as Authorization;
+    expect(authorization.status).toBe('ACTIVE');
+    expect(authorization.requestId).toBe(request.id);
+    expect(authorization.items[0]?.entitlementReservationId).toBeTruthy();
+    await expect(panel.getByText(authorization.reference, { exact: true })).toBeVisible();
+    await expect(panel.getByRole('button', { name: 'Hak ayır', exact: true })).toHaveCount(0);
+    await test.info().attach('real-authorization', {
+      body: JSON.stringify({ reference: authorization.reference, status: authorization.status }),
+      contentType: 'application/json',
+    });
+  }
   await page.getByRole('button', { name: 'Kullanıcı menüsü', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Çıkış yap', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Oturum kapatıldı', exact: true })).toBeVisible();
@@ -102,7 +127,49 @@ test('real health request: clinical provider eligibility, medical decision and p
   await expect(page.getByRole('heading', { name: request.reference, exact: true })).toBeVisible();
   await expect(page.getByRole('definition').filter({ hasText: /^Onaylandı$/ })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Vaka aç', exact: true })).toBeVisible();
+  if (authorization) {
+    const panel = page.getByTestId('request-authorization');
+    await expect(panel.getByText(authorization.reference, { exact: true })).toBeVisible();
+    await expect(panel.getByRole('button', { name: 'Hak ayır', exact: true })).toHaveCount(0);
+  }
   await page.screenshot({ path: '.impeccable/review/health-approved-real.png', fullPage: true });
   await page.getByRole('button', { name: 'Çıkış yap', exact: true }).click();
   await expect(page.getByLabel(/Kullanıcı adı/)).toBeVisible();
+  if (authorization) {
+    // Release the synthetic hold via the public command, without direct balance edits.
+    await page.goto(new URL(`/requests/${request.id}`, EXISTING!).href);
+    await page.getByLabel(/Kullanıcı adı/).fill('doctor.a');
+    await page.getByLabel(/^Parola/).fill(PASSWORD);
+    await page.getByRole('button', { name: 'Giriş yap', exact: true }).click();
+    await expect(
+      page.getByTestId('request-authorization').getByText(authorization.reference, { exact: true }),
+    ).toBeVisible();
+    const cancelled = await page.evaluate(
+      async ({ id, rowVersion }) => {
+        const session = await (await fetch('/api/v1/session')).json();
+        const r = await fetch(`/api/v1/authorizations/${id}/cancel`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Tenant-ID': session.activeTenantId,
+            'X-Kapsora-App': 'backoffice',
+            'X-CSRF-Token': session.csrfToken,
+            'If-Match': `"${rowVersion}"`,
+            'Idempotency-Key': `health-smoke-cancel:${id}`,
+          },
+          body: JSON.stringify({ reasonCode: 'DEMO_TEST_COMPLETE' }),
+        });
+        return { status: r.status, body: await r.json() };
+      },
+      { id: authorization.id, rowVersion: authorization.rowVersion },
+    );
+    expect(cancelled.status).toBe(200);
+    expect(cancelled.body.status).toBe('CANCELLED');
+    await page.reload();
+    await expect(
+      page.getByTestId('request-authorization').getByText('İptal edildi', { exact: true }),
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'Kullanıcı menüsü', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'Çıkış yap', exact: true }).click();
+  }
 });

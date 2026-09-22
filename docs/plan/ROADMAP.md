@@ -24,7 +24,7 @@ the existing work-package contracts rather than starting their implementation ag
 
 ### Baseline and delivery sequence
 
-- Local schema: 000050 (dirty=false). API, worker, scheduler and the three apps run through the
+- Local schema: 000051 (dirty=false); authorization Go changes await operator restart. API, worker, scheduler and the three apps run through the
   operator's single door at `http://127.0.0.1:5181`; API port 8090. PostgreSQL, MinIO,
   ClamAV and Mailpit are the existing native dependencies.
 - PC-01 passed twice in the real browser on 2026-09-22 (15.8 s total). All six GitHub
@@ -133,7 +133,7 @@ evidence; race, duplicate-delivery and ledger invariants may use focused databas
 | H01 | Provider finds a member, selects service/enrollment and gets the correct eligibility result | PC-02 | Partial: single-enrollment browser path passed |
 | H02 | Invalid date/enrollment or insufficient balance is explained; ambiguous enrollment is selectable | PC-02 | Partial: insufficient-quantity refusal passed; dates/ambiguity pending |
 | H03 | Automatic/manual request decision and return/correct/resubmit reach the provider | PC-02 | Partial: manual medical approval and provider follow-up passed; automatic/return paths pending |
-| H04 | Authorization/fulfillment and exact entitlement effects agree; retries do not duplicate | PC-02 | Pending |
+| H04 | Authorization/fulfillment and exact entitlement effects agree; retries do not duplicate | PC-02 | Partial: mapped ledger regressions and intercepted UI pass; restarted real handoff pending |
 | H05 | Same episode reaches case, encounter and valid diagnosis | PC-03 | Pending |
 | H06 | Browser-uploaded evidence is scanned CLEAN; missing/unsafe evidence cannot pass submission | PC-03 | Pending |
 | H07 | Report review, coverage and immutable correction history work | PC-03 | Pending |
@@ -307,6 +307,39 @@ rule changes or genuinely new access decisions are brought back with a concrete 
   mapping-aware reservation/consumption and retry/release evidence. Source review found
   generic authorization still assumes matching service/entitlement codes and factor 1.
   No reservation UI or complete H04 acceptance is delivered by this pricing correction.
+
+### PC-02 authorization handoff — 2026-09-22
+
+- **Delivered:** approved backoffice requests have explicit entitlement reservation with a
+  required operator-selected expiry and `authorization.manage` permission. Providers see
+  reference, expiry and status. Failed reads offer no creation; uncertain submissions keep
+  the same body/key, and confirmed success survives a temporarily stale list. The mobile
+  header's theme button now hides as intended, removing the observed 390px overflow.
+- **Ledger:** resolve the selected enrollment's published plan on the service date, prefer
+  explicit service mappings to the legacy code fallback, and reserve the mapped quantity.
+  Migration 000051 stores each authorization item's factor; existing rows retain factor 1.
+  Service counters remain service quantities. Fulfilment/claim consumption and unused release
+  use entitlement units with cumulative rounding. Cancel/expiry release the actual remaining
+  hold after an earlier discharge release. Replayed creation rechecks provider scope.
+- **Evidence:** full authorization application/domain/HTTP tests pass (application 84.746 s,
+  HTTP 20.485 s), including mapping factor 2, insufficient-balance rollback, retry conservation,
+  consumption, partial unused release followed by cancel and scoped replay refusal. Fractional
+  consume/release conserves a 0.333333-unit hold. Health and claim application regressions
+  passed earlier in this slice. The clean-schema test passes at 51; the broad database package
+  exceeded its default 10-minute limit and is not reported as passed.
+- **UI evidence:** 486 frontend tests, typecheck, lint and three production builds pass.
+  `authorization-ui.spec.ts` passed (7.6 s) with intercepted authorization replies against
+  the existing UI, checking past-date refusal, frozen uncertain retry, stale-list success,
+  failed-list refusal and provider read-only states. 1440px/390px captures inspected;
+  Impeccable detector returned no findings and the delegated finish review closed as ship.
+  The original real provider-to-medical-approval flow passed again (6.4 s) after the UI change;
+  this default run creates no authorization and does not replace the pending opt-in check.
+- **Live boundary:** local migration is 51, dirty=false. Operator restart is still required;
+  `E2E_HEALTH_AUTHORIZATION=1` extends `real-health.spec.ts` with real reservation, provider
+  follow-up and cancellation of the synthetic hold. This opt-in path is prepared, not yet
+  executed against the new running Go code. No PC-02 or complete-health closure is claimed.
+- **Next:** restart/live confirmation, then enrollment selection, returned-request correction
+  and failed-submit recovery before proceeding to PC-03 outpatient care.
 
 ### Progress, evidence and timing
 

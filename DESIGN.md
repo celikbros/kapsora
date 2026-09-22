@@ -372,6 +372,13 @@ said, what a person decided, and what is still missing, in that order down the p
 opening it is reconstructing how the thing got to where it is, and a field grid makes them
 do that reconstruction themselves.
 
+**Medical approval and reserving entitlement are separate decisions.** An approved request
+keeps a distinct "Hak ayırma" section with a required operator-chosen future expiry and
+a "Hak ayır" action available only with `authorization.manage`; the provider reads only the
+reference, expiry and status. An uncertain retry keeps the same key and submitted values,
+and a successful response remains visible even while the following list is stale. A failed
+list shows its error and offers no new reservation, because unread is not empty.
+
 **Two refusals that ask for different things must not look the same.** A returned request
 is an invitation to correct something and its panel says what to fix and offers the way to
 fix it. A rejected one is finished: it says why, and offers nothing but a new request.

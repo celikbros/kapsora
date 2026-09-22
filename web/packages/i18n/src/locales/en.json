@@ -1976,5 +1976,25 @@
       },
       "purposeRequired": "Choose why you are downloading."
     }
+  },
+  "authorization": {
+    "title": "Entitlement reservation",
+    "empty": "The request is approved; entitlement has not been reserved yet.",
+    "none": "No entitlement reservation exists for this request.",
+    "providerEmpty": "No entitlement reservation exists for this request. Request approval alone does not reserve entitlement.",
+    "deadline": "Valid until",
+    "futureDate": "Choose a future date and time.",
+    "reserve": "Reserve entitlement",
+    "reserving": "Reserving entitlement…",
+    "retry": "Retry entitlement reservation",
+    "effect": "Reserves entitlement for the approved services. This does not record service delivery or payment. Dates and times use your local time zone.",
+    "validUntil": "Valid until: {{date}}",
+    "status": {
+      "ACTIVE": "Reserved",
+      "PARTIALLY_USED": "Partially used",
+      "USED": "Used",
+      "EXPIRED": "Expired",
+      "CANCELLED": "Cancelled"
+    }
   }
 }
