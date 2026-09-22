@@ -639,6 +639,21 @@
       "quantityError": "Enter a quantity greater than zero, with at most 6 decimal places; for example 1.5.",
       "amountError": "Enter a non-negative amount with at most 6 decimal places; for example 400.50.",
       "currencyError": "Enter a three-letter currency code, for example TRY."
+    },
+    "cancellation": {
+      "action": "Cancel request",
+      "confirm": "Request {{reference}} will close. Cancellation cannot be undone.",
+      "done": "Request cancelled.",
+      "reason": "Cancellation reason",
+      "choose": "Select a reason",
+      "optional": "Optional, up to 1000 characters.",
+      "changed": "The action was refused or the request changed. Load the current record to check its status.",
+      "uncertain": "The cancellation outcome could not be confirmed. Retry the same action or load the current record.",
+      "reasons": {
+        "PROVIDER_WITHDRAWN": "Request withdrawn",
+        "DUPLICATE_REQUEST": "Another request covers this service",
+        "INPUT_ERROR": "Request created in error"
+      }
     }
   },
   "health": {

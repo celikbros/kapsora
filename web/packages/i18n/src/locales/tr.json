@@ -2403,6 +2403,21 @@
       "quantityError": "Sıfırdan büyük bir miktar giriniz. En fazla 6 ondalık basamak kullanınız; örnek: 1,5.",
       "amountError": "Sıfır veya daha büyük bir tutar giriniz. En fazla 6 ondalık basamak kullanınız; örnek: 400,50.",
       "currencyError": "Üç harfli para birimi kodunu giriniz; örnek: TRY."
+    },
+    "cancellation": {
+      "action": "Talebi iptal et",
+      "confirm": "{{reference}} numaralı talep kapanacak. İptal geri alınamaz.",
+      "done": "Talep iptal edildi.",
+      "reason": "İptal gerekçesi",
+      "choose": "Gerekçe seçiniz",
+      "optional": "İsteğe bağlı, en fazla 1000 karakter.",
+      "changed": "İşlem uygulanamadı veya talep değişti. Güncel kaydı yükleyip durumunu kontrol ediniz.",
+      "uncertain": "İptalin sonucu doğrulanamadı. Aynı işlemi yeniden deneyebilir veya güncel kaydı yükleyebilirsiniz.",
+      "reasons": {
+        "PROVIDER_WITHDRAWN": "Talep geri çekildi",
+        "DUPLICATE_REQUEST": "Aynı hizmet için başka talep var",
+        "INPUT_ERROR": "Talep yanlış açıldı"
+      }
     }
   },
   "units": {

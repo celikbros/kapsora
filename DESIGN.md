@@ -395,6 +395,15 @@ decimal comma by normalizing the string to a dot. A stale version or uncertain s
 editing and offers an explicit reload, preserving local input until then. An uncertain
 submission keeps the editor frozen and retries with the same key and saved version.
 
+**A provider withdraws an undecided request with an explicit reason.** Cancellation is
+available only for an undecided request and with `service_request.cancel`. Its dialog
+names the reference and irreversible closure, offers understandable reason choices and
+an optional note, and reserves danger styling for the final command. An uncertain result
+freezes the fields and retains the submitted body, idempotency key and ETag even after
+the dialog closes and reopens; retry sends that identical command. A definite refusal or
+stale version requires an explicit reload before a new command. Confirmed cancellation
+removes the correction editor and upload controls, leaving the closed record readable.
+
 **A state is shown as it is, never as what it is about to be.** A file being scanned says
 "taranıyor" with a spinner; it does not say "yüklendi" because the upload finished. The
 download appears only where the server says `downloadable`, and where it is absent the

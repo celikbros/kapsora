@@ -4,6 +4,7 @@ import { Badge, Breadcrumb, Button, Card, PageHeader, ProblemAlert, Spinner } fr
 import { Link, useParams } from '@tanstack/react-router';
 
 import { useState } from 'react';
+import { RequestCancel } from './RequestCancel';
 import { RequestCorrection } from './RequestCorrection';
 import { RequestAuthorization } from './RequestAuthorization';
 import { DocumentsPanel } from './documents';
@@ -71,6 +72,7 @@ export function RequestPage() {
         }
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            <RequestCancel key={request.id} current={query.data} />
             <Badge tone={waiting ? 'warning' : request.status === 'REJECTED' ? 'danger' : 'info'}>
               {t(`requests.status.${request.status}`)}
             </Badge>

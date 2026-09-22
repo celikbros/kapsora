@@ -157,12 +157,40 @@ account balances and versions stay unchanged. Rejected request:
 `01a0ca50-ed16-70b8-a1a5-c29e8b48766b`. Each run leaves three closed synthetic requests;
 failure cleanup cancels any still-undecided request it created.
 
-PC-02 remains active: actual upload/scan with the revised gate, scoped queue acceptance
-and the missing provider request-cancel control remain before PC-03 case/report/claim.
-The provider cancellation API is proven; the portal still has no cancellation action.
-Schema remains 51. The running operator-started API has not been restarted for the new
-Go document-gate code; that live check must follow the operator's next restart. Do not
-claim this database-tested fix is already running in the API.
+**Provider cancellation and real document upload checkpoint (2026-09-22):** the operator
+restarted the system; all six CI checks on `d48d8da` passed. The existing real negative
+test passed again after restart (5.0 s). Provider request detail now offers "Talebi iptal et"
+only with service_request.cancel and an undecided status. The dialog names the request,
+explains finality, requires a readable reason choice and accepts an optional note.
+
+Pending commands disable controls. Uncertain replies retain the exact body/key/ETag,
+including after closing/reopening the dialog; a stale/definite refusal requires explicit
+reload. 408, 429 and IDEMPOTENCY_IN_PROGRESS retain the retry. Success removes the editor,
+upload form and cancel action. Mock return/reject/cancel now replay successful commands
+within actor/tenant/request/command scope and reject same-key different bodies, matching
+the real cancellation behavior. No permission grant changed.
+
+The extended live test passed (9.3 s total): a real PDF goes browser → MinIO quarantine →
+worker/ClamAV → CLEAN/secure, then downloads with identical bytes and SHA-256. The provider
+cancels that test request in the browser; the harness drops the response AFTER the API
+commits, retries with the same key/body, and verifies the same response/ETag and unchanged
+member account balances/versions. Request `01a0cab4-8c83-75e0-b60e-6db5c2825461`, document
+`01a0cab4-8fe0-7b6f-aa41-b63019511013`. This is a synthetic INVOICE attachment, not a clinical
+report. There was no matching DOCUMENT rule in this live fixture; the previous document
+gate tests are still isolated PostgreSQL evidence, not a combined live rule/upload proof.
+
+Regression: 59 focused frontend/mock tests passed, then the final transient-retry and
+different-body checks passed in the 12-test cancellation suite; nine backoffice request
+tests also pass. Provider build/typecheck,
+API-client typecheck, harness TypeScript and lint pass. Desktop/mobile normal and error
+captures at 1440/390 have no overflow; detector returned []; fresh finish reviewer: ship.
+Frontend/mock-only change after the operator restart; schema 51, no further restart needed.
+
+PC-02 remains active: combine actual upload/scan with a narrowly scoped published document
+rule, verify the remaining scoped queue cases, then proceed to PC-03 case/report/claim.
+The current seed has no RULE_AUTHOR/RULE_APPROVER demo actors (cmd/seed/main.go); do not
+silently widen existing human grants or publish a tenant-wide requirement for a test.
+Real document upload/download itself and the provider cancellation control are now proven.
 
 Recovery, deployment and full-capacity benchmarking remain deferred. Do not request an
 Ubuntu recovery target or continue I10-03. Clinical/health-claim completion requires
@@ -306,9 +334,14 @@ new account. The request/authorization/fulfilment/account IDs are attached to th
 
 Run `pnpm e2e real-request-lifecycle.spec.ts --project chromium --trace off` with the same
 existing-UI variables for live rejection/cancellation/replay proof. It uses Melis Üye's
-existing demo enrollment, creates three new requests, closes them and makes no hold or
-consumption. It does not edit existing requests. The API actor helper shared with the
+existing demo enrollment, creates four new requests (one cancelled in the browser), closes
+them and makes no hold or consumption. It does not edit existing requests. The API actor helper shared with the
 entitlement harness isolates sessions and never attaches credentials or response bodies.
+Set `$env:E2E_REQUEST_UPLOAD = '1'` to include actual browser PDF upload, worker scan,
+secure download and byte/hash comparison before cancellation. Remove the flag afterward.
+It leaves one synthetic clean document attached to that closed request. Screenshots under
+`.impeccable/review/request-cancel*.png` are ignored; result attachments contain safe IDs
+only, never signed storage URLs. This upload scenario does not add a rule or clinical claim.
 
 Set `$env:E2E_HEALTH_CORRECTION = '1'` for the real return/correct/resubmit extension:
 the reviewer returns the request, the provider changes quantity from one to two, the test

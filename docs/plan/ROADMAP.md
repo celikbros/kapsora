@@ -135,7 +135,7 @@ evidence; race, duplicate-delivery and ledger invariants may use focused databas
 | H03 | Automatic/manual request decision and return/correct/resubmit reach the provider | PC-02 | Partial: live approval/correction/rejection/cancellation passed; document and automatic gates pass PostgreSQL tests, real upload/gate still pending |
 | H04 | Authorization/fulfillment and exact entitlement effects agree; retries do not duplicate | PC-02 | Generic path verified: live reserve/record/complete/replay/release; clinical claim consumption remains PC-03 |
 | H05 | Same episode reaches case, encounter and valid diagnosis | PC-03 | Pending |
-| H06 | Browser-uploaded evidence is scanned CLEAN; missing/unsafe evidence cannot pass submission | PC-03 | Pending |
+| H06 | Browser-uploaded evidence is scanned CLEAN; missing/unsafe evidence cannot pass submission | PC-03 | Partial: real PDF upload/ClamAV/secure download passed; clinical report and live missing/unsafe gate remain |
 | H07 | Report review, coverage and immutable correction history work | PC-03 | Pending |
 | H08 | Clinical provider → billing → medical → financial handoff reaches invoice-ready claim | PC-03 | Pending |
 | H09 | Duplicate/report/authorization blockers and corrected claim history are accurate | PC-03 | Pending |
@@ -472,6 +472,38 @@ rule changes or genuinely new access decisions are brought back with a concrete 
 - **Next:** provider request cancellation control (API proven, portal action absent),
   actual upload/scan plus gate acceptance and remaining scoped queue checks, then PC-03.
   H03/PC-02 remain open; no complete-health claim and no demo configuration/grants changed.
+
+### PC-02 provider cancellation and actual upload — 2026-09-22
+
+- **Restart/CI:** the operator restarted the system and real negative transitions passed
+  again (5.0 s). All six CI jobs passed on `d48d8da`.
+- **Portal cancellation:** undecided request detail now offers the existing cancel command
+  with its separate permission, readable reason choices, optional note and explicit finality.
+  Pending controls freeze; unknown outcomes retain body/key/ETag across dialog reopening.
+  Explicit reload resolves stale/definite refusal before another command. Transient 408,
+  429 and IDEMPOTENCY_IN_PROGRESS permit the same retry. Confirmed closure removes editing,
+  upload and cancellation. No new role grants or backend/schema changes.
+- **Live UI proof:** the extended `real-request-lifecycle.spec.ts` passed in 9.3 s with
+  E2E_REQUEST_UPLOAD=1. A fourth request is cancelled in the provider browser, the first
+  response is intentionally lost after server commit, and the retry returns the same
+  outcome/ETag without changing account balances/versions. Safe request ID:
+  `01a0cab4-8c83-75e0-b60e-6db5c2825461`.
+- **Real file proof:** browser uploads an entirely synthetic PDF to signed MinIO quarantine
+  storage, actual worker/ClamAV promotes it to CLEAN/secure, the UI offers download and
+  downloaded bytes/hash equal the original. Document `01a0cab4-8fe0-7b6f-aa41-b63019511013`.
+  One clean synthetic INVOICE attachment remains on the closed request. No document rule
+  matched this fixture; clinical report submission and combined rule/upload acceptance
+  are not claimed. The current seed has no RULE_AUTHOR/RULE_APPROVER actors; a safe scoped
+  acceptance fixture is needed, without widening existing grants or a tenant-wide test rule.
+- **Regression/design:** mock reason commands now match successful real idempotent replay
+  and reject same-key changed payloads after enforcing actor/tenant/provider access. The
+  59 focused tests passed; final cancellation suite (12 tests) also passes transient errors,
+  stale reload failure, permission and terminal-status hiding; nine backoffice request tests
+  also pass. Provider build/typecheck,
+  API-client/harness typechecks and lint pass. 1440/390 normal/error captures have no page
+  overflow; detector []; independent finish review: ship. Existing Vite chunk-size advisory.
+- **Next:** remaining live rule/document and scoped queue acceptance, then PC-03 outpatient
+  case/report/claim. Frontend-only delivery needs no new restart. PC-02 remains active.
 
 ### Progress, evidence and timing
 

@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { expect, request as apiRequest, test } from '@playwright/test';
 import type { components } from '../../web/packages/api-client/src/generated/kapsora-v1';
 import { Actor } from './real-api-actor';
@@ -175,9 +175,124 @@ test('real request rejection and cancellation are final, reasoned and safe to re
     ).toBeVisible();
     await expect(page.getByText('PC02_REJECTED', { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: /Gönder|Kaydet/ })).toHaveCount(0);
+    const uiDraft = await create();
+    const uiPath = `/api/v1/service-requests/${uiDraft.data.id}`;
+    await provider.call('POST', uiPath + '/submit', {}, { etag: uiDraft.etag });
+    await page.goto(base + `/portal/requests/${uiDraft.data.id}`);
+    await expect(
+      page.getByRole('heading', { name: uiDraft.data.reference, exact: true }),
+    ).toBeVisible();
+    let documentId: string | undefined;
+    if (process.env['E2E_REQUEST_UPLOAD'] === '1') {
+      const filename = `pc02-${randomUUID().slice(0, 8)}.pdf`;
+      const bytes = syntheticPDF();
+      const form = page.getByTestId('document-upload-form');
+      await form
+        .getByLabel(/Dosya seç/)
+        .setInputFiles({ name: filename, mimeType: 'application/pdf', buffer: bytes });
+      await form.getByLabel(/Belge türü/).fill('INVOICE');
+      const completed = page.waitForResponse(
+        (r) =>
+          /\/api\/v1\/documents\/[^/]+\/complete$/.test(new URL(r.url()).pathname) &&
+          r.request().method() === 'POST',
+      );
+      await form.getByRole('button', { name: 'Belge yükle', exact: true }).click();
+      const response = await completed;
+      expect(response.status()).toBe(200);
+      const uploaded = (await response.json()) as Schema<'Document'>;
+      documentId = uploaded.id;
+      // The completed upload is not a clean verdict. Only the real worker may promote it.
+      expect(['SCANNING', 'CLEAN']).toContain(uploaded.scanStatus);
+      const row = page
+        .getByTestId('documents-table')
+        .getByRole('row')
+        .filter({ hasText: filename });
+      await expect(row.getByText('Temiz', { exact: true })).toBeVisible({ timeout: 45_000 });
+      await expect(row.getByRole('button', { name: 'İndir', exact: true })).toBeVisible();
+      const stored = (
+        await provider.call<Schema<'Document'>>('GET', `/api/v1/documents/${documentId}`)
+      ).data;
+      expect(stored.scanStatus).toBe('CLEAN');
+      expect(stored.bucket).toBe('secure');
+      expect(stored.sha256).toBe(createHash('sha256').update(bytes).digest('hex'));
+      expect(
+        stored.links.some(
+          (link) =>
+            link.aggregateType === 'SERVICE_REQUEST' &&
+            link.aggregateId === uiDraft.data.id &&
+            link.documentTypeCode === 'INVOICE',
+        ),
+      ).toBe(true);
+      const ticket = (
+        await provider.call<Schema<'DocumentDownload'>>(
+          'POST',
+          `/api/v1/documents/${documentId}/download`,
+          {},
+        )
+      ).data;
+      const downloaded = await page.request.get(ticket.url);
+      expect(downloaded.status()).toBe(200);
+      expect(await downloaded.body()).toEqual(bytes);
+    }
+    const attempts: { key: string | undefined; body: string | null }[] = [];
+    await page.route('**' + uiPath + '/cancel', async (route) => {
+      attempts.push({
+        key: route.request().headers()['idempotency-key'],
+        body: route.request().postData(),
+      });
+      if (attempts.length === 1) {
+        const committed = await route.fetch();
+        expect(committed.status()).toBe(200);
+        await route.abort('failed'); // server committed, browser did not receive the response
+      } else await route.continue();
+    });
+    await page.getByRole('button', { name: 'Talebi iptal et', exact: true }).click();
+    const dialog = page.getByRole('dialog');
+    await expect(
+      dialog.getByRole('button', { name: 'Talebi iptal et', exact: true }),
+    ).toBeDisabled();
+    await dialog.getByLabel(/İptal gerekçesi/).selectOption('PROVIDER_WITHDRAWN');
+    await dialog.getByLabel('Açıklama', { exact: true }).fill('Sentetik kabul testi.');
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.evaluate(() => window.scrollTo(0, 0));
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true,
+      );
+      await page.screenshot({
+        path: `.impeccable/review/request-cancel-${width}.png`,
+        fullPage: true,
+      });
+    }
+    await dialog.getByRole('button', { name: 'Talebi iptal et', exact: true }).click();
+    await expect(dialog.getByRole('alert')).toBeVisible();
+    await expect(dialog.getByLabel(/İptal gerekçesi/)).toBeDisabled();
+    const committed = await provider.call<Schema<'ServiceRequest'>>('GET', uiPath);
+    expect(committed.data.status).toBe('CANCELLED');
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true,
+      );
+      await page.screenshot({
+        path: `.impeccable/review/request-cancel-error-${width}.png`,
+        fullPage: true,
+      });
+    }
+    await dialog.getByRole('button', { name: 'Yeniden dene', exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Talebi iptal et', exact: true })).toHaveCount(0);
+    await expect(page.getByTestId('document-upload-form')).toHaveCount(0);
+    expect(attempts).toHaveLength(2);
+    expect(attempts[1]).toEqual(attempts[0]);
+    expect(await provider.call('GET', uiPath)).toEqual(committed);
+    expect(await accounts()).toEqual(before);
+    cancelled.push(uiDraft.data.id);
     await test.info().attach('request-lifecycle-acceptance', {
       body: JSON.stringify({
         rejected: draft.data.id,
+        documentId,
+        browserCancellation: uiDraft.data.id,
         cancelled,
         balancesAndVersionsUnchanged: true,
       }),
@@ -209,3 +324,29 @@ test('real request rejection and cancellation are final, reasoned and safe to re
     }
   }
 });
+
+/** One valid PDF page with unique, entirely synthetic text; no parser or fixture file needed. */
+function syntheticPDF() {
+  const text = `BT /F1 12 Tf 40 150 Td (KAPSORA PC02 ${randomUUID()}) Tj ET`;
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 500 200] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>',
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    `<< /Length ${Buffer.byteLength(text)} >>\nstream\n${text}\nendstream`,
+  ];
+  let pdf = '%PDF-1.4\n';
+  const offsets = [0];
+  objects.forEach((object, i) => {
+    offsets.push(Buffer.byteLength(pdf));
+    pdf += `${i + 1} 0 obj\n${object}\nendobj\n`;
+  });
+  const xref = Buffer.byteLength(pdf);
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  pdf += offsets
+    .slice(1)
+    .map((offset) => `${String(offset).padStart(10, '0')} 00000 n \n`)
+    .join('');
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+  return Buffer.from(pdf);
+}
