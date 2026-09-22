@@ -45,9 +45,13 @@ The first live health checkpoint passed: provider catalog access, single-enrollm
 eligibility, insufficient-quantity refusal, request submission, medical approval and the
 provider's updated status. Migration 000050 fixes the reproduced catalog 403 for system
 PROVIDER_STAFF in current/new tenants; no catalog maintenance or billing grant was added.
-PC-02 is not complete. Next resolve quantity-versus-money pricing and the explicit
-authorization handoff, then enrollment choice, return/correction and retry paths. See the
-roadmap's dated checkpoint for evidence and remaining gates.
+PC-02 is not complete. The quantity-versus-money quote fix now passes local pricing,
+HTTP and eligibility regression tests: monetary entitlements cap money; session/night/count
+entitlements gate service quantity, including mapping factors and shared per-quote pools.
+It requires the operator to restart `dev.ps1 up` before live confirmation; no migration is
+needed. Next verify the live quote, then complete the explicit authorization handoff and
+its mapping/quantity semantics, enrollment choice, return/correction and retry paths.
+See the roadmap's dated checkpoints for evidence and remaining gates.
 
 Recovery, deployment and full-capacity benchmarking remain deferred. Do not request an
 Ubuntu recovery target or continue I10-03. Clinical/health-claim completion requires

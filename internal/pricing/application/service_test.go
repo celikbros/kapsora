@@ -55,6 +55,14 @@ type fixture struct {
 }
 
 func newFixture(t *testing.T) *fixture {
+	return newFixtureWithEntitlement(t, "MONEY", "300")
+}
+
+func newQuantityFixture(t *testing.T) *fixture {
+	return newFixtureWithEntitlement(t, "SESSION", "20")
+}
+
+func newFixtureWithEntitlement(t *testing.T, unit, initial string) *fixture {
 	t.Helper()
 	h := dbtest.New(t)
 	svc, err := application.New(application.Deps{
@@ -65,11 +73,11 @@ func newFixture(t *testing.T) *fixture {
 		t.Fatal(err)
 	}
 	f := &fixture{h: h, svc: svc}
-	f.seed(t)
+	f.seed(t, unit, initial)
 	return f
 }
 
-func (f *fixture) seed(t *testing.T) { //nolint:funlen // one linear fixture reads better whole
+func (f *fixture) seed(t *testing.T, unit, initial string) { //nolint:funlen // one linear fixture reads better whole
 	t.Helper()
 	h := f.h
 	ctx, cancel := h.Ctx()
@@ -120,14 +128,14 @@ func (f *fixture) seed(t *testing.T) { //nolint:funlen // one linear fixture rea
 	scan(&planVersion, "plan version", `
 		INSERT INTO benefit.plan_version (tenant_id, plan_id, version_no, status, valid_period,
 		                                  published_at, published_by)
-		VALUES ($1, $2, 1, 'PUBLISHED', daterange('2026-01-01','2027-01-01','[)'), clock_timestamp(), $3)
-		RETURNING id`, f.tenant, planID, f.actor)
+		VALUES ($1, $2, 1, 'DRAFT', daterange('2026-01-01','2027-01-01','[)'), NULL, NULL)
+		RETURNING id`, f.tenant, planID)
 	var definitionID uuid.UUID
 	scan(&definitionID, "entitlement definition", `
 		INSERT INTO benefit.entitlement_definition (tenant_id, plan_version_id, code, name, unit_type,
 		                                            currency_code, period_type, initial_quantity)
-		VALUES ($1, $2, $3, $3, 'MONEY', 'TRY', 'CALENDAR_YEAR', 300) RETURNING id`,
-		f.tenant, planVersion, entitlementCode)
+		VALUES ($1, $2, $3, $3, $4, CASE WHEN $4='MONEY' THEN 'TRY' ELSE NULL END, 'CALENDAR_YEAR', $5) RETURNING id`,
+		f.tenant, planVersion, entitlementCode, unit, initial)
 	scan(&f.enrollment, "enrollment", `
 		INSERT INTO benefit.enrollment (tenant_id, sponsor_membership_id, plan_id, status, valid_period)
 		VALUES ($1, $2, $3, 'ACTIVE', daterange('2026-01-01', NULL, '[)')) RETURNING id`,
@@ -138,14 +146,14 @@ func (f *fixture) seed(t *testing.T) { //nolint:funlen // one linear fixture rea
 	scan(&f.account, "entitlement account", `
 		INSERT INTO benefit.entitlement_account (tenant_id, enrollment_id, entitlement_definition_id,
 		                                         benefit_period, total_granted, available_quantity)
-		VALUES ($1, $2, $3, daterange('2026-01-01','2027-01-01','[)'), 300, 300) RETURNING id`,
-		f.tenant, f.enrollment, definitionID)
+		VALUES ($1, $2, $3, daterange('2026-01-01','2027-01-01','[)'), $4, $4) RETURNING id`,
+		f.tenant, f.enrollment, definitionID, initial)
 	h.AdminExec(`
 		INSERT INTO benefit.entitlement_ledger (tenant_id, entitlement_account_id, movement_type,
 		                                        effective_at, delta_total, delta_available,
 		                                        reference_type, reference_id, idempotency_key)
-		VALUES ($1, $2, 'GRANT', clock_timestamp(), 300, 300, 'ENROLLMENT', $3, 'grant:seed')`,
-		f.tenant, f.account, f.enrollment)
+		VALUES ($1, $2, 'GRANT', clock_timestamp(), $4, $4, 'ENROLLMENT', $3, 'grant:seed')`,
+		f.tenant, f.account, f.enrollment, initial)
 
 	scan(&f.category, "service category", `
 		INSERT INTO catalog.service_category (tenant_id, code, name, domain_code)
@@ -155,6 +163,13 @@ func (f *fixture) seed(t *testing.T) { //nolint:funlen // one linear fixture rea
 		                                        fulfillment_mode, default_unit_type)
 		VALUES ($1, $2, 'PHYSIO_SESSION', 'Fizyoterapi seansı', 'SESSION', 'SESSION') RETURNING id`,
 		f.tenant, f.category)
+
+	if unit != "MONEY" {
+		h.AdminExec(`INSERT INTO benefit.service_entitlement_mapping
+		    (tenant_id, plan_version_id, service_definition_id, entitlement_definition_id, unit_factor)
+		    VALUES ($1, $2, $3, $4, 2)`, f.tenant, planVersion, f.definition, definitionID)
+	}
+	h.AdminExec(`UPDATE benefit.plan_version SET status='PUBLISHED', published_at=clock_timestamp(), published_by=$3 WHERE tenant_id=$1 AND id=$2`, f.tenant, planVersion, f.actor)
 
 	var contractID uuid.UUID
 	scan(&contractID, "contract", `
