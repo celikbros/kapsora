@@ -966,3 +966,15 @@ problem-message gaps are closed by these changes; other recorded gaps are not im
   outpatient harness now performs browser claim creation/save/submit but has not yet run
   against the restarted API. Do not count H08 complete until that checkpoint and the
   medical/financial review route pass. Other PC-03 exception/privacy gates remain open.
+
+### PC-03 restarted API / native services checkpoint — 2026-09-23
+
+- Operator restarted API/UI/worker. The first live attempt stopped at PDF upload:
+  MinIO port 9000 and ClamAV port 3310 were closed while 8090/5181 were open.
+  Requested `scripts/dev.ps1 native-up` in a second terminal; keep the application running.
+  Failure cleanup cancelled the attempt's authorization and draft report; no claim/usage
+  was created. Live browser handoff acceptance remains pending, not passed.
+- CI on `3c2f066` exposed three absent problem translations and the legacy provider smoke's
+  unsupported direct billing of an unlinked case. `804634a` repairs translations and verifies
+  refusal plus existing-draft submission. Local catalog test, ESLint and harness typecheck
+  pass; the follow-up CI run is pending. No backend change or further API restart is needed.
