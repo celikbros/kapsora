@@ -92,7 +92,7 @@ References: [eligibility](../delegation/WP-I2-04-eligibility.md), existing M4 pa
 | PC-03.2 | Draft the medical report with its service/date/quantity scope. Upload a synthetic document through the actual browser path: quarantine → scanner worker → CLEAN → authorized access. Show a useful pending/rejected state; refuse submission without required clean evidence. Do not use a pre-seeded CLEAN file as proof of scanning. |
 | PC-03.3 | Medical reviewer takes the work item and approves or rejects. Verify approved coverage/usage; a correction creates a new draft version and preserves the decided version, reviewer and history. Report return is not a supported command; return/resubmit belongs to requests and claims. |
 | PC-03.4 | Hand off to the provider billing actor to create/submit the health claim using the case, authorization and report where required. Cover an automatic-priced case and a case needing medical then financial review. Verify per-line decisions, reasons, contract price, approved total and exact payer/member shares. |
-| PC-03.5 | Cover duplicate suspicion, insufficient authorization, expired/out-of-scope report, return/correction and stale versions. Readiness must name unresolved blockers and permit invoicing only after every required decision. No service, report usage or entitlement may be counted twice. |
+| PC-03.5 | Cover duplicate suspicion, insufficient authorization, expired/out-of-scope report, return/correction and stale versions. Readiness must name unresolved blockers and permit invoicing only after every required decision. No service or entitlement may be counted twice. Exact command replays add no report usage; new version evaluations retain their own historical usage rows (WP-I5-02). |
 | PC-03.6 | Test clinical/financial projections and sensitive access with real roles at both API and DOM level. HR must receive no diagnosis/report narrative; cross-provider/tenant access is refused; purpose accept/decline and audited access work. Include a reviewer who is also the subject of the record. |
 
 **Exit:** a standard outpatient episode and a report-dependent episode reach invoice
@@ -1012,3 +1012,22 @@ problem-message gaps are closed by these changes; other recorded gaps are not im
   return/correct/resubmit, frozen versions, hidden clinical notes and one net consumption.
   Operator API restart and the live run are pending; this is not yet H08 acceptance.
   No migration, grant or endpoint change. PC-03 stays active; PC-04/05 stay next.
+
+### PC-03 live review corrections — 2026-09-23
+
+- After the operator restart, the live browser reached two return/correct/resubmit cycles,
+  medical → financial decisions and final approval. Three versions preserve their history;
+  clinical text is hidden from finance. Wrong-stage/stale refusals and exact command replays
+  pass. Ledger has three draws/two reversals, net one session (19/0/1 final balance).
+- Fixed a real provider save/submit race: shared pending state keeps editing and submission
+  disabled until the new ETag loads. The live test deliberately stalls this refresh.
+  Desktop/mobile inspection, provider build/typecheck, 25 focused UI/mock tests pass.
+- Final live price assertion found manual decisions losing the frozen contract price.
+  PostgreSQL reproduced the defect; decisions/rejection now preserve the snapshot price,
+  including null when pricing genuinely failed. No contract, grant or schema change.
+  This last backend fix requires another operator API restart and live confirmation.
+- Corrected two harness assumptions: stale ETags must be positive; report coverage appends
+  a trace for each new evaluation, so three versions have three rows, with no additions
+  on command replay. Long-run API checks honor Retry-After without changing server limits.
+- CI passed on preceding `5eec483`. H08/PC-03 remain open until the full rerun passes;
+  report correction/unsafe files and remaining privacy gates still follow before PC-04/05.

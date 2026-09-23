@@ -1851,6 +1851,7 @@ export interface StoredClaimVersion {
    * What the submit decided about routing and what it found, frozen. `financialRequired` is
    * what makes "medical first, then financial" survive the medical stage.
    */
+  contractAmounts?: Record<number, string | null>;
   financialRequired: boolean;
   exceptions: Schemas['ClaimException'][];
   createdAt: string;

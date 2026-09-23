@@ -442,6 +442,41 @@ The operator must restart `scripts/dev.ps1 up` to load the backend change (secti
 native services need no restart. PC-03/H08 remain open until the real run and remaining
 report/privacy gates are verified.
 
+**Claim review live findings after operator restart (2026-09-23):** CI passed on
+`5eec483`. Real browser runs now reach medical return → billing correction (v2, 450 TRY)
+→ medical decision → financial return → second correction (v3, 400 TRY) → medical and
+financial decisions → approval. Frozen v1/v2 and medical decision text remain readable to
+the doctor and hidden from the financial projection. Wrong-stage decisions return 409;
+stale return returns 412. The account ends 19 available / 0 reserved / 1 consumed, with
+three CONSUME and two REVERSE entries. Replayed commands preserve account versions and
+report history. This confirms the consumption fix, but **full H08 acceptance is still pending**.
+
+Two actual defects were found in the extended live path. The provider could submit while
+the line save's fresh GET was still pending and receive 412. Its editor and page now share
+one mutation state; inputs, save, submit and cancel remain disabled through refresh.
+The live regression holds that GET deliberately and verifies the disabled controls.
+Desktop/mobile captures at 1440/390 have no overflow; design inspection/detector, provider
+build/typecheck, six existing UI tests and 19 claim mock tests pass.
+
+The final price check found the second defect: manual decisions discarded `contractAmount`,
+despite a known frozen price. The new database test reproduced null instead of 500.
+Medical/financial decisions and outright rejection now copy the contract amount from the
+submitted version's pricing snapshot; missing/ambiguous prices stay null. The mock mirrors
+the same distinction. All claim PostgreSQL tests pass (131.0 s). Go lint/build, workspace
+ typecheck and harness lint/TypeScript pass.
+This backend change is not loaded until the operator restarts `scripts/dev.ps1 up` again;
+no migration, grants or native-service restart is needed. The final live check must retain
+its expected contract/approved/payer/member 400/400/400/0; do not weaken that assertion.
+
+Harness fixes: zero is not a valid stale ETag (428), so use the preceding positive version.
+WP-I5-02 explicitly records every successful report-coverage evaluation: three corrected
+submissions produce three historical usage rows, while exact command replays add none.
+The initial one-row-across-all-versions assertion was incorrect, not a report-service bug.
+Long review runs opt into bounded Retry-After handling for 429 in their API actor, retaining
+the same command key/body/ETag. API limits stay unchanged. Cleanup retires the scoped rule
+and closes only that episode's work items. Known decided attempts' remaining work/cases
+were closed via public APIs; approved synthetic claims and consumed entitlement remain.
+
 ## 3. Get it running
 
 Requirements: Go 1.27+, a local PostgreSQL 18, Node 24 + pnpm 10. No Docker, ever (§6).

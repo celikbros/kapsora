@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -10,6 +11,7 @@ import (
 	benefitdomain "github.com/celikbros/kapsora/internal/benefit/domain"
 	"github.com/celikbros/kapsora/internal/claim/domain"
 	"github.com/celikbros/kapsora/internal/identity"
+	"github.com/celikbros/kapsora/internal/pricing"
 )
 
 // DecisionInput is one per-line decision as the reviewer sent it.
@@ -101,9 +103,14 @@ func (s *Service) DecideLines(ctx context.Context, rc identity.RequestContext, i
 			if !ok {
 				return ErrLineNotFound
 			}
+			contract, err := submittedContract(version.Snapshot, line.LineNo)
+			if err != nil {
+				return err
+			}
 			if _, err := s.repo.CreateDecision(ctx, tx, rc.TenantID, NewDecisionRow{
 				LineID: line.ID, DecidedInVersionNo: version.VersionNo,
 				Decision:         decision.Decision,
+				ContractAmount:   contract,
 				ApprovedQuantity: decision.ApprovedQuantity,
 				ApprovedAmount:   decision.ApprovedAmount,
 				PayerAmount:      decision.PayerAmount, MemberAmount: decision.MemberAmount,
@@ -336,9 +343,14 @@ func (s *Service) Reject(ctx context.Context, rc identity.RequestContext, id uui
 		now := s.now().UTC()
 		stage := stageOf(rc)
 		for _, line := range lines {
+			contract, err := submittedContract(version.Snapshot, line.LineNo)
+			if err != nil {
+				return err
+			}
 			if _, err := s.repo.CreateDecision(ctx, tx, rc.TenantID, NewDecisionRow{
 				LineID: line.ID, DecidedInVersionNo: version.VersionNo,
 				Decision:         domain.DecisionRejected,
+				ContractAmount:   contract,
 				ApprovedQuantity: zero().String(), ApprovedAmount: zero().String(),
 				PayerAmount: zero().String(), MemberAmount: zero().String(),
 				ReasonCode: in.ReasonCode, ReasonText: trimmedPtr(in.ReasonText),
@@ -619,4 +631,22 @@ func decisionRows(in []DecisionInput) []domain.Decision {
 		})
 	}
 	return out
+}
+
+// submittedContract is the price the frozen version was judged against. A manual
+// decision changes the approved amount, never the historical contract price.
+func submittedContract(snapshot []byte, lineNo int) (*string, error) {
+	if len(snapshot) == 0 {
+		return nil, nil
+	}
+	var doc claimSnapshot
+	if err := json.Unmarshal(snapshot, &doc); err != nil {
+		return nil, err
+	}
+	for _, priced := range doc.Pricing {
+		if priced.LineNo == lineNo && priced.Outcome != string(pricing.OutcomeReviewRequired) && priced.Contract != "" {
+			return &priced.Contract, nil
+		}
+	}
+	return nil, nil
 }

@@ -335,6 +335,36 @@ describe('the freeze and the correction', () => {
     );
     await submit(provider, created.data.id);
     expect(item.consumedQuantity).toBe('1');
+    const financial = await signIn('financial.reviewer');
+    const decided = await unwrap(
+      financial.c.POST('/api/v1/claims/{claimId}/line-decisions', {
+        params: {
+          header: {
+            ...tenant(financial),
+            'If-Match': await etagOf(financial, created.data.id),
+            'Idempotency-Key': key(),
+          },
+          path: { claimId: created.data.id },
+        },
+        body: {
+          decisions: [
+            {
+              lineNo: 1,
+              decision: 'CUT',
+              approvedQuantity: '1',
+              approvedAmount: '200',
+              payerAmount: '200',
+              memberAmount: '0',
+              reasonCode: 'REVIEWED',
+            },
+          ],
+        },
+      }),
+    );
+    expect(decided.data.lines[0]!.decision).toMatchObject({
+      contractAmount: '750',
+      approvedAmount: '200',
+    });
   });
 
   it('refuses to edit a submitted version and opens version n+1 on a return', async () => {

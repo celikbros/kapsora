@@ -1351,6 +1351,9 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
       version.submittedAt = new Date().toISOString();
       version.submittedBy = g.session.account.actorId;
       version.financialRequired = financialRequired;
+      version.contractAmounts = Object.fromEntries(
+        outcomes.map((o) => [o.line.lineNo, o.contract]),
+      );
       version.exceptions = outcomes.flatMap((o) => (o.decision === null ? o.exceptions : []));
 
       for (const outcome of outcomes) {
@@ -1481,6 +1484,7 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
           d.reasonCode,
           stage,
           {
+            contractAmount: version.contractAmounts?.[line.lineNo] ?? null,
             approvedQuantity: d.approvedQuantity,
             reasonText: d.reasonText ?? null,
             decidedBy: gg.session.account.actorId,
@@ -1590,6 +1594,7 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
           body.reasonCode,
           stage,
           {
+            contractAmount: version.contractAmounts?.[line.lineNo] ?? null,
             approvedQuantity: '0',
             reasonText: body.reasonText ?? null,
             decidedBy: gg.session.account.actorId,

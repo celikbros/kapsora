@@ -1,3 +1,4 @@
+import { setTimeout as delay } from 'node:timers/promises';
 import { randomUUID } from 'node:crypto';
 import { expect, type APIRequestContext } from '@playwright/test';
 
@@ -12,6 +13,7 @@ export class Actor {
   constructor(
     private context: APIRequestContext,
     private app: string,
+    private retryRateLimit = false,
   ) {}
   async call<T>(
     method: string,
@@ -23,7 +25,7 @@ export class Actor {
       key?: string;
     } = {},
   ) {
-    const response = await this.context.fetch(base + path, {
+    const requestOptions = {
       method,
       maxRedirects: 0,
       headers: {
@@ -36,7 +38,20 @@ export class Actor {
         ...(method === 'PATCH' ? { 'Content-Type': 'application/merge-patch+json' } : {}),
       },
       ...(body === undefined ? {} : { data: body }),
-    });
+    };
+    let response = await this.context.fetch(base + path, requestOptions);
+    // Opt-in for long acceptance flows: honor server backpressure with the exact same
+    // command key/body/ETag, never by raising limits or replaying other failures.
+    for (
+      let retry = 0;
+      this.retryRateLimit && options.expected !== 429 && response.status() === 429 && retry < 3;
+      retry++
+    ) {
+      const seconds = Number(response.headers()['retry-after']);
+      if (!Number.isFinite(seconds) || seconds <= 0 || seconds > 30) break;
+      await delay(seconds * 1000);
+      response = await this.context.fetch(base + path, requestOptions);
+    }
     const cookie = response
       .headersArray()
       .find((h) => h.name.toLowerCase() === 'set-cookie' && !h.value.startsWith('__Host-csrf'));

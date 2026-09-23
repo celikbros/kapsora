@@ -1,3 +1,4 @@
+import { mkdir } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { expect, type Page, type Response } from '@playwright/test';
@@ -19,6 +20,7 @@ export async function seedClaimReviewRule(personId: string, retire = false) {
 export async function reviewAndCorrectClaim(input: {
   base: string;
   claimId: string;
+  reportId: string;
   doctor: Actor;
   finance: Actor;
   billing: Actor;
@@ -30,6 +32,7 @@ export async function reviewAndCorrectClaim(input: {
   const {
     base,
     claimId,
+    reportId,
     doctor,
     finance,
     billing,
@@ -52,6 +55,10 @@ export async function reviewAndCorrectClaim(input: {
       data: (await response.json()) as Schema<'Claim'>,
       etag: response.headers()['etag']!,
     };
+    const usagesBefore = await doctor.call<Schema<'MedicalReportUsagePage'>>(
+      'GET',
+      `/api/v1/medical-reports/${reportId}/usages`,
+    );
     const before = await snapshot(expected.data.status === 'RETURNED' ? [19, 1, 0] : [19, 0, 1]);
     expect(
       await actor.call<Schema<'Claim'>>(
@@ -64,6 +71,12 @@ export async function reviewAndCorrectClaim(input: {
     expect(await snapshot(expected.data.status === 'RETURNED' ? [19, 1, 0] : [19, 0, 1])).toEqual(
       before,
     );
+    expect(
+      await doctor.call<Schema<'MedicalReportUsagePage'>>(
+        'GET',
+        `/api/v1/medical-reports/${reportId}/usages`,
+      ),
+    ).toEqual(usagesBefore);
     return expected;
   };
   const returnClaim = async (actor: Actor, page: Page, version: number) => {
@@ -98,15 +111,56 @@ export async function reviewAndCorrectClaim(input: {
   const correct = async (amount: string, version: number) => {
     await billingPage.goto(base + `/portal/claims/${claimId}`);
     await expect(billingPage.getByTestId('claim-status')).toHaveText('İade edildi');
+    const capture = async (state: string) => {
+      if (process.env['E2E_REVIEW_CAPTURE'] !== '1' || version !== 2) return;
+      await mkdir('.impeccable/review/claim-correction', { recursive: true });
+      for (const width of [1440, 390]) {
+        await billingPage.setViewportSize({ width, height: 950 });
+        await expect(billingPage.locator('[name="lines.0.lineAmount"]')).toBeVisible();
+        expect(
+          await billingPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+        ).toBe(true);
+        await billingPage.screenshot({
+          path: `.impeccable/review/claim-correction/${state}-${width}.png`,
+          fullPage: true,
+        });
+      }
+      await billingPage.setViewportSize({ width: 1440, height: 950 });
+    };
+    await capture('returned');
+    let releaseRefresh = () => {};
+    const refreshGate = new Promise<void>((resolve) => {
+      releaseRefresh = resolve;
+    });
+    let seenRefresh = () => {};
+    const refreshSeen = new Promise<void>((resolve) => {
+      seenRefresh = resolve;
+    });
+    await billingPage.route(base + path, async (route) => {
+      if (route.request().method() === 'GET') {
+        seenRefresh();
+        await refreshGate;
+      }
+      await route.continue();
+    });
     const saved = billingPage.waitForResponse(
       (r) => new URL(r.url()).pathname === path + '/lines' && r.request().method() === 'PUT',
     );
     await billingPage.locator('[name="lines.0.lineAmount"]').fill(amount);
     await billingPage.getByRole('button', { name: 'Satırları kaydet', exact: true }).click();
-    expect((await saved).status()).toBe(200);
+    try {
+      expect((await saved).status()).toBe(200);
+      await refreshSeen;
+      await expect(billingPage.getByRole('button', { name: 'Gönder', exact: true })).toBeDisabled();
+      await expect(billingPage.locator('[name="lines.0.lineAmount"]')).toBeDisabled();
+      await capture('saving');
+    } finally {
+      releaseRefresh();
+    }
     const sent = commandResponse(billingPage, '/submit');
     await billingPage.getByRole('button', { name: 'Gönder', exact: true }).click();
     const submitted = await replay(billing, await sent);
+    await billingPage.unroute(base + path);
     expect(submitted.data).toMatchObject({ status: 'PENDING_MEDICAL', currentVersionNo: version });
   };
   const decideMedical = async () => {
@@ -146,7 +200,7 @@ export async function reviewAndCorrectClaim(input: {
     'POST',
     path + '/return',
     { reasonCode: 'AMOUNT_CORRECTION' },
-    { etag: '"0"', expected: 412 },
+    { etag: `"${pending.data.rowVersion - 1}"`, expected: 412 },
   );
   await billing.call('GET', path + '/invoice-readiness', undefined, { expected: 409 });
   expect(await read(doctor)).toEqual(pending);

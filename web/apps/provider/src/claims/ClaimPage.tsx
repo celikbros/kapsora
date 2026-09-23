@@ -201,10 +201,17 @@ export function LinesTable({
   );
 }
 
-function DraftLines({ claim }: { claim: Claim }) {
+function DraftLines({
+  claim,
+  commands,
+  busy,
+}: {
+  claim: Claim;
+  commands: ReturnType<typeof useClaimCommands>;
+  busy: boolean;
+}) {
   const { t } = useTranslation();
   const toast = useToast();
-  const commands = useClaimCommands(claim.id);
   const [lines, setLines] = useState<DraftLine[]>(draftFrom(claim.lines));
   async function save() {
     try {
@@ -219,25 +226,27 @@ function DraftLines({ claim }: { claim: Claim }) {
   }
   return (
     <div className="grid gap-3">
-      <LinesEditor
-        lines={lines}
-        onChange={setLines}
-        {...(claim.projection === 'FINANCIAL'
-          ? {
-              fixedServices: claim.lines.map((line) => ({
-                value: line.serviceDefinitionId,
-                label: line.serviceCode ?? line.serviceDefinitionId,
-                unitType: line.unitType,
-              })),
-            }
-          : {})}
-      />
+      <fieldset disabled={busy} aria-busy={busy}>
+        <LinesEditor
+          lines={lines}
+          onChange={setLines}
+          {...(claim.projection === 'FINANCIAL'
+            ? {
+                fixedServices: claim.lines.map((line) => ({
+                  value: line.serviceDefinitionId,
+                  label: line.serviceCode ?? line.serviceDefinitionId,
+                  unitType: line.unitType,
+                })),
+              }
+            : {})}
+        />
+      </fieldset>
       <ProblemAlert problem={commands.putLines.error ? problemOf(commands.putLines.error) : null} />
       <div className="flex justify-end">
         <Button
           size="sm"
           loading={commands.putLines.isPending}
-          disabled={!linesValid(lines)}
+          disabled={busy || !linesValid(lines)}
           onClick={() => void save()}
         >
           {t('claims.lines.save')}
@@ -262,6 +271,7 @@ export function ClaimPage() {
   const canSubmit = usePermission('claim.submit');
   const canCancel = usePermission('claim.cancel');
   const commands = useClaimCommands(claimId);
+  const busy = Object.values(commands).some((command) => command.isPending);
   const personName = usePersonName(query.data?.data.personId);
   const claim = query.data?.data;
   const previousNo =
@@ -309,6 +319,7 @@ export function ClaimPage() {
       claim.status === 'PENDING_FINANCIAL');
 
   async function submit() {
+    if (busy) return;
     try {
       await commands.submit.mutateAsync({ rowVersion: claim!.rowVersion });
       toast.notify({ tone: 'success', title: t('claims.toast.submitted') });
@@ -351,12 +362,22 @@ export function ClaimPage() {
               {t(`claims.status.${claim.status}`)}
             </Badge>
             {submittable ? (
-              <Button size="sm" loading={commands.submit.isPending} onClick={() => void submit()}>
+              <Button
+                size="sm"
+                loading={commands.submit.isPending}
+                disabled={busy}
+                onClick={() => void submit()}
+              >
                 {t('claims.commands.submit')}
               </Button>
             ) : null}
             {cancellable ? (
-              <Button size="sm" variant="secondary" onClick={() => setCancelling(true)}>
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={busy}
+                onClick={() => setCancelling(true)}
+              >
                 {t('claims.commands.cancel')}
               </Button>
             ) : null}
@@ -401,7 +422,12 @@ export function ClaimPage() {
                   {t('claims.returned.current', { n: claim.currentVersionNo })}
                 </h3>
                 {editable ? (
-                  <DraftLines key={claim.rowVersion} claim={claim} />
+                  <DraftLines
+                    key={claim.rowVersion}
+                    claim={claim}
+                    commands={commands}
+                    busy={busy}
+                  />
                 ) : (
                   <LinesTable lines={claim.lines} clinical={clinical} testId="claim-lines" />
                 )}
@@ -413,7 +439,7 @@ export function ClaimPage() {
             <h2 className="text-base font-semibold">{t('claims.lines.title')}</h2>
             <p className="text-fg-muted mb-3 mt-1 text-sm">{t('claims.lines.intro')}</p>
             {claim.status === 'DRAFT' && editable ? (
-              <DraftLines key={claim.rowVersion} claim={claim} />
+              <DraftLines key={claim.rowVersion} claim={claim} commands={commands} busy={busy} />
             ) : claim.lines.length === 0 ? (
               <p className="text-fg-muted text-sm">{t('claims.lines.empty')}</p>
             ) : (
@@ -512,7 +538,7 @@ export function ClaimPage() {
             <Button
               variant="danger"
               loading={commands.cancel.isPending}
-              disabled={!REASON_CODE.test(reasonCode)}
+              disabled={busy || !REASON_CODE.test(reasonCode)}
               onClick={() => void cancel()}
             >
               {t('claims.commands.cancel')}

@@ -22,12 +22,12 @@ test('real outpatient case, diagnosis and scanned report reach a priced claim wi
   const doctorPage = await browser.newPage({ locale: 'tr-TR', timezoneId: 'Europe/Istanbul' });
   const billingPage = await browser.newPage({ locale: 'tr-TR', timezoneId: 'Europe/Istanbul' });
   const financePage = await browser.newPage({ locale: 'tr-TR', timezoneId: 'Europe/Istanbul' });
-  const finance = new Actor(financePage.request, 'backoffice');
+  const finance = new Actor(financePage.request, 'backoffice', reviewMode);
   let ruleAttempted = false;
-  const admin = new Actor(await apiRequest.newContext(), 'backoffice');
-  const provider = new Actor(page.request, 'provider');
-  const doctor = new Actor(doctorPage.request, 'backoffice');
-  const billing = new Actor(billingPage.request, 'provider');
+  const admin = new Actor(await apiRequest.newContext(), 'backoffice', reviewMode);
+  const provider = new Actor(page.request, 'provider', reviewMode);
+  const doctor = new Actor(doctorPage.request, 'backoffice', reviewMode);
+  const billing = new Actor(billingPage.request, 'provider', reviewMode);
   const ids: Record<string, string> = {};
   try {
     await admin.login('admin.a');
@@ -431,6 +431,7 @@ test('real outpatient case, diagnosis and scanned report reach a priced claim wi
       submitted = await reviewAndCorrectClaim({
         base,
         claimId: claim.data.id,
+        reportId: report.id,
         doctor,
         finance,
         billing,
@@ -439,9 +440,18 @@ test('real outpatient case, diagnosis and scanned report reach a priced claim wi
         billingPage,
         snapshot,
       });
-      expect(
-        await doctor.call<Schema<'MedicalReportUsagePage'>>('GET', reportPath + '/usages'),
-      ).toEqual(usages);
+      // Each new version evaluates report coverage anew (WP-I5-02); replay does not.
+      const history = (
+        await doctor.call<Schema<'MedicalReportUsagePage'>>('GET', reportPath + '/usages')
+      ).data.items;
+      expect(history).toHaveLength(3);
+      expect(history).toEqual(expect.arrayContaining(usages.data.items));
+      for (const usage of history)
+        expect(usage).toMatchObject({
+          reportId: report.id,
+          usedByType: 'CLAIM',
+          usedById: claim.data.id,
+        });
     }
     const ledger = (
       await admin.call<Schema<'LedgerPage'>>(
