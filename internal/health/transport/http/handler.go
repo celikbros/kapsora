@@ -68,6 +68,7 @@ type Middlewares struct {
 	CreateCase      func(http.Handler) http.Handler
 	CloseCase       func(http.Handler) http.Handler
 	CreateEncounter func(http.Handler) http.Handler
+	EndEncounter    func(http.Handler) http.Handler
 	PutDiagnoses    func(http.Handler) http.Handler
 }
 
@@ -98,6 +99,7 @@ func (h *Handler) CaseRoutes(r chi.Router, mw Middlewares) {
 // EncounterRoutes mounts everything below /encounters.
 func (h *Handler) EncounterRoutes(r chi.Router, mw Middlewares) {
 	r.Get("/{encounterId}", h.GetEncounter)
+	r.With(wrap(mw.EndEncounter)).Post("/{encounterId}/end", h.EndEncounter)
 	r.Get("/{encounterId}/diagnoses", h.ListEncounterDiagnoses)
 	r.With(wrap(mw.PutDiagnoses)).Put("/{encounterId}/diagnoses", h.PutEncounterDiagnoses)
 }
@@ -206,6 +208,8 @@ func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) 
 	case errors.Is(err, application.ErrCaseClosed):
 		problem(w, r, http.StatusConflict, "health-cases/closed", "HEALTH_CASE_CLOSED",
 			"Sağlık vakası kapalı", "Kapanmış bir vakaya kayıt eklenemez.")
+	case errors.Is(err, application.ErrEncounterEnded):
+		problem(w, r, http.StatusConflict, "encounters/ended", "ENCOUNTER_ALREADY_ENDED", "Muayene zaten sonlandırılmış", "Tamamlanan muayenenin bitiş zamanı değiştirilemez.")
 	case errors.Is(err, application.ErrEncounterOpen):
 		problem(w, r, http.StatusConflict, "health-cases/encounter-open", "HEALTH_CASE_ENCOUNTER_OPEN",
 			"Vakada bitmemiş bir encounter var", "Vakayı kapatmadan önce tüm encounter'ları sonlandırın.")

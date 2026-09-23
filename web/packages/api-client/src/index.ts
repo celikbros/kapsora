@@ -321,6 +321,7 @@ export type {
   AccessPurpose,
   CloseHealthCase,
   CreateEncounter,
+  EndEncounter,
   CreateHealthCase,
   Diagnosis,
   DiagnosisInput,

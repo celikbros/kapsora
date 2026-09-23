@@ -868,6 +868,7 @@ func newRouter(d routerDeps) http.Handler {
 				CreateCase:      d.idempotent("health_case.create"),
 				CloseCase:       d.idempotent("health_case.close"),
 				CreateEncounter: d.idempotent("health_encounter.create"),
+				EndEncounter:    d.idempotent("health_encounter.end"),
 				PutDiagnoses:    d.idempotent("health_diagnosis.put"),
 			}
 			tenant.Route("/health-cases", func(r chi.Router) {

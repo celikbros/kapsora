@@ -2278,6 +2278,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/encounters/{encounterId}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Ends an open encounter without changing its clinical content. Requires
+         *     health.case.manage and health.clinical.read within the provider scope.
+         *     The case must be open; endedAt cannot precede startedAt. The encounter ETag
+         *     prevents stale updates. Replaying the same idempotency key returns the same result;
+         *     a fresh command for an already ended encounter is refused.
+         */
+        post: operations["endEncounter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/enrollments": {
         parameters: {
             query?: never;
@@ -8938,6 +8961,10 @@ export interface components {
         };
         /** @enum {string} */
         EncounterType: "OUTPATIENT" | "INPATIENT" | "EMERGENCY" | "TELEHEALTH";
+        EndEncounter: {
+            /** Format: date-time */
+            endedAt: string;
+        };
         EndPeriodCommand: {
             /** Format: date */
             endsOn: string;
@@ -13563,6 +13590,7 @@ export type SchemaEligibilityCheckResult = components['schemas']['EligibilityChe
 export type SchemaEligibilityEvaluation = components['schemas']['EligibilityEvaluation'];
 export type SchemaEncounter = components['schemas']['Encounter'];
 export type SchemaEncounterType = components['schemas']['EncounterType'];
+export type SchemaEndEncounter = components['schemas']['EndEncounter'];
 export type SchemaEndPeriodCommand = components['schemas']['EndPeriodCommand'];
 export type SchemaEnrollment = components['schemas']['Enrollment'];
 export type SchemaEnrollmentPage = components['schemas']['EnrollmentPage'];
@@ -18865,6 +18893,63 @@ export interface operations {
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    endEncounter: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                encounterId: components["parameters"]["EncounterId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EndEncounter"];
+            };
+        };
+        responses: {
+            /** @description Encounter ended */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Encounter"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description The encounter changed since the caller read it */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match is missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             429: components["responses"]["TooManyRequests"];
         };
     };

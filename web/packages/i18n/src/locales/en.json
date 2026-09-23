@@ -415,7 +415,8 @@
     "VOUCHER_NOT_AVAILABLE": "A voucher cannot be issued before the booking is confirmed.",
     "CLAIM_CASE_ALREADY_CLAIMED": "A claim already exists for this case. Check the claim list.",
     "CLAIM_SOURCE_NOT_FOUND": "The billing case was not found. Refresh the case list.",
-    "CLAIM_SOURCE_NOT_READY": "This case is not ready for billing. Ask the clinical team to check the records and authorization."
+    "CLAIM_SOURCE_NOT_READY": "This case is not ready for billing. Ask the clinical team to check the records and authorization.",
+    "ENCOUNTER_ALREADY_ENDED": "The encounter has already ended. Reload the record."
   },
   "fieldErrors": {
     "RULE_COMPILE_FAILED": "The rule condition did not compile",
@@ -761,7 +762,16 @@
       "created": "Encounter saved.",
       "diagnoses": "Diagnoses",
       "editDiagnoses": "Edit diagnoses",
-      "noDiagnosis": "No diagnosis"
+      "noDiagnosis": "No diagnosis",
+      "end": {
+        "action": "End encounter",
+        "done": "Encounter ended",
+        "hint": "Started: {{started}}. The end time cannot be changed after saving.",
+        "invalid": "End time cannot precede the start.",
+        "reload": "Reload the record to check its current state.",
+        "uncertain": "The outcome is uncertain. Retry the same end time or reload the record.",
+        "refresh": "Reload record"
+      }
     },
     "diagnoses": {
       "title": "Diagnoses",

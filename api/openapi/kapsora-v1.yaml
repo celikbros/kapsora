@@ -8228,6 +8228,59 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+  /api/v1/encounters/{encounterId}/end:
+    post:
+      tags: [Clinical]
+      operationId: endEncounter
+      description: |
+        Ends an open encounter without changing its clinical content. Requires
+        health.case.manage and health.clinical.read within the provider scope.
+        The case must be open; endedAt cannot precede startedAt. The encounter ETag
+        prevents stale updates. Replaying the same idempotency key returns the same result;
+        a fresh command for an already ended encounter is refused.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/EncounterId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EndEncounter'
+      responses:
+        '200':
+          description: Encounter ended
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Encounter'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: The encounter changed since the caller read it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match is missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /api/v1/encounters/{encounterId}/diagnoses:
     get:
       tags: [Clinical]
@@ -21159,6 +21212,14 @@ components:
             Free text kept on the audit row, not on the case. Two hundred characters is the
             audit detail limit: a longer value would be dropped by the sanitiser without
             anybody being told, so it is refused here instead.
+    EndEncounter:
+      type: object
+      additionalProperties: false
+      required: [endedAt]
+      properties:
+        endedAt:
+          type: string
+          format: date-time
     CreateEncounter:
       type: object
       additionalProperties: false

@@ -355,3 +355,15 @@ func (Repository) ListAccessEvents(ctx context.Context, tx pgx.Tx, tenantID uuid
 	}
 	return out, nil
 }
+
+// EndEncounter updates only the end timestamp and the actor at the expected version.
+func (Repository) EndEncounter(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID, endedAt time.Time, actorID *uuid.UUID, expected int64) error {
+	n, err := sqlcgen.New(tx).EndEncounter(ctx, sqlcgen.EndEncounterParams{TenantID: tenantID, ID: id, EndedAt: &endedAt, ActorID: optUUID(actorID), ExpectedVersion: expected})
+	if err != nil {
+		return fmt.Errorf("health: end encounter: %w", err)
+	}
+	if n != 1 {
+		return application.ErrVersionMismatch
+	}
+	return nil
+}

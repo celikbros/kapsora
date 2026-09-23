@@ -173,6 +173,23 @@ func run(args []string) error {
 	}
 
 	switch args[0] {
+	case "health-case-scope":
+		if len(args) != 3 {
+			return fmt.Errorf("usage: seed health-case-scope <source-claim-uuid> <fixture-uuid>")
+		}
+		source, err := uuid.Parse(args[1])
+		if err != nil {
+			return fmt.Errorf("invalid source claim UUID")
+		}
+		fixture, err := uuid.Parse(args[2])
+		if err != nil {
+			return fmt.Errorf("invalid fixture UUID")
+		}
+		result, err := s.healthCaseBoundary(ctx, source, fixture)
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(os.Stdout).Encode(result)
 	case "health-scope":
 		if len(args) != 2 {
 			return fmt.Errorf("usage: seed health-scope <fixture-uuid>")
@@ -250,7 +267,7 @@ func run(args []string) error {
 		}
 		return s.demo(ctx)
 	default:
-		return fmt.Errorf("unknown command %q; use account, demo, document-rule, claim-review-rule, automatic-program or health-scope", args[0])
+		return fmt.Errorf("unknown command %q; use account, demo, document-rule, claim-review-rule, automatic-program, health-scope or health-case-scope", args[0])
 	}
 }
 

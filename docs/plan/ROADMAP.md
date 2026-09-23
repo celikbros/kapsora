@@ -134,13 +134,13 @@ evidence; race, duplicate-delivery and ledger invariants may use focused databas
 | H02 | Invalid date/enrollment or insufficient balance is explained; ambiguous enrollment is selectable | PC-02 | Verified for demo: insufficient quantity, real ambiguity and exclusive enrollment end passed |
 | H03 | Automatic/manual request decision and return/correct/resubmit reach the provider | PC-02 | Partial: live approval/correction/rejection/cancellation and combined document gate passed; live scoped automatic decision passed; queue own-file fix confirmed live after restart |
 | H04 | Authorization/fulfillment and exact entitlement effects agree; retries do not duplicate | PC-02 | Generic path and automatic clinical claim consumption verified live; retries preserve exact balances and one usage |
-| H05 | Same episode reaches case, encounter and valid diagnosis | PC-03 | Partial: live browser case → ended encounter → primary ICD-10 diagnosis → case closure passed; primary/closure refusal cases remain |
+| H05 | Same episode reaches case, encounter and valid diagnosis | PC-03 | Partial: original closed-encounter path passed; missing open-encounter end command implemented and locally verified. Live diagnosis/closure/retry acceptance awaits operator API restart |
 | H06 | Browser-uploaded evidence is scanned CLEAN; missing/unsafe evidence cannot pass submission | PC-03 | PASSED 2026-09-23: real clean PDF and EICAR rejection; unsafe download/submit refused with no queue/usage; clean replacement completes the same episode |
 | H07 | Report review, coverage and immutable correction history work | PC-03 | PASSED 2026-09-23: live approval/correction, immutable history, separate scanned evidence and unchanged prior claim/usage; coverage exceptions verified in isolated PostgreSQL tests |
 | H08 | Clinical provider → billing → medical → financial handoff reaches invoice-ready claim | PC-03 | PASSED 2026-09-23: real browser handoff, two return/correction cycles, preserved contract price, final 400/400/0 TRY and one net session consumed |
-| H09 | Duplicate/report/authorization blockers and corrected claim history are accurate | PC-03 | Partial: two correction versions, immutable decisions, stale/wrong-stage refusals, readiness gate and exact consumption/replays passed; duplicate/report/authorization exception coverage remains |
+| H09 | Duplicate/report/authorization blockers and corrected claim history are accurate | PC-03 | PASSED 2026-09-23: correction/history and consumption/replays plus live duplicate, authorization exceeded, report date and service-scope blockers; no extra consumption or report usage |
 | H10 | HR/financial projections exclude forbidden clinical fields in API and DOM | PC-03/04 | Outpatient verified live: HR case/report and HR/financial claim API/DOM hide clinical fields; current/historical claim notes protected. Inpatient projection coverage remains for PC-04 |
-| H11 | Sensitive purpose, access audit, self-review and other-provider/tenant boundaries hold | PC-03/04 | Partial: live purpose/audit, own-report decisions/queue and report cross-provider/tenant reads/writes passed; own-claim and broader case/claim/stay live boundaries remain |
+| H11 | Sensitive purpose, access audit, self-review and other-provider/tenant boundaries hold | PC-03/04 | Outpatient verified: live purpose/audit, own-report/claim decisions, report tenant/provider and case/claim provider boundaries; case/claim tenant refusals verified with PostgreSQL/HTTP tests. Stay boundaries remain for PC-04 |
 | H12 | Admission approval advances the stay once and refuses duplicate open admission | PC-04 | Pending |
 | H13 | Extension and segment rules hold; refusal leaves balances correct | PC-04 | Pending |
 | H14 | Early discharge, partial days and overstay reconcile original/extension authorizations | PC-04 | Pending |
@@ -224,7 +224,7 @@ backend change is concrete and locally checked.
 | Explicit request authorization handoff is implemented and verified | Real provider visibility and reserve/consume/release checks pass; approval and reservation remain separate commands | Verify clinical episode/claim usage at PC-03 |
 | Session quantity no longer caps money | Live PHYSIO_SESSION quote is contract/payer/member 400/400/0 TRY with unchanged balances | Preserve regression; verify same-episode claim pricing at PC-03 |
 | Mapping-aware authorization is implemented | Factor-2 and fractional integration tests pass; real selected-enrollment factor-1 reserve/consume/release passes | Keep clinical usage and inpatient partial release acceptance separate |
-| Checked-in seed lacks admission service; seeded CLEAN report bypasses upload scanning | `cmd/seed/business.go`, `businessplan.go`, `staffmember.go`; current DB configuration not audited | PC-04.1 admission fixtures; PC-03.2 genuine upload/scan |
+| Checked-in seed lacks admission service; seeded CLEAN report bypasses upload scanning | `cmd/seed/business.go`, `businessplan.go`, `staffmember.go`; live catalog read on 2026-09-23 confirms INPATIENT_DAY absent; real outpatient CLEAN/EICAR scan now passed | PC-04.1 admission fixtures; PC-03.2 genuine upload/scan |
 | Dedicated provider/member projects still use their test ports; single-door provider/backoffice handoff now works | `real-health.spec.ts` runs under chromium with explicit `/portal/` routes and logout between actors | PC-02.3 partially verified; member handoff and dedicated-project URL generalization remain pending |
 | `invoice.submitted` has no consumer; `settlement.approved` is the deferred M9 posting boundary | Observed startup warnings plus worker/port inspection; settlement notification is published separately, so local failure is not established | PC-05.6 document event handling policy and test required local effects; do not invent automatic batch creation |
 | Historical UI list/detail gaps may already have changed | Dated status-log notes are not current reproduction evidence | Check while exercising their scenario; create fixes only for reproduced gaps |
@@ -235,6 +235,35 @@ in parallel. If an external dependency blocks a path, name the exact blocker and
 independent work within the current stage; do not silently mark it complete or switch
 to recovery/deployment. Routine reversible fixes follow the approved scope. Business
 rule changes or genuinely new access decisions are brought back with a concrete proposal.
+
+### PC-03 exception and boundary checkpoint — 2026-09-23
+
+- [Real claim exceptions](../../tests/e2e/real-claim-exceptions.spec.ts) passed (5.3 s total):
+  DUPLICATE_SUSPECTED routes to financial review; AUTHORIZATION_EXCEEDED,
+  REPORT_OUT_OF_WINDOW and SERVICE_NOT_IN_REPORT route to medical review. Each blocker
+  appears in the reviewer screen and prevents invoice readiness. Proper reviewers reject
+  the synthetic claims; queues close, the unused hold releases, report usage stays unchanged
+  and final balances match the original 19 available / 0 reserved / 1 consumed.
+- [Real own-claim acceptance](../../tests/e2e/real-own-claim.spec.ts) passed (3.9 s total):
+  staff.member cannot decide lines, approve, reject or return their own claim; API returns
+  OWN_FILE_DECISION and the UI omits those actions. Another doctor rejects the fixture;
+  no entitlement or report usage changes.
+- [Real case/claim provider boundaries](../../tests/e2e/real-case-claim-scope.spec.ts)
+  passed (11.7 s total). A distinct provider's closed case, ended encounter and cancelled
+  draft claim remain visible to the medical reviewer, hidden from provider.a/billing.a
+  reads, lists, mutation commands and screens. Repeating fixture setup confirms unchanged
+  content/versions; the source outpatient episode and balances remain unchanged.
+- Case/encounter tenant HTTP and claim tenant/provider service tests use actual isolated
+  PostgreSQL databases with valid records and identical permissions; foreign reads, history,
+  readiness and writes are refused without mutations. These are database/transport tests,
+  not a live DEMO_B clinical-login walkthrough. DEMO_B report isolation has separate live evidence.
+- Found H05 blocker: an encounter could be created open but had no command to end it,
+  leaving case closure unreachable. `endEncounter` now validates time/version, serializes
+  against case closure, enforces provider/clinical permissions and records an audit event.
+  Provider UI preserves the exact command after an uncertain response and explicitly reloads
+  stale data. HTTP, concurrent-command/projection and UI retry tests pass. The operator
+  restart is pending; [live acceptance](../../tests/e2e/real-encounter.spec.ts) is prepared,
+  and H05/PC-03 are not marked complete before it passes.
 
 ### PC-02 checkpoint — 2026-09-22
 

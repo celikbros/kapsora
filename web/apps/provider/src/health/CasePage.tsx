@@ -36,6 +36,7 @@ import { useClaimsOfCase } from '../claims/queries';
 import { DocumentsPanel } from '../documents';
 import { problemOf } from '../problems';
 import { useProviderOrganizationId } from '../queries';
+import { EndEncounterForm } from './EndEncounterForm';
 import { DiagnosisEditor } from './DiagnosisEditor';
 import {
   useAdmit,
@@ -845,6 +846,7 @@ function EncounterRows({
   onLoaded: (encounterId: string, items: Diagnosis[]) => void;
 }) {
   const { t } = useTranslation();
+  const [ending, setEnding] = useState(false);
   const columns = 3 + (clinical ? 2 : 0) + (editable ? 1 : 0);
   return (
     <>
@@ -868,12 +870,26 @@ function EncounterRows({
         ) : null}
         {editable ? (
           <TD>
-            <Button size="sm" variant="ghost" onClick={onEdit} aria-expanded={editing}>
-              {t('health.encounters.editDiagnoses')}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              {!encounter.endedAt && !ending ? (
+                <Button size="sm" variant="secondary" onClick={() => setEnding(true)}>
+                  {t('health.encounters.end.action')}
+                </Button>
+              ) : null}
+              <Button size="sm" variant="ghost" onClick={onEdit} aria-expanded={editing}>
+                {t('health.encounters.editDiagnoses')}
+              </Button>
+            </div>
           </TD>
         ) : null}
       </TR>
+      {ending && editable && !encounter.endedAt ? (
+        <TR>
+          <TD colSpan={columns}>
+            <EndEncounterForm encounter={encounter} onDone={() => setEnding(false)} />
+          </TD>
+        </TR>
+      ) : null}
       {editing ? (
         <TR>
           <TD colSpan={columns}>

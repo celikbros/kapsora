@@ -647,6 +647,77 @@ head dc8ac52 passed CI. No runtime implementation/migration change; no restart n
 H11 remains partial: own-claim decisions and broader live case/claim/stay boundaries are
 not certified by these report tests. These and H05/H09 exceptions precede PC-03 closure.
 
+**H09 and outpatient access boundaries (2026-09-23):** real claim exception acceptance
+passed (3.6 s / 5.3 s total). Four new claims expose duplicate suspicion, authorization
+exceeded, report out-of-window and uncovered service in the proper review screen, all
+blocked from invoice readiness. No submit adds consumption/report usage. Rejecting the
+claim with the temporary authorization releases its unused hold; after cleanup the account
+returns to 19 available / 0 reserved / 1 consumed. Each test's work items are completed.
+The original approved outpatient claim `01a0cea7-d8b0-75aa-be3b-1168326af322` remains
+invoice-ready for PC-05. The new authorization is CANCELLED:
+`01a0cf87-3eb9-7510-aea0-c513ea0a242c`. Claims are REJECTED:
+`01a0cf87-3f07-778a-b7e6-a219ef8a99b2`, `01a0cf87-41e4-7d95-8812-bf01b8ee306a`,
+`01a0cf87-44d8-768e-9ff2-79a11e127907`, `01a0cf87-46cb-7d61-8870-2f63d28a99d8`.
+The focused duplicate/authorization/report coverage PostgreSQL tests also passed (29.1 s).
+
+The real own-claim test passed (2.0 s / 3.9 s total). staff.member gets
+OWN_FILE_DECISION/403 for line decisions, approve, reject and return, with no version,
+entitlement or usage change; the screen shows the own-file note without decision controls.
+Another doctor rejects the synthetic claim `01a0cf82-5863-7c48-85d1-fda1120a5db7` and
+its review work item is completed.
+
+Real provider-scope acceptance passed (9.9 s / 11.7 s total). A dedicated test provider owns
+a closed case, ended encounter and cancelled draft claim. doctor.a can read them;
+provider.a/billing.a cannot read/list/change them, see claim history/readiness or open the
+case source. Their screens show not-found without clinical text. The repeated seed call
+confirms unchanged records/versions; the source episode and balances stay unchanged.
+Fixture UUID `192a0c7b-1eeb-4cde-a06c-ad87f9c6c2ed`; case
+`01a0cf91-2d29-7343-a476-315ba8dd10c5`, encounter `01a0cf91-2d2e-732f-9292-c62551b3aea2`,
+claim `01a0cf91-2d39-745d-b788-e741a849e8fc`. Setup uses application services only, accepts
+an approved single-line claim for the synthetic Deneme Ayaktan person and a closed outpatient
+case, and creates no reservation, consumption, report, enrollment or human grant. Reuse the
+UUID; a new UUID creates another dedicated provider and closed records.
+Case/encounter tenant HTTP and claim tenant/provider integration tests also pass (3.8 s
+each) against isolated PostgreSQL. They verify reads and writes with the same permissions
+in a second tenant; this is not a live clinical login in DEMO_B.
+
+With `.env` loaded and the existing-UI variables set, run the bounded opt-ins separately:
+
+```powershell
+$env:E2E_OWN_CLAIM = '1'
+pnpm e2e real-own-claim.spec.ts --project chromium --trace off
+$env:E2E_CLAIM_EXCEPTION_SOURCE_CASE = '01a0cea7-9065-7661-af37-b132c171758b'
+pnpm e2e real-claim-exceptions.spec.ts --project chromium --trace off
+$env:E2E_CASE_SCOPE_SOURCE_CLAIM = '01a0cea7-d8b0-75aa-be3b-1168326af322'
+$env:E2E_CASE_SCOPE_FIXTURE = '192a0c7b-1eeb-4cde-a06c-ad87f9c6c2ed'
+pnpm e2e real-case-claim-scope.spec.ts --project chromium --trace off
+Remove-Item Env:E2E_OWN_CLAIM, Env:E2E_CLAIM_EXCEPTION_SOURCE_CASE, Env:E2E_CASE_SCOPE_SOURCE_CLAIM, Env:E2E_CASE_SCOPE_FIXTURE
+```
+
+**H05 open-encounter closure fix — implemented, live verification pending:** the API
+allowed open encounters but had no end command. Added POST `/api/v1/encounters/{id}/end`,
+If-Match/idempotency, parent-case locking, end-time validation, audit event and projected
+response. Existing case/manage plus clinical/read permissions and provider/tenant scope
+apply. The provider form is inline beneath the open encounter; a lost response retries the
+same key/body/ETag, while stale/definitive failures require an explicit reload. No migration.
+Three focused HTTP tests passed (10.7 s), including simultaneous commands and sensitive
+projection; eight UI tests passed (12.6 s), along with provider build, typecheck/lint,
+Go lint and OpenAPI lint (11 pre-existing description warnings). The complete health Go
+suite also passed, including application (89.5 s) and HTTP (126.8 s) packages. Previous head `739d922`
+passed GitHub CI. New backend needs the operator's `dev.ps1 up` restart, already requested;
+H05 remains partial until the following live test runs:
+
+```powershell
+$env:E2E_ENCOUNTER_SOURCE_CASE = '01a0cea7-9065-7661-af37-b132c171758b'
+pnpm e2e real-encounter.spec.ts --project chromium --trace off
+Remove-Item Env:E2E_ENCOUNTER_SOURCE_CASE
+```
+
+That test creates its own case/encounter, validates primary-diagnosis rules, intercepts a
+committed end response, retries, closes the case and checks no balance change. Desktop/mobile
+screenshots remain ignored under `.impeccable/review`. PC-03 is still active; inpatient
+privacy and acceptance remain PC-04, followed by PC-05 and PC-06 in order.
+
 ## 3. Get it running
 
 Requirements: Go 1.27+, a local PostgreSQL 18, Node 24 + pnpm 10. No Docker, ever (§6).

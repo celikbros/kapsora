@@ -8140,6 +8140,11 @@ type Encounter struct {
 // EncounterType defines model for EncounterType.
 type EncounterType string
 
+// EndEncounter defines model for EndEncounter.
+type EndEncounter struct {
+	EndedAt time.Time `json:"endedAt"`
+}
+
 // EndPeriodCommand defines model for EndPeriodCommand.
 type EndPeriodCommand struct {
 	EndsOn     openapi_types.Date `json:"endsOn"`
@@ -14180,6 +14185,18 @@ type PutEncounterDiagnosesParams struct {
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
+// EndEncounterParams defines parameters for EndEncounter.
+type EndEncounterParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
 // ListEnrollmentsParams defines parameters for ListEnrollments.
 type ListEnrollmentsParams struct {
 	// Cursor Opaque cursor from the previous response.
@@ -17009,6 +17026,9 @@ type CheckEligibilityJSONRequestBody = EligibilityCheckRequest
 // PutEncounterDiagnosesJSONRequestBody defines body for PutEncounterDiagnoses for application/json ContentType.
 type PutEncounterDiagnosesJSONRequestBody = PutEncounterDiagnoses
 
+// EndEncounterJSONRequestBody defines body for EndEncounter for application/json ContentType.
+type EndEncounterJSONRequestBody = EndEncounter
+
 // UpdateEnrollmentApplicationMergePatchPlusJSONRequestBody defines body for UpdateEnrollment for application/merge-patch+json ContentType.
 type UpdateEnrollmentApplicationMergePatchPlusJSONRequestBody = UpdateEnrollmentRequest
 
@@ -17795,6 +17815,9 @@ type ServerInterface interface {
 
 	// (PUT /api/v1/encounters/{encounterId}/diagnoses)
 	PutEncounterDiagnoses(w http.ResponseWriter, r *http.Request, encounterId EncounterId, params PutEncounterDiagnosesParams)
+
+	// (POST /api/v1/encounters/{encounterId}/end)
+	EndEncounter(w http.ResponseWriter, r *http.Request, encounterId EncounterId, params EndEncounterParams)
 
 	// (GET /api/v1/enrollments)
 	ListEnrollments(w http.ResponseWriter, r *http.Request, params ListEnrollmentsParams)
@@ -18942,6 +18965,11 @@ func (_ Unimplemented) ListEncounterDiagnoses(w http.ResponseWriter, r *http.Req
 
 // (PUT /api/v1/encounters/{encounterId}/diagnoses)
 func (_ Unimplemented) PutEncounterDiagnoses(w http.ResponseWriter, r *http.Request, encounterId EncounterId, params PutEncounterDiagnosesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/encounters/{encounterId}/end)
+func (_ Unimplemented) EndEncounter(w http.ResponseWriter, r *http.Request, encounterId EncounterId, params EndEncounterParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -28584,6 +28612,106 @@ func (siw *ServerInterfaceWrapper) PutEncounterDiagnoses(w http.ResponseWriter, 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PutEncounterDiagnoses(w, r, encounterId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// EndEncounter operation middleware
+func (siw *ServerInterfaceWrapper) EndEncounter(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "encounterId" -------------
+	var encounterId EncounterId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "encounterId", chi.URLParam(r, "encounterId"), &encounterId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "encounterId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params EndEncounterParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.EndEncounter(w, r, encounterId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -47318,6 +47446,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/v1/encounters/{encounterId}", wrapper.GetEncounter)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/encounters/{encounterId}/end", wrapper.EndEncounter)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/encounters/{encounterId}/diagnoses", wrapper.ListEncounterDiagnoses)
 	})
 	r.Group(func(r chi.Router) {
@@ -57149,6 +57280,151 @@ type PutEncounterDiagnoses429ApplicationProblemPlusJSONResponse struct {
 }
 
 func (response PutEncounterDiagnoses429ApplicationProblemPlusJSONResponse) VisitPutEncounterDiagnosesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EndEncounterRequestObject struct {
+	EncounterId EncounterId `json:"encounterId"`
+	Params      EndEncounterParams
+	Body        *EndEncounterJSONRequestBody
+}
+
+type EndEncounterResponseObject interface {
+	VisitEndEncounterResponse(w http.ResponseWriter) error
+}
+
+type EndEncounter200ResponseHeaders struct {
+	ETag *string
+}
+
+type EndEncounter200JSONResponse struct {
+	Body    Encounter
+	Headers EndEncounter200ResponseHeaders
+}
+
+func (response EndEncounter200JSONResponse) VisitEndEncounterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EndEncounter403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response EndEncounter403ApplicationProblemPlusJSONResponse) VisitEndEncounterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EndEncounter404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response EndEncounter404ApplicationProblemPlusJSONResponse) VisitEndEncounterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EndEncounter409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response EndEncounter409ApplicationProblemPlusJSONResponse) VisitEndEncounterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EndEncounter412ApplicationProblemPlusJSONResponse Problem
+
+func (response EndEncounter412ApplicationProblemPlusJSONResponse) VisitEndEncounterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EndEncounter422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response EndEncounter422ApplicationProblemPlusJSONResponse) VisitEndEncounterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EndEncounter428ApplicationProblemPlusJSONResponse Problem
+
+func (response EndEncounter428ApplicationProblemPlusJSONResponse) VisitEndEncounterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EndEncounter429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response EndEncounter429ApplicationProblemPlusJSONResponse) VisitEndEncounterResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -76865,6 +77141,9 @@ type StrictServerInterface interface {
 	// (PUT /api/v1/encounters/{encounterId}/diagnoses)
 	PutEncounterDiagnoses(ctx context.Context, request PutEncounterDiagnosesRequestObject) (PutEncounterDiagnosesResponseObject, error)
 
+	// (POST /api/v1/encounters/{encounterId}/end)
+	EndEncounter(ctx context.Context, request EndEncounterRequestObject) (EndEncounterResponseObject, error)
+
 	// (GET /api/v1/enrollments)
 	ListEnrollments(ctx context.Context, request ListEnrollmentsRequestObject) (ListEnrollmentsResponseObject, error)
 
@@ -80629,6 +80908,40 @@ func (sh *strictHandler) PutEncounterDiagnoses(w http.ResponseWriter, r *http.Re
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PutEncounterDiagnosesResponseObject); ok {
 		if err := validResponse.VisitPutEncounterDiagnosesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// EndEncounter operation middleware
+func (sh *strictHandler) EndEncounter(w http.ResponseWriter, r *http.Request, encounterId EncounterId, params EndEncounterParams) {
+	var request EndEncounterRequestObject
+
+	request.EncounterId = encounterId
+	request.Params = params
+
+	var body EndEncounterJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.EndEncounter(ctx, request.(EndEncounterRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "EndEncounter")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(EndEncounterResponseObject); ok {
+		if err := validResponse.VisitEndEncounterResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

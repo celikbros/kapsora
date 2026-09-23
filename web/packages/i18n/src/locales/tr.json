@@ -547,7 +547,8 @@
     "VOUCHER_NOT_AVAILABLE": "Rezervasyon onaylanmadan kupon üretilemez.",
     "CLAIM_CASE_ALREADY_CLAIMED": "Bu vaka için dosya zaten oluşturulmuş. Dosya listesini kontrol edin.",
     "CLAIM_SOURCE_NOT_FOUND": "Faturalandırılacak vaka bulunamadı. Vaka listesini yenileyin.",
-    "CLAIM_SOURCE_NOT_READY": "Vaka faturalamaya hazır değil. Klinik ekibin kayıtları ve provizyonu kontrol etmesini isteyin."
+    "CLAIM_SOURCE_NOT_READY": "Vaka faturalamaya hazır değil. Klinik ekibin kayıtları ve provizyonu kontrol etmesini isteyin.",
+    "ENCOUNTER_ALREADY_ENDED": "Muayene zaten sonlandırılmış. Kaydı yenileyiniz."
   },
   "fieldErrors": {
     "RULE_COMPILE_FAILED": "Kural koşulu derlenemedi",
@@ -2534,7 +2535,16 @@
       "created": "Muayene kaydedildi.",
       "diagnoses": "Tanılar",
       "editDiagnoses": "Tanıları düzenle",
-      "noDiagnosis": "Tanı girilmedi"
+      "noDiagnosis": "Tanı girilmedi",
+      "end": {
+        "action": "Muayeneyi sonlandır",
+        "done": "Muayene sonlandırıldı",
+        "hint": "Başlangıç: {{started}}. Bitiş zamanı kaydedildikten sonra değiştirilemez.",
+        "invalid": "Bitiş zamanı başlangıçtan önce olamaz.",
+        "reload": "Kaydı yeniden yükleyip güncel durumu kontrol ediniz.",
+        "uncertain": "İşlemin sonucu alınamadı. Aynı bitiş zamanıyla tekrar deneyebilir veya kaydı yenileyebilirsiniz.",
+        "refresh": "Kaydı yenile"
+      }
     },
     "diagnoses": {
       "title": "Tanılar",
