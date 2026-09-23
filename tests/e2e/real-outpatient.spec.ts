@@ -262,7 +262,14 @@ test('real outpatient case, diagnosis and scanned report reach a priced claim wi
       .setInputFiles({ name: filename, mimeType: 'application/pdf', buffer: syntheticPDF() });
     await upload.getByLabel(/Belge türü/).selectOption('MEDICAL_REPORT');
     await upload.getByLabel(/Gizlilik/).selectOption('HEALTH');
+    const uploadStarted = page.waitForResponse(
+      (r) => new URL(r.url()).pathname === '/api/v1/documents' && r.request().method() === 'POST',
+    );
     await upload.getByRole('button', { name: 'Belge yükle', exact: true }).click();
+    expect(
+      (await uploadStarted).status(),
+      'document upload reservation; verify MinIO is running',
+    ).toBe(201);
     await expect(
       page
         .getByTestId('documents-table')

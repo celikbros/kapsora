@@ -11,11 +11,11 @@ async function login(page: Page, username: string) {
 /**
  * The health vertical from the provider's desk: a case is opened for a member by name, an
  * encounter is recorded with a diagnosis chosen from ICD-10, a report is drafted and its
- * submission refused honestly while its file is not clean, and a claim is drafted from the
- * case and submitted. In-app navigation throughout: a full page load starts a new mock
+ * submission refused honestly while its file is not clean. An unlinked case cannot start
+ * the new billing handoff; an existing claim draft can still be submitted. In-app navigation throughout: a full page load starts a new mock
  * session.
  */
-test('a provider opens a case, records a diagnosis, drafts a report and submits a claim', async ({
+test('a provider records care, cannot bill an unready case, and submits an existing draft', async ({
   page,
 }) => {
   await page.goto('/');
@@ -67,21 +67,23 @@ test('a provider opens a case, records a diagnosis, drafts a report and submits 
   await page.getByRole('button', { name: 'Gönder' }).click();
   await expect(page.getByTestId('report-status')).toHaveText('Taslak');
 
-  // Back on the case, the billing side: a claim drafted from the case and submitted.
+  // This case has neither an approved source request nor an authorization/report.
+  // Billing must stop rather than manufacture clinical links or a new claim.
   await page.getByRole('link', { name: 'Vaka', exact: true }).first().click();
   await expect(page.getByTestId('case-reports')).toContainText('MR-');
   await page.getByRole('link', { name: 'Yeni claim' }).click();
   await expect(page).toHaveURL(/\/claims\/new/);
+  await expect(page.getByRole('alert')).toContainText('Faturalandırılacak vaka bulunamadı');
+  await expect(page.getByTestId('case-claim-form')).toHaveCount(0);
+
+  // Keep submission coverage using a seeded draft with established associations.
+  await rail.getByRole('link', { name: "Claim'ler", exact: true }).click();
   await page
-    .getByRole('combobox', { name: /^Hizmet/ })
+    .getByTestId('claim-table')
+    .locator('tr[data-status="DRAFT"]')
     .first()
-    .selectOption({ index: 1 });
-  await page
-    .getByLabel(/^İstenen tutar/)
-    .first()
-    .fill('450');
-  await page.getByRole('button', { name: 'Taslağı oluştur' }).click();
-  await expect(page).toHaveURL(/\/claims\/[0-9a-f-]+$/);
+    .getByRole('link')
+    .click();
   await expect(page.getByTestId('claim-status')).toHaveText('Taslak');
   await page.getByRole('button', { name: 'Gönder' }).click();
   await expect(page.getByTestId('claim-status')).not.toHaveText('Taslak');

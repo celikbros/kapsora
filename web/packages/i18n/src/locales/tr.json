@@ -544,7 +544,10 @@
     "NO_SHOW_EVIDENCE_REQUIRED": "Gelmeme bildirimi için kanıt belgesi gerekli.",
     "NO_SHOW_SAME_REVIEWER": "Bildirimi yapan kişi kendi bildirimini onaylayamaz.",
     "WAITLIST_DUPLICATE": "Bu tarihler için zaten bekleme listesindesiniz.",
-    "VOUCHER_NOT_AVAILABLE": "Rezervasyon onaylanmadan kupon üretilemez."
+    "VOUCHER_NOT_AVAILABLE": "Rezervasyon onaylanmadan kupon üretilemez.",
+    "CLAIM_CASE_ALREADY_CLAIMED": "Bu vaka için dosya zaten oluşturulmuş. Dosya listesini kontrol edin.",
+    "CLAIM_SOURCE_NOT_FOUND": "Faturalandırılacak vaka bulunamadı. Vaka listesini yenileyin.",
+    "CLAIM_SOURCE_NOT_READY": "Vaka faturalamaya hazır değil. Klinik ekibin kayıtları ve provizyonu kontrol etmesini isteyin."
   },
   "fieldErrors": {
     "RULE_COMPILE_FAILED": "Kural koşulu derlenemedi",

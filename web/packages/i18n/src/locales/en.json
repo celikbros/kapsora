@@ -412,7 +412,10 @@
     "NO_SHOW_EVIDENCE_REQUIRED": "A no-show report needs an evidence document.",
     "NO_SHOW_SAME_REVIEWER": "The reporter cannot confirm their own report.",
     "WAITLIST_DUPLICATE": "You are already on the waiting list for these dates.",
-    "VOUCHER_NOT_AVAILABLE": "A voucher cannot be issued before the booking is confirmed."
+    "VOUCHER_NOT_AVAILABLE": "A voucher cannot be issued before the booking is confirmed.",
+    "CLAIM_CASE_ALREADY_CLAIMED": "A claim already exists for this case. Check the claim list.",
+    "CLAIM_SOURCE_NOT_FOUND": "The billing case was not found. Refresh the case list.",
+    "CLAIM_SOURCE_NOT_READY": "This case is not ready for billing. Ask the clinical team to check the records and authorization."
   },
   "fieldErrors": {
     "RULE_COMPILE_FAILED": "The rule condition did not compile",
