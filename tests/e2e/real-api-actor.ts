@@ -23,6 +23,7 @@ export class Actor {
       expected?: number;
       etag?: string;
       key?: string;
+      access?: { purpose?: string; reason?: string; projection?: 'FINANCIAL' };
     } = {},
   ) {
     const requestOptions = {
@@ -30,6 +31,11 @@ export class Actor {
       maxRedirects: 0,
       headers: {
         'X-Kapsora-App': this.app,
+        ...(options.access?.purpose ? { 'X-Access-Purpose': options.access.purpose } : {}),
+        ...(options.access?.reason
+          ? { 'X-Access-Reason': encodeURIComponent(options.access.reason) }
+          : {}),
+        ...(options.access?.projection ? { 'X-Access-Projection': options.access.projection } : {}),
         ...(this.cookie ? { Cookie: this.cookie } : {}),
         ...(this.csrf ? { 'X-CSRF-Token': this.csrf } : {}),
         ...(this.tenant ? { 'X-Tenant-ID': this.tenant } : {}),

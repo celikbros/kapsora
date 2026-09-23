@@ -571,6 +571,43 @@ harness TypeScript and ESLint pass. No backend/schema/grant changes or restart r
 H06 is passed; next are H10 real-role privacy/access checks and outstanding PC-03 exception
 gates. PC-03 and health overall remain open; PC-04 inpatient and PC-05 finance follow.
 
+**Outpatient privacy and sensitive-purpose checkpoint (2026-09-23):**
+`real-health-privacy.spec.ts` passed twice (5.3 s, then 5.8 s test / 7.6 s total) on the
+operator's existing server. Set `E2E_REAL_API=1`, `E2E_EXISTING_UI_URL=http://127.0.0.1:5181`
+and `E2E_PRIVACY_SOURCE_CASE=01a0cea7-9065-7661-af37-b132c171758b`, then run the spec
+with `--project chromium --trace off`. The source must be a closed synthetic Deneme Ayaktan
+episode with an approved report and claim. It is read only. Each run opens a separate
+unfunded case on that enrollment, adds an ended encounter with a sensitive diagnosis and
+two draft reports, then cancels those drafts and closes that new case in cleanup.
+
+Real sponsor.hr receives financial case/report projections, no clinical summary/type,
+encounter notes/branch or report documents; direct diagnoses, document downloads and
+access-log reads return 403. HR's member health tab and sensitive report screen show no
+clinical content. HR and financial.reviewer claim API/DOM exclude description, diagnosis
+and report links. The accepted source case and all entitlement balances remain unchanged.
+
+A provider without the sensitive grant receives the financial projection. A doctor without
+purpose gets 428; declining sends FINANCIAL and adds no clinical access event. The real
+purpose dialog opens clinical content only after confirmation, and an auditor reads the
+SUCCESS event with MEDICAL_REVIEW and the exact Turkish reason. A separately opened second
+sensitive report asks again; declining it leaves no SUCCESS event for that report.
+
+Regression testing reproduced a frontend defect: a reused claim page carried both granted
+and declined access state into another record. The access helper now selects state by
+record/actor/tenant/session during render, before the query can issue a read. Two SPA
+navigation regressions cover grant/decline and return-to-original behavior; three more
+cover actor, tenant and session changes. These are UI/mock tests; the real test checks
+separate page loads, not SPA reuse. All 10 focused UI tests and seven health HTTP scenarios
+(29.6 s), backoffice build/typecheck, harness TypeScript and ESLint pass. Desktop/mobile
+HR and purpose-dialog captures were inspected. No backend, migration, grant or restart.
+
+Evidence: new closed case `01a0cf3a-313c-7b12-ac85-81af43ea83f4`, cancelled reports
+`01a0cf3a-3161-71ec-81c1-e572e3048d9d` and `01a0cf3a-3173-7a76-8de6-f4a73cf22845`.
+The source claim remains `01a0cea7-d8b0-75aa-be3b-1168326af322`. Previous head `3458400`
+passed CI. H10 has outpatient live evidence; inpatient coverage remains for PC-04. H11 is
+partial: live purpose/access audit passed; real cross-provider/tenant and remaining own-file
+decision checks still follow. H05/H09 exceptions remain open before PC-03 closure.
+
 ## 3. Get it running
 
 Requirements: Go 1.27+, a local PostgreSQL 18, Node 24 + pnpm 10. No Docker, ever (§6).

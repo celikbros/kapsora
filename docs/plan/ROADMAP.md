@@ -139,8 +139,8 @@ evidence; race, duplicate-delivery and ledger invariants may use focused databas
 | H07 | Report review, coverage and immutable correction history work | PC-03 | PASSED 2026-09-23: live approval/correction, immutable history, separate scanned evidence and unchanged prior claim/usage; coverage exceptions verified in isolated PostgreSQL tests |
 | H08 | Clinical provider → billing → medical → financial handoff reaches invoice-ready claim | PC-03 | PASSED 2026-09-23: real browser handoff, two return/correction cycles, preserved contract price, final 400/400/0 TRY and one net session consumed |
 | H09 | Duplicate/report/authorization blockers and corrected claim history are accurate | PC-03 | Partial: two correction versions, immutable decisions, stale/wrong-stage refusals, readiness gate and exact consumption/replays passed; duplicate/report/authorization exception coverage remains |
-| H10 | HR/financial projections exclude forbidden clinical fields in API and DOM | PC-03/04 | Partial: billing API/DOM excludes clinical fields; medical notes hidden from finance in current/historical claim API and current DOM; HR and other projections remain |
-| H11 | Sensitive purpose, access audit, self-review and other-provider/tenant boundaries hold | PC-03/04 | Pending |
+| H10 | HR/financial projections exclude forbidden clinical fields in API and DOM | PC-03/04 | Outpatient verified live: HR case/report and HR/financial claim API/DOM hide clinical fields; current/historical claim notes protected. Inpatient projection coverage remains for PC-04 |
+| H11 | Sensitive purpose, access audit, self-review and other-provider/tenant boundaries hold | PC-03/04 | Partial: live purpose accept/decline and access audit passed; own-file queue refusal passed earlier; cross-provider/tenant and remaining own-file decisions remain |
 | H12 | Admission approval advances the stay once and refuses duplicate open admission | PC-04 | Pending |
 | H13 | Extension and segment rules hold; refusal leaves balances correct | PC-04 | Pending |
 | H14 | Early discharge, partial days and overstay reconcile original/extension authorizations | PC-04 | Pending |
@@ -1091,3 +1091,25 @@ problem-message gaps are closed by these changes; other recorded gaps are not im
   `01a0cea7-ad13-7f1a-8d0f-19713a87b2b1`; full evidence IDs are in HANDOVER.
   No backend, migration or grant changes. H06 passed; H10 real-role privacy/access and
   remaining PC-03 exceptions are next. PC-04/05 remain queued; no health-wide closure.
+
+### Outpatient HR/financial privacy and purpose boundaries — 2026-09-23
+
+- Real sponsor.hr case/report projections exclude clinical fields/documents; diagnoses,
+  document downloads and access-log reads are forbidden. HR member/claim/report DOM and
+  financial reviewer claim API/DOM carry no clinical text or diagnosis/report links.
+- Fresh separate sensitive case: provider gets financial projection; doctor without a
+  purpose gets 428. Declining creates no clinical access event; confirming the dialog
+  produces a SUCCESS event with MEDICAL_REVIEW and the exact reason, visible to an auditor.
+- Fixed a reproduced SPA defect where an access choice followed navigation to another
+  claim. State is scoped to record/actor/tenant/session before the first query; original
+  record choices are remembered within that context. Five new UI regressions cover record
+  navigation, return, actor, tenant and session changes. No backend/grant/schema change.
+- Live test passed twice (5.3/5.8 s), final 7.6 s total. All 10 focused UI tests, seven
+  health HTTP scenarios (29.6 s), build/typecheck, harness TypeScript and lint pass.
+  Desktop/mobile inspected; original case and entitlement accounts unchanged. Test reports
+  cancelled and new case closed; no authorization/claim/invoice/payment created.
+- New case `01a0cf3a-313c-7b12-ac85-81af43ea83f4`; safe evidence IDs and rerun command in
+  HANDOVER. Previous `3458400` CI passed. H10 outpatient evidence expanded; H11 partial.
+- Next: real foreign-provider/tenant and remaining own-file decision boundaries, then
+  outstanding H05/H09 exceptions before PC-03 closure. Inpatient privacy remains part of
+  PC-04; PC-05 finance follows. This is not complete-health acceptance.

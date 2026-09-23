@@ -474,7 +474,10 @@ never a cell.
 **A sensitive record asks why before its clinical half opens, once per record, in memory
 only.** The server answers 428 and the screen puts a real dialog in front of the page: a
 purpose from the reference list, a reason, and the sentence that the look is recorded. The
-answer lives for the tab's lifetime and nowhere else, because a stated purpose is not a
+answer is scoped to the record, actor, active tenant and authenticated session. Resolve a
+changed scope before issuing the first read; never reuse the previous record's purpose
+while waiting for an effect. Returning to that same record in the same context keeps its
+choice. The answer lives in tab memory and nowhere else, because a stated purpose is not a
 credential to store and asking again on every refetch would turn a question into a
 click-through. Declining is a button that leads somewhere — the financial half, with a
 sentence saying why the diagnosis is not on the page — and not a dead end.
