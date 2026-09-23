@@ -502,9 +502,43 @@ Evidence: claim `01a0ce7a-c25f-7b41-8384-c3a86913c973`, case
 `01a0ce7a-7ae3-79ea-b907-e1ee7c56e6b1`, report `01a0ce7a-7eb1-7f10-b191-855a3286070f`,
 authorization `01a0ce7a-716f-78ad-800f-c81ea4e0d42f`, account
 `01a0ce7a-6d0c-7831-ae52-cfe4047d730f`. All six CI jobs passed on `98d6ab4`.
-H08 is passed; H09/H10 have expanded partial evidence. PC-03 is still active: next is
-approved-report correction/history and coverage exceptions, then remaining unsafe-file
-and HR/sensitive/provider/tenant/audit boundaries. PC-04 inpatient and PC-05 finance follow.
+H08 is passed; H09/H10 have expanded partial evidence. The report correction checkpoint
+below completes the next H07 slice. PC-03 remains active; PC-04/05 follow its remaining gates.
+
+**H07 report correction/history checkpoint passed (2026-09-23):** the real outpatient
+harness with `E2E_REPORT_CORRECTION=1` and `E2E_CLAIM_REVIEW=0` passed twice (34.0 s,
+then 33.4 s test / 35.8 s total). Use the same `E2E_REAL_API`, existing-UI URL and source
+request settings as the outpatient test above. Each run creates a fresh synthetic episode.
+
+The provider cannot patch/replace services on an approved report (409). A correction
+keeps the reference/root, copies service lines into new identities and requires its own
+document. Missing evidence and a second correction fork return 422; exact create replay
+returns the same draft. The browser edits the summary and coverage to two sessions,
+uploads a separate PDF through real ClamAV and sends it to the doctor's queue for approval.
+The old report becomes SUPERSEDED; all its other clinical fields, services, document and
+usage history remain unchanged. The existing approved claim and invoice readiness stay
+unchanged, with account 19 available / 0 reserved / 1 consumed. Replayed approval changes
+nothing. Both versions remain navigable; the case is closed and work items completed.
+
+The live test reproduced a header-save/service-edit race. Report commands now share one
+pending state through the awaited refetch; header/services and submission are disabled
+until it settles. The test deliberately delays that GET and checks the lock before saving
+quantity two. Mobile service editing scrolls within its table instead of squeezing fields.
+Desktop/mobile captures were inspected; no page overflow at 390/1440px.
+
+Evidence: original report `01a0ce8c-0b08-732a-914a-79003ee2081c`, correction
+`01a0ce8c-4e49-70c9-a914-9f74538c8635`, claim `01a0ce8c-445f-77d8-a554-851ae916fae5`,
+case `01a0ce8c-0695-73bd-a634-48e1e9db2857`, account `01a0ce8b-fd33-775b-9afd-88adcab83790`.
+
+Isolated PostgreSQL claim tests separately prove approved/date-window/status/superseded/
+wrong-service coverage behavior: refused coverage routes to medical review, creates no
+usage and refuses invoice readiness; finance does not receive the clinical exception.
+These exception fixtures are not live-browser evidence. Focused claim tests (27.0 s),
+report HTTP tests (10.9 s), 19 UI/mock tests, provider build/typecheck, harness TypeScript,
+ESLint and Go vet pass. No backend implementation, schema or permission change; no restart.
+Previous head `1ee92da` has all six CI jobs green; this checkpoint's CI is pending push.
+Next: remaining unsafe-file and HR/sensitive/provider/tenant/audit boundaries and outstanding
+PC-03 exceptions. H09/H10 remain partial; health as a whole is not complete.
 
 ## 3. Get it running
 

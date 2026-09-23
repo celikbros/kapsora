@@ -136,7 +136,7 @@ evidence; race, duplicate-delivery and ledger invariants may use focused databas
 | H04 | Authorization/fulfillment and exact entitlement effects agree; retries do not duplicate | PC-02 | Generic path and automatic clinical claim consumption verified live; retries preserve exact balances and one usage |
 | H05 | Same episode reaches case, encounter and valid diagnosis | PC-03 | Partial: live browser case → ended encounter → primary ICD-10 diagnosis → case closure passed; primary/closure refusal cases remain |
 | H06 | Browser-uploaded evidence is scanned CLEAN; missing/unsafe evidence cannot pass submission | PC-03 | Partial: real PDF/ClamAV and missing/unscanned request gate passed; real case-linked report upload/scan and missing-file refusal passed; infected-file acceptance remains |
-| H07 | Report review, coverage and immutable correction history work | PC-03 | Partial: browser approval, queue completion and one linked claim usage/replay passed; correction history and coverage exceptions remain |
+| H07 | Report review, coverage and immutable correction history work | PC-03 | PASSED 2026-09-23: live approval/correction, immutable history, separate scanned evidence and unchanged prior claim/usage; coverage exceptions verified in isolated PostgreSQL tests |
 | H08 | Clinical provider → billing → medical → financial handoff reaches invoice-ready claim | PC-03 | PASSED 2026-09-23: real browser handoff, two return/correction cycles, preserved contract price, final 400/400/0 TRY and one net session consumed |
 | H09 | Duplicate/report/authorization blockers and corrected claim history are accurate | PC-03 | Partial: two correction versions, immutable decisions, stale/wrong-stage refusals, readiness gate and exact consumption/replays passed; duplicate/report/authorization exception coverage remains |
 | H10 | HR/financial projections exclude forbidden clinical fields in API and DOM | PC-03/04 | Partial: billing API/DOM excludes clinical fields; medical notes hidden from finance in current/historical claim API and current DOM; HR and other projections remain |
@@ -1048,3 +1048,27 @@ problem-message gaps are closed by these changes; other recorded gaps are not im
   All six CI checks passed on `98d6ab4`. H08 is passed; H09/H10 remain partial.
 - Next: H07 report correction/history and coverage exceptions, followed by remaining
   unsafe-file and privacy/access boundaries. PC-03 remains active; PC-04/05 follow.
+
+### H07 report correction and coverage acceptance — 2026-09-23
+
+- The real outpatient browser test passed twice with `E2E_REPORT_CORRECTION=1`
+  (34.0 s then 33.4 s). Provider creates version two, edits coverage, uploads its own PDF,
+  passes real ClamAV and submits; the doctor approves through the review queue.
+- Approved-report edits return 409; missing correction evidence and duplicate forks return
+  422. Exact command replays preserve history. Old report becomes SUPERSEDED without
+  changing its clinical contents, services, document or usage. The original approved claim,
+  invoice readiness and account 19/0/1 remain unchanged; case closed, queue completed.
+- Fixed the reproduced report-save race with shared pending state through the post-save
+  refetch. A deliberately delayed GET proves editing/submission stay locked. Mobile fields
+  remain readable within a scrolling table; 390/1440px visual checks passed.
+- PostgreSQL claim tests verify valid, future, past, unapproved, superseded and wrong-service
+  reports. Invalid coverage routes to medical review without usage or invoice readiness;
+  clinical exceptions stay hidden from finance. This is isolated test evidence, not a live
+  browser exception sign-off. Focused claim/report HTTP tests, 19 UI/mock tests, provider
+  build/typecheck, harness TypeScript, ESLint and Go vet pass. No server restart needed.
+- Original/correction reports `01a0ce8c-0b08-732a-914a-79003ee2081c` /
+  `01a0ce8c-4e49-70c9-a914-9f74538c8635`; remaining evidence IDs are in HANDOVER.
+  H07 is passed within this stated evidence scope. H09/H10 and PC-03 remain open.
+- Next: unsafe-file acceptance, remaining privacy/access boundaries and PC-03 exceptions,
+  followed by PC-04 inpatient and PC-05 finance. Previous head `1ee92da` has six green CI jobs;
+  this checkpoint's CI is pending push.

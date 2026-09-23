@@ -3,10 +3,12 @@ import { expect, request as apiRequest, test } from '@playwright/test';
 import type { components } from '../../web/packages/api-client/src/generated/kapsora-v1';
 import { Actor } from './real-api-actor';
 import { reviewAndCorrectClaim, seedClaimReviewRule } from './real-claim-review-flow';
+import { correctApprovedReport } from './real-report-correction-flow';
 import { syntheticPDF } from './synthetic-pdf';
 
 type Schema<K extends keyof components['schemas']> = components['schemas'][K];
 const base = process.env['E2E_EXISTING_UI_URL'] ?? '';
+const reportMode = process.env['E2E_REPORT_CORRECTION'] === '1';
 const reviewMode = process.env['E2E_CLAIM_REVIEW'] === '1';
 const sourceId = process.env['E2E_OUTPATIENT_SOURCE_REQUEST'] ?? '';
 test.skip(
@@ -18,16 +20,16 @@ test('real outpatient case, diagnosis and scanned report reach a priced claim wi
   page,
   browser,
 }) => {
-  test.setTimeout(reviewMode ? 240_000 : 120_000);
+  test.setTimeout(reviewMode || reportMode ? 240_000 : 120_000);
   const doctorPage = await browser.newPage({ locale: 'tr-TR', timezoneId: 'Europe/Istanbul' });
   const billingPage = await browser.newPage({ locale: 'tr-TR', timezoneId: 'Europe/Istanbul' });
   const financePage = await browser.newPage({ locale: 'tr-TR', timezoneId: 'Europe/Istanbul' });
-  const finance = new Actor(financePage.request, 'backoffice', reviewMode);
+  const finance = new Actor(financePage.request, 'backoffice', reviewMode || reportMode);
   let ruleAttempted = false;
-  const admin = new Actor(await apiRequest.newContext(), 'backoffice', reviewMode);
-  const provider = new Actor(page.request, 'provider', reviewMode);
-  const doctor = new Actor(doctorPage.request, 'backoffice', reviewMode);
-  const billing = new Actor(billingPage.request, 'provider', reviewMode);
+  const admin = new Actor(await apiRequest.newContext(), 'backoffice', reviewMode || reportMode);
+  const provider = new Actor(page.request, 'provider', reviewMode || reportMode);
+  const doctor = new Actor(doctorPage.request, 'backoffice', reviewMode || reportMode);
+  const billing = new Actor(billingPage.request, 'provider', reviewMode || reportMode);
   const ids: Record<string, string> = {};
   try {
     await admin.login('admin.a');
@@ -525,6 +527,18 @@ test('real outpatient case, diagnosis and scanned report reach a priced claim wi
     await expect(billingPage.getByTestId('claim-status')).toHaveText('Onaylandı');
     await expect(billingPage.getByTestId('readiness-verdict')).toContainText('hazır');
     expect(await billingPage.locator('body').innerText()).not.toContain(clinicalMarker);
+    if (reportMode)
+      await correctApprovedReport({
+        base,
+        reportId: report.id,
+        claimId: claim.data.id,
+        provider,
+        doctor,
+        billing,
+        providerPage: page,
+        doctorPage,
+        snapshot,
+      });
     await page.goto(base + `/portal/cases/${healthCase.id}`);
     await page.getByRole('button', { name: 'Vakayı kapat', exact: true }).click();
     await page
@@ -537,7 +551,8 @@ test('real outpatient case, diagnosis and scanned report reach a priced claim wi
       contentType: 'application/json',
       body: JSON.stringify({
         ...ids,
-        reportStatus: 'APPROVED',
+        reportStatus: reportMode ? 'SUPERSEDED' : 'APPROVED',
+        reportCorrection: reportMode,
         claimStatus: 'APPROVED',
         available: 19,
         reserved: 0,
