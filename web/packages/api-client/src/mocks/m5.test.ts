@@ -140,6 +140,28 @@ function permissionsOf(username: string): string[] {
 }
 
 describe('the M5 review and billing accounts', () => {
+  it('lets real and demo clinical staff read the catalog without maintaining it', () => {
+    for (const permissions of [goRolePermissions('PROVIDER_STAFF'), permissionsOf('provider.a')]) {
+      expect(permissions).toContain('catalog.read');
+      expect(permissions).not.toContain('catalog.manage');
+    }
+    // Billing belongs to a separate real role; do not copy the mock's legacy extra grants.
+    expect(goRolePermissions('PROVIDER_STAFF')).not.toContain('claim.create');
+  });
+  it('keeps demo import access aligned with the real program manager role', () => {
+    expect(goRolePermissions('PROGRAM_MANAGER')).toContain('import.execute');
+    expect(goRolePermissions('TENANT_ADMIN')).not.toContain('import.execute');
+    expect(permissionsOf('admin.a')).toContain('import.execute');
+    for (const username of [
+      'sponsor.hr',
+      'financial.reviewer',
+      'payer.approver',
+      'provider.a',
+      'member.a',
+    ]) {
+      expect(permissionsOf(username)).not.toContain('import.execute');
+    }
+  });
   it('grants sponsor.hr exactly the Go SPONSOR_HR list', () => {
     expect(permissionsOf('sponsor.hr')).toEqual(goRolePermissions('SPONSOR_HR'));
   });

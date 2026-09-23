@@ -6460,6 +6460,44 @@ type ClaimAdjustmentSource string
 // it is the only way an adjustment is ever undone.
 type ClaimAdjustmentType string
 
+// ClaimCaseCharge defines model for ClaimCaseCharge.
+type ClaimCaseCharge struct {
+	LineAmount          string             `json:"lineAmount"`
+	Quantity            string             `json:"quantity"`
+	ServiceDefinitionId openapi_types.UUID `json:"serviceDefinitionId"`
+}
+
+// ClaimCaseSource defines model for ClaimCaseSource.
+type ClaimCaseSource struct {
+	CaseId            openapi_types.UUID `json:"caseId"`
+	OpenedAt          time.Time          `json:"openedAt"`
+	PersonDisplayName string             `json:"personDisplayName"`
+	RequestReference  string             `json:"requestReference"`
+	RowVersion        int64              `json:"rowVersion"`
+	ServiceDate       openapi_types.Date `json:"serviceDate"`
+}
+
+// ClaimCaseSourceDetail defines model for ClaimCaseSourceDetail.
+type ClaimCaseSourceDetail struct {
+	Lines  []ClaimCaseSourceLine `json:"lines"`
+	Source ClaimCaseSource       `json:"source"`
+}
+
+// ClaimCaseSourceLine defines model for ClaimCaseSourceLine.
+type ClaimCaseSourceLine struct {
+	Quantity            string             `json:"quantity"`
+	ServiceCode         string             `json:"serviceCode"`
+	ServiceDefinitionId openapi_types.UUID `json:"serviceDefinitionId"`
+	ServiceName         string             `json:"serviceName"`
+	UnitType            string             `json:"unitType"`
+}
+
+// ClaimCaseSourcePage defines model for ClaimCaseSourcePage.
+type ClaimCaseSourcePage struct {
+	Items      []ClaimCaseSource `json:"items"`
+	NextCursor *string           `json:"nextCursor,omitempty"`
+}
+
 // ClaimDecisionKind What was decided about one line. CUT is a reduction the payer applied to an otherwise
 // valid line; PARTIALLY_APPROVED is a smaller quantity than was claimed. They are two
 // words because a provider reads them differently and disputes them differently.
@@ -7010,6 +7048,11 @@ type CreateClaimAdjustment struct {
 
 	// ReversesAdjustmentId Makes this a REVERSAL of that adjustment and nothing else.
 	ReversesAdjustmentId *openapi_types.UUID `json:"reversesAdjustmentId,omitempty"`
+}
+
+// CreateClaimFromCase defines model for CreateClaimFromCase.
+type CreateClaimFromCase struct {
+	Lines []ClaimCaseCharge `json:"lines"`
 }
 
 // CreateCodeSystemRequest defines model for CreateCodeSystemRequest.
@@ -8096,6 +8139,11 @@ type Encounter struct {
 
 // EncounterType defines model for EncounterType.
 type EncounterType string
+
+// EndEncounter defines model for EndEncounter.
+type EndEncounter struct {
+	EndedAt time.Time `json:"endedAt"`
+}
 
 // EndPeriodCommand defines model for EndPeriodCommand.
 type EndPeriodCommand struct {
@@ -13406,6 +13454,34 @@ type CreateClaimParamsXAccessPurpose string
 // CreateClaimParamsXAccessProjection defines parameters for CreateClaim.
 type CreateClaimParamsXAccessProjection string
 
+// ListClaimCaseSourcesParams defines parameters for ListClaimCaseSources.
+type ListClaimCaseSourcesParams struct {
+	// Cursor Opaque cursor from the previous response.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// GetClaimCaseSourceParams defines parameters for GetClaimCaseSource.
+type GetClaimCaseSourceParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// CreateClaimFromCaseParams defines parameters for CreateClaimFromCase.
+type CreateClaimFromCaseParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
 // GetClaimParams defines parameters for GetClaim.
 type GetClaimParams struct {
 	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
@@ -14107,6 +14183,18 @@ type PutEncounterDiagnosesParams struct {
 
 	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// EndEncounterParams defines parameters for EndEncounter.
+type EndEncounterParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
 }
 
 // ListEnrollmentsParams defines parameters for ListEnrollments.
@@ -16848,6 +16936,9 @@ type ReviewBatchInvoiceJSONRequestBody = ReviewBatchInvoice
 // CreateClaimJSONRequestBody defines body for CreateClaim for application/json ContentType.
 type CreateClaimJSONRequestBody = CreateClaim
 
+// CreateClaimFromCaseJSONRequestBody defines body for CreateClaimFromCase for application/json ContentType.
+type CreateClaimFromCaseJSONRequestBody = CreateClaimFromCase
+
 // PatchClaimDraftJSONRequestBody defines body for PatchClaimDraft for application/json ContentType.
 type PatchClaimDraftJSONRequestBody = PatchClaimDraft
 
@@ -16934,6 +17025,9 @@ type CheckEligibilityJSONRequestBody = EligibilityCheckRequest
 
 // PutEncounterDiagnosesJSONRequestBody defines body for PutEncounterDiagnoses for application/json ContentType.
 type PutEncounterDiagnosesJSONRequestBody = PutEncounterDiagnoses
+
+// EndEncounterJSONRequestBody defines body for EndEncounter for application/json ContentType.
+type EndEncounterJSONRequestBody = EndEncounter
 
 // UpdateEnrollmentApplicationMergePatchPlusJSONRequestBody defines body for UpdateEnrollment for application/merge-patch+json ContentType.
 type UpdateEnrollmentApplicationMergePatchPlusJSONRequestBody = UpdateEnrollmentRequest
@@ -17554,6 +17648,15 @@ type ServerInterface interface {
 	// (POST /api/v1/claims)
 	CreateClaim(w http.ResponseWriter, r *http.Request, params CreateClaimParams)
 
+	// (GET /api/v1/claims/case-sources)
+	ListClaimCaseSources(w http.ResponseWriter, r *http.Request, params ListClaimCaseSourcesParams)
+
+	// (GET /api/v1/claims/case-sources/{caseId})
+	GetClaimCaseSource(w http.ResponseWriter, r *http.Request, caseId CaseId, params GetClaimCaseSourceParams)
+
+	// (POST /api/v1/claims/case-sources/{caseId})
+	CreateClaimFromCase(w http.ResponseWriter, r *http.Request, caseId CaseId, params CreateClaimFromCaseParams)
+
 	// (GET /api/v1/claims/{claimId})
 	GetClaim(w http.ResponseWriter, r *http.Request, claimId ClaimId, params GetClaimParams)
 
@@ -17712,6 +17815,9 @@ type ServerInterface interface {
 
 	// (PUT /api/v1/encounters/{encounterId}/diagnoses)
 	PutEncounterDiagnoses(w http.ResponseWriter, r *http.Request, encounterId EncounterId, params PutEncounterDiagnosesParams)
+
+	// (POST /api/v1/encounters/{encounterId}/end)
+	EndEncounter(w http.ResponseWriter, r *http.Request, encounterId EncounterId, params EndEncounterParams)
 
 	// (GET /api/v1/enrollments)
 	ListEnrollments(w http.ResponseWriter, r *http.Request, params ListEnrollmentsParams)
@@ -18582,6 +18688,21 @@ func (_ Unimplemented) CreateClaim(w http.ResponseWriter, r *http.Request, param
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// (GET /api/v1/claims/case-sources)
+func (_ Unimplemented) ListClaimCaseSources(w http.ResponseWriter, r *http.Request, params ListClaimCaseSourcesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/claims/case-sources/{caseId})
+func (_ Unimplemented) GetClaimCaseSource(w http.ResponseWriter, r *http.Request, caseId CaseId, params GetClaimCaseSourceParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/claims/case-sources/{caseId})
+func (_ Unimplemented) CreateClaimFromCase(w http.ResponseWriter, r *http.Request, caseId CaseId, params CreateClaimFromCaseParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // (GET /api/v1/claims/{claimId})
 func (_ Unimplemented) GetClaim(w http.ResponseWriter, r *http.Request, claimId ClaimId, params GetClaimParams) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -18844,6 +18965,11 @@ func (_ Unimplemented) ListEncounterDiagnoses(w http.ResponseWriter, r *http.Req
 
 // (PUT /api/v1/encounters/{encounterId}/diagnoses)
 func (_ Unimplemented) PutEncounterDiagnoses(w http.ResponseWriter, r *http.Request, encounterId EncounterId, params PutEncounterDiagnosesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/encounters/{encounterId}/end)
+func (_ Unimplemented) EndEncounter(w http.ResponseWriter, r *http.Request, encounterId EncounterId, params EndEncounterParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -23737,6 +23863,231 @@ func (siw *ServerInterfaceWrapper) CreateClaim(w http.ResponseWriter, r *http.Re
 	handler.ServeHTTP(w, r)
 }
 
+// ListClaimCaseSources operation middleware
+func (siw *ServerInterfaceWrapper) ListClaimCaseSources(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListClaimCaseSourcesParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListClaimCaseSources(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetClaimCaseSource operation middleware
+func (siw *ServerInterfaceWrapper) GetClaimCaseSource(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "caseId" -------------
+	var caseId CaseId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "caseId", chi.URLParam(r, "caseId"), &caseId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "caseId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetClaimCaseSourceParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetClaimCaseSource(w, r, caseId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateClaimFromCase operation middleware
+func (siw *ServerInterfaceWrapper) CreateClaimFromCase(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "caseId" -------------
+	var caseId CaseId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "caseId", chi.URLParam(r, "caseId"), &caseId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "caseId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateClaimFromCaseParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateClaimFromCase(w, r, caseId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetClaim operation middleware
 func (siw *ServerInterfaceWrapper) GetClaim(w http.ResponseWriter, r *http.Request) {
 
@@ -28261,6 +28612,106 @@ func (siw *ServerInterfaceWrapper) PutEncounterDiagnoses(w http.ResponseWriter, 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PutEncounterDiagnoses(w, r, encounterId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// EndEncounter operation middleware
+func (siw *ServerInterfaceWrapper) EndEncounter(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "encounterId" -------------
+	var encounterId EncounterId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "encounterId", chi.URLParam(r, "encounterId"), &encounterId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "encounterId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params EndEncounterParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.EndEncounter(w, r, encounterId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -46995,6 +47446,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/v1/encounters/{encounterId}", wrapper.GetEncounter)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/encounters/{encounterId}/end", wrapper.EndEncounter)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/encounters/{encounterId}/diagnoses", wrapper.ListEncounterDiagnoses)
 	})
 	r.Group(func(r chi.Router) {
@@ -47059,6 +47513,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/inpatient-stays/{stayId}/reconciliation", wrapper.GetInpatientStayReconciliation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/claims/case-sources", wrapper.ListClaimCaseSources)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/claims/case-sources/{caseId}", wrapper.GetClaimCaseSource)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/claims/case-sources/{caseId}", wrapper.CreateClaimFromCase)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/claims", wrapper.ListClaims)
@@ -51365,6 +51828,265 @@ func (response CreateClaim429ApplicationProblemPlusJSONResponse) VisitCreateClai
 		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
 	}
 	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListClaimCaseSourcesRequestObject struct {
+	Params ListClaimCaseSourcesParams
+}
+
+type ListClaimCaseSourcesResponseObject interface {
+	VisitListClaimCaseSourcesResponse(w http.ResponseWriter) error
+}
+
+type ListClaimCaseSources200JSONResponse ClaimCaseSourcePage
+
+func (response ListClaimCaseSources200JSONResponse) VisitListClaimCaseSourcesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListClaimCaseSources400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListClaimCaseSources400ApplicationProblemPlusJSONResponse) VisitListClaimCaseSourcesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListClaimCaseSources403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListClaimCaseSources403ApplicationProblemPlusJSONResponse) VisitListClaimCaseSourcesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetClaimCaseSourceRequestObject struct {
+	CaseId CaseId `json:"caseId"`
+	Params GetClaimCaseSourceParams
+}
+
+type GetClaimCaseSourceResponseObject interface {
+	VisitGetClaimCaseSourceResponse(w http.ResponseWriter) error
+}
+
+type GetClaimCaseSource200ResponseHeaders struct {
+	ETag *string
+}
+
+type GetClaimCaseSource200JSONResponse struct {
+	Body    ClaimCaseSourceDetail
+	Headers GetClaimCaseSource200ResponseHeaders
+}
+
+func (response GetClaimCaseSource200JSONResponse) VisitGetClaimCaseSourceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetClaimCaseSource403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetClaimCaseSource403ApplicationProblemPlusJSONResponse) VisitGetClaimCaseSourceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetClaimCaseSource404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetClaimCaseSource404ApplicationProblemPlusJSONResponse) VisitGetClaimCaseSourceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetClaimCaseSource409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response GetClaimCaseSource409ApplicationProblemPlusJSONResponse) VisitGetClaimCaseSourceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateClaimFromCaseRequestObject struct {
+	CaseId CaseId `json:"caseId"`
+	Params CreateClaimFromCaseParams
+	Body   *CreateClaimFromCaseJSONRequestBody
+}
+
+type CreateClaimFromCaseResponseObject interface {
+	VisitCreateClaimFromCaseResponse(w http.ResponseWriter) error
+}
+
+type CreateClaimFromCase201ResponseHeaders struct {
+	ETag *string
+}
+
+type CreateClaimFromCase201JSONResponse struct {
+	Body    Claim
+	Headers CreateClaimFromCase201ResponseHeaders
+}
+
+func (response CreateClaimFromCase201JSONResponse) VisitCreateClaimFromCaseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateClaimFromCase403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CreateClaimFromCase403ApplicationProblemPlusJSONResponse) VisitCreateClaimFromCaseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateClaimFromCase404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CreateClaimFromCase404ApplicationProblemPlusJSONResponse) VisitCreateClaimFromCaseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateClaimFromCase409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response CreateClaimFromCase409ApplicationProblemPlusJSONResponse) VisitCreateClaimFromCaseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateClaimFromCase412ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateClaimFromCase412ApplicationProblemPlusJSONResponse) VisitCreateClaimFromCaseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateClaimFromCase422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CreateClaimFromCase422ApplicationProblemPlusJSONResponse) VisitCreateClaimFromCaseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateClaimFromCase428ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateClaimFromCase428ApplicationProblemPlusJSONResponse) VisitCreateClaimFromCaseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -56558,6 +57280,151 @@ type PutEncounterDiagnoses429ApplicationProblemPlusJSONResponse struct {
 }
 
 func (response PutEncounterDiagnoses429ApplicationProblemPlusJSONResponse) VisitPutEncounterDiagnosesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EndEncounterRequestObject struct {
+	EncounterId EncounterId `json:"encounterId"`
+	Params      EndEncounterParams
+	Body        *EndEncounterJSONRequestBody
+}
+
+type EndEncounterResponseObject interface {
+	VisitEndEncounterResponse(w http.ResponseWriter) error
+}
+
+type EndEncounter200ResponseHeaders struct {
+	ETag *string
+}
+
+type EndEncounter200JSONResponse struct {
+	Body    Encounter
+	Headers EndEncounter200ResponseHeaders
+}
+
+func (response EndEncounter200JSONResponse) VisitEndEncounterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EndEncounter403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response EndEncounter403ApplicationProblemPlusJSONResponse) VisitEndEncounterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EndEncounter404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response EndEncounter404ApplicationProblemPlusJSONResponse) VisitEndEncounterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EndEncounter409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response EndEncounter409ApplicationProblemPlusJSONResponse) VisitEndEncounterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EndEncounter412ApplicationProblemPlusJSONResponse Problem
+
+func (response EndEncounter412ApplicationProblemPlusJSONResponse) VisitEndEncounterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EndEncounter422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response EndEncounter422ApplicationProblemPlusJSONResponse) VisitEndEncounterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EndEncounter428ApplicationProblemPlusJSONResponse Problem
+
+func (response EndEncounter428ApplicationProblemPlusJSONResponse) VisitEndEncounterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EndEncounter429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response EndEncounter429ApplicationProblemPlusJSONResponse) VisitEndEncounterResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -76106,6 +76973,15 @@ type StrictServerInterface interface {
 	// (POST /api/v1/claims)
 	CreateClaim(ctx context.Context, request CreateClaimRequestObject) (CreateClaimResponseObject, error)
 
+	// (GET /api/v1/claims/case-sources)
+	ListClaimCaseSources(ctx context.Context, request ListClaimCaseSourcesRequestObject) (ListClaimCaseSourcesResponseObject, error)
+
+	// (GET /api/v1/claims/case-sources/{caseId})
+	GetClaimCaseSource(ctx context.Context, request GetClaimCaseSourceRequestObject) (GetClaimCaseSourceResponseObject, error)
+
+	// (POST /api/v1/claims/case-sources/{caseId})
+	CreateClaimFromCase(ctx context.Context, request CreateClaimFromCaseRequestObject) (CreateClaimFromCaseResponseObject, error)
+
 	// (GET /api/v1/claims/{claimId})
 	GetClaim(ctx context.Context, request GetClaimRequestObject) (GetClaimResponseObject, error)
 
@@ -76264,6 +77140,9 @@ type StrictServerInterface interface {
 
 	// (PUT /api/v1/encounters/{encounterId}/diagnoses)
 	PutEncounterDiagnoses(ctx context.Context, request PutEncounterDiagnosesRequestObject) (PutEncounterDiagnosesResponseObject, error)
+
+	// (POST /api/v1/encounters/{encounterId}/end)
+	EndEncounter(ctx context.Context, request EndEncounterRequestObject) (EndEncounterResponseObject, error)
 
 	// (GET /api/v1/enrollments)
 	ListEnrollments(ctx context.Context, request ListEnrollmentsRequestObject) (ListEnrollmentsResponseObject, error)
@@ -78311,6 +79190,93 @@ func (sh *strictHandler) CreateClaim(w http.ResponseWriter, r *http.Request, par
 	}
 }
 
+// ListClaimCaseSources operation middleware
+func (sh *strictHandler) ListClaimCaseSources(w http.ResponseWriter, r *http.Request, params ListClaimCaseSourcesParams) {
+	var request ListClaimCaseSourcesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListClaimCaseSources(ctx, request.(ListClaimCaseSourcesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListClaimCaseSources")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListClaimCaseSourcesResponseObject); ok {
+		if err := validResponse.VisitListClaimCaseSourcesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetClaimCaseSource operation middleware
+func (sh *strictHandler) GetClaimCaseSource(w http.ResponseWriter, r *http.Request, caseId CaseId, params GetClaimCaseSourceParams) {
+	var request GetClaimCaseSourceRequestObject
+
+	request.CaseId = caseId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetClaimCaseSource(ctx, request.(GetClaimCaseSourceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetClaimCaseSource")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetClaimCaseSourceResponseObject); ok {
+		if err := validResponse.VisitGetClaimCaseSourceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateClaimFromCase operation middleware
+func (sh *strictHandler) CreateClaimFromCase(w http.ResponseWriter, r *http.Request, caseId CaseId, params CreateClaimFromCaseParams) {
+	var request CreateClaimFromCaseRequestObject
+
+	request.CaseId = caseId
+	request.Params = params
+
+	var body CreateClaimFromCaseJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateClaimFromCase(ctx, request.(CreateClaimFromCaseRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateClaimFromCase")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateClaimFromCaseResponseObject); ok {
+		if err := validResponse.VisitCreateClaimFromCaseResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetClaim operation middleware
 func (sh *strictHandler) GetClaim(w http.ResponseWriter, r *http.Request, claimId ClaimId, params GetClaimParams) {
 	var request GetClaimRequestObject
@@ -79942,6 +80908,40 @@ func (sh *strictHandler) PutEncounterDiagnoses(w http.ResponseWriter, r *http.Re
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PutEncounterDiagnosesResponseObject); ok {
 		if err := validResponse.VisitPutEncounterDiagnosesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// EndEncounter operation middleware
+func (sh *strictHandler) EndEncounter(w http.ResponseWriter, r *http.Request, encounterId EncounterId, params EndEncounterParams) {
+	var request EndEncounterRequestObject
+
+	request.EncounterId = encounterId
+	request.Params = params
+
+	var body EndEncounterJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.EndEncounter(ctx, request.(EndEncounterRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "EndEncounter")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(EndEncounterResponseObject); ok {
+		if err := validResponse.VisitEndEncounterResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

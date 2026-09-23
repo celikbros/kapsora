@@ -1426,3 +1426,70 @@ describe('worklist: the permission a queue names', () => {
     expect(seen.data.items.map((i) => i.id)).toContain(open.id);
   });
 });
+
+describe('request document gate', () => {
+  it.each([
+    ['clean', 'APPROVED'],
+    ['scanning', 'PENDING_DOCUMENT'],
+    ['purged', 'PENDING_DOCUMENT'],
+    ['wrong request', 'PENDING_DOCUMENT'],
+    ['wrong provider', 'PENDING_DOCUMENT'],
+    ['purged canonical', 'PENDING_DOCUMENT'],
+    ['unlinked', 'PENDING_DOCUMENT'],
+  ])('rechecks %s evidence on return and resubmit', async (kind, expected) => {
+    const s = await signIn('admin.a');
+    const draft = await createDraft(s, { requestType: 'PREAUTHORIZATION' });
+    const first = await submit(s, draft.id, draft.etag);
+    expect(first.data.status).toBe('PENDING_DOCUMENT');
+    for (const [filename, documentTypeCode] of [
+      ['fatura-2026-03.pdf', 'INVOICE'],
+      ['rapor.pdf', 'MEDICAL_REPORT'],
+    ]) {
+      const doc = { ...documentByName(filename!), id: api.world.nextId() };
+      if (documentTypeCode === 'INVOICE') {
+        if (kind === 'scanning') {
+          doc.scanStatus = 'SCANNING';
+          doc.bucket = 'quarantine';
+        }
+        if (kind === 'purged') doc.purgedAt = new Date().toISOString();
+        if (kind === 'wrong provider')
+          doc.ownerOrganizationId =
+            documentByName('baska-saglayici-fatura.pdf').ownerOrganizationId ?? null;
+        if (kind === 'purged canonical')
+          doc.duplicateOfDocumentId = documentByName('eski-rapor.pdf').id;
+      }
+      api.world.documents.push(doc);
+      if (kind === 'unlinked' && documentTypeCode === 'INVOICE') continue;
+      api.world.documentLinks.push({
+        id: api.world.nextId(),
+        tenantId: s.tenantId,
+        documentId: doc.id,
+        aggregateType: 'SERVICE_REQUEST',
+        aggregateId:
+          kind === 'wrong request' && documentTypeCode === 'INVOICE'
+            ? api.world.nextId()
+            : draft.id,
+        documentTypeCode: documentTypeCode!,
+        createdAt: new Date().toISOString(),
+      });
+    }
+    const returned = await unwrap(
+      s.c.POST('/api/v1/service-requests/{requestId}/return', {
+        params: {
+          header: {
+            ...tenant(s),
+            'Idempotency-Key': key(),
+            'If-Match': first.response.headers.get('ETag')!,
+          },
+          path: { requestId: draft.id },
+        },
+        body: { reasonCode: 'DOCUMENT_COMPLETED' },
+      }),
+    );
+    const second = await submit(s, draft.id, returned.response.headers.get('ETag')!);
+    expect(second.data.status).toBe(expected);
+    expect(second.data.reference).toBe(first.data.reference);
+    expect(second.data.currentVersionNo).toBe(2);
+    expect(second.data.requiredDocumentTypes).toEqual(['INVOICE', 'MEDICAL_REPORT']);
+  });
+});

@@ -41,11 +41,13 @@ user, staggered by three seconds, against the real API:
 | import | Stage a small CSV_V1 file | Wait for validation, reconcile valid row count, cancel with a fresh ETag |
 
 Import measures **staging and validation**, not apply or a customer HR/policy adapter.
-It requires `import.execute` and a password step-up. The current real demo administrator
-does not hold that permission, although the browser mock grants it. No standard role grants
-it today; the role-owner decision is still pending. The harness does not change grants.
+It requires `import.execute` and a password step-up. PROGRAM_MANAGER now supplies that
+permission; demo `admin.a` holds this role in addition to TENANT_ADMIN. Apply migration
+000049 for existing system roles, or provision new tenants with the updated template.
+The harness itself never changes grants. A PostgreSQL-backed HTTP integration test also
+covers applying a staged member and worker redelivery; this is separate from k6 staging.
 
-To explicitly verify the four currently authorized demo workflows:
+For a deliberately reduced four-workflow smoke:
 
 ```powershell
 $env:KAPSORA_LOAD_WORKLOADS = 'read,write,eligibility,hold'
@@ -54,8 +56,8 @@ Remove-Item Env:KAPSORA_LOAD_WORKLOADS
 ```
 
 The report then says `partial_functional_smoke` and lists `import` as omitted. An omitted
-workflow never counts as passed. With a suitably authorized synthetic import account,
-put its username/app/tenant in the import case and run the default five-workflow smoke.
+workflow never counts as passed. With the migrated demo and running native services,
+leave KAPSORA_LOAD_WORKLOADS unset to run the default five-workflow smoke.
 All configured accounts use the test password supplied in `KAPSORA_LOAD_PASSWORD`.
 
 Setup logs in each distinct account context, checks its required grants and records the

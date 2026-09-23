@@ -115,6 +115,13 @@ type Adjustment struct {
 	Value    Money
 }
 
+// QuantityCover is a non-monetary entitlement (sessions, nights, counts, etc.).
+// Required is already multiplied by the plan mapping's unit factor. It is never money.
+type QuantityCover struct {
+	Required       domain.Quantity
+	AllowOverdraft bool
+}
+
 // Item is one requested line.
 type Item struct {
 	LineNo int
@@ -130,6 +137,9 @@ type Item struct {
 	NoPriceReason string
 	// Available is the entitlement balance this line may draw on.
 	Available Money
+	// QuantityCover changes Available's unit from money to entitlement quantity.
+	// Nil preserves the monetary cap; a quantity balance only gates service coverage.
+	QuantityCover *QuantityCover
 	// AccountKey identifies the entitlement account behind Available. Lines sharing a key
 	// share one balance: two services drawing on the same account cannot each be told the
 	// whole of it. An empty key means the line has a balance of its own.
@@ -180,9 +190,25 @@ func Calculate(items []Item, minorUnits int) Result {
 				pools[item.AccountKey] = item.Available
 			}
 		}
+		quantityShort := item.QuantityCover != nil &&
+			!item.QuantityCover.AllowOverdraft && item.QuantityCover.Required.Cmp(item.Available) > 0
+		if quantityShort {
+			item.Eligible = false
+		}
 		line := calculateLine(item, minorUnits)
+		if quantityShort {
+			line.Explanations = append(line.Explanations,
+				Explanation{Code: ExplanationBalanceShort, Severity: SeverityWarning})
+		}
 		if item.AccountKey != "" {
-			left := pools[item.AccountKey].Sub(line.Payer)
+			draw := line.Payer
+			if item.QuantityCover != nil {
+				draw = domain.ZeroQuantity()
+				if item.Eligible && line.Outcome != OutcomeReviewRequired {
+					draw = item.QuantityCover.Required
+				}
+			}
+			left := pools[item.AccountKey].Sub(draw)
 			if left.IsNegative() {
 				left = domain.ZeroQuantity()
 			}
@@ -272,7 +298,10 @@ func calculateLine(item Item, minorUnits int) LineResult {
 			Explanation{Code: ExplanationNotEligible, Severity: SeverityWarning})
 	}
 
-	payer := covered.Min(item.Available)
+	payer := covered
+	if item.QuantityCover == nil {
+		payer = covered.Min(item.Available)
+	}
 	if payer.IsNegative() {
 		payer = domain.ZeroQuantity()
 	}

@@ -111,15 +111,16 @@ export function AppLayout() {
         </Badge>
       ) : null}
       <div className="ml-auto flex min-w-0 shrink-0 items-center gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="hidden sm:inline-flex"
-          onClick={() => setTheme(toggleTheme())}
-          aria-label={`${t('header.theme')}: ${theme === 'dark' ? t('header.themeDark') : t('header.themeLight')}`}
-        >
-          {theme === 'dark' ? <MoonIcon /> : <SunIcon />}
-        </Button>
+        <div className="hidden sm:block">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setTheme(toggleTheme())}
+            aria-label={`${t('header.theme')}: ${theme === 'dark' ? t('header.themeDark') : t('header.themeLight')}`}
+          >
+            {theme === 'dark' ? <MoonIcon /> : <SunIcon />}
+          </Button>
+        </div>
         <HelpButton label={t('help.open')} expanded={helpOpen} onClick={() => setHelpOpen(true)} />
         <HelpDrawer open={helpOpen} onOpenChange={setHelpOpen} page={help} />
         <DropdownMenu

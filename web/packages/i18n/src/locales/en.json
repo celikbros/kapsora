@@ -412,7 +412,11 @@
     "NO_SHOW_EVIDENCE_REQUIRED": "A no-show report needs an evidence document.",
     "NO_SHOW_SAME_REVIEWER": "The reporter cannot confirm their own report.",
     "WAITLIST_DUPLICATE": "You are already on the waiting list for these dates.",
-    "VOUCHER_NOT_AVAILABLE": "A voucher cannot be issued before the booking is confirmed."
+    "VOUCHER_NOT_AVAILABLE": "A voucher cannot be issued before the booking is confirmed.",
+    "CLAIM_CASE_ALREADY_CLAIMED": "A claim already exists for this case. Check the claim list.",
+    "CLAIM_SOURCE_NOT_FOUND": "The billing case was not found. Refresh the case list.",
+    "CLAIM_SOURCE_NOT_READY": "This case is not ready for billing. Ask the clinical team to check the records and authorization.",
+    "ENCOUNTER_ALREADY_ENDED": "The encounter has already ended. Reload the record."
   },
   "fieldErrors": {
     "RULE_COMPILE_FAILED": "The rule condition did not compile",
@@ -617,6 +621,43 @@
         "assessedFee": "Assessed fee",
         "noShowReviewNote": "The record stays under review until a second person at the payer confirms it."
       }
+    },
+    "newRequest": {
+      "enrollmentHint": "Several valid plans are available. Choose a plan to check eligibility again."
+    },
+    "correction": {
+      "title": "Correct the request",
+      "intro": "Save your changes, then submit the request again.",
+      "draftTitle": "Complete the request",
+      "save": "Save changes",
+      "submit": "Submit request",
+      "saved": "Changes saved.",
+      "sent": "Request submitted.",
+      "reload": "Load current record",
+      "reloadHint": "The record may have changed or the operation may have completed. Load and review the current record. Unsaved changes will be discarded.",
+      "retryHint": "No submission result was received. Retry the same command or load the current record.",
+      "line": "Service {{number}}",
+      "currency": "Currency",
+      "dateError": "Choose a valid service date.",
+      "serviceError": "Choose a service.",
+      "quantityError": "Enter a quantity greater than zero, with at most 6 decimal places; for example 1.5.",
+      "amountError": "Enter a non-negative amount with at most 6 decimal places; for example 400.50.",
+      "currencyError": "Enter a three-letter currency code, for example TRY."
+    },
+    "cancellation": {
+      "action": "Cancel request",
+      "confirm": "Request {{reference}} will close. Cancellation cannot be undone.",
+      "done": "Request cancelled.",
+      "reason": "Cancellation reason",
+      "choose": "Select a reason",
+      "optional": "Optional, up to 1000 characters.",
+      "changed": "The action was refused or the request changed. Load the current record to check its status.",
+      "uncertain": "The cancellation outcome could not be confirmed. Retry the same action or load the current record.",
+      "reasons": {
+        "PROVIDER_WITHDRAWN": "Request withdrawn",
+        "DUPLICATE_REQUEST": "Another request covers this service",
+        "INPUT_ERROR": "Request created in error"
+      }
     }
   },
   "health": {
@@ -721,7 +762,16 @@
       "created": "Encounter saved.",
       "diagnoses": "Diagnoses",
       "editDiagnoses": "Edit diagnoses",
-      "noDiagnosis": "No diagnosis"
+      "noDiagnosis": "No diagnosis",
+      "end": {
+        "action": "End encounter",
+        "done": "Encounter ended",
+        "hint": "Started: {{started}}. The end time cannot be changed after saving.",
+        "invalid": "End time cannot precede the start.",
+        "reload": "Reload the record to check its current state.",
+        "uncertain": "The outcome is uncertain. Retry the same end time or reload the record.",
+        "refresh": "Reload record"
+      }
     },
     "diagnoses": {
       "title": "Diagnoses",
@@ -1151,6 +1201,24 @@
         "CURRENCY_NOT_SINGLE": "The lines are not in one currency",
         "LINE_NOT_DECIDED": "A line is undecided"
       }
+    },
+    "handoff": {
+      "intro": "Select your organization’s case, then enter service quantities and requested amounts.",
+      "case": "Case to bill",
+      "caseHint": "Outpatient cases with active authorization and no existing claim are listed.",
+      "choose": "Select a case",
+      "more": "Load more cases",
+      "empty": "No cases to bill",
+      "emptyHint": "Cases appear after clinical preparation and authorization.",
+      "charges": "Services and amounts",
+      "date": "Service date: {{date}}",
+      "reserved": "Authorization quantity: {{quantity}} {{unit}}",
+      "amount": "Requested amount (TRY)",
+      "links": "Case and authorization associations are retained. Clinical information is not shown to billing.",
+      "uncertain": "The outcome could not be confirmed. Retry the same request.",
+      "edit": "Edit details",
+      "quantityError": "Enter a quantity greater than zero (e.g. 1 or 1.5; up to 6 decimal places).",
+      "amountError": "Enter a nonnegative amount (e.g. 400.50; up to 6 decimal places)."
     }
   },
   "review": {
@@ -1975,6 +2043,26 @@
         "MANAGEMENT_REPORT": "Management report"
       },
       "purposeRequired": "Choose why you are downloading."
+    }
+  },
+  "authorization": {
+    "title": "Entitlement reservation",
+    "empty": "The request is approved; entitlement has not been reserved yet.",
+    "none": "No entitlement reservation exists for this request.",
+    "providerEmpty": "No entitlement reservation exists for this request. Request approval alone does not reserve entitlement.",
+    "deadline": "Valid until",
+    "futureDate": "Choose a future date and time.",
+    "reserve": "Reserve entitlement",
+    "reserving": "Reserving entitlement…",
+    "retry": "Retry entitlement reservation",
+    "effect": "Reserves entitlement for the approved services. This does not record service delivery or payment. Dates and times use your local time zone.",
+    "validUntil": "Valid until: {{date}}",
+    "status": {
+      "ACTIVE": "Reserved",
+      "PARTIALLY_USED": "Partially used",
+      "USED": "Used",
+      "EXPIRED": "Expired",
+      "CANCELLED": "Cancelled"
     }
   }
 }

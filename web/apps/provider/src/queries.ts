@@ -6,6 +6,8 @@ import type {
 import { useSession, useTenantId } from '@kapsora/auth';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { useMemo } from 'react';
+import { createRequestSubmission } from './requestSubmission';
 import { useOps } from './services';
 
 /**
@@ -51,11 +53,12 @@ export function usePersonEnrollments(personId: string) {
   });
 }
 
-export function useServiceDefinitions() {
+export function useServiceDefinitions(enabled = true) {
   const ops = useOps();
   const tenantId = useTenantId();
   return useQuery({
     queryKey: ['provider', tenantId, 'service-definitions'],
+    enabled,
     queryFn: () => ops.catalog.listDefinitions(tenantId, { limit: 200 }),
     staleTime: 5 * 60_000,
     select: (page) =>
@@ -123,11 +126,13 @@ export function useCreateAndSubmit() {
   const ops = useOps();
   const tenantId = useTenantId();
   const client = useQueryClient();
+  const actorId = useSession((s) => s.session?.actorId ?? '');
+  const submitRequest = useMemo(
+    () => createRequestSubmission(ops.requests, actorId),
+    [ops, actorId],
+  );
   return useMutation({
-    mutationFn: async (body: CreateServiceRequest) => {
-      const created = await ops.requests.create(tenantId, body);
-      return ops.requests.submit(tenantId, created.data.id, created.etag);
-    },
+    mutationFn: (body: CreateServiceRequest) => submitRequest(tenantId, body),
     onSuccess: () => client.invalidateQueries({ queryKey: ['provider', tenantId, 'requests'] }),
   });
 }

@@ -65,7 +65,9 @@ type fixture struct {
 	dentalAccount    uuid.UUID
 }
 
-func newFixture(t *testing.T) *fixture {
+func newFixture(t *testing.T) *fixture { return newFixtureWithMapping(t, false) }
+
+func newFixtureWithMapping(t *testing.T, mapped bool) *fixture {
 	t.Helper()
 	h := dbtest.New(t)
 
@@ -94,11 +96,11 @@ func newFixture(t *testing.T) *fixture {
 	}
 
 	f := &fixture{h: h, pool: pool, svc: svc, logs: logs}
-	f.seed(t)
+	f.seed(t, mapped)
 	return f
 }
 
-func (f *fixture) seed(t *testing.T) { //nolint:funlen // one linear fixture reads better whole
+func (f *fixture) seed(t *testing.T, mapped bool) { //nolint:funlen // one linear fixture reads better whole
 	t.Helper()
 	h := f.h
 	ctx, cancel := h.Ctx()
@@ -142,8 +144,8 @@ func (f *fixture) seed(t *testing.T) { //nolint:funlen // one linear fixture rea
 	scan(&planVersion, "plan version", `
 		INSERT INTO benefit.plan_version (tenant_id, plan_id, version_no, status, valid_period,
 		                                  published_at, published_by)
-		VALUES ($1, $2, 1, 'PUBLISHED', daterange('2026-01-01','2027-01-01','[)'), clock_timestamp(), $3)
-		RETURNING id`, f.tenant, planID, f.actor)
+		VALUES ($1, $2, 1, 'DRAFT', daterange('2026-01-01','2027-01-01','[)'), NULL, NULL)
+		RETURNING id`, f.tenant, planID)
 	scan(&f.enrollment, "enrollment", `
 		INSERT INTO benefit.enrollment (tenant_id, sponsor_membership_id, plan_id, status, valid_period)
 		VALUES ($1, $2, $3, 'ACTIVE', daterange('2026-01-01', NULL, '[)')) RETURNING id`,
@@ -176,16 +178,26 @@ func (f *fixture) seed(t *testing.T) { //nolint:funlen // one linear fixture rea
 			VALUES ($1, $2, 'GRANT', clock_timestamp(), $3::text::numeric, $3::text::numeric,
 			        'ENROLLMENT', $4, $5)`,
 			f.tenant, accountID, quantity, f.enrollment, "grant:seed:"+code)
+		serviceCode := code
+		if mapped && code == physioCode {
+			serviceCode = "MAPPED_PHYSIO"
+		}
 		var serviceID uuid.UUID
 		scan(&serviceID, "service definition "+code, `
 			INSERT INTO catalog.service_definition (tenant_id, category_id, code, name,
 			                                        fulfillment_mode, default_unit_type, requires_provider)
 			VALUES ($1, $2, $3, $3, 'SESSION', 'SESSION', false) RETURNING id`,
-			f.tenant, category, code)
+			f.tenant, category, serviceCode)
+		if mapped && code == physioCode {
+			h.AdminExec(`INSERT INTO benefit.service_entitlement_mapping
+			    (tenant_id, plan_version_id, service_definition_id, entitlement_definition_id, unit_factor)
+			    VALUES ($1,$2,$3,$4,2)`, f.tenant, planVersion, serviceID, definitionID)
+		}
 		return serviceID, accountID
 	}
 	f.physioDefinition, f.physioAccount = open(physioCode, physioGrant)
 	f.dentalDefinition, f.dentalAccount = open(dentalCode, dentalGrant)
+	h.AdminExec(`UPDATE benefit.plan_version SET status='PUBLISHED', published_at=clock_timestamp(), published_by=$3 WHERE tenant_id=$1 AND id=$2`, f.tenant, planVersion, f.actor)
 }
 
 // rc is a back office actor holding every permission of this package.

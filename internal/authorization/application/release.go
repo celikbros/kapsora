@@ -69,8 +69,12 @@ func (s *Service) ReleaseUnused(ctx context.Context, tx pgx.Tx, in ReleaseUnused
 		if !amount.IsPositive() {
 			continue
 		}
+		draw, err := entitlementRelease(item, amount)
+		if err != nil {
+			return benefitdomain.Quantity{}, err
+		}
 		_, err = s.ledger.Release(ctx, tx, ledger.MovementInput{
-			TenantID: in.TenantID, ReservationID: *item.ReservationID, Quantity: amount,
+			TenantID: in.TenantID, ReservationID: *item.ReservationID, Quantity: draw,
 			Key: releaseKey(item.ID, in.ReasonCode), ReasonCode: in.ReasonCode,
 			ActorID: in.ActorID,
 		})

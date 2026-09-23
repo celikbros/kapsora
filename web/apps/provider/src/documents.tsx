@@ -149,9 +149,11 @@ export function DocumentsPanel({
 
   const rows: Document[] = documents.data?.items ?? [];
   const linkedTypes = new Set(
-    rows.flatMap((d) =>
-      d.links.filter((l) => l.aggregateId === aggregateId).map((l) => l.documentTypeCode),
-    ),
+    rows
+      .filter((d) => d.downloadable)
+      .flatMap((d) =>
+        d.links.filter((l) => l.aggregateId === aggregateId).map((l) => l.documentTypeCode),
+      ),
   );
   const missing = (requiredTypes ?? []).filter((code) => !linkedTypes.has(code));
   // What the type field offers follows the request, not the documents query. `missing`

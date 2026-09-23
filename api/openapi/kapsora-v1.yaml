@@ -8228,6 +8228,59 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+  /api/v1/encounters/{encounterId}/end:
+    post:
+      tags: [Clinical]
+      operationId: endEncounter
+      description: |
+        Ends an open encounter without changing its clinical content. Requires
+        health.case.manage and health.clinical.read within the provider scope.
+        The case must be open; endedAt cannot precede startedAt. The encounter ETag
+        prevents stale updates. Replaying the same idempotency key returns the same result;
+        a fresh command for an already ended encounter is refused.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/EncounterId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EndEncounter'
+      responses:
+        '200':
+          description: Encounter ended
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Encounter'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: The encounter changed since the caller read it
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match is missing
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /api/v1/encounters/{encounterId}/diagnoses:
     get:
       tags: [Clinical]
@@ -9477,6 +9530,106 @@ paths:
                 $ref: '#/components/schemas/Problem'
         '422':
           $ref: '#/components/responses/ValidationError'
+
+  /api/v1/claims/case-sources:
+    get:
+      tags: [Claims]
+      operationId: listClaimCaseSources
+      description: Financial-only outpatient handoff candidates; requires claim.create and provider scope. No clinical fields.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Candidate cases with an active authorization and no existing non-cancelled claim
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimCaseSourcePage'
+        '400':
+          description: Invalid cursor
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/v1/claims/case-sources/{caseId}:
+    get:
+      tags: [Claims]
+      operationId: getClaimCaseSource
+      description: Returns financial service choices, never diagnosis or report references. Incomplete or ambiguous clinical handoffs are refused.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/CaseId'
+      responses:
+        '200':
+          description: Financial source and available service quantities
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimCaseSourceDetail'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    post:
+      tags: [Claims]
+      operationId: createClaimFromCase
+      description: |
+        Requires claim.create. Locks and rechecks the scoped source, derives its person,
+        program, enrollment, provider, authorization, diagnosis and report associations
+        inside the create transaction. Requires one unambiguous primary diagnosis and one
+        approved in-window report per selected service. The caller supplies only service,
+        quantity and requested amount. One non-cancelled claim per case through this path;
+        retry with the same idempotency key. Financial projection is always returned.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/CaseId'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateClaimFromCase'
+      responses:
+        '201':
+          description: Linked draft created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claim'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          description: Stale version
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '428':
+          description: If-Match required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
 
   /api/v1/claims:
     get:
@@ -21059,6 +21212,14 @@ components:
             Free text kept on the audit row, not on the case. Two hundred characters is the
             audit detail limit: a longer value would be dropped by the sanitiser without
             anybody being told, so it is refused here instead.
+    EndEncounter:
+      type: object
+      additionalProperties: false
+      required: [endedAt]
+      properties:
+        endedAt:
+          type: string
+          format: date-time
     CreateEncounter:
       type: object
       additionalProperties: false
@@ -22217,6 +22378,91 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ClaimException'
+    ClaimCaseSource:
+      type: object
+      additionalProperties: false
+      required: [caseId, openedAt, serviceDate, requestReference, personDisplayName, rowVersion]
+      properties:
+        caseId:
+          type: string
+          format: uuid
+        openedAt:
+          type: string
+          format: date-time
+        serviceDate:
+          type: string
+          format: date
+        requestReference:
+          type: string
+        personDisplayName:
+          type: string
+        rowVersion:
+          type: integer
+          format: int64
+    ClaimCaseSourcePage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClaimCaseSource'
+        nextCursor:
+          type: string
+    ClaimCaseSourceLine:
+      type: object
+      additionalProperties: false
+      required: [serviceDefinitionId, serviceCode, serviceName, unitType, quantity]
+      properties:
+        serviceDefinitionId:
+          type: string
+          format: uuid
+        serviceCode:
+          type: string
+        serviceName:
+          type: string
+        unitType:
+          type: string
+        quantity:
+          type: string
+    ClaimCaseSourceDetail:
+      type: object
+      additionalProperties: false
+      required: [source, lines]
+      properties:
+        source:
+          $ref: '#/components/schemas/ClaimCaseSource'
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClaimCaseSourceLine'
+    CreateClaimFromCase:
+      type: object
+      additionalProperties: false
+      required: [lines]
+      properties:
+        lines:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/ClaimCaseCharge'
+    ClaimCaseCharge:
+      type: object
+      additionalProperties: false
+      required: [serviceDefinitionId, quantity, lineAmount]
+      properties:
+        serviceDefinitionId:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+          pattern: '^[0-9]{1,14}(\.[0-9]{1,6})?$'
+        lineAmount:
+          type: string
+          pattern: '^[0-9]{1,14}(\.[0-9]{1,6})?$'
+
     NewClaimLine:
       type: object
       additionalProperties: false

@@ -1,5 +1,5 @@
 import type { EligibilityCheckRequest, ServiceUnitType } from '@kapsora/api-client';
-import { useTranslation } from '@kapsora/i18n';
+import { formatDate, useTranslation } from '@kapsora/i18n';
 import { Button, FormField, Input, PageHeader, ProblemAlert, Select, useToast } from '@kapsora/ui';
 import { useNavigate } from '@tanstack/react-router';
 import { useState, type FormEvent } from 'react';
@@ -37,6 +37,8 @@ export function NewRequestPage() {
   const [serviceDate, setServiceDate] = useState(new Date().toISOString().slice(0, 10));
   const [quantity, setQuantity] = useState('1');
   const [amount, setAmount] = useState('');
+  const [selection, setSelection] = useState({ scope: '', id: '' });
+  const selectionScope = JSON.stringify([member?.id, definitionId, serviceDate]);
 
   // The question the right column asks, or null while it cannot be asked yet. The query
   // key is hashed structurally, so building it every render costs nothing.
@@ -55,15 +57,33 @@ export function NewRequestPage() {
             },
           ],
         };
-  const check = useLiveEligibility(checkBody);
-  // The check names the enrollment when it found exactly one. That, not a verdict, is
-  // what a request needs: a service the catalog has not mapped to an entitlement yet is
-  // "review required", which is a request that goes to review — not one that cannot exist.
-  const enrollmentId = check.data?.enrollmentId ?? null;
+  // Keep the unselected result so the operator can change plans after a selected check.
+  const discovery = useLiveEligibility(checkBody);
+  const candidates = discovery.data?.enrollmentCandidates ?? [];
+  const selectedId =
+    selection.scope === selectionScope && candidates.some((c) => c.enrollmentId === selection.id)
+      ? selection.id
+      : '';
+  const selected = useLiveEligibility(
+    checkBody && selectedId ? { ...checkBody, enrollmentId: selectedId } : null,
+  );
+  const check = selectedId ? selected : discovery;
+  const enrollmentId =
+    checkBody &&
+    !discovery.isFetching &&
+    !discovery.error &&
+    !check.isFetching &&
+    !check.error &&
+    (candidates.length < 2 || selectedId) &&
+    (!selectedId || check.data?.enrollmentId === selectedId) &&
+    check.data?.outcome !== 'INELIGIBLE' &&
+    check.data?.outcome !== 'MISSING_DATA'
+      ? check.data?.enrollmentId
+      : null;
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!member || !enrollmentId) return;
+    if (!member || !enrollmentId || submitAll.isPending) return;
     try {
       const result = await submitAll.mutateAsync({
         personId: member.id,
@@ -100,7 +120,13 @@ export function NewRequestPage() {
       <div className="grid gap-6 lg:grid-cols-[3fr_2fr]">
         <form onSubmit={submit} className="grid gap-4" noValidate data-testid="new-request-form">
           <ProblemAlert problem={submitAll.error ? problemOf(submitAll.error) : null} />
-          <MemberPicker member={member} onPick={setMember} />
+          <MemberPicker
+            member={member}
+            onPick={(picked) => {
+              setMember(picked);
+              setSelection({ scope: '', id: '' });
+            }}
+          />
           <div className="grid gap-4 md:grid-cols-2">
             <FormField
               label={t('provider.newRequest.service')}
@@ -112,6 +138,7 @@ export function NewRequestPage() {
                 value={definitionId}
                 onChange={(e) => {
                   setDefinitionId(e.target.value);
+                  setSelection({ scope: '', id: '' });
                   const picked = definitions.data?.find((d) => d.value === e.target.value);
                   if (picked) setUnitType(picked.unitType);
                 }}
@@ -128,7 +155,10 @@ export function NewRequestPage() {
                 name="serviceDate"
                 type="date"
                 value={serviceDate}
-                onChange={(e) => setServiceDate(e.target.value)}
+                onChange={(e) => {
+                  setServiceDate(e.target.value);
+                  setSelection({ scope: '', id: '' });
+                }}
               />
             </FormField>
             <FormField
@@ -155,7 +185,26 @@ export function NewRequestPage() {
               />
             </FormField>
           </div>
-          {/* Absent, not disabled, until the answer on the right has found the enrollment. */}
+          {candidates.length > 1 ? (
+            <FormField
+              label={t('provider.newRequest.enrollment')}
+              required
+              requiredLabel={t('common.requiredMark')}
+              hint={t('provider.newRequest.enrollmentHint')}
+            >
+              <Select
+                name="enrollmentId"
+                value={selectedId}
+                onChange={(e) => setSelection({ scope: selectionScope, id: e.target.value })}
+                placeholder={t('common.none')}
+                options={candidates.map((c) => ({
+                  value: c.enrollmentId,
+                  label: `${c.planName} (${c.planCode}) · ${formatDate(c.validFrom)}${c.validTo ? ` – ${formatDate(c.validTo)}` : ''}`,
+                }))}
+              />
+            </FormField>
+          ) : null}
+          {/* Only a resolved check for the current selection permits submission. */}
           {enrollmentId ? (
             <div className="flex justify-end">
               <Button type="submit" loading={submitAll.isPending}>
@@ -169,7 +218,7 @@ export function NewRequestPage() {
           <EligibilityPane
             check={{
               asked: checkBody !== null,
-              isPending: check.isPending,
+              isPending: check.isPending || check.isFetching,
               error: check.error,
               data: check.data,
             }}

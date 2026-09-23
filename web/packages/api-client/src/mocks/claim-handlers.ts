@@ -35,6 +35,7 @@
  */
 import { HttpResponse, http, type HttpHandler } from 'msw';
 
+import { claimSourceHandlers } from './claim-source-handlers';
 import { resolveContractPrice } from './contract-handlers';
 import {
   fromMicros,
@@ -356,6 +357,19 @@ interface LineOutcome {
 
 export function claimHandlers(api: MockApi): HttpHandler[] {
   const world = (): MockWorld => api.world;
+  // Actual draws only; an over-limit attempt must never restore entitlement.
+  const draws = new WeakMap<
+    MockWorld,
+    Map<string, { item: { consumedQuantity: string }; quantity: bigint }>
+  >();
+  const drawsOf = () => {
+    let entries = draws.get(world());
+    if (!entries) {
+      entries = new Map();
+      draws.set(world(), entries);
+    }
+    return entries;
+  };
 
   const caseOf = (row: StoredClaim): StoredHealthCase | undefined =>
     row.caseId === null ? undefined : world().healthCases.find((c) => c.id === row.caseId);
@@ -917,6 +931,7 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
       return;
     }
     item.consumedQuantity = amount(toMicros(item.consumedQuantity) + wanted);
+    drawsOf().set(outcome.line.id, { item, quantity: wanted });
   };
 
   /** Another live claim of the same person, service and day, named by its reference. */
@@ -1034,7 +1049,64 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
     row.rowVersion += 1;
   };
 
+  const createDraft = (session: MockSession, tenantId: string, body: Schemas['CreateClaim']) => {
+    const now = new Date().toISOString();
+    const claim: StoredClaim = {
+      id: world().nextId(),
+      tenantId: tenantId,
+      reference: `CLM-${body.serviceDateFrom.replace(/-/g, '')}-${world()
+        .nextId()
+        .slice(-8)
+        .toUpperCase()}`,
+      personId: body.personId,
+      programId: body.programId,
+      enrollmentId: body.enrollmentId,
+      providerOrganizationId: body.providerOrganizationId,
+      // A claim comes from one thing. `bookingId` makes it a lodging claim and `caseId`
+      // makes it a health one; the two together are refused above.
+      domainCode: body.bookingId ? 'ACCOMMODATION' : 'HEALTH',
+      sourceType: body.bookingId ? 'BOOKING' : body.caseId ? 'HEALTH_CASE' : null,
+      sourceId: body.bookingId ?? body.caseId ?? null,
+      caseId: body.caseId ?? null,
+      fulfilmentId: body.fulfilmentId ?? null,
+      authorizationId: body.authorizationId ?? null,
+      currentVersionNo: 1,
+      status: 'DRAFT',
+      serviceDateFrom: body.serviceDateFrom,
+      serviceDateTo: body.serviceDateTo,
+      channel: body.channel ?? 'PROVIDER_PORTAL',
+      rejectReasonCode: null,
+      returnReasonCode: null,
+      reviewCommentMedical: null,
+      reviewCommentFinancial: null,
+      closedAt: null,
+      createdAt: now,
+      rowVersion: 1,
+    };
+    world().claims.push(claim);
+    const version: StoredClaimVersion = {
+      id: world().nextId(),
+      tenantId: tenantId,
+      claimId: claim.id,
+      versionNo: 1,
+      status: 'DRAFT',
+      submittedAt: null,
+      submittedBy: null,
+      returnedAt: null,
+      returnedBy: null,
+      returnReasonCode: null,
+      returnReasonText: null,
+      financialRequired: false,
+      exceptions: [],
+      createdAt: now,
+      rowVersion: 1,
+    };
+    world().claimVersions.push(version);
+    replaceLines(tenantId, version, body.lines);
+    return answer(session, tenantId, claim, 201);
+  };
   return [
+    ...claimSourceHandlers(api, createDraft),
     http.get(`${ANY}/api/v1/claims`, async ({ request }) => {
       await wait(api);
       const g = guardTenant(api, request, PERMISSION_READ, false);
@@ -1154,60 +1226,7 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
         return problem(api, 422, 'CLAIM_PROVIDER_UNKNOWN', "Bu kurum tenant'ın sağlayıcısı değil");
       }
 
-      const now = new Date().toISOString();
-      const claim: StoredClaim = {
-        id: world().nextId(),
-        tenantId: g.tenantId,
-        reference: `CLM-${body.serviceDateFrom.replace(/-/g, '')}-${world()
-          .nextId()
-          .slice(-8)
-          .toUpperCase()}`,
-        personId: body.personId,
-        programId: body.programId,
-        enrollmentId: body.enrollmentId,
-        providerOrganizationId: body.providerOrganizationId,
-        // A claim comes from one thing. `bookingId` makes it a lodging claim and `caseId`
-        // makes it a health one; the two together are refused above.
-        domainCode: body.bookingId ? 'ACCOMMODATION' : 'HEALTH',
-        sourceType: body.bookingId ? 'BOOKING' : body.caseId ? 'HEALTH_CASE' : null,
-        sourceId: body.bookingId ?? body.caseId ?? null,
-        caseId: body.caseId ?? null,
-        fulfilmentId: body.fulfilmentId ?? null,
-        authorizationId: body.authorizationId ?? null,
-        currentVersionNo: 1,
-        status: 'DRAFT',
-        serviceDateFrom: body.serviceDateFrom,
-        serviceDateTo: body.serviceDateTo,
-        channel: body.channel ?? 'PROVIDER_PORTAL',
-        rejectReasonCode: null,
-        returnReasonCode: null,
-        reviewCommentMedical: null,
-        reviewCommentFinancial: null,
-        closedAt: null,
-        createdAt: now,
-        rowVersion: 1,
-      };
-      world().claims.push(claim);
-      const version: StoredClaimVersion = {
-        id: world().nextId(),
-        tenantId: g.tenantId,
-        claimId: claim.id,
-        versionNo: 1,
-        status: 'DRAFT',
-        submittedAt: null,
-        submittedBy: null,
-        returnedAt: null,
-        returnedBy: null,
-        returnReasonCode: null,
-        returnReasonText: null,
-        financialRequired: false,
-        exceptions: [],
-        createdAt: now,
-        rowVersion: 1,
-      };
-      world().claimVersions.push(version);
-      replaceLines(g.tenantId, version, body.lines);
-      return answer(g.session, g.tenantId, claim, 201);
+      return createDraft(g.session, g.tenantId, body);
     }),
 
     http.get(`${ANY}/api/v1/claims/:claimId`, async ({ request, params }) => {
@@ -1282,6 +1301,21 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
       if (errors.length > 0) return validationFailed(api, errors);
       const version = draftVersionOf(found.row.id);
       if (!version) return versionFrozen(api);
+      if (!hasPermission(api, g.session, g.tenantId, 'health.clinical.read')) {
+        const old = world().claimLines.filter((line) => line.versionId === version.id);
+        for (const line of body.lines) {
+          const previous = old.find((item) => item.lineNo === line.lineNo);
+          if (!previous) continue;
+          if (
+            (previous.diagnosisId || previous.medicalReportId) &&
+            previous.serviceDefinitionId !== line.serviceDefinitionId
+          )
+            return validationFailed(api, [{ field: 'lines', code: 'CLINICAL_LINK' }]);
+          line.diagnosisId = previous.diagnosisId;
+          line.medicalReportId = previous.medicalReportId;
+          line.description = previous.description;
+        }
+      }
       replaceLines(g.tenantId, version, body.lines);
       // The lines belong to the version and the ETag belongs to the claim.
       touch(found.row);
@@ -1317,6 +1351,9 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
       version.submittedAt = new Date().toISOString();
       version.submittedBy = g.session.account.actorId;
       version.financialRequired = financialRequired;
+      version.contractAmounts = Object.fromEntries(
+        outcomes.map((o) => [o.line.lineNo, o.contract]),
+      );
       version.exceptions = outcomes.flatMap((o) => (o.decision === null ? o.exceptions : []));
 
       for (const outcome of outcomes) {
@@ -1447,6 +1484,7 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
           d.reasonCode,
           stage,
           {
+            contractAmount: version.contractAmounts?.[line.lineNo] ?? null,
             approvedQuantity: d.approvedQuantity,
             reasonText: d.reasonText ?? null,
             decidedBy: gg.session.account.actorId,
@@ -1556,6 +1594,7 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
           body.reasonCode,
           stage,
           {
+            contractAmount: version.contractAmounts?.[line.lineNo] ?? null,
             approvedQuantity: '0',
             reasonText: body.reasonText ?? null,
             decidedBy: gg.session.account.actorId,
@@ -1596,6 +1635,12 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
       const version = versionOf(claim.id, claim.currentVersionNo);
       if (!version || version.status !== 'SUBMITTED') return transitionInvalid(api);
 
+      for (const line of linesOf(version.id)) {
+        const draw = drawsOf().get(line.id);
+        if (!draw) continue;
+        draw.item.consumedQuantity = amount(toMicros(draw.item.consumedQuantity) - draw.quantity);
+        drawsOf().delete(line.id);
+      }
       // The decided version keeps everything it was given; only the return reason is added.
       version.status = 'SUPERSEDED';
       version.returnedAt = new Date().toISOString();

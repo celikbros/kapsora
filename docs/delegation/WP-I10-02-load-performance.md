@@ -53,11 +53,13 @@ Real API evidence: read, draft-write/cancel, eligibility and hold/release pass; 
 inventory and exact entitlement balances match the initial snapshot. This is four-flow
 functional evidence, not a latency or capacity acceptance result.
 
-Import staging is implemented but not yet accepted against the real API: no standard role
-currently grants `import.execute`, while the browser demo grants it to its administrator.
-The role-owner decision is pending. Required grants are checked before workload mutations;
-the harness does not add a permission to make the scenario pass. An explicitly reduced smoke
-reports its omitted workflow; load mode requires all five.
+The original staging smoke was blocked by the missing real-role grant. On 2026-09-21 the
+owner approved import access for PROGRAM_MANAGER; migration 000049 and the provisioning
+template now supply it. A PostgreSQL-backed HTTP test covers upload, step-up, apply and
+worker replay. The CSV fixture uses PRINCIPAL, matching CSV_V1. The live five-workflow k6
+smoke still needs operator-started services; do not confuse the HTTP integration test with
+that measurement. Required grants are checked before mutations; the harness never grants
+permissions. Reduced smoke reports omitted coverage; load mode requires all five.
 
 Full-capacity data/session provisioning, import apply/adapter coverage, server telemetry,
 designated-environment load execution and measured performance corrections remain open.

@@ -15,7 +15,7 @@ function verdict(result: EligibilityCheckResult): Verdict {
   if (result.eligible) return 'eligible';
   const hardStop = result.explanations.some((e) => e.severity === 'ERROR');
   const review = (result.items ?? []).some((i) => i.outcome === 'REVIEW_REQUIRED');
-  return review && !hardStop ? 'review' : 'notEligible';
+  return (review || result.outcome === 'REVIEW_REQUIRED') && !hardStop ? 'review' : 'notEligible';
 }
 function verdictKey(v: Verdict): string {
   return v === 'review' ? 'reviewRequired' : v;

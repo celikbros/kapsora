@@ -523,6 +523,9 @@ type EarningClaimRecord struct {
 // boundary is a repository concern too: the scope is passed down rather than checked above,
 // so a claim outside it is genuinely not there rather than fetched and then hidden.
 type Repository interface {
+	ListCaseSources(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, q CaseSourceQuery) ([]CaseSourceSummary, error)
+	LockCaseSource(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID, scope Scope, now time.Time) (CaseSource, error)
+	CaseSourceLines(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, source CaseSource) ([]CaseSourceLine, error)
 	CreateClaim(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, in NewClaimRow) (ClaimRecord, error)
 	GetClaim(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID, scope Scope) (ClaimRecord, error)
 	// LockClaim reads the row FOR UPDATE, so two commands on one claim serialise.
@@ -704,6 +707,7 @@ func (NoRules) EvaluateClaimLine(context.Context, pgx.Tx, uuid.UUID, uuid.UUID, 
 // quantity down, and give back what a refused claim was holding. There is no method here that
 // would let a claim decide anything about entitlement.
 type AuthorizationPort interface {
+	UndoConsumption(ctx context.Context, tx pgx.Tx, in ConsumeRequest) error
 	Consume(ctx context.Context, tx pgx.Tx, in ConsumeRequest) (ConsumeAnswer, error)
 	ReleaseUnused(ctx context.Context, tx pgx.Tx, in ReleaseRequest) (benefitdomain.Quantity, error)
 }
@@ -825,3 +829,6 @@ type NoWorkItems struct{}
 
 // Raise implements WorkItemPort.
 func (NoWorkItems) Raise(context.Context, pgx.Tx, uuid.UUID, RaiseWorkItem) error { return nil }
+
+// UndoConsumption implements AuthorizationPort when no authorization module is configured.
+func (NoAuthorizations) UndoConsumption(context.Context, pgx.Tx, ConsumeRequest) error { return nil }

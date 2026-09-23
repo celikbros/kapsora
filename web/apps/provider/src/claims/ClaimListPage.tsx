@@ -55,7 +55,7 @@ export function ClaimListPage() {
         description={t('claims.intro')}
         actions={
           canCreate ? (
-            <Link to="/cases">
+            <Link to="/claims/new">
               <Button size="sm">{t('claims.new')}</Button>
             </Link>
           ) : undefined

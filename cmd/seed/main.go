@@ -3,6 +3,10 @@
 //
 //	seed account <username> <display name> [email]   one login with a random password
 //	seed demo                                        tenants DEMO_A / DEMO_B, demo users, grants
+//	seed claim-review-rule <dedicated-person-id> [retire]  scoped local claim review fixture
+//	seed document-rule <dedicated-person-id> [retire]  scoped local acceptance fixture
+//	seed health-scope <fixture-uuid>  closed cross-provider/tenant acceptance reports
+//	seed automatic-program <dedicated-program-id> [disable]  isolated automatic decision fixture
 //
 // Generated passwords are printed once and never stored in plaintext. Set
 // KAPSORA_SEED_DEMO_PASSWORD to give every demo user the same known password (local only).
@@ -12,6 +16,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base32"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -98,7 +103,7 @@ type seeder struct {
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("usage: seed account <username> <display name> [email] | seed demo")
+		return fmt.Errorf("usage: seed account <username> <display name> [email] | seed demo | seed document-rule <dedicated-person-id> [retire]")
 	}
 	cfg, err := config.Load("kapsora-seed")
 	if err != nil {
@@ -168,6 +173,75 @@ func run(args []string) error {
 	}
 
 	switch args[0] {
+	case "health-case-scope":
+		if len(args) != 3 {
+			return fmt.Errorf("usage: seed health-case-scope <source-claim-uuid> <fixture-uuid>")
+		}
+		source, err := uuid.Parse(args[1])
+		if err != nil {
+			return fmt.Errorf("invalid source claim UUID")
+		}
+		fixture, err := uuid.Parse(args[2])
+		if err != nil {
+			return fmt.Errorf("invalid fixture UUID")
+		}
+		result, err := s.healthCaseBoundary(ctx, source, fixture)
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(os.Stdout).Encode(result)
+	case "health-scope":
+		if len(args) != 2 {
+			return fmt.Errorf("usage: seed health-scope <fixture-uuid>")
+		}
+		id, err := uuid.Parse(args[1])
+		if err != nil {
+			return fmt.Errorf("invalid scope fixture UUID")
+		}
+		result, err := s.healthScope(ctx, id)
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(os.Stdout).Encode(result)
+	case "automatic-program":
+		if len(args) < 2 || len(args) > 3 || (len(args) == 3 && args[2] != "disable") {
+			return fmt.Errorf("usage: seed automatic-program <dedicated-program-id> [disable]")
+		}
+		id, err := uuid.Parse(args[1])
+		if err != nil {
+			return fmt.Errorf("invalid fixture program id")
+		}
+		result, err := s.automaticProgram(ctx, id, len(args) == 3)
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(os.Stdout).Encode(result)
+	case "claim-review-rule":
+		if len(args) < 2 || len(args) > 3 || (len(args) == 3 && args[2] != "retire") {
+			return fmt.Errorf("usage: seed claim-review-rule <dedicated-person-id> [retire]")
+		}
+		personID, err := uuid.Parse(args[1])
+		if err != nil {
+			return fmt.Errorf("invalid fixture person id")
+		}
+		result, err := s.claimReviewRule(ctx, personID, len(args) == 3)
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(os.Stdout).Encode(result)
+	case "document-rule":
+		if len(args) < 2 || len(args) > 3 || (len(args) == 3 && args[2] != "retire") {
+			return fmt.Errorf("usage: seed document-rule <dedicated-person-id> [retire]")
+		}
+		personID, err := uuid.Parse(args[1])
+		if err != nil {
+			return fmt.Errorf("invalid fixture person id")
+		}
+		result, err := s.documentRule(ctx, personID, len(args) == 3)
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(os.Stdout).Encode(result)
 	case "account":
 		if len(args) < 3 {
 			return fmt.Errorf("usage: seed account <username> <display name> [email]")
@@ -193,7 +267,7 @@ func run(args []string) error {
 		}
 		return s.demo(ctx)
 	default:
-		return fmt.Errorf("unknown command %q; use account or demo", args[0])
+		return fmt.Errorf("unknown command %q; use account, demo, document-rule, claim-review-rule, automatic-program, health-scope or health-case-scope", args[0])
 	}
 }
 

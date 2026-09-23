@@ -95,6 +95,9 @@ func NewHandler(svc *application.Service, deny Denier, logger *slog.Logger) *Han
 // Routes mounts everything below /claims.
 func (h *Handler) Routes(r chi.Router, mw Middlewares) {
 	r.Get("/", h.ListClaims)
+	r.Get("/case-sources", h.ListCaseSources)
+	r.Get("/case-sources/{caseId}", h.GetCaseSource)
+	r.With(wrap(mw.CreateClaim)).Post("/case-sources/{caseId}", h.CreateFromCase)
 	r.With(wrap(mw.CreateClaim)).Post("/", h.CreateClaim)
 	r.Get("/{claimId}", h.GetClaim)
 	r.With(wrap(mw.PatchClaim)).Patch("/{claimId}", h.PatchClaimDraft)
@@ -263,6 +266,12 @@ func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) 
 	case errors.Is(err, application.ErrAdjustmentLine):
 		problem(w, r, http.StatusUnprocessableEntity, "claims/adjustment-line",
 			"CLAIM_ADJUSTMENT_LINE_NOT_FOUND", "Bu sürümde böyle bir satır yok", "")
+	case errors.Is(err, application.ErrSourceNotFound):
+		problem(w, r, http.StatusNotFound, "claims/source-not-found", "CLAIM_SOURCE_NOT_FOUND", "Faturalandırılacak vaka bulunamadı", "")
+	case errors.Is(err, application.ErrSourceNotReady):
+		problem(w, r, http.StatusConflict, "claims/source-not-ready", "CLAIM_SOURCE_NOT_READY", "Vaka faturalamaya hazır değil", "Klinik ekibin vaka kayıtlarını tamamlamasını ve geçerli provizyonu kontrol etmesini isteyin.")
+	case errors.Is(err, application.ErrSourceAlreadyClaimed):
+		problem(w, r, http.StatusConflict, "claims/case-already-claimed", "CLAIM_CASE_ALREADY_CLAIMED", "Bu vaka için bir dosya zaten var", "Dosyalar listesinden mevcut kaydı açın.")
 	case errors.Is(err, application.ErrClaimAlreadyRaised):
 		problem(w, r, http.StatusConflict, "claims/source-already-claimed",
 			"CLAIM_SOURCE_ALREADY_CLAIMED", "Bu rezervasyon için açık bir dosya zaten var",

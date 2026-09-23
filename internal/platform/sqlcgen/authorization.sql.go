@@ -275,21 +275,23 @@ func (q *Queries) CreateAuthorization(ctx context.Context, arg CreateAuthorizati
 const createAuthorizationItem = `-- name: CreateAuthorizationItem :one
 INSERT INTO service.authorization_item (
     tenant_id, authorization_id, request_item_id, service_definition_id,
-    approved_quantity, approved_amount, member_amount)
+    approved_quantity, approved_amount, member_amount, entitlement_unit_factor)
 VALUES ($1, $2, $3,
         $4, $5::text::numeric,
-        $6::text::numeric, $7::text::numeric)
+        $6::text::numeric, $7::text::numeric,
+        $8::text::numeric)
 RETURNING id, created_at, row_version
 `
 
 type CreateAuthorizationItemParams struct {
-	TenantID            uuid.UUID
-	AuthorizationID     uuid.UUID
-	RequestItemID       uuid.UUID
-	ServiceDefinitionID uuid.UUID
-	ApprovedQuantity    string
-	ApprovedAmount      *string
-	MemberAmount        string
+	TenantID              uuid.UUID
+	AuthorizationID       uuid.UUID
+	RequestItemID         uuid.UUID
+	ServiceDefinitionID   uuid.UUID
+	ApprovedQuantity      string
+	ApprovedAmount        *string
+	MemberAmount          string
+	EntitlementUnitFactor string
 }
 
 type CreateAuthorizationItemRow struct {
@@ -311,6 +313,7 @@ func (q *Queries) CreateAuthorizationItem(ctx context.Context, arg CreateAuthori
 		arg.ApprovedQuantity,
 		arg.ApprovedAmount,
 		arg.MemberAmount,
+		arg.EntitlementUnitFactor,
 	)
 	var i CreateAuthorizationItemRow
 	err := row.Scan(&i.ID, &i.CreatedAt, &i.RowVersion)
@@ -733,6 +736,7 @@ SELECT id, authorization_id, request_item_id, service_definition_id,
        member_amount::text AS member_amount,
        entitlement_reservation_id,
        consumed_quantity::text AS consumed_quantity,
+       entitlement_unit_factor::text AS entitlement_unit_factor,
        row_version
   FROM service.authorization_item
  WHERE tenant_id = $1
@@ -755,6 +759,7 @@ type ListAuthorizationItemsRow struct {
 	MemberAmount             string
 	EntitlementReservationID uuid.NullUUID
 	ConsumedQuantity         string
+	EntitlementUnitFactor    string
 	RowVersion               int64
 }
 
@@ -777,6 +782,7 @@ func (q *Queries) ListAuthorizationItems(ctx context.Context, arg ListAuthorizat
 			&i.MemberAmount,
 			&i.EntitlementReservationID,
 			&i.ConsumedQuantity,
+			&i.EntitlementUnitFactor,
 			&i.RowVersion,
 		); err != nil {
 			return nil, err
@@ -1287,6 +1293,7 @@ SELECT id, authorization_id, request_item_id, service_definition_id,
        member_amount::text AS member_amount,
        entitlement_reservation_id,
        consumed_quantity::text AS consumed_quantity,
+       entitlement_unit_factor::text AS entitlement_unit_factor,
        row_version
   FROM service.authorization_item
  WHERE tenant_id = $1
@@ -1310,6 +1317,7 @@ type LockAuthorizationItemsRow struct {
 	MemberAmount             string
 	EntitlementReservationID uuid.NullUUID
 	ConsumedQuantity         string
+	EntitlementUnitFactor    string
 	RowVersion               int64
 }
 
@@ -1334,6 +1342,7 @@ func (q *Queries) LockAuthorizationItems(ctx context.Context, arg LockAuthorizat
 			&i.MemberAmount,
 			&i.EntitlementReservationID,
 			&i.ConsumedQuantity,
+			&i.EntitlementUnitFactor,
 			&i.RowVersion,
 		); err != nil {
 			return nil, err

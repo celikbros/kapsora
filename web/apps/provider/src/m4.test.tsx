@@ -3,7 +3,7 @@ import { initI18n } from '@kapsora/i18n';
 import { createMemoryHistory } from '@tanstack/react-router';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { createServices } from './services';
 
@@ -99,11 +99,14 @@ describe('provider portal', () => {
     expect(personCalls, 'the list read a person per row').toBe(0);
   });
 
-  it(
-    'checks eligibility live while the form is filled, then submits',
+  it.each([false, true])(
+    'checks eligibility and submits without duplicate drafts (first submit fails: %s)',
     { timeout: 20_000 },
-    async () => {
-      const { history } = mount('/');
+    async (failFirstSubmit) => {
+      const { history, services: appServices } = mount('/');
+      const create = vi.spyOn(appServices.ops.requests, 'create');
+      const submit = vi.spyOn(appServices.ops.requests, 'submit');
+      if (failFirstSubmit) submit.mockRejectedValueOnce(new Error('connection lost'));
       await login('provider.a');
       await screen.findByRole('heading', { name: 'Yeni talep' });
       const pane = screen.getByTestId('eligibility-pane');
@@ -111,9 +114,8 @@ describe('provider portal', () => {
 
       const user = userEvent.setup();
       // The member by name: two letters narrow the list, a click picks. A person with exactly
-      // one active enrollment: with two, the check answers ENROLLMENT_MULTIPLE and the desk
-      // cannot choose, because it may read no enrollments — real, shown as the server said it,
-      // and not this flow.
+      // one active enrollment. The multiple-candidate path is covered in requestFlow.test.tsx;
+      // this case preserves direct single-plan submission.
       const person = api.world.people.find(
         (p) =>
           p.tenantId === api.world.tenants.find((t) => t.code === 'DEMO_A')!.id &&
@@ -147,6 +149,11 @@ describe('provider portal', () => {
       // Gönder exists only once the check found the enrollment; its absence is the diagnosis.
       const send = await screen.findByRole('button', { name: 'Gönder' }, { timeout: 5_000 });
       await user.click(send);
+      if (failFirstSubmit) {
+        await screen.findByRole('alert');
+        await waitFor(() => expect(send).toBeEnabled());
+        await user.click(send);
+      }
       await waitFor(
         () => {
           const alert = screen.queryByRole('alert');
@@ -162,6 +169,9 @@ describe('provider portal', () => {
       expect(stored.status).not.toBe('SUBMITTED');
       expect(stored.channel).toBe('PROVIDER_PORTAL');
       expect(stored.providerOrganizationId).toBe(providerOrganizationId());
+      expect(create).toHaveBeenCalledTimes(1);
+      expect(submit).toHaveBeenCalledTimes(failFirstSubmit ? 2 : 1);
+      if (failFirstSubmit) expect(submit.mock.calls[1]).toEqual(submit.mock.calls[0]);
     },
   );
 
@@ -257,6 +267,47 @@ describe('provider portal', () => {
 
       expect(after).toBe(first);
       expect(after).toBe('SELECT');
+    },
+  );
+});
+
+describe('required document readiness', () => {
+  it.each(['PENDING', 'SCANNING', 'INFECTED', 'FAILED', 'PURGED', 'CLEAN'] as const)(
+    'keeps required evidence outstanding unless downloadable: %s',
+    async (state) => {
+      const record = api.world.serviceRequests.find((r) => {
+        const types = r.requiredDocumentTypes ?? [];
+        const linked = api.world.documentLinks.filter((l) => l.aggregateId === r.id);
+        return (
+          r.providerOrganizationId === providerOrganizationId() &&
+          types.length > 0 &&
+          types.every((code) => linked.some((l) => l.documentTypeCode === code))
+        );
+      });
+      expect(record).toBeDefined();
+      const ids = new Set(
+        api.world.documentLinks
+          .filter((l) => l.aggregateId === record!.id)
+          .map((l) => l.documentId),
+      );
+      const documents = api.world.documents.filter((d) => ids.has(d.id));
+      expect(documents.length).toBeGreaterThan(0);
+      for (const doc of documents) {
+        doc.scanStatus = state === 'PURGED' ? 'CLEAN' : state;
+        doc.bucket = doc.scanStatus === 'CLEAN' ? 'secure' : 'quarantine';
+        doc.purgedAt = state === 'PURGED' ? new Date().toISOString() : null;
+      }
+      mount(`/requests/${record!.id}`);
+      await login('provider.a');
+      await screen.findByTestId('documents-table');
+      const missing = screen.queryByRole('heading', { name: 'Eksik belgeler' });
+      if (state === 'CLEAN') expect(missing).toBeNull();
+      else {
+        expect(missing).toBeInTheDocument();
+        for (const code of record!.requiredDocumentTypes!) {
+          expect(within(missing!.closest('section')!).getByText(code)).toBeInTheDocument();
+        }
+      }
     },
   );
 });

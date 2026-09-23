@@ -1,6 +1,7 @@
 import type {
   CodeValue,
   CreateEncounter,
+  EndEncounter,
   CreateHealthCase,
   CreateInpatientStay,
   CreateMedicalReport,
@@ -86,6 +87,17 @@ export function useCreateEncounter(caseId: string) {
   const invalidate = useInvalidateCase();
   return useMutation({
     mutationFn: (body: CreateEncounter) => ops.health.createEncounter(tenantId, caseId, body),
+    onSuccess: () => invalidate(caseId),
+  });
+}
+
+export function useEndEncounter(caseId: string, encounterId: string) {
+  const ops = useOps();
+  const tenantId = useTenantId();
+  const invalidate = useInvalidateCase();
+  return useMutation({
+    mutationFn: (input: { etag: string; key: string; body: EndEncounter }) =>
+      ops.health.endEncounter(tenantId, encounterId, input.etag, input.body, input.key),
     onSuccess: () => invalidate(caseId),
   });
 }

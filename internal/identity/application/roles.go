@@ -42,7 +42,7 @@ func RoleTemplates() []RoleTemplate {
 			Description: "Program, plan taslağı, hak sahibi ve enrollment yönetimi.",
 			Permissions: []string{"organization.read", "member.read", "member.manage", "member.relationship.manage", "membership.manage",
 				"member.contact.read", "member.contact.manage",
-				"enrollment.manage", "eligibility.check", "program.read", "program.manage", "plan.manage",
+				"enrollment.manage", "import.execute", "eligibility.check", "program.read", "program.manage", "plan.manage",
 				"entitlement.read", "entitlement.mapping.manage",
 				"catalog.read", "catalog.manage", "pricing.quote", "authorization.manage", "fulfilment.record",
 				"voucher.redeem", "claim.read", "report.read", "report.export",
@@ -115,7 +115,8 @@ func RoleTemplates() []RoleTemplate {
 				"provider.practitioner.manage"}},
 		{Code: "PROVIDER_STAFF", Name: "Sağlayıcı Kayıt/Klinik", Scope: ScopeOrganization,
 			Description: "Hak sorgusu, hizmet talebi, sağlık vakası, belge ve hizmet kaydı.",
-			Permissions: []string{"member.read", "eligibility.check", "service_request.read", "service_request.create",
+			// Service selection and ICD-10 lookup need catalog read access; no maintenance grant.
+			Permissions: []string{"member.read", "eligibility.check", "catalog.read", "service_request.read", "service_request.create",
 				"service_request.submit", "service_request.cancel", "fulfilment.record", "voucher.redeem",
 				"health.case.read", "health.case.manage", "health.clinical.read", "health.medical_report.manage",
 				"document.upload", "document.read", "document.link", "pricing.quote"}},

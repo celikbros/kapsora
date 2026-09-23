@@ -394,3 +394,21 @@ SELECT value_json
   FROM platform.tenant_setting
  WHERE tenant_id = sqlc.arg('tenant_id')
    AND setting_key = 'service_request.review_required';
+
+-- name: ListServiceRequestDocumentEvidence :many
+-- A link alone is not proof: both the linked object and its canonical bytes must
+-- still be clean and retained. Do not use another provider's attachment.
+SELECT o.id, l.document_type_code
+  FROM document.link l
+  JOIN document.object o ON o.tenant_id = l.tenant_id AND o.id = l.object_id
+  JOIN document.object stored ON stored.tenant_id = o.tenant_id
+       AND stored.id = COALESCE(o.duplicate_of_object_id, o.id)
+ WHERE l.tenant_id = sqlc.arg('tenant_id')
+   AND l.aggregate_type = 'SERVICE_REQUEST'
+   AND l.aggregate_id = sqlc.arg('request_id')
+   AND l.document_type_code = ANY(sqlc.arg('required_types')::text[])
+   AND o.scan_status = 'CLEAN' AND o.bucket = 'secure' AND o.purged_at IS NULL
+   AND stored.scan_status = 'CLEAN' AND stored.bucket = 'secure' AND stored.purged_at IS NULL
+   AND (sqlc.narg('provider_id')::uuid IS NULL OR o.owner_tenant_organization_id IS NULL
+        OR o.owner_tenant_organization_id = sqlc.narg('provider_id')::uuid)
+ ORDER BY l.document_type_code, o.id;

@@ -544,7 +544,11 @@
     "NO_SHOW_EVIDENCE_REQUIRED": "Gelmeme bildirimi için kanıt belgesi gerekli.",
     "NO_SHOW_SAME_REVIEWER": "Bildirimi yapan kişi kendi bildirimini onaylayamaz.",
     "WAITLIST_DUPLICATE": "Bu tarihler için zaten bekleme listesindesiniz.",
-    "VOUCHER_NOT_AVAILABLE": "Rezervasyon onaylanmadan kupon üretilemez."
+    "VOUCHER_NOT_AVAILABLE": "Rezervasyon onaylanmadan kupon üretilemez.",
+    "CLAIM_CASE_ALREADY_CLAIMED": "Bu vaka için dosya zaten oluşturulmuş. Dosya listesini kontrol edin.",
+    "CLAIM_SOURCE_NOT_FOUND": "Faturalandırılacak vaka bulunamadı. Vaka listesini yenileyin.",
+    "CLAIM_SOURCE_NOT_READY": "Vaka faturalamaya hazır değil. Klinik ekibin kayıtları ve provizyonu kontrol etmesini isteyin.",
+    "ENCOUNTER_ALREADY_ENDED": "Muayene zaten sonlandırılmış. Kaydı yenileyiniz."
   },
   "fieldErrors": {
     "RULE_COMPILE_FAILED": "Kural koşulu derlenemedi",
@@ -2307,7 +2311,8 @@
       "eligible": "Uygun",
       "notEligible": "Uygun değil",
       "resultNote": "Bu bir ön bilgidir; karar, talep gönderildiğinde verilir.",
-      "reviewRequired": "İnceleme gerekli"
+      "reviewRequired": "İnceleme gerekli",
+      "enrollmentHint": "Birden fazla geçerli plan var. Kullanılacak planı seçiniz; uygunluk yeniden hesaplanır."
     },
     "myRequests": {
       "title": "Taleplerim",
@@ -2382,6 +2387,40 @@
         "noShowReported": "Gelmeme bildirildi.",
         "assessedFee": "Hesaplanan ücret",
         "noShowReviewNote": "Ödeyen kurumdan ikinci bir kişi onaylayana kadar kayıt incelemede kalır."
+      }
+    },
+    "correction": {
+      "title": "Talebi düzeltiniz",
+      "intro": "Değişiklikleri kaydediniz, ardından talebi yeniden gönderiniz.",
+      "draftTitle": "Talebi tamamlayınız",
+      "save": "Değişiklikleri kaydet",
+      "submit": "Talebi gönder",
+      "saved": "Değişiklikler kaydedildi.",
+      "sent": "Talep gönderildi.",
+      "reload": "Güncel kaydı yükle",
+      "reloadHint": "Kayıt değişmiş veya işlem tamamlanmış olabilir. Güncel kaydı yükleyip kontrol ediniz. Kaydedilmemiş değişiklikleriniz silinir.",
+      "retryHint": "Gönderim sonucu alınamadı. Aynı işlemi yeniden deneyebilir veya güncel kaydı yükleyebilirsiniz.",
+      "line": "Hizmet {{number}}",
+      "currency": "Para birimi",
+      "dateError": "Geçerli bir hizmet tarihi seçiniz.",
+      "serviceError": "Bir hizmet seçiniz.",
+      "quantityError": "Sıfırdan büyük bir miktar giriniz. En fazla 6 ondalık basamak kullanınız; örnek: 1,5.",
+      "amountError": "Sıfır veya daha büyük bir tutar giriniz. En fazla 6 ondalık basamak kullanınız; örnek: 400,50.",
+      "currencyError": "Üç harfli para birimi kodunu giriniz; örnek: TRY."
+    },
+    "cancellation": {
+      "action": "Talebi iptal et",
+      "confirm": "{{reference}} numaralı talep kapanacak. İptal geri alınamaz.",
+      "done": "Talep iptal edildi.",
+      "reason": "İptal gerekçesi",
+      "choose": "Gerekçe seçiniz",
+      "optional": "İsteğe bağlı, en fazla 1000 karakter.",
+      "changed": "İşlem uygulanamadı veya talep değişti. Güncel kaydı yükleyip durumunu kontrol ediniz.",
+      "uncertain": "İptalin sonucu doğrulanamadı. Aynı işlemi yeniden deneyebilir veya güncel kaydı yükleyebilirsiniz.",
+      "reasons": {
+        "PROVIDER_WITHDRAWN": "Talep geri çekildi",
+        "DUPLICATE_REQUEST": "Aynı hizmet için başka talep var",
+        "INPUT_ERROR": "Talep yanlış açıldı"
       }
     }
   },
@@ -2496,7 +2535,16 @@
       "created": "Muayene kaydedildi.",
       "diagnoses": "Tanılar",
       "editDiagnoses": "Tanıları düzenle",
-      "noDiagnosis": "Tanı girilmedi"
+      "noDiagnosis": "Tanı girilmedi",
+      "end": {
+        "action": "Muayeneyi sonlandır",
+        "done": "Muayene sonlandırıldı",
+        "hint": "Başlangıç: {{started}}. Bitiş zamanı kaydedildikten sonra değiştirilemez.",
+        "invalid": "Bitiş zamanı başlangıçtan önce olamaz.",
+        "reload": "Kaydı yeniden yükleyip güncel durumu kontrol ediniz.",
+        "uncertain": "İşlemin sonucu alınamadı. Aynı bitiş zamanıyla tekrar deneyebilir veya kaydı yenileyebilirsiniz.",
+        "refresh": "Kaydı yenile"
+      }
     },
     "diagnoses": {
       "title": "Tanılar",
@@ -2926,6 +2974,24 @@
         "CURRENCY_NOT_SINGLE": "Satırlar tek para biriminde değil",
         "LINE_NOT_DECIDED": "Karara bağlanmamış satır var"
       }
+    },
+    "handoff": {
+      "intro": "Kurumunuzun vakasını seçin, hizmet miktarlarını ve talep ettiğiniz tutarları yazın.",
+      "case": "Faturalandırılacak vaka",
+      "caseHint": "Aktif provizyonu olan ve henüz dosyası açılmamış ayaktan vakalar listelenir.",
+      "choose": "Vaka seçin",
+      "more": "Daha fazla vaka yükle",
+      "empty": "Faturalandırılacak vaka yok",
+      "emptyHint": "Klinik ekip vaka kaydını tamamladıktan ve provizyon alındıktan sonra burada görünecektir.",
+      "charges": "Hizmetler ve tutarlar",
+      "date": "Hizmet tarihi: {{date}}",
+      "reserved": "Provizyon miktarı: {{quantity}} {{unit}}",
+      "amount": "Talep edilen tutar (TRY)",
+      "links": "Vaka ve provizyon bağlantıları korunur. Klinik bilgiler faturalama ekranında gösterilmez.",
+      "uncertain": "İşlemin sonucu doğrulanamadı. Aynı istekle yeniden deneyin.",
+      "edit": "Bilgileri düzenle",
+      "quantityError": "Sıfırdan büyük bir miktar girin (ör. 1 veya 1,5; en fazla 6 ondalık basamak).",
+      "amountError": "Sıfır veya daha büyük bir tutar girin (ör. 400,50; en fazla 6 ondalık basamak)."
     }
   },
   "review": {
@@ -3750,6 +3816,26 @@
         "MANAGEMENT_REPORT": "Yönetim raporu"
       },
       "purposeRequired": "İndirmenin amacını seçin."
+    }
+  },
+  "authorization": {
+    "title": "Hak ayırma",
+    "empty": "Talep onaylandı; henüz hak ayrılmadı.",
+    "none": "Bu talep için hak ayırma kaydı yok.",
+    "providerEmpty": "Bu talep için hak ayırma kaydı yok. Talep onayı, tek başına hak ayırmaz.",
+    "deadline": "Geçerlilik sonu",
+    "futureDate": "Şimdiden sonraki bir tarih ve saat seçin.",
+    "reserve": "Hak ayır",
+    "reserving": "Hak ayrılıyor…",
+    "retry": "Hak ayırmayı yeniden dene",
+    "effect": "Onaylanan hizmetler için hak ayrılır. Bu işlem hizmet kullanımı veya ödeme kaydı oluşturmaz. Tarih ve saat yerel saat diliminizdedir.",
+    "validUntil": "Geçerlilik sonu: {{date}}",
+    "status": {
+      "ACTIVE": "Ayrıldı",
+      "PARTIALLY_USED": "Kısmen kullanıldı",
+      "USED": "Kullanıldı",
+      "EXPIRED": "Süresi doldu",
+      "CANCELLED": "İptal edildi"
     }
   }
 }

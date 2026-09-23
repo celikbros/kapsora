@@ -868,6 +868,7 @@ func newRouter(d routerDeps) http.Handler {
 				CreateCase:      d.idempotent("health_case.create"),
 				CloseCase:       d.idempotent("health_case.close"),
 				CreateEncounter: d.idempotent("health_encounter.create"),
+				EndEncounter:    d.idempotent("health_encounter.end"),
 				PutDiagnoses:    d.idempotent("health_diagnosis.put"),
 			}
 			tenant.Route("/health-cases", func(r chi.Router) {
@@ -1097,7 +1098,7 @@ func newRouter(d routerDeps) http.Handler {
 			// retried browser submit cannot create a second batch.
 			importHandler := partyhttp.NewImportHandler(d.imports, sessions, d.logger)
 			tenant.Route("/imports/members", func(r chi.Router) {
-				importHandler.Routes(r, d.idempotent("member_import.create"))
+				importHandler.Routes(r, d.idempotentLarge("member_import.create", 28<<20))
 			})
 		})
 	})

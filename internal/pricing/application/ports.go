@@ -89,6 +89,7 @@ type EligibilityInput struct {
 	// that were never opened are simply absent: a quote must not open one, because
 	// opening an account posts a GRANT movement and the ledger has to stay untouched.
 	Accounts []eligibility.Account
+	Mappings map[uuid.UUID]eligibility.Mapping
 }
 
 // PriceRuleVersion is one published PRICE rule set version with its rules, ready to be

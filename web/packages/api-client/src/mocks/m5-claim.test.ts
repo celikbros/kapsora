@@ -22,6 +22,8 @@ import { createKapsoraClient, randomId, type KapsoraClient } from '../client';
 import { createOperations } from '../operations';
 import { ApiError, unwrap, type Problem } from '../problem';
 import { createMockServer } from './node';
+import { mockAuthorizations } from './authorization-handlers';
+import { currentVersionOf } from './data';
 
 const { api, server } = createMockServer({ organizationsPerTenant: 6 });
 const BASE = 'http://mock.test';
@@ -287,6 +289,84 @@ describe('the submit pipeline', () => {
 });
 
 describe('the freeze and the correction', () => {
+  it('returns the actual hold draw before consuming the corrected version', async () => {
+    let provider = await signIn('provider.a');
+    const control = await createClaim(provider, [clinicalLine(1, 'PHYSIO_SESSION', '1', '250')]);
+    await submit(provider, control.data.id);
+    const hold = api.world.claimAuthorizations[0]!;
+    const item = hold.items[0]!;
+    item.approvedQuantity = '4';
+    item.consumedQuantity = '0';
+    const created = await createClaim(provider, [clinicalLine(1, 'PHYSIO_SESSION', '2', '500')], {
+      authorizationId: hold.id,
+    });
+    const pending = await submit(provider, created.data.id);
+    expect(pending.data.status).toBe('PENDING_FINANCIAL');
+    expect(item.consumedQuantity).toBe('2');
+    const reviewer = await signIn('financial.reviewer');
+    const returned = await unwrap(
+      reviewer.c.POST('/api/v1/claims/{claimId}/return', {
+        params: {
+          header: {
+            ...tenant(reviewer),
+            'If-Match': await etagOf(reviewer, created.data.id),
+            'Idempotency-Key': key(),
+          },
+          path: { claimId: created.data.id },
+        },
+        body: { reasonCode: 'AMOUNT_CORRECTION' },
+      }),
+    );
+    expect(returned.data.currentVersionNo).toBe(2);
+    expect(item.consumedQuantity).toBe('0');
+    provider = await signIn('provider.a');
+    await unwrap(
+      provider.c.PUT('/api/v1/claims/{claimId}/lines', {
+        params: {
+          header: {
+            ...tenant(provider),
+            'If-Match': await etagOf(provider, created.data.id),
+            'Idempotency-Key': key(),
+          },
+          path: { claimId: created.data.id },
+        },
+        body: { lines: [clinicalLine(1, 'PHYSIO_SESSION', '1', '250')] },
+      }),
+    );
+    await submit(provider, created.data.id);
+    expect(item.consumedQuantity).toBe('1');
+    const financial = await signIn('financial.reviewer');
+    const decided = await unwrap(
+      financial.c.POST('/api/v1/claims/{claimId}/line-decisions', {
+        params: {
+          header: {
+            ...tenant(financial),
+            'If-Match': await etagOf(financial, created.data.id),
+            'Idempotency-Key': key(),
+          },
+          path: { claimId: created.data.id },
+        },
+        body: {
+          decisions: [
+            {
+              lineNo: 1,
+              decision: 'CUT',
+              approvedQuantity: '1',
+              approvedAmount: '200',
+              payerAmount: '200',
+              memberAmount: '0',
+              reasonCode: 'REVIEWED',
+            },
+          ],
+        },
+      }),
+    );
+    expect(decided.data.lines[0]!.decision).toMatchObject({
+      contractAmount: '750',
+      approvedAmount: '200',
+    });
+  });
+
   it('refuses to edit a submitted version and opens version n+1 on a return', async () => {
     const provider = await signIn('provider.a');
     const created = await createClaim(provider, [
@@ -705,5 +785,166 @@ describe('the sponsor HR scan', () => {
     expect(events.length).toBe(before + 1);
     expect(events[events.length - 1]!.outcome).toBe('SUCCESS');
     expect(events[events.length - 1]!.purposeCode).toBe('CLAIM_REVIEW');
+  });
+});
+
+it('financial case handoff preserves private links, scopes sources and replays one draft', async () => {
+  const s = await signIn('billing.a');
+  const world = api.world;
+  const original = world.healthCases.find(
+    (c) => c.tenantId === s.tenantId && c.caseType === 'OUTPATIENT',
+  )!;
+  const request = world.serviceRequests.find(
+    (r) =>
+      r.tenantId === s.tenantId && r.providerOrganizationId === original.providerOrganizationId,
+  )!;
+  request.status = 'APPROVED';
+  const item = currentVersionOf(world, request)!.items[0]!;
+  const row = {
+    ...original,
+    id: world.nextId(),
+    personId: request.personId,
+    programId: request.programId,
+    enrollmentId: request.enrollmentId,
+    serviceRequestId: request.id,
+  };
+  world.healthCases.push(row);
+  const encounter = {
+    ...world.encounters[0]!,
+    id: world.nextId(),
+    tenantId: s.tenantId,
+    caseId: row.id,
+    endedAt: new Date().toISOString(),
+  };
+  world.encounters.push(encounter);
+  const diagnosis = {
+    ...world.diagnoses[0]!,
+    id: world.nextId(),
+    tenantId: s.tenantId,
+    encounterId: encounter.id,
+    diagnosisType: 'PRIMARY' as const,
+  };
+  world.diagnoses.push(diagnosis);
+  const report = {
+    ...world.medicalReports[0]!,
+    id: world.nextId(),
+    tenantId: s.tenantId,
+    caseId: row.id,
+    personId: row.personId,
+    issuingProviderOrganizationId: row.providerOrganizationId,
+    status: 'APPROVED' as const,
+    validFrom: request.serviceDate,
+    validTo: request.serviceDate,
+  };
+  world.medicalReports.push(report);
+  world.medicalReportServices.push({
+    id: world.nextId(),
+    tenantId: s.tenantId,
+    reportId: report.id,
+    serviceDefinitionId: item.serviceDefinitionId,
+    coveredQuantity: '2',
+    coveredAmount: null,
+    currencyCode: null,
+    notes: null,
+  });
+  const authId = world.nextId();
+  const now = new Date().toISOString();
+  mockAuthorizations(world).push({
+    id: authId,
+    tenantId: s.tenantId,
+    requestId: request.id,
+    reference: 'AUT-HANDOFF',
+    status: 'ACTIVE',
+    validFrom: now,
+    validTo: new Date(Date.now() + 86400000).toISOString(),
+    approvedAt: now,
+    approvedBy: s.actorId,
+    createdAt: now,
+    rowVersion: 1,
+    consumedTotal: '0',
+    reservedTotal: '2',
+    vouchers: [],
+    items: [
+      {
+        id: world.nextId(),
+        requestItemId: item.id,
+        serviceDefinitionId: item.serviceDefinitionId,
+        approvedQuantity: '2',
+        consumedQuantity: '0',
+        memberAmount: '0',
+        entitlementReservationId: world.nextId(),
+      },
+    ],
+  });
+  const ops = createOperations(s.c);
+  expect(
+    (await ops.claims.listCaseSources(s.tenantId)).items.some((c) => c.caseId === row.id),
+  ).toBe(true);
+  const detail = await ops.claims.getCaseSource(s.tenantId, row.id);
+  expect(JSON.stringify(detail.data)).not.toContain(report.id);
+  expect(JSON.stringify(detail.data)).not.toContain(diagnosis.id);
+  const body = {
+    lines: [{ serviceDefinitionId: item.serviceDefinitionId, quantity: '1', lineAmount: '400.50' }],
+  };
+  const command = key();
+  const created = await ops.claims.createFromCase(s.tenantId, row.id, body, detail.etag, command);
+  const replay = await ops.claims.createFromCase(s.tenantId, row.id, body, detail.etag, command);
+  expect(replay).toEqual(created);
+  expect(created.data.projection).toBe('FINANCIAL');
+  expect(JSON.stringify(created.data)).not.toContain(report.id);
+  await expect(
+    ops.claims.createFromCase(
+      s.tenantId,
+      row.id,
+      { lines: [{ ...body.lines[0]!, lineAmount: '500' }] },
+      detail.etag,
+      command,
+    ),
+  ).rejects.toMatchObject({ problem: { status: 409 } });
+  await expect(
+    ops.claims.createFromCase(s.tenantId, row.id, body, detail.etag, key()),
+  ).rejects.toMatchObject({ problem: { code: 'CLAIM_CASE_ALREADY_CLAIMED' } });
+  const version = world.claimVersions.find((v) => v.claimId === created.data.id)!;
+  const saved = await unwrap(
+    s.c.PUT('/api/v1/claims/{claimId}/lines', {
+      params: {
+        path: { claimId: created.data.id },
+        header: { ...tenant(s), 'If-Match': created.etag, 'Idempotency-Key': key() },
+      },
+      body: {
+        lines: [
+          {
+            lineNo: 1,
+            serviceDefinitionId: item.serviceDefinitionId,
+            unitType: item.unitType,
+            quantity: '2',
+            lineAmount: '500',
+          },
+        ],
+      },
+    }),
+  );
+  expect(saved.response.status).toBe(200);
+  expect(world.claimLines.find((l) => l.versionId === version.id)).toMatchObject({
+    diagnosisId: diagnosis.id,
+    medicalReportId: report.id,
+    quantity: '2',
+  });
+  expect(
+    (await ops.claims.listCaseSources(s.tenantId)).items.some((c) => c.caseId === row.id),
+  ).toBe(false);
+  const outsider = {
+    ...row,
+    id: world.nextId(),
+    providerOrganizationId: world.relationships.find(
+      (r) =>
+        r.tenantId === s.tenantId &&
+        r.relationshipRole === 'PROVIDER' &&
+        r.id !== row.providerOrganizationId,
+    )!.id,
+  };
+  world.healthCases.push(outsider);
+  await expect(ops.claims.getCaseSource(s.tenantId, outsider.id)).rejects.toMatchObject({
+    problem: { status: 404 },
   });
 });

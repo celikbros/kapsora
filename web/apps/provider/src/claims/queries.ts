@@ -1,7 +1,13 @@
-import type { ClaimStatus, CreateClaim, PatchClaimDraft, PutClaimLines } from '@kapsora/api-client';
+import type {
+  ClaimStatus,
+  CreateClaim,
+  PatchClaimDraft,
+  PutClaimLines,
+  components,
+} from '@kapsora/api-client';
 import { etagOf } from '@kapsora/api-client';
 import { useTenantId } from '@kapsora/auth';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useOps } from '../services';
 
@@ -123,4 +129,44 @@ export function useClaimCommands(claimId: string) {
       onSuccess: done,
     }),
   };
+}
+
+export function useCaseSources() {
+  const ops = useOps();
+  const tenantId = useTenantId();
+  return useInfiniteQuery({
+    queryKey: ['provider', tenantId, 'claim-sources'],
+    retry: false,
+    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam }) => ops.claims.listCaseSources(tenantId, pageParam),
+    getNextPageParam: (last) => last.nextCursor,
+  });
+}
+
+export function useCaseSource(caseId: string) {
+  const ops = useOps();
+  const tenantId = useTenantId();
+  return useQuery({
+    queryKey: ['provider', tenantId, 'claim-source', caseId],
+    queryFn: () => ops.claims.getCaseSource(tenantId, caseId),
+    enabled: caseId !== '',
+    retry: false,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+  });
+}
+
+export function useCreateFromCase() {
+  const ops = useOps();
+  const tenantId = useTenantId();
+  const invalidate = useInvalidateClaims();
+  return useMutation({
+    mutationFn: (in_: {
+      caseId: string;
+      body: components['schemas']['CreateClaimFromCase'];
+      etag: string;
+      key: string;
+    }) => ops.claims.createFromCase(tenantId, in_.caseId, in_.body, in_.etag, in_.key),
+    onSuccess: () => invalidate(),
+  });
 }

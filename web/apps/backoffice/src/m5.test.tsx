@@ -1,12 +1,13 @@
 import { createMockServer } from '@kapsora/api-client/mocks/node';
+import { SessionProvider } from '@kapsora/auth';
 import { initI18n } from '@kapsora/i18n';
 import { createMemoryHistory } from '@tanstack/react-router';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, renderHook, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { App } from './App';
 import { createServices } from './api';
-import { resetAccessMemory } from './health/access';
+import { accessFor, resetAccessMemory, useAccessState } from './health/access';
 
 /**
  * The M5 review screens against the mock world. The milestone is judged by what the
@@ -249,4 +250,72 @@ describe('the medical reviewer', () => {
       expect(screen.getByTestId('claim-status')).toHaveTextContent('Mali incelemede'),
     );
   });
+});
+
+describe('sensitive record navigation', () => {
+  it.each(['grant', 'decline'] as const)('does not carry %s to another claim', async (choice) => {
+    const first = claimIn('PENDING_MEDICAL');
+    const second = claimIn('APPROVED');
+    first.caseId = sensitiveCase().id;
+    second.caseId = sensitiveCase().id;
+    const { history } = mount(`/claims/${first.id}`);
+    const user = await login('doctor.a');
+    await screen.findByTestId('purpose-dialog');
+    await user.click(
+      screen.getByTestId(choice === 'grant' ? 'purpose-confirm' : 'purpose-decline'),
+    );
+    await screen.findByTestId('claim-lines');
+    await history.push(`/claims/${second.id}`);
+    await screen.findByTestId('purpose-dialog');
+    expect(screen.queryByTestId('claim-lines')).toBeNull();
+    await user.click(screen.getByTestId('purpose-decline'));
+    await screen.findByTestId('claim-lines');
+    await history.push(`/claims/${first.id}`);
+    await waitFor(() =>
+      expect(screen.getByTestId('claim-lines')).toHaveAttribute(
+        'data-projection',
+        choice === 'grant' ? 'CLINICAL' : 'FINANCIAL',
+      ),
+    );
+    expect(screen.queryByTestId('purpose-dialog')).toBeNull();
+  });
+});
+
+describe('sensitive access context', () => {
+  it.each(['actor', 'tenant', 'session'] as const)(
+    'asks again after the %s changes',
+    async (boundary) => {
+      const claim = claimIn('PENDING_MEDICAL');
+      const { services, view } = mount(`/claims/${claim.id}`);
+      await login('doctor.a');
+      await screen.findByTestId('claim-lines');
+      view.unmount();
+      const hook = renderHook(() => useAccessState(claim.id), {
+        wrapper: ({ children }) => (
+          <SessionProvider store={services.store}>{children}</SessionProvider>
+        ),
+      });
+      act(() => hook.result.current.grant('MEDICAL_REVIEW', 'For this record only'));
+      expect(accessFor(hook.result.current.state)?.purpose).toBe('MEDICAL_REVIEW');
+      const before = services.store.getState();
+      expect(before.session).not.toBeNull();
+      expect(before.activeTenant).not.toBeNull();
+      act(() => {
+        if (boundary === 'actor')
+          services.store.setState({ session: { ...before.session!, actorId: 'another-reviewer' } });
+        if (boundary === 'session')
+          services.store.setState({
+            session: { ...before.session!, expiresAt: '2099-01-01T00:00:00Z' },
+          });
+        if (boundary === 'tenant')
+          services.store.setState({
+            activeTenant: {
+              ...before.activeTenant!,
+              tenant: { ...before.activeTenant!.tenant, id: 'another-tenant' },
+            },
+          });
+      });
+      expect(accessFor(hook.result.current.state)).toBeUndefined();
+    },
+  );
 });

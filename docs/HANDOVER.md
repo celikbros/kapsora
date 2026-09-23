@@ -34,7 +34,269 @@ keep them current as you build.
 
 ## 2. Where things stand
 
-**M1 through M7 are DONE.** Schema is at migration `000048` (`db/migrations/`). Every
+**Current owner priority (reconfirmed 2026-09-22): complete the running product, with
+health first.** The detailed plan for the approved sequence is the
+[PC-01–PC-06 product completion roadmap](plan/ROADMAP.md#current-product-completion-roadmap-2026-09-22).
+Member import is locally verified. PC-02 eligibility/request/authorization has substantial
+live evidence with scoped gates still open; the first PC-03 outpatient checkpoint passed.
+Next are the remaining PC-03 handoff/exception gates, PC-04 inpatient health,
+PC-05 invoice/batch/payment, and PC-06
+accommodation plus combined acceptance. The roadmap records task dependencies, 15 health
+acceptance scenarios, role handoffs, evidence gates and confirmed source/fixture gaps.
+The first live health checkpoint passed: provider catalog access, single-enrollment
+eligibility, insufficient-quantity refusal, request submission, medical approval and the
+provider's updated status. Migration 000050 fixes the reproduced catalog 403 for system
+PROVIDER_STAFF in current/new tenants; no catalog maintenance or billing grant was added.
+PC-02 is not complete. The quantity-versus-money quote fix now passes local pricing,
+HTTP and eligibility regression tests: monetary entitlements cap money; session/night/count
+entitlements gate service quantity, including mapping factors and shared per-quote pools.
+The operator restarted `dev.ps1 up` on 2026-09-22 and live confirmation passed: the 400 TRY
+physiotherapy quote is now payer 400/member 0. Excess quantity and shared-balance refusal
+pass, and quote calls leave account balances/row versions unchanged. The real health
+request/medical-approval browser regression passed again (8.1 s total); all six CI checks
+passed on pricing code head `9b50aa7`.
+
+The next PC-02 authorization slice is implemented and locally tested. The approved request
+now exposes an explicit "Hak ayır" action with an operator-chosen expiry; the provider sees
+the resulting reference/status. Published-plan mappings and their factors govern the hold,
+fulfilment/claim consumption and unused release. Migration 000051 stores the factor per item;
+old rows default to 1 to preserve their actual historical ledger units. Cancel/expiry read the
+remaining hold after earlier partial release, and create replays still enforce provider scope.
+Authorization application/HTTP tests, fractional rounding, clean migration, 486 frontend tests,
+typecheck, lint and all app builds pass. The intercepted-response UI browser test passes
+validation, identical uncertain retries, stale-list success, list failure and provider read-only
+states; this is not live-ledger proof. The full database test package hit its 10-minute timeout;
+the focused clean migration test passed separately.
+
+**Live checkpoint (2026-09-22):** the operator restarted the system and the real
+provider → medical approval → authorization → provider follow-up → cancellation test passed
+(10.1 s total). A read-only ledger check confirmed one RESERVE and one RELEASE, net zero
+deltas; the test's 1-unit hold was fully released and the account ended available 20,
+reserved 0, consumed 0 with conservation intact. All six CI checks on `68ba0d5` passed,
+including the full schema suite that exceeded the local timeout. Local schema remains 51.
+
+The next confirmed PC-02 defect is fixed too: retrying a failed provider submission now
+reuses the same draft, ETag and command keys instead of creating another draft. Uncertain
+create responses reuse the create key; simultaneous clicks share the same in-flight request.
+Attempts are kept only in the current form session, isolated by actor, tenant and input.
+The real test with its first submit aborted passed (7.9 s): one create, two identical submit
+attempts, then medical approval, reservation, provider visibility and cancellation. The
+second hold also has exactly one reserve/release pair and zero net balance change.
+
+**Request correction checkpoint (2026-09-22):** the provider now selects an enrollment
+from eligibility candidates, then waits for the selected enrollment's successful check.
+Changing member/service/date clears the selection; failed or ineligible checks cannot send.
+The candidate list stays available after selecting a plan. An ambiguous top-level
+REVIEW_REQUIRED result is no longer displayed as a final refusal.
+
+Provider draft detail now supports saving the service date and service lines, showing the
+reviewer's correction text and resubmitting the same request. ETag conflicts or uncertain
+saves require an explicit reload; unsaved input is not overwritten by background reads.
+An uncertain submit freezes edits and retries the same command key. This also lets a
+provider reopen a known draft from the request list after a reload, without another create.
+No draft body or patient data is persisted in browser storage.
+
+The live return/correct/resubmit test passed (9.0 s): request
+`SR-20260922-ZPT6KIUF` kept version 1 at one session, saved version 2 at two sessions,
+resubmitted and received medical approval, with exactly one create. No entitlement was
+reserved by this run. Twelve focused frontend tests passed, including explicit selection,
+delayed/failed recheck, unchanged submission retries, preserved history and a real mock
+ETag conflict. The plan-selection browser test passed (3.8 s) with intercepted ambiguity
+and failure responses; its chosen valid plan was rechecked by the live API. This does not
+certify a real multiple-enrollment database fixture. Both screens fit 390px and 1440px. The
+full frontend suite passed (494 tests); the subsequent validation fix passed four focused
+tests and another live correction run (9.9 s). Invalid fields now explain how to correct them,
+and comma decimals are normalized without floating point conversion.
+
+**Real enrollment and consumption checkpoint (2026-09-22):**
+`real-entitlement.spec.ts` now prepares a separate synthetic person through public APIs,
+with EMPLOYEE and MEMBER memberships in the existing sponsor and two enrollments in the
+same published DEMO_STANDARD plan (distinct start dates). The real worker opens both sets
+of accounts. No existing person, published plan or permission grant is changed.
+
+The browser requires an explicit choice, selects the second enrollment, refuses service
+on the exclusive enrollment end date and requires a fresh choice after returning to today.
+This last check reproduced a defect: a scope-keyed old selection reappeared when the form
+returned to its previous date. Member/service/date handlers now clear selection explicitly;
+the focused regression verifies the round trip.
+
+The selected enrollment alone funds the live three-session authorization. Recording a
+two-session fulfilment does not consume; completing it moves the account from 17/3/0 to
+17/1/2 (available/reserved/consumed). Replayed record/complete commands do not change
+balances or versions; a fresh duplicate complete returns 409, over-fulfilment 422, and a
+reviewer without fulfilment.record gets 403. Cancellation releases only the unused one:
+final 18/0/2, conservation intact, all other accounts unchanged. The account has exactly
+GRANT, RESERVE, CONSUME and RELEASE entries. The test passed twice (7.8 s then 9.3 s total).
+
+This proves generic fulfilment through the public API, not the clinical case/report/claim
+journey. Completed consumption remains recorded on the synthetic test account. The harness
+releases its unused hold even after an assertion failure when its authorization ID is known.
+Each run creates one test person, two memberships and two enrollments; do not run outside
+the demo environment. The tested authorization is cancelled, so PC-03 must start with a
+fresh episode/hold. Do not bill the two generic fulfilment units again as new claim usage.
+
+**Document and negative-transition checkpoint (2026-09-22):** all six CI checks passed
+on preceding head `3563eb7`. The next gate defect is fixed: a REQUIRE_DOCUMENT rule
+previously blocked every submit even after the required file was attached. The gate now
+accepts only matching SERVICE_REQUEST links to CLEAN, secure, retained objects in the
+same tenant and the request's provider boundary. Duplicate objects also require retained
+canonical bytes. Required type codes remain visible; accepted document IDs/types are
+frozen into the version's gate snapshot so unlinking cannot erase the decision evidence.
+
+The existing explicit flow remains reviewer return → provider resubmit. Upload/scan alone
+does not move PENDING_DOCUMENT, and no new transition/permission was introduced. The new
+PostgreSQL tests verify 14 document boundary cases, preserved history, unlink/recheck,
+automatic approval when configured, and mandatory PREAUTH review even with clean files.
+They seed scan verdicts in disposable databases; they do not prove real ClamAV upload.
+All service-request application/HTTP database tests pass (110.2 s / 54.0 s), as do 50
+focused frontend/mock tests, scoped Go/ESLint checks and TypeScript checks.
+
+The real API/browser negative test passed (5.1 s total): provider review commands 403,
+empty rejection reason 422, stale ETag 412, medical rejection and provider cancellation
+of both draft and submitted requests, stable same-key replays and 409 on reopening a
+closed request. The provider sees the rejection reason and no draft editor. All member
+account balances and versions stay unchanged. Rejected request:
+`01a0ca50-ed16-70b8-a1a5-c29e8b48766b`. Each run leaves three closed synthetic requests;
+failure cleanup cancels any still-undecided request it created.
+
+**Provider cancellation and real document upload checkpoint (2026-09-22):** the operator
+restarted the system; all six CI checks on `d48d8da` passed. The existing real negative
+test passed again after restart (5.0 s). Provider request detail now offers "Talebi iptal et"
+only with service_request.cancel and an undecided status. The dialog names the request,
+explains finality, requires a readable reason choice and accepts an optional note.
+
+Pending commands disable controls. Uncertain replies retain the exact body/key/ETag,
+including after closing/reopening the dialog; a stale/definite refusal requires explicit
+reload. 408, 429 and IDEMPOTENCY_IN_PROGRESS retain the retry. Success removes the editor,
+upload form and cancel action. Mock return/reject/cancel now replay successful commands
+within actor/tenant/request/command scope and reject same-key different bodies, matching
+the real cancellation behavior. No permission grant changed.
+
+The extended live test passed (9.3 s total): a real PDF goes browser → MinIO quarantine →
+worker/ClamAV → CLEAN/secure, then downloads with identical bytes and SHA-256. The provider
+cancels that test request in the browser; the harness drops the response AFTER the API
+commits, retries with the same key/body, and verifies the same response/ETag and unchanged
+member account balances/versions. Request `01a0cab4-8c83-75e0-b60e-6db5c2825461`, document
+`01a0cab4-8fe0-7b6f-aa41-b63019511013`. This is a synthetic INVOICE attachment, not a clinical
+report. There was no matching DOCUMENT rule in this live fixture; the previous document
+gate tests are still isolated PostgreSQL evidence, not a combined live rule/upload proof.
+
+Regression: 59 focused frontend/mock tests passed, then the final transient-retry and
+different-body checks passed in the 12-test cancellation suite; nine backoffice request
+tests also pass. Provider build/typecheck,
+API-client typecheck, harness TypeScript and lint pass. Desktop/mobile normal and error
+captures at 1440/390 have no overflow; detector returned []; fresh finish reviewer: ship.
+Frontend/mock-only change after the operator restart; schema 51, no further restart needed.
+
+**Live document-rule checkpoint (2026-09-22):** all six CI checks on `23ecc5d`
+passed. The new opt-in `real-document-gate.spec.ts` passed against the operator's running
+system (11.1 s test / 12.7 s total). Its separate synthetic person gets one enrollment in
+the existing published plan; the real worker funds that person's accounts. A time-bounded
+DOCUMENT rule requires INVOICE only for that exact person. Another person's control
+request still reaches PENDING_REVIEW, and repeating setup creates no duplicate version.
+
+Missing evidence blocks submission at PENDING_DOCUMENT and prevents medical approval.
+The browser uploads a real PDF to MinIO; the harness pauses only the completion command
+to test a genuinely unscanned object. Download is refused, and return/resubmit still
+stays PENDING_DOCUMENT. After actual worker/ClamAV processing, CLEAN/secure bytes match
+the uploaded SHA-256. Upload alone leaves the status unchanged. Reviewer return followed
+by provider browser resubmit reaches PENDING_REVIEW at version 3, preserving version 1
+and the required type. All funded account balances/versions remain unchanged.
+
+Request `01a0cadc-7edc-7875-b0ef-fca22b43230e`, document
+`01a0cadc-8362-78c3-8dec-9b2ee8ad9e3a`, rule version
+`01a0cadc-7a46-75f7-9c1f-47a3440b3e5c`. Cleanup cancelled both created requests and
+retired the rule version. The synthetic person, enrollment, clean file and rule history
+remain as evidence; there was no reservation or consumption.
+
+Fixture setup is the new local-only `seed document-rule` command, using existing
+application services with distinct maker/checker identities, as the plan/contract seed
+does. It refuses ordinary people, changes no human grants and never reactivates a retired
+version. This is offline fixture provisioning, not authenticated rule-author/publisher UI
+permission proof. The full seed package passes with PostgreSQL enabled (13.0 s), including publish-gate
+positive/negative cases, repeated setup/retirement and unchanged grants. Scoped Go lint,
+vet/build, harness TypeScript and ESLint pass. Schema remains 51; no server restart needed.
+
+PC-02 remains active: finish automatic-decision and scoped queue/ownership/role acceptance,
+then proceed to PC-03 case/report/claim. Automatic decisions have isolated PostgreSQL
+evidence; this live run proves the demo program retains manual review. Clinical reports and infected
+file refusal are not certified by the synthetic INVOICE test.
+
+**Automatic decision and worklist checkpoint (2026-09-23):** all six CI checks passed
+on `2c60a2b`. The live automatic-request test passed (8.7 s total): a new short-lived
+program/plan and synthetic enrollment alone enable automatic approval. The ordinary demo
+program still requires review; excessive quantity fails eligibility; identical submit
+replays preserve the response/ETag, approved line quantity and all account balances/versions.
+The provider sees approval. Offline fixture setup uses distinct maker/checker identities
+and preserves other program settings/defaults and grants; cleanup restores this program
+to manual review. Approved input for PC-03: request `01a0cafa-9412-75b5-98f0-764cfdc43a4e`,
+person `01a0cafa-8bbf-7c58-95bb-96a0e521c32c`, enrollment
+`01a0cafa-8be2-72ea-aefa-55155cf276d1`. There is no authorization/consumption yet;
+the fixture's plan/program expires after two days, so recheck validity before using it.
+
+The real medical-worklist baseline passed (9.2 s total): a new standalone synthetic report
+for the existing staff/member account is blocked without evidence, then a real browser PDF
+upload/ClamAV scan lets it submit and raise one work item. Clinical text, report type and
+person name are absent from its title/payload. Financial reviewers cannot see or claim it;
+providers lack worklist access. Claim/replay, stale ETags, competing claims, non-owner
+release/complete refusal, unchanged SLA after release and completion/replay all passed.
+Claim starts report review. The test report was rejected and its work item completed;
+balances/versions were unchanged. Report `01a0cb07-f05d-7be5-a5f1-7b05a29f6f57`, work item
+`01a0cb08-06a2-725d-999c-1f71822af03e`. This is standalone report/queue evidence, not the
+PC-03 case/encounter/claim chain. Requests use their request list; no automatic request-to-
+work-item routing is implemented or claimed.
+
+**Own-file fix confirmed live after the operator restart (2026-09-23):** claiming one's own
+medical report from the worklist bypassed StartReview's own-file guard (reproduced 200).
+The claim hook now refuses the same subject and the workflow handler returns the existing
+403 OWN_FILE_DECISION. The PostgreSQL/HTTP regression verifies the work item, version,
+assignment, status events and report all remain unchanged; a different reviewer can claim.
+Full health HTTP, workflow application/HTTP and seed tests pass (112.0/57.6/34.6/29.7 s),
+as do scoped Go lint/vet/API build and harness TypeScript/ESLint. Schema remains 51.
+The final `real-health-worklist.spec.ts` always checks own-file refusal both before review
+and after release. The complete live test passed (10.6 s total), including both own-file
+refusals with unchanged work item/report and ledger balances. Report
+`01a0cb59-f6ed-7c58-981b-901fd9d1bfa4` ended REJECTED and work item
+`01a0cb5a-0fb7-7c71-83d3-a56669a0c45b` ended COMPLETED. All six CI checks passed
+on `2b394cd`. Remaining provider/tenant/audit boundaries stay open alongside the first
+PC-03 outpatient case/encounter/report/claim checkpoint. No PC-02 or complete-health closure
+is claimed.
+
+**First PC-03 outpatient checkpoint (2026-09-23):** the live test passed (25.6 s total).
+It uses a fresh synthetic person/enrollment under the bounded PC-02 fixture plan and creates
+a fresh reviewed request/one-session authorization. The provider browser opens the case
+from that request, preserving person/enrollment/program/provider, records an ended encounter
+and primary J06.9 diagnosis, then creates the case-linked treatment report and its one-service
+scope. Missing evidence refuses submission. A real browser PDF upload passes ClamAV; queue
+claim starts review and the doctor approves through the real screen. Queue completion and
+the provider's approval status pass. The case is finally closed through the provider UI.
+
+The billing actor creates the linked claim through the public API (case, authorization,
+diagnosis and approved report references), then submits it and reads invoice readiness in
+the real browser. One AUTO_APPROVED line is contract/approved/payer/member 400/400/400/0 TRY.
+Its account ends available 19/reserved 0/consumed 1; exactly GRANT, RESERVE and CONSUME exist,
+with the expected one-unit ledger deltas. Identical submit replay preserves the response,
+account version and single report usage. The clinical reviewer sees the claim's references;
+the billing API omits diagnosis/report/description fields and refuses direct diagnosis and
+case access. This verifies billing projection only, not HR/sensitive/cross-tenant acceptance.
+Case `01a0cb68-dfc2-7b47-b6ad-16606a1ca8b2`, report `01a0cb68-e345-74cc-ba5b-ed10eaaba36d`,
+claim `01a0cb69-162b-7713-be62-f79acb2696ba`, authorization
+`01a0cb68-db40-7703-8fcb-acfc4e8d2e8c`. The claim is invoice-ready but no invoice/payment was made.
+Test source: `tests/e2e/real-outpatient.spec.ts`; TypeScript and ESLint pass.
+
+**The billing browser handoff gap found in that first run is now fixed and verified**
+in the checkpoint below. Billing selects a scoped financial source and the server preserves
+the case/authorization/diagnosis/report links. No clinical permission was added.
+Next are claim medical/financial exception review, report correction/history, unsafe files
+and remaining privacy boundaries before PC-03 closure, then PC-04/05. Schema remains 51.
+
+Recovery, deployment and full-capacity benchmarking remain deferred. Do not request an
+Ubuntu recovery target or continue I10-03. Clinical/health-claim completion requires
+PC-02–PC-04 to pass; the health episode's local financial journey closes at PC-05.
+
+**M1 through M7 are recorded as DONE for original implementation delivery.** This does
+not certify the current real-browser health chain; its acceptance is tracked separately
+in PC-02–PC-04. Schema is at migration `000051` (`db/migrations/`). Every
 milestone's exit criteria were verified by the integrator before closing (see `docs/plan/ROADMAP.md`
 § Status log for the full narrative, milestone by milestone — it is long, but it is the real
 history of every non-obvious decision, and reading the last 10–15 entries will save you from
@@ -54,14 +316,35 @@ the integration model those two milestones will implement.
 The owner approved closing the small readiness gaps and preparing M10 next. M10 now has
 five work packages under `docs/delegation/WP-I10-*`. I10-02 implementation has started: the
 k6 harness and four real-API smoke workflows pass; full load and pilot acceptance remain open.
-See `docs/runbooks/load-testing.md`. Import testing awaits the role-owner decision because
-no real role template grants `import.execute`; the harness does not change grants. M11 is PLANNED. M8/M9 remain deferred.
+See `docs/runbooks/load-testing.md`. The owner approved import access for the existing
+PROGRAM_MANAGER role in current and new tenants (2026-09-21). Migration 000049 updates
+existing system roles; provisioning supplies the same permission to new tenants. Custom
+roles and other standard roles are unchanged. Password step-up remains required.
+Real PostgreSQL/HTTP integration tests cover upload, apply, worker redelivery and duplicate
+refusal. The local database is now at 51 (dirty=false). The first live browser run found an upload retry
+defect after password step-up: the challenge was cached and the multipart boundary changed
+the request hash. Import authorization now runs before idempotency (including replays),
+and multipart hashing ignores only its transport boundary. Integration tests cover the
+challenge, retry, replay, expired step-up and changed-content refusal. The upload middleware
+also honors the existing 20 MiB file allowance plus 8 MiB multipart overhead instead of
+the default 1 MiB request ceiling. Real browser confirmation passed twice consecutively on 2026-09-22 against the
+operator-started API and worker: password step-up, upload, invalid-row skip, one created
+member, one skipped row, name search, logout and protected-page redirect. The test uses
+unique source record IDs per run so it cannot update a previous test's member. M11 is PLANNED. M8/M9 remain deferred.
 
 Pilot customer, program, beneficiary group and HR/policy source formats are still external
 inputs. Technical preparation can proceed without them; customer-specific integration and
 signed acceptance cannot.
 
 ### Smaller open items worth knowing about
+
+- The 2026-09-22 startup log reports no worker handler for `invoice.submitted` and
+  `settlement.approved`; those events are deferred one hour. Member-import worker
+  processing passed independently. Track these warnings in the invoice/payment flow
+  review; this import correction does not resolve them. After the pricing restart on
+  2026-09-22, a read-only aggregate confirmed the nine pending rows are seven
+  `invoice.submitted` and two `settlement.approved`, all deferred (none currently due).
+  They were not deleted or marked as processed.
 
 - The mock world's `SPONSOR_HR_PERMISSIONS` now matches the real role, including
   `accommodation.property.read`; the mock test compares it with `roles.go`. Keep both
@@ -77,6 +360,382 @@ signed acceptance cannot.
   status-log entries (grep the file for `Open:`) — none block anything, all are candidates
   for a quiet afternoon.
 
+**Financial case handoff implemented and verified live (2026-09-23):**
+the provider billing actor can select its own outpatient case from the claim creation
+screen using member name, request reference and service date. New `claims/case-sources`
+endpoints use the existing `claim.create` scope; they return financial identity and service
+charges only. The server derives authorization, primary diagnosis and approved report
+links. Incomplete or ambiguous matches stop with a generic readiness refusal. This slice
+requires one active authorization, one primary diagnosis, ended encounters and one matching
+approved report per remaining service. It creates one non-cancelled claim per case through
+this handoff; TRY and outpatient care are the current scope. No grant or migration changed.
+
+Case locking plus a fresh post-lock duplicate read prevents concurrent double creation.
+Financial draft saves preserve hidden clinical associations and refuse changing a linked
+service. Comma decimals remain exact strings, invalid fields explain correction, and uncertain
+creation retries keep the same body, ETag and key. Mobile and desktop captures passed; the
+finish reviewer scored both requested numeric corrections resolved. Demo handlers now mirror
+this handoff and preserve links too; their consumption remains a test double, not ledger proof.
+
+All claim PostgreSQL tests passed (111.0 s), scoped Go lint/build, API contract generation,
+Spectral (zero errors), compatibility diff (no breaking change), all 517 frontend/mock
+tests, workspace typecheck, provider build and the intercepted-response browser test passed.
+New handler tests also verify permission refusal, foreign scope, ETag requirements and
+financial response allowlists against PostgreSQL (all source tests: 9.9 s). `real-outpatient.spec.ts` now creates, edits and submits through the billing
+browser. The operator started native MinIO/ClamAV after the initial upload failure, and
+the complete live run passed (23.1 s test / 25.4 s total). No additional API restart was needed.
+Schema remains 51.
+
+**Follow-up verification (2026-09-23):** CI on `3c2f066` found missing problem
+translations and an outdated provider smoke test that still tried to bill an unlinked case.
+Commit `804634a` adds the translations and tests the source refusal before submitting an
+existing seeded draft. Local problem-catalog, harness TypeScript and ESLint checks pass;
+all six CI checks passed on `0d09bc4`, including the repaired provider smoke. The live harness now reports failed upload reservation directly
+instead of waiting for a scan that never started. Failed live attempt authorization
+`01a0cd45-4061-76bb-a4d4-df8f2d442a1f` and draft report
+`01a0cd45-4a47-713f-936e-d21d3b6f850b` were cancelled by the successful failure cleanup;
+no claim was created or entitlement consumed. The synthetic case/person/history remain.
+
+**Live browser handoff checkpoint (2026-09-23):** a fresh synthetic episode passed
+request/authorization → provider case/ended encounter/primary diagnosis → actual browser
+PDF upload and ClamAV scan → doctor report approval/work-item completion → billing browser
+source selection/create → financial line save → submit → invoice readiness → case closure.
+The financial source response contains no diagnosis/report IDs or clinical text; clinical
+provider source access is refused. Billing still cannot read the underlying case/diagnosis.
+Hidden links survive the financial save and remain visible to the authorized reviewer.
+
+Same-key creation returns the same draft; a fresh second create returns 409. Submit replay
+keeps response, ETag, account balances/versions and report usage unchanged. The account ends
+available 19, reserved 0, consumed 1, with exactly GRANT/RESERVE/CONSUME and one report usage.
+The automatic contract/approved/payer/member figures are 400/400/400/0 TRY; readiness is true
+with no blockers. No invoice or payment was created. The approved report/claim and consumed
+test entitlement remain auditable synthetic history; the case is closed.
+Claim `01a0cd5f-e38e-7cd7-93a0-4411259e064f`, case `01a0cd5f-a621-7a6e-9202-aa45fd072bae`,
+report `01a0cd5f-a91c-77f1-b749-5397bf9e9844`, authorization `01a0cd5f-a102-79f3-a741-e9f1b604d727`,
+account `01a0cd5f-9ec2-7a0a-ad0b-9063dd7da158`. Six CI checks pass on `0d09bc4`.
+PC-03 is still active: this proves the automatic-priced path, not medical/financial claim
+exceptions, report correction, infected files or full HR/sensitive/cross-tenant acceptance.
+
+**Claim correction consumption fix (2026-09-23; live confirmation below):**
+the new PostgreSQL regression reproduced two sessions becoming four after financial return
+and resubmission: copied version lines get new IDs, so their consumption keys were new too.
+Return now reverses only the original version's actual authorization draws in the same
+transaction as opening the correction draft. Existing CONSUME entries remain; linked REVERSE
+entries restore the hold. Resubmission consumes the corrected quantity. Fully used holds
+reopen, while cancelled/expired holds stay terminal and release restored reservations.
+Authorization consumption and correction both lock the header before its items.
+
+Full claim, authorization and seed tests pass (139.9 / 105.7 / 33.9 s; authorization HTTP
+25.9 s). Regression covers repeated correction, changed quantities, stale return, attempted
+over-consumption, mapped factors and cancelled/expired holds. Scoped Go lint/API build,
+all 518 frontend/mock tests, workspace typecheck and harness TypeScript/ESLint pass.
+Mock return mirrors actual draws.
+No migration, API contract or permission grant changed; schema remains 51.
+
+The outpatient harness now accepts `E2E_CLAIM_REVIEW=1` with its existing variables and
+loaded `.env`. It prepares a person-scoped temporary ADJUDICATION rule using the local
+`seed claim-review-rule <person-id> [retire]` command, distinct maker/checker identities,
+two passing rule cases and bounded validity. Cleanup retires it. It targets medical return,
+billing correction, medical decision, financial return, second correction and final approval,
+with version/privacy/replay and exact ledger checks. The operator restarted the backend;
+the complete passing review checkpoint is recorded below. H08 is now passed; PC-03 still
+has report/exception/privacy gates open.
+
+**Claim review live findings after operator restart (2026-09-23):** CI passed on
+`5eec483`. Real browser runs now reach medical return → billing correction (v2, 450 TRY)
+→ medical decision → financial return → second correction (v3, 400 TRY) → medical and
+financial decisions → approval. Frozen v1/v2 and medical decision text remain readable to
+the doctor and hidden from the financial projection. Wrong-stage decisions return 409;
+stale return returns 412. The account ends 19 available / 0 reserved / 1 consumed, with
+three CONSUME and two REVERSE entries. Replayed commands preserve account versions and
+report history. This first attempt confirmed consumption; the subsequent full H08
+acceptance is recorded below.
+
+Two actual defects were found in the extended live path. The provider could submit while
+the line save's fresh GET was still pending and receive 412. Its editor and page now share
+one mutation state; inputs, save, submit and cancel remain disabled through refresh.
+The live regression holds that GET deliberately and verifies the disabled controls.
+Desktop/mobile captures at 1440/390 have no overflow; design inspection/detector, provider
+build/typecheck, six existing UI tests and 19 claim mock tests pass.
+
+The final price check found the second defect: manual decisions discarded `contractAmount`,
+despite a known frozen price. The new database test reproduced null instead of 500.
+Medical/financial decisions and outright rejection now copy the contract amount from the
+submitted version's pricing snapshot; missing/ambiguous prices stay null. The mock mirrors
+the same distinction. All claim PostgreSQL tests pass (131.0 s). Go lint/build, workspace
+typecheck and harness lint/TypeScript pass. The operator has since restarted the API and
+the final live check passed with contract/approved/payer/member 400/400/400/0 (below).
+No migration, grants or native-service restart was needed.
+
+Harness fixes: zero is not a valid stale ETag (428), so use the preceding positive version.
+WP-I5-02 explicitly records every successful report-coverage evaluation: three corrected
+submissions produce three historical usage rows, while exact command replays add none.
+The initial one-row-across-all-versions assertion was incorrect, not a report-service bug.
+Long review runs opt into bounded Retry-After handling for 429 in their API actor, retaining
+the same command key/body/ETag. API limits stay unchanged. Cleanup retires the scoped rule
+and closes only that episode's work items. Known decided attempts' remaining work/cases
+were closed via public APIs; approved synthetic claims and consumed entitlement remain.
+
+**H08 medical → financial claim acceptance passed (2026-09-23):** after the latest
+operator restart, `E2E_CLAIM_REVIEW=1` with `real-outpatient.spec.ts` passed in 39.3 s
+(41.8 s total). This is a fresh synthetic episode: real provider case/encounter/diagnosis,
+PDF upload/ClamAV, doctor report approval, billing browser source/create/save/submit,
+medical return, correction, medical decision, financial return, second correction,
+medical decision, financial decision/approval, invoice readiness and browser case closure.
+
+Claim version 3 is APPROVED. Versions 1 and 2 remain SUPERSEDED, with requested amounts
+400 and 450 and their decision/reason history preserved. The final contract, approved,
+payer and member amounts are 400/400/400/0 TRY; readiness is true with no blockers.
+The account is available 19 / reserved 0 / consumed 1. Its exact ledger is one GRANT,
+one RESERVE, three CONSUME and two REVERSE entries. Each return restores the one-session
+hold; each resubmission consumes it once. Exact command replays leave balances, row
+versions and report history unchanged. Three successful version evaluations retain
+three report-usage trace rows, as required by WP-I5-02.
+
+The test also proves wrong-stage 409, stale-version 412, not-yet-decided readiness 409,
+clinical text hidden from finance in current/history API and the current DOM, and the provider save
+gate while the post-save GET is deliberately paused. Cleanup retired the temporary
+person-only rule and completed this claim's work items; the case is closed. Approved
+synthetic history and one consumed session remain. No invoice/payment was created.
+
+Evidence: claim `01a0ce7a-c25f-7b41-8384-c3a86913c973`, case
+`01a0ce7a-7ae3-79ea-b907-e1ee7c56e6b1`, report `01a0ce7a-7eb1-7f10-b191-855a3286070f`,
+authorization `01a0ce7a-716f-78ad-800f-c81ea4e0d42f`, account
+`01a0ce7a-6d0c-7831-ae52-cfe4047d730f`. All six CI jobs passed on `98d6ab4`.
+H08 is passed; H09/H10 have expanded partial evidence. The report correction checkpoint
+below completes the next H07 slice. PC-03 remains active; PC-04/05 follow its remaining gates.
+
+**H07 report correction/history checkpoint passed (2026-09-23):** the real outpatient
+harness with `E2E_REPORT_CORRECTION=1` and `E2E_CLAIM_REVIEW=0` passed twice (34.0 s,
+then 33.4 s test / 35.8 s total). Use the same `E2E_REAL_API`, existing-UI URL and source
+request settings as the outpatient test above. Each run creates a fresh synthetic episode.
+
+The provider cannot patch/replace services on an approved report (409). A correction
+keeps the reference/root, copies service lines into new identities and requires its own
+document. Missing evidence and a second correction fork return 422; exact create replay
+returns the same draft. The browser edits the summary and coverage to two sessions,
+uploads a separate PDF through real ClamAV and sends it to the doctor's queue for approval.
+The old report becomes SUPERSEDED; all its other clinical fields, services, document and
+usage history remain unchanged. The existing approved claim and invoice readiness stay
+unchanged, with account 19 available / 0 reserved / 1 consumed. Replayed approval changes
+nothing. Both versions remain navigable; the case is closed and work items completed.
+
+The live test reproduced a header-save/service-edit race. Report commands now share one
+pending state through the awaited refetch; header/services and submission are disabled
+until it settles. The test deliberately delays that GET and checks the lock before saving
+quantity two. Mobile service editing scrolls within its table instead of squeezing fields.
+Desktop/mobile captures were inspected; no page overflow at 390/1440px.
+
+Evidence: original report `01a0ce8c-0b08-732a-914a-79003ee2081c`, correction
+`01a0ce8c-4e49-70c9-a914-9f74538c8635`, claim `01a0ce8c-445f-77d8-a554-851ae916fae5`,
+case `01a0ce8c-0695-73bd-a634-48e1e9db2857`, account `01a0ce8b-fd33-775b-9afd-88adcab83790`.
+
+Isolated PostgreSQL claim tests separately prove approved/date-window/status/superseded/
+wrong-service coverage behavior: refused coverage routes to medical review, creates no
+usage and refuses invoice readiness; finance does not receive the clinical exception.
+These exception fixtures are not live-browser evidence. Focused claim tests (27.0 s),
+report HTTP tests (10.9 s), 19 UI/mock tests, provider build/typecheck, harness TypeScript,
+ESLint and Go vet pass. No backend implementation, schema or permission change; no restart.
+All six CI jobs passed on report-correction head `a7f9292`.
+Next: remaining unsafe-file and HR/sensitive/provider/tenant/audit boundaries and outstanding
+PC-03 exceptions. H09/H10 remain partial; health as a whole is not complete.
+
+**H06 unsafe-report evidence passed (2026-09-23):** the real outpatient browser harness
+with `E2E_UNSAFE_REPORT=1`, `E2E_REPORT_CORRECTION=0` and `E2E_CLAIM_REVIEW=0` passed
+twice (32.3 s, then 28.6 s test / 31.2 s total). Use the existing real-API/UI/source settings.
+The helper assembles harmless EICAR antivirus-test bytes in memory and uploads them from
+the provider's actual file chooser through signed MinIO upload and the running scanner worker.
+No real malware, seeded scan verdict or scanner bypass is used.
+
+The linked file becomes INFECTED and not downloadable; direct download returns 409
+DOCUMENT_INFECTED and report submit returns 422 MEDICAL_REPORT_DOCUMENT_REQUIRED.
+The report remains DRAFT with no review work item or usage, and the account remains
+19 available / 1 reserved / 0 consumed. A subsequent clean synthetic PDF on that same
+report clears the missing-evidence notice and permits doctor approval, billing handoff,
+400 TRY invoice-ready claim and case closure, ending 19/0/1. The infected incident stays
+linked and visible; no invoice or payment is created.
+
+Live testing found the missing-document notice incorrectly disappearing on an infected
+upload. Both provider and backoffice now count only matching downloadable documents.
+Twelve new UI cases cover pending, scanning, infected, failed, purged and clean evidence
+in both apps; all 26 focused UI tests pass. Real MinIO/ClamAV pipeline tests also pass
+without skips (8.6 s): zero writes to secure storage, quarantine/secure bytes absent after
+the infected verdict, download refusal and one SECURITY audit event. Those storage/audit
+assertions use isolated test databases, distinct from the browser episode.
+
+Evidence: report `01a0cea7-942a-7d86-8c5f-218ecdb95d03`, infected document
+`01a0cea7-ad13-7f1a-8d0f-19713a87b2b1`, claim `01a0cea7-d8b0-75aa-be3b-1168326af322`,
+case `01a0cea7-9065-7661-af37-b132c171758b`, account `01a0cea7-8711-7635-ab9f-cc4d14fae3bf`.
+Desktop/mobile inspection includes the scrollable status column. Both app builds/typechecks,
+harness TypeScript and ESLint pass. No backend/schema/grant changes or restart required.
+H06 is passed; next are H10 real-role privacy/access checks and outstanding PC-03 exception
+gates. PC-03 and health overall remain open; PC-04 inpatient and PC-05 finance follow.
+
+**Outpatient privacy and sensitive-purpose checkpoint (2026-09-23):**
+`real-health-privacy.spec.ts` passed twice (5.3 s, then 5.8 s test / 7.6 s total) on the
+operator's existing server. Set `E2E_REAL_API=1`, `E2E_EXISTING_UI_URL=http://127.0.0.1:5181`
+and `E2E_PRIVACY_SOURCE_CASE=01a0cea7-9065-7661-af37-b132c171758b`, then run the spec
+with `--project chromium --trace off`. The source must be a closed synthetic Deneme Ayaktan
+episode with an approved report and claim. It is read only. Each run opens a separate
+unfunded case on that enrollment, adds an ended encounter with a sensitive diagnosis and
+two draft reports, then cancels those drafts and closes that new case in cleanup.
+
+Real sponsor.hr receives financial case/report projections, no clinical summary/type,
+encounter notes/branch or report documents; direct diagnoses, document downloads and
+access-log reads return 403. HR's member health tab and sensitive report screen show no
+clinical content. HR and financial.reviewer claim API/DOM exclude description, diagnosis
+and report links. The accepted source case and all entitlement balances remain unchanged.
+
+A provider without the sensitive grant receives the financial projection. A doctor without
+purpose gets 428; declining sends FINANCIAL and adds no clinical access event. The real
+purpose dialog opens clinical content only after confirmation, and an auditor reads the
+SUCCESS event with MEDICAL_REVIEW and the exact Turkish reason. A separately opened second
+sensitive report asks again; declining it leaves no SUCCESS event for that report.
+
+Regression testing reproduced a frontend defect: a reused claim page carried both granted
+and declined access state into another record. The access helper now selects state by
+record/actor/tenant/session during render, before the query can issue a read. Two SPA
+navigation regressions cover grant/decline and return-to-original behavior; three more
+cover actor, tenant and session changes. These are UI/mock tests; the real test checks
+separate page loads, not SPA reuse. All 10 focused UI tests and seven health HTTP scenarios
+(29.6 s), backoffice build/typecheck, harness TypeScript and ESLint pass. Desktop/mobile
+HR and purpose-dialog captures were inspected. No backend, migration, grant or restart.
+
+Evidence: new closed case `01a0cf3a-313c-7b12-ac85-81af43ea83f4`, cancelled reports
+`01a0cf3a-3161-71ec-81c1-e572e3048d9d` and `01a0cf3a-3173-7a76-8de6-f4a73cf22845`.
+The source claim remains `01a0cea7-d8b0-75aa-be3b-1168326af322`. Previous head `3458400`
+passed CI. H10 has outpatient live evidence; inpatient coverage remains for PC-04. H11 is
+partial: live purpose/access audit passed; real cross-provider/tenant and remaining own-file
+decision checks still follow. H05/H09 exceptions remain open before PC-03 closure.
+
+**Own-report and scope checkpoint (2026-09-23):** the extended real worklist test
+passed (6.8 s / 8.6 s total). staff.member gets OWN_FILE_DECISION/403 for start-review
+on their submitted report and approve/reject while it is under another doctor's review.
+Report content/ETag and entitlement accounts stay unchanged. Both own-file screens show
+the notice and no decision controls. The test report is REJECTED and its work item COMPLETED:
+`01a0cf62-4e79-711e-9559-4d33b892d7ed` / `01a0cf62-5cc0-752d-8e78-f3837d3be3be`.
+
+The new real report-scope test passed (7.0 s / 8.8 s total). provider.a can read its own
+report, but gets 404 for foreign-provider/tenant detail, usage, patch, service replacement,
+submit and cancel; filtered lists are empty and both portal screens hide the report.
+doctor.a can read the other provider's DEMO_A report, but cannot read/list/decide DEMO_B's.
+Unknown IDs use the same not-found code. Repeated seed reads confirm both foreign records
+remain CANCELLED at row version 2 with their original provider and clinical marker.
+DEMO_B's positive existence/read check uses the application service in the seed process;
+there is no DEMO_B clinical demo login. No human grant was broadened.
+
+With `.env` loaded and the existing-UI variables set, use:
+
+```powershell
+$env:E2E_HEALTH_SCOPE = '1'
+$env:E2E_HEALTH_SCOPE_FIXTURE = 'df7f2408-e7ff-41e2-891b-83cead4194e6'
+pnpm e2e real-health-scope.spec.ts --project chromium --trace off
+Remove-Item Env:E2E_HEALTH_SCOPE, Env:E2E_HEALTH_SCOPE_FIXTURE
+```
+
+This opt-in runs `go run ./cmd/seed health-scope <fixture-uuid>`. A new UUID creates one
+synthetic provider/person/cancelled report per demo tenant; no enrollment, document,
+authorization, work item or usage is created. Reuse the recorded UUID to avoid extra rows.
+If setup is interrupted, repeating that UUID cancels its still-draft report. Unexpected
+markers or report status cause refusal. The seed refuses production-like environments and
+requires both existing demo tenants. Report IDs: `01a0cf67-6621-7173-b9fc-4531fe7be371`
+and `01a0cf67-6636-7cea-a596-db728e87091c`. Test attachments contain only safe fixture IDs.
+
+Three existing PostgreSQL case/provider, stay/provider and own-worklist tests passed
+(11.4 s), along with harness type/lint/format and seed compile/vet/Go lint checks. Earlier
+head dc8ac52 passed CI. No runtime implementation/migration change; no restart needed.
+H11 remains partial: own-claim decisions and broader live case/claim/stay boundaries are
+not certified by these report tests. These and H05/H09 exceptions precede PC-03 closure.
+
+**H09 and outpatient access boundaries (2026-09-23):** real claim exception acceptance
+passed (3.6 s / 5.3 s total). Four new claims expose duplicate suspicion, authorization
+exceeded, report out-of-window and uncovered service in the proper review screen, all
+blocked from invoice readiness. No submit adds consumption/report usage. Rejecting the
+claim with the temporary authorization releases its unused hold; after cleanup the account
+returns to 19 available / 0 reserved / 1 consumed. Each test's work items are completed.
+The original approved outpatient claim `01a0cea7-d8b0-75aa-be3b-1168326af322` remains
+invoice-ready for PC-05. The new authorization is CANCELLED:
+`01a0cf87-3eb9-7510-aea0-c513ea0a242c`. Claims are REJECTED:
+`01a0cf87-3f07-778a-b7e6-a219ef8a99b2`, `01a0cf87-41e4-7d95-8812-bf01b8ee306a`,
+`01a0cf87-44d8-768e-9ff2-79a11e127907`, `01a0cf87-46cb-7d61-8870-2f63d28a99d8`.
+The focused duplicate/authorization/report coverage PostgreSQL tests also passed (29.1 s).
+
+The real own-claim test passed (2.0 s / 3.9 s total). staff.member gets
+OWN_FILE_DECISION/403 for line decisions, approve, reject and return, with no version,
+entitlement or usage change; the screen shows the own-file note without decision controls.
+Another doctor rejects the synthetic claim `01a0cf82-5863-7c48-85d1-fda1120a5db7` and
+its review work item is completed.
+
+Real provider-scope acceptance passed (9.9 s / 11.7 s total). A dedicated test provider owns
+a closed case, ended encounter and cancelled draft claim. doctor.a can read them;
+provider.a/billing.a cannot read/list/change them, see claim history/readiness or open the
+case source. Their screens show not-found without clinical text. The repeated seed call
+confirms unchanged records/versions; the source episode and balances stay unchanged.
+Fixture UUID `192a0c7b-1eeb-4cde-a06c-ad87f9c6c2ed`; case
+`01a0cf91-2d29-7343-a476-315ba8dd10c5`, encounter `01a0cf91-2d2e-732f-9292-c62551b3aea2`,
+claim `01a0cf91-2d39-745d-b788-e741a849e8fc`. Setup uses application services only, accepts
+an approved single-line claim for the synthetic Deneme Ayaktan person and a closed outpatient
+case, and creates no reservation, consumption, report, enrollment or human grant. Reuse the
+UUID; a new UUID creates another dedicated provider and closed records.
+Case/encounter tenant HTTP and claim tenant/provider integration tests also pass (3.8 s
+each) against isolated PostgreSQL. They verify reads and writes with the same permissions
+in a second tenant; this is not a live clinical login in DEMO_B.
+
+With `.env` loaded and the existing-UI variables set, run the bounded opt-ins separately:
+
+```powershell
+$env:E2E_OWN_CLAIM = '1'
+pnpm e2e real-own-claim.spec.ts --project chromium --trace off
+$env:E2E_CLAIM_EXCEPTION_SOURCE_CASE = '01a0cea7-9065-7661-af37-b132c171758b'
+pnpm e2e real-claim-exceptions.spec.ts --project chromium --trace off
+$env:E2E_CASE_SCOPE_SOURCE_CLAIM = '01a0cea7-d8b0-75aa-be3b-1168326af322'
+$env:E2E_CASE_SCOPE_FIXTURE = '192a0c7b-1eeb-4cde-a06c-ad87f9c6c2ed'
+pnpm e2e real-case-claim-scope.spec.ts --project chromium --trace off
+Remove-Item Env:E2E_OWN_CLAIM, Env:E2E_CLAIM_EXCEPTION_SOURCE_CASE, Env:E2E_CASE_SCOPE_SOURCE_CLAIM, Env:E2E_CASE_SCOPE_FIXTURE
+```
+
+**PC-02 request boundary follow-up (2026-09-23):** the same scope fixture now includes
+one cancelled, never-submitted PREAUTHORIZATION request at its dedicated provider.
+The extended real test passed (9.5 s / 11.3 s total): doctor.a reads the request;
+provider.a gets SERVICE_REQUEST_NOT_FOUND for detail/version history, header/line edits,
+submit and cancel, an empty provider-filtered list and a not-found screen without its
+reference. Request `01a0cfa6-80c4-7ac2-a8c5-f3832c47eb04` remains CANCELLED at version 2;
+repeat setup reads it without changes. No review queue, authorization or usage is created,
+and source episode/balances are unchanged. The existing command/fixture UUID above reruns
+this coverage. A new PostgreSQL tenant-boundary regression passed (3.4 s): identical
+permissions in another tenant cannot read/list/history/edit/submit/cancel the original
+request, which remains unchanged. This is isolated database evidence for tenant isolation,
+not a DEMO_B browser review. All six CI checks passed on the preceding UI head `918ef0c`.
+
+**H05 open-encounter closure fix — implemented, live verification pending:** the API
+allowed open encounters but had no end command. Added POST `/api/v1/encounters/{id}/end`,
+If-Match/idempotency, parent-case locking, end-time validation, audit event and projected
+response. Existing case/manage plus clinical/read permissions and provider/tenant scope
+apply. The provider form sits below the encounter table; a lost response retries the
+same key/body/ETag, while stale/definitive failures require an explicit reload. No migration.
+Three focused HTTP tests passed (10.7 s), including simultaneous commands and sensitive
+projection; eight UI tests passed (12.6 s), along with provider build, typecheck/lint,
+Go lint and OpenAPI lint (11 pre-existing description warnings). The complete health Go
+suite also passed, including application (89.5 s) and HTTP (126.8 s) packages. All six GitHub CI checks passed on `6bb51a3`. New backend needs the operator's `dev.ps1 up` restart, already requested;
+H05 remains partial until the following live test runs:
+
+```powershell
+$env:E2E_ENCOUNTER_SOURCE_CASE = '01a0cea7-9065-7661-af37-b132c171758b'
+pnpm e2e real-encounter.spec.ts --project chromium --trace off
+Remove-Item Env:E2E_ENCOUNTER_SOURCE_CASE
+```
+
+A separate read-only browser layout check used intercepted case data to expose the new
+form without changing a database record. It found a clipped date field inside the mobile
+scrolling table. The form now sits below that table, with one active end form; the 1440px
+and 390px captures were inspected, and the eight focused UI tests passed again. This layout
+check does not replace the pending live end-command test.
+
+That test creates its own case/encounter, validates primary-diagnosis rules, intercepts a
+committed end response, retries, closes the case and checks no balance change. Desktop/mobile
+screenshots remain ignored under `.impeccable/review`. PC-03 is still active; inpatient
+privacy and acceptance remain PC-04, followed by PC-05 and PC-06 in order.
+
 ## 3. Get it running
 
 Requirements: Go 1.27+, a local PostgreSQL 18, Node 24 + pnpm 10. No Docker, ever (§6).
@@ -86,7 +745,7 @@ cp .env.example .env              # fill CHANGE_ME with your local PostgreSQL cr
 make tools                        # sqlc, oapi-codegen, oasdiff, golangci-lint, govulncheck
 make native-install && make native-up   # MinIO, ClamAV, Mailpit as native processes
 make db-init                      # role kapsora_app + database kapsora
-make migrate-up                   # schema to 000048
+make migrate-up                   # schema to 000051
 make test-unit && make test-db    # should both be green before you write anything
 ```
 
@@ -99,6 +758,132 @@ all three web apps behind one door on port 5181, so the single sign-in's shared 
 exactly as it will in production. `... down` stops everything it started. Seed demo data
 first with `.\scripts\dev.ps1 seed-demo` (needs `native-up` running; password
 `demo parola 2026 kapsora` unless `KAPSORA_SEED_DEMO_PASSWORD` is set).
+
+To run the real member-import browser regression against that already running system:
+
+```powershell
+$env:E2E_REAL_API = '1'
+$env:E2E_EXISTING_UI_URL = 'http://127.0.0.1:5181'
+pnpm e2e real-import.spec.ts --project chromium --trace off
+```
+
+This command starts no servers. It uploads two synthetic rows in DEMO_A, skips the invalid
+row, waits for the worker to apply the valid row, checks the member list and signs out.
+Each run that reaches apply creates one synthetic member; use the demo database only. The
+existing-UI option is for backoffice tests. Trace capture is disabled in this command
+because authentication requests contain credentials.
+
+With the same environment variables, run the health-entry regression:
+
+```powershell
+pnpm e2e real-health.spec.ts --project chromium --trace off
+```
+
+It uses `/portal/` and backoffice on the existing single door, signing out between clinical
+provider and medical reviewer. Each run creates and approves one synthetic request in
+DEMO_A. It checks service access, eligible/insufficient quantity, submission, medical
+approval and provider follow-up. It creates no authorization, case or claim and does not
+certify reservation, consumption or financial correctness. Member-app acceptance is pending.
+
+Enable the verified authorization extension of that same real flow:
+
+```powershell
+$env:E2E_HEALTH_AUTHORIZATION = '1'
+pnpm e2e real-health.spec.ts --project chromium --trace off
+Remove-Item Env:E2E_HEALTH_AUTHORIZATION
+```
+
+This creates one real synthetic hold, verifies the provider sees it, then cancels it through
+the public API as the medical reviewer to return the unused entitlement. This path passed
+after the operator restart on 2026-09-22. If interrupted after creation, reconcile the
+test authorization before rerunning. To include a simulated first-submit network failure,
+also set `$env:E2E_HEALTH_SUBMIT_RETRY = '1'`; the harness verifies one create and two submit
+attempts with identical request URL and key. Remove that environment variable after the run.
+
+Run `pnpm e2e real-entitlement.spec.ts --project chromium --trace off` with the same
+existing-UI variables for real ambiguous-enrollment, expiry and generic consumption proof.
+The operator's worker must be running: this test waits for enrollment events to fund the
+accounts. It creates only synthetic demo records and consumes two sessions on its own
+new account. The request/authorization/fulfilment/account IDs are attached to the test result.
+
+Run `pnpm e2e real-request-lifecycle.spec.ts --project chromium --trace off` with the same
+existing-UI variables for live rejection/cancellation/replay proof. It uses Melis Üye's
+existing demo enrollment, creates four new requests (one cancelled in the browser), closes
+them and makes no hold or consumption. It does not edit existing requests. The API actor helper shared with the
+entitlement harness isolates sessions and never attaches credentials or response bodies.
+Set `$env:E2E_REQUEST_UPLOAD = '1'` to include actual browser PDF upload, worker scan,
+secure download and byte/hash comparison before cancellation. Remove the flag afterward.
+It leaves one synthetic clean document attached to that closed request. Screenshots under
+`.impeccable/review/request-cancel*.png` are ignored; result attachments contain safe IDs
+only, never signed storage URLs. This upload scenario does not add a rule or clinical claim.
+
+For combined live rule/upload acceptance, load the local `.env` into the test process
+without printing it, then use the existing-UI variables above and explicit opt-in:
+
+```powershell
+Get-Content -LiteralPath .env | ForEach-Object {
+  if ($_ -cmatch '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$') {
+    [Environment]::SetEnvironmentVariable($matches[1], $matches[2])
+  }
+}
+$env:E2E_DOCUMENT_GATE = '1'
+pnpm e2e real-document-gate.spec.ts --project chromium --trace off
+Remove-Item Env:E2E_DOCUMENT_GATE
+```
+
+This requires Go and the operator-started worker/MinIO/ClamAV. It creates one synthetic
+person/membership/enrollment, two requests, one PDF and one scoped rule version. It closes
+the requests and retires the rule in cleanup. If interrupted, use the person ID from the
+result with `go run ./cmd/seed document-rule <dedicated-person-id> retire`; the version also
+has an expiry. Setup accepts only the dedicated synthetic name/UUID marker and DEMO_A.
+No human role is broadened and no tenant-wide document requirement is introduced.
+
+For automatic-request acceptance, load `.env` as above and set
+`$env:E2E_AUTOMATIC_REQUEST = '1'`, then run
+`pnpm e2e real-automatic-request.spec.ts --project chromium --trace off`.
+Remove the flag afterward. Each run creates one bounded synthetic program/plan/person/
+enrollment, one approved request and two cancelled controls. It leaves no hold or usage.
+If interrupted, use `go run ./cmd/seed automatic-program <dedicated-program-id> disable`
+to restore manual review for only that program. No public settings write API exists; the
+offline seed merges just that program's setting and refuses malformed configuration.
+
+For medical queue/own-file acceptance, set
+`$env:E2E_HEALTH_WORKLIST = '1'`, then run
+`pnpm e2e real-health-worklist.spec.ts --project chromium --trace off`.
+Remove the flag afterward. It creates only a new synthetic report/file on staff.member's
+existing person; it does not edit the person's existing report, case, grants or enrollment.
+Successful cleanup rejects the test report and completes its work item. On failed runs,
+draft/submitted reports are cancelled and an in-review test report is rejected; any known
+work item is completed. No health coverage or entitlement consumption is left behind.
+The browser shares the provider's authenticated cookie jar, avoiding an unnecessary extra
+login that could hit the development login rate limit. Authentication traces stay disabled.
+
+For the first outpatient checkpoint, use the existing-UI variables and set
+`$env:E2E_OUTPATIENT_SOURCE_REQUEST = '01a0cafa-9412-75b5-98f0-764cfdc43a4e'`, then run
+`pnpm e2e real-outpatient.spec.ts --project chromium --trace off`.
+Remove the variable afterward. The source must be an approved request from the short-lived
+`real-automatic-request.spec.ts` fixture with its program returned to manual review and still
+valid. If expired, run that fixture again and use its new approved request ID. The outpatient
+test creates a fresh person/enrollment in that plan per run, waits for worker funding and
+uses only those new records. Successful runs leave a closed case, approved report and
+invoice-ready claim with one consumed session as auditable synthetic history. Failed runs
+release unused authorization holds and cancel/reject undecided reports and complete known
+work items; decided claims/usage remain. Safe IDs are attached even on failures. Review those
+IDs before rerunning an interrupted process. The current harness uses browser claim creation, financial line saving and submission;
+its complete browser handoff passed after the operator started native MinIO/ClamAV; no grant or program setting is changed.
+
+Set `$env:E2E_HEALTH_CORRECTION = '1'` for the real return/correct/resubmit extension:
+the reviewer returns the request, the provider changes quantity from one to two, the test
+checks immutable version 1, and the reviewer approves version 2. It creates one synthetic
+request per run. Remove the variable afterward. Without the authorization extension it
+does not reserve any entitlement. `request-selection-ui.spec.ts` reads existing demo data
+and intercepts ambiguity/failure replies; it creates no requests or enrollments.
+
+`pnpm e2e authorization-ui.spec.ts --project chromium --trace off` reuses the same existing
+UI but intercepts only authorization responses; it reads an existing approved demo request
+and writes no real hold. It checks uncertain retry, stale-read success, invalid expiry,
+read failure, desktop/mobile layout and provider read-only behavior.
+
 
 **A backend-free demo** (in-browser mock data, nothing to install): double-click
 `scripts\demo\KAPSORA-Demo-Baslat.cmd`. It opens the three apps on ports 5181–5183 against
@@ -235,5 +1020,6 @@ English — that split is deliberate and consistent across ~50 commits; don't mi
    enough to know when to go back and check it.
 5. Get the real system running end to end (`.\scripts\dev.ps1 up`, seeded), and sign in as
    two or three different demo accounts to feel the permission boundaries first-hand.
-6. Continue with the approved M10 packages in `docs/plan/ROADMAP.md`. Collect the missing
-   pilot/source inputs for customer-specific work; M8/M9 remain deferred by the owner.
+6. Follow the current PC-01–PC-06 execution sequence in `docs/plan/ROADMAP.md`; the next
+   task is the remaining PC-02 checkpoint blockers. Resume M10/pilot work only after product completion is reprioritized;
+   M8/M9 remain deferred by the owner.

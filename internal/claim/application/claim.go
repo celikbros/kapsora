@@ -259,23 +259,8 @@ func (s *Service) CreateClaim(ctx context.Context, rc identity.RequestContext, i
 		if err := s.checkServices(ctx, tx, rc.TenantID, in.Lines); err != nil {
 			return err
 		}
-		record, err := s.createWithReference(ctx, tx, rc, in, channel)
+		record, err := s.createDraft(ctx, tx, rc, in, channel)
 		if err != nil {
-			return err
-		}
-		version, err := s.repo.CreateVersion(ctx, tx, rc.TenantID, record.ID, 1,
-			actorPtr(rc.Principal.ActorID))
-		if err != nil {
-			return err
-		}
-		if err := s.repo.ReplaceLines(ctx, tx, rc.TenantID, version.ID,
-			lineRows(version.ID, in.Lines, actorPtr(rc.Principal.ActorID))); err != nil {
-			return err
-		}
-		if err := s.record(ctx, tx, rc, "claim.create", record.ID, map[string]any{
-			"reference": record.Reference, "provider": record.ProviderOrganizationID.String(),
-			"version_no": 1, "line_count": len(in.Lines),
-		}); err != nil {
 			return err
 		}
 		decision, err := s.projectionFor(ctx, tx, rc, record, AccessRequest{})
@@ -289,6 +274,30 @@ func (s *Service) CreateClaim(ctx context.Context, rc identity.RequestContext, i
 		return ClaimView{}, err
 	}
 	return out, nil
+}
+
+// createDraft writes the shared draft/version/line/audit unit inside the caller's transaction.
+func (s *Service) createDraft(ctx context.Context, tx pgx.Tx, rc identity.RequestContext, in NewClaimInput, channel string) (ClaimRecord, error) {
+	record, err := s.createWithReference(ctx, tx, rc, in, channel)
+	if err != nil {
+		return ClaimRecord{}, err
+	}
+	version, err := s.repo.CreateVersion(ctx, tx, rc.TenantID, record.ID, 1,
+		actorPtr(rc.Principal.ActorID))
+	if err != nil {
+		return ClaimRecord{}, err
+	}
+	if err := s.repo.ReplaceLines(ctx, tx, rc.TenantID, version.ID,
+		lineRows(version.ID, in.Lines, actorPtr(rc.Principal.ActorID))); err != nil {
+		return ClaimRecord{}, err
+	}
+	if err := s.record(ctx, tx, rc, "claim.create", record.ID, map[string]any{
+		"reference": record.Reference, "provider": record.ProviderOrganizationID.String(),
+		"version_no": 1, "line_count": len(in.Lines),
+	}); err != nil {
+		return ClaimRecord{}, err
+	}
+	return record, nil
 }
 
 // createWithReference retries a reference collision rather than making somebody read one.
@@ -415,6 +424,30 @@ func (s *Service) PutLines(ctx context.Context, rc identity.RequestContext, id u
 		if err != nil {
 			return err
 		}
+		// A financial projection cannot round-trip clinical references. Preserve them
+		// for the same numbered service; refuse changing a clinically linked service.
+		if !rc.Has(PermissionClinicalRead) {
+			previous, err := s.repo.ListLines(ctx, tx, rc.TenantID, version.ID)
+			if err != nil {
+				return err
+			}
+			for i := range lines {
+				for _, old := range previous {
+					if old.LineNo != lines[i].LineNo {
+						continue
+					}
+					if old.DiagnosisID != nil || old.MedicalReportID != nil {
+						if old.ServiceDefinitionID != lines[i].ServiceDefinitionID {
+							return fieldError("lines", "CLINICAL_LINK", "Klinik kayda bağlı hizmet değiştirilemez.")
+						}
+					}
+					lines[i].DiagnosisID = old.DiagnosisID
+					lines[i].MedicalReportID = old.MedicalReportID
+					lines[i].Description = old.Description
+				}
+			}
+		}
+
 		if err := s.repo.ReplaceLines(ctx, tx, rc.TenantID, version.ID,
 			lineRows(version.ID, lines, actorPtr(rc.Principal.ActorID))); err != nil {
 			return err

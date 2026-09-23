@@ -328,3 +328,44 @@ describe('notifications', () => {
     expect(row.textContent).toMatch(/istemiyor|sessiz saat|şablon yok|adres yok|sağlayıcı yok/);
   });
 });
+
+describe('required document readiness', () => {
+  it.each(['PENDING', 'SCANNING', 'INFECTED', 'FAILED', 'PURGED', 'CLEAN'] as const)(
+    'keeps required evidence outstanding unless downloadable: %s',
+    async (state) => {
+      const record = api.world.serviceRequests.find((r) => {
+        const types = r.requiredDocumentTypes ?? [];
+        const linked = api.world.documentLinks.filter((l) => l.aggregateId === r.id);
+        return (
+          r.tenantId === tenantA().id &&
+          types.length > 0 &&
+          types.every((code) => linked.some((l) => l.documentTypeCode === code))
+        );
+      });
+      expect(record).toBeDefined();
+      const ids = new Set(
+        api.world.documentLinks
+          .filter((l) => l.aggregateId === record!.id)
+          .map((l) => l.documentId),
+      );
+      const documents = api.world.documents.filter((d) => ids.has(d.id));
+      expect(documents.length).toBeGreaterThan(0);
+      for (const doc of documents) {
+        doc.scanStatus = state === 'PURGED' ? 'CLEAN' : state;
+        doc.bucket = doc.scanStatus === 'CLEAN' ? 'secure' : 'quarantine';
+        doc.purgedAt = state === 'PURGED' ? new Date().toISOString() : null;
+      }
+      mount(`/requests/${record!.id}`);
+      await login('admin.a');
+      await screen.findByTestId('documents-table');
+      const missing = screen.queryByRole('heading', { name: 'Eksik belgeler' });
+      if (state === 'CLEAN') expect(missing).toBeNull();
+      else {
+        expect(missing).toBeInTheDocument();
+        for (const code of record!.requiredDocumentTypes!) {
+          expect(within(missing!.closest('section')!).getByText(code)).toBeInTheDocument();
+        }
+      }
+    },
+  );
+});

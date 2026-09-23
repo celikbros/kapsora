@@ -17,6 +17,8 @@ export type {
   UpdateOrganizationRequest,
   UserContext,
 } from './operations';
+export { authorizationOperations } from './authorization';
+export type { Authorization, CreateAuthorization, AuthorizationListQuery } from './authorization';
 export type { Versioned } from './versioned';
 export {
   isValidTCKN,
@@ -319,6 +321,7 @@ export type {
   AccessPurpose,
   CloseHealthCase,
   CreateEncounter,
+  EndEncounter,
   CreateHealthCase,
   Diagnosis,
   DiagnosisInput,

@@ -297,8 +297,12 @@ func (s *Service) consume(ctx context.Context, tx pgx.Tx, rc identity.RequestCon
 		if line.ReservationID == nil {
 			return benefitdomain.Quantity{}, ErrAccountNotFound
 		}
+		draw, err := entitlementConsumption(line, quantity)
+		if err != nil {
+			return benefitdomain.Quantity{}, err
+		}
 		if _, err := s.ledger.Consume(ctx, tx, ledger.MovementInput{
-			TenantID: rc.TenantID, ReservationID: *line.ReservationID, Quantity: quantity,
+			TenantID: rc.TenantID, ReservationID: *line.ReservationID, Quantity: draw,
 			Key: consumeKey(item.ID), ReasonCode: "FULFILMENT", ActorID: rc.Principal.ActorID,
 		}); err != nil {
 			return benefitdomain.Quantity{}, err

@@ -3,6 +3,10 @@ import { usePermission } from '@kapsora/auth';
 import { Badge, Breadcrumb, Button, Card, PageHeader, ProblemAlert, Spinner } from '@kapsora/ui';
 import { Link, useParams } from '@tanstack/react-router';
 
+import { useState } from 'react';
+import { RequestCancel } from './RequestCancel';
+import { RequestCorrection } from './RequestCorrection';
+import { RequestAuthorization } from './RequestAuthorization';
 import { DocumentsPanel } from './documents';
 import { useRequest, useServiceName } from './queries';
 import { problemOf } from './problems';
@@ -16,6 +20,7 @@ export function RequestPage() {
   const { t } = useTranslation();
   const { requestId } = useParams({ from: '/app/requests/$requestId' });
   const query = useRequest(requestId);
+  const [editorEpoch, setEditorEpoch] = useState(0);
   const canOpenCase = usePermission('health.case.manage');
   // The name is on the row (WP-I5-05 section 2.6); the request is read once either way.
   const personName = query.data?.data.personDisplayName;
@@ -67,6 +72,7 @@ export function RequestPage() {
         }
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            <RequestCancel key={request.id} current={query.data} />
             <Badge tone={waiting ? 'warning' : request.status === 'REJECTED' ? 'danger' : 'info'}>
               {t(`requests.status.${request.status}`)}
             </Badge>
@@ -114,6 +120,19 @@ export function RequestPage() {
             ) : null}
           </dl>
         </Card>
+        {request.status === 'APPROVED' || request.status === 'PARTIALLY_APPROVED' || closed ? (
+          <RequestAuthorization key={request.id} requestId={request.id} />
+        ) : null}
+        {request.status === 'DRAFT' ? (
+          <RequestCorrection
+            key={`${request.id}:${editorEpoch}`}
+            current={query.data}
+            reload={async () => {
+              const result = await query.refetch();
+              if (!result.error) setEditorEpoch((value) => value + 1);
+            }}
+          />
+        ) : null}
         <Card>
           <h2 className="text-base font-semibold">{t('provider.upload.title')}</h2>
           {waiting ? (

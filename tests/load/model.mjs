@@ -210,7 +210,7 @@ export function csvForRows(count, prefix, from, planCode) {
     digits.push((((odd * 7 - even) % 10) + 10) % 10);
     digits.push(digits.reduce((sum, digit) => sum + digit, 0) % 10);
     rows.push(
-      `${prefix}-${i},Load,,Synthetic,1990-01-01,FEMALE,${digits.join('')},${prefix}-${i},${prefix}-${i},EMPLOYEE,,,${from},,${planCode}`,
+      `${prefix}-${i},Load,,Synthetic,1990-01-01,FEMALE,${digits.join('')},${prefix}-${i},${prefix}-${i},PRINCIPAL,,,${from},,${planCode}`,
     );
   }
   return rows.join('\n') + '\n';
