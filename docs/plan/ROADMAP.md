@@ -42,7 +42,7 @@ the existing work-package contracts rather than starting their implementation ag
 | --- | --- | --- | --- | --- |
 | PC-01 | Member import | VERIFIED locally; PR open | Existing identity/member setup | Upload → password step-up → invalid-row skip → one created member → search → logout; no duplicate effect |
 | PC-02 | Eligibility, service request and authorization | ACTIVE; provider-to-medical approval verified, remaining gates open | Verified member/scenario prerequisites | A real provider can request covered care; approvals/refusals and the authorization/entitlement effects agree |
-| PC-03 | Outpatient care, reports and health claims | ACTIVE; complete outpatient browser handoff passed; exception/privacy gates remain | PC-02 | Real case → encounter/diagnosis → clean report → review → claim ready for invoicing |
+| PC-03 | Outpatient care, reports and health claims | ACTIVE; automatic and medical/financial browser handoffs passed; exception/privacy gates remain | PC-02 | Real case → encounter/diagnosis → clean report → review → claim ready for invoicing |
 | PC-04 | Inpatient care | QUEUED | PC-03 and admission configuration | Preauthorization → admission → extension → discharge → invoice-ready claim; entitlement reconciles |
 | PC-05 | Invoice, batch, settlement and payment | QUEUED | An invoice-ready health claim from PC-03/04 | The same episode reaches invoice, payer decision and a reconciled local payment record |
 | PC-06 | Accommodation and combined product acceptance | QUEUED | PC-05; existing lodging implementation | Booking and its financial consequences work; cross-app regression and owner walkthrough complete |
@@ -137,9 +137,9 @@ evidence; race, duplicate-delivery and ledger invariants may use focused databas
 | H05 | Same episode reaches case, encounter and valid diagnosis | PC-03 | Partial: live browser case → ended encounter → primary ICD-10 diagnosis → case closure passed; primary/closure refusal cases remain |
 | H06 | Browser-uploaded evidence is scanned CLEAN; missing/unsafe evidence cannot pass submission | PC-03 | Partial: real PDF/ClamAV and missing/unscanned request gate passed; real case-linked report upload/scan and missing-file refusal passed; infected-file acceptance remains |
 | H07 | Report review, coverage and immutable correction history work | PC-03 | Partial: browser approval, queue completion and one linked claim usage/replay passed; correction history and coverage exceptions remain |
-| H08 | Clinical provider → billing → medical → financial handoff reaches invoice-ready claim | PC-03 | Partial: billing browser create/save/submit and invoice readiness pass at 400/400/0 TRY; medical/financial claim review path remains |
-| H09 | Duplicate/report/authorization blockers and corrected claim history are accurate | PC-03 | Pending |
-| H10 | HR/financial projections exclude forbidden clinical fields in API and DOM | PC-03/04 | Partial: billing claim API hides diagnosis/report/description; clinical marker absent in billing claim DOM; HR and other projections remain |
+| H08 | Clinical provider → billing → medical → financial handoff reaches invoice-ready claim | PC-03 | PASSED 2026-09-23: real browser handoff, two return/correction cycles, preserved contract price, final 400/400/0 TRY and one net session consumed |
+| H09 | Duplicate/report/authorization blockers and corrected claim history are accurate | PC-03 | Partial: two correction versions, immutable decisions, stale/wrong-stage refusals, readiness gate and exact consumption/replays passed; duplicate/report/authorization exception coverage remains |
+| H10 | HR/financial projections exclude forbidden clinical fields in API and DOM | PC-03/04 | Partial: billing API/DOM excludes clinical fields; medical notes hidden from finance in current/historical claim API and current DOM; HR and other projections remain |
 | H11 | Sensitive purpose, access audit, self-review and other-provider/tenant boundaries hold | PC-03/04 | Pending |
 | H12 | Admission approval advances the stay once and refuses duplicate open admission | PC-04 | Pending |
 | H13 | Extension and segment rules hold; refusal leaves balances correct | PC-04 | Pending |
@@ -1031,3 +1031,20 @@ problem-message gaps are closed by these changes; other recorded gaps are not im
   on command replay. Long-run API checks honor Retry-After without changing server limits.
 - CI passed on preceding `5eec483`. H08/PC-03 remain open until the full rerun passes;
   report correction/unsafe files and remaining privacy gates still follow before PC-04/05.
+
+### H08 complete medical/financial browser acceptance — 2026-09-23
+
+- Operator restarted the API after `98d6ab4`. The complete real review test passed
+  (39.3 s test / 41.8 s total), including actual PDF scan, doctor report approval, billing
+  browser creation and two return/correct/resubmit cycles before final financial approval.
+- Three claim versions retain amounts/history; frozen contract price survives manual
+  decisions. Final contract/approved/payer/member: 400/400/400/0 TRY, invoice-ready with
+  no blockers. Account 19/0/1, exactly three CONSUME and two REVERSE entries plus initial
+  GRANT/RESERVE. Replays change neither balances/versions nor report usage history.
+- Wrong-stage, stale-version and premature-readiness refusals pass. Financial views hide
+  medical notes, including old decisions. Delayed post-save refresh blocks submission.
+  Temporary rule retired, own work items completed and case closed; no invoice/payment.
+- Claim `01a0ce7a-c25f-7b41-8384-c3a86913c973`; full evidence IDs are in HANDOVER.
+  All six CI checks passed on `98d6ab4`. H08 is passed; H09/H10 remain partial.
+- Next: H07 report correction/history and coverage exceptions, followed by remaining
+  unsafe-file and privacy/access boundaries. PC-03 remains active; PC-04/05 follow.

@@ -416,7 +416,7 @@ account `01a0cd5f-9ec2-7a0a-ad0b-9063dd7da158`. Six CI checks pass on `0d09bc4`.
 PC-03 is still active: this proves the automatic-priced path, not medical/financial claim
 exceptions, report correction, infected files or full HR/sensitive/cross-tenant acceptance.
 
-**Claim correction consumption fix (2026-09-23, restart/live check pending):**
+**Claim correction consumption fix (2026-09-23; live confirmation below):**
 the new PostgreSQL regression reproduced two sessions becoming four after financial return
 and resubmission: copied version lines get new IDs, so their consumption keys were new too.
 Return now reverses only the original version's actual authorization draws in the same
@@ -437,10 +437,9 @@ loaded `.env`. It prepares a person-scoped temporary ADJUDICATION rule using the
 `seed claim-review-rule <person-id> [retire]` command, distinct maker/checker identities,
 two passing rule cases and bounded validity. Cleanup retires it. It targets medical return,
 billing correction, medical decision, financial return, second correction and final approval,
-with version/privacy/replay and exact ledger checks. This new live route is **not yet passed**.
-The operator must restart `scripts/dev.ps1 up` to load the backend change (section 3);
-native services need no restart. PC-03/H08 remain open until the real run and remaining
-report/privacy gates are verified.
+with version/privacy/replay and exact ledger checks. The operator restarted the backend;
+the complete passing review checkpoint is recorded below. H08 is now passed; PC-03 still
+has report/exception/privacy gates open.
 
 **Claim review live findings after operator restart (2026-09-23):** CI passed on
 `5eec483`. Real browser runs now reach medical return → billing correction (v2, 450 TRY)
@@ -449,7 +448,8 @@ financial decisions → approval. Frozen v1/v2 and medical decision text remain 
 the doctor and hidden from the financial projection. Wrong-stage decisions return 409;
 stale return returns 412. The account ends 19 available / 0 reserved / 1 consumed, with
 three CONSUME and two REVERSE entries. Replayed commands preserve account versions and
-report history. This confirms the consumption fix, but **full H08 acceptance is still pending**.
+report history. This first attempt confirmed consumption; the subsequent full H08
+acceptance is recorded below.
 
 Two actual defects were found in the extended live path. The provider could submit while
 the line save's fresh GET was still pending and receive 412. Its editor and page now share
@@ -463,10 +463,9 @@ despite a known frozen price. The new database test reproduced null instead of 5
 Medical/financial decisions and outright rejection now copy the contract amount from the
 submitted version's pricing snapshot; missing/ambiguous prices stay null. The mock mirrors
 the same distinction. All claim PostgreSQL tests pass (131.0 s). Go lint/build, workspace
- typecheck and harness lint/TypeScript pass.
-This backend change is not loaded until the operator restarts `scripts/dev.ps1 up` again;
-no migration, grants or native-service restart is needed. The final live check must retain
-its expected contract/approved/payer/member 400/400/400/0; do not weaken that assertion.
+typecheck and harness lint/TypeScript pass. The operator has since restarted the API and
+the final live check passed with contract/approved/payer/member 400/400/400/0 (below).
+No migration, grants or native-service restart was needed.
 
 Harness fixes: zero is not a valid stale ETag (428), so use the preceding positive version.
 WP-I5-02 explicitly records every successful report-coverage evaluation: three corrected
@@ -476,6 +475,36 @@ Long review runs opt into bounded Retry-After handling for 429 in their API acto
 the same command key/body/ETag. API limits stay unchanged. Cleanup retires the scoped rule
 and closes only that episode's work items. Known decided attempts' remaining work/cases
 were closed via public APIs; approved synthetic claims and consumed entitlement remain.
+
+**H08 medical → financial claim acceptance passed (2026-09-23):** after the latest
+operator restart, `E2E_CLAIM_REVIEW=1` with `real-outpatient.spec.ts` passed in 39.3 s
+(41.8 s total). This is a fresh synthetic episode: real provider case/encounter/diagnosis,
+PDF upload/ClamAV, doctor report approval, billing browser source/create/save/submit,
+medical return, correction, medical decision, financial return, second correction,
+medical decision, financial decision/approval, invoice readiness and browser case closure.
+
+Claim version 3 is APPROVED. Versions 1 and 2 remain SUPERSEDED, with requested amounts
+400 and 450 and their decision/reason history preserved. The final contract, approved,
+payer and member amounts are 400/400/400/0 TRY; readiness is true with no blockers.
+The account is available 19 / reserved 0 / consumed 1. Its exact ledger is one GRANT,
+one RESERVE, three CONSUME and two REVERSE entries. Each return restores the one-session
+hold; each resubmission consumes it once. Exact command replays leave balances, row
+versions and report history unchanged. Three successful version evaluations retain
+three report-usage trace rows, as required by WP-I5-02.
+
+The test also proves wrong-stage 409, stale-version 412, not-yet-decided readiness 409,
+clinical text hidden from finance in current/history API and the current DOM, and the provider save
+gate while the post-save GET is deliberately paused. Cleanup retired the temporary
+person-only rule and completed this claim's work items; the case is closed. Approved
+synthetic history and one consumed session remain. No invoice/payment was created.
+
+Evidence: claim `01a0ce7a-c25f-7b41-8384-c3a86913c973`, case
+`01a0ce7a-7ae3-79ea-b907-e1ee7c56e6b1`, report `01a0ce7a-7eb1-7f10-b191-855a3286070f`,
+authorization `01a0ce7a-716f-78ad-800f-c81ea4e0d42f`, account
+`01a0ce7a-6d0c-7831-ae52-cfe4047d730f`. All six CI jobs passed on `98d6ab4`.
+H08 is passed; H09/H10 have expanded partial evidence. PC-03 is still active: next is
+approved-report correction/history and coverage exceptions, then remaining unsafe-file
+and HR/sensitive/provider/tenant/audit boundaries. PC-04 inpatient and PC-05 finance follow.
 
 ## 3. Get it running
 
