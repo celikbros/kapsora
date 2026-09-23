@@ -135,7 +135,7 @@ evidence; race, duplicate-delivery and ledger invariants may use focused databas
 | H03 | Automatic/manual request decision and return/correct/resubmit reach the provider | PC-02 | Partial: live approval/correction/rejection/cancellation and combined document gate passed; live scoped automatic decision passed; queue own-file fix confirmed live after restart |
 | H04 | Authorization/fulfillment and exact entitlement effects agree; retries do not duplicate | PC-02 | Generic path and automatic clinical claim consumption verified live; retries preserve exact balances and one usage |
 | H05 | Same episode reaches case, encounter and valid diagnosis | PC-03 | Partial: live browser case → ended encounter → primary ICD-10 diagnosis → case closure passed; primary/closure refusal cases remain |
-| H06 | Browser-uploaded evidence is scanned CLEAN; missing/unsafe evidence cannot pass submission | PC-03 | Partial: real PDF/ClamAV and missing/unscanned request gate passed; real case-linked report upload/scan and missing-file refusal passed; infected-file acceptance remains |
+| H06 | Browser-uploaded evidence is scanned CLEAN; missing/unsafe evidence cannot pass submission | PC-03 | PASSED 2026-09-23: real clean PDF and EICAR rejection; unsafe download/submit refused with no queue/usage; clean replacement completes the same episode |
 | H07 | Report review, coverage and immutable correction history work | PC-03 | PASSED 2026-09-23: live approval/correction, immutable history, separate scanned evidence and unchanged prior claim/usage; coverage exceptions verified in isolated PostgreSQL tests |
 | H08 | Clinical provider → billing → medical → financial handoff reaches invoice-ready claim | PC-03 | PASSED 2026-09-23: real browser handoff, two return/correction cycles, preserved contract price, final 400/400/0 TRY and one net session consumed |
 | H09 | Duplicate/report/authorization blockers and corrected claim history are accurate | PC-03 | Partial: two correction versions, immutable decisions, stale/wrong-stage refusals, readiness gate and exact consumption/replays passed; duplicate/report/authorization exception coverage remains |
@@ -1071,4 +1071,23 @@ problem-message gaps are closed by these changes; other recorded gaps are not im
   H07 is passed within this stated evidence scope. H09/H10 and PC-03 remain open.
 - Next: unsafe-file acceptance, remaining privacy/access boundaries and PC-03 exceptions,
   followed by PC-04 inpatient and PC-05 finance. Previous head `1ee92da` has six green CI jobs;
-  this checkpoint's CI is pending push.
+  all six CI jobs subsequently passed on `a7f9292`.
+
+### H06 unsafe evidence and clean replacement — 2026-09-23
+
+- Real browser EICAR upload through MinIO/ClamAV is INFECTED, has no download action,
+  and returns DOCUMENT_INFECTED on direct download. Report submission is refused with
+  MEDICAL_REPORT_DOCUMENT_REQUIRED; no queue item, usage or balance change is created.
+- Fixed the reproduced missing-evidence notice in both apps: a linked file only satisfies
+  a required type when downloadable. Pending/scanning/infected/failed/purged files do not.
+  The document-type selector stays stable and the incident remains visible.
+- A clean PDF added to the same report clears the notice; doctor approval and billing
+  reach an invoice-ready 400 TRY claim, one net session consumed (19/0/1), case closed.
+  Live test passed twice (32.3 s and 28.6 s); `E2E_UNSAFE_REPORT=1` enables this slice.
+- 26 UI tests pass, including 12 new state cases. Real native pipeline tests pass without
+  skips (8.6 s), separately proving no secure writes, infected-byte deletion and SECURITY
+  audit. Both app builds/typechecks, harness TypeScript and ESLint pass; 390/1440px checked.
+- Report `01a0cea7-942a-7d86-8c5f-218ecdb95d03`, infected document
+  `01a0cea7-ad13-7f1a-8d0f-19713a87b2b1`; full evidence IDs are in HANDOVER.
+  No backend, migration or grant changes. H06 passed; H10 real-role privacy/access and
+  remaining PC-03 exceptions are next. PC-04/05 remain queued; no health-wide closure.

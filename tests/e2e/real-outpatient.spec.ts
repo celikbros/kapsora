@@ -4,10 +4,12 @@ import type { components } from '../../web/packages/api-client/src/generated/kap
 import { Actor } from './real-api-actor';
 import { reviewAndCorrectClaim, seedClaimReviewRule } from './real-claim-review-flow';
 import { correctApprovedReport } from './real-report-correction-flow';
+import { refuseUnsafeReport } from './real-unsafe-report-flow';
 import { syntheticPDF } from './synthetic-pdf';
 
 type Schema<K extends keyof components['schemas']> = components['schemas'][K];
 const base = process.env['E2E_EXISTING_UI_URL'] ?? '';
+const unsafeMode = process.env['E2E_UNSAFE_REPORT'] === '1';
 const reportMode = process.env['E2E_REPORT_CORRECTION'] === '1';
 const reviewMode = process.env['E2E_CLAIM_REVIEW'] === '1';
 const sourceId = process.env['E2E_OUTPATIENT_SOURCE_REQUEST'] ?? '';
@@ -20,16 +22,32 @@ test('real outpatient case, diagnosis and scanned report reach a priced claim wi
   page,
   browser,
 }) => {
-  test.setTimeout(reviewMode || reportMode ? 240_000 : 120_000);
+  test.setTimeout(reviewMode || reportMode || unsafeMode ? 240_000 : 120_000);
   const doctorPage = await browser.newPage({ locale: 'tr-TR', timezoneId: 'Europe/Istanbul' });
   const billingPage = await browser.newPage({ locale: 'tr-TR', timezoneId: 'Europe/Istanbul' });
   const financePage = await browser.newPage({ locale: 'tr-TR', timezoneId: 'Europe/Istanbul' });
-  const finance = new Actor(financePage.request, 'backoffice', reviewMode || reportMode);
+  const finance = new Actor(
+    financePage.request,
+    'backoffice',
+    reviewMode || reportMode || unsafeMode,
+  );
   let ruleAttempted = false;
-  const admin = new Actor(await apiRequest.newContext(), 'backoffice', reviewMode || reportMode);
-  const provider = new Actor(page.request, 'provider', reviewMode || reportMode);
-  const doctor = new Actor(doctorPage.request, 'backoffice', reviewMode || reportMode);
-  const billing = new Actor(billingPage.request, 'provider', reviewMode || reportMode);
+  const admin = new Actor(
+    await apiRequest.newContext(),
+    'backoffice',
+    reviewMode || reportMode || unsafeMode,
+  );
+  const provider = new Actor(page.request, 'provider', reviewMode || reportMode || unsafeMode);
+  const doctor = new Actor(
+    doctorPage.request,
+    'backoffice',
+    reviewMode || reportMode || unsafeMode,
+  );
+  const billing = new Actor(
+    billingPage.request,
+    'provider',
+    reviewMode || reportMode || unsafeMode,
+  );
   const ids: Record<string, string> = {};
   try {
     await admin.login('admin.a');
@@ -274,6 +292,8 @@ test('real outpatient case, diagnosis and scanned report reach a priced claim wi
       { etag: currentReport.etag, expected: 422 },
     );
     expect(refused.data.code).toBe('MEDICAL_REPORT_DOCUMENT_REQUIRED');
+    if (unsafeMode)
+      await refuseUnsafeReport({ page, provider, doctor, reportId: report.id, snapshot });
     const upload = page.getByTestId('document-upload-form');
     const filename = `outpatient-${report.id.slice(-8)}.pdf`;
     await upload
@@ -296,6 +316,10 @@ test('real outpatient case, diagnosis and scanned report reach a priced claim wi
         .filter({ hasText: filename })
         .getByText('Temiz', { exact: true }),
     ).toBeVisible({ timeout: 45_000 });
+    if (unsafeMode)
+      await expect(page.getByRole('heading', { name: 'Eksik belgeler', exact: true })).toHaveCount(
+        0,
+      );
     await page.getByRole('button', { name: 'Gönder', exact: true }).click();
     await expect(page.getByTestId('report-status')).toHaveText('Gönderildi');
     const queue = (

@@ -536,9 +536,40 @@ usage and refuses invoice readiness; finance does not receive the clinical excep
 These exception fixtures are not live-browser evidence. Focused claim tests (27.0 s),
 report HTTP tests (10.9 s), 19 UI/mock tests, provider build/typecheck, harness TypeScript,
 ESLint and Go vet pass. No backend implementation, schema or permission change; no restart.
-Previous head `1ee92da` has all six CI jobs green; this checkpoint's CI is pending push.
+All six CI jobs passed on report-correction head `a7f9292`.
 Next: remaining unsafe-file and HR/sensitive/provider/tenant/audit boundaries and outstanding
 PC-03 exceptions. H09/H10 remain partial; health as a whole is not complete.
+
+**H06 unsafe-report evidence passed (2026-09-23):** the real outpatient browser harness
+with `E2E_UNSAFE_REPORT=1`, `E2E_REPORT_CORRECTION=0` and `E2E_CLAIM_REVIEW=0` passed
+twice (32.3 s, then 28.6 s test / 31.2 s total). Use the existing real-API/UI/source settings.
+The helper assembles harmless EICAR antivirus-test bytes in memory and uploads them from
+the provider's actual file chooser through signed MinIO upload and the running scanner worker.
+No real malware, seeded scan verdict or scanner bypass is used.
+
+The linked file becomes INFECTED and not downloadable; direct download returns 409
+DOCUMENT_INFECTED and report submit returns 422 MEDICAL_REPORT_DOCUMENT_REQUIRED.
+The report remains DRAFT with no review work item or usage, and the account remains
+19 available / 1 reserved / 0 consumed. A subsequent clean synthetic PDF on that same
+report clears the missing-evidence notice and permits doctor approval, billing handoff,
+400 TRY invoice-ready claim and case closure, ending 19/0/1. The infected incident stays
+linked and visible; no invoice or payment is created.
+
+Live testing found the missing-document notice incorrectly disappearing on an infected
+upload. Both provider and backoffice now count only matching downloadable documents.
+Twelve new UI cases cover pending, scanning, infected, failed, purged and clean evidence
+in both apps; all 26 focused UI tests pass. Real MinIO/ClamAV pipeline tests also pass
+without skips (8.6 s): zero writes to secure storage, quarantine/secure bytes absent after
+the infected verdict, download refusal and one SECURITY audit event. Those storage/audit
+assertions use isolated test databases, distinct from the browser episode.
+
+Evidence: report `01a0cea7-942a-7d86-8c5f-218ecdb95d03`, infected document
+`01a0cea7-ad13-7f1a-8d0f-19713a87b2b1`, claim `01a0cea7-d8b0-75aa-be3b-1168326af322`,
+case `01a0cea7-9065-7661-af37-b132c171758b`, account `01a0cea7-8711-7635-ab9f-cc4d14fae3bf`.
+Desktop/mobile inspection includes the scrollable status column. Both app builds/typechecks,
+harness TypeScript and ESLint pass. No backend/schema/grant changes or restart required.
+H06 is passed; next are H10 real-role privacy/access checks and outstanding PC-03 exception
+gates. PC-03 and health overall remain open; PC-04 inpatient and PC-05 finance follow.
 
 ## 3. Get it running
 

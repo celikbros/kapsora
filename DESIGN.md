@@ -412,7 +412,10 @@ removes the correction editor and upload controls, leaving the closed record rea
 "taranıyor" with a spinner; it does not say "yüklendi" because the upload finished. The
 download appears only where the server says `downloadable`, and where it is absent the
 screen says which state is in the way. An optimistic label on an unfinished process is a
-lie the operator only discovers by clicking.
+lie the operator only discovers by clicking. A required document stays outstanding until
+a matching linked file is `downloadable`; uploading, a scan failure, an infected file or
+purged content does not clear the missing-document notice. A later clean replacement may
+satisfy it while the rejected file remains visible as incident history.
 
 **A lost race names the winner.** When two operators reach for one work item, the loser is
 told who holds it, by name. "Somebody else took it" leaves two people clicking the same
