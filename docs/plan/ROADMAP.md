@@ -236,6 +236,18 @@ independent work within the current stage; do not silently mark it complete or s
 to recovery/deployment. Routine reversible fixes follow the approved scope. Business
 rule changes or genuinely new access decisions are brought back with a concrete proposal.
 
+### PC-02 request scope follow-up — 2026-09-23
+
+[Real provider scope regression](../../tests/e2e/real-case-claim-scope.spec.ts) now includes
+service requests and passed (11.3 s total). A dedicated provider's cancelled draft is visible
+to doctor.a but hidden from provider.a detail/history/list, edits, submit/cancel and screen.
+Repeated setup confirms the request and existing case/claim fixtures are unchanged; no
+queue/authorization/consumption is created. Source episode and balances remain unchanged.
+The corresponding [tenant regression](../../internal/servicerequest/application/tenant_scope_test.go)
+passed on isolated PostgreSQL (3.4 s) with the same permissions in a distinct tenant.
+This closes the request provider-boundary evidence gap in PC-02.7; it does not replace
+H05's pending live end-command test or inpatient acceptance.
+
 ### PC-03 exception and boundary checkpoint — 2026-09-23
 
 - [Real claim exceptions](../../tests/e2e/real-claim-exceptions.spec.ts) passed (5.3 s total):

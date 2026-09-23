@@ -7,6 +7,8 @@ import { Actor } from './real-api-actor';
 
 type S<K extends keyof components['schemas']> = components['schemas'][K];
 type Fixture = {
+  requestId: string;
+  requestVersion: number;
   providerId: string;
   caseId: string;
   encounterId: string;
@@ -30,7 +32,7 @@ async function seed(id: string): Promise<Fixture> {
   return JSON.parse(stdout) as Fixture;
 }
 
-test('real provider boundaries hide foreign cases, encounters and claims without mutations', async ({
+test('real provider boundaries hide foreign requests, cases, encounters and claims without mutations', async ({
   page,
   browser,
 }) => {
@@ -141,6 +143,56 @@ test('real provider boundaries hide foreign cases, encounters and claims without
     await billingPage.goto(base + `/portal/claims/${fixture.claimId}`);
     await expect(billingPage.getByRole('alert')).toContainText('Hasar dosyası bulunamadı');
     await expect(billingPage.locator('body')).not.toContainText(marker);
+    const requestPath = `/api/v1/service-requests/${fixture.requestId}`;
+    const visibleRequest = await doctor.call<S<'ServiceRequest'>>('GET', requestPath);
+    expect(visibleRequest.data.status).toBe('CANCELLED');
+    expect(visibleRequest.data.providerOrganizationId).toBe(fixture.providerId);
+    for (const suffix of ['', '/versions', '/versions/1']) {
+      const denied = await provider.call<{ code: string }>('GET', requestPath + suffix, undefined, {
+        expected: 404,
+      });
+      expect(denied.data.code).toBe('SERVICE_REQUEST_NOT_FOUND');
+    }
+    const requestOptions = { expected: 404, etag: `"${fixture.requestVersion}"` };
+    await provider.call(
+      'PATCH',
+      requestPath,
+      { serviceDate: visibleRequest.data.serviceDate },
+      requestOptions,
+    );
+    await provider.call(
+      'PUT',
+      requestPath + '/items',
+      {
+        items: [
+          {
+            serviceDefinitionId: visibleRequest.data.items[0]!.serviceDefinitionId,
+            requestedQuantity: '1',
+            unitType: visibleRequest.data.items[0]!.unitType,
+          },
+        ],
+      },
+      requestOptions,
+    );
+    for (const command of ['submit', 'cancel'])
+      await provider.call(
+        'POST',
+        requestPath + '/' + command,
+        command === 'submit' ? {} : { reasonCode: 'PC02_SCOPE_REFUSED' },
+        requestOptions,
+      );
+    expect(
+      (
+        await provider.call<S<'ServiceRequestPage'>>(
+          'GET',
+          `/api/v1/service-requests?providerOrganizationId=${fixture.providerId}`,
+        )
+      ).data.items,
+    ).toEqual([]);
+    await page.goto(base + `/portal/requests/${fixture.requestId}`);
+    await expect(page.getByRole('alert')).toContainText('Hizmet talebi bulunamadı');
+    await expect(page.locator('body')).not.toContainText(visibleRequest.data.reference);
+    expect(await doctor.call('GET', requestPath)).toEqual(visibleRequest);
     expect(await seed(fixtureId)).toEqual(fixture);
     expect(await doctor.call('GET', casePath)).toEqual(visibleCase);
     expect(await doctor.call('GET', encounterPath)).toEqual(visibleEncounter);

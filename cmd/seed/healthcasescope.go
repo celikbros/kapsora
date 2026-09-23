@@ -15,9 +15,14 @@ import (
 	healthpg "github.com/celikbros/kapsora/internal/health/infrastructure/postgres"
 	"github.com/celikbros/kapsora/internal/platform/httpx"
 	"github.com/celikbros/kapsora/internal/platform/sqlcgen"
+	requestapp "github.com/celikbros/kapsora/internal/servicerequest/application"
+	requestdomain "github.com/celikbros/kapsora/internal/servicerequest/domain"
+	requestpg "github.com/celikbros/kapsora/internal/servicerequest/infrastructure/postgres"
 )
 
 type healthCaseScope struct {
+	RequestID        uuid.UUID `json:"requestId"`
+	RequestVersion   int64     `json:"requestVersion"`
 	ProviderID       uuid.UUID `json:"providerId"`
 	CaseID           uuid.UUID `json:"caseId"`
 	EncounterID      uuid.UUID `json:"encounterId"`
@@ -28,7 +33,7 @@ type healthCaseScope struct {
 }
 
 // healthCaseBoundary creates a closed case and cancelled draft at a dedicated
-// provider. It reuses only the synthetic outpatient enrollment; it never submits
+// provider, plus a cancelled request. It reuses only the synthetic outpatient enrollment; it never submits
 // a claim, reserves entitlement, assigns permissions or changes the source episode.
 func (s *seeder) healthCaseBoundary(ctx context.Context, sourceID, fixture uuid.UUID) (healthCaseScope, error) {
 	var out healthCaseScope
@@ -170,5 +175,50 @@ func (s *seeder) healthCaseBoundary(ctx context.Context, sourceID, fixture uuid.
 	if claim.Claim.Status != "CANCELLED" {
 		return out, fmt.Errorf("scope claim must be cancelled")
 	}
-	return healthCaseScope{provider, record.Case.ID, record.Encounters[0].ID, claim.Claim.ID, record.Case.RowVersion, record.Encounters[0].RowVersion, claim.Claim.RowVersion}, nil
+	requests, err := requestapp.New(requestapp.Deps{Pool: s.pool, Repo: requestpg.New(), Audit: auditpg.New(), Cursors: cursors})
+	if err != nil {
+		return out, err
+	}
+	requestPage, err := requests.List(ctx, rc, requestapp.ListFilter{ProviderOrganizationID: &provider, Limit: 2})
+	if err != nil {
+		return out, err
+	}
+	line := source.Lines[0].Line
+	var request requestapp.RequestView
+	switch len(requestPage.Items) {
+	case 0:
+		request, err = requests.Create(ctx, rc, requestapp.NewRequestInput{
+			RequestType: "PREAUTHORIZATION", PersonID: source.Claim.PersonID,
+			ProgramID: source.Claim.ProgramID, EnrollmentID: source.Claim.EnrollmentID,
+			ProviderOrganizationID: &provider, ServiceDate: source.Claim.ServiceDateFrom,
+			Channel: "PROVIDER_PORTAL", Items: []requestdomain.ItemInput{{
+				ServiceDefinitionID: line.ServiceDefinitionID.String(), RequestedQuantity: "1", UnitType: line.UnitType,
+			}},
+		})
+	case 1:
+		request = requestPage.Items[0]
+	default:
+		return out, fmt.Errorf("ambiguous scope request")
+	}
+	if err != nil {
+		return out, err
+	}
+	if request.Request.PersonID != source.Claim.PersonID || request.Request.EnrollmentID != source.Claim.EnrollmentID ||
+		request.Request.RequestType != "PREAUTHORIZATION" || len(request.Items) != 1 || request.Items[0].ServiceDefinitionID != line.ServiceDefinitionID {
+		return out, fmt.Errorf("unexpected scope request")
+	}
+	if request.Request.Status == "DRAFT" {
+		request, err = requests.Cancel(ctx, rc, request.Request.ID, requestapp.ReasonInput{ReasonCode: "PC02_SCOPE_FIXTURE", ExpectedVersion: request.Request.RowVersion})
+		if err != nil {
+			return out, err
+		}
+	}
+	if request.Request.Status != "CANCELLED" {
+		return out, fmt.Errorf("scope request must be cancelled")
+	}
+	return healthCaseScope{
+		RequestID: request.Request.ID, RequestVersion: request.Request.RowVersion,
+		ProviderID: provider, CaseID: record.Case.ID, EncounterID: record.Encounters[0].ID, ClaimID: claim.Claim.ID,
+		CaseVersion: record.Case.RowVersion, EncounterVersion: record.Encounters[0].RowVersion, ClaimVersion: claim.Claim.RowVersion,
+	}, nil
 }

@@ -694,6 +694,19 @@ pnpm e2e real-case-claim-scope.spec.ts --project chromium --trace off
 Remove-Item Env:E2E_OWN_CLAIM, Env:E2E_CLAIM_EXCEPTION_SOURCE_CASE, Env:E2E_CASE_SCOPE_SOURCE_CLAIM, Env:E2E_CASE_SCOPE_FIXTURE
 ```
 
+**PC-02 request boundary follow-up (2026-09-23):** the same scope fixture now includes
+one cancelled, never-submitted PREAUTHORIZATION request at its dedicated provider.
+The extended real test passed (9.5 s / 11.3 s total): doctor.a reads the request;
+provider.a gets SERVICE_REQUEST_NOT_FOUND for detail/version history, header/line edits,
+submit and cancel, an empty provider-filtered list and a not-found screen without its
+reference. Request `01a0cfa6-80c4-7ac2-a8c5-f3832c47eb04` remains CANCELLED at version 2;
+repeat setup reads it without changes. No review queue, authorization or usage is created,
+and source episode/balances are unchanged. The existing command/fixture UUID above reruns
+this coverage. A new PostgreSQL tenant-boundary regression passed (3.4 s): identical
+permissions in another tenant cannot read/list/history/edit/submit/cancel the original
+request, which remains unchanged. This is isolated database evidence for tenant isolation,
+not a DEMO_B browser review. All six CI checks passed on the preceding UI head `918ef0c`.
+
 **H05 open-encounter closure fix — implemented, live verification pending:** the API
 allowed open encounters but had no end command. Added POST `/api/v1/encounters/{id}/end`,
 If-Match/idempotency, parent-case locking, end-time validation, audit event and projected
