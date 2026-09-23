@@ -608,6 +608,45 @@ passed CI. H10 has outpatient live evidence; inpatient coverage remains for PC-0
 partial: live purpose/access audit passed; real cross-provider/tenant and remaining own-file
 decision checks still follow. H05/H09 exceptions remain open before PC-03 closure.
 
+**Own-report and scope checkpoint (2026-09-23):** the extended real worklist test
+passed (6.8 s / 8.6 s total). staff.member gets OWN_FILE_DECISION/403 for start-review
+on their submitted report and approve/reject while it is under another doctor's review.
+Report content/ETag and entitlement accounts stay unchanged. Both own-file screens show
+the notice and no decision controls. The test report is REJECTED and its work item COMPLETED:
+`01a0cf62-4e79-711e-9559-4d33b892d7ed` / `01a0cf62-5cc0-752d-8e78-f3837d3be3be`.
+
+The new real report-scope test passed (7.0 s / 8.8 s total). provider.a can read its own
+report, but gets 404 for foreign-provider/tenant detail, usage, patch, service replacement,
+submit and cancel; filtered lists are empty and both portal screens hide the report.
+doctor.a can read the other provider's DEMO_A report, but cannot read/list/decide DEMO_B's.
+Unknown IDs use the same not-found code. Repeated seed reads confirm both foreign records
+remain CANCELLED at row version 2 with their original provider and clinical marker.
+DEMO_B's positive existence/read check uses the application service in the seed process;
+there is no DEMO_B clinical demo login. No human grant was broadened.
+
+With `.env` loaded and the existing-UI variables set, use:
+
+```powershell
+$env:E2E_HEALTH_SCOPE = '1'
+$env:E2E_HEALTH_SCOPE_FIXTURE = 'df7f2408-e7ff-41e2-891b-83cead4194e6'
+pnpm e2e real-health-scope.spec.ts --project chromium --trace off
+Remove-Item Env:E2E_HEALTH_SCOPE, Env:E2E_HEALTH_SCOPE_FIXTURE
+```
+
+This opt-in runs `go run ./cmd/seed health-scope <fixture-uuid>`. A new UUID creates one
+synthetic provider/person/cancelled report per demo tenant; no enrollment, document,
+authorization, work item or usage is created. Reuse the recorded UUID to avoid extra rows.
+If setup is interrupted, repeating that UUID cancels its still-draft report. Unexpected
+markers or report status cause refusal. The seed refuses production-like environments and
+requires both existing demo tenants. Report IDs: `01a0cf67-6621-7173-b9fc-4531fe7be371`
+and `01a0cf67-6636-7cea-a596-db728e87091c`. Test attachments contain only safe fixture IDs.
+
+Three existing PostgreSQL case/provider, stay/provider and own-worklist tests passed
+(11.4 s), along with harness type/lint/format and seed compile/vet/Go lint checks. Earlier
+head dc8ac52 passed CI. No runtime implementation/migration change; no restart needed.
+H11 remains partial: own-claim decisions and broader live case/claim/stay boundaries are
+not certified by these report tests. These and H05/H09 exceptions precede PC-03 closure.
+
 ## 3. Get it running
 
 Requirements: Go 1.27+, a local PostgreSQL 18, Node 24 + pnpm 10. No Docker, ever (§6).

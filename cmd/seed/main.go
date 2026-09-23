@@ -5,6 +5,7 @@
 //	seed demo                                        tenants DEMO_A / DEMO_B, demo users, grants
 //	seed claim-review-rule <dedicated-person-id> [retire]  scoped local claim review fixture
 //	seed document-rule <dedicated-person-id> [retire]  scoped local acceptance fixture
+//	seed health-scope <fixture-uuid>  closed cross-provider/tenant acceptance reports
 //	seed automatic-program <dedicated-program-id> [disable]  isolated automatic decision fixture
 //
 // Generated passwords are printed once and never stored in plaintext. Set
@@ -172,6 +173,19 @@ func run(args []string) error {
 	}
 
 	switch args[0] {
+	case "health-scope":
+		if len(args) != 2 {
+			return fmt.Errorf("usage: seed health-scope <fixture-uuid>")
+		}
+		id, err := uuid.Parse(args[1])
+		if err != nil {
+			return fmt.Errorf("invalid scope fixture UUID")
+		}
+		result, err := s.healthScope(ctx, id)
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(os.Stdout).Encode(result)
 	case "automatic-program":
 		if len(args) < 2 || len(args) > 3 || (len(args) == 3 && args[2] != "disable") {
 			return fmt.Errorf("usage: seed automatic-program <dedicated-program-id> [disable]")
@@ -236,7 +250,7 @@ func run(args []string) error {
 		}
 		return s.demo(ctx)
 	default:
-		return fmt.Errorf("unknown command %q; use account, demo, document-rule, claim-review-rule or automatic-program", args[0])
+		return fmt.Errorf("unknown command %q; use account, demo, document-rule, claim-review-rule, automatic-program or health-scope", args[0])
 	}
 }
 

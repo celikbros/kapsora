@@ -140,7 +140,7 @@ evidence; race, duplicate-delivery and ledger invariants may use focused databas
 | H08 | Clinical provider → billing → medical → financial handoff reaches invoice-ready claim | PC-03 | PASSED 2026-09-23: real browser handoff, two return/correction cycles, preserved contract price, final 400/400/0 TRY and one net session consumed |
 | H09 | Duplicate/report/authorization blockers and corrected claim history are accurate | PC-03 | Partial: two correction versions, immutable decisions, stale/wrong-stage refusals, readiness gate and exact consumption/replays passed; duplicate/report/authorization exception coverage remains |
 | H10 | HR/financial projections exclude forbidden clinical fields in API and DOM | PC-03/04 | Outpatient verified live: HR case/report and HR/financial claim API/DOM hide clinical fields; current/historical claim notes protected. Inpatient projection coverage remains for PC-04 |
-| H11 | Sensitive purpose, access audit, self-review and other-provider/tenant boundaries hold | PC-03/04 | Partial: live purpose accept/decline and access audit passed; own-file queue refusal passed earlier; cross-provider/tenant and remaining own-file decisions remain |
+| H11 | Sensitive purpose, access audit, self-review and other-provider/tenant boundaries hold | PC-03/04 | Partial: live purpose/audit, own-report decisions/queue and report cross-provider/tenant reads/writes passed; own-claim and broader case/claim/stay live boundaries remain |
 | H12 | Admission approval advances the stay once and refuses duplicate open admission | PC-04 | Pending |
 | H13 | Extension and segment rules hold; refusal leaves balances correct | PC-04 | Pending |
 | H14 | Early discharge, partial days and overstay reconcile original/extension authorizations | PC-04 | Pending |
@@ -1113,3 +1113,32 @@ problem-message gaps are closed by these changes; other recorded gaps are not im
 - Next: real foreign-provider/tenant and remaining own-file decision boundaries, then
   outstanding H05/H09 exceptions before PC-03 closure. Inpatient privacy remains part of
   PC-04; PC-05 finance follows. This is not complete-health acceptance.
+
+
+### 2026-09-23 ? PC-03 own-report decisions and real report scope boundaries
+
+- Extended `real-health-worklist.spec.ts`: staff.member cannot start review of their
+  submitted report or approve/reject it once another doctor takes it into review. Each
+  valid-stage command returns OWN_FILE_DECISION/403 and preserves report/ETag. The real
+  screen shows the own-file notice with no decision buttons; balances stay unchanged.
+  Passed in 6.8 s (8.6 s total); report rejected and work item completed.
+- Added opt-in `seed health-scope <fixture-uuid>` and `real-health-scope.spec.ts`.
+  Application services create two dedicated people/providers and cancelled, unfunded
+  standalone reports in DEMO_A/B. Existing accounts, grants and enrollments are unchanged.
+  Repeating the UUID reuses the closed reports and verifies their fixture markers.
+- Real provider.a can read its own report but cannot read/list/update/submit/cancel either
+  foreign report or read its usage trace. Both foreign-report screens hide the contents.
+  Real doctor.a can read the other provider's DEMO_A report, but gets 404/empty results for
+  DEMO_B, including start-review/approve/reject. Unknown IDs also return the same 404 code.
+  Final seed reread confirms unchanged report versions/status/markers. Passed in 7.0 s
+  (8.8 s total). DEMO_B existence/read is proven by the seed service, not a second clinical
+  login: no such demo login exists, and no grant was added to create one.
+- Fixture `df7f2408-e7ff-41e2-891b-83cead4194e6`; both reports remain CANCELLED at version 2.
+  Own report `01a0cf62-4e79-711e-9559-4d33b892d7ed`, work item
+  `01a0cf62-5cc0-752d-8e78-f3837d3be3be`. Initial failed harness attempt was also closed.
+- Three existing PostgreSQL provider-case/stay-scope and own-worklist tests pass (11.4 s).
+  Harness TypeScript/ESLint/Prettier, seed compile/vet/golangci-lint and diff checks pass.
+  Previous head dc8ac52 passed CI. No API/UI implementation, migration or restart change.
+- H11 remains partial: live report proof does not certify case/claim/stay boundaries or
+  own-claim decisions. Finish the remaining outpatient H11 scope and H05/H09 exceptions
+  before PC-03 closure; then continue PC-04 inpatient and PC-05 finance.

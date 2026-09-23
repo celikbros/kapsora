@@ -13,12 +13,15 @@ test.skip(
 
 test('real medical worklist enforces queue permissions, ownership and report review handoff', async ({
   page,
+  browser,
 }) => {
   test.setTimeout(120_000);
   const admin = new Actor(await apiRequest.newContext(), 'backoffice');
   const provider = new Actor(page.request, 'provider');
   const doctor = new Actor(await apiRequest.newContext(), 'backoffice');
-  const staff = new Actor(await apiRequest.newContext(), 'backoffice');
+  const staffPage = await browser.newPage({ locale: 'tr-TR', timezoneId: 'Europe/Istanbul' });
+  staffPage.setDefaultTimeout(15_000);
+  const staff = new Actor(staffPage.request, 'backoffice');
   const finance = new Actor(await apiRequest.newContext(), 'backoffice');
   let reportId: string | undefined;
   let itemId: string | undefined;
@@ -107,11 +110,31 @@ test('real medical worklist enforces queue permissions, ownership and report rev
     await page.getByRole('button', { name: 'Gönder', exact: true }).click();
     expect((await sent).status()).toBe(200);
     await expect(page.getByTestId('report-status')).toHaveText('Gönderildi');
+    const refuseOwnCommands = async () => {
+      const before = await provider.call<Schema<'MedicalReport'>>('GET', path);
+      const commands =
+        before.data.status === 'SUBMITTED' ? ['start-review'] : ['approve', 'reject'];
+      for (const command of commands) {
+        const denied = await staff.call<{ code: string }>(
+          'POST',
+          path + '/' + command,
+          command === 'reject' ? { rejectReasonCode: 'PC03_OWN_FILE_REFUSED' } : {},
+          { etag: before.etag, expected: 403 },
+        );
+        expect(denied.data.code).toBe('OWN_FILE_DECISION');
+        expect(await provider.call<Schema<'MedicalReport'>>('GET', path)).toEqual(before);
+      }
+      await staffPage.goto(base + `/medical-reports/${reportId}`);
+      await expect(staffPage.getByTestId('own-file-notice')).toBeVisible();
+      await expect(staffPage.getByTestId('report-commands').getByRole('button')).toHaveCount(0);
+      await expect(staffPage.getByTestId('report-summary')).toHaveText(clinicalMarker);
+    };
     const listPath = `/api/v1/work-items?aggregateType=MEDICAL_REPORT&aggregateId=${reportId}`;
     const queue = (await doctor.call<Schema<'WorkItemPage'>>('GET', listPath)).data.items;
     expect(queue).toHaveLength(1);
     const item = queue[0]!;
     itemId = item.id;
+    await refuseOwnCommands();
     const itemPath = `/api/v1/work-items/${itemId}`;
     expect(item.status).toBe('OPEN');
     expect(item.title).toContain(draft.data.reference);
@@ -157,6 +180,7 @@ test('real medical worklist enforces queue permissions, ownership and report rev
     expect((await provider.call<Schema<'MedicalReport'>>('GET', path)).data.status).toBe(
       'UNDER_REVIEW',
     );
+    await refuseOwnCommands();
     expect(
       await doctor.call<Schema<'WorkItem'>>(
         'POST',
@@ -233,6 +257,8 @@ test('real medical worklist enforces queue permissions, ownership and report rev
         reportId,
         workItemId: itemId,
         ownFileVerified: true,
+        ownReportCommandsRefused: true,
+        ownReportDecisionControlsAbsent: true,
         ledgerAccountsUnchanged: true,
         reportStatus: 'REJECTED',
         workItemStatus: 'COMPLETED',
@@ -279,6 +305,7 @@ test('real medical worklist enforces queue permissions, ownership and report rev
         staff.close(),
         finance.close(),
       ]);
+      await staffPage.close();
     }
   }
 });
