@@ -802,8 +802,8 @@ else's. The server refuses it anyway (403 OWN_FILE_DECISION, audited), so the no
 sentence, not the lock. The same note serves requests, claims, medical reports, refunds and
 balance adjustments.
 
-**An open encounter can be ended from its own row.** “Muayeneyi sonlandır” expands an
-inline dated form beneath that encounter. It shows the start, requires an end no earlier
+**An open encounter can be ended from its own row.** “Muayeneyi sonlandır” expands a
+dated form beneath the encounter table, outside its horizontal scroll area. It shows the start, requires an end no earlier
 than the start, and explains that the saved end cannot be changed here. Only one such form
 is open at a time. While a command is pending or its response is uncertain, input and
 cancellation stay locked; retry preserves its body, ETag and command key. A definitive

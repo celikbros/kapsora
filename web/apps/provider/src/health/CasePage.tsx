@@ -436,6 +436,7 @@ export function CasePage() {
   const close = useCloseCase(caseId);
   const personName = usePersonName(query.data?.data.personId);
   const [adding, setAdding] = useState(false);
+  const [ending, setEnding] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [admitting, setAdmitting] = useState(false);
   const [creatingReport, setCreatingReport] = useState(false);
@@ -468,6 +469,7 @@ export function CasePage() {
   const clinical = record.projection === 'CLINICAL';
   const open = record.status === 'OPEN';
   const everyEncounterEnded = record.encounters.every((e) => Boolean(e.endedAt));
+  const endingEncounter = record.encounters.find((e) => e.id === ending && !e.endedAt);
   const diagnoses = Object.values(byEncounter).flat();
   const openStay = (stays.data?.items ?? []).find((s) => OPEN_STAY.has(s.status));
   // The chapter headers carry the chapter's state: the newest report's status, the open
@@ -576,6 +578,7 @@ export function CasePage() {
                       encounter={encounter}
                       clinical={clinical}
                       editable={clinical && canManage && open}
+                      onEnd={ending === null ? () => setEnding(encounter.id) : undefined}
                       editing={editing === encounter.id}
                       onEdit={() => setEditing(editing === encounter.id ? null : encounter.id)}
                       caseId={record.id}
@@ -587,6 +590,16 @@ export function CasePage() {
               </Table>
             </div>
           )}
+          {endingEncounter && clinical && canManage && open ? (
+            <div className="border-line mt-4 border-t pt-4">
+              <h3 className="text-sm font-semibold">{t('health.encounters.end.action')}</h3>
+              <EndEncounterForm
+                key={endingEncounter.id}
+                encounter={endingEncounter}
+                onDone={() => setEnding(null)}
+              />
+            </div>
+          ) : null}
           {adding ? <EncounterForm caseId={record.id} onDone={() => setAdding(false)} /> : null}
         </Card>
 
@@ -832,6 +845,7 @@ function EncounterRows({
   editable,
   editing,
   onEdit,
+  onEnd,
   caseId,
   current,
   onLoaded,
@@ -841,12 +855,12 @@ function EncounterRows({
   editable: boolean;
   editing: boolean;
   onEdit: () => void;
+  onEnd: (() => void) | undefined;
   caseId: string;
   current: Diagnosis[];
   onLoaded: (encounterId: string, items: Diagnosis[]) => void;
 }) {
   const { t } = useTranslation();
-  const [ending, setEnding] = useState(false);
   const columns = 3 + (clinical ? 2 : 0) + (editable ? 1 : 0);
   return (
     <>
@@ -871,8 +885,8 @@ function EncounterRows({
         {editable ? (
           <TD>
             <div className="flex flex-wrap gap-2">
-              {!encounter.endedAt && !ending ? (
-                <Button size="sm" variant="secondary" onClick={() => setEnding(true)}>
+              {!encounter.endedAt && onEnd ? (
+                <Button size="sm" variant="secondary" onClick={onEnd}>
                   {t('health.encounters.end.action')}
                 </Button>
               ) : null}
@@ -883,13 +897,6 @@ function EncounterRows({
           </TD>
         ) : null}
       </TR>
-      {ending && editable && !encounter.endedAt ? (
-        <TR>
-          <TD colSpan={columns}>
-            <EndEncounterForm encounter={encounter} onDone={() => setEnding(false)} />
-          </TD>
-        </TR>
-      ) : null}
       {editing ? (
         <TR>
           <TD colSpan={columns}>

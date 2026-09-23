@@ -698,13 +698,12 @@ Remove-Item Env:E2E_OWN_CLAIM, Env:E2E_CLAIM_EXCEPTION_SOURCE_CASE, Env:E2E_CASE
 allowed open encounters but had no end command. Added POST `/api/v1/encounters/{id}/end`,
 If-Match/idempotency, parent-case locking, end-time validation, audit event and projected
 response. Existing case/manage plus clinical/read permissions and provider/tenant scope
-apply. The provider form is inline beneath the open encounter; a lost response retries the
+apply. The provider form sits below the encounter table; a lost response retries the
 same key/body/ETag, while stale/definitive failures require an explicit reload. No migration.
 Three focused HTTP tests passed (10.7 s), including simultaneous commands and sensitive
 projection; eight UI tests passed (12.6 s), along with provider build, typecheck/lint,
 Go lint and OpenAPI lint (11 pre-existing description warnings). The complete health Go
-suite also passed, including application (89.5 s) and HTTP (126.8 s) packages. Previous head `739d922`
-passed GitHub CI. New backend needs the operator's `dev.ps1 up` restart, already requested;
+suite also passed, including application (89.5 s) and HTTP (126.8 s) packages. All six GitHub CI checks passed on `6bb51a3`. New backend needs the operator's `dev.ps1 up` restart, already requested;
 H05 remains partial until the following live test runs:
 
 ```powershell
@@ -712,6 +711,12 @@ $env:E2E_ENCOUNTER_SOURCE_CASE = '01a0cea7-9065-7661-af37-b132c171758b'
 pnpm e2e real-encounter.spec.ts --project chromium --trace off
 Remove-Item Env:E2E_ENCOUNTER_SOURCE_CASE
 ```
+
+A separate read-only browser layout check used intercepted case data to expose the new
+form without changing a database record. It found a clipped date field inside the mobile
+scrolling table. The form now sits below that table, with one active end form; the 1440px
+and 390px captures were inspected, and the eight focused UI tests passed again. This layout
+check does not replace the pending live end-command test.
 
 That test creates its own case/encounter, validates primary-diagnosis rules, intercepts a
 committed end response, retries, closes the case and checks no balance change. Desktop/mobile

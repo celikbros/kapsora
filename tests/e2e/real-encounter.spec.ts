@@ -117,6 +117,10 @@ test('real primary diagnosis validation and encounter ending unblock case closur
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
         true,
       );
+      const inputBounds = await form.locator('input[name="endedAt"]').boundingBox();
+      expect(inputBounds).not.toBeNull();
+      expect(inputBounds!.x).toBeGreaterThanOrEqual(0);
+      expect(inputBounds!.x + inputBounds!.width).toBeLessThanOrEqual(width);
       await page.screenshot({
         path: `.impeccable/review/encounter-end-${width}.png`,
         fullPage: true,
