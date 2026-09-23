@@ -124,3 +124,51 @@ func TestAuthorizationRetryStillEnforcesProviderScope(t *testing.T) {
 	}
 	assertQuantity(t, f.balances(t, f.physioAccount).Reserved, "2", "no second hold")
 }
+
+func TestMappedClaimReturnRestoresOnlyItsDrawAndPreservesClosedState(t *testing.T) {
+	for _, status := range []string{"ACTIVE", "CANCELLED", "EXPIRED"} {
+		t.Run(status, func(t *testing.T) {
+			f := newFixtureWithMapping(t, true)
+			request := f.seedRequest(t, f.providerOr, line{f.physioDefinition, "5"})
+			auth := f.authorize(t, request, "correction-mapped")
+			original := application.ConsumeInput{TenantID: f.tenant, ActorID: f.actor, AuthorizationID: auth.Authorization.ID, ServiceDefinitionID: f.physioDefinition, Quantity: benefitdomain.MustQuantity("2"), Key: "claim-original", ReasonCode: "CLAIM"}
+			run := func(fn func(context.Context, pgx.Tx) error) {
+				t.Helper()
+				if err := db.WithTenantTx(context.Background(), f.pool, db.TenantContext{TenantID: f.tenant}, fn); err != nil {
+					t.Fatal(err)
+				}
+			}
+			run(func(ctx context.Context, tx pgx.Tx) error { _, err := f.svc.Consume(ctx, tx, original); return err })
+			assertQuantity(t, f.balances(t, f.physioAccount).Consumed, "4", "mapped first draw")
+			switch status {
+			case "CANCELLED":
+				view, err := f.svc.Get(context.Background(), f.rc(), auth.Authorization.ID)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if _, err = f.svc.Cancel(context.Background(), f.rc(), auth.Authorization.ID, application.ReasonInput{ReasonCode: "CLOSED_TEST", ExpectedVersion: view.Authorization.RowVersion}); err != nil {
+					t.Fatal(err)
+				}
+			case "EXPIRED":
+				f.h.AdminExec(`UPDATE service.authorization SET valid_from=valid_from-interval '2 days',valid_to=valid_from-interval '1 day' WHERE id=$1`, auth.Authorization.ID)
+			}
+			for range 2 {
+				run(func(ctx context.Context, tx pgx.Tx) error { return f.svc.UndoConsumption(ctx, tx, original) })
+			}
+			assertQuantity(t, f.balances(t, f.physioAccount).Consumed, "0", "undo mapped draw once")
+			view, err := f.svc.Get(context.Background(), f.rc(), auth.Authorization.ID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if view.Authorization.ConsumedTotal != "0" || view.Authorization.Status != status {
+				t.Fatalf("status=%s consumed=%s", view.Authorization.Status, view.Authorization.ConsumedTotal)
+			}
+			if status == "ACTIVE" {
+				assertQuantity(t, f.balances(t, f.physioAccount).Reserved, "10", "restored mapped hold")
+			} else {
+				assertQuantity(t, f.balances(t, f.physioAccount).Reserved, "0", "closed hold stays released")
+			}
+			f.assertConservation(t, f.physioAccount)
+		})
+	}
+}

@@ -76,7 +76,7 @@ func (s *Service) Consume(ctx context.Context, tx pgx.Tx, in ConsumeInput) (Cons
 	if !in.Quantity.IsPositive() {
 		return ConsumeResult{}, nil
 	}
-	authorization, err := s.repo.GetAuthorization(ctx, tx, in.TenantID, in.AuthorizationID, Scope{})
+	authorization, err := s.repo.LockAuthorization(ctx, tx, in.TenantID, in.AuthorizationID, Scope{})
 	if err != nil {
 		return ConsumeResult{}, err
 	}

@@ -357,6 +357,19 @@ interface LineOutcome {
 
 export function claimHandlers(api: MockApi): HttpHandler[] {
   const world = (): MockWorld => api.world;
+  // Actual draws only; an over-limit attempt must never restore entitlement.
+  const draws = new WeakMap<
+    MockWorld,
+    Map<string, { item: { consumedQuantity: string }; quantity: bigint }>
+  >();
+  const drawsOf = () => {
+    let entries = draws.get(world());
+    if (!entries) {
+      entries = new Map();
+      draws.set(world(), entries);
+    }
+    return entries;
+  };
 
   const caseOf = (row: StoredClaim): StoredHealthCase | undefined =>
     row.caseId === null ? undefined : world().healthCases.find((c) => c.id === row.caseId);
@@ -918,6 +931,7 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
       return;
     }
     item.consumedQuantity = amount(toMicros(item.consumedQuantity) + wanted);
+    drawsOf().set(outcome.line.id, { item, quantity: wanted });
   };
 
   /** Another live claim of the same person, service and day, named by its reference. */
@@ -1616,6 +1630,12 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
       const version = versionOf(claim.id, claim.currentVersionNo);
       if (!version || version.status !== 'SUBMITTED') return transitionInvalid(api);
 
+      for (const line of linesOf(version.id)) {
+        const draw = drawsOf().get(line.id);
+        if (!draw) continue;
+        draw.item.consumedQuantity = amount(toMicros(draw.item.consumedQuantity) - draw.quantity);
+        drawsOf().delete(line.id);
+      }
       // The decided version keeps everything it was given; only the return reason is added.
       version.status = 'SUPERSEDED';
       version.returnedAt = new Date().toISOString();

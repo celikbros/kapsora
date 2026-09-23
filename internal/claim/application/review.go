@@ -427,6 +427,20 @@ func (s *Service) Return(ctx context.Context, rc identity.RequestContext, id uui
 		if err != nil {
 			return err
 		}
+		// A correction replaces the submitted statement. Undo only its actual line draws,
+		// preserving the append-only ledger; a later submit consumes the corrected quantities.
+		if current.AuthorizationID != nil {
+			for _, line := range lines {
+				quantity, err := quantityOf(line.Quantity, "quantity")
+				if err != nil {
+					return err
+				}
+				if err = s.authorizations.UndoConsumption(ctx, tx, ConsumeRequest{TenantID: rc.TenantID, ActorID: rc.Principal.ActorID, AuthorizationID: *current.AuthorizationID, ServiceDefinitionID: line.ServiceDefinitionID, Quantity: quantity, Key: consumeKey(line.ID), ReasonCode: consumeReason}); err != nil {
+					return err
+				}
+			}
+		}
+
 		now := s.now().UTC()
 		actor := actorPtr(rc.Principal.ActorID)
 		superseded, err := s.repo.SupersedeVersion(ctx, tx, rc.TenantID, version.ID, ReturnRow{

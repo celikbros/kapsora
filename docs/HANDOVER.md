@@ -416,6 +416,32 @@ account `01a0cd5f-9ec2-7a0a-ad0b-9063dd7da158`. Six CI checks pass on `0d09bc4`.
 PC-03 is still active: this proves the automatic-priced path, not medical/financial claim
 exceptions, report correction, infected files or full HR/sensitive/cross-tenant acceptance.
 
+**Claim correction consumption fix (2026-09-23, restart/live check pending):**
+the new PostgreSQL regression reproduced two sessions becoming four after financial return
+and resubmission: copied version lines get new IDs, so their consumption keys were new too.
+Return now reverses only the original version's actual authorization draws in the same
+transaction as opening the correction draft. Existing CONSUME entries remain; linked REVERSE
+entries restore the hold. Resubmission consumes the corrected quantity. Fully used holds
+reopen, while cancelled/expired holds stay terminal and release restored reservations.
+Authorization consumption and correction both lock the header before its items.
+
+Full claim, authorization and seed tests pass (139.9 / 105.7 / 33.9 s; authorization HTTP
+25.9 s). Regression covers repeated correction, changed quantities, stale return, attempted
+over-consumption, mapped factors and cancelled/expired holds. Scoped Go lint/API build,
+all 518 frontend/mock tests, workspace typecheck and harness TypeScript/ESLint pass.
+Mock return mirrors actual draws.
+No migration, API contract or permission grant changed; schema remains 51.
+
+The outpatient harness now accepts `E2E_CLAIM_REVIEW=1` with its existing variables and
+loaded `.env`. It prepares a person-scoped temporary ADJUDICATION rule using the local
+`seed claim-review-rule <person-id> [retire]` command, distinct maker/checker identities,
+two passing rule cases and bounded validity. Cleanup retires it. It targets medical return,
+billing correction, medical decision, financial return, second correction and final approval,
+with version/privacy/replay and exact ledger checks. This new live route is **not yet passed**.
+The operator must restart `scripts/dev.ps1 up` to load the backend change (section 3);
+native services need no restart. PC-03/H08 remain open until the real run and remaining
+report/privacy gates are verified.
+
 ## 3. Get it running
 
 Requirements: Go 1.27+, a local PostgreSQL 18, Node 24 + pnpm 10. No Docker, ever (§6).

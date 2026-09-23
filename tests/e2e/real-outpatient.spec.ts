@@ -2,10 +2,12 @@ import { randomUUID } from 'node:crypto';
 import { expect, request as apiRequest, test } from '@playwright/test';
 import type { components } from '../../web/packages/api-client/src/generated/kapsora-v1';
 import { Actor } from './real-api-actor';
+import { reviewAndCorrectClaim, seedClaimReviewRule } from './real-claim-review-flow';
 import { syntheticPDF } from './synthetic-pdf';
 
 type Schema<K extends keyof components['schemas']> = components['schemas'][K];
 const base = process.env['E2E_EXISTING_UI_URL'] ?? '';
+const reviewMode = process.env['E2E_CLAIM_REVIEW'] === '1';
 const sourceId = process.env['E2E_OUTPATIENT_SOURCE_REQUEST'] ?? '';
 test.skip(
   process.env['E2E_REAL_API'] !== '1' || !base || !sourceId,
@@ -16,9 +18,12 @@ test('real outpatient case, diagnosis and scanned report reach a priced claim wi
   page,
   browser,
 }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(reviewMode ? 240_000 : 120_000);
   const doctorPage = await browser.newPage({ locale: 'tr-TR', timezoneId: 'Europe/Istanbul' });
   const billingPage = await browser.newPage({ locale: 'tr-TR', timezoneId: 'Europe/Istanbul' });
+  const financePage = await browser.newPage({ locale: 'tr-TR', timezoneId: 'Europe/Istanbul' });
+  const finance = new Actor(financePage.request, 'backoffice');
+  let ruleAttempted = false;
   const admin = new Actor(await apiRequest.newContext(), 'backoffice');
   const provider = new Actor(page.request, 'provider');
   const doctor = new Actor(doctorPage.request, 'backoffice');
@@ -29,6 +34,7 @@ test('real outpatient case, diagnosis and scanned report reach a priced claim wi
     await provider.login('provider.a');
     await doctor.login('doctor.a');
     await billing.login('billing.a');
+    if (reviewMode) await finance.login('financial.reviewer');
     const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul' }).format(
       new Date(),
     );
@@ -59,6 +65,17 @@ test('real outpatient case, diagnosis and scanned report reach a priced claim wi
       )
     ).data;
     ids['personId'] = person.id;
+    if (reviewMode) {
+      const current = await admin.call<Schema<'Person'>>('GET', `/api/v1/people/${person.id}`);
+      await admin.call(
+        'PATCH',
+        `/api/v1/people/${person.id}`,
+        { lastName: `Hasarinceleme${person.id.replaceAll('-', '')}` },
+        { etag: current.etag },
+      );
+      ruleAttempted = true;
+      ids['reviewRuleVersionId'] = (await seedClaimReviewRule(person.id)).versionId;
+    }
     const membership = (
       await admin.call<Schema<'SponsorMembership'>>(
         'POST',
@@ -384,7 +401,7 @@ test('real outpatient case, diagnosis and scanned report reach a priced claim wi
     await billingPage.getByRole('button', { name: 'Gönder', exact: true }).click();
     const sentResponse = await sent;
     expect(sentResponse.status()).toBe(200);
-    const submitted = {
+    let submitted = {
       data: (await sentResponse.json()) as Schema<'Claim'>,
       etag: sentResponse.headers()['etag']!,
     };
@@ -392,7 +409,7 @@ test('real outpatient case, diagnosis and scanned report reach a priced claim wi
     const submitBody: unknown = sentResponse.request().postData()
       ? sentResponse.request().postDataJSON()
       : undefined;
-    expect(submitted.data.status).toBe('APPROVED');
+    expect(submitted.data.status).toBe(reviewMode ? 'PENDING_MEDICAL' : 'APPROVED');
     const after = await snapshot([19, 0, 1]);
     const usages = await doctor.call<Schema<'MedicalReportUsagePage'>>(
       'GET',
@@ -410,13 +427,33 @@ test('real outpatient case, diagnosis and scanned report reach a priced claim wi
     expect(
       await doctor.call<Schema<'MedicalReportUsagePage'>>('GET', reportPath + '/usages'),
     ).toEqual(usages);
+    if (reviewMode) {
+      submitted = await reviewAndCorrectClaim({
+        base,
+        claimId: claim.data.id,
+        doctor,
+        finance,
+        billing,
+        doctorPage,
+        financePage,
+        billingPage,
+        snapshot,
+      });
+      expect(
+        await doctor.call<Schema<'MedicalReportUsagePage'>>('GET', reportPath + '/usages'),
+      ).toEqual(usages);
+    }
     const ledger = (
       await admin.call<Schema<'LedgerPage'>>(
         'GET',
         `/api/v1/entitlement-accounts/${ids['accountId']}/ledger?limit=100`,
       )
     ).data.items;
-    expect(ledger.map((row) => row.movementType).sort()).toEqual(['CONSUME', 'GRANT', 'RESERVE']);
+    expect(ledger.map((row) => row.movementType).sort()).toEqual(
+      reviewMode
+        ? ['CONSUME', 'CONSUME', 'CONSUME', 'GRANT', 'RESERVE', 'REVERSE', 'REVERSE']
+        : ['CONSUME', 'GRANT', 'RESERVE'],
+    );
     expect(ledger.find((row) => row.movementType === 'RESERVE')).toMatchObject({
       deltaAvailable: -1,
       deltaReserved: 1,
@@ -441,9 +478,9 @@ test('real outpatient case, diagnosis and scanned report reach a priced claim wi
     expect(submitted.data.lines[0]!.description).toBeUndefined();
     const decision = submitted.data.lines[0]!.decision!;
     expect(decision).toMatchObject({
-      stage: 'AUTO',
+      stage: reviewMode ? 'FINANCIAL' : 'AUTO',
       decision: 'APPROVED',
-      reasonCode: 'AUTO_APPROVED',
+      reasonCode: reviewMode ? 'WITHIN_TARIFF' : 'AUTO_APPROVED',
     });
     expect(
       [
@@ -500,6 +537,8 @@ test('real outpatient case, diagnosis and scanned report reach a priced claim wi
         memberTotal: '0',
         invoiceReady: true,
         claimCreation: 'BROWSER',
+        reviewCorrection: reviewMode,
+        claimVersion: submitted.data.currentVersionNo,
       }),
     });
   } finally {
@@ -509,6 +548,52 @@ test('real outpatient case, diagnosis and scanned report reach a priced claim wi
       body: JSON.stringify(ids),
     });
     try {
+      if (ruleAttempted && ids['personId']) await seedClaimReviewRule(ids['personId'], true);
+      if (ids['claimId']) {
+        const path = `/api/v1/claims/${ids['claimId']}`;
+        const current = await billing.call<Schema<'Claim'>>('GET', path);
+        if (
+          ['DRAFT', 'PENDING_MEDICAL', 'PENDING_FINANCIAL', 'RETURNED'].includes(
+            current.data.status,
+          )
+        )
+          await billing.call(
+            'POST',
+            path + '/cancel',
+            { reasonCode: 'PC03_TEST_CLEANUP' },
+            { etag: current.etag },
+          );
+      }
+      if (reviewMode && ids['claimId']) {
+        // Claim decisions do not automatically complete workflow items. Close only this
+        // test episode's items through each queue's authorized reviewer.
+        for (const actor of [doctor, finance]) {
+          const items = (
+            await actor.call<Schema<'WorkItemPage'>>(
+              'GET',
+              `/api/v1/work-items?aggregateType=CLAIM&aggregateId=${ids['claimId']}&limit=100`,
+            )
+          ).data.items;
+          for (const item of items) {
+            const path = `/api/v1/work-items/${item.id}`;
+            let current = await actor.call<Schema<'WorkItem'>>('GET', path);
+            if (current.data.status === 'OPEN')
+              current = await actor.call<Schema<'WorkItem'>>(
+                'POST',
+                path + '/claim',
+                {},
+                { etag: current.etag },
+              );
+            if (current.data.status === 'CLAIMED')
+              await actor.call(
+                'POST',
+                path + '/complete',
+                { outcomeCode: 'PC03_TEST_CLEANUP' },
+                { etag: current.etag },
+              );
+          }
+        }
+      }
       if (ids['authorizationId']) {
         const path = `/api/v1/authorizations/${ids['authorizationId']}`;
         const current = await doctor.call<Schema<'Authorization'>>('GET', path);
@@ -552,9 +637,16 @@ test('real outpatient case, diagnosis and scanned report reach a priced claim wi
           );
       }
     } finally {
-      await Promise.all([admin.close(), provider.close(), doctor.close(), billing.close()]);
+      await Promise.all([
+        admin.close(),
+        provider.close(),
+        doctor.close(),
+        billing.close(),
+        finance.close(),
+      ]);
       await doctorPage.close();
       await billingPage.close();
+      await financePage.close();
     }
   }
 });

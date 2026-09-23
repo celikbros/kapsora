@@ -707,6 +707,7 @@ func (NoRules) EvaluateClaimLine(context.Context, pgx.Tx, uuid.UUID, uuid.UUID, 
 // quantity down, and give back what a refused claim was holding. There is no method here that
 // would let a claim decide anything about entitlement.
 type AuthorizationPort interface {
+	UndoConsumption(ctx context.Context, tx pgx.Tx, in ConsumeRequest) error
 	Consume(ctx context.Context, tx pgx.Tx, in ConsumeRequest) (ConsumeAnswer, error)
 	ReleaseUnused(ctx context.Context, tx pgx.Tx, in ReleaseRequest) (benefitdomain.Quantity, error)
 }
@@ -828,3 +829,6 @@ type NoWorkItems struct{}
 
 // Raise implements WorkItemPort.
 func (NoWorkItems) Raise(context.Context, pgx.Tx, uuid.UUID, RaiseWorkItem) error { return nil }
+
+// UndoConsumption implements AuthorizationPort when no authorization module is configured.
+func (NoAuthorizations) UndoConsumption(context.Context, pgx.Tx, ConsumeRequest) error { return nil }

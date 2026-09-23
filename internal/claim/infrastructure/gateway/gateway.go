@@ -393,3 +393,8 @@ func dateParam(t time.Time) pgtype.Date {
 	}
 	return pgtype.Date{Time: t, Valid: true}
 }
+
+// UndoConsumption restores this frozen claim line's actual draw before a correction.
+func (a *Authorizations) UndoConsumption(ctx context.Context, tx pgx.Tx, in claimapp.ConsumeRequest) error {
+	return a.svc.UndoConsumption(ctx, tx, authorizationapp.ConsumeInput{TenantID: in.TenantID, ActorID: in.ActorID, AuthorizationID: in.AuthorizationID, ServiceDefinitionID: in.ServiceDefinitionID, Quantity: in.Quantity, Key: in.Key, ReasonCode: in.ReasonCode})
+}

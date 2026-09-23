@@ -335,6 +335,8 @@ type EntitlementTarget struct {
 // Nothing here writes benefit.entitlement_account or benefit.entitlement_ledger. The only
 // entitlement column this package's SQL touches is the reservation id it stores on a line.
 type Repository interface {
+	FindConsumption(ctx context.Context, tx pgx.Tx, tenantID, authorizationID, reservationID uuid.UUID, key, reason string) (ConsumptionRecord, bool, error)
+	RestoreConsumption(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID, quantity benefitdomain.Quantity, now time.Time, actorID *uuid.UUID) error
 	ReservationRemaining(ctx context.Context, tx pgx.Tx, tenantID, reservationID uuid.UUID) (benefitdomain.Quantity, error)
 	ResolveEntitlements(ctx context.Context, tx pgx.Tx, tenantID, enrollmentID uuid.UUID, day time.Time, services []uuid.UUID) (map[uuid.UUID]EntitlementTarget, error)
 	CreateAuthorization(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, in NewAuthorizationRow) (AuthorizationRecord, error)
@@ -407,9 +409,10 @@ type Repository interface {
 }
 
 // Ledger is the movement engine this package drives and never reimplements. It is
-// benefit/ledger.Ledger, narrowed to the three movements an authorization makes, so that
+// benefit/ledger.Ledger, narrowed to the movements an authorization makes, so that
 // the compiler agrees this package cannot post a GRANT or an ADJUST.
 type Ledger interface {
+	Reverse(ctx context.Context, tx pgx.Tx, in ledger.ReverseInput) (ledger.Entry, error)
 	Reserve(ctx context.Context, tx pgx.Tx, in ledger.ReserveInput) (ledger.Reservation, error)
 	Release(ctx context.Context, tx pgx.Tx, in ledger.MovementInput) (ledger.Reservation, error)
 	Consume(ctx context.Context, tx pgx.Tx, in ledger.MovementInput) (ledger.Reservation, error)

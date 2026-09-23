@@ -289,6 +289,54 @@ describe('the submit pipeline', () => {
 });
 
 describe('the freeze and the correction', () => {
+  it('returns the actual hold draw before consuming the corrected version', async () => {
+    let provider = await signIn('provider.a');
+    const control = await createClaim(provider, [clinicalLine(1, 'PHYSIO_SESSION', '1', '250')]);
+    await submit(provider, control.data.id);
+    const hold = api.world.claimAuthorizations[0]!;
+    const item = hold.items[0]!;
+    item.approvedQuantity = '4';
+    item.consumedQuantity = '0';
+    const created = await createClaim(provider, [clinicalLine(1, 'PHYSIO_SESSION', '2', '500')], {
+      authorizationId: hold.id,
+    });
+    const pending = await submit(provider, created.data.id);
+    expect(pending.data.status).toBe('PENDING_FINANCIAL');
+    expect(item.consumedQuantity).toBe('2');
+    const reviewer = await signIn('financial.reviewer');
+    const returned = await unwrap(
+      reviewer.c.POST('/api/v1/claims/{claimId}/return', {
+        params: {
+          header: {
+            ...tenant(reviewer),
+            'If-Match': await etagOf(reviewer, created.data.id),
+            'Idempotency-Key': key(),
+          },
+          path: { claimId: created.data.id },
+        },
+        body: { reasonCode: 'AMOUNT_CORRECTION' },
+      }),
+    );
+    expect(returned.data.currentVersionNo).toBe(2);
+    expect(item.consumedQuantity).toBe('0');
+    provider = await signIn('provider.a');
+    await unwrap(
+      provider.c.PUT('/api/v1/claims/{claimId}/lines', {
+        params: {
+          header: {
+            ...tenant(provider),
+            'If-Match': await etagOf(provider, created.data.id),
+            'Idempotency-Key': key(),
+          },
+          path: { claimId: created.data.id },
+        },
+        body: { lines: [clinicalLine(1, 'PHYSIO_SESSION', '1', '250')] },
+      }),
+    );
+    await submit(provider, created.data.id);
+    expect(item.consumedQuantity).toBe('1');
+  });
+
   it('refuses to edit a submitted version and opens version n+1 on a return', async () => {
     const provider = await signIn('provider.a');
     const created = await createClaim(provider, [

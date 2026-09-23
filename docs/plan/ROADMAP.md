@@ -997,3 +997,18 @@ problem-message gaps are closed by these changes; other recorded gaps are not im
   smoke. No migration/grant changed. H08 remains partial: next is the medical then financial
   claim review/return/correction route, followed by remaining report/privacy exceptions.
   PC-04 inpatient and PC-05 invoicing/payment remain queued after the applicable gates.
+
+### PC-03 claim review / correction preparation — 2026-09-23
+
+- Reproduced and fixed duplicate entitlement consumption after return/resubmit. Returning
+  a claim now appends ledger reversals and restores its original hold atomically with the
+  correction draft. Corrected quantities consume afresh; frozen versions/decisions remain.
+  Cancelled/expired authorizations stay terminal and restored holds are released.
+- Full claim, authorization and seed regression suites pass; coverage includes fully used
+  holds, repeated returns, quantity changes, mapped factors, stale requests and no-draw
+  over-consumption. Go lint/build, all 518 frontend/mock tests, workspace typecheck and harness TypeScript/ESLint pass.
+- Extended the real outpatient harness with an explicit `E2E_CLAIM_REVIEW=1` mode and
+  dedicated, temporary person-only review rule. It tests medical → financial handoff,
+  return/correct/resubmit, frozen versions, hidden clinical notes and one net consumption.
+  Operator API restart and the live run are pending; this is not yet H08 acceptance.
+  No migration, grant or endpoint change. PC-03 stays active; PC-04/05 stay next.

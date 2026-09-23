@@ -3,6 +3,7 @@
 //
 //	seed account <username> <display name> [email]   one login with a random password
 //	seed demo                                        tenants DEMO_A / DEMO_B, demo users, grants
+//	seed claim-review-rule <dedicated-person-id> [retire]  scoped local claim review fixture
 //	seed document-rule <dedicated-person-id> [retire]  scoped local acceptance fixture
 //	seed automatic-program <dedicated-program-id> [disable]  isolated automatic decision fixture
 //
@@ -184,6 +185,19 @@ func run(args []string) error {
 			return err
 		}
 		return json.NewEncoder(os.Stdout).Encode(result)
+	case "claim-review-rule":
+		if len(args) < 2 || len(args) > 3 || (len(args) == 3 && args[2] != "retire") {
+			return fmt.Errorf("usage: seed claim-review-rule <dedicated-person-id> [retire]")
+		}
+		personID, err := uuid.Parse(args[1])
+		if err != nil {
+			return fmt.Errorf("invalid fixture person id")
+		}
+		result, err := s.claimReviewRule(ctx, personID, len(args) == 3)
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(os.Stdout).Encode(result)
 	case "document-rule":
 		if len(args) < 2 || len(args) > 3 || (len(args) == 3 && args[2] != "retire") {
 			return fmt.Errorf("usage: seed document-rule <dedicated-person-id> [retire]")
@@ -222,7 +236,7 @@ func run(args []string) error {
 		}
 		return s.demo(ctx)
 	default:
-		return fmt.Errorf("unknown command %q; use account, demo, document-rule or automatic-program", args[0])
+		return fmt.Errorf("unknown command %q; use account, demo, document-rule, claim-review-rule or automatic-program", args[0])
 	}
 }
 
