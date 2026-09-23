@@ -284,15 +284,11 @@ claim `01a0cb69-162b-7713-be62-f79acb2696ba`, authorization
 `01a0cb68-db40-7703-8fcb-acfc4e8d2e8c`. The claim is invoice-ready but no invoice/payment was made.
 Test source: `tests/e2e/real-outpatient.spec.ts`; TypeScript and ESLint pass.
 
-**Next confirmed product gap:** the provider claim creation page requires a case read that
-PROVIDER_BILLING cannot perform, while PROVIDER_STAFF has no claim-create permission.
-That form also does not carry authorization/report links. Therefore the API-created claim
-above is not proof of a complete browser handoff. Implement a scoped financial handoff that
-retains the case/authorization/report association without giving billing clinical access,
-then replace this harness's API creation with the real UI path. Claim medical/financial
-exceptions, report correction/history, unsafe files and remaining privacy boundaries stay
-open before PC-03 closure; proceed to PC-04/05 afterward. No new restart or migration is needed
-for this test/documentation checkpoint; current API schema remains 51.
+**The billing browser handoff gap found in that first run is now fixed and verified**
+in the checkpoint below. Billing selects a scoped financial source and the server preserves
+the case/authorization/diagnosis/report links. No clinical permission was added.
+Next are claim medical/financial exception review, report correction/history, unsafe files
+and remaining privacy boundaries before PC-03 closure, then PC-04/05. Schema remains 51.
 
 Recovery, deployment and full-capacity benchmarking remain deferred. Do not request an
 Ubuntu recovery target or continue I10-03. Clinical/health-claim completion requires
@@ -364,7 +360,7 @@ signed acceptance cannot.
   status-log entries (grep the file for `Open:`) — none block anything, all are candidates
   for a quiet afternoon.
 
-**Financial case handoff implemented (2026-09-23; live storage/scanner startup pending):**
+**Financial case handoff implemented and verified live (2026-09-23):**
 the provider billing actor can select its own outpatient case from the claim creation
 screen using member name, request reference and service date. New `claims/case-sources`
 endpoints use the existing `claim.create` scope; they return financial identity and service
@@ -386,21 +382,39 @@ Spectral (zero errors), compatibility diff (no breaking change), all 517 fronten
 tests, workspace typecheck, provider build and the intercepted-response browser test passed.
 New handler tests also verify permission refusal, foreign scope, ETag requirements and
 financial response allowlists against PostgreSQL (all source tests: 9.9 s). `real-outpatient.spec.ts` now creates, edits and submits through the billing
-browser; the operator restarted the API, but the first run stopped at PDF upload because native
-MinIO (9000) and ClamAV (3310) were not listening. API/UI ports 8090/5181 are open.
-The operator has been asked to run `scripts/dev.ps1 native-up` in a second terminal.
-Do not request another API restart for the test/translation-only follow-up. Earlier live
-evidence remains API-created until that run passes. Schema remains 51.
+browser. The operator started native MinIO/ClamAV after the initial upload failure, and
+the complete live run passed (23.1 s test / 25.4 s total). No additional API restart was needed.
+Schema remains 51.
 
 **Follow-up verification (2026-09-23):** CI on `3c2f066` found missing problem
 translations and an outdated provider smoke test that still tried to bill an unlinked case.
 Commit `804634a` adds the translations and tests the source refusal before submitting an
 existing seeded draft. Local problem-catalog, harness TypeScript and ESLint checks pass;
-the new CI run is pending. The live harness now reports failed upload reservation directly
+all six CI checks passed on `0d09bc4`, including the repaired provider smoke. The live harness now reports failed upload reservation directly
 instead of waiting for a scan that never started. Failed live attempt authorization
 `01a0cd45-4061-76bb-a4d4-df8f2d442a1f` and draft report
 `01a0cd45-4a47-713f-936e-d21d3b6f850b` were cancelled by the successful failure cleanup;
 no claim was created or entitlement consumed. The synthetic case/person/history remain.
+
+**Live browser handoff checkpoint (2026-09-23):** a fresh synthetic episode passed
+request/authorization → provider case/ended encounter/primary diagnosis → actual browser
+PDF upload and ClamAV scan → doctor report approval/work-item completion → billing browser
+source selection/create → financial line save → submit → invoice readiness → case closure.
+The financial source response contains no diagnosis/report IDs or clinical text; clinical
+provider source access is refused. Billing still cannot read the underlying case/diagnosis.
+Hidden links survive the financial save and remain visible to the authorized reviewer.
+
+Same-key creation returns the same draft; a fresh second create returns 409. Submit replay
+keeps response, ETag, account balances/versions and report usage unchanged. The account ends
+available 19, reserved 0, consumed 1, with exactly GRANT/RESERVE/CONSUME and one report usage.
+The automatic contract/approved/payer/member figures are 400/400/400/0 TRY; readiness is true
+with no blockers. No invoice or payment was created. The approved report/claim and consumed
+test entitlement remain auditable synthetic history; the case is closed.
+Claim `01a0cd5f-e38e-7cd7-93a0-4411259e064f`, case `01a0cd5f-a621-7a6e-9202-aa45fd072bae`,
+report `01a0cd5f-a91c-77f1-b749-5397bf9e9844`, authorization `01a0cd5f-a102-79f3-a741-e9f1b604d727`,
+account `01a0cd5f-9ec2-7a0a-ad0b-9063dd7da158`. Six CI checks pass on `0d09bc4`.
+PC-03 is still active: this proves the automatic-priced path, not medical/financial claim
+exceptions, report correction, infected files or full HR/sensitive/cross-tenant acceptance.
 
 ## 3. Get it running
 
@@ -536,7 +550,7 @@ invoice-ready claim with one consumed session as auditable synthetic history. Fa
 release unused authorization holds and cancel/reject undecided reports and complete known
 work items; decided claims/usage remain. Safe IDs are attached even on failures. Review those
 IDs before rerunning an interrupted process. The current harness uses browser claim creation, financial line saving and submission;
-its new handoff run awaits native MinIO/ClamAV startup after the operator restarted the API; no grant or program setting is changed.
+its complete browser handoff passed after the operator started native MinIO/ClamAV; no grant or program setting is changed.
 
 Set `$env:E2E_HEALTH_CORRECTION = '1'` for the real return/correct/resubmit extension:
 the reviewer returns the request, the provider changes quantity from one to two, the test

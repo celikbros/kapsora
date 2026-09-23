@@ -42,7 +42,7 @@ the existing work-package contracts rather than starting their implementation ag
 | --- | --- | --- | --- | --- |
 | PC-01 | Member import | VERIFIED locally; PR open | Existing identity/member setup | Upload → password step-up → invalid-row skip → one created member → search → logout; no duplicate effect |
 | PC-02 | Eligibility, service request and authorization | ACTIVE; provider-to-medical approval verified, remaining gates open | Verified member/scenario prerequisites | A real provider can request covered care; approvals/refusals and the authorization/entitlement effects agree |
-| PC-03 | Outpatient care, reports and health claims | ACTIVE; first hybrid checkpoint passed; billing UI handoff implemented, final live check pending | PC-02 | Real case → encounter/diagnosis → clean report → review → claim ready for invoicing |
+| PC-03 | Outpatient care, reports and health claims | ACTIVE; complete outpatient browser handoff passed; exception/privacy gates remain | PC-02 | Real case → encounter/diagnosis → clean report → review → claim ready for invoicing |
 | PC-04 | Inpatient care | QUEUED | PC-03 and admission configuration | Preauthorization → admission → extension → discharge → invoice-ready claim; entitlement reconciles |
 | PC-05 | Invoice, batch, settlement and payment | QUEUED | An invoice-ready health claim from PC-03/04 | The same episode reaches invoice, payer decision and a reconciled local payment record |
 | PC-06 | Accommodation and combined product acceptance | QUEUED | PC-05; existing lodging implementation | Booking and its financial consequences work; cross-app regression and owner walkthrough complete |
@@ -133,11 +133,11 @@ evidence; race, duplicate-delivery and ledger invariants may use focused databas
 | H01 | Provider finds a member, selects service/enrollment and gets the correct eligibility result | PC-02 | Verified for demo: single and real multiple-enrollment selection passed |
 | H02 | Invalid date/enrollment or insufficient balance is explained; ambiguous enrollment is selectable | PC-02 | Verified for demo: insufficient quantity, real ambiguity and exclusive enrollment end passed |
 | H03 | Automatic/manual request decision and return/correct/resubmit reach the provider | PC-02 | Partial: live approval/correction/rejection/cancellation and combined document gate passed; live scoped automatic decision passed; queue own-file fix confirmed live after restart |
-| H04 | Authorization/fulfillment and exact entitlement effects agree; retries do not duplicate | PC-02 | Generic path verified: live reserve/record/complete/replay/release; clinical claim consumption remains PC-03 |
+| H04 | Authorization/fulfillment and exact entitlement effects agree; retries do not duplicate | PC-02 | Generic path and automatic clinical claim consumption verified live; retries preserve exact balances and one usage |
 | H05 | Same episode reaches case, encounter and valid diagnosis | PC-03 | Partial: live browser case → ended encounter → primary ICD-10 diagnosis → case closure passed; primary/closure refusal cases remain |
 | H06 | Browser-uploaded evidence is scanned CLEAN; missing/unsafe evidence cannot pass submission | PC-03 | Partial: real PDF/ClamAV and missing/unscanned request gate passed; real case-linked report upload/scan and missing-file refusal passed; infected-file acceptance remains |
 | H07 | Report review, coverage and immutable correction history work | PC-03 | Partial: browser approval, queue completion and one linked claim usage/replay passed; correction history and coverage exceptions remain |
-| H08 | Clinical provider → billing → medical → financial handoff reaches invoice-ready claim | PC-03 | Partial: API-created linked claim auto-approves at 400/400/0 TRY and browser readiness passes; billing UI creation and medical/financial review path remain |
+| H08 | Clinical provider → billing → medical → financial handoff reaches invoice-ready claim | PC-03 | Partial: billing browser create/save/submit and invoice readiness pass at 400/400/0 TRY; medical/financial claim review path remains |
 | H09 | Duplicate/report/authorization blockers and corrected claim history are accurate | PC-03 | Pending |
 | H10 | HR/financial projections exclude forbidden clinical fields in API and DOM | PC-03/04 | Partial: billing claim API hides diagnosis/report/description; clinical marker absent in billing claim DOM; HR and other projections remain |
 | H11 | Sensitive purpose, access audit, self-review and other-provider/tenant boundaries hold | PC-03/04 | Pending |
@@ -948,7 +948,7 @@ problem-message gaps are closed by these changes; other recorded gaps are not im
 - 2026-09-03 · WP-I1-01 delivered, with a scope change the owner made: KAPSORA authenticates its own users, no Keycloak and no JDK ([ADR-022](../adr/ADR-022.md) supersedes ADR-005). Argon2id credentials, opaque session cookie whose digest is what the database stores, derived CSRF token, per-account lockout plus per-address rate limit, step-up and password change. Verified end to end against the running API. Migration 000012; schema version 12.
 - 2026-09-02 · WP-I1-04 delivered in-house: audit recorder, outbox dispatcher (exactly-once under two concurrent dispatchers, retries, dead-letter, stale recovery), idempotency middleware, PostgreSQL rate limiter, scheduler job runner with four standard jobs, keygen. Found and fixed a baseline schema defect: the outbox dedupe constraint blocked every second event of a type (migration 000011).
 
-### PC-03 financial case handoff — 2026-09-23 (live check pending)
+### PC-03 financial case handoff — 2026-09-23 (live check passed below)
 
 - Billing can select a scoped outpatient source and enter service charges without clinical
   API access. The server derives and retains authorization/diagnosis/approved-report links;
@@ -963,9 +963,9 @@ problem-message gaps are closed by these changes; other recorded gaps are not im
   Spectral zero errors, no breaking contract change, 517 frontend/mock tests, workspace
   typecheck, provider build and intercepted UI regression pass. New HTTP/database tests
   verify permission, foreign scope, ETag and financial serialization boundaries (9.9 s). The real
-  outpatient harness now performs browser claim creation/save/submit but has not yet run
-  against the restarted API. Do not count H08 complete until that checkpoint and the
-  medical/financial review route pass. Other PC-03 exception/privacy gates remain open.
+  outpatient harness now performs browser claim creation/save/submit; the subsequent native
+  service startup and passing run are recorded below. H08 still requires the
+  medical/financial review route. Other PC-03 exception/privacy gates remain open.
 
 ### PC-03 restarted API / native services checkpoint — 2026-09-23
 
@@ -978,3 +978,22 @@ problem-message gaps are closed by these changes; other recorded gaps are not im
   unsupported direct billing of an unlinked case. `804634a` repairs translations and verifies
   refusal plus existing-draft submission. Local catalog test, ESLint and harness typecheck
   pass; the follow-up CI run is pending. No backend change or further API restart is needed.
+
+### PC-03 complete outpatient browser handoff — 2026-09-23
+
+- Operator started MinIO/ClamAV with `native-up`; no further application restart was needed.
+  `real-outpatient.spec.ts` passed (23.1 s test / 25.4 s total) using fresh synthetic records.
+  The real PDF scan, case/diagnosis, doctor report approval and queue completion lead into
+  billing browser source selection, draft creation, financial save, submission and readiness.
+- Source responses exclude diagnosis/report IDs and clinical text. Financial saves preserve
+  clinical links. Same-key create replays the same draft; fresh duplicate returns 409.
+  Submit replay changes neither balances/versions nor the single report usage. Final account
+  is 19 available / 0 reserved / 1 consumed; ledger is GRANT, RESERVE, CONSUME exactly.
+- Automatic contract/approved/payer/member amounts: 400/400/400/0 TRY, invoice-ready with no
+  blockers; case closed. No invoice/payment was made. Decided synthetic history remains.
+  Claim `01a0cd5f-e38e-7cd7-93a0-4411259e064f`, case `01a0cd5f-a621-7a6e-9202-aa45fd072bae`;
+  full evidence IDs and rerun instructions are in HANDOVER.
+- All six CI jobs passed on `0d09bc4`, including schema, contracts, Go and the repaired web
+  smoke. No migration/grant changed. H08 remains partial: next is the medical then financial
+  claim review/return/correction route, followed by remaining report/privacy exceptions.
+  PC-04 inpatient and PC-05 invoicing/payment remain queued after the applicable gates.
