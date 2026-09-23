@@ -270,6 +270,10 @@ Forms: two columns on ≥768px, label above control, hint below, error below hin
 `danger`, required marked with `*` and an sr-only word. Client validation gives instant
 feedback; the server's 422 field errors are mapped onto the same fields and win.
 
+Provider claim handoff: the service name and reserved quantity lead each charge row;
+quantity and asked amount sit beside them from 640px and stack below on a phone. Existing
+claim edits use the shared table from 768px and labelled line blocks below it.
+
 ## Components
 
 Built on Radix primitives (Dialog, Toast, DropdownMenu, Label) styled with the tokens;
@@ -446,6 +450,16 @@ financial one. Neither is the other with columns hidden — a column that would 
 every row does not exist — and the same rule lays out the case's encounters, where a branch
 or a diagnosis heading is there because the field arrived. Where the financial half is what
 came, the page says so in a line at the top rather than leaving the absence to be noticed.
+
+**Provider billing starts from a financial case identity.** The case selector shows the
+member name, request reference and service date for the provider's own cases. The server
+links the clinical record, report and authorization; billing never chooses those hidden
+references. The financial editor keeps services fixed and exposes only quantity and asked
+amount, with no clinical description or add/remove controls. Decimal commas normalize as
+strings without rounding; numbers are right-aligned monospace and each invalid field has
+an associated correction message. An uncertain creation freezes the case and charges and
+retries the same payload, version and key; a definite refusal offers an explicit reload
+before editing resumes.
 
 **A column the caller may not read does not exist.** The claim and the case carry the
 provider's id and not its name, and resolving that name needs `organization.read`; without

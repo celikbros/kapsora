@@ -523,6 +523,9 @@ type EarningClaimRecord struct {
 // boundary is a repository concern too: the scope is passed down rather than checked above,
 // so a claim outside it is genuinely not there rather than fetched and then hidden.
 type Repository interface {
+	ListCaseSources(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, q CaseSourceQuery) ([]CaseSourceSummary, error)
+	LockCaseSource(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID, scope Scope, now time.Time) (CaseSource, error)
+	CaseSourceLines(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, source CaseSource) ([]CaseSourceLine, error)
 	CreateClaim(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, in NewClaimRow) (ClaimRecord, error)
 	GetClaim(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID, scope Scope) (ClaimRecord, error)
 	// LockClaim reads the row FOR UPDATE, so two commands on one claim serialise.

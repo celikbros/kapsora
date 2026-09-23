@@ -42,7 +42,7 @@ the existing work-package contracts rather than starting their implementation ag
 | --- | --- | --- | --- | --- |
 | PC-01 | Member import | VERIFIED locally; PR open | Existing identity/member setup | Upload → password step-up → invalid-row skip → one created member → search → logout; no duplicate effect |
 | PC-02 | Eligibility, service request and authorization | ACTIVE; provider-to-medical approval verified, remaining gates open | Verified member/scenario prerequisites | A real provider can request covered care; approvals/refusals and the authorization/entitlement effects agree |
-| PC-03 | Outpatient care, reports and health claims | ACTIVE; first hybrid browser/API checkpoint passed; billing UI handoff open | PC-02 | Real case → encounter/diagnosis → clean report → review → claim ready for invoicing |
+| PC-03 | Outpatient care, reports and health claims | ACTIVE; first hybrid checkpoint passed; billing UI handoff implemented, final live check pending | PC-02 | Real case → encounter/diagnosis → clean report → review → claim ready for invoicing |
 | PC-04 | Inpatient care | QUEUED | PC-03 and admission configuration | Preauthorization → admission → extension → discharge → invoice-ready claim; entitlement reconciles |
 | PC-05 | Invoice, batch, settlement and payment | QUEUED | An invoice-ready health claim from PC-03/04 | The same episode reaches invoice, payer decision and a reconciled local payment record |
 | PC-06 | Accommodation and combined product acceptance | QUEUED | PC-05; existing lodging implementation | Booking and its financial consequences work; cross-app regression and owner walkthrough complete |
@@ -947,3 +947,22 @@ problem-message gaps are closed by these changes; other recorded gaps are not im
 - 2026-09-03 · WP-I1-02 delivered: request context from session + validated X-Tenant-ID + live membership, permission union over valid grants with scopes, `/me`, `/tenants`, `switch-tenant`, 16 system role templates, tenant provisioning with baseline catalogs, audited denials, `seed demo` (DEMO_A/DEMO_B, five demo users, idempotent). No migration needed. Verified end to end.
 - 2026-09-03 · WP-I1-01 delivered, with a scope change the owner made: KAPSORA authenticates its own users, no Keycloak and no JDK ([ADR-022](../adr/ADR-022.md) supersedes ADR-005). Argon2id credentials, opaque session cookie whose digest is what the database stores, derived CSRF token, per-account lockout plus per-address rate limit, step-up and password change. Verified end to end against the running API. Migration 000012; schema version 12.
 - 2026-09-02 · WP-I1-04 delivered in-house: audit recorder, outbox dispatcher (exactly-once under two concurrent dispatchers, retries, dead-letter, stale recovery), idempotency middleware, PostgreSQL rate limiter, scheduler job runner with four standard jobs, keygen. Found and fixed a baseline schema defect: the outbox dedupe constraint blocked every second event of a type (migration 000011).
+
+### PC-03 financial case handoff — 2026-09-23 (live check pending)
+
+- Billing can select a scoped outpatient source and enter service charges without clinical
+  API access. The server derives and retains authorization/diagnosis/approved-report links;
+  incomplete/ambiguous sources stop. Fixed-service financial editing preserves those links.
+- New source creation serializes on the case and refuses a second non-cancelled claim.
+  PostgreSQL regression covers concurrent creation, stale versions, excessive quantity,
+  other-provider/tenant boundaries, missing/expired evidence and preserved hidden links.
+- The creation form covers loading, failures, correction, exact comma decimals and identical
+  uncertain retries. Desktop/mobile review fixes are resolved; mock handlers mirror the UI
+  contract. No role grants or migration changed; outpatient/TRY are this slice's boundary.
+- Validation: full claim database suite, scoped Go lint/build, generated contract,
+  Spectral zero errors, no breaking contract change, 517 frontend/mock tests, workspace
+  typecheck, provider build and intercepted UI regression pass. New HTTP/database tests
+  verify permission, foreign scope, ETag and financial serialization boundaries (9.9 s). The real
+  outpatient harness now performs browser claim creation/save/submit but has not yet run
+  against the restarted API. Do not count H08 complete until that checkpoint and the
+  medical/financial review route pass. Other PC-03 exception/privacy gates remain open.

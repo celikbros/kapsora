@@ -309,46 +309,82 @@ test('real outpatient case, diagnosis and scanned report reach a priced claim wi
     await expect(page.getByTestId('report-status')).toHaveText('Onaylandı');
     await snapshot([19, 1, 0]);
 
-    // The current creation UI cannot choose authorization/report references. Exercise
-    // that API boundary explicitly; do not claim browser creation handoff coverage.
-    const claim = await billing.call<Schema<'Claim'>>(
-      'POST',
-      '/api/v1/claims',
-      {
-        personId: person.id,
-        enrollmentId: enrollment.id,
-        programId: program.id,
-        providerOrganizationId: source.providerOrganizationId!,
-        caseId: healthCase.id,
-        authorizationId: authorization.data.id,
-        serviceDateFrom: today,
-        serviceDateTo: today,
-        channel: 'PROVIDER_PORTAL',
-        lines: [
-          {
-            lineNo: 1,
-            serviceDefinitionId: service.id,
-            unitType: 'SESSION',
-            quantity: '1',
-            unitAmount: '400',
-            lineAmount: '400',
-            currencyCode: 'TRY',
-            diagnosisId: diagnoses[0]!.id,
-            medicalReportId: report.id,
-          },
-        ],
-      } satisfies Schema<'CreateClaim'>,
-      { expected: 201 },
+    await billingPage.goto(base + '/portal/claims');
+    await billingPage.locator('a[href="/portal/claims/new"]').click();
+    const sourcePath = `/api/v1/claims/case-sources/${healthCase.id}`;
+    const sourceLoaded = billingPage.waitForResponse(
+      (r) => new URL(r.url()).pathname === sourcePath && r.request().method() === 'GET',
     );
+    await billingPage
+      .getByLabel('Faturalandırılacak vaka', { exact: true })
+      .selectOption(healthCase.id);
+    const sourceResponse = await sourceLoaded;
+    expect(sourceResponse.status()).toBe(200);
+    const sourceBody = (await sourceResponse.json()) as Schema<'ClaimCaseSourceDetail'>;
+    expect(sourceBody.source.caseId).toBe(healthCase.id);
+    expect(JSON.stringify(sourceBody)).not.toContain(report.id);
+    expect(JSON.stringify(sourceBody)).not.toContain(diagnoses[0]!.id);
+    expect(JSON.stringify(sourceBody)).not.toContain(clinicalMarker);
+    await provider.call('GET', sourcePath, undefined, { expected: 403 });
+    const form = billingPage.getByTestId('case-claim-form');
+    await form.getByLabel(/Talep edilen tutar/).fill('400');
+    const created = billingPage.waitForResponse(
+      (r) => new URL(r.url()).pathname === sourcePath && r.request().method() === 'POST',
+    );
+    await form.getByRole('button', { name: 'Taslağı oluştur', exact: true }).click();
+    const createdResponse = await created;
+    expect(createdResponse.status()).toBe(201);
+    const claim = {
+      data: (await createdResponse.json()) as Schema<'Claim'>,
+      etag: createdResponse.headers()['etag']!,
+    };
     ids['claimId'] = claim.data.id;
+    const createBody = createdResponse.request().postDataJSON() as Schema<'CreateClaimFromCase'>;
+    const createHeaders = createdResponse.request().headers();
+    expect(createBody).toEqual({
+      lines: [
+        {
+          serviceDefinitionId: service.id,
+          quantity: sourceBody.lines[0]!.quantity,
+          lineAmount: '400',
+        },
+      ],
+    });
+    expect(
+      await billing.call<Schema<'Claim'>>('POST', sourcePath, createBody, {
+        expected: 201,
+        etag: createHeaders['if-match']!,
+        key: createHeaders['idempotency-key']!,
+      }),
+    ).toEqual(claim);
+    await billing.call('POST', sourcePath, createBody, {
+      expected: 409,
+      etag: createHeaders['if-match']!,
+    });
+    await expect(billingPage.getByTestId('claim-status')).toHaveText('Taslak');
     const claimPath = `/api/v1/claims/${claim.data.id}`;
-    const submitKey = randomUUID();
-    const submitted = await billing.call<Schema<'Claim'>>(
-      'POST',
-      claimPath + '/submit',
-      {},
-      { etag: claim.etag, key: submitKey },
+    // Saving the financial projection must not erase the hidden diagnosis/report links.
+    const saved = billingPage.waitForResponse(
+      (r) => new URL(r.url()).pathname === claimPath + '/lines' && r.request().method() === 'PUT',
     );
+    await billingPage.locator('[name="lines.0.lineAmount"]').fill('400');
+    await billingPage.getByRole('button', { name: 'Satırları kaydet', exact: true }).click();
+    expect((await saved).status()).toBe(200);
+    const beforeSubmit = await billing.call<Schema<'Claim'>>('GET', claimPath);
+    const sent = billingPage.waitForResponse(
+      (r) => new URL(r.url()).pathname === claimPath + '/submit' && r.request().method() === 'POST',
+    );
+    await billingPage.getByRole('button', { name: 'Gönder', exact: true }).click();
+    const sentResponse = await sent;
+    expect(sentResponse.status()).toBe(200);
+    const submitted = {
+      data: (await sentResponse.json()) as Schema<'Claim'>,
+      etag: sentResponse.headers()['etag']!,
+    };
+    const submitKey = sentResponse.request().headers()['idempotency-key']!;
+    const submitBody: unknown = sentResponse.request().postData()
+      ? sentResponse.request().postDataJSON()
+      : undefined;
     expect(submitted.data.status).toBe('APPROVED');
     const after = await snapshot([19, 0, 1]);
     const usages = await doctor.call<Schema<'MedicalReportUsagePage'>>(
@@ -358,12 +394,10 @@ test('real outpatient case, diagnosis and scanned report reach a priced claim wi
     expect(usages.data.items).toHaveLength(1);
     expect(usages.data.items[0]!.reportId).toBe(report.id);
     expect(
-      await billing.call<Schema<'Claim'>>(
-        'POST',
-        claimPath + '/submit',
-        {},
-        { etag: claim.etag, key: submitKey },
-      ),
+      await billing.call<Schema<'Claim'>>('POST', claimPath + '/submit', submitBody, {
+        etag: beforeSubmit.etag,
+        key: submitKey,
+      }),
     ).toEqual(submitted);
     expect(await accounts()).toEqual(after);
     expect(
@@ -416,7 +450,7 @@ test('real outpatient case, diagnosis and scanned report reach a priced claim wi
     await billing.call('GET', `/api/v1/encounters/${encounter.id}/diagnoses`, undefined, {
       expected: 403,
     });
-    // Records the current handoff gap without adding a clinical grant to billing.
+    // The financial handoff must not grant access to the underlying clinical case.
     await billing.call('GET', `/api/v1/health-cases/${healthCase.id}`, undefined, {
       expected: 403,
     });
@@ -458,7 +492,7 @@ test('real outpatient case, diagnosis and scanned report reach a priced claim wi
         payerTotal: '400',
         memberTotal: '0',
         invoiceReady: true,
-        claimCreation: 'API',
+        claimCreation: 'BROWSER',
       }),
     });
   } finally {

@@ -1530,6 +1530,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/claims/case-sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Financial-only outpatient handoff candidates; requires claim.create and provider scope. No clinical fields. */
+        get: operations["listClaimCaseSources"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/claims/case-sources/{caseId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Returns financial service choices, never diagnosis or report references. Incomplete or ambiguous clinical handoffs are refused. */
+        get: operations["getClaimCaseSource"];
+        put?: never;
+        /**
+         * @description Requires claim.create. Locks and rechecks the scoped source, derives its person,
+         *     program, enrollment, provider, authorization, diagnosis and report associations
+         *     inside the create transaction. Requires one unambiguous primary diagnosis and one
+         *     approved in-window report per selected service. The caller supplies only service,
+         *     quantity and requested amount. One non-cancelled claim per case through this path;
+         *     retry with the same idempotency key. Financial projection is always returned.
+         */
+        post: operations["createClaimFromCase"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/code-systems": {
         parameters: {
             query?: never;
@@ -7221,6 +7263,40 @@ export interface components {
          * @enum {string}
          */
         ClaimAdjustmentType: "CUT" | "RECOVERY" | "CORRECTION" | "REVERSAL";
+        ClaimCaseCharge: {
+            lineAmount: string;
+            quantity: string;
+            /** Format: uuid */
+            serviceDefinitionId: string;
+        };
+        ClaimCaseSource: {
+            /** Format: uuid */
+            caseId: string;
+            /** Format: date-time */
+            openedAt: string;
+            personDisplayName: string;
+            requestReference: string;
+            /** Format: int64 */
+            rowVersion: number;
+            /** Format: date */
+            serviceDate: string;
+        };
+        ClaimCaseSourceDetail: {
+            lines: components["schemas"]["ClaimCaseSourceLine"][];
+            source: components["schemas"]["ClaimCaseSource"];
+        };
+        ClaimCaseSourceLine: {
+            quantity: string;
+            serviceCode: string;
+            /** Format: uuid */
+            serviceDefinitionId: string;
+            serviceName: string;
+            unitType: string;
+        };
+        ClaimCaseSourcePage: {
+            items: components["schemas"]["ClaimCaseSource"][];
+            nextCursor?: string;
+        };
         /**
          * @description What was decided about one line. CUT is a reduction the payer applied to an otherwise
          *     valid line; PARTIALLY_APPROVED is a smaller quantity than was claimed. They are two
@@ -7775,6 +7851,9 @@ export interface components {
              * @description Makes this a REVERSAL of that adjustment and nothing else.
              */
             reversesAdjustmentId?: string | null;
+        };
+        CreateClaimFromCase: {
+            lines: components["schemas"]["ClaimCaseCharge"][];
         };
         CreateCodeSystemRequest: {
             authority: components["schemas"]["CodeSystemAuthority"];
@@ -13367,6 +13446,11 @@ export type SchemaClaimAdjustmentList = components['schemas']['ClaimAdjustmentLi
 export type SchemaClaimAdjustmentResult = components['schemas']['ClaimAdjustmentResult'];
 export type SchemaClaimAdjustmentSource = components['schemas']['ClaimAdjustmentSource'];
 export type SchemaClaimAdjustmentType = components['schemas']['ClaimAdjustmentType'];
+export type SchemaClaimCaseCharge = components['schemas']['ClaimCaseCharge'];
+export type SchemaClaimCaseSource = components['schemas']['ClaimCaseSource'];
+export type SchemaClaimCaseSourceDetail = components['schemas']['ClaimCaseSourceDetail'];
+export type SchemaClaimCaseSourceLine = components['schemas']['ClaimCaseSourceLine'];
+export type SchemaClaimCaseSourcePage = components['schemas']['ClaimCaseSourcePage'];
 export type SchemaClaimDecisionKind = components['schemas']['ClaimDecisionKind'];
 export type SchemaClaimDecisionReason = components['schemas']['ClaimDecisionReason'];
 export type SchemaClaimDecisionStage = components['schemas']['ClaimDecisionStage'];
@@ -13410,6 +13494,7 @@ export type SchemaCreateBatch = components['schemas']['CreateBatch'];
 export type SchemaCreateBookingGuest = components['schemas']['CreateBookingGuest'];
 export type SchemaCreateClaim = components['schemas']['CreateClaim'];
 export type SchemaCreateClaimAdjustment = components['schemas']['CreateClaimAdjustment'];
+export type SchemaCreateClaimFromCase = components['schemas']['CreateClaimFromCase'];
 export type SchemaCreateCodeSystemRequest = components['schemas']['CreateCodeSystemRequest'];
 export type SchemaCreateContractRequest = components['schemas']['CreateContractRequest'];
 export type SchemaCreateContractVersionRequest = components['schemas']['CreateContractVersionRequest'];
@@ -16941,6 +17026,128 @@ export interface operations {
             404: components["responses"]["NotFound"];
             422: components["responses"]["ValidationError"];
             /** @description The claim belongs to a sensitive case and the caller stated no access purpose. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listClaimCaseSources: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Candidate cases with an active authorization and no existing non-cancelled claim */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimCaseSourcePage"];
+                };
+            };
+            /** @description Invalid cursor */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getClaimCaseSource: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                caseId: components["parameters"]["CaseId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Financial source and available service quantities */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimCaseSourceDetail"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    createClaimFromCase: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                caseId: components["parameters"]["CaseId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateClaimFromCase"];
+            };
+        };
+        responses: {
+            /** @description Linked draft created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Claim"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description Stale version */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match required */
             428: {
                 headers: {
                     [name: string]: unknown;

@@ -1188,6 +1188,24 @@
         "CURRENCY_NOT_SINGLE": "The lines are not in one currency",
         "LINE_NOT_DECIDED": "A line is undecided"
       }
+    },
+    "handoff": {
+      "intro": "Select your organization’s case, then enter service quantities and requested amounts.",
+      "case": "Case to bill",
+      "caseHint": "Outpatient cases with active authorization and no existing claim are listed.",
+      "choose": "Select a case",
+      "more": "Load more cases",
+      "empty": "No cases to bill",
+      "emptyHint": "Cases appear after clinical preparation and authorization.",
+      "charges": "Services and amounts",
+      "date": "Service date: {{date}}",
+      "reserved": "Authorization quantity: {{quantity}} {{unit}}",
+      "amount": "Requested amount (TRY)",
+      "links": "Case and authorization associations are retained. Clinical information is not shown to billing.",
+      "uncertain": "The outcome could not be confirmed. Retry the same request.",
+      "edit": "Edit details",
+      "quantityError": "Enter a quantity greater than zero (e.g. 1 or 1.5; up to 6 decimal places).",
+      "amountError": "Enter a nonnegative amount (e.g. 400.50; up to 6 decimal places)."
     }
   },
   "review": {

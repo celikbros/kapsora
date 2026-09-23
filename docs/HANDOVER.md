@@ -364,6 +364,31 @@ signed acceptance cannot.
   status-log entries (grep the file for `Open:`) — none block anything, all are candidates
   for a quiet afternoon.
 
+**Financial case handoff implemented (2026-09-23; live restart check pending):**
+the provider billing actor can select its own outpatient case from the claim creation
+screen using member name, request reference and service date. New `claims/case-sources`
+endpoints use the existing `claim.create` scope; they return financial identity and service
+charges only. The server derives authorization, primary diagnosis and approved report
+links. Incomplete or ambiguous matches stop with a generic readiness refusal. This slice
+requires one active authorization, one primary diagnosis, ended encounters and one matching
+approved report per remaining service. It creates one non-cancelled claim per case through
+this handoff; TRY and outpatient care are the current scope. No grant or migration changed.
+
+Case locking plus a fresh post-lock duplicate read prevents concurrent double creation.
+Financial draft saves preserve hidden clinical associations and refuse changing a linked
+service. Comma decimals remain exact strings, invalid fields explain correction, and uncertain
+creation retries keep the same body, ETag and key. Mobile and desktop captures passed; the
+finish reviewer scored both requested numeric corrections resolved. Demo handlers now mirror
+this handoff and preserve links too; their consumption remains a test double, not ledger proof.
+
+All claim PostgreSQL tests passed (111.0 s), scoped Go lint/build, API contract generation,
+Spectral (zero errors), compatibility diff (no breaking change), all 517 frontend/mock
+tests, workspace typecheck, provider build and the intercepted-response browser test passed.
+New handler tests also verify permission refusal, foreign scope, ETag requirements and
+financial response allowlists against PostgreSQL (all source tests: 9.9 s). `real-outpatient.spec.ts` now creates, edits and submits through the billing
+browser; its final run awaits the operator restarting the API with this code. Earlier live
+evidence below remains API-created until that run passes. Schema remains 51.
+
 ## 3. Get it running
 
 Requirements: Go 1.27+, a local PostgreSQL 18, Node 24 + pnpm 10. No Docker, ever (§6).
@@ -497,8 +522,8 @@ uses only those new records. Successful runs leave a closed case, approved repor
 invoice-ready claim with one consumed session as auditable synthetic history. Failed runs
 release unused authorization holds and cancel/reject undecided reports and complete known
 work items; decided claims/usage remain. Safe IDs are attached even on failures. Review those
-IDs before rerunning an interrupted process. This test deliberately uses API claim creation
-until the financial handoff gap above is fixed; no grant or program setting is changed.
+IDs before rerunning an interrupted process. The current harness uses browser claim creation, financial line saving and submission;
+its new handoff run is pending the operator restart; no grant or program setting is changed.
 
 Set `$env:E2E_HEALTH_CORRECTION = '1'` for the real return/correct/resubmit extension:
 the reviewer returns the request, the provider changes quantity from one to two, the test

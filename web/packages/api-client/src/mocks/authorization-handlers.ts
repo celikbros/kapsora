@@ -23,15 +23,16 @@ import {
 // Request-screen mock only. Claim fixtures keep their independent consumption stand-in;
 // real ledger, fulfilment, cancellation and expiry correctness is tested in Go/PostgreSQL.
 const records = new WeakMap<MockWorld, (Schemas['Authorization'] & { tenantId: string })[]>();
+export function mockAuthorizations(world: MockWorld) {
+  let result = records.get(world);
+  if (!result) {
+    result = [];
+    records.set(world, result);
+  }
+  return result;
+}
 export function authorizationHandlers(api: MockApi): HttpHandler[] {
-  const rows = () => {
-    let result = records.get(api.world);
-    if (!result) {
-      result = [];
-      records.set(api.world, result);
-    }
-    return result;
-  };
+  const rows = () => mockAuthorizations(api.world);
   return [
     http.get(`${ANY}/api/v1/authorizations`, async ({ request }) => {
       await wait(api);

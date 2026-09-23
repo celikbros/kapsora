@@ -2961,6 +2961,24 @@
         "CURRENCY_NOT_SINGLE": "Satırlar tek para biriminde değil",
         "LINE_NOT_DECIDED": "Karara bağlanmamış satır var"
       }
+    },
+    "handoff": {
+      "intro": "Kurumunuzun vakasını seçin, hizmet miktarlarını ve talep ettiğiniz tutarları yazın.",
+      "case": "Faturalandırılacak vaka",
+      "caseHint": "Aktif provizyonu olan ve henüz dosyası açılmamış ayaktan vakalar listelenir.",
+      "choose": "Vaka seçin",
+      "more": "Daha fazla vaka yükle",
+      "empty": "Faturalandırılacak vaka yok",
+      "emptyHint": "Klinik ekip vaka kaydını tamamladıktan ve provizyon alındıktan sonra burada görünecektir.",
+      "charges": "Hizmetler ve tutarlar",
+      "date": "Hizmet tarihi: {{date}}",
+      "reserved": "Provizyon miktarı: {{quantity}} {{unit}}",
+      "amount": "Talep edilen tutar (TRY)",
+      "links": "Vaka ve provizyon bağlantıları korunur. Klinik bilgiler faturalama ekranında gösterilmez.",
+      "uncertain": "İşlemin sonucu doğrulanamadı. Aynı istekle yeniden deneyin.",
+      "edit": "Bilgileri düzenle",
+      "quantityError": "Sıfırdan büyük bir miktar girin (ör. 1 veya 1,5; en fazla 6 ondalık basamak).",
+      "amountError": "Sıfır veya daha büyük bir tutar girin (ör. 400,50; en fazla 6 ondalık basamak)."
     }
   },
   "review": {

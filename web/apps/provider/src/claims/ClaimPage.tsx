@@ -219,7 +219,19 @@ function DraftLines({ claim }: { claim: Claim }) {
   }
   return (
     <div className="grid gap-3">
-      <LinesEditor lines={lines} onChange={setLines} />
+      <LinesEditor
+        lines={lines}
+        onChange={setLines}
+        {...(claim.projection === 'FINANCIAL'
+          ? {
+              fixedServices: claim.lines.map((line) => ({
+                value: line.serviceDefinitionId,
+                label: line.serviceCode ?? line.serviceDefinitionId,
+                unitType: line.unitType,
+              })),
+            }
+          : {})}
+      />
       <ProblemAlert problem={commands.putLines.error ? problemOf(commands.putLines.error) : null} />
       <div className="flex justify-end">
         <Button

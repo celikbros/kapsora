@@ -53,11 +53,12 @@ export function usePersonEnrollments(personId: string) {
   });
 }
 
-export function useServiceDefinitions() {
+export function useServiceDefinitions(enabled = true) {
   const ops = useOps();
   const tenantId = useTenantId();
   return useQuery({
     queryKey: ['provider', tenantId, 'service-definitions'],
+    enabled,
     queryFn: () => ops.catalog.listDefinitions(tenantId, { limit: 200 }),
     staleTime: 5 * 60_000,
     select: (page) =>
