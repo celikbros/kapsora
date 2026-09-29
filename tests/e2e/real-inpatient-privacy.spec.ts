@@ -6,6 +6,9 @@ import { Actor } from './real-api-actor';
 type S<K extends keyof components['schemas']> = components['schemas'][K];
 const base = process.env['E2E_EXISTING_UI_URL'] ?? '';
 const sourceId = process.env['E2E_INPATIENT_PRIVACY_SOURCE'] ?? '';
+
+// Leave time for fixture cleanup when a UI action cannot complete.
+test.use({ actionTimeout: 15000 });
 test.skip(
   process.env['E2E_REAL_API'] !== '1' || !base || !sourceId,
   'requires operator-started demo and explicit synthetic inpatient source stay',
@@ -294,19 +297,20 @@ test('real inpatient privacy, sensitive access and admission dates preserve boun
     const cancellationCheck = process.env['E2E_INPATIENT_CANCEL_CHECK'] === '1';
     if (cancellationCheck) {
       const currentStay = await getStay();
+      expect(currentStay.etag).not.toBe(stay.etag);
       await provider.call(
         'POST',
         stayPath + '/cancel',
         { reasonCode: 'PC04_STALE' },
         {
-          etag: '"0"',
+          etag: stay.etag,
           expected: 412,
         },
       );
       expect(await getStay()).toEqual(currentStay);
       await providerPage.getByRole('button', { name: 'İptal et', exact: true }).click();
       const dialog = providerPage.getByRole('dialog');
-      await dialog.locator('[name="reasonCode"]').fill('PC04_CANCELLATION');
+      await dialog.locator('[name="cancelReasonCode"]').fill('PC04_CANCELLATION');
       const cancelling = providerPage.waitForResponse(
         (r) =>
           new URL(r.url()).pathname === stayPath + '/cancel' && r.request().method() === 'POST',
@@ -358,6 +362,10 @@ test('real inpatient privacy, sensitive access and admission dates preserve boun
       }),
     });
   } finally {
+    await test.info().attach('inpatient-privacy-fixtures', {
+      contentType: 'application/json',
+      body: JSON.stringify(ids),
+    });
     try {
       if (ids['stayId']) {
         const path = `/api/v1/inpatient-stays/${ids['stayId']}`;
@@ -402,10 +410,6 @@ test('real inpatient privacy, sensitive access and admission dates preserve boun
           rows.map((r) => [r.id, r.available, r.reserved, r.consumed, r.expired]);
         expect(figures(await balances())).toEqual(figures(balancesBefore));
       }
-      await test.info().attach('inpatient-privacy-fixtures', {
-        contentType: 'application/json',
-        body: JSON.stringify(ids),
-      });
     } finally {
       await Promise.all([
         provider.close(),

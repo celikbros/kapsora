@@ -40,11 +40,11 @@ health first.** The detailed plan for the approved sequence is the
 Member import is locally verified. PC-02 is VERIFIED locally for its defined demo
 acceptance scope as of 2026-09-29; its dated evidence and limits are recorded below and in
 the roadmap. PC-03 is VERIFIED locally for the defined outpatient acceptance scope after
-the live standard outpatient run; overall health acceptance remains open. PC-04 remains a
-separate inpatient acceptance gate spanning admission, extension, discharge, claim and
-privacy. Admission/extension and release, privacy screenshots, seeder scope, and local claim
-allocation behavior have dated evidence below; live claim acceptance and remaining scope
-checks are still open. PC-05 invoice/batch/payment and PC-06 accommodation plus combined acceptance follow. The roadmap records
+the live standard outpatient run. PC-04 is VERIFIED locally for its defined inpatient demo
+acceptance scope after operator restart and live admission, extension, discharge, claim,
+cancellation and privacy acceptance. The health financial journey remains open at PC-05.
+Split-claim evidence proves allocation quantities, not chronological coverage. PC-05
+invoice/batch/payment is active; PC-06 accommodation plus combined acceptance is pending. The roadmap records
 task dependencies, 15 health acceptance scenarios, role handoffs, evidence gates and
 confirmed source/fixture gaps.
 The first live health checkpoint passed: provider catalog access, single-enrollment
@@ -774,7 +774,38 @@ across 64 files (55.82 s), and `golangci-lint ./internal/claim/...` reported zer
 Request notifications are retained real-worker evidence only: they do not prove a fresh send, SMTP delivery or member inbox UI.
 Tenant isolation is supported by isolated-database tests, not a live DEMO_B walkthrough.
 
-**PC-04 preparation (2026-09-29):** the early-discharge fix releases the latest approved
+**PC-04 VERIFIED locally: live inpatient demo acceptance (2026-09-29).** The operator
+restarted the backend; the cancellation/privacy test passed in 6.265 s, default claim in
+21.135 s, split clinical/claim in 16.274/3.934 s, and overstay clinical/claim in
+16.011/3.646 s. Safe evidence is retained in ignored `tmp/real-inpatient-*-results.json`.
+
+| Claim scenario | Claim ID | Result | Available / reserved / consumed |
+| --- | --- | --- | --- |
+| Default, original stay `01a0ec9b-eae4-71e6-8426-ca03c108c887` | `01a0edc6-d807-7570-bc69-3c91949159d7` | APPROVED; invoice-ready 800/800/0 TRY (total/payer/member) | 18 / 0 / 2 |
+| Split across original and extension holds | `01a0edc8-e52c-7cd5-bdc6-b634740bfd7f` | APPROVED; invoice-ready 800/800/0 TRY | 18 / 0 / 2 |
+| Overstay | `01a0edc9-cf3f-7649-9b90-044e5ad16386` | Approval refused with `CLAIM_INPATIENT_ALLOCATION_MISSING`, then explicitly REJECTED | 20 / 0 / 0 |
+
+Split consumed one day from each of two authorizations without duplicate consumption.
+This proves aggregate quantities only: extension `validFrom` follows the original expected
+discharge, so this fixture does not prove chronological day coverage. Overstay drew nothing;
+rejection released its remaining hold. Cancellation returned four held days across two
+authorizations before fallback cleanup, with unchanged replay. Valid stale ETag returned
+412; referenced diagnosis replacement returned 409 without mutation. Privacy boundaries
+passed. The 1440/390 claim-source captures were visually reviewed with no overflow or
+clinical text. H14/H15 are closed for the defined local demo scope; PC-05 is active.
+
+The failed harness used invalid ETag zero and a wrong cancellation input name. It now uses
+the actual earlier ETag, `cancelReasonCode`, a 15 s action timeout and early fixture
+attachments. Timed-out case `01a0edc1-b25f-74f9-9f87-037293d35e7e` / stay
+`01a0edc1-b36e-7583-bb37-12389b7dd448` was cancelled and closed through the API, restoring
+18/2/0 before the passing rerun; that cleanup is not acceptance evidence.
+
+Preserve both approved inpatient claims and outpatient claim
+`01a0ec97-cf5c-7727-8c64-c19abcd02cd1` (400 TRY) for PC-05. Do not rerun a consuming claim
+test on these spent sources. Payment, reimbursement, exports and PC-06 remain separate;
+this checkpoint does not establish full-product acceptance or fiscal release readiness.
+
+**PC-04 preparation (2026-09-29; historical, superseded above):** the early-discharge fix releases the latest approved
 extension hold before the original; three focused PostgreSQL tests passed (11 s). With
 original 5 + extension 3 and actual use 2, releasing the unused 6 leaves original 2 and
 extension 0; consuming 2 and replaying preserves conservation. The partial case with one
@@ -797,16 +828,16 @@ reused `E2E_INPATIENT_PROGRAM`; do not expand a
 published tariff. Shared-tariff checks beyond this run remain pending. Overstay is for medical review/refusal with zero
 consumption; approval alone provides no funding or consumption. All six CI checks passed on `336e1c9`
 ([run](https://github.com/celikbros/kapsora/actions/runs/36530650005)). PC-03's live
-standard outpatient acceptance passed as recorded above; PC-04 remains active.
+standard outpatient acceptance passed as recorded above; PC-04 was still active at that checkpoint.
 
-**PC-04 live clinical run (2026-09-29):** `real-inpatient.spec.ts` passed in 16.8 s
+**PC-04 live clinical run (2026-09-29; superseded by acceptance above):** `real-inpatient.spec.ts` passed in 16.8 s
 (17.9 s total). Admission UI created WARD + COMPANION segments. Overlap returned 422 with
 field `OVERLAP` and left segments unchanged; duplicate admission and duplicate pending
 extension returned 409. The worker advanced the stay to AUTHORIZED. Original authorization
 5 plus approved extension 3, followed by refusal of the next extension, discharged at actual
 use 2 and released 6: account remained at 18 available / 2 reserved / 0 consumed, with
 original hold 2 and extension hold 0 verified separately. Discharge replay left balances
-unchanged. No claim or invoice was created; H14 consumption and H15 remain pending. The first
+unchanged. No claim or invoice was created; H14 and H15 were subsequently verified in the acceptance checkpoint above. The first
 two harness attempts were fixed by taking `providerOrganizationID` from session scope and
 validating overlap 422 at the field; no backend permission/grant or user change was made.
 The program/tariff seed was applied or reused in this run.
@@ -823,7 +854,7 @@ stay `01a0ec9b-eae4-71e6-8426-ca03c108c887`, request
 
 **PC-04 inpatient privacy/purpose (2026-09-29):** [real-inpatient-privacy.spec.ts](../tests/e2e/real-inpatient-privacy.spec.ts) passed in 9.7 s (11.0 s total). Source stay `01a0ec9b-eae4-71e6-8426-ca03c108c887` remained unchanged; new case `01a0eca9-5bfe-7bdb-9092-df65eda1140a` and stay `01a0eca9-5caf-773f-8663-4777b99a555d` used the existing synthetic person/enrollment. HR stay detail/list and FINANCIAL projections omitted `admissionDiagnosisId`/`reasonText`; `financial.reviewer` returned 403. A separate sensitive encounter made the case SENSITIVE: doctor GET without purpose returned 428, explicit FINANCIAL decline emitted no access event, and MEDICAL_REVIEW with a clinical reason recorded audit SUCCESS with DENIED visible. Provider sensitive-FINANCIAL API/DOM and HR person-health DOM showed no clinical text. Dates +/-4000 days returned 422 with no stay/balance mutation. 1440/390 screens had no overflow; screenshots were visually reviewed with no clinical text. Cleanup cancelled the new stay and each known authorization, with account figures at baseline; this does not prove CancelStay auto-releases every hold. Inpatient provider/tenant boundaries are covered by the separate scope run recorded in this checkpoint.
 
-**PC-04 local implementation checkpoint (2026-09-29):** migration 000052 adds per-claim-version
+**PC-04 local implementation checkpoint (2026-09-29; live confirmation above):** migration 000052 adds per-claim-version
 inpatient authorization allocations. The full claim application PostgreSQL suite passed in
 316.433 s. A 5 + 1 allocation consumes exactly 6 days and approves 2400 TRY; early discharge consumes only the
 original hold; shortage (focused compatibility/shortage PostgreSQL tests, 14.589 s) and overstay draw nothing and manual overstay approval is refused.
@@ -852,7 +883,7 @@ stay `01a0ec9b-eae4-71e6-8426-ca03c108c887` retains 2 reserved for the prepared
 `E2E_INPATIENT_CANCEL_CHECK=1` is also prepared, not run. The local full schema suite reached its 15-minute total timeout; focused migration/RLS/claim-schema checks passed (26.716 s), and the full schema CI job passed on `8998560`. Mock parity passed 23 focused tests. All 541 frontend tests passed with two workers after the unrestricted run hit timeouts; workspace typecheck, lint, formatting and all app builds pass. All six CI checks passed on `89d1fcb` ([run 36556355293](https://github.com/celikbros/kapsora/actions/runs/36556355293)). All six checks also passed on the implementation commit `8998560` ([run 36559629740](https://github.com/celikbros/kapsora/actions/runs/36559629740)).
 
 
-Prepared live variants (not yet run): set `E2E_INPATIENT_SCENARIO=split` or `overstay`
+Live variants, previously prepared and now passed (see PC-04 VERIFIED checkpoint above): set `E2E_INPATIENT_SCENARIO=split` or `overstay`
 for `real-inpatient.spec.ts`, reusing the marked program with a fresh synthetic person/case.
 Both partially approve the five-day estimate for one day. Split adds three approved days,
 discharges at two actual days and preserves one held day per authorization. Its later claim
@@ -917,6 +948,9 @@ children were removed; an unrelated process survived, repeated shutdown was safe
 a stale supervisor identity was ignored. Literal interactive Ctrl+C remains an operator
 check; the test covers its shared cleanup path. PowerShell 5.1 parsing and `git diff --check`
 passed. The operator's existing API and three UI process IDs were unchanged.
+After the next operator restart, read-only Win32 checks confirmed API 8090 and UI
+5181/5182/5183 all belonged to the new launcher's Job Object, with matching supervisor
+PID creation time. No stop command was issued; literal Ctrl+C remains untested.
 
 To run the real member-import browser regression against that already running system:
 

@@ -44,8 +44,8 @@ the existing work-package contracts rather than starting their implementation ag
 | PC-01 | Member import | VERIFIED locally; PR open | Existing identity/member setup | Upload → password step-up → invalid-row skip → one created member → search → logout; no duplicate effect |
 | PC-02 | Eligibility, service request and authorization | VERIFIED locally for the defined demo acceptance scope (2026-09-29) | Verified member/scenario prerequisites | A real provider can request covered care; approvals/refusals and the authorization/entitlement effects agree |
 | PC-03 | Outpatient care, reports and health claims | VERIFIED locally for the defined outpatient acceptance scope (2026-09-29); PC-04/05 remain separate | PC-02 | Case, encounter and diagnosis, then a clean report, review and invoice-ready claim |
-| PC-04 | Inpatient care | ACTIVE; live admission/extension/release and privacy/scope evidence passed; local allocation/claim tests pass; live claim acceptance and remaining scenarios pending | PC-03 and admission configuration | Preauthorization -> admission -> extension -> discharge -> invoice-ready claim; entitlement reconciles |
-| PC-05 | Invoice, batch, settlement and payment | QUEUED | An invoice-ready health claim from PC-03/04 | The same episode reaches invoice, payer decision and a reconciled local payment record |
+| PC-04 | Inpatient care | VERIFIED locally for the defined inpatient demo acceptance scope (2026-09-29); PC-05 active | PC-03 and admission configuration | Preauthorization -> admission -> extension -> discharge -> invoice-ready claim; entitlement reconciles |
+| PC-05 | Invoice, batch, settlement and payment | ACTIVE | An invoice-ready health claim from PC-03/04 | The same episode reaches invoice, payer decision and a reconciled local payment record |
 | PC-06 | Accommodation and combined product acceptance | QUEUED | PC-05; existing lodging implementation | Booking and its financial consequences work; cross-app regression and owner walkthrough complete |
 
 **Health completion has two explicit checkpoints.** Clinical and health-claim acceptance
@@ -130,7 +130,21 @@ References: existing [M5 packages](#m5-work-packages-issued-2026-09-05),
 | PC-04.4 | Discharge with actual dates. Verify partial-day calculation and unused reservation release across both original and extension authorizations. Verify consumption in the subsequent claim/fulfillment path. Overstay is surfaced for review. Repeated discharge/event delivery has no extra ledger effect. |
 | PC-04.5 | Exercise cancellation/date boundaries, preserve clinical privacy, and take the resulting inpatient claim through required review to invoice readiness. |
 
-**PC-04 preparation and claim allocation checkpoint (2026-09-29):**
+**PC-04 VERIFIED locally for the defined inpatient demo scope (2026-09-29).**
+The operator-restarted backend passed cancellation/privacy, default inpatient claim,
+split-hold consumption and overstay review/rejection. Both funded claims are invoice-ready
+at 800/800/0 TRY (total/payer/member), with exactly two days consumed and no reserved
+remainder. Overstay consumed nothing; explicit rejection released its hold. Cancellation
+returned four held days across two authorizations before cleanup and replay changed nothing.
+Stale version, diagnosis-reference and privacy controls passed; desktop/mobile claim-source
+captures were visually reviewed. Safe record IDs, runtimes, harness corrections and rerun
+restrictions are in [HANDOVER's PC-04 checkpoint](../HANDOVER.md#2-where-things-stand).
+
+Split evidence proves quantities, not chronological coverage: extension `validFrom`
+follows the original expected discharge. H14/H15 close within that defined scope.
+PC-05 remains open; this is not full-product, fiscal-release or customer acceptance.
+
+**PC-04 preparation and claim allocation checkpoint (2026-09-29; historical, superseded above):**
 
 **PC-04 local implementation checkpoint (2026-09-29):** the full claim application PostgreSQL
 suite passed (316.433 s), full health application tests passed (197.824 s), and concurrency
@@ -232,10 +246,10 @@ source is INPATIENT_STAY/stayID; public v1 HEALTH_CASE/caseID mapping contract t
   shared-tariff checks beyond it remain pending. H15 needs a fully covered 5 + 1 allocation
   case; the overstay path must be tested for review/refusal only. All six GitHub CI checks passed on `336e1c9`
   [run 36530650005](https://github.com/celikbros/kapsora/actions/runs/36530650005).
-  PC-03's live outpatient acceptance is recorded in the 2026-09-29 checkpoint above; PC-04 remains active.
+  PC-03's live outpatient acceptance is recorded in the 2026-09-29 checkpoint above; PC-04 was still active at that historical checkpoint.
 
 
-Prepared live variants (not yet run): set `E2E_INPATIENT_SCENARIO=split` or `overstay`
+Live variants, now passed in the acceptance checkpoint above: set `E2E_INPATIENT_SCENARIO=split` or `overstay`
 for `real-inpatient.spec.ts`, reusing the marked program with a fresh synthetic person/case.
 Both partially approve the five-day estimate for one day. Split adds three approved days,
 discharges at two actual days and preserves one held day per authorization. Its later claim
@@ -273,10 +287,20 @@ evidence; race, duplicate-delivery and ledger invariants may use focused databas
 | H11 | Sensitive purpose, access audit, self-review and other-provider/tenant boundaries hold | PC-03/04 | Outpatient scope verified; inpatient purpose API tested (428 without purpose, FINANCIAL decline no event, MEDICAL_REVIEW grant audited with DENIED reason); inpatient provider-other and DEMO_B detail/list/reconcile scope passed live |
 | H12 | Admission approval advances the stay once and refuses duplicate open admission | PC-04 | PASSED live: worker authorization, duplicate admission 409, discharge replay unchanged |
 | H13 | Extension and segment rules hold; refusal leaves balances correct | PC-04 | PASSED live: WARD + COMPANION; overlap 422/OVERLAP without mutation; duplicate pending extension 409; approved extension and subsequent refusal |
-| H14 | Early discharge, partial days and overstay reconcile original/extension authorizations | PC-04 | PARTIAL: live unused-hold release verified (original 2 / extension 0 after releasing 6); local exact 5 + 1 consumption, return undo, shortage and overstay no-draw tests pass; live consumption/partial-day/overstay remain pending |
-| H15 | Inpatient claim becomes invoice-ready without duplicate consumption | PC-04 | Local PostgreSQL allocation/claim suite passes, including exact multi-hold consumption and replay/correction behavior; live claim/invoice readiness remains pending |
+| H14 | Early discharge, partial days and overstay reconcile original/extension authorizations | PC-04 | PASSED for defined local demo scope: discharge/release and overstay refusal/rejection passed. Split consumption and early-release regression passed; split temporal coverage remains unproven. |
+| H15 | Inpatient claim becomes invoice-ready without duplicate consumption | PC-04 | PASSED for defined local demo scope: default and split claims invoice-ready at 800/0 TRY, consuming exactly two days each; overstay does not consume. |
 
 ### PC-05 — health invoice, batch, settlement and payment
+
+PC-05 read-only event audit: [WP-I7-02](../delegation/WP-I7-02-invoice-manual-entry-and-allocation.md) requires publishing `invoice.submitted`;
+invoice/claim submit freezes and moves synchronously, with no automatic batch requirement.
+`settlement.approved` is deferred to M9 per [WP-I7-04](../delegation/WP-I7-04-settlement-payment-records-reimbursement.md). Local settlement
+approval/payment notifications and `batch.decided` handling are present; no missing local
+handler or discarded event was established, so none was added. Four focused billing
+PostgreSQL tests passed (16.976 s); five threshold/concurrent payment tests passed
+(20.262 s). The live fixture cannot exercise the 100k/50k threshold. Live local
+notification proof remains pending PC-05; this does not verify payment or notification
+acceptance.
 
 1. Carry the accepted health claims into provider billing. Validate invoice header,
    fiscal year/number, allocations, tolerance and required image; block an unready claim.
