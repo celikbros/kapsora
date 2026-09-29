@@ -1,5 +1,5 @@
 import { useTenantId } from '@kapsora/auth';
-import { useQueries } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useOps } from '../services';
 
@@ -9,37 +9,39 @@ export interface ClaimSummary {
   approvedTotal: string | null;
 }
 
-/**
- * The invoiceable claims the earnings view names by id, read one by one for their
- * reference, status and approved total (the readiness answer). Read only for the ids
- * the invoice does not already carry.
- */
-export function useClaimSummaries(ids: string[]): Map<string, ClaimSummary> {
+/** Fetch the visible claim rows in order. Earlier rows stay cached as more are opened. */
+export function useClaimSummaries(ids: string[]): {
+  summaries: Map<string, ClaimSummary>;
+  error: unknown;
+} {
   const ops = useOps();
   const tenantId = useTenantId();
-  const results = useQueries({
-    queries: ids.map((id) => ({
-      queryKey: ['provider', tenantId, 'billing', 'claim-summary', id],
-      queryFn: async (): Promise<[string, ClaimSummary]> => {
-        const [claim, readiness] = await Promise.all([
-          ops.claims.get(tenantId, id),
-          ops.claims.readiness(tenantId, id).catch(() => null),
-        ]);
-        return [
-          id,
-          {
-            reference: claim.data.reference,
-            status: claim.data.status,
-            approvedTotal: readiness?.approvedTotal ?? null,
+  const queryClient = useQueryClient();
+  const result = useQuery({
+    queryKey: ['provider', tenantId, 'billing', 'claim-summaries', ids],
+    enabled: ids.length > 0,
+    queryFn: async (): Promise<[string, ClaimSummary][]> => {
+      const rows: [string, ClaimSummary][] = [];
+      for (const id of ids) {
+        const summary = await queryClient.fetchQuery({
+          queryKey: ['provider', tenantId, 'billing', 'claim-summary', id],
+          queryFn: async (): Promise<ClaimSummary> => {
+            const claim = await ops.claims.get(tenantId, id);
+            const readiness = await ops.claims.readiness(tenantId, id);
+            return {
+              reference: claim.data.reference,
+              status: claim.data.status,
+              approvedTotal: readiness.approvedTotal,
+            };
           },
-        ];
-      },
-      staleTime: 60_000,
-    })),
+          staleTime: 60_000,
+        });
+        rows.push([id, summary]);
+      }
+      return rows;
+    },
+    placeholderData: (previous) => previous,
+    staleTime: 60_000,
   });
-  const map = new Map<string, ClaimSummary>();
-  for (const r of results) {
-    if (r.data) map.set(r.data[0], r.data[1]);
-  }
-  return map;
+  return { summaries: new Map(result.data ?? []), error: result.error };
 }

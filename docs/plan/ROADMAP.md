@@ -331,6 +331,32 @@ captures at 390px/1440px were inspected. The paid-state resume passed again (3.2
 no additional payment. PC-05 remains ACTIVE: return/cut/rejection, reimbursement and live
 daily reconciliation remain open.
 
+Schema/permission follow-up: the stale version assertion was updated to 53, the real
+empty-database migration and 19 grant/role tests passed, and all six CI jobs passed on
+`0e8ef64`. A read-only historical reconciliation browser test passed (2.2 s), including
+exact differences, immutable reads and provider-versus-tenant run access. The current
+scheduler job succeeded with zero due-day runs. The new 800 TRY settlement is due
+2026-10-29, so it remains PAID; its RECONCILED transition has isolated PostgreSQL proof,
+not live proof. The historical 2026-09-11 run's 2,500 TRY difference is separate data.
+
+The live RETURN → correction → CUT path also passed (25.8 s): the 800 TRY secondary
+claim was released, corrected with a new CLEAN image, then approved for 600 with a 200
+cut. Old/new invoice history remains visible, empty reasons are refused and the worker
+created one 600 TRY pending-approval settlement. Two earlier 429 failures reproduced an
+invoice-screen request fanout defect; the same financial records were resumed after a
+bounded visible-row loading fix. The separate 400 TRY outpatient invoice was then rejected,
+its claim became CLOSED_UNPAID and invoice readiness returned 409. Its worker settlement
+is zero approved/payable/paid; the delivered entitlement remains 19/0/1. The final same-ID
+rejection resume passed (1.6 s) after correcting the test's expected readiness response.
+Provider tests pass 12/12, with bounded reads, invalidation refresh and all read-only rows;
+final invoice captures at 390/1440px were inspected.
+
+Member reimbursement now crosses the service-request submission gate before bank details
+and financial creation. Exact unknown-response retries and blocked outcomes are tested;
+the backend refuses unusable request states. Six member UI tests and the real PostgreSQL
+reimbursement/settlement regression set (98.768 s) pass. `962f6ff` is restart-pending for
+live verification; `real-health-reimbursement.spec.ts` is prepared, not yet executed.
+
 PC-05 read-only event audit: [WP-I7-02](../delegation/WP-I7-02-invoice-manual-entry-and-allocation.md) requires publishing `invoice.submitted`;
 invoice/claim submit freezes and moves synchronously, with no automatic batch requirement.
 `settlement.approved` is deferred to M9 per [WP-I7-04](../delegation/WP-I7-04-settlement-payment-records-reimbursement.md). Local settlement

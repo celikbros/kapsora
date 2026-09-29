@@ -952,6 +952,97 @@ The paid-state resume also passed (3.2 s) without another payment. PC-05 remains
 return/cut/rejection, reimbursement and live daily reconciliation acceptance remain open.
 This synthetic local demo evidence does not complete full-product or fiscal acceptance.
 
+### PC-05 schema and historical reconciliation checks (2026-09-29)
+
+The schema assertion now expects version 53; migration from an empty database passed
+on real PostgreSQL (3.364 s), followed by all 19 permission/grant/role tests (62.161 s).
+All six CI jobs passed on `0e8ef64`, including the full schema suite. The approved
+PROVIDER_BILLING upload migration has also passed its actual non-skipped multi-tenant
+application test (6.727 s).
+
+`real-health-reconciliation.spec.ts` passed (2.2 s total), reading the existing scheduler
+PROVIDER run `01a092ea-b8f0-7a8f-b6d8-f307ac0681ed` and TENANT run
+`01a092ea-b8e3-70d6-9176-1b729ce699a2` for 2026-09-11. It checks exact difference arithmetic,
+unchanged history, desktop/mobile rows and provider access to its own run; the tenant-wide
+run is hidden from that provider (404). These historical runs show 2,500 TRY outstanding;
+they do not describe the new 800 TRY payment. Screenshots at 390/1440px were inspected.
+
+A read-only app-role probe confirms the 2026-09-29 `billing.reconcile` scheduled job
+SUCCEEDED with two tenants and zero runs: no settlement was due on its target day.
+The newly paid 800 TRY settlement is due 2026-10-29 and correctly remains PAID. Its
+transition to RECONCILED is therefore not claimed as live evidence; equality/transition
+behavior is covered by isolated PostgreSQL tests. No scheduler, due date or live payment
+was changed to manufacture that state.
+
+### PC-05 return/correction/cut and reimbursement gate (2026-09-29)
+
+The live return/correction/cut flow passed (25.8 s total) after two earlier attempts hit
+429 while the invoice screen hydrated every invoiceable claim. The same invoice and clean
+upload were resumed; no duplicate invoice was created. The screen now loads referenced
+claim rows in small visible groups, preserves entered allocations and displays readiness
+errors instead of hiding them. Provider regression checks cover bounded reads.
+
+Claim `01a0edc8-e52c-7cd5-bdc6-b634740bfd7f` (800 TRY) used original invoice
+`01a0ee0c-4b39-7761-a98b-639ad3f50604` and return batch
+`01a0ee19-91a3-79c2-9e2e-14678214a678`. RETURN released the claim for correction while
+preserving the original allocation history. Correction invoice
+`01a0ee19-9e9c-7cf4-919f-a4b56c601e07` used a separately uploaded/scanned PDF and cancelled
+the old invoice on submission; both versions remain in the UI chain. Cut batch
+`01a0ee19-bff2-787d-b34d-784d4e4f886a` records approved 600, cut 200, with a reason and a
+reviewer distinct from the submitter. Empty RETURN/CUT reasons are refused (422).
+The real worker created one 600 TRY PENDING_APPROVAL settlement
+`01a0ee19-dc9d-7e06-91df-fdf714e0b858`; this branch has no payment record. A read-only app-role
+check before/after the financial decisions found account
+`01a0edc7-9b64-754a-bb08-8e4f8fdad8a4` unchanged at 18 available / 0 reserved /
+2 consumed, row version 7. The financial cut did not restore delivered service units.
+
+Reimbursement creation now requires the underlying request to pass submission. The member
+uploads/links a CLEAN receipt, explicitly submits the request, and reaches the account
+step only for PENDING_REVIEW/APPROVED/PARTIALLY_APPROVED. The backend also accepts legacy
+SUBMITTED requests; it refuses draft, failed, missing-document and terminal states.
+An uncertain create retains its exact body/key; an uncertain submit retains its original
+key/ETag and concurrent clicks share one command. Blocked outcomes offer a return link.
+This implements the existing request gate, not a second financial approval.
+
+The member suite passed 6/6 including lost-after-commit submit replay. Real PostgreSQL
+reimbursement/settlement regressions passed without skips (98.768 s), including seven
+refused request states, positive pending review, duplicate/ceiling/receipt checks,
+approved-only consumption, rejection, masked account/privacy and payment status. API
+build, billing vet/lint and member build/type/lint passed. Backend commit `962f6ff` needs
+an operator restart before live reimbursement verification; the prepared
+`real-health-reimbursement.spec.ts` has not yet run. PC-05 remains active.
+
+### PC-05 rejection checkpoint and next execution (2026-09-29)
+
+The separate 400 TRY outpatient claim `01a0ec97-cf5c-7727-8c64-c19abcd02cd1` now has rejected
+invoice `01a0ee1d-e1c3-7e29-8669-2936a927f088`, CLEAN image
+`01a0ee1d-e60c-7a31-b875-bcbb1b0c7a25` and decided batch
+`01a0ee1d-fb7a-7148-8e9e-74c833a49e54`. REJECT/NOT_COVERED closes the claim as CLOSED_UNPAID;
+invoice readiness refuses it with CLAIM_NOT_DECIDED/409. The first test reached that
+state but expected a 200 not-ready reply; after correcting the assertion, the same IDs
+passed a read-only resume (1.6 s total). No second invoice or decision was made.
+The worker's settlement `01a0ee1e-03a4-721b-b70b-fc22dea6c751` has approved/payable/paid
+all zero. This is the current zero-approved batch behavior; no payment was recorded.
+The delivered outpatient entitlement remains 19 available / 0 reserved / 1 consumed,
+row version 4, consistent with its accepted clinical baseline.
+
+Provider tests now pass 12/12, including more than three read-only allocations, bounded
+candidate hydration and refreshed summaries after invalidation. Type/lint/build and all
+three new harness static checks pass. The final invoice layout was inspected at
+390/1440px. The paid, return/correction/cut and rejection paths are verified locally;
+member reimbursement remains restart-pending. The scheduler/date limitation above remains
+separate from the historical reconciliation UI and isolated transition tests.
+
+Next: after the operator restarts `dev.ps1 up`, load `.env` privately and set
+`E2E_REAL_API=1`, `E2E_EXISTING_UI_URL=http://127.0.0.1:5181`, then run only
+`real-health-reimbursement.spec.ts --project chromium --trace off`. It uses member.a,
+GP_VISIT and a synthetic 125.50 TRY receipt/account, with financial.reviewer approval.
+Its stage attachments provide E2E_HEALTH_REIMBURSEMENT_REQUEST, _DOCUMENT and _ID resume
+values. A request-only resume uploads to the same request; fresh preflight refuses an
+existing same-provider/date/amount reimbursement. Never rerun fresh after a partial pass.
+Known reimbursement ceilings have isolated PostgreSQL tests; this live fixture does not
+claim a ceiling-specific branch. PC-06 still follows PC-05 acceptance.
+
 ## 3. Get it running
 
 Requirements: Go 1.27+, a local PostgreSQL 18, Node 24 + pnpm 10. No Docker, ever (§6).

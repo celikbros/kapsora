@@ -557,10 +557,17 @@ function AllocationsCard({
   const invoiceable =
     earnings.data?.currencies.find((c) => c.currencyCode === record.currencyCode)
       ?.invoiceableClaimIds ?? [];
-  const ids = Array.from(
+  // Keep every candidate from the earnings link. Hydrate only the rows the provider opens.
+  // Existing allocations come first; amounts entered on earlier rows remain in state.
+  const allIds = Array.from(
     new Set([...record.allocations.map((a) => a.claimId), ...candidateIds, ...invoiceable]),
   );
-  const summaries = useClaimSummaries(
+  const [visibleCount, setVisibleCount] = useState(() =>
+    Math.min(3, new Set([...record.allocations.map((a) => a.claimId), ...candidateIds]).size),
+  );
+  const ids = editable ? allIds.slice(0, visibleCount) : record.allocations.map((a) => a.claimId);
+  const hasMore = editable && visibleCount < allIds.length;
+  const { summaries, error: summaryError } = useClaimSummaries(
     ids.filter((id) => !record.allocations.some((a) => a.claimId === id)),
   );
   const [amounts, setAmounts] = useState<Record<string, string>>(() =>
@@ -584,8 +591,11 @@ function AllocationsCard({
     <Card className="min-w-0">
       <h2 className="text-base font-semibold">{t('billing.provider.allocations')}</h2>
       <p className="text-fg-muted mt-1 text-sm">{t('billing.provider.pickHint')}</p>
+      <ProblemAlert problem={summaryError ? problemOf(summaryError) : null} className="mt-3" />
       {rows.length === 0 ? (
-        <p className="text-fg-muted mt-3 text-sm">{t('billing.provider.noInvoiceable')}</p>
+        hasMore ? null : (
+          <p className="text-fg-muted mt-3 text-sm">{t('billing.provider.noInvoiceable')}</p>
+        )
       ) : !wide ? (
         <ul className="mt-3 grid gap-2" data-testid="allocation-table">
           {rows.map((row) => (
@@ -673,6 +683,17 @@ function AllocationsCard({
           </Table>
         </div>
       )}
+      {hasMore ? (
+        <Button
+          size="sm"
+          variant="secondary"
+          className="mt-3"
+          onClick={() => setVisibleCount((count) => count + 3)}
+          data-testid="allocation-show-more"
+        >
+          {t('billing.provider.showMoreClaims')}
+        </Button>
+      ) : null}
       <dl
         className="mt-3 max-w-sm grid grid-cols-[max-content_minmax(0,1fr)] gap-x-6 gap-y-1 text-sm"
         data-testid="allocation-totals"
@@ -699,9 +720,9 @@ function AllocationsCard({
             variant="secondary"
             onClick={() =>
               onSave(
-                rows
-                  .filter((r) => r.amount.trim() !== '')
-                  .map((r) => ({ claimId: r.claimId, allocatedAmount: r.amount.trim() })),
+                Object.entries(amounts)
+                  .filter(([, amount]) => amount.trim() !== '')
+                  .map(([claimId, amount]) => ({ claimId, allocatedAmount: amount.trim() })),
               )
             }
             loading={saving}
