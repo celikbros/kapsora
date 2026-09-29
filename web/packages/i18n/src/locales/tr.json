@@ -3668,6 +3668,9 @@
       "requested": "İstenen",
       "approved": "Onaylanan",
       "reason": "Gerekçe",
+      "decisionReasons": {
+        "REIMBURSEMENT_APPROVED": "Geri ödeme onaylandı"
+      },
       "paidTo": "Ödendi",
       "sequence": "Ne oldu",
       "decided": "Karar",

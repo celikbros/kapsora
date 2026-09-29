@@ -1,3 +1,4 @@
+import { mkdir } from 'node:fs/promises';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { expect, request as apiRequest, test } from '@playwright/test';
 import type { components } from '../../web/packages/api-client/src/generated/kapsora-v1';
@@ -447,5 +448,53 @@ test('member receipt and request gate lead to reviewed reimbursement, one money 
     await stage(ids, 'latest-resume-ids');
     await Promise.allSettled([member.close(), reviewer.close(), admin.close()]);
     await Promise.allSettled([memberPage.close(), reviewerPage.close()]);
+  }
+});
+
+test('paid reimbursement layout is readable without changing the record', async ({ browser }) => {
+  test.skip(!resumeReimbursementId, 'requires an explicit already-paid reimbursement ID');
+  expect(new URL(base).hostname).toMatch(/^(localhost|127\.0\.0\.1)$/);
+  const page = await browser.newPage({ locale: 'tr-TR', timezoneId: 'Europe/Istanbul' });
+  const member = new Actor(page.request, 'member', true);
+  const blockedWrites: string[] = [];
+  try {
+    await member.login('member.a');
+    const path = `/api/v1/reimbursements/${resumeReimbursementId}`;
+    const before = await member.call<S<'Reimbursement'>>('GET', path);
+    expect(before.data.status).toBe('PAID');
+    await page.route('**/api/v1/**', async (route) => {
+      if (!['GET', 'HEAD', 'OPTIONS'].includes(route.request().method())) {
+        blockedWrites.push(
+          route.request().method() + ' ' + new URL(route.request().url()).pathname,
+        );
+        await route.abort();
+      } else await route.continue();
+    });
+    await page.goto(base + `/uye/reimbursements/${resumeReimbursementId}`);
+    await expect(page.getByTestId('reimbursement-status')).toHaveText('Ödendi');
+    if (before.data.decisionReasonCode === 'REIMBURSEMENT_APPROVED') {
+      await expect(page.getByTestId('receipt')).toContainText('Geri ödeme onaylandı');
+      await expect(page.getByTestId('receipt')).not.toContainText('REIMBURSEMENT_APPROVED');
+    }
+    await mkdir('.impeccable/review/health-billing', { recursive: true });
+    for (const width of [390, 1440]) {
+      await page.setViewportSize({ width, height: 1000 });
+      await expect
+        .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
+        .toBe(true);
+      await expect(page.getByTestId('reimbursement-sequence')).toContainText(
+        before.data.paymentReference!,
+      );
+      await page.screenshot({
+        path: `.impeccable/review/health-billing/reimbursement-paid-${width}.png`,
+        fullPage: true,
+      });
+    }
+    const after = await member.call<S<'Reimbursement'>>('GET', path);
+    expect(after).toEqual(before);
+    expect(blockedWrites).toEqual([]);
+  } finally {
+    await member.close();
+    await page.close();
   }
 });

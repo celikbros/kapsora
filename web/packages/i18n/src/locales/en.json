@@ -1895,6 +1895,9 @@
       "requested": "Requested",
       "approved": "Approved",
       "reason": "Reason",
+      "decisionReasons": {
+        "REIMBURSEMENT_APPROVED": "Reimbursement approved"
+      },
       "paidTo": "Paid",
       "sequence": "What happened",
       "decided": "Decision",
