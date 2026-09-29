@@ -5,6 +5,8 @@ import { Actor } from './real-api-actor';
 type S<K extends keyof components['schemas']> = components['schemas'][K];
 const base = process.env['E2E_EXISTING_UI_URL'] ?? '';
 const stayId = process.env['E2E_INPATIENT_CLAIM_SOURCE'] ?? '';
+const overstay = process.env['E2E_INPATIENT_CLAIM_EXPECT_OVERSTAY'] === '1';
+const split = process.env['E2E_INPATIENT_SCENARIO'] === 'split';
 test.skip(
   process.env['E2E_REAL_API'] !== '1' || !base || !stayId,
   'requires operator-started demo and a dedicated discharged inpatient source with unspent holds',
@@ -20,6 +22,72 @@ test('real discharged inpatient source becomes one invoice-ready claim without d
   const hr = new Actor(await apiRequest.newContext(), 'backoffice', true);
   const provider = new Actor(await apiRequest.newContext(), 'provider', true);
   const ids: Record<string, string> = { stayId };
+  let overstayAccepted = false;
+  const completeOverstayWorkItems = async () => {
+    if (!overstay || !ids['claimId']) return;
+    const workItems = (
+      await doctor.call<S<'WorkItemPage'>>(
+        'GET',
+        `/api/v1/work-items?aggregateType=CLAIM&aggregateId=${ids['claimId']}`,
+      )
+    ).data.items;
+    for (const item of workItems) {
+      const itemPath = `/api/v1/work-items/${item.id}`;
+      let task = await doctor.call<S<'WorkItem'>>('GET', itemPath);
+      if (task.data.status === 'OPEN')
+        task = await doctor.call<S<'WorkItem'>>(
+          'POST',
+          itemPath + '/claim',
+          {},
+          { etag: task.etag },
+        );
+      if (task.data.status === 'CLAIMED')
+        await doctor.call(
+          'POST',
+          itemPath + '/complete',
+          { outcomeCode: 'PC04_OVERSTAY_FINISHED' },
+          { etag: task.etag },
+        );
+    }
+  };
+  const cleanupOverstayFailure = async () => {
+    if (!overstay || !ids['claimId']) return;
+    const path = `/api/v1/claims/${ids['claimId']}`;
+    const current = await doctor.call<S<'Claim'>>('GET', path);
+    if (current.data.status === 'DRAFT')
+      await billing.call(
+        'POST',
+        path + '/cancel',
+        { reasonCode: 'PC04_OVERSTAY_CLEANUP' },
+        { etag: current.etag },
+      );
+    if (current.data.status === 'PENDING_MEDICAL')
+      await doctor.call(
+        'POST',
+        path + '/reject',
+        { reasonCode: 'PC04_OVERSTAY_CLEANUP' },
+        { etag: current.etag },
+      );
+    const source = (
+      await provider.call<S<'InpatientStay'>>('GET', `/api/v1/inpatient-stays/${stayId}`)
+    ).data;
+    const holds = [
+      source.authorizationId,
+      ...source.extensions.map((e) => e.authorizationId),
+    ].filter((id): id is string => !!id);
+    for (const id of new Set(holds)) {
+      const holdPath = `/api/v1/authorizations/${id}`;
+      const hold = await doctor.call<S<'Authorization'>>('GET', holdPath);
+      if (hold.data.status === 'ACTIVE' || hold.data.status === 'PARTIALLY_USED')
+        await doctor.call(
+          'POST',
+          holdPath + '/cancel',
+          { reasonCode: 'PC04_OVERSTAY_CLEANUP' },
+          { etag: hold.etag },
+        );
+    }
+    await completeOverstayWorkItems();
+  };
   try {
     await billing.login('billing.a');
     await doctor.login('doctor.a');
@@ -29,7 +97,18 @@ test('real discharged inpatient source becomes one invoice-ready claim without d
       await provider.call<S<'InpatientStay'>>('GET', `/api/v1/inpatient-stays/${stayId}`)
     ).data;
     expect(stay.status).toBe('DISCHARGED');
-    expect(stay.overAuthorization).toBe(false);
+    expect(stay.overAuthorization).toBe(overstay);
+    if (overstay) {
+      expect([stay.authorizedDays, stay.actualDays, stay.releasedDays].map(Number)).toEqual([
+        1, 2, 0,
+      ]);
+      expect(stay.extensions).toHaveLength(0);
+    } else if (split) {
+      expect([stay.authorizedDays, stay.actualDays, stay.releasedDays].map(Number)).toEqual([
+        4, 2, 2,
+      ]);
+      expect(stay.extensions).toHaveLength(2);
+    }
     const person = (await hr.call<S<'Person'>>('GET', `/api/v1/people/${stay.personId}`)).data;
     expect(person.displayName).toMatch(/^Deneme Yatis/);
     ids['caseId'] = stay.caseId;
@@ -51,8 +130,9 @@ test('real discharged inpatient source becomes one invoice-ready claim without d
     expect(before).toHaveLength(1);
     const actual = Number(stay.actualDays);
     expect(actual).toBeGreaterThan(0);
-    expect(before[0]!.reserved).toBe(actual);
+    expect(before[0]!.reserved).toBe(overstay ? 1 : actual);
     expect(before[0]!.consumed).toBe(0);
+    if (overstay) expect(before[0]!.available).toBe(19);
     ids['accountId'] = before[0]!.id;
     const sourcePath = `/api/v1/claims/case-sources/${stay.caseId}`;
     await provider.call('GET', sourcePath, undefined, { expected: 403 });
@@ -127,6 +207,93 @@ test('real discharged inpatient source becomes one invoice-ready claim without d
       data: (await sentResponse.json()) as S<'Claim'>,
       etag: sentResponse.headers()['etag']!,
     };
+    if (overstay) {
+      expect(submitted.data.status).toBe('PENDING_MEDICAL');
+      expect(await accounts()).toEqual(before);
+      const submitHeaders = sentResponse.request().headers();
+      const submitBody: unknown = sentResponse.request().postData()
+        ? sentResponse.request().postDataJSON()
+        : undefined;
+      expect(
+        await billing.call<S<'Claim'>>('POST', path + '/submit', submitBody, {
+          etag: submitHeaders['if-match']!,
+          key: submitHeaders['idempotency-key']!,
+        }),
+      ).toEqual(submitted);
+      expect(await accounts()).toEqual(before);
+      const readiness = await billing.call<S<'Problem'>>(
+        'GET',
+        path + '/invoice-readiness',
+        undefined,
+        { expected: 409 },
+      );
+      expect(readiness.data.code).toBe('CLAIM_NOT_DECIDED');
+      const clinical = await doctor.call<S<'Claim'>>('GET', path);
+      expect(clinical.data.exceptions.some((e) => e.code === 'STAY_OVER_AUTHORIZATION')).toBe(true);
+      const decided = await doctor.call<S<'Claim'>>(
+        'POST',
+        path + '/line-decisions',
+        {
+          decisions: [
+            {
+              lineNo: 1,
+              decision: 'APPROVED',
+              approvedQuantity: '2',
+              approvedAmount: '800',
+              payerAmount: '800',
+              memberAmount: '0',
+              reasonCode: 'PC04_OVERSTAY_REVIEW',
+            },
+          ],
+        } satisfies S<'DecideClaimLines'>,
+        { etag: clinical.etag },
+      );
+      expect(decided.data.status).toBe('PENDING_MEDICAL');
+      const refused = await doctor.call<S<'Problem'>>(
+        'POST',
+        path + '/approve',
+        { reasonCode: 'PC04_OVERSTAY_REVIEW' },
+        { etag: decided.etag, expected: 409 },
+      );
+      expect(refused.data.code).toBe('CLAIM_INPATIENT_ALLOCATION_MISSING');
+      const stillPending = await doctor.call<S<'Claim'>>('GET', path);
+      expect(stillPending.data.status).toBe('PENDING_MEDICAL');
+      expect(await accounts()).toEqual(before);
+      const rejected = await doctor.call<S<'Claim'>>(
+        'POST',
+        path + '/reject',
+        { reasonCode: 'PC04_OVERSTAY_REJECTED' },
+        { etag: stillPending.etag },
+      );
+      expect(rejected.data.status).toBe('REJECTED');
+      const after = await accounts();
+      expect([after[0]!.available, after[0]!.reserved, after[0]!.consumed]).toEqual([20, 0, 0]);
+      const ledger = (
+        await hr.call<S<'LedgerPage'>>(
+          'GET',
+          `/api/v1/entitlement-accounts/${before[0]!.id}/ledger?limit=100`,
+        )
+      ).data.items;
+      expect(ledger.map((row) => row.movementType).sort()).toEqual(['GRANT', 'RELEASE', 'RESERVE']);
+      expect(ledger.filter((row) => row.movementType === 'CONSUME')).toHaveLength(0);
+      expect((await doctor.call<S<'Claim'>>('GET', path)).data.status).toBe('REJECTED');
+      await completeOverstayWorkItems();
+      await test.info().attach('inpatient-claim-acceptance', {
+        contentType: 'application/json',
+        body: JSON.stringify({
+          ...ids,
+          scenario: 'overstay',
+          actualDays: actual,
+          claimStatus: 'REJECTED',
+          approvalError: refused.data.code,
+          available: 20,
+          reserved: 0,
+          consumed: 0,
+        }),
+      });
+      overstayAccepted = true;
+      return;
+    }
     expect(submitted.data.status).toBe('APPROVED');
     expect(submitted.data.projection).toBe('FINANCIAL');
     expect(submitted.data.lines[0]!.diagnosisId).toBeUndefined();
@@ -193,13 +360,23 @@ test('real discharged inpatient source becomes one invoice-ready claim without d
       const movements = ledger.filter((m) => items.includes(m.referenceId));
       expect(movements.reduce((sum, m) => sum + m.deltaReserved, 0)).toBe(0);
       consumed += movements.reduce((sum, m) => sum + m.deltaConsumed, 0);
-      expect(movements.filter((m) => m.movementType === 'CONSUME').length).toBeLessThanOrEqual(1);
+      const consumes = movements.filter((m) => m.movementType === 'CONSUME');
+      if (split) {
+        expect(consumes).toHaveLength(1);
+        expect(consumes[0]!.deltaConsumed).toBe(1);
+      } else {
+        expect(consumes.length).toBeLessThanOrEqual(1);
+      }
     }
     expect(consumed).toBe(actual);
+    if (split) expect(holds).toHaveLength(2);
     await test.info().attach('inpatient-claim-acceptance', {
       contentType: 'application/json',
       body: JSON.stringify({
         ...ids,
+        scenario: split ? 'split' : 'early',
+        allocationScope:
+          'Consumption receipts prove hold quantities; extension validity dates do not establish chronological day coverage.',
         actualDays: actual,
         claimStatus: submitted.data.status,
         invoiceReady: ready.ready,
@@ -217,6 +394,10 @@ test('real discharged inpatient source becomes one invoice-ready claim without d
       body: JSON.stringify(ids),
     });
     // Keep the specific claim/version as reviewable evidence; never reset its clinical source.
-    await Promise.all([billing.close(), doctor.close(), hr.close(), provider.close()]);
+    try {
+      if (!overstayAccepted) await cleanupOverstayFailure();
+    } finally {
+      await Promise.all([billing.close(), doctor.close(), hr.close(), provider.close()]);
+    }
   }
 });

@@ -8,6 +8,7 @@ import { Actor } from './real-api-actor';
 type S<K extends keyof components['schemas']> = components['schemas'][K];
 const base = process.env['E2E_EXISTING_UI_URL'] ?? '';
 const existingProgram = process.env['E2E_INPATIENT_PROGRAM'] ?? '';
+const scenario = process.env['E2E_INPATIENT_SCENARIO'] ?? 'early';
 test.skip(
   process.env['E2E_REAL_API'] !== '1' || !base || process.env['E2E_INPATIENT'] !== '1',
   'requires the operator-started local demo, loaded .env and explicit inpatient opt-in',
@@ -25,6 +26,12 @@ test('real admission and extension reconcile early discharge against each origin
 }) => {
   test.setTimeout(240000);
   expect(new URL(base).hostname).toMatch(/^(localhost|127\.0\.0\.1)$/);
+  expect(['early', 'split', 'overstay']).toContain(scenario);
+  const partial = scenario !== 'early';
+  const overstay = scenario === 'overstay';
+  const authorizedDays = overstay ? 1 : partial ? 4 : 8;
+  const releasedDays = overstay ? 0 : authorizedDays - 2;
+  const finalBalance = overstay ? [19, 1, 0] : [18, 2, 0];
   const admin = new Actor(await apiRequest.newContext(), 'backoffice', true);
   const provider = new Actor(page.request, 'provider', true);
   const doctor = new Actor(await apiRequest.newContext(), 'backoffice', true);
@@ -230,24 +237,63 @@ test('real admission and extension reconcile early discharge against each origin
       },
       { expected: 409 },
     );
-    const decide = async (requestId: string, decision: 'approve' | 'reject') => {
+    const decide = async (
+      requestId: string,
+      decision: 'approve' | 'partially-approve' | 'reject',
+    ) => {
       const path = `/api/v1/service-requests/${requestId}`;
       const pending = await doctor.call<S<'ServiceRequest'>>('GET', path);
       expect(pending.data.status).toBe('PENDING_REVIEW');
-      await doctor.call(
+      const decided = await doctor.call<S<'ServiceRequest'>>(
         'POST',
         path + '/' + decision,
-        { reasonCode: 'PC04_TEST_DECISION' },
+        {
+          reasonCode: 'PC04_TEST_DECISION',
+          ...(decision === 'partially-approve'
+            ? {
+                items: [
+                  {
+                    lineNo: 1,
+                    status: 'PARTIALLY_APPROVED',
+                    approvedQuantity: '1',
+                    decisionReasonCode: 'PC04_TEST_PARTIAL',
+                  },
+                ],
+              }
+            : {}),
+        } satisfies S<'ServiceRequestDecision'>,
         { etag: pending.etag },
       );
+      expect(decided.data.status).toBe(
+        decision === 'partially-approve'
+          ? 'PARTIALLY_APPROVED'
+          : decision === 'approve'
+            ? 'APPROVED'
+            : 'REJECTED',
+      );
+      if (decision === 'partially-approve') {
+        expect(decided.data.items[0]!.status).toBe('PARTIALLY_APPROVED');
+        expect(Number(decided.data.items[0]!.approvedQuantity)).toBe(1);
+      }
     };
-    await decide(first.serviceRequestId, 'approve');
+    await decide(first.serviceRequestId, partial ? 'partially-approve' : 'approve');
     await expect
       .poll(async () => (await getStay()).data.status, { timeout: 30000 })
       .toBe('AUTHORIZED');
     let current = await getStay();
     ids['authorizationId'] = current.data.authorizationId!;
-    await balance([15, 5, 0]);
+    const originalAuthorization = (
+      await doctor.call<S<'Authorization'>>(
+        'GET',
+        `/api/v1/authorizations/${ids['authorizationId']}`,
+      )
+    ).data;
+    expect(new Date(originalAuthorization.validFrom).getTime()).toBe(admission.getTime());
+    expect(new Date(originalAuthorization.validTo).getTime()).toBe(
+      new Date(first.expectedDischargeAt).getTime(),
+    );
+    expect(Number(current.data.authorizedDays)).toBe(partial ? 1 : 5);
+    await balance(partial ? [19, 1, 0] : [15, 5, 0]);
     await page.reload();
     for (const [index, kind] of ['WARD', 'COMPANION'].entries()) {
       await page.getByRole('button', { name: 'Segment ekle', exact: true }).click();
@@ -288,34 +334,38 @@ test('real admission and extension reconcile early discharge against each origin
       expect(result.status()).toBe(200);
       return (await result.json()) as S<'InpatientStay'>;
     };
-    const extended = await extendInBrowser('3');
-    expect(extended.extensions).toHaveLength(1);
-    await expect(page.getByTestId('extension-pending')).toBeVisible();
-    await expect(page.getByTestId('extend-button')).toHaveCount(0);
-    current = await getStay();
-    await provider.call(
-      'POST',
-      stayPath + '/extensions',
-      { additionalDays: 1, reasonCode: 'PC04_DUPLICATE_EXTENSION' },
-      { etag: current.etag, expected: 409 },
-    );
-    await decide(extended.extensions[0]!.serviceRequestId, 'approve');
-    await expect
-      .poll(async () => (await getStay()).data.extensions[0]!.status, { timeout: 30000 })
-      .toBe('APPROVED');
-    current = await getStay();
-    ids['extensionAuthorizationId'] = current.data.extensions[0]!.authorizationId!;
-    expect(ids['extensionAuthorizationId']).not.toBe(ids['authorizationId']);
-    expect(Number(current.data.authorizedDays)).toBe(8);
-    await balance([12, 8, 0]);
-    await page.reload();
-    const second = await extendInBrowser('1');
-    await decide(second.extensions[1]!.serviceRequestId, 'reject');
-    await expect
-      .poll(async () => (await getStay()).data.extensions[1]!.status, { timeout: 30000 })
-      .toBe('REJECTED');
-    await balance([12, 8, 0]);
-    await page.reload();
+    if (!overstay) {
+      const extended = await extendInBrowser('3');
+      expect(extended.extensions).toHaveLength(1);
+      await expect(page.getByTestId('extension-pending')).toBeVisible();
+      await expect(page.getByTestId('extend-button')).toHaveCount(0);
+      current = await getStay();
+      await provider.call(
+        'POST',
+        stayPath + '/extensions',
+        { additionalDays: 1, reasonCode: 'PC04_DUPLICATE_EXTENSION' },
+        { etag: current.etag, expected: 409 },
+      );
+      await decide(extended.extensions[0]!.serviceRequestId, 'approve');
+      await expect
+        .poll(async () => (await getStay()).data.extensions[0]!.status, { timeout: 30000 })
+        .toBe('APPROVED');
+      current = await getStay();
+      ids['extensionAuthorizationId'] = current.data.extensions[0]!.authorizationId!;
+      expect(ids['extensionAuthorizationId']).not.toBe(ids['authorizationId']);
+      expect(Number(current.data.authorizedDays)).toBe(authorizedDays);
+      await balance(partial ? [16, 4, 0] : [12, 8, 0]);
+      await page.reload();
+      const second = await extendInBrowser('1');
+      await decide(second.extensions[1]!.serviceRequestId, 'reject');
+      await expect
+        .poll(async () => (await getStay()).data.extensions[1]!.status, { timeout: 30000 })
+        .toBe('REJECTED');
+      await balance(partial ? [16, 4, 0] : [12, 8, 0]);
+      await page.reload();
+    } else {
+      expect(current.data.extensions).toHaveLength(0);
+    }
     const dischargeAt = new Date();
     dischargeAt.setSeconds(0, 0);
     await page.getByRole('button', { name: 'Taburcu et', exact: true }).click();
@@ -339,12 +389,13 @@ test('real admission and extension reconcile early discharge against each origin
         discharged.data.actualDays,
         discharged.data.releasedDays,
       ].map(Number),
-    ).toEqual([8, 2, 6]);
-    expect(discharged.data.overAuthorization).toBe(false);
+    ).toEqual([authorizedDays, 2, releasedDays]);
+    expect(discharged.data.overAuthorization).toBe(overstay);
+    expect(discharged.data.extensions).toHaveLength(overstay ? 0 : 2);
     expect(discharged.data.segments).toHaveLength(2);
     for (const segment of discharged.data.segments)
       expect(segment.endsAt).toBe(discharged.data.dischargeAt);
-    const after = await balance([18, 2, 0]);
+    const after = await balance(finalBalance);
     const replay = await provider.call(
       'POST',
       stayPath + '/discharge',
@@ -368,24 +419,27 @@ test('real admission and extension reconcile early discharge against each origin
         `/api/v1/entitlement-accounts/${ids['accountId']}/ledger?limit=100`,
       )
     ).data.items;
-    expect(ledger.map((r) => r.movementType).sort()).toEqual([
-      'GRANT',
-      'RELEASE',
-      'RELEASE',
-      'RESERVE',
-      'RESERVE',
-    ]);
-    for (const [key, held] of [
-      ['authorizationId', 2],
-      ['extensionAuthorizationId', 0],
-    ] as const) {
+    expect(ledger.map((r) => r.movementType).sort()).toEqual(
+      overstay
+        ? ['GRANT', 'RESERVE']
+        : partial
+          ? ['GRANT', 'RELEASE', 'RESERVE', 'RESERVE']
+          : ['GRANT', 'RELEASE', 'RELEASE', 'RESERVE', 'RESERVE'],
+    );
+    const expectedHolds: [string, number, number][] = overstay
+      ? [['authorizationId', 1, 0]]
+      : [
+          ['authorizationId', partial ? 1 : 2, partial ? 0 : 1],
+          ['extensionAuthorizationId', partial ? 1 : 0, 1],
+        ];
+    for (const [key, held, releases] of expectedHolds) {
       const authorization = (
         await doctor.call<S<'Authorization'>>('GET', `/api/v1/authorizations/${ids[key]}`)
       ).data;
       const itemIds = authorization.items.map((item) => item.id);
       const movements = ledger.filter((row) => itemIds.includes(row.referenceId));
       expect(movements.reduce((n, row) => n + row.deltaReserved, 0)).toBe(held);
-      expect(movements.filter((row) => row.movementType === 'RELEASE')).toHaveLength(1);
+      expect(movements.filter((row) => row.movementType === 'RELEASE')).toHaveLength(releases);
     }
     const reconciliation = (
       await provider.call<S<'StayReconciliation'>>('GET', stayPath + '/reconciliation')
@@ -394,7 +448,8 @@ test('real admission and extension reconcile early discharge against each origin
       [reconciliation.authorizedDays, reconciliation.actualDays, reconciliation.releasedDays].map(
         Number,
       ),
-    ).toEqual([8, 2, 6]);
+    ).toEqual([authorizedDays, 2, releasedDays]);
+    expect(reconciliation.overAuthorization).toBe(overstay);
     await expect(page.getByTestId('stay-status')).toHaveText('Taburcu');
     await expect(page.getByTestId('reconciliation')).toContainText('Mutabakat');
     accepted = true;
@@ -402,14 +457,18 @@ test('real admission and extension reconcile early discharge against each origin
       contentType: 'application/json',
       body: JSON.stringify({
         ...ids,
-        available: 18,
-        reserved: 2,
+        scenario,
+        available: finalBalance[0],
+        reserved: finalBalance[1],
         consumed: 0,
-        authorizedDays: 8,
+        authorizedDays,
         actualDays: 2,
-        releasedDays: 6,
-        originalHeld: 2,
-        extensionHeld: 0,
+        releasedDays,
+        originalHeld: overstay || partial ? 1 : 2,
+        extensionHeld: scenario === 'split' ? 1 : 0,
+        overAuthorization: overstay,
+        coverageCaveat:
+          'Extension validFrom follows the original expected discharge; allocation assertions prove quantities, not chronological coverage.',
         invoiceReadyVerified: false,
       }),
     });

@@ -301,7 +301,7 @@ PC-02–PC-04 to pass; the health episode's local financial journey closes at PC
 
 **M1 through M7 are recorded as DONE for original implementation delivery.** This does
 not certify the current real-browser health chain; its acceptance is tracked separately
-in PC-02–PC-04. Schema is at migration `000051` (`db/migrations/`). Every
+in PC-02–PC-04. Schema is at migration `000052` (`db/migrations/`). Every
 milestone's exit criteria were verified by the integrator before closing (see `docs/plan/ROADMAP.md`
 § Status log for the full narrative, milestone by milestone — it is long, but it is the real
 history of every non-obvious decision, and reading the last 10–15 entries will save you from
@@ -835,7 +835,7 @@ concurrency (5.15 s), legacy closed-late behavior (5.94 s), and auth-in-transact
 acceptance. The public API still uses HEALTH_CASE/caseID while internal allocation uses
 INPATIENT_STAY/stayID; readiness without a receipt returns 409
 CLAIM_INPATIENT_ALLOCATION_MISSING. No new closed-response enum was added; public v1 HEALTH_CASE/caseID mapping contract tests
-pass, and oasdiff reports no breaking change.
+pass, and oasdiff reports no breaking change. The existing intercepted-response claim-source UI regression passed (1.9 s / 2.9 s total) after refreshing its stale expected localized error. Desktop/mobile captures and the scoped copy finish review passed; this is UI evidence, not live inpatient billing.
 
 Diagnosis replacement's former 500 is now 409 DIAGNOSIS_IN_USE in local HTTP checks
 (health 181.5 s; app 134.5 s); live confirmation awaits the planned restart. The real inpatient
@@ -845,11 +845,22 @@ scoped, and the seeder reuses closed unfunded rows while refusing marker tamperi
 `f4a96463-296d-5c69-a536-776d18baea91` and DEMO_B stay
 `f6c45296-cefe-50d6-bb98-32eab7e9887d`; no accounts, auth, ledger or grants were created.
 Inpatient privacy screenshots at 1440px and 390px were visually reviewed with no overflow or
-clinical text. Schema on the live database remains 51 and the running backend is still
-`9338869`; migration/restart and live claim confirmation are pending. The existing clinical
+clinical text. Migration 000052 is applied locally (dirty=false). The running backend still needs
+an operator restart; live claim confirmation remains pending. The existing clinical
 stay `01a0ec9b-eae4-71e6-8426-ca03c108c887` retains 2 reserved for the prepared
 `real-inpatient-claim.spec.ts` (strict TypeScript and lint pass; not run). Privacy mode
-`E2E_INPATIENT_CANCEL_CHECK=1` is also prepared, not run. The full-schema suite is still running. Mock source/allocation parity passed 23 focused tests; full frontend validation is in progress. All six CI checks passed on `89d1fcb` ([run 36556355293](https://github.com/celikbros/kapsora/actions/runs/36556355293)).
+`E2E_INPATIENT_CANCEL_CHECK=1` is also prepared, not run. The local full schema suite reached its 15-minute total timeout; focused migration/RLS/claim-schema checks passed (26.716 s), and the full schema CI job passed on `8998560`. Mock parity passed 23 focused tests. All 541 frontend tests passed with two workers after the unrestricted run hit timeouts; workspace typecheck, lint, formatting and all app builds pass. All six CI checks passed on `89d1fcb` ([run 36556355293](https://github.com/celikbros/kapsora/actions/runs/36556355293)). All six checks also passed on the implementation commit `8998560` ([run 36559629740](https://github.com/celikbros/kapsora/actions/runs/36559629740)).
+
+
+Prepared live variants (not yet run): set `E2E_INPATIENT_SCENARIO=split` or `overstay`
+for `real-inpatient.spec.ts`, reusing the marked program with a fresh synthetic person/case.
+Both partially approve the five-day estimate for one day. Split adds three approved days,
+discharges at two actual days and preserves one held day per authorization. Its later claim
+checks one draw from each hold. Overstay omits the extension; its claim uses
+`E2E_INPATIENT_CLAIM_EXPECT_OVERSTAY=1` to verify zero consumption, approval refusal,
+rejection release and unchanged submit replay. Strict TypeScript, lint and formatting pass.
+These split assertions certify quantity reconciliation only: extension validFrom follows the
+original expected discharge and this fixture does not prove chronological coverage.
 
 **Cancellation and remaining PC-04 defects:** old CancelStay left 3 reserved from original 5 + extension 3. The local helper now releases extension then original, preserving prior consumption. Two new PostgreSQL subtests (spent 0 and 1) failed before the fix; `go test ./internal/health/application -run 'TestCancelReleases|TestDischarge'` passed afterward (33.707 s), with scoped health-application golangci-lint at 0 issues. Live cancellation confirmation awaits an operator restart. Diagnosis replacement now returns 409 DIAGNOSIS_IN_USE in local tests; live confirmation awaits restart. No user/grant changes were made.
 
@@ -873,7 +884,7 @@ cp .env.example .env              # fill CHANGE_ME with your local PostgreSQL cr
 make tools                        # sqlc, oapi-codegen, oasdiff, golangci-lint, govulncheck
 make native-install && make native-up   # MinIO, ClamAV, Mailpit as native processes
 make db-init                      # role kapsora_app + database kapsora
-make migrate-up                   # schema to 000051
+make migrate-up                   # schema to 000052
 make test-unit && make test-db    # should both be green before you write anything
 ```
 

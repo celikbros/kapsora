@@ -101,7 +101,9 @@ test('billing selects a financial case source and retries an uncertain creation 
     await expect(page.getByText('Liste yüklenemedi', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Yeniden dene', exact: true }).click();
     await page.getByLabel('Faturalandırılacak vaka', { exact: true }).selectOption(caseId);
-    await expect(page.getByText('Vaka faturalamaya hazır değil', { exact: true })).toBeVisible();
+    await expect(page.getByRole('alert')).toContainText(
+      'Vaka faturalamaya hazır değil. Klinik ekibin kayıtları ve provizyonu kontrol etmesini isteyin.',
+    );
     await expect(page.getByTestId('case-claim-form')).toHaveCount(0);
     await page.getByRole('button', { name: 'Yeniden dene', exact: true }).click();
     const form = page.getByTestId('case-claim-form');

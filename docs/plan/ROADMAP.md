@@ -139,7 +139,7 @@ Scoped lint reported zero issues. Shortage and overstay produce no draws; exact 
 terminal cancel/reject preservation, and atomic decision funding with stay state/audit are
 covered locally. Defensive readiness without an allocation receipt returns 409
 CLAIM_INPATIENT_ALLOCATION_MISSING. Public source remains HEALTH_CASE/caseID while internal
-source is INPATIENT_STAY/stayID; public v1 HEALTH_CASE/caseID mapping contract tests pass and oasdiff reports no breaking change.
+source is INPATIENT_STAY/stayID; public v1 HEALTH_CASE/caseID mapping contract tests pass and oasdiff reports no breaking change. The existing intercepted-response claim-source UI regression passed (1.9 s / 2.9 s total) after refreshing its stale expected localized error. Desktop/mobile captures and the scoped copy finish review passed; this is UI evidence, not live inpatient billing.
 
 - **Scope and fixture:** `real-inpatient-scope.spec.ts` passed (15.8 s), covering provider-other
   and DEMO_B detail/list/reconcile commands. Seeder rerun reuses closed unfunded rows and
@@ -151,9 +151,9 @@ source is INPATIENT_STAY/stayID; public v1 HEALTH_CASE/caseID mapping contract t
   clinical text. The existing clinical stay `01a0ec9b-eae4-71e6-8426-ca03c108c887` retains
   2 reserved for `real-inpatient-claim.spec.ts`, which passes strict TypeScript and lint but
   has not run. `E2E_INPATIENT_CANCEL_CHECK=1` is prepared but not run.
-- Live database is still schema 51 with backend `9338869`; migration/restart and live claim
-  confirmation are pending. The full-schema suite is pending; mock parity passed 23 focused tests and full frontend validation is in progress. CI all six
-  checks passed on `89d1fcb` ([run 36556355293](https://github.com/celikbros/kapsora/actions/runs/36556355293)).
+- Migration 000052 is applied locally (dirty=false); backend restart and live claim
+  confirmation are pending. The local full schema suite reached its 15-minute total timeout; focused migration/RLS/claim checks passed (26.716 s), and the full schema CI job passed on `8998560`. Mock parity passed 23 focused tests; all 541 frontend tests passed with two workers after the unrestricted run timed out. Workspace typecheck, lint, formatting and app builds pass. CI all six
+  checks passed on `89d1fcb` ([run 36556355293](https://github.com/celikbros/kapsora/actions/runs/36556355293)). All six implementation checks passed on `8998560` ([run 36559629740](https://github.com/celikbros/kapsora/actions/runs/36559629740)).
 
 - [real-inpatient.spec.ts](../../tests/e2e/real-inpatient.spec.ts) is prepared with API
   clinical setup and provider UI paths for admission, segments, extension approval/refusal
@@ -233,6 +233,17 @@ source is INPATIENT_STAY/stayID; public v1 HEALTH_CASE/caseID mapping contract t
   case; the overstay path must be tested for review/refusal only. All six GitHub CI checks passed on `336e1c9`
   [run 36530650005](https://github.com/celikbros/kapsora/actions/runs/36530650005).
   PC-03's live outpatient acceptance is recorded in the 2026-09-29 checkpoint above; PC-04 remains active.
+
+
+Prepared live variants (not yet run): set `E2E_INPATIENT_SCENARIO=split` or `overstay`
+for `real-inpatient.spec.ts`, reusing the marked program with a fresh synthetic person/case.
+Both partially approve the five-day estimate for one day. Split adds three approved days,
+discharges at two actual days and preserves one held day per authorization. Its later claim
+checks one draw from each hold. Overstay omits the extension; its claim uses
+`E2E_INPATIENT_CLAIM_EXPECT_OVERSTAY=1` to verify zero consumption, approval refusal,
+rejection release and unchanged submit replay. Strict TypeScript, lint and formatting pass.
+These split assertions certify quantity reconciliation only: extension validFrom follows the
+original expected discharge and this fixture does not prove chronological coverage.
 
 **Exit:** admission with an approved extension and early discharge reconciles each
 authorization separately; a refused/invalid admission or extension behaves correctly;
