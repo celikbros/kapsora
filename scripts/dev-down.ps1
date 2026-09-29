@@ -1,31 +1,30 @@
-# Stops whatever `.\scripts\dev.ps1 up` left running: the three dev servers on 5181-5183 and the
-# Go services started with `go run ./cmd/...`.
-#
-# The filters are deliberately narrow. A dev server is only stopped when its command line names
-# one of those ports and a path inside this repository, and a Go service only when it is the
-# temporary binary `go run` builds for cmd/api, cmd/worker or cmd/scheduler -- so another
-# project's server on another port, and anything else on this machine, is left alone.
+﻿# Stop only process groups created by scripts/dev-up.ps1.
 param([switch]$Quiet)
 
-$ErrorActionPreference = "Stop"
-$root = (Split-Path -Parent $PSScriptRoot).ToLowerInvariant()
-
+$ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'dev-processes.ps1')
+$root = Split-Path -Parent $PSScriptRoot
+$runsPath = Join-Path $root 'tools\dev-runs'
 $stopped = 0
-$candidates = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {
-    $line = $_.CommandLine
-    if (-not $line) { return $false }
-    $lower = $line.ToLowerInvariant()
-    $isWeb = ($_.Name -eq 'node.exe' -or $_.Name -eq 'cmd.exe') -and
-             ($lower -cmatch '--port\s+518[123]\b') -and ($lower.Contains('kapsora'))
-    $isGo = ($lower.Contains('go-build') -or $lower.Contains('\cmd\')) -and
-            ($_.Name -eq 'api.exe' -or $_.Name -eq 'worker.exe' -or $_.Name -eq 'scheduler.exe')
-    $isGoRun = ($_.Name -eq 'go.exe') -and ($lower -cmatch 'run\s+\./cmd/(api|worker|scheduler)')
-    $isWeb -or $isGo -or $isGoRun
-}
-foreach ($process in $candidates) {
-    Stop-Process -Id $process.ProcessId -Force -ErrorAction SilentlyContinue
-    $stopped++
+if (Test-Path -LiteralPath $runsPath) {
+    foreach ($run in @(Get-ChildItem -LiteralPath $runsPath -Directory -ErrorAction SilentlyContinue)) {
+        $statePath = Join-Path $run.FullName 'state.json'
+        if (-not (Test-Path -LiteralPath $statePath)) { continue }
+        try { $state = Get-Content -LiteralPath $statePath -Raw | ConvertFrom-Json } catch { continue }
+        if ($state.JobName -cnotmatch '^Local\\KapsoraDev-[0-9a-f]{32}$') { continue }
+        if (Test-DevProcessIdentity $state.Supervisor) {
+            [System.IO.File]::WriteAllText((Join-Path $run.FullName 'stop.signal'), '')
+        }
+        $jobHandle = [KapsoraDevJob]::Open([string]$state.JobName)
+        if ($jobHandle -eq [IntPtr]::Zero) { continue }
+        try {
+            [void][KapsoraDevJob]::Terminate($jobHandle)
+            $stopped++
+        } finally {
+            [KapsoraDevJob]::Close($jobHandle)
+        }
+    }
 }
 if (-not $Quiet) {
-    Write-Host ("KAPSORA durduruldu ({0} surec)." -f $stopped)
+    if ($stopped -eq 0) { Write-Host "Kayıtlı etkin geliştirme oturumu bulunamadı." } else { Write-Host ("KAPSORA durduruldu ({0} oturum)." -f $stopped) }
 }

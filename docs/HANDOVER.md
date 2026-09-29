@@ -898,6 +898,26 @@ exactly as it will in production. `... down` stops everything it started. Seed d
 first with `.\scripts\dev.ps1 seed-demo` (needs `native-up` running; password
 `demo parola 2026 kapsora` unless `KAPSORA_SEED_DEMO_PASSWORD` is set).
 
+**Windows shutdown ownership (2026-09-29):** the launcher assigns each worker to a
+unique Windows Job Object before allowing Go/Vite to start. Ctrl+C terminates that group
+and its descendants, replacing sequential unbounded `Stop-Job` waits. `dev.ps1 down`
+uses the recorded job name under ignored `tools/dev-runs/`; it does not discover targets
+by executable name, command line or port. The interactive terminal and native services
+(PostgreSQL, MinIO, ClamAV and Mailpit) are outside that group. This is forced development
+process cleanup, not a guarantee that in-flight application requests drain gracefully.
+The operator still owns server start/stop. Existing sessions launched by the old script
+must finish their old shutdown path once; changing files does not update the launcher
+already running in that terminal. The new `down` command intentionally does not target
+such untracked legacy processes.
+
+Validation: `powershell.exe -NoProfile -File scripts/tests/dev-shutdown.tests.ps1`
+passed with isolated copied scripts and fake Go/pnpm commands: external `down` 683 ms,
+stop-signal/finally 370 ms, and early startup cancellation 436 ms. Six orphaned mock
+children were removed; an unrelated process survived, repeated shutdown was safe, and
+a stale supervisor identity was ignored. Literal interactive Ctrl+C remains an operator
+check; the test covers its shared cleanup path. PowerShell 5.1 parsing and `git diff --check`
+passed. The operator's existing API and three UI process IDs were unchanged.
+
 To run the real member-import browser regression against that already running system:
 
 ```powershell
