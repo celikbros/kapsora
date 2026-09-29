@@ -34,6 +34,12 @@ test('real admission and extension reconcile early discharge against each origin
     await admin.login('admin.a');
     await provider.login('provider.a');
     await doctor.login('doctor.a');
+    const me = (await provider.call<S<'UserContext'>>('GET', '/api/v1/me')).data;
+    const providerScopes = me.tenants
+      .find((t) => t.tenant.code === 'DEMO_A')!
+      .scopes!.filter((scope) => scope.type === 'ORGANIZATION' && scope.id);
+    expect(providerScopes).toHaveLength(1);
+    const providerOrganizationId = providerScopes[0]!.id!;
     const now = new Date();
     const today = day(now);
     const admission = new Date(now.getTime() - 25 * 3600000);
@@ -156,6 +162,7 @@ test('real admission and extension reconcile early discharge against each origin
           personId: person.id,
           enrollmentId: enrollment.id,
           caseType: 'INPATIENT',
+          providerOrganizationId,
           openedAt: admission.toISOString(),
         } satisfies S<'CreateHealthCase'>,
         { expected: 201 },
@@ -254,7 +261,7 @@ test('real admission and extension reconcile early discharge against each origin
     expect((await saving).status()).toBe(200);
     await expect(page.getByTestId('stay-status')).toHaveText('Yatan');
     current = await getStay();
-    await provider.call(
+    const overlap = await provider.call<S<'Problem'>>(
       'PUT',
       stayPath + '/segments',
       {
@@ -263,8 +270,9 @@ test('real admission and extension reconcile early discharge against each origin
           { segmentType: 'ICU', startsAt: admission.toISOString() },
         ],
       },
-      { etag: current.etag, expected: 409 },
+      { etag: current.etag, expected: 422 },
     );
+    expect(overlap.data.errors?.some((error) => error.code === 'OVERLAP')).toBe(true);
     expect(await getStay()).toEqual(current);
     const extendInBrowser = async (days: string) => {
       await page.getByTestId('extend-button').click();

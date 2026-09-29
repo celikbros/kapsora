@@ -39,11 +39,13 @@ health first.** The detailed plan for the approved sequence is the
 [PC-01–PC-06 product completion roadmap](plan/ROADMAP.md#current-product-completion-roadmap-2026-09-22).
 Member import is locally verified. PC-02 is VERIFIED locally for its defined demo
 acceptance scope as of 2026-09-29; its dated evidence and limits are recorded below and in
-the roadmap. PC-03 still needs a live standard report-free episode after the operator API
-restart. PC-04 remains a separate inpatient acceptance gate spanning admission, extension,
-discharge, claim and privacy. Its early-discharge regression and inpatient-program seeder
-are verified locally; applying the fixture to the running demo and browser acceptance remain
-pending. PC-05 invoice/batch/payment and PC-06 accommodation plus combined acceptance follow. The roadmap records
+the roadmap. PC-03 is VERIFIED locally for the defined outpatient acceptance scope after
+the live standard outpatient run; overall health acceptance remains open. PC-04 remains a
+separate inpatient acceptance gate spanning admission, extension, discharge, claim and
+privacy. Its early-discharge regression and inpatient-program seeder are verified locally,
+and the marked fixture was applied or reused in the live clinical run. H12/H13 and discharge
+release passed; H14 consumption/partial-day/overstay and H15 claim/invoice remain pending.
+PC-05 invoice/batch/payment and PC-06 accommodation plus combined acceptance follow. The roadmap records
 task dependencies, 15 health acceptance scenarios, role handoffs, evidence gates and
 confirmed source/fixture gaps.
 The first live health checkpoint passed: provider catalog access, single-enrollment
@@ -732,8 +734,8 @@ end time returns 422. An aborted commit response followed by the exact same key/
 retry produced one version; a second end returned 409. The provider UI closed the case;
 editing or creating encounters on the closed case returned 409. Accounts were unchanged.
 The inspected 1440px and 390px captures under ignored `.impeccable/review` show the end
-form fits. H05 is passed for this scope. PC-03 still requires a live standard report-free
-episode; inpatient privacy remains PC-04.
+form fits. H05 is passed for this scope. PC-03 is verified for the defined outpatient scope
+in the live acceptance checkpoint below; inpatient acceptance remains PC-04.
 
 **2026-09-29 shared-door and request notification evidence:** [real-provider-member-handoff.spec.ts](../tests/e2e/real-provider-member-handoff.spec.ts) passed against shared `http://127.0.0.1:5181` in both dedicated projects (8.0 s and 5.4 s; 16.2 s total). `E2E_EXISTING_UI_URL` now works in both projects. Real login reaches the correct app, a wrong-app second-tab visit redirects, and logout invalidates the session.
 
@@ -741,9 +743,30 @@ episode; inpatient privacy remains PC-04.
 
 A read-only RLS app-role DB probe confirmed request create, submit, gate and approve each returned SUCCESS once. Mock provider role parity now matches real `PROVIDER_STAFF` after removing six extra grants; billing grants are unchanged. Validation passed: 128 mock tests, 12 UI tests, TypeScript typecheck and lint. A fresh automatic-program live run passed (13.3 s / 15.3 s total), replacing the expired fixture.
 
-The standard report-free handoff is implemented and local tests pass; live verification
-awaits the operator API restart. PC-03 still requires a live standard report-free episode;
-inpatient privacy remains PC-04.
+### PC-03 standard outpatient live acceptance (2026-09-29)
+
+[real-standard-outpatient.spec.ts](../tests/e2e/real-standard-outpatient.spec.ts) passed in
+11.1 s (12.2 s total) after the operator API restart. It used source request
+`01a0ebc5-cece-7cbf-8e81-43984ad51314` and its program
+`01a0ebc5-a96a-7267-84e2-a474e5e48fc6`, valid through 2026-10-01. The run created closed
+case `01a0ec97-c327-758a-beaf-da60da0aa38c`, ended encounter
+`01a0ec97-c4be-7539-bd42-7c82032d9d56`, request
+`01a0ec97-b75b-76a2-9d35-7acd65b6fd89`, authorization
+`01a0ec97-b7e3-76b4-bab3-6f5c2068afb3`, and approved invoice-ready claim
+`01a0ec97-cf5c-7727-8c64-c19abcd02cd1` at 400/400/0 TRY. Person
+`01a0ec97-af2c-74d9-b985-2b260659f2ce`, enrollment
+`01a0ec97-af66-7804-858f-bed8d0e27993`, and account
+`01a0ec97-b399-7acf-94de-9628de42a52a` ended at 19 available / 0 reserved / 1 consumed,
+from 20/0/0.
+
+The provider UI closed the case with an ended encounter and primary diagnosis, displayed the
+claim-restriction message, and offered no new-claim action. Billing created, submitted and
+checked readiness in its UI. Financial/clinical projections and create/submit replays were
+checked; replays retained one consumption. No report was created, and the optional report
+line was absent. The catalog has no intrinsic-report flag, so this run establishes the
+observed fixture path, not a general PHYSIO report policy.
+
+All six CI checks passed on `9338869` ([run 36532511610](https://github.com/celikbros/kapsora/actions/runs/36532511610)). PC-03 is VERIFIED locally for the defined outpatient acceptance scope. PC-04 inpatient acceptance and PC-05 finance remain separate; overall health acceptance is not complete.
 
 **PC-02 closure checkpoint (2026-09-29):** Review of the linked acceptance evidence found no concrete unmet
 task for the defined demo acceptance scope; PC-02 is VERIFIED locally for that scope. The
@@ -758,34 +781,50 @@ original 5 + extension 3 and actual use 2, releasing the unused 6 leaves origina
 extension 0; consuming 2 and replaying preserves conservation. The partial case with one
 unit consumed before discharge also reconciles. The worker advances the existing stay to
 AUTHORIZED and creates the authorization; it does not create the stay. The planned claim
-allocation design and boundaries are in the roadmap. `real-inpatient.spec.ts` is prepared; strict TypeScript,
-lint and formatting pass, but it has not been executed. Its intended ledger check is 18 available /
-2 reserved / 0 consumed; this is not invoice or claim evidence. The `cmd/seed/inpatientprogram.go`
-command is registered and locally verified, not live-verified: its disposable-PostgreSQL
-integration test passed (5.75 s), including first publish/rerun, two distinct programs
+allocation design and boundaries are in the roadmap. `real-inpatient.spec.ts` passes strict
+TypeScript, lint and formatting. The first two attempts exposed harness issues:
+`providerOrganizationID` is now read from the session and overlap 422 is checked at the field.
+The successful run required no backend permission/grant or user change. This is not invoice
+or claim evidence. The `cmd/seed/inpatientprogram.go`
+command is locally verified by disposable-PostgreSQL integration (5.75 s), including first
+publish/rerun, two distinct programs
 sharing one contract/version with separate plans, and candidate selection. The bounded tariff
 uses a marked manual-review program, a 20 NIGHT plan, factor 1, and a maximum 31-day
 NIGHT/UNIT price of 400 TRY with no member share. Admission at -25 h and extension at +8 d
 select it uniquely; insufficient windows and a foreign competing tariff fail before plan
-mutation. Scoped `go vet` and `golangci-lint ./cmd/seed/...` passed (0 issues); no live demo
-records changed. `E2E_INPATIENT_PROGRAM`
-reuses the marked window only while valid; do not expand a published tariff. Applying the
-fixture to the running demo and the real browser scenario remain pending. Overstay is for medical review/refusal with zero
+mutation. Scoped `go vet` and `golangci-lint ./cmd/seed/...` passed (0 issues); the
+integration test itself changed no live demo records. The later live clinical run applied or
+reused `E2E_INPATIENT_PROGRAM`; do not expand a
+published tariff. Shared-tariff checks beyond this run remain pending. Overstay is for medical review/refusal with zero
 consumption; approval alone provides no funding or consumption. All six CI checks passed on `336e1c9`
 ([run](https://github.com/celikbros/kapsora/actions/runs/36530650005)). PC-03's live
-standard report-free episode still awaits the operator API restart. Resume it after restart with:
+standard outpatient acceptance passed as recorded above; PC-04 remains active.
 
-```powershell
-$env:E2E_REAL_API = '1'
-$env:E2E_EXISTING_UI_URL = 'http://127.0.0.1:5181'
-$env:E2E_STANDARD_OUTPATIENT_SOURCE_REQUEST = '01a0ebc5-cece-7cbf-8e81-43984ad51314'
-pnpm e2e real-standard-outpatient.spec.ts --project chromium --trace off
-Remove-Item Env:E2E_REAL_API, Env:E2E_EXISTING_UI_URL, Env:E2E_STANDARD_OUTPATIENT_SOURCE_REQUEST
-```
+**PC-04 live clinical run (2026-09-29):** `real-inpatient.spec.ts` passed in 16.8 s
+(17.9 s total). Admission UI created WARD + COMPANION segments. Overlap returned 422 with
+field `OVERLAP` and left segments unchanged; duplicate admission and duplicate pending
+extension returned 409. The worker advanced the stay to AUTHORIZED. Original authorization
+5 plus approved extension 3, followed by refusal of the next extension, discharged at actual
+use 2 and released 6: account remained at 18 available / 2 reserved / 0 consumed, with
+original hold 2 and extension hold 0 verified separately. Discharge replay left balances
+unchanged. No claim or invoice was created; H14 consumption and H15 remain pending. The first
+two harness attempts were fixed by taking `providerOrganizationID` from session scope and
+validating overlap 422 at the field; no backend permission/grant or user change was made.
+The program/tariff seed was applied or reused in this run.
 
-The source request's program `01a0ebc5-a96a-7267-84e2-a474e5e48fc6` has recorded
-`validTo: 2026-10-01`. If that window expires, create a fresh request through the explicit
-automatic-request harness; never edit the published plan.
+Program `01a0ec98-4d6d-7f66-a322-0c0ea12bdbb8`, plan
+`01a0ec98-5aa5-7c62-9b0b-f2ad0f08d354`, contract
+`01a0ec98-5a4b-76cc-91d6-eb1b269347df`, person `01a0ec9b-d41f-7424-8385-d31c2cf3bf0d`,
+enrollment `01a0ec9b-d449-7c0f-a2fb-24b2f53deb29`, account
+`01a0ec9b-e318-74d3-8b86-aeccdf8304d6`, case `01a0ec9b-e422-748e-9a65-2123d6e0807c`,
+stay `01a0ec9b-eae4-71e6-8426-ca03c108c887`, request
+`01a0ec9b-ead1-777c-be55-bac36c48def3`, admission authorization
+`01a0ec9b-eeee-7b45-b906-ef1e6e0a651f`, and extension authorization
+`01a0ec9b-fae5-7640-9ef4-ca1d15f473e7`.
+
+**PC-04 inpatient privacy/purpose (2026-09-29):** [real-inpatient-privacy.spec.ts](../tests/e2e/real-inpatient-privacy.spec.ts) passed in 9.7 s (11.0 s total). Source stay `01a0ec9b-eae4-71e6-8426-ca03c108c887` remained unchanged; new case `01a0eca9-5bfe-7bdb-9092-df65eda1140a` and stay `01a0eca9-5caf-773f-8663-4777b99a555d` used the existing synthetic person/enrollment. HR stay detail/list and FINANCIAL projections omitted `admissionDiagnosisId`/`reasonText`; `financial.reviewer` returned 403. A separate sensitive encounter made the case SENSITIVE: doctor GET without purpose returned 428, explicit FINANCIAL decline emitted no access event, and MEDICAL_REVIEW with a clinical reason recorded audit SUCCESS with DENIED visible. Provider sensitive-FINANCIAL API/DOM and HR person-health DOM showed no clinical text. Dates +/-4000 days returned 422 with no stay/balance mutation. 1440/390 screens had no overflow; screenshots still need visual review. Cleanup cancelled the new stay and each known authorization, with account figures at baseline; this does not prove CancelStay auto-releases every hold. Full H11 stay provider/tenant boundaries remain open.
+
+**Cancellation and remaining PC-04 defects:** old CancelStay left 3 reserved from original 5 + extension 3. The local helper now releases extension then original, preserving prior consumption. Two new PostgreSQL subtests (spent 0 and 1) failed before the fix; `go test ./internal/health/application -run 'TestCancelReleases|TestDischarge'` passed afterward (33.707 s), with scoped health-application golangci-lint at 0 issues. Live cancellation confirmation awaits an operator restart. A separate diagnosis replacement currently returns 500 because the admission FK still references it; that fix is in progress. No user/grant changes were made.
 
 A separate read-only browser layout check used intercepted case data to expose the new
 form without changing a database record. It found a clipped date field inside the mobile

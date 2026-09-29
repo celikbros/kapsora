@@ -503,7 +503,7 @@ func (s *Service) DischargeStay(ctx context.Context, rc identity.RequestContext,
 		// An approved extension reserves days on its own authorization. Give unused days
 		// back from the newest extension first, then the original hold, so the days
 		// actually spent remain on the earliest authorization for the later claim.
-		released, err := s.releaseUnusedDays(ctx, tx, rc, current, authorized.Sub(actual))
+		released, err := s.releaseUnusedDays(ctx, tx, rc, current, authorized.Sub(actual), ReleaseReasonDischarge)
 		if err != nil {
 			return err
 		}
@@ -548,7 +548,7 @@ func (s *Service) DischargeStay(ctx context.Context, rc identity.RequestContext,
 // next one. Running a discharge twice releases once: the key is the line and the reason, not
 // the moment.
 func (s *Service) releaseUnusedDays(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
-	current StayRecord, unused benefitdomain.Quantity,
+	current StayRecord, unused benefitdomain.Quantity, reasonCode string,
 ) (benefitdomain.Quantity, error) {
 	released := benefitdomain.ZeroQuantity()
 	if !unused.IsPositive() {
@@ -577,7 +577,7 @@ func (s *Service) releaseUnusedDays(ctx context.Context, tx pgx.Tx, rc identity.
 		raw, err := s.authorizations.ReleaseUnused(ctx, tx, StayReleaseInput{
 			TenantID: rc.TenantID, ActorID: rc.Principal.ActorID,
 			AuthorizationID: authorizationID, Days: remaining.String(),
-			ReasonCode: ReleaseReasonDischarge,
+			ReasonCode: reasonCode,
 		})
 		if err != nil {
 			return released, err
@@ -613,20 +613,12 @@ func (s *Service) CancelStay(ctx context.Context, rc identity.RequestContext, id
 		if err != nil {
 			return err
 		}
-		released := benefitdomain.ZeroQuantity()
-		if current.AuthorizationID != nil {
-			authorized := parseDays(current.AuthorizedDays)
-			if authorized.IsPositive() {
-				raw, err := s.authorizations.ReleaseUnused(ctx, tx, StayReleaseInput{
-					TenantID: rc.TenantID, ActorID: rc.Principal.ActorID,
-					AuthorizationID: *current.AuthorizationID, Days: authorized.String(),
-					ReasonCode: ReleaseReasonCancelled,
-				})
-				if err != nil {
-					return err
-				}
-				released = parseDays(raw)
-			}
+		// Approved extensions own separate holds. Release every unused portion; the
+		// authorization service preserves quantities already consumed.
+		released, err := s.releaseUnusedDays(ctx, tx, rc, current,
+			parseDays(current.AuthorizedDays), ReleaseReasonCancelled)
+		if err != nil {
+			return err
 		}
 		if err := s.stayRepo.CancelStay(ctx, tx, rc.TenantID, id, reasonCode,
 			actorPtr(rc.Principal.ActorID), expected); err != nil {

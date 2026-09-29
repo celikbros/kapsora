@@ -43,8 +43,8 @@ the existing work-package contracts rather than starting their implementation ag
 | --- | --- | --- | --- | --- |
 | PC-01 | Member import | VERIFIED locally; PR open | Existing identity/member setup | Upload → password step-up → invalid-row skip → one created member → search → logout; no duplicate effect |
 | PC-02 | Eligibility, service request and authorization | VERIFIED locally for the defined demo acceptance scope (2026-09-29) | Verified member/scenario prerequisites | A real provider can request covered care; approvals/refusals and the authorization/entitlement effects agree |
-| PC-03 | Outpatient care, reports and health claims | ACTIVE; H05 passed; live standard report-free episode pending operator API restart | PC-02 | Case, encounter and diagnosis, then a clean report, review and invoice-ready claim |
-| PC-04 | Inpatient care | PREPARATION; early-discharge regression and inpatient-program seeder verified locally; real browser scenario pending | PC-03 and admission configuration | Preauthorization → admission → extension → discharge → invoice-ready claim; entitlement reconciles |
+| PC-03 | Outpatient care, reports and health claims | VERIFIED locally for the defined outpatient acceptance scope (2026-09-29); PC-04/05 remain separate | PC-02 | Case, encounter and diagnosis, then a clean report, review and invoice-ready claim |
+| PC-04 | Inpatient care | ACTIVE; first live admission, extension and discharge-release path passed; consumption and claim/invoice acceptance remain pending | PC-03 and admission configuration | Preauthorization -> admission -> extension -> discharge -> invoice-ready claim; entitlement reconciles |
 | PC-05 | Invoice, batch, settlement and payment | QUEUED | An invoice-ready health claim from PC-03/04 | The same episode reaches invoice, payer decision and a reconciled local payment record |
 | PC-06 | Accommodation and combined product acceptance | QUEUED | PC-05; existing lodging implementation | Booking and its financial consequences work; cross-app regression and owner walkthrough complete |
 
@@ -109,9 +109,11 @@ References: [eligibility](../delegation/WP-I2-04-eligibility.md), existing M4 pa
 | PC-03.6 | Test clinical/financial projections and sensitive access with real roles at both API and DOM level. HR must receive no diagnosis/report narrative; cross-provider/tenant access is refused; purpose accept/decline and audited access work. Include a reviewer who is also the subject of the record. |
 
 **Exit:** a standard outpatient episode and a report-dependent episode reach invoice
-readiness through the real applications. All PC-03 exceptions/privacy gates pass. Save
-safe record IDs, totals and statuses for PC-05; a pre-existing invoice is not evidence
-that this newly tested episode flowed through billing.
+readiness through the real applications. For the defined outpatient acceptance scope,
+PC-03 is VERIFIED locally as of 2026-09-29. Save safe record IDs, totals and statuses for
+PC-05; a pre-existing invoice is not evidence that this newly tested episode flowed through
+billing. PC-04 inpatient acceptance and PC-05 finance remain separate; overall health
+acceptance is not complete.
 
 References: existing [M5 packages](#m5-work-packages-issued-2026-09-05),
 [report HTTP tests](../../internal/health/transport/http/report_test.go),
@@ -133,9 +135,49 @@ References: existing [M5 packages](#m5-work-packages-issued-2026-09-05),
 - [real-inpatient.spec.ts](../../tests/e2e/real-inpatient.spec.ts) is prepared with API
   clinical setup and provider UI paths for admission, segments, extension approval/refusal
   and discharge. TypeScript strict checking, lint and formatting pass; the browser scenario
-  has not been executed. It is intended to verify the worker advances the existing stay to
-  AUTHORIZED and creates the authorization, plus per-hold ledger state (18 available /
-  2 reserved / 0 consumed). This is not invoice or claim proof.
+  initial attempts exposed harness issues: `providerOrganizationID` now comes from the session,
+  and overlap 422 is validated at the field. The real-inpatient run passed the clinical path;
+  no backend permission or grant change and no user change was made. It verifies the worker
+  advances the existing stay to AUTHORIZED and creates the authorization. It is not claim or
+  invoice proof.
+- **Live clinical acceptance:** [real-inpatient.spec.ts](../../tests/e2e/real-inpatient.spec.ts)
+  passed in 16.8 s (17.9 s total). The UI admitted WARD + COMPANION; overlapping segments
+  returned 422/OVERLAP without changes; duplicate admission and duplicate pending extension
+  returned 409. The worker advanced the stay to AUTHORIZED. An original authorization of 5
+  plus approved extension of 3 was followed by refusal of the next extension. Discharge with
+  actual use 2 released 6: account ended at 18 available / 2 reserved / 0 consumed, with
+  original hold 2 and extension hold 0 verified separately. Discharge replay left the ledger
+  unchanged. No claim or invoice was created; H14 consumption and H15 remain open. The
+  program/tariff seed was applied or reused in this run. Program
+  `01a0ec98-4d6d-7f66-a322-0c0ea12bdbb8`, plan `01a0ec98-5aa5-7c62-9b0b-f2ad0f08d354`,
+  contract `01a0ec98-5a4b-76cc-91d6-eb1b269347df`, person `01a0ec9b-d41f-7424-8385-d31c2cf3bf0d`,
+  enrollment `01a0ec9b-d449-7c0f-a2fb-24b2f53deb29`, account
+  `01a0ec9b-e318-74d3-8b86-aeccdf8304d6`, case `01a0ec9b-e422-748e-9a65-2123d6e0807c`,
+  stay `01a0ec9b-eae4-71e6-8426-ca03c108c887`, request
+  `01a0ec9b-ead1-777c-be55-bac36c48def3`, admission authorization
+  `01a0ec9b-eeee-7b45-b906-ef1e6e0a651f`, extension authorization
+  `01a0ec9b-fae5-7640-9ef4-ca1d15f473e7`.
+- **Inpatient privacy/purpose:** [real-inpatient-privacy.spec.ts](../../tests/e2e/real-inpatient-privacy.spec.ts)
+  passed in 9.7 s (11.0 s total). Source stay `01a0ec9b-eae4-71e6-8426-ca03c108c887`
+  was unchanged; new case `01a0eca9-5bfe-7bdb-9092-df65eda1140a` and stay
+  `01a0eca9-5caf-773f-8663-4777b99a555d` used the existing synthetic person/enrollment.
+  HR stay detail/list and FINANCIAL projections omitted `admissionDiagnosisId` and
+  `reasonText`; `financial.reviewer` received 403. A sensitive separate encounter made
+  the case SENSITIVE: doctor GET without purpose returned 428, explicit FINANCIAL decline
+  emitted no access event, and MEDICAL_REVIEW with a clinical reason recorded audit SUCCESS
+  with DENIED shown. Provider sensitive-FINANCIAL API/DOM and HR person-health DOM had no
+  clinical text. Dates at +/-4000 days returned 422 without stay or balance mutation.
+  Screens at 1440/390 had no overflow; screenshots still need visual review. Cleanup
+  cancelled the new stay and each known authorization, with account figures at baseline;
+  this is not proof that CancelStay automatically releases every hold. It proves these
+  projection/purpose cases only, not full H11 stay-provider/tenant boundaries.
+- **Cancellation follow-up:** old CancelStay behavior left 3 reserved from original 5 +
+  extension 3. A new local health helper releases extension then original, preserving prior
+  consumption. Two PostgreSQL subtests (spent 0 and 1) failed before the fix; afterward
+  `go test ./internal/health/application -run 'TestCancelReleases|TestDischarge'` passed
+  (33.707 s), and scoped health-application golangci-lint reported 0 issues. Live
+  cancellation confirmation awaits an operator restart. A separate diagnosis replacement
+  currently returns 500 because the admission FK still references it; that fix is in progress.
 - A local early-discharge fix releases unused authorization from the latest approved
   extension first, then the original hold. Three focused PostgreSQL tests passed (11 s):
   with original 5 + extension 3 and actual use 2, release of the unused 6 leaves original
@@ -155,8 +197,8 @@ References: existing [M5 packages](#m5-work-packages-issued-2026-09-05),
 - The per-version allocation table keeps a single claim's duplicate checks and history
   coherent; splitting the stay across separate claims would bypass the current claim model.
   The seeder in `cmd/seed/inpatientprogram.go` is registered with the seed command and
-  locally verified, not live-verified. Its disposable-PostgreSQL integration test passed
-  (5.75 s), covering first publish and rerun, two distinct programs sharing one contract /
+  locally verified by disposable-PostgreSQL integration (5.75 s), covering first publish
+  and rerun, two distinct programs sharing one contract /
   version while keeping separate plans, and candidate selection. The bounded tariff is a
   dedicated marked program with manual review, a 20 NIGHT plan, factor 1, and a maximum
   31-day NIGHT/UNIT tariff at 400 TRY with no member share. The candidate is uniquely
@@ -164,11 +206,11 @@ References: existing [M5 packages](#m5-work-packages-issued-2026-09-05),
   competing tariff are refused before plan mutation. Scoped `go vet` and
   `golangci-lint ./cmd/seed/...` passed (0 issues); no live demo
   records were changed. `E2E_INPATIENT_PROGRAM` reuses the marked window only while it remains
-  valid; do not expand a published tariff. Applying the fixture to the running demo and the
-  real browser scenario are pending. H15 needs a fully covered 5 + 1 allocation case; the overstay
-  path must be tested for review/refusal only. All six GitHub CI checks passed on `336e1c9`
+  valid; do not expand a published tariff. The fixture was applied or reused in the live run;
+  shared-tariff checks beyond it remain pending. H15 needs a fully covered 5 + 1 allocation
+  case; the overstay path must be tested for review/refusal only. All six GitHub CI checks passed on `336e1c9`
   [run 36530650005](https://github.com/celikbros/kapsora/actions/runs/36530650005).
-  PC-03's live standard report-free episode still awaits the operator API restart.
+  PC-03's live outpatient acceptance is recorded in the 2026-09-29 checkpoint above; PC-04 remains active.
 
 **Exit:** admission with an approved extension and early discharge reconciles each
 authorization separately; a refused/invalid admission or extension behaves correctly;
@@ -194,12 +236,12 @@ evidence; race, duplicate-delivery and ledger invariants may use focused databas
 | H07 | Report review, coverage and immutable correction history work | PC-03 | PASSED 2026-09-23: live approval/correction, immutable history, separate scanned evidence and unchanged prior claim/usage; coverage exceptions verified in isolated PostgreSQL tests |
 | H08 | Clinical provider → billing → medical → financial handoff reaches invoice-ready claim | PC-03 | PASSED 2026-09-23: real browser handoff, two return/correction cycles, preserved contract price, final 400/400/0 TRY and one net session consumed |
 | H09 | Duplicate/report/authorization blockers and corrected claim history are accurate | PC-03 | PASSED 2026-09-23: correction/history and consumption/replays plus live duplicate, authorization exceeded, report date and service-scope blockers; no extra consumption or report usage |
-| H10 | HR/financial projections exclude forbidden clinical fields in API and DOM | PC-03/04 | Outpatient verified live: HR case/report and HR/financial claim API/DOM hide clinical fields; current/historical claim notes protected. Inpatient projection coverage remains for PC-04 |
-| H11 | Sensitive purpose, access audit, self-review and other-provider/tenant boundaries hold | PC-03/04 | Outpatient verified: live purpose/audit, own-report/claim decisions, report tenant/provider and case/claim provider boundaries; case/claim tenant refusals verified with PostgreSQL/HTTP tests. Stay boundaries remain for PC-04 |
-| H12 | Admission approval advances the stay once and refuses duplicate open admission | PC-04 | Pending |
-| H13 | Extension and segment rules hold; refusal leaves balances correct | PC-04 | Pending |
-| H14 | Early discharge, partial days and overstay reconcile original/extension authorizations | PC-04 | Pending |
-| H15 | Inpatient claim becomes invoice-ready without duplicate consumption | PC-04 | Pending |
+| H10 | HR/financial projections exclude forbidden clinical fields in API and DOM | PC-03/04 | Outpatient verified live; inpatient HR stay detail/list and FINANCIAL omit admissionDiagnosisId/reasonText, financial.reviewer 403, and HR person-health DOM contains no clinical text. Screenshot visual review pending |
+| H11 | Sensitive purpose, access audit, self-review and other-provider/tenant boundaries hold | PC-03/04 | Outpatient scope verified; inpatient purpose API tested (428 without purpose, FINANCIAL decline no event, MEDICAL_REVIEW grant audited with DENIED reason). Full H11 remains open for stay provider/tenant boundaries |
+| H12 | Admission approval advances the stay once and refuses duplicate open admission | PC-04 | PASSED live: worker authorization, duplicate admission 409, discharge replay unchanged |
+| H13 | Extension and segment rules hold; refusal leaves balances correct | PC-04 | PASSED live: WARD + COMPANION; overlap 422/OVERLAP without mutation; duplicate pending extension 409; approved extension and subsequent refusal |
+| H14 | Early discharge, partial days and overstay reconcile original/extension authorizations | PC-04 | PARTIAL: live unused-hold release verified (original 2 / extension 0 after releasing 6); consumption, partial-day and overstay cases remain pending |
+| H15 | Inpatient claim becomes invoice-ready without duplicate consumption | PC-04 | Pending; live clinical run created no claim/invoice |
 
 ### PC-05 — health invoice, batch, settlement and payment
 
@@ -347,7 +389,8 @@ response followed by the exact same idempotency key/body/ETag retry produced a s
 version; a second end returned 409. The provider UI closed the case, while encounter edit
 and creation on the closed case returned 409. Accounts were unchanged. Reviewed 1440px and
 390px screenshots in ignored `.impeccable/review` show the end form fits. H05 is passed for
-this scope. PC-03 still requires a live standard report-free episode; inpatient privacy remains PC-04.
+this scope. The live standard outpatient episode is recorded in the current checkpoint below;
+inpatient privacy remains part of PC-04.
 
 ### Shared-door and request notification checkpoint: 2026-09-29
 
@@ -366,10 +409,31 @@ this scope. PC-03 still requires a live standard report-free episode; inpatient 
 - Mock provider-role parity now removes six extra grants to match real `PROVIDER_STAFF`;
   billing grants are unchanged. Validation passed: 128 mock tests, 12 UI tests, TypeScript
   typecheck and lint. A fresh automatic-program live run passed in 13.3 s (15.3 s total),
-  replacing the expired fixture. The standard report-free handoff is implemented with local tests passing; live
-  verification awaits operator API restart. PC-03 still requires a live standard report-free
-  episode; inpatient privacy remains PC-04. PC-02's defined demo acceptance scope is
-  verified locally as recorded in the closure checkpoint below.
+  replacing the expired fixture. The live standard outpatient acceptance is recorded in the
+  PC-03 checkpoint below; inpatient acceptance remains part of PC-04. PC-02's defined demo
+  scope is verified in its closure checkpoint.
+
+### PC-03 standard outpatient live acceptance: 2026-09-29
+
+[real-standard-outpatient.spec.ts](../../tests/e2e/real-standard-outpatient.spec.ts) passed
+in 11.1 s (12.2 s total) after the operator API restart, using source request
+`01a0ebc5-cece-7cbf-8e81-43984ad51314` from program
+`01a0ebc5-a96a-7267-84e2-a474e5e48fc6` (valid through 2026-10-01). The run closed case
+`01a0ec97-c327-758a-beaf-da60da0aa38c` and ended encounter
+`01a0ec97-c4be-7539-bd42-7c82032d9d56`; request
+`01a0ec97-b75b-76a2-9d35-7acd65b6fd89`, authorization
+`01a0ec97-b7e3-76b4-bab3-6f5c2068afb3`, and approved invoice-ready claim
+`01a0ec97-cf5c-7727-8c64-c19abcd02cd1` at 400/400/0 TRY were created. Account
+`01a0ec97-b399-7acf-94de-9628de42a52a` moved from 20/0/0 to 19 available / 0 reserved /
+1 consumed. The provider UI closed the case with ended encounter and primary diagnosis,
+showed the claim-restriction message and no new-claim action. Billing created/submitted the
+claim and checked readiness; financial/clinical projections were checked. Create/submit
+replays retained one consumption. No report was created; the optional report line was absent.
+The catalog has no intrinsic-report flag, so this documents the observed fixture path, not a
+general PHYSIO report policy. All six CI checks passed on `9338869`
+[run 36532511610](https://github.com/celikbros/kapsora/actions/runs/36532511610). PC-03 is
+VERIFIED locally for the defined outpatient acceptance scope. PC-04 and PC-05 remain
+separate; overall health acceptance remains open.
 
 ### PC-02 checkpoint — 2026-09-22 (historical evidence)
 
