@@ -357,6 +357,14 @@ the backend refuses unusable request states. Six member UI tests and the real Po
 reimbursement/settlement regression set (98.768 s) pass. `962f6ff` is restart-pending for
 live verification; `real-health-reimbursement.spec.ts` is prepared, not yet executed.
 
+After the operator restart, live member reimbursement passed (15.1 s): real CLEAN
+receipt, request gate, duplicate refusal, financial approval, one exact 125.50 TRY
+HEALTH_MONEY consumption and local PAID status. Creation/submission and payment recording
+caused no extra consumption. Same-ID desktop/mobile follow-up remains pending because
+command approval review timed out twice and the local Windows sandbox failed. The dated
+HANDOVER checkpoint carries resume IDs and the distinction between passed functional
+acceptance and pending visual verification. All six CI jobs on `3ddaa33` passed.
+
 PC-05 read-only event audit: [WP-I7-02](../delegation/WP-I7-02-invoice-manual-entry-and-allocation.md) requires publishing `invoice.submitted`;
 invoice/claim submit freezes and moves synchronously, with no automatic batch requirement.
 `settlement.approved` is deferred to M9 per [WP-I7-04](../delegation/WP-I7-04-settlement-payment-records-reimbursement.md). Local settlement

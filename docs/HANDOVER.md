@@ -1043,6 +1043,31 @@ existing same-provider/date/amount reimbursement. Never rerun fresh after a part
 Known reimbursement ceilings have isolated PostgreSQL tests; this live fixture does not
 claim a ceiling-specific branch. PC-06 still follows PC-05 acceptance.
 
+### PC-05 live reimbursement passed after restart (2026-09-29)
+
+The operator restarted the services, then `real-health-reimbursement.spec.ts` passed
+end to end (15.1 s total). Member.a created a synthetic 125.50 TRY GP_VISIT request,
+uploaded a unique receipt through the real scanner, crossed the service-request gate,
+and created/submitted a reimbursement. A duplicate receipt/application was refused (409).
+Financial review approved the full amount; exactly one ledger CONSUME references the
+service request. Only approval reduced HEALTH_MONEY by 125.50; creating/submitting the
+application and recording its local payment did not consume again. The member sees PAID.
+This proves a local payment record, not a bank transfer.
+
+Request: `01a0ee4d-7c93-76ba-9b33-fc9408a8d02c`; receipt:
+`01a0ee4d-7d42-70e2-b2a0-13bd3974e99d`; reimbursement:
+`01a0ee4d-97a9-77eb-8192-e993b3a6f955`; account:
+`01a09098-b235-756a-96bf-37f676c23925`. Resume with these explicit IDs; do not create a
+second application. The follow-up paid-state desktop/mobile screenshot command did not
+execute: automatic approval review timed out twice, and the local patch tool failed to
+prepare its Windows sandbox. The functional test passed; final screenshots remain pending.
+All six CI checks on preceding implementation head `3ddaa33` passed.
+
+PC-06 audit: the business seed supplies hotel/room inventory, published lodging terms and
+a member NIGHT entitlement but no booking. Existing lodging Playwright tests use mocks;
+a dedicated live/resumable accommodation harness remains necessary. No accommodation
+booking or business setting was changed by this audit.
+
 ## 3. Get it running
 
 Requirements: Go 1.27+, a local PostgreSQL 18, Node 24 + pnpm 10. No Docker, ever (§6).
