@@ -496,6 +496,13 @@ func (s *Service) DischargeStay(ctx context.Context, rc identity.RequestContext,
 		if err := domain.ValidateDischarge(dischargeAt, current.AdmissionAt, now); err != nil {
 			return err
 		}
+		// Close undecided requests under the same parent lock. A delayed approval event
+		// then sees CANCELLED and cannot take a new hold after discharge.
+		cancelledExtensions, err := s.stayRepo.CancelExtensions(ctx, tx, rc.TenantID, id,
+			actorPtr(rc.Principal.ActorID))
+		if err != nil {
+			return err
+		}
 		actual := benefitdomain.MustQuantity(
 			fmt.Sprint(domain.ActualDays(current.AdmissionAt, dischargeAt)))
 		authorized := parseDays(current.AuthorizedDays)
@@ -526,6 +533,7 @@ func (s *Service) DischargeStay(ctx context.Context, rc identity.RequestContext,
 		if err := s.recordStay(ctx, tx, rc, "inpatient_stay.discharge", current, map[string]any{
 			"authorized_days": authorized.String(), "actual_days": actual.String(),
 			"released_days": released.String(), "over_authorization": over,
+			"cancelled_extensions": cancelledExtensions,
 		}); err != nil {
 			return err
 		}

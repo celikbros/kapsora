@@ -1808,7 +1808,7 @@ export interface StoredClaim {
    * What the claim came from (migration 000043). Null together with `sourceId` on a claim
    * raised by hand against nothing, which is an ordinary claim.
    */
-  sourceType: Schemas['ClaimSourceType'] | null;
+  sourceType: Schemas['ClaimSourceType'] | 'INPATIENT_STAY' | null;
   sourceId: string | null;
   caseId: string | null;
   fulfilmentId: string | null;
@@ -1927,6 +1927,18 @@ export interface StoredClaimAdjustment {
  * one rule the claim owns can be exercised, which is that an over-consumption is an exception
  * and **nothing moves**, not even the part that was left.
  */
+/** Frozen mock receipt for one inpatient claim line and authorization. */
+export interface StoredClaimLineAllocation {
+  tenantId: string;
+  versionId: string;
+  lineId: string;
+  authorizationId: string;
+  order: number;
+  plannedQuantity: string;
+  appliedQuantity: string;
+  idempotencyKey: string;
+}
+
 export interface StoredClaimAuthorization {
   id: string;
   tenantId: string;
@@ -2364,6 +2376,7 @@ export interface MockWorld {
   claimLineDecisions: StoredClaimLineDecision[];
   claimAdjustments: StoredClaimAdjustment[];
   claimAuthorizations: StoredClaimAuthorization[];
+  claimLineAllocations: StoredClaimLineAllocation[];
   // M6.
   /**
    * The accommodation vertical (WP-I6-01): the buildings, the kinds of room in them and the
@@ -5239,6 +5252,7 @@ export function buildWorld(
 
   // Historical hold used by two claim fixtures, independent of the request-screen mock;
   // see StoredClaimAuthorization.
+  const claimLineAllocations: StoredClaimLineAllocation[] = [];
   const claimAuthorizations: StoredClaimAuthorization[] = [
     {
       id: nextId(-30 * 86_400_000),
@@ -7336,6 +7350,7 @@ export function buildWorld(
     claimLineDecisions,
     claimAdjustments,
     claimAuthorizations,
+    claimLineAllocations,
     properties,
     roomTypes,
     inventoryDays,

@@ -205,6 +205,10 @@ func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) 
 		problem(w, r, http.StatusPreconditionRequired, "health/access-purpose-required",
 			"ACCESS_PURPOSE_REQUIRED", "Erişim amacı belirtilmeli",
 			"Bu kaydı görüntülemek için X-Access-Purpose başlığıyla erişim amacınızı bildirin.")
+	case errors.Is(err, application.ErrDiagnosisInUse):
+		problem(w, r, http.StatusConflict, "encounters/diagnosis-in-use", "DIAGNOSIS_IN_USE",
+			"Tanı başka bir klinik kayıtta kullanılıyor",
+			"Bu tanı bir yatış veya talep satırına bağlı. Tanıyı değiştirmeden önce ilgili klinik kaydı düzeltin.")
 	case errors.Is(err, application.ErrCaseClosed):
 		problem(w, r, http.StatusConflict, "health-cases/closed", "HEALTH_CASE_CLOSED",
 			"Sağlık vakası kapalı", "Kapanmış bir vakaya kayıt eklenemez.")

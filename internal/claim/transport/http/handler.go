@@ -274,11 +274,15 @@ func (h *Handler) writeError(w http.ResponseWriter, r *http.Request, err error) 
 		problem(w, r, http.StatusConflict, "claims/case-already-claimed", "CLAIM_CASE_ALREADY_CLAIMED", "Bu vaka için bir dosya zaten var", "Dosyalar listesinden mevcut kaydı açın.")
 	case errors.Is(err, application.ErrClaimAlreadyRaised):
 		problem(w, r, http.StatusConflict, "claims/source-already-claimed",
-			"CLAIM_SOURCE_ALREADY_CLAIMED", "Bu rezervasyon için açık bir dosya zaten var",
-			"Bir rezervasyonun aynı anda yalnızca bir açık hasar dosyası olur.")
+			"CLAIM_SOURCE_ALREADY_CLAIMED",
+			"Bu kaynak i\u00e7in a\u00e7\u0131k bir dosya zaten var",
+			"Bir kaynak i\u00e7in ayn\u0131 anda yaln\u0131zca bir a\u00e7\u0131k hasar dosyas\u0131 olur.")
 	case errors.Is(err, application.ErrBookingNotFound):
 		problem(w, r, http.StatusUnprocessableEntity, "claims/booking-unknown",
 			"CLAIM_BOOKING_UNKNOWN", "Rezervasyon bulunamadı", "")
+	case errors.Is(err, application.ErrInpatientAllocationMissing):
+		problem(w, r, http.StatusConflict, "claims/inpatient-allocation-missing",
+			"CLAIM_INPATIENT_ALLOCATION_MISSING", "Yat\u0131\u015f g\u00fcnleri provizyondan kar\u015f\u0131lanmad\u0131", "Provizyon da\u011f\u0131l\u0131m\u0131 tamamlanmadan dosya onaylanamaz.")
 	case errors.Is(err, application.ErrTransitionInvalid):
 		problem(w, r, http.StatusConflict, "claims/transition-invalid", "CLAIM_TRANSITION_INVALID",
 			"Dosya bu durumda bu işleme uygun değil", "")

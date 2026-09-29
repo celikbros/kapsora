@@ -68,6 +68,10 @@ type fixture struct {
 func newFixture(t *testing.T) *fixture { return newFixtureWithMapping(t, false) }
 
 func newFixtureWithMapping(t *testing.T, mapped bool) *fixture {
+	return newFixtureWithFactor(t, mapped, "2")
+}
+
+func newFixtureWithFactor(t *testing.T, mapped bool, factor string) *fixture {
 	t.Helper()
 	h := dbtest.New(t)
 
@@ -96,11 +100,11 @@ func newFixtureWithMapping(t *testing.T, mapped bool) *fixture {
 	}
 
 	f := &fixture{h: h, pool: pool, svc: svc, logs: logs}
-	f.seed(t, mapped)
+	f.seed(t, mapped, factor)
 	return f
 }
 
-func (f *fixture) seed(t *testing.T, mapped bool) { //nolint:funlen // one linear fixture reads better whole
+func (f *fixture) seed(t *testing.T, mapped bool, factor string) { //nolint:funlen // one linear fixture reads better whole
 	t.Helper()
 	h := f.h
 	ctx, cancel := h.Ctx()
@@ -191,7 +195,7 @@ func (f *fixture) seed(t *testing.T, mapped bool) { //nolint:funlen // one linea
 		if mapped && code == physioCode {
 			h.AdminExec(`INSERT INTO benefit.service_entitlement_mapping
 			    (tenant_id, plan_version_id, service_definition_id, entitlement_definition_id, unit_factor)
-			    VALUES ($1,$2,$3,$4,2)`, f.tenant, planVersion, serviceID, definitionID)
+			    VALUES ($1,$2,$3,$4,$5)`, f.tenant, planVersion, serviceID, definitionID, factor)
 		}
 		return serviceID, accountID
 	}

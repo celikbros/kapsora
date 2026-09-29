@@ -479,8 +479,8 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
       enrollmentId: row.enrollmentId,
       providerOrganizationId: row.providerOrganizationId,
       domainCode: row.domainCode,
-      sourceType: row.sourceType,
-      sourceId: row.sourceId,
+      sourceType: row.sourceType === 'INPATIENT_STAY' ? 'HEALTH_CASE' : row.sourceType,
+      sourceId: row.sourceType === 'INPATIENT_STAY' ? row.caseId : row.sourceId,
       caseId: row.caseId,
       fulfilmentId: row.fulfilmentId,
       authorizationId: row.authorizationId,
@@ -824,7 +824,7 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
 
     // ---- 3. Cross-checks that are not rules -----------------------------
     // The stay's reconciliation is a fact about the case rather than about any one line.
-    if (claim.caseId !== null && outcomes.length > 0) {
+    if (claim.caseId !== null && claim.sourceType !== 'INPATIENT_STAY' && outcomes.length > 0) {
       const over = world().inpatientStays.some(
         (s) => s.tenantId === tenantId && s.caseId === claim.caseId && s.overAuthorization,
       );
@@ -839,6 +839,17 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
       }
     }
     for (const outcome of outcomes) {
+      if (claim.sourceType === 'INPATIENT_STAY') {
+        if (outcome.decision === 'REJECTED') continue;
+        // A positive rule decision cannot bypass the hold draw.
+        if (outcome.decision !== null) {
+          outcome.decision = null;
+          outcome.needsMedical = true;
+        }
+        checkInpatientAllocation(tenantId, claim, outcome);
+        checkDuplicate(tenantId, claim, outcome);
+        continue;
+      }
       // A line the rules already decided consumes nothing and is checked against nothing.
       if (outcome.decision !== null) continue;
       checkAuthorization(tenantId, claim, outcome);
@@ -932,6 +943,166 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
     }
     item.consumedQuantity = amount(toMicros(item.consumedQuantity) + wanted);
     drawsOf().set(outcome.line.id, { item, quantity: wanted });
+  };
+
+  /** Frozen inpatient plan. The mock counts service days, not ledger units. */
+  const inpatientPlan = (tenantId: string, claim: StoredClaim, line: StoredClaimLine) => {
+    const stay = world().inpatientStays.find(
+      (s) =>
+        s.tenantId === tenantId &&
+        s.id === claim.sourceId &&
+        s.caseId === claim.caseId &&
+        s.providerOrganizationId === claim.providerOrganizationId &&
+        s.authorizationId === claim.authorizationId,
+    );
+    if (
+      !stay ||
+      stay.status !== 'DISCHARGED' ||
+      stay.overAuthorization ||
+      !stay.actualDays ||
+      !stay.authorizedDays ||
+      world().serviceDefinitions.find((s) => s.id === line.serviceDefinitionId)?.code !==
+        'INPATIENT_DAY' ||
+      toMicros(line.quantity) !== toMicros(stay.actualDays)
+    )
+      return null;
+    const original = world().claimAuthorizations.find(
+      (a) => a.tenantId === tenantId && a.id === stay.authorizationId,
+    );
+    const originalItem = original?.items.find(
+      (i) => i.serviceDefinitionId === line.serviceDefinitionId,
+    );
+    if (!originalItem) return null;
+    const extensions = world()
+      .stayExtensions.filter(
+        (e) => e.tenantId === tenantId && e.stayId === stay.id && e.status === 'APPROVED',
+      )
+      .sort((a, b) => a.sequenceNo - b.sequenceNo);
+    const extensionHolds = [] as { id: string; days: bigint; item: typeof originalItem }[];
+    let extensionDays = 0n;
+    for (const extension of extensions) {
+      const hold = world().claimAuthorizations.find(
+        (a) => a.tenantId === tenantId && a.id === extension.authorizationId,
+      );
+      const item = hold?.items.find((i) => i.serviceDefinitionId === line.serviceDefinitionId);
+      if (!item || !extension.authorizationId) return null;
+      const days = toMicros(item.approvedQuantity);
+      if (days <= 0n) return null;
+      extensionDays += days;
+      extensionHolds.push({ id: extension.authorizationId, days, item });
+    }
+    const originalDays = toMicros(stay.authorizedDays) - extensionDays;
+    if (originalDays <= 0n) return null;
+    const holds = [
+      { id: stay.authorizationId!, days: originalDays, item: originalItem },
+      ...extensionHolds,
+    ];
+    if (holds.reduce((sum, hold) => sum + hold.days, 0n) < toMicros(stay.actualDays)) return null;
+    return { stay, holds };
+  };
+
+  const checkInpatientAllocation = (
+    tenantId: string,
+    claim: StoredClaim,
+    outcome: LineOutcome,
+  ): void => {
+    const plan = inpatientPlan(tenantId, claim, outcome.line);
+    if (!plan) {
+      outcome.needsMedical = true;
+      outcome.exceptions.push({
+        lineNo: outcome.line.lineNo,
+        code: REASON.stayOverAuthorization,
+        stage: 'MEDICAL',
+        detail: null,
+      });
+      return;
+    }
+    let remaining = toMicros(outcome.line.quantity);
+    const rows = [] as MockWorld['claimLineAllocations'];
+    for (const [index, hold] of plan.holds.entries()) {
+      if (remaining === 0n) break;
+      const planned = remaining < hold.days ? remaining : hold.days;
+      rows.push({
+        tenantId,
+        versionId: outcome.line.versionId,
+        lineId: outcome.line.id,
+        authorizationId: hold.id,
+        order: index + 1,
+        plannedQuantity: amount(planned),
+        appliedQuantity: '0',
+        idempotencyKey: `claim-line:${outcome.line.id}:authorization:${hold.id}`,
+      });
+      remaining -= planned;
+    }
+    if (remaining !== 0n) {
+      outcome.needsMedical = true;
+      outcome.exceptions.push({
+        lineNo: outcome.line.lineNo,
+        code: REASON.stayOverAuthorization,
+        stage: 'MEDICAL',
+        detail: null,
+      });
+      return;
+    }
+    const shortage = rows.some((row) => {
+      const item = plan.holds.find((hold) => hold.id === row.authorizationId)!.item;
+      return (
+        toMicros(item.approvedQuantity) - toMicros(item.consumedQuantity) <
+        toMicros(row.plannedQuantity)
+      );
+    });
+    if (shortage) {
+      outcome.needsMedical = true;
+      outcome.exceptions.push({
+        lineNo: outcome.line.lineNo,
+        code: REASON.authorizationExceeded,
+        stage: 'MEDICAL',
+        detail: null,
+      });
+    } else {
+      for (const row of rows) {
+        row.appliedQuantity = row.plannedQuantity;
+        const item = plan.holds.find((hold) => hold.id === row.authorizationId)!.item;
+        item.consumedQuantity = amount(
+          toMicros(item.consumedQuantity) + toMicros(row.appliedQuantity),
+        );
+      }
+    }
+    world().claimLineAllocations.push(...rows);
+  };
+
+  const inpatientAllocationComplete = (
+    tenantId: string,
+    claim: StoredClaim,
+    version: StoredClaimVersion,
+    lines: StoredClaimLine[],
+  ): boolean => {
+    if (lines.length !== 1) return false;
+    const plan = inpatientPlan(tenantId, claim, lines[0]!);
+    if (!plan) return false;
+    const rows = world().claimLineAllocations.filter(
+      (a) => a.tenantId === tenantId && a.versionId === version.id,
+    );
+    let remaining = toMicros(lines[0]!.quantity);
+    let expected = 0;
+    for (const hold of plan.holds) {
+      if (remaining === 0n) break;
+      const planned = remaining < hold.days ? remaining : hold.days;
+      const row = rows[expected];
+      if (
+        !row ||
+        row.lineId !== lines[0]!.id ||
+        row.authorizationId !== hold.id ||
+        row.order !== expected + 1 ||
+        row.idempotencyKey !== `claim-line:${row.lineId}:authorization:${hold.id}` ||
+        toMicros(row.plannedQuantity) !== planned ||
+        toMicros(row.appliedQuantity) !== planned
+      )
+        return false;
+      remaining -= planned;
+      expected += 1;
+    }
+    return remaining === 0n && rows.length === expected;
   };
 
   /** Another live claim of the same person, service and day, named by its reference. */
@@ -1049,7 +1220,12 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
     row.rowVersion += 1;
   };
 
-  const createDraft = (session: MockSession, tenantId: string, body: Schemas['CreateClaim']) => {
+  const createDraft = (
+    session: MockSession,
+    tenantId: string,
+    body: Schemas['CreateClaim'],
+    source?: { type: 'INPATIENT_STAY'; id: string },
+  ) => {
     const now = new Date().toISOString();
     const claim: StoredClaim = {
       id: world().nextId(),
@@ -1065,8 +1241,8 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
       // A claim comes from one thing. `bookingId` makes it a lodging claim and `caseId`
       // makes it a health one; the two together are refused above.
       domainCode: body.bookingId ? 'ACCOMMODATION' : 'HEALTH',
-      sourceType: body.bookingId ? 'BOOKING' : body.caseId ? 'HEALTH_CASE' : null,
-      sourceId: body.bookingId ?? body.caseId ?? null,
+      sourceType: source?.type ?? (body.bookingId ? 'BOOKING' : body.caseId ? 'HEALTH_CASE' : null),
+      sourceId: source?.id ?? body.bookingId ?? body.caseId ?? null,
       caseId: body.caseId ?? null,
       fulfilmentId: body.fulfilmentId ?? null,
       authorizationId: body.authorizationId ?? null,
@@ -1190,6 +1366,14 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
       if (body.bookingId && body.caseId) {
         errors.push({ field: 'bookingId', code: 'CONFLICT' });
       }
+      if (
+        body.caseId &&
+        world().healthCases.some(
+          (c) => c.tenantId === g.tenantId && c.id === body.caseId && c.caseType === 'INPATIENT',
+        )
+      ) {
+        errors.push({ field: 'caseId', code: 'SOURCE_REQUIRED' });
+      }
       if (errors.length > 0) return validationFailed(api, errors);
 
       // One live claim per booking, as `uq_claim_live_booking` says it on the server.
@@ -1273,6 +1457,21 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
         return validationFailed(api, [{ field: 'serviceDateTo', code: 'RANGE' }]);
       }
       const row = found.row;
+      if (
+        row.sourceType === 'INPATIENT_STAY' &&
+        (body.caseId !== row.caseId || body.authorizationId !== row.authorizationId)
+      ) {
+        return validationFailed(api, [{ field: 'source', code: 'SOURCE_FROZEN' }]);
+      }
+      if (
+        body.caseId &&
+        world().healthCases.some(
+          (c) => c.tenantId === g.tenantId && c.id === body.caseId && c.caseType === 'INPATIENT',
+        ) &&
+        row.sourceType !== 'INPATIENT_STAY'
+      ) {
+        return validationFailed(api, [{ field: 'caseId', code: 'SOURCE_REQUIRED' }]);
+      }
       row.serviceDateFrom = body.serviceDateFrom;
       row.serviceDateTo = body.serviceDateTo;
       row.channel = body.channel ?? 'PROVIDER_PORTAL';
@@ -1540,7 +1739,20 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
           detail: 'Dosyayı sonuçlandırmadan önce her satır için karar girin.',
         });
       }
-      claim.status = statusFor(decisions);
+      const decidedStatus = statusFor(decisions);
+      if (
+        claim.sourceType === 'INPATIENT_STAY' &&
+        decidedStatus !== 'REJECTED' &&
+        !inpatientAllocationComplete(gg.tenantId, claim, version, linesOf(version.id))
+      ) {
+        return problem(
+          api,
+          409,
+          'CLAIM_INPATIENT_ALLOCATION_MISSING',
+          'Yat?? g?nlerinin provizyon t?ketimi eksik',
+        );
+      }
+      claim.status = decidedStatus;
       if (claim.status === 'REJECTED') {
         claim.rejectReasonCode = body.reasonCode;
         claim.closedAt = new Date().toISOString();
@@ -1636,6 +1848,18 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
       if (!version || version.status !== 'SUBMITTED') return transitionInvalid(api);
 
       for (const line of linesOf(version.id)) {
+        for (const allocation of world().claimLineAllocations.filter(
+          (a) =>
+            a.versionId === version.id && a.lineId === line.id && toMicros(a.appliedQuantity) > 0n,
+        )) {
+          const item = world()
+            .claimAuthorizations.find((a) => a.id === allocation.authorizationId)
+            ?.items.find((i) => i.serviceDefinitionId === line.serviceDefinitionId);
+          if (item)
+            item.consumedQuantity = amount(
+              toMicros(item.consumedQuantity) - toMicros(allocation.appliedQuantity),
+            );
+        }
         const draw = drawsOf().get(line.id);
         if (!draw) continue;
         draw.item.consumedQuantity = amount(toMicros(draw.item.consumedQuantity) - draw.quantity);
@@ -1761,6 +1985,16 @@ export function claimHandlers(api: MockApi): HttpHandler[] {
           detail:
             'Fatura hazırlığı yalnızca onaylanmış ya da kısmen onaylanmış dosya için sorulur.',
         });
+      }
+      if (row.sourceType === 'INPATIENT_STAY') {
+        const version = versionOf(row.id, row.currentVersionNo);
+        if (!version || !inpatientAllocationComplete(g.tenantId, row, version, linesOf(version.id)))
+          return problem(
+            api,
+            409,
+            'CLAIM_INPATIENT_ALLOCATION_MISSING',
+            'Yat?? g?nlerinin provizyon t?ketimi eksik',
+          );
       }
       return HttpResponse.json(readinessOf(row), { headers: NO_STORE });
     }),

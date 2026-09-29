@@ -6695,7 +6695,8 @@ type ClaimReturnReason struct {
 }
 
 // ClaimSourceType What a claim was raised from. It is one vocabulary for every vertical, so a settlement
-// never has to know which module wrote a claim.
+// never has to know which module wrote a claim. Inpatient claims use HEALTH_CASE
+// with the case ID as sourceId; the exact stay and authorization allocation remain internal.
 type ClaimSourceType string
 
 // ClaimStatus The claim lifecycle of v1.2 12.5. INVOICED, BATCHED and SETTLED are declared because

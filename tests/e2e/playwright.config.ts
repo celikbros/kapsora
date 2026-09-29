@@ -27,7 +27,8 @@ export default defineConfig({
   reporter: process.env['CI'] ? [['github'], ['list']] : 'list',
   use: {
     baseURL: EXISTING_UI_URL ?? `http://127.0.0.1:${PORT}`,
-    trace: 'retain-on-failure',
+    // Real login requests contain credentials; retain traces only for mock runs.
+    trace: REAL ? 'off' : 'retain-on-failure',
     locale: 'tr-TR',
     timezoneId: 'Europe/Istanbul',
   },

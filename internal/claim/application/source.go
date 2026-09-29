@@ -32,6 +32,8 @@ type CaseSourceSummary struct {
 // CaseSource stays inside the application boundary. Transport uses an explicit allowlist.
 type CaseSource struct {
 	CaseSourceSummary
+	StayID                                        *uuid.UUID
+	DischargeAt                                   *time.Time
 	PersonID, ProgramID, EnrollmentID, ProviderID uuid.UUID
 	AuthorizationIDs, DiagnosisIDs                []uuid.UUID
 	Ongoing, AlreadyRaised                        bool
@@ -88,7 +90,7 @@ func (s *Service) ListCaseSources(ctx context.Context, rc identity.RequestContex
 	return rows, next, err
 }
 
-// GetCaseSource resolves only an unambiguous, completed outpatient episode.
+// GetCaseSource resolves an unambiguous completed outpatient episode or discharged stay.
 func (s *Service) GetCaseSource(ctx context.Context, rc identity.RequestContext, id uuid.UUID) (CaseSource, error) {
 	if !rc.Has(PermissionCreate) {
 		return CaseSource{}, ErrProviderScope
@@ -151,6 +153,14 @@ func (s *Service) CreateFromCase(ctx context.Context, rc identity.RequestContext
 		in := NewClaimInput{PersonID: source.PersonID, ProgramID: source.ProgramID, EnrollmentID: source.EnrollmentID,
 			ProviderOrganizationID: source.ProviderID, CaseID: &id, AuthorizationID: &source.AuthorizationIDs[0],
 			ServiceDateFrom: source.ServiceDate, ServiceDateTo: source.ServiceDate, Channel: domain.DefaultChannel}
+		if source.StayID != nil {
+			kind := inpatientStaySource
+			in.SourceType, in.SourceID = &kind, source.StayID
+			if source.DischargeAt == nil {
+				return ErrSourceNotReady
+			}
+			in.ServiceDateTo = *source.DischargeAt
+		}
 		available := map[uuid.UUID]CaseSourceLine{}
 		for _, line := range source.Lines {
 			available[line.ServiceID] = line
@@ -165,6 +175,9 @@ func (s *Service) CreateFromCase(ctx context.Context, rc identity.RequestContext
 			maxQty, maxErr := benefitdomain.ParseQuantity(line.Quantity)
 			if err != nil || maxErr != nil || qty.Cmp(maxQty) > 0 {
 				return fieldError("lines", "SOURCE_QUANTITY", "Miktar ayrılan hakkı aşamaz.")
+			}
+			if source.StayID != nil && qty.Cmp(maxQty) != 0 {
+				return fieldError("lines", "SOURCE_QUANTITY", "Yatışın gerçekleşen gün sayısını tam olarak girin.")
 			}
 			currency := "TRY"
 			var reportID *uuid.UUID

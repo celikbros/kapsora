@@ -583,3 +583,52 @@ func memberAmountOf(amounts map[int]string, lineNo int) benefitdomain.Quantity {
 	}
 	return value
 }
+
+// CreateInTx reserves a hold in the caller's tenant transaction. The caller must roll
+// back its transaction if this fails, including on a unique-key collision.
+func (s *Service) CreateInTx(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
+	in NewAuthorizationInput,
+) (AuthorizationView, error) {
+	if in.IdempotencyKey == "" {
+		return AuthorizationView{}, ErrIdempotencyKeyRequired
+	}
+	validFrom := s.now().UTC()
+	if in.ValidFrom != nil {
+		validFrom = in.ValidFrom.UTC()
+	}
+	if err := domain.ValidateNewAuthorization(domain.NewAuthorization{
+		ValidFrom: validFrom, ValidTo: in.ValidTo, MemberAmounts: in.MemberAmounts,
+	}); err != nil {
+		return AuthorizationView{}, err
+	}
+	return s.create(ctx, tx, rc, in, validFrom)
+}
+
+// ExtendValidityInTx advances an active authorization in the caller's transaction.
+// A repeated end date is accepted only while the authorization remains active.
+func (s *Service) ExtendValidityInTx(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
+	id uuid.UUID, validTo time.Time, reasonCode string,
+) error {
+	scope := scopeOf(rc)
+	current, err := s.repo.LockAuthorization(ctx, tx, rc.TenantID, id, scope)
+	if err != nil {
+		return err
+	}
+	if current.Status != domain.StatusActive {
+		return ErrAuthorizationNotActive
+	}
+	if !validTo.After(current.ValidTo) {
+		return nil
+	}
+	if err := domain.ValidateExtension(current.ValidTo, validTo, reasonCode, nil); err != nil {
+		return err
+	}
+	if err := s.repo.ExtendAuthorization(ctx, tx, rc.TenantID, id, validTo.UTC(),
+		actorPtr(rc.Principal.ActorID), current.RowVersion); err != nil {
+		return err
+	}
+	return s.record(ctx, tx, rc, "authorization.extend", "authorization", id, map[string]any{
+		"from_valid_to": current.ValidTo.UTC().Format(time.RFC3339),
+		"valid_to":      validTo.UTC().Format(time.RFC3339), "reason_code": reasonCode,
+	})
+}

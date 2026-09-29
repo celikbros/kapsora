@@ -1,4 +1,4 @@
-import { http, HttpResponse } from 'msw';
+﻿import { http, HttpResponse } from 'msw';
 import { mockAuthorizations } from './authorization-handlers';
 import {
   currentVersionOf,
@@ -6,6 +6,7 @@ import {
   toMicros,
   type StoredServiceRequest,
   type StoredHealthCase,
+  type StoredInpatientStay,
 } from './data';
 import {
   ANY,
@@ -30,19 +31,39 @@ import {
 /** UI test double. Real reservation/consumption atomicity is verified in PostgreSQL. */
 export function claimSourceHandlers(
   api: MockApi,
-  createDraft: (session: MockSession, tenantId: string, body: Schemas['CreateClaim']) => Response,
+  createDraft: (
+    session: MockSession,
+    tenantId: string,
+    body: Schemas['CreateClaim'],
+    source?: { type: 'INPATIENT_STAY'; id: string },
+  ) => Response,
 ) {
   const sourceFor = (session: MockSession, tenantId: string, id: string) => {
     const row = api.world.healthCases.find(
       (c) =>
         c.id === id &&
         c.tenantId === tenantId &&
-        c.caseType === 'OUTPATIENT' &&
+        ['OUTPATIENT', 'INPATIENT'].includes(c.caseType) &&
         withinScope(organizationScope(api, session, tenantId), c.providerOrganizationId),
     );
+    if (!row) return null;
+    let stay: StoredInpatientStay | null = null;
+    if (row.caseType === 'INPATIENT') {
+      const discharged = api.world.inpatientStays.filter(
+        (s) =>
+          s.tenantId === tenantId &&
+          s.caseId === id &&
+          s.providerOrganizationId === row.providerOrganizationId &&
+          s.status === 'DISCHARGED' &&
+          s.actualDays !== null &&
+          toMicros(s.actualDays) > 0n,
+      );
+      if (discharged.length !== 1) return null;
+      stay = discharged[0]!;
+    }
     const request = api.world.serviceRequests.find(
       (r) =>
-        r.id === row?.serviceRequestId &&
+        r.id === (stay?.serviceRequestId ?? row.serviceRequestId) &&
         r.tenantId === tenantId &&
         r.personId === row.personId &&
         r.programId === row.programId &&
@@ -50,22 +71,24 @@ export function claimSourceHandlers(
         r.providerOrganizationId === row.providerOrganizationId &&
         ['APPROVED', 'PARTIALLY_APPROVED'].includes(r.status),
     );
-    if (!row || !request) return null;
+    if (!request) return null;
     const authorizations = mockAuthorizations(api.world).filter(
       (a) =>
         a.tenantId === tenantId &&
         a.requestId === request.id &&
+        (stay === null || a.id === stay.authorizationId) &&
         ['ACTIVE', 'PARTIALLY_USED'].includes(a.status) &&
         Date.parse(a.validTo) > Date.now(),
     );
     const raised = api.world.claims.some(
       (c) => c.tenantId === tenantId && c.caseId === id && c.status !== 'CANCELLED',
     );
-    return { row, request, authorizations, raised };
+    return { row, request, stay, authorizations, raised };
   };
   const summary = (
     row: StoredHealthCase,
     request: StoredServiceRequest,
+    stay: StoredInpatientStay | null,
   ): Schemas['ClaimCaseSource'] => {
     const person = api.world.people.find(
       (p) => p.tenantId === row.tenantId && p.id === row.personId,
@@ -74,7 +97,9 @@ export function claimSourceHandlers(
       caseId: row.id,
       rowVersion: row.rowVersion,
       openedAt: row.openedAt,
-      serviceDate: request.serviceDate,
+      serviceDate: stay
+        ? new Date(stay.admissionAt).toISOString().slice(0, 10)
+        : request.serviceDate,
       requestReference: request.reference,
       personDisplayName: person
         ? [person.firstName, person.middleName, person.lastName].filter(Boolean).join(' ')
@@ -94,23 +119,43 @@ export function claimSourceHandlers(
     const encounters = api.world.encounters.filter(
       (e) => e.tenantId === tenantId && e.caseId === id,
     );
-    const diagnoses = api.world.diagnoses.filter(
+    const fallback = api.world.diagnoses.filter(
       (d) =>
         d.tenantId === tenantId &&
         d.diagnosisType === 'PRIMARY' &&
         encounters.some((e) => e.id === d.encounterId && e.endedAt),
     );
+    const diagnoses = source.stay?.admissionDiagnosisId
+      ? api.world.diagnoses.filter(
+          (d) =>
+            d.tenantId === tenantId &&
+            d.id === source.stay!.admissionDiagnosisId &&
+            encounters.some((e) => e.id === d.encounterId),
+        )
+      : fallback;
+    const activeStay = api.world.inpatientStays.some(
+      (s) =>
+        s.tenantId === tenantId &&
+        s.caseId === id &&
+        ['REQUESTED', 'AUTHORIZED', 'ADMITTED'].includes(s.status),
+    );
     if (
       source.authorizations.length !== 1 ||
       diagnoses.length !== 1 ||
-      encounters.some((e) => !e.endedAt)
+      encounters.some((e) => !e.endedAt) ||
+      activeStay
     )
       return notReady();
     const auth = source.authorizations[0]!;
+    const serviceDate = summary(source.row, source.request, source.stay).serviceDate;
     const lines: (Schemas['ClaimCaseSourceLine'] & { reportId?: string })[] = [];
-    for (const item of auth.items.filter(
-      (i) => toMicros(i.approvedQuantity) > toMicros(i.consumedQuantity),
-    )) {
+    for (const item of auth.items) {
+      const service = api.world.serviceDefinitions.find(
+        (s) => s.tenantId === tenantId && s.id === item.serviceDefinitionId,
+      );
+      if (source.stay && service?.code !== 'INPATIENT_DAY') continue;
+      if (!source.stay && toMicros(item.approvedQuantity) <= toMicros(item.consumedQuantity))
+        continue;
       const reportCandidates = api.world.medicalReports.filter(
         (r) =>
           r.tenantId === tenantId &&
@@ -125,13 +170,7 @@ export function claimSourceHandlers(
           ),
       );
       const reports = reportCandidates.filter(
-        (r) =>
-          r.status === 'APPROVED' &&
-          r.validFrom <= source.request.serviceDate &&
-          r.validTo >= source.request.serviceDate,
-      );
-      const service = api.world.serviceDefinitions.find(
-        (s) => s.tenantId === tenantId && s.id === item.serviceDefinitionId,
+        (r) => r.status === 'APPROVED' && r.validFrom <= serviceDate && r.validTo >= serviceDate,
       );
       const requestItem = currentVersionOf(api.world, source.request)?.items.find(
         (i) => i.id === item.requestItemId,
@@ -149,7 +188,9 @@ export function claimSourceHandlers(
         serviceCode: service.code,
         serviceName: service.name,
         unitType: requestItem.unitType,
-        quantity: fromMicros(toMicros(item.approvedQuantity) - toMicros(item.consumedQuantity)),
+        quantity: source.stay
+          ? source.stay.actualDays!
+          : fromMicros(toMicros(item.approvedQuantity) - toMicros(item.consumedQuantity)),
         ...(reports.length ? { reportId: reports[0]!.id } : {}),
       });
     }
@@ -170,7 +211,7 @@ export function claimSourceHandlers(
       const rows = api.world.healthCases
         .map((c) => sourceFor(g.session, g.tenantId, c.id))
         .filter((s) => s && s.authorizations.length && !s.raised)
-        .map((s) => summary(s!.row, s!.request))
+        .map((s) => summary(s!.row, s!.request, s!.stay))
         .sort((a, b) => b.openedAt.localeCompare(a.openedAt) || b.caseId.localeCompare(a.caseId));
       return HttpResponse.json({
         items: rows.slice(offset, offset + limit),
@@ -185,7 +226,7 @@ export function claimSourceHandlers(
       if ('error' in found) return found.error;
       return HttpResponse.json(
         {
-          source: summary(found.source.row, found.source.request),
+          source: summary(found.source.row, found.source.request, found.source.stay),
           lines: found.lines.map(({ reportId: _reportId, ...line }) => line),
         },
         { headers: { ETag: etagOf(found.source.row.rowVersion) } },
@@ -228,7 +269,8 @@ export function claimSourceHandlers(
           !/^\d{1,14}(\.\d{1,6})?$/.test(charge.quantity) ||
           !/^\d{1,14}(\.\d{1,6})?$/.test(charge.lineAmount) ||
           toMicros(charge.quantity) <= 0n ||
-          toMicros(charge.quantity) > toMicros(line.quantity)
+          toMicros(charge.quantity) > toMicros(line.quantity) ||
+          (found.source.stay !== null && toMicros(charge.quantity) !== toMicros(line.quantity))
         )
           return problem(api, 422, 'VALIDATION_FAILED', 'Hizmet, miktar veya tutar geçersiz');
         seen.add(charge.serviceDefinitionId);
@@ -244,30 +286,54 @@ export function claimSourceHandlers(
         });
       }
       const row = found.source.row;
-      const response = createDraft(g.session, g.tenantId, {
-        personId: row.personId,
-        programId: row.programId,
-        enrollmentId: row.enrollmentId,
-        providerOrganizationId: row.providerOrganizationId!,
-        caseId: id,
-        authorizationId: found.auth.id,
-        serviceDateFrom: found.source.request.serviceDate,
-        serviceDateTo: found.source.request.serviceDate,
-        lines,
-      });
-      // Existing claim mock owns consumption; expose this request hold to that stand-in.
-      if (!api.world.claimAuthorizations.some((a) => a.id === found.auth.id))
-        api.world.claimAuthorizations.push({
-          id: found.auth.id,
-          tenantId: g.tenantId,
-          reference: found.auth.reference,
+      const serviceDate = summary(row, found.source.request, found.source.stay).serviceDate;
+      const response = createDraft(
+        g.session,
+        g.tenantId,
+        {
           personId: row.personId,
-          items: found.auth.items.map((i) => ({
-            serviceDefinitionId: i.serviceDefinitionId,
-            approvedQuantity: i.approvedQuantity,
-            consumedQuantity: i.consumedQuantity,
-          })),
-        });
+          programId: row.programId,
+          enrollmentId: row.enrollmentId,
+          providerOrganizationId: row.providerOrganizationId!,
+          caseId: id,
+          authorizationId: found.auth.id,
+          serviceDateFrom: serviceDate,
+          serviceDateTo: found.source.stay?.dischargeAt
+            ? new Date(found.source.stay.dischargeAt).toISOString().slice(0, 10)
+            : serviceDate,
+          lines,
+        },
+        found.source.stay ? { type: 'INPATIENT_STAY', id: found.source.stay.id } : undefined,
+      );
+      if (response.status !== 201) return response;
+      // Keep the stand-in holds for the submit pipeline. The real ledger is tested in Go.
+      const used = new Set([found.auth.id]);
+      if (found.source.stay) {
+        for (const extension of api.world.stayExtensions) {
+          if (
+            extension.tenantId === g.tenantId &&
+            extension.stayId === found.source.stay.id &&
+            extension.status === 'APPROVED' &&
+            extension.authorizationId
+          )
+            used.add(extension.authorizationId);
+        }
+      }
+      for (const authorization of mockAuthorizations(api.world)) {
+        if (!used.has(authorization.id) || authorization.tenantId !== g.tenantId) continue;
+        if (!api.world.claimAuthorizations.some((a) => a.id === authorization.id))
+          api.world.claimAuthorizations.push({
+            id: authorization.id,
+            tenantId: g.tenantId,
+            reference: authorization.reference,
+            personId: row.personId,
+            items: authorization.items.map((i) => ({
+              serviceDefinitionId: i.serviceDefinitionId,
+              approvedQuantity: i.approvedQuantity,
+              consumedQuantity: i.consumedQuantity,
+            })),
+          });
+      }
       const output: unknown = await response.clone().json();
       fingerprints.set(key, fingerprint);
       api.rememberIdempotent(key, response.status, output, response.headers.get('ETag'));

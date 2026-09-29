@@ -190,3 +190,38 @@ func (a *Authorizations) ReleaseUnused(ctx context.Context, tx pgx.Tx,
 	}
 	return released.String(), nil
 }
+
+// CreateForRequestInTx takes the hold in the stay decision's tenant transaction.
+func (a *Authorizations) CreateForRequestInTx(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
+	in healthapp.StayAuthorizationInput,
+) (healthapp.StayAuthorizationRef, error) {
+	validFrom := in.ValidFrom
+	view, err := a.svc.CreateInTx(ctx, tx, rc, authorizationapp.NewAuthorizationInput{
+		RequestID: in.RequestID, ValidFrom: &validFrom, ValidTo: in.ValidTo,
+		IdempotencyKey: in.IdempotencyKey,
+	})
+	if err != nil {
+		return healthapp.StayAuthorizationRef{}, err
+	}
+	approved := benefitdomain.ZeroQuantity()
+	for _, item := range view.Items {
+		quantity, err := benefitdomain.ParseQuantity(item.ApprovedQuantity)
+		if err != nil {
+			return healthapp.StayAuthorizationRef{},
+				fmt.Errorf("health: authorization line %s quantity: %w", item.ID, err)
+		}
+		approved = approved.Add(quantity)
+	}
+	return healthapp.StayAuthorizationRef{
+		ID: view.Authorization.ID, ApprovedDays: approved.String(),
+		ValidTo: view.Authorization.ValidTo, RowVersion: view.Authorization.RowVersion,
+	}, nil
+}
+
+// ExtendValidityInTx moves the original hold's end in the same transaction as the
+// extension hold and the stay counters.
+func (a *Authorizations) ExtendValidityInTx(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
+	authorizationID uuid.UUID, validTo time.Time, reasonCode string,
+) error {
+	return a.svc.ExtendValidityInTx(ctx, tx, rc, authorizationID, validTo, reasonCode)
+}

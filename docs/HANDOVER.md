@@ -42,10 +42,9 @@ acceptance scope as of 2026-09-29; its dated evidence and limits are recorded be
 the roadmap. PC-03 is VERIFIED locally for the defined outpatient acceptance scope after
 the live standard outpatient run; overall health acceptance remains open. PC-04 remains a
 separate inpatient acceptance gate spanning admission, extension, discharge, claim and
-privacy. Its early-discharge regression and inpatient-program seeder are verified locally,
-and the marked fixture was applied or reused in the live clinical run. H12/H13 and discharge
-release passed; H14 consumption/partial-day/overstay and H15 claim/invoice remain pending.
-PC-05 invoice/batch/payment and PC-06 accommodation plus combined acceptance follow. The roadmap records
+privacy. Admission/extension and release, privacy screenshots, seeder scope, and local claim
+allocation behavior have dated evidence below; live claim acceptance and remaining scope
+checks are still open. PC-05 invoice/batch/payment and PC-06 accommodation plus combined acceptance follow. The roadmap records
 task dependencies, 15 health acceptance scenarios, role handoffs, evidence gates and
 confirmed source/fixture gaps.
 The first live health checkpoint passed: provider catalog access, single-enrollment
@@ -822,9 +821,37 @@ stay `01a0ec9b-eae4-71e6-8426-ca03c108c887`, request
 `01a0ec9b-eeee-7b45-b906-ef1e6e0a651f`, and extension authorization
 `01a0ec9b-fae5-7640-9ef4-ca1d15f473e7`.
 
-**PC-04 inpatient privacy/purpose (2026-09-29):** [real-inpatient-privacy.spec.ts](../tests/e2e/real-inpatient-privacy.spec.ts) passed in 9.7 s (11.0 s total). Source stay `01a0ec9b-eae4-71e6-8426-ca03c108c887` remained unchanged; new case `01a0eca9-5bfe-7bdb-9092-df65eda1140a` and stay `01a0eca9-5caf-773f-8663-4777b99a555d` used the existing synthetic person/enrollment. HR stay detail/list and FINANCIAL projections omitted `admissionDiagnosisId`/`reasonText`; `financial.reviewer` returned 403. A separate sensitive encounter made the case SENSITIVE: doctor GET without purpose returned 428, explicit FINANCIAL decline emitted no access event, and MEDICAL_REVIEW with a clinical reason recorded audit SUCCESS with DENIED visible. Provider sensitive-FINANCIAL API/DOM and HR person-health DOM showed no clinical text. Dates +/-4000 days returned 422 with no stay/balance mutation. 1440/390 screens had no overflow; screenshots still need visual review. Cleanup cancelled the new stay and each known authorization, with account figures at baseline; this does not prove CancelStay auto-releases every hold. Full H11 stay provider/tenant boundaries remain open.
+**PC-04 inpatient privacy/purpose (2026-09-29):** [real-inpatient-privacy.spec.ts](../tests/e2e/real-inpatient-privacy.spec.ts) passed in 9.7 s (11.0 s total). Source stay `01a0ec9b-eae4-71e6-8426-ca03c108c887` remained unchanged; new case `01a0eca9-5bfe-7bdb-9092-df65eda1140a` and stay `01a0eca9-5caf-773f-8663-4777b99a555d` used the existing synthetic person/enrollment. HR stay detail/list and FINANCIAL projections omitted `admissionDiagnosisId`/`reasonText`; `financial.reviewer` returned 403. A separate sensitive encounter made the case SENSITIVE: doctor GET without purpose returned 428, explicit FINANCIAL decline emitted no access event, and MEDICAL_REVIEW with a clinical reason recorded audit SUCCESS with DENIED visible. Provider sensitive-FINANCIAL API/DOM and HR person-health DOM showed no clinical text. Dates +/-4000 days returned 422 with no stay/balance mutation. 1440/390 screens had no overflow; screenshots were visually reviewed with no clinical text. Cleanup cancelled the new stay and each known authorization, with account figures at baseline; this does not prove CancelStay auto-releases every hold. Inpatient provider/tenant boundaries are covered by the separate scope run recorded in this checkpoint.
 
-**Cancellation and remaining PC-04 defects:** old CancelStay left 3 reserved from original 5 + extension 3. The local helper now releases extension then original, preserving prior consumption. Two new PostgreSQL subtests (spent 0 and 1) failed before the fix; `go test ./internal/health/application -run 'TestCancelReleases|TestDischarge'` passed afterward (33.707 s), with scoped health-application golangci-lint at 0 issues. Live cancellation confirmation awaits an operator restart. A separate diagnosis replacement currently returns 500 because the admission FK still references it; that fix is in progress. No user/grant changes were made.
+**PC-04 local implementation checkpoint (2026-09-29):** migration 000052 adds per-claim-version
+inpatient authorization allocations. The full claim application PostgreSQL suite passed in
+316.433 s. A 5 + 1 allocation consumes exactly 6 days and approves 2400 TRY; early discharge consumes only the
+original hold; shortage (focused compatibility/shortage PostgreSQL tests, 14.589 s) and overstay draw nothing and manual overstay approval is refused.
+Returning a claim undoes the exact recorded receipts, while terminal cancellation/rejection
+preserves consumed units and releases only unused holds. Atomic decision funding and stay
+state plus audit now share one transaction. Full health application tests passed (197.824 s),
+concurrency (5.15 s), legacy closed-late behavior (5.94 s), and auth-in-transaction rollback
+(5 s); scoped lint reported zero issues. This is local database evidence, not live claim
+acceptance. The public API still uses HEALTH_CASE/caseID while internal allocation uses
+INPATIENT_STAY/stayID; readiness without a receipt returns 409
+CLAIM_INPATIENT_ALLOCATION_MISSING. No new closed-response enum was added; public v1 HEALTH_CASE/caseID mapping contract tests
+pass, and oasdiff reports no breaking change.
+
+Diagnosis replacement's former 500 is now 409 DIAGNOSIS_IN_USE in local HTTP checks
+(health 181.5 s; app 134.5 s); live confirmation awaits the planned restart. The real inpatient
+scope test passed (15.8 s): provider-other and DEMO_B detail/list/reconcile commands are
+scoped, and the seeder reuses closed unfunded rows while refusing marker tampering. Fixture
+`90b11d5c-bceb-4eb3-a3a6-30356e5da831` uses other-provider stay
+`f4a96463-296d-5c69-a536-776d18baea91` and DEMO_B stay
+`f6c45296-cefe-50d6-bb98-32eab7e9887d`; no accounts, auth, ledger or grants were created.
+Inpatient privacy screenshots at 1440px and 390px were visually reviewed with no overflow or
+clinical text. Schema on the live database remains 51 and the running backend is still
+`9338869`; migration/restart and live claim confirmation are pending. The existing clinical
+stay `01a0ec9b-eae4-71e6-8426-ca03c108c887` retains 2 reserved for the prepared
+`real-inpatient-claim.spec.ts` (strict TypeScript and lint pass; not run). Privacy mode
+`E2E_INPATIENT_CANCEL_CHECK=1` is also prepared, not run. The full-schema suite is still running. Mock source/allocation parity passed 23 focused tests; full frontend validation is in progress. All six CI checks passed on `89d1fcb` ([run 36556355293](https://github.com/celikbros/kapsora/actions/runs/36556355293)).
+
+**Cancellation and remaining PC-04 defects:** old CancelStay left 3 reserved from original 5 + extension 3. The local helper now releases extension then original, preserving prior consumption. Two new PostgreSQL subtests (spent 0 and 1) failed before the fix; `go test ./internal/health/application -run 'TestCancelReleases|TestDischarge'` passed afterward (33.707 s), with scoped health-application golangci-lint at 0 issues. Live cancellation confirmation awaits an operator restart. Diagnosis replacement now returns 409 DIAGNOSIS_IN_USE in local tests; live confirmation awaits restart. No user/grant changes were made.
 
 A separate read-only browser layout check used intercepted case data to expose the new
 form without changing a database record. It found a clipped date field inside the mobile

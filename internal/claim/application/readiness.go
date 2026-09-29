@@ -114,6 +114,15 @@ func (s *Service) InvoiceReadiness(ctx context.Context, rc identity.RequestConte
 		if len(decisions) != len(lines) {
 			out.Blockers = append(out.Blockers, BlockerLineNotDecided)
 		}
+		if isInpatientStayClaim(record) {
+			complete, err := s.inpatientAllocationComplete(ctx, tx, rc, record, version.ID, lines)
+			if err != nil {
+				return err
+			}
+			if !complete {
+				return ErrInpatientAllocationMissing
+			}
+		}
 		out.Ready = len(out.Blockers) == 0
 		return nil
 	})

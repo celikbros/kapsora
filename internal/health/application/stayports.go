@@ -351,11 +351,14 @@ type StayReleaseInput struct {
 // hold: take one when the request is approved, move its end when an extension is approved,
 // and give back what was never used at discharge.
 //
-// Create and Extend open transactions of their own, because they are the authorization
-// module's own commands with their own audit rows and ledger movements. Release takes the
-// caller's transaction: the discharge and the release it owes have to commit together, or a
-// stay would end with entitlement still held for days nobody spent.
+// Decision handling uses the InTx methods so funding and the stay transition commit
+// together. The standalone methods preserve the port for other callers. Release also
+// uses the caller's transaction so discharge and returned entitlement commit together.
 type AuthorizationPort interface {
+	CreateForRequestInTx(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
+		in StayAuthorizationInput) (StayAuthorizationRef, error)
+	ExtendValidityInTx(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
+		authorizationID uuid.UUID, validTo time.Time, reasonCode string) error
 	CreateForRequest(ctx context.Context, rc identity.RequestContext,
 		in StayAuthorizationInput) (StayAuthorizationRef, error)
 	ExtendValidity(ctx context.Context, rc identity.RequestContext, authorizationID uuid.UUID,
@@ -389,6 +392,20 @@ func (NoAuthorizations) CreateForRequest(context.Context, identity.RequestContex
 // ExtendValidity implements AuthorizationPort.
 func (NoAuthorizations) ExtendValidity(context.Context, identity.RequestContext, uuid.UUID,
 	time.Time, string,
+) error {
+	return errors.New("health: this process cannot extend an authorization")
+}
+
+// CreateForRequestInTx implements AuthorizationPort.
+func (NoAuthorizations) CreateForRequestInTx(context.Context, pgx.Tx, identity.RequestContext,
+	StayAuthorizationInput,
+) (StayAuthorizationRef, error) {
+	return StayAuthorizationRef{}, errors.New("health: this process cannot create an authorization")
+}
+
+// ExtendValidityInTx implements AuthorizationPort.
+func (NoAuthorizations) ExtendValidityInTx(context.Context, pgx.Tx, identity.RequestContext,
+	uuid.UUID, time.Time, string,
 ) error {
 	return errors.New("health: this process cannot extend an authorization")
 }

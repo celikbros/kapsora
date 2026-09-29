@@ -193,6 +193,24 @@ test('real inpatient privacy, sensitive access and admission dates preserve boun
     );
     await finance.call('GET', stayPath, undefined, { expected: 403 });
     await finance.call('GET', stayPath + '/reconciliation', undefined, { expected: 403 });
+    if (process.env['E2E_INPATIENT_CANCEL_CHECK'] === '1') {
+      const encounterPath = `/api/v1/encounters/${encounter.data.id}`;
+      const before = await provider.call<S<'Encounter'>>('GET', encounterPath);
+      const conflict = await provider.call<S<'Problem'>>(
+        'PUT',
+        encounterPath + '/diagnoses',
+        { items: [{ codeValueId: normal.id, diagnosisType: 'PRIMARY' }] },
+        { etag: before.etag, expected: 409 },
+      );
+      expect(conflict.data.code).toBe('DIAGNOSIS_IN_USE');
+      expect(await provider.call<S<'Encounter'>>('GET', encounterPath)).toEqual(before);
+      const unchanged = await provider.call<{ items: S<'Diagnosis'>[] }>(
+        'GET',
+        encounterPath + '/diagnoses',
+      );
+      expect(unchanged.data.items).toEqual(diagnoses.data.items);
+      expect((await getStay()).data.admissionDiagnosisId).toBe(admission.admissionDiagnosisId);
+    }
     // Make only this new episode sensitive after recording an extension with actual clinical text.
     const sensitive = await diagnosisCode('F32.1');
     expect(sensitive.attributes['sensitive']).toBe(true);
@@ -273,6 +291,58 @@ test('real inpatient privacy, sensitive access and admission dates preserve boun
     expect(
       (await provider.call<S<'InpatientStay'>>('GET', `/api/v1/inpatient-stays/${sourceId}`)).data,
     ).toEqual(source);
+    const cancellationCheck = process.env['E2E_INPATIENT_CANCEL_CHECK'] === '1';
+    if (cancellationCheck) {
+      const currentStay = await getStay();
+      await provider.call(
+        'POST',
+        stayPath + '/cancel',
+        { reasonCode: 'PC04_STALE' },
+        {
+          etag: '"0"',
+          expected: 412,
+        },
+      );
+      expect(await getStay()).toEqual(currentStay);
+      await providerPage.getByRole('button', { name: 'İptal et', exact: true }).click();
+      const dialog = providerPage.getByRole('dialog');
+      await dialog.locator('[name="reasonCode"]').fill('PC04_CANCELLATION');
+      const cancelling = providerPage.waitForResponse(
+        (r) =>
+          new URL(r.url()).pathname === stayPath + '/cancel' && r.request().method() === 'POST',
+      );
+      await dialog.getByRole('button', { name: 'İptal et', exact: true }).click();
+      const response = await cancelling;
+      expect(response.status()).toBe(200);
+      const cancelled = {
+        data: (await response.json()) as S<'InpatientStay'>,
+        etag: response.headers()['etag']!,
+      };
+      expect(cancelled.data.status).toBe('CANCELLED');
+      const afterCancel = await balances();
+      const figures = (rows: S<'EntitlementAccount'>[]) =>
+        rows.map((r) => [r.id, r.available, r.reserved, r.consumed, r.expired]);
+      // This assertion precedes fallback fixture cleanup: only the stay command may release the four days.
+      expect(figures(afterCancel)).toEqual(figures(balancesBefore));
+      expect(
+        await provider.call<S<'InpatientStay'>>(
+          'POST',
+          stayPath + '/cancel',
+          response.request().postDataJSON(),
+          {
+            etag: response.request().headers()['if-match']!,
+            key: response.request().headers()['idempotency-key']!,
+          },
+        ),
+      ).toEqual(cancelled);
+      await provider.call(
+        'POST',
+        stayPath + '/cancel',
+        { reasonCode: 'PC04_CANCELLATION' },
+        { etag: cancelled.etag, expected: 409 },
+      );
+      expect(await balances()).toEqual(afterCancel);
+    }
     await test.info().attach('inpatient-privacy-acceptance', {
       contentType: 'application/json',
       body: JSON.stringify({
@@ -284,6 +354,7 @@ test('real inpatient privacy, sensitive access and admission dates preserve boun
         purposeDeclineNoAccess: true,
         purposeRecorded: true,
         dateBoundaries: true,
+        cancellationAllHoldsVerified: cancellationCheck,
       }),
     });
   } finally {

@@ -55,6 +55,8 @@ var (
 	ErrCaseNotFound      = errors.New("health: health case not found")
 	ErrEncounterEnded    = errors.New("health: encounter already ended")
 	ErrEncounterNotFound = errors.New("health: encounter not found")
+	// ErrDiagnosisInUse keeps clinical history referenced by an inpatient stay or claim line intact.
+	ErrDiagnosisInUse = errors.New("health: diagnosis is referenced by another clinical record")
 	// ErrCaseClosed refuses a second close and any write into a finished case.
 	ErrCaseClosed = errors.New("health: the case is already closed")
 	// ErrEncounterOpen refuses a close over an encounter nobody ended.

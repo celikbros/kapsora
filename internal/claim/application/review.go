@@ -248,6 +248,15 @@ func (s *Service) Approve(ctx context.Context, rc identity.RequestContext, id uu
 		}
 
 		status := statusFor(decisions)
+		if isInpatientStayClaim(current) && status != domain.StatusRejected {
+			complete, err := s.inpatientAllocationComplete(ctx, tx, rc, current, version.ID, lines)
+			if err != nil {
+				return err
+			}
+			if !complete {
+				return ErrInpatientAllocationMissing
+			}
+		}
 		now := s.now().UTC()
 		var closedAt *time.Time
 		if domain.Closed(status) {
@@ -441,7 +450,25 @@ func (s *Service) Return(ctx context.Context, rc identity.RequestContext, id uui
 		}
 		// A correction replaces the submitted statement. Undo only its actual line draws,
 		// preserving the append-only ledger; a later submit consumes the corrected quantities.
-		if current.AuthorizationID != nil {
+		if isInpatientStayClaim(current) {
+			allocations, err := s.repo.ListVersionAllocations(ctx, tx, rc.TenantID, version.ID)
+			if err != nil {
+				return err
+			}
+			for _, draw := range allocations {
+				if draw.Applied.IsZero() {
+					continue
+				}
+				if err := s.authorizations.UndoConsumption(ctx, tx, ConsumeRequest{
+					TenantID: rc.TenantID, ActorID: rc.Principal.ActorID,
+					AuthorizationID:     draw.AuthorizationID,
+					ServiceDefinitionID: draw.ServiceDefinitionID,
+					Quantity:            draw.Applied, Key: draw.Key, ReasonCode: consumeReason,
+				}); err != nil {
+					return err
+				}
+			}
+		} else if current.AuthorizationID != nil {
 			for _, line := range lines {
 				quantity, err := quantityOf(line.Quantity, "quantity")
 				if err != nil {

@@ -416,6 +416,8 @@
     "CLAIM_CASE_ALREADY_CLAIMED": "A claim already exists for this case. Check the claim list.",
     "CLAIM_SOURCE_NOT_FOUND": "The billing case was not found. Refresh the case list.",
     "CLAIM_SOURCE_NOT_READY": "This case is not ready for billing. Ask the clinical team to check the records and authorization.",
+    "CLAIM_INPATIENT_ALLOCATION_MISSING": "Inpatient authorization consumption is incomplete. Check the day count and approvals.",
+    "DIAGNOSIS_IN_USE": "This diagnosis is used by an inpatient stay or claim line. Correct the linked record before changing it.",
     "ENCOUNTER_ALREADY_ENDED": "The encounter has already ended. Reload the record."
   },
   "fieldErrors": {
@@ -1206,16 +1208,16 @@
     "handoff": {
       "intro": "Select your organization’s case, then enter service quantities and requested amounts.",
       "case": "Case to bill",
-      "caseHint": "Outpatient cases with active authorization and no existing claim are listed.",
+      "caseHint": "Outpatient cases and discharged stays with active authorization and no existing claim are listed.",
       "choose": "Select a case",
       "more": "Load more cases",
       "empty": "No cases to bill",
       "emptyHint": "Cases appear after clinical preparation and authorization.",
       "charges": "Services and amounts",
       "date": "Service date: {{date}}",
-      "reserved": "Authorization quantity: {{quantity}} {{unit}}",
+      "reserved": "Billable quantity: {{quantity}} {{unit}}",
       "amount": "Requested amount (TRY)",
-      "links": "Case and authorization associations are retained. Clinical information is not shown to billing.",
+      "links": "For inpatient stays, enter the full actual day count. Case and authorization associations are retained; clinical information is not shown here.",
       "uncertain": "The outcome could not be confirmed. Retry the same request.",
       "edit": "Edit details",
       "quantityError": "Enter a quantity greater than zero (e.g. 1 or 1.5; up to 6 decimal places).",

@@ -44,7 +44,7 @@ the existing work-package contracts rather than starting their implementation ag
 | PC-01 | Member import | VERIFIED locally; PR open | Existing identity/member setup | Upload → password step-up → invalid-row skip → one created member → search → logout; no duplicate effect |
 | PC-02 | Eligibility, service request and authorization | VERIFIED locally for the defined demo acceptance scope (2026-09-29) | Verified member/scenario prerequisites | A real provider can request covered care; approvals/refusals and the authorization/entitlement effects agree |
 | PC-03 | Outpatient care, reports and health claims | VERIFIED locally for the defined outpatient acceptance scope (2026-09-29); PC-04/05 remain separate | PC-02 | Case, encounter and diagnosis, then a clean report, review and invoice-ready claim |
-| PC-04 | Inpatient care | ACTIVE; first live admission, extension and discharge-release path passed; consumption and claim/invoice acceptance remain pending | PC-03 and admission configuration | Preauthorization -> admission -> extension -> discharge -> invoice-ready claim; entitlement reconciles |
+| PC-04 | Inpatient care | ACTIVE; live admission/extension/release and privacy/scope evidence passed; local allocation/claim tests pass; live claim acceptance and remaining scenarios pending | PC-03 and admission configuration | Preauthorization -> admission -> extension -> discharge -> invoice-ready claim; entitlement reconciles |
 | PC-05 | Invoice, batch, settlement and payment | QUEUED | An invoice-ready health claim from PC-03/04 | The same episode reaches invoice, payer decision and a reconciled local payment record |
 | PC-06 | Accommodation and combined product acceptance | QUEUED | PC-05; existing lodging implementation | Booking and its financial consequences work; cross-app regression and owner walkthrough complete |
 
@@ -130,7 +130,30 @@ References: existing [M5 packages](#m5-work-packages-issued-2026-09-05),
 | PC-04.4 | Discharge with actual dates. Verify partial-day calculation and unused reservation release across both original and extension authorizations. Verify consumption in the subsequent claim/fulfillment path. Overstay is surfaced for review. Repeated discharge/event delivery has no extra ledger effect. |
 | PC-04.5 | Exercise cancellation/date boundaries, preserve clinical privacy, and take the resulting inpatient claim through required review to invoice readiness. |
 
-**PC-04 preparation and claim allocation design (2026-09-29):**
+**PC-04 preparation and claim allocation checkpoint (2026-09-29):**
+
+**PC-04 local implementation checkpoint (2026-09-29):** the full claim application PostgreSQL
+suite passed (316.433 s), full health application tests passed (197.824 s), and concurrency
+(5.15 s), legacy closed-late (5.94 s), and auth-in-transaction rollback (5 s) checks passed.
+Scoped lint reported zero issues. Shortage and overstay produce no draws; exact return undo,
+terminal cancel/reject preservation, and atomic decision funding with stay state/audit are
+covered locally. Defensive readiness without an allocation receipt returns 409
+CLAIM_INPATIENT_ALLOCATION_MISSING. Public source remains HEALTH_CASE/caseID while internal
+source is INPATIENT_STAY/stayID; public v1 HEALTH_CASE/caseID mapping contract tests pass and oasdiff reports no breaking change.
+
+- **Scope and fixture:** `real-inpatient-scope.spec.ts` passed (15.8 s), covering provider-other
+  and DEMO_B detail/list/reconcile commands. Seeder rerun reuses closed unfunded rows and
+  rejects marker tampering (PostgreSQL, 3.52 s); it created no accounts, auth, ledger entries
+  or grants. Fixture `90b11d5c-bceb-4eb3-a3a6-30356e5da831`, other-provider stay
+  `f4a96463-296d-5c69-a536-776d18baea91`, DEMO_B stay
+  `f6c45296-cefe-50d6-bb98-32eab7e9887d`.
+- Inpatient privacy screenshots were visually reviewed at 1440px and 390px: no overflow or
+  clinical text. The existing clinical stay `01a0ec9b-eae4-71e6-8426-ca03c108c887` retains
+  2 reserved for `real-inpatient-claim.spec.ts`, which passes strict TypeScript and lint but
+  has not run. `E2E_INPATIENT_CANCEL_CHECK=1` is prepared but not run.
+- Live database is still schema 51 with backend `9338869`; migration/restart and live claim
+  confirmation are pending. The full-schema suite is pending; mock parity passed 23 focused tests and full frontend validation is in progress. CI all six
+  checks passed on `89d1fcb` ([run 36556355293](https://github.com/celikbros/kapsora/actions/runs/36556355293)).
 
 - [real-inpatient.spec.ts](../../tests/e2e/real-inpatient.spec.ts) is prepared with API
   clinical setup and provider UI paths for admission, segments, extension approval/refusal
@@ -167,33 +190,32 @@ References: existing [M5 packages](#m5-work-packages-issued-2026-09-05),
   emitted no access event, and MEDICAL_REVIEW with a clinical reason recorded audit SUCCESS
   with DENIED shown. Provider sensitive-FINANCIAL API/DOM and HR person-health DOM had no
   clinical text. Dates at +/-4000 days returned 422 without stay or balance mutation.
-  Screens at 1440/390 had no overflow; screenshots still need visual review. Cleanup
+  Screens at 1440/390 had no overflow; 1440px and 390px screenshots were visually reviewed with no overflow or clinical text. Cleanup
   cancelled the new stay and each known authorization, with account figures at baseline;
-  this is not proof that CancelStay automatically releases every hold. It proves these
-  projection/purpose cases only, not full H11 stay-provider/tenant boundaries.
+  this is not proof that CancelStay automatically releases every hold. This privacy/purpose
+  run covers its stated projection cases; stay provider/tenant scope is covered by the separate
+  scope run recorded in this checkpoint.
 - **Cancellation follow-up:** old CancelStay behavior left 3 reserved from original 5 +
   extension 3. A new local health helper releases extension then original, preserving prior
   consumption. Two PostgreSQL subtests (spent 0 and 1) failed before the fix; afterward
   `go test ./internal/health/application -run 'TestCancelReleases|TestDischarge'` passed
   (33.707 s), and scoped health-application golangci-lint reported 0 issues. Live
   cancellation confirmation awaits an operator restart. A separate diagnosis replacement
-  currently returns 500 because the admission FK still references it; that fix is in progress.
+  now returns 409 DIAGNOSIS_IN_USE in local HTTP tests (health 181.5 s; app 134.5 s); live confirmation awaits restart.
 - A local early-discharge fix releases unused authorization from the latest approved
   extension first, then the original hold. Three focused PostgreSQL tests passed (11 s):
   with original 5 + extension 3 and actual use 2, release of the unused 6 leaves original
   2 and extension 0; consuming 2 and replaying preserves conservation. The partial case
   with one unit consumed before discharge also reconciles without counting it twice.
-- Planned claim change: one claim version stores a line-to-authorization quantity allocation
-  table in a new migration. Inpatient source is the discharged stay and its original plus
-  approved extension holds. Add an atomic multi-hold preflight/consume transaction that
-  rolls back on failure, plus stored per-hold consumption allocations so return/correction
-  can undo exactly the prior deltas. Cancellation/rejection releases all unused holds; use
-  stable idempotency keys per hold. Keep outpatient behavior unchanged and hide allocation
-  links from clinical/financial projections. Overstay remains pending medical review with
-  zero consumption; existing manual approval does not create funding or consumption.
-  Allocation example: actual use 6 against original 5 + extension 3 releases 2 from the
-  latest extension hold, then allocates consumption as original 5 + extension 1 within the
-  same claim version.
+- Implemented locally: migration 000052 stores per-claim-version line-to-authorization
+  quantity allocations for the discharged stay and its original plus approved extension holds.
+  Atomic multi-hold preflight/consume rolls back on failure, and stored per-hold receipts let
+  return/correction undo exactly the prior deltas. Cancellation/rejection releases unused
+  holds while retaining consumed units. Outpatient behavior is unchanged and allocation links
+  remain hidden from clinical/financial projections. Overstay draws zero; manual approval
+  without funding is refused. A 5 + 1 allocation consumes exactly 6 days and approves 2400 TRY, including the
+  case where unused extension hold is released first. These results are local suite evidence;
+  live claim acceptance remains pending.
 - The per-version allocation table keeps a single claim's duplicate checks and history
   coherent; splitting the stay across separate claims would bypass the current claim model.
   The seeder in `cmd/seed/inpatientprogram.go` is registered with the seed command and
@@ -236,12 +258,12 @@ evidence; race, duplicate-delivery and ledger invariants may use focused databas
 | H07 | Report review, coverage and immutable correction history work | PC-03 | PASSED 2026-09-23: live approval/correction, immutable history, separate scanned evidence and unchanged prior claim/usage; coverage exceptions verified in isolated PostgreSQL tests |
 | H08 | Clinical provider → billing → medical → financial handoff reaches invoice-ready claim | PC-03 | PASSED 2026-09-23: real browser handoff, two return/correction cycles, preserved contract price, final 400/400/0 TRY and one net session consumed |
 | H09 | Duplicate/report/authorization blockers and corrected claim history are accurate | PC-03 | PASSED 2026-09-23: correction/history and consumption/replays plus live duplicate, authorization exceeded, report date and service-scope blockers; no extra consumption or report usage |
-| H10 | HR/financial projections exclude forbidden clinical fields in API and DOM | PC-03/04 | Outpatient verified live; inpatient HR stay detail/list and FINANCIAL omit admissionDiagnosisId/reasonText, financial.reviewer 403, and HR person-health DOM contains no clinical text. Screenshot visual review pending |
-| H11 | Sensitive purpose, access audit, self-review and other-provider/tenant boundaries hold | PC-03/04 | Outpatient scope verified; inpatient purpose API tested (428 without purpose, FINANCIAL decline no event, MEDICAL_REVIEW grant audited with DENIED reason). Full H11 remains open for stay provider/tenant boundaries |
+| H10 | HR/financial projections exclude forbidden clinical fields in API and DOM | PC-03/04 | Outpatient verified live; inpatient HR stay detail/list and FINANCIAL omit admissionDiagnosisId/reasonText, financial.reviewer 403, and HR person-health DOM contains no clinical text. 1440/390 screenshots visually reviewed with no overflow or clinical text |
+| H11 | Sensitive purpose, access audit, self-review and other-provider/tenant boundaries hold | PC-03/04 | Outpatient scope verified; inpatient purpose API tested (428 without purpose, FINANCIAL decline no event, MEDICAL_REVIEW grant audited with DENIED reason); inpatient provider-other and DEMO_B detail/list/reconcile scope passed live |
 | H12 | Admission approval advances the stay once and refuses duplicate open admission | PC-04 | PASSED live: worker authorization, duplicate admission 409, discharge replay unchanged |
 | H13 | Extension and segment rules hold; refusal leaves balances correct | PC-04 | PASSED live: WARD + COMPANION; overlap 422/OVERLAP without mutation; duplicate pending extension 409; approved extension and subsequent refusal |
-| H14 | Early discharge, partial days and overstay reconcile original/extension authorizations | PC-04 | PARTIAL: live unused-hold release verified (original 2 / extension 0 after releasing 6); consumption, partial-day and overstay cases remain pending |
-| H15 | Inpatient claim becomes invoice-ready without duplicate consumption | PC-04 | Pending; live clinical run created no claim/invoice |
+| H14 | Early discharge, partial days and overstay reconcile original/extension authorizations | PC-04 | PARTIAL: live unused-hold release verified (original 2 / extension 0 after releasing 6); local exact 5 + 1 consumption, return undo, shortage and overstay no-draw tests pass; live consumption/partial-day/overstay remain pending |
+| H15 | Inpatient claim becomes invoice-ready without duplicate consumption | PC-04 | Local PostgreSQL allocation/claim suite passes, including exact multi-hold consumption and replay/correction behavior; live claim/invoice readiness remains pending |
 
 ### PC-05 — health invoice, batch, settlement and payment
 

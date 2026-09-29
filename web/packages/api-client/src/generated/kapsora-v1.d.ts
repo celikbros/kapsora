@@ -1320,6 +1320,8 @@ export interface paths {
          *     provider organization carries no tax identity to invoice against,
          *     `CURRENCY_NOT_SINGLE` when the lines are not all in one currency, and
          *     `LINE_NOT_DECIDED` when a line of the current version still has no decision.
+         *     A decided inpatient claim without its complete consumption receipt returns 409
+         *     CLAIM_INPATIENT_ALLOCATION_MISSING instead of a readiness result.
          *
          *     Only an APPROVED or PARTIALLY_APPROVED claim has an answer; anything else is 409
          *     CLAIM_NOT_DECIDED, because "is this invoiceable" is not a question about a draft.
@@ -1537,7 +1539,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Financial-only outpatient handoff candidates; requires claim.create and provider scope. No clinical fields. */
+        /** @description Financial-only outpatient and discharged inpatient handoff candidates; requires claim.create and provider scope. No clinical fields. */
         get: operations["listClaimCaseSources"];
         put?: never;
         post?: never;
@@ -1560,9 +1562,11 @@ export interface paths {
         /**
          * @description Requires claim.create. Locks and rechecks the scoped source, derives its person,
          *     program, enrollment, provider, authorization, diagnosis and report associations
-         *     inside the create transaction. Requires one unambiguous primary diagnosis and one
-         *     approved in-window report per selected service. The caller supplies only service,
-         *     quantity and requested amount. One non-cancelled claim per case through this path;
+         *     inside the create transaction. Requires one unambiguous primary diagnosis. When
+         *     a report is associated with the case/service, exactly one approved in-window report
+         *     must resolve. Inpatient cases require one discharged stay, use its admission diagnosis
+         *     when present, and bill its actual days in full; original and approved extension holds
+         *     are allocated internally. The caller supplies only service, quantity and requested amount. One non-cancelled claim per case through this path;
          *     retry with the same idempotency key. Financial projection is always returned.
          */
         post: operations["createClaimFromCase"];
@@ -2262,9 +2266,11 @@ export interface paths {
          */
         get: operations["listEncounterDiagnoses"];
         /**
-         * @description Replaces the encounter's diagnoses as a whole: the set is the unit, and a diagnosis
-         *     id is not something anything else hangs off. A second PRIMARY is refused with 422 —
-         *     every downstream rule asks "what was this for" and expects one answer.
+         * @description Replaces the encounter's diagnoses as a whole. A diagnosis referenced by an
+         *     inpatient stay or claim line cannot be removed through this operation; the request
+         *     is refused with 409 DIAGNOSIS_IN_USE and the stored set remains unchanged. Correct
+         *     the dependent clinical record before replacing that diagnosis. A second PRIMARY is
+         *     refused with 422; every downstream rule expects one answer.
          *
          *     `sensitive` is not accepted from the caller. It is read from each code value's own
          *     category in the catalogue, and the case's sensitivity is recomputed from the
@@ -7506,7 +7512,8 @@ export interface components {
         };
         /**
          * @description What a claim was raised from. It is one vocabulary for every vertical, so a settlement
-         *     never has to know which module wrote a claim.
+         *     never has to know which module wrote a claim. Inpatient claims use HEALTH_CASE
+         *     with the case ID as sourceId; the exact stay and authorization allocation remain internal.
          * @enum {string}
          */
         ClaimSourceType: "HEALTH_CASE" | "BOOKING" | "REIMBURSEMENT";
@@ -16546,7 +16553,10 @@ export interface operations {
             };
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            /** @description The claim has not been decided. CLAIM_NOT_DECIDED. */
+            /**
+             * @description The claim has not been decided (CLAIM_NOT_DECIDED), or an inpatient claim
+             *     lacks its complete consumption receipt (CLAIM_INPATIENT_ALLOCATION_MISSING).
+             */
             409: {
                 headers: {
                     [name: string]: unknown;

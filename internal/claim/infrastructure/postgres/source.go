@@ -70,12 +70,16 @@ func (Repository) LockCaseSource(ctx context.Context, tx pgx.Tx, tenant, id uuid
 		return application.CaseSource{}, err
 	}
 	return application.CaseSource{CaseSourceSummary: application.CaseSourceSummary{ID: r.ID, OpenedAt: r.OpenedAt, RowVersion: r.RowVersion, ServiceDate: r.ServiceDate.Time, RequestReference: r.RequestReference, PersonDisplayName: r.PersonDisplayName},
+		StayID: sourceStayID(r.StayID), DischargeAt: r.DischargeAt,
 		PersonID: r.PersonID, ProgramID: r.ProgramID, EnrollmentID: r.EnrollmentID, ProviderID: r.ProviderOrganizationID.UUID,
-		AuthorizationIDs: auth, DiagnosisIDs: diagnoses, Ongoing: r.Ongoing, AlreadyRaised: r.AlreadyRaised}, nil
+		AuthorizationIDs: auth, DiagnosisIDs: diagnoses, Ongoing: r.Ongoing == nil || *r.Ongoing, AlreadyRaised: r.AlreadyRaised}, nil
 }
 
 // CaseSourceLines keeps clinical associations inside the repository/application boundary.
 func (Repository) CaseSourceLines(ctx context.Context, tx pgx.Tx, tenant uuid.UUID, source application.CaseSource) ([]application.CaseSourceLine, error) {
+	if source.StayID != nil {
+		return inpatientSourceLines(ctx, tx, tenant, source)
+	}
 	rows, err := sqlcgen.New(tx).ClaimSourceLines(ctx, sqlcgen.ClaimSourceLinesParams{TenantID: tenant, CaseID: uuid.NullUUID{UUID: source.ID, Valid: true}, PersonID: source.PersonID, ProviderID: uuid.NullUUID{UUID: source.ProviderID, Valid: true}, ServiceDate: dateParam(source.ServiceDate), AuthorizationID: source.AuthorizationIDs[0]})
 	if err != nil {
 		return nil, err
@@ -87,6 +91,33 @@ func (Repository) CaseSourceLines(ctx context.Context, tx pgx.Tx, tenant uuid.UU
 			return nil, err
 		}
 		out = append(out, application.CaseSourceLine{ServiceID: r.ServiceDefinitionID, Code: r.ServiceCode, Name: r.ServiceName, UnitType: r.UnitType, Quantity: r.Quantity, ReportIDs: reports, HasReportCandidate: r.HasReportCandidate})
+	}
+	return out, nil
+}
+
+func sourceStayID(id uuid.NullUUID) *uuid.UUID {
+	if !id.Valid {
+		return nil
+	}
+	return &id.UUID
+}
+
+func inpatientSourceLines(ctx context.Context, tx pgx.Tx, tenant uuid.UUID, source application.CaseSource) ([]application.CaseSourceLine, error) {
+	rows, err := sqlcgen.New(tx).ClaimInpatientSourceLines(ctx, sqlcgen.ClaimInpatientSourceLinesParams{
+		TenantID: tenant, CaseID: uuid.NullUUID{UUID: source.ID, Valid: true}, PersonID: source.PersonID,
+		ProviderID: uuid.NullUUID{UUID: source.ProviderID, Valid: true}, ServiceDate: dateParam(source.ServiceDate), StayID: *source.StayID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]application.CaseSourceLine, 0, len(rows))
+	for _, r := range rows {
+		reports, err := sourceIDs(r.ReportIds)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, application.CaseSourceLine{ServiceID: r.ServiceDefinitionID, Code: r.ServiceCode, Name: r.ServiceName,
+			UnitType: r.UnitType, Quantity: r.Quantity, ReportIDs: reports, HasReportCandidate: r.HasReportCandidate})
 	}
 	return out, nil
 }

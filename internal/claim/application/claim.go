@@ -35,12 +35,16 @@ type NewClaimInput struct {
 	EnrollmentID           uuid.UUID
 	ProviderOrganizationID uuid.UUID
 	CaseID                 *uuid.UUID
-	FulfilmentID           *uuid.UUID
-	AuthorizationID        *uuid.UUID
-	ServiceDateFrom        time.Time
-	ServiceDateTo          time.Time
-	Channel                string
-	Lines                  []NewLineInput
+	// SourceType/SourceID are set by the source handler after it has locked and
+	// validated the exact discharged stay; generic claim create leaves them nil.
+	SourceType      *string
+	SourceID        *uuid.UUID
+	FulfilmentID    *uuid.UUID
+	AuthorizationID *uuid.UUID
+	ServiceDateFrom time.Time
+	ServiceDateTo   time.Time
+	Channel         string
+	Lines           []NewLineInput
 }
 
 // DraftInput is the header patch of a claim whose current version is still a draft.
@@ -259,6 +263,18 @@ func (s *Service) CreateClaim(ctx context.Context, rc identity.RequestContext, i
 		if err := s.checkServices(ctx, tx, rc.TenantID, in.Lines); err != nil {
 			return err
 		}
+		if in.SourceType != nil || in.SourceID != nil {
+			return fieldError("source", "SOURCE_REQUIRED", "Kaynak hasarlari kaynak aktarimindan olusturulmalidir.")
+		}
+		if in.CaseID != nil {
+			caseType, err := s.repo.CaseType(ctx, tx, rc.TenantID, *in.CaseID)
+			if err != nil {
+				return err
+			}
+			if caseType == "INPATIENT" {
+				return fieldError("caseId", "SOURCE_REQUIRED", "Yatis hasari taburculuk aktarimindan olusturulmalidir.")
+			}
+		}
 		record, err := s.createDraft(ctx, tx, rc, in, channel)
 		if err != nil {
 			return err
@@ -309,6 +325,10 @@ func (s *Service) createWithReference(ctx context.Context, tx pgx.Tx, rc identit
 		if err != nil {
 			return ClaimRecord{}, err
 		}
+		sourceType, sourceID := caseSource(in.CaseID), in.CaseID
+		if in.SourceType != nil || in.SourceID != nil {
+			sourceType, sourceID = in.SourceType, in.SourceID
+		}
 		record, err := s.repo.CreateClaim(ctx, tx, rc.TenantID, NewClaimRow{
 			Reference: reference, PersonID: in.PersonID, ProgramID: in.ProgramID,
 			EnrollmentID: in.EnrollmentID, ProviderOrganizationID: in.ProviderOrganizationID,
@@ -316,7 +336,7 @@ func (s *Service) createWithReference(ctx context.Context, tx pgx.Tx, rc identit
 			// The pair follows the case. A claim raised by hand against an episode of care
 			// names it once and the two columns say the same thing, which is what
 			// `ck_claim_case_matches_source` asserts.
-			SourceType: caseSource(in.CaseID), SourceID: in.CaseID,
+			SourceType: sourceType, SourceID: sourceID,
 			CaseID: in.CaseID, FulfilmentID: in.FulfilmentID,
 			AuthorizationID: in.AuthorizationID,
 			ServiceDateFrom: domain.DateOnly(in.ServiceDateFrom),
@@ -366,6 +386,21 @@ func (s *Service) PatchDraft(ctx context.Context, rc identity.RequestContext, id
 		}
 		if current.RowVersion != in.ExpectedVersion {
 			return ErrVersionMismatch
+		}
+		if isInpatientStayClaim(current) {
+			if in.CaseID == nil || current.CaseID == nil || *in.CaseID != *current.CaseID ||
+				in.AuthorizationID == nil || current.AuthorizationID == nil ||
+				*in.AuthorizationID != *current.AuthorizationID {
+				return fieldError("source", "SOURCE_FROZEN", "Yatis ve provizyon baglantisi degistirilemez.")
+			}
+		} else if in.CaseID != nil {
+			caseType, err := s.repo.CaseType(ctx, tx, rc.TenantID, *in.CaseID)
+			if err != nil {
+				return err
+			}
+			if caseType == "INPATIENT" && (current.CaseID == nil || *current.CaseID != *in.CaseID) {
+				return fieldError("caseId", "SOURCE_REQUIRED", "Yatis hasari taburculuk aktarimindan olusturulmalidir.")
+			}
 		}
 		updated, err := s.repo.UpdateDraft(ctx, tx, rc.TenantID, id, DraftRow{
 			ServiceDateFrom: domain.DateOnly(in.ServiceDateFrom),

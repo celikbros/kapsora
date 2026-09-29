@@ -84,6 +84,7 @@ type fixture struct {
 	consult      uuid.UUID
 	physio       uuid.UUID
 	lab          uuid.UUID
+	inpatient    uuid.UUID
 	caseID       uuid.UUID
 	encounterID  uuid.UUID
 	diagnosisID  uuid.UUID
@@ -245,27 +246,30 @@ func (f *fixture) seed(t *testing.T) { //nolint:funlen // one linear fixture rea
 	f.consult = service("CONSULT", "Muayene", "COUNT")
 	f.physio = service("PHYSIO_SESSION", "Fizyoterapi seansı", "SESSION")
 	f.lab = service("LAB_TEST", "Laboratuvar tetkiki", "COUNT")
+	f.inpatient = service("INPATIENT_DAY", "Inpatient night", "NIGHT")
 
 	// One entitlement per service, its code matching the service's own — the convention
 	// WP-I4-02 maps an authorization line onto a balance with. The mapping table beside it
 	// is WP-I5-05's, and it is what the claim's pricing reads.
-	entitlement := func(code, name string) uuid.UUID {
+	entitlement := func(code, name, unit string) uuid.UUID {
 		var id uuid.UUID
 		scan(&id, "entitlement "+code, `
 			INSERT INTO benefit.entitlement_definition (tenant_id, plan_version_id, code, name,
 			                                            unit_type, currency_code, period_type,
 			                                            initial_quantity)
-			VALUES ($1, $2, $3, $4, 'MONEY', 'TRY', 'CALENDAR_YEAR', 5000) RETURNING id`,
-			f.tenant, f.planVersion, code, name)
+			VALUES ($1, $2, $3, $4, $5, CASE WHEN $5 = 'MONEY' THEN 'TRY' ELSE NULL END, 'CALENDAR_YEAR', 5000) RETURNING id`,
+			f.tenant, f.planVersion, code, name, unit)
 		return id
 	}
-	consultDef := entitlement("CONSULT", "Muayene bütçesi")
-	physioDef := entitlement("PHYSIO_SESSION", "Fizyoterapi bütçesi")
-	labDef := entitlement("LAB_TEST", "Laboratuvar bütçesi")
+	consultDef := entitlement("CONSULT", "Muayene bütçesi", "MONEY")
+	physioDef := entitlement("PHYSIO_SESSION", "Fizyoterapi bütçesi", "MONEY")
+	labDef := entitlement("LAB_TEST", "Laboratuvar bütçesi", "MONEY")
+	inpatientDef := entitlement("INPATIENT_DAY", "Inpatient nights", "NIGHT")
 	for _, pair := range []struct {
 		service, definition uuid.UUID
 	}{
 		{f.consult, consultDef}, {f.physio, physioDef}, {f.lab, labDef},
+		{f.inpatient, inpatientDef},
 	} {
 		h.AdminExec(`
 			INSERT INTO benefit.service_entitlement_mapping (tenant_id, plan_version_id,
@@ -296,6 +300,7 @@ func (f *fixture) seed(t *testing.T) { //nolint:funlen // one linear fixture rea
 	f.consultAcct = account(consultDef, "consult")
 	f.physioAcct = account(physioDef, "physio")
 	account(labDef, "lab")
+	account(inpatientDef, "inpatient")
 
 	// The contract the lines are priced against. The physiotherapy price is per unit, so a
 	// claim for two sessions is twice a claim for one; the consultation is a flat price with
@@ -326,6 +331,7 @@ func (f *fixture) seed(t *testing.T) { //nolint:funlen // one linear fixture rea
 		                                 pricing_method, amount, member_share_method, valid_from)
 		VALUES ($1, $2, $3, 'SESSION', 'UNIT', $4::text::numeric, 'NONE', '2026-01-01')`,
 		f.tenant, priceList, f.physio, physioUnitPrice)
+	h.AdminExec("INSERT INTO contract.price_item (tenant_id, price_list_id, service_definition_id, unit_type, pricing_method, amount, member_share_method, valid_from) VALUES ($1, $2, $3, 'NIGHT', 'UNIT', 400, 'NONE', '2026-01-01')", f.tenant, priceList, f.inpatient)
 	// LAB_TEST is deliberately left unpriced: a line the ladder cannot price is what sends a
 	// claim to financial review with the pricing explanation attached.
 

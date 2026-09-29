@@ -191,6 +191,19 @@ func run(args []string) error {
 			return err
 		}
 		return json.NewEncoder(os.Stdout).Encode(result)
+	case "inpatient-scope":
+		if len(args) != 2 {
+			return fmt.Errorf("usage: seed inpatient-scope <fixture-uuid>")
+		}
+		id, err := uuid.Parse(args[1])
+		if err != nil {
+			return fmt.Errorf("invalid inpatient scope fixture UUID")
+		}
+		result, err := s.inpatientScope(ctx, id)
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(os.Stdout).Encode(result)
 	case "health-scope":
 		if len(args) != 2 {
 			return fmt.Errorf("usage: seed health-scope <fixture-uuid>")
