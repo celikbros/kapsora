@@ -906,43 +906,51 @@ committed end response, retries, closes the case and checks no balance change. D
 screenshots remain ignored under `.impeccable/review`. PC-03 is still active; inpatient
 privacy and acceptance remain PC-04, followed by PC-05 and PC-06 in order.
 
-### PC-05 invoice entry checkpoint (2026-09-29)
+### PC-05 live invoice, batch and payment checkpoint (2026-09-29)
 
-The first real billing run created HEALTH invoice `01a0ede0-4f89-7406-bfd9-910961ebc123`
-(number `PC05-01a0edc6-d807-7570-bc69-3c91949159d7`) from the accepted inpatient
-claim `01a0edc6-d807-7570-bc69-3c91949159d7`. The invoice remains DRAFT with exactly
-one allocation: 800 TRY payable, 800 allocated, zero difference. No document, batch,
-settlement or payment was created by this run. Resume this invoice explicitly; do not
-create another invoice for the same claim.
+After explicit owner approval for existing and new tenants, the system
+`PROVIDER_BILLING` role now has `document.upload` through migration 000053,
+applied locally (schema 53, dirty false) without a server restart. The grant covers current
+and new tenants; the mock permission mirror matches. Tests pass for both existing tenants,
+idempotent application, custom-role exclusion, organization scope and no clinical-read
+grant. A real draft-batch UI bug was also fixed: `invoiceCount` remains zero until submit,
+so draft counts and the submit button now use persisted `invoices.length`; ten provider
+tests pass.
 
-Two frontend defects are fixed: invoice creation now requires an explicit service domain,
-draft edits send it, and corrections preserve the returned invoice's domain; the shared
-invoice PATCH operation now sends `application/merge-patch+json` instead of JSON (the old
-request was refused with 415). Four new regressions cover health/accommodation creation,
-required selection, repairing a generic draft and preserving an accommodation correction.
-The 38 focused provider/invoice tests pass. The full web suite passed all 545 tests
-across 65 files with two workers (196.69 s); the first high-concurrency run had three
-5-second timeouts. All workspace TypeScript checks, scoped ESLint/format checks and the
-provider production build pass. The 390px/1440px captures fit without horizontal overflow. The available Impeccable
-CLI scan is clean; its skill package was unavailable, so this is a manual finish review
-against PRODUCT.md/DESIGN.md, not a claimed skill execution.
+The live journey resumed the same primary claim `01a0edc6-d807-7570-bc69-3c91949159d7`
+and invoice `01a0ede0-4f89-7406-bfd9-910961ebc123`. PDF
+`01a0edf6-1f43-7411-b71d-482956f97bab` uploaded through MinIO, scanned CLEAN by ClamAV
+and attached in the UI. Invoice submission, replay and frozen-content patch refusal (409)
+passed. Batch `01a0edf8-b9ec-773e-9bef-be5bb6c348f0` was submitted and approved by a
+distinct financial reviewer. The real worker created settlement
+`01a0edfc-0d55-72da-b489-c36c2a7f6526` for 800 TRY, due in 30 days by BANK_TRANSFER;
+a distinct payer approved it. Two UI payments (300 and 500 TRY) ended PAID at exactly
+800. Replaying the first payment with its same key left totals unchanged; a 501 TRY
+overpayment against 500 remaining and a duplicate external reference each returned 409.
+Local INAPP settlement approval and two payment notifications were SENT. Resume testing
+completed in 9.0 seconds; evidence spans partial runs, not one uninterrupted run.
 
-Live upload exposed the next blocker: PROVIDER_BILLING lacks `document.upload`, so its
-required invoice-image form is absent. A system-role grant is prepared for existing and
-new tenants; automatic approval review rejected the persistent all-tenant migration pending
-explicit owner approval. No migration was created or applied; role-template/mock permission changes are also
-deferred until approval. The local schema remains 52.
-Existing provider ownership and clinical-download permission tests pass. The grant is read
-from the database per request, so this correction would not require a server restart.
+Six focused billing PostgreSQL negative tests passed (23.939 s); six report/export/privacy/
+expiry/audit/reconciliation tests passed (30.864 s). Existing full-suite (545 tests) and
+all six CI checks on `265903c` are preceding evidence, not a new full CI run. The initial read burst
+returned 429 and was accounted for by the narrowed resume. The 800 TRY fixture is below
+the 100k and 50k checker thresholds. A local payment record is not proof of a bank transfer.
 
-`tests/e2e/real-health-billing.spec.ts` contains the remaining opt-in browser/worker/payment
-acceptance, **not yet passed**. Set `E2E_HEALTH_BILLING_CLAIM` and
-`E2E_HEALTH_BILLING_INVOICE` to the IDs above; use emitted `E2E_HEALTH_BILLING_BATCH` and
-`E2E_HEALTH_BILLING_SETTLEMENT` IDs after later partial attempts. A newly created empty
-batch has no invoice backlink yet and must be resumed explicitly. The 800 TRY fixture is
-below the checker/step-up thresholds; it cannot prove required high-value challenges.
-PC-05 remains ACTIVE; return/cut/rejection, reimbursement, statement/export and reconciliation
-acceptance remain open. All six CI checks on preceding head `7abfd71` passed.
+The real provider statement/export test then passed (9.3 s). It showed the same invoice
+and settlement with 800 TRY paid and zero open balance; the actual worker generated CSV
+export `01a0edff-bcb9-795e-a022-76ca810f9321` (one data row, 431 bytes). UI download,
+UTF-8 BOM, watermark on every row, exact amounts and one counted download were verified.
+The first attempt queued an extra export before its incorrect 201 expectation was corrected
+to the contract's 202; it did not create another invoice or payment. Export expiry/audit
+and cross-provider refusal have isolated-database evidence; the optional live foreign-provider
+check was not enabled. The 1440px/390px statement and paid-settlement screens were inspected.
+
+Live harnesses are `real-health-billing.spec.ts` and `real-health-statement.spec.ts`.
+Use explicit `E2E_HEALTH_BILLING_CLAIM`, `_INVOICE`, `_DOCUMENT`, `_BATCH` and `_SETTLEMENT`
+IDs above when resuming; these are suffixes on `E2E_HEALTH_BILLING`, not new fixtures.
+The paid-state resume also passed (3.2 s) without another payment. PC-05 remains ACTIVE:
+return/cut/rejection, reimbursement and live daily reconciliation acceptance remain open.
+This synthetic local demo evidence does not complete full-product or fiscal acceptance.
 
 ## 3. Get it running
 
@@ -953,7 +961,7 @@ cp .env.example .env              # fill CHANGE_ME with your local PostgreSQL cr
 make tools                        # sqlc, oapi-codegen, oasdiff, golangci-lint, govulncheck
 make native-install && make native-up   # MinIO, ClamAV, Mailpit as native processes
 make db-init                      # role kapsora_app + database kapsora
-make migrate-up                   # schema to 000052
+make migrate-up                   # schema to 000053
 make test-unit && make test-db    # should both be green before you write anything
 ```
 

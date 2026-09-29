@@ -166,12 +166,15 @@ describe('the invoice', () => {
 describe('the icmal', () => {
   it('lists the submitted invoices in the draft and sends it', async () => {
     const draft = api.world.batches.find((b) => b.status === 'DRAFT')!;
+    // The real API freezes invoiceCount at submit; draft membership lives in invoices.
+    draft.invoiceCount = 0;
     mount(`/billing/batches/${draft.id}`);
     const user = await login();
     expect(await screen.findByTestId('batch-status')).toHaveTextContent('Taslak');
     const list = await screen.findByTestId('membership-list');
     const members = api.world.batchInvoices.filter((m) => m.batchId === draft.id);
     expect(within(list).getAllByRole('checkbox', { checked: true }).length).toBe(members.length);
+    expect(screen.getByTestId('batch-submit')).toBeEnabled();
     await user.click(screen.getByTestId('batch-submit'));
     await waitFor(() => expect(screen.getByTestId('batch-status')).toHaveTextContent('Gönderildi'));
     const rows = within(await screen.findByTestId('decision-table')).getAllByTestId('decision-row');

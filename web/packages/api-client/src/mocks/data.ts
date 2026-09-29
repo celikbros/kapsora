@@ -1642,6 +1642,7 @@ const PROVIDER_BILLING_PERMISSIONS = [
   'batch.submit',
   'settlement.read',
   'fiscal.edocument.read',
+  'document.upload',
   'document.read',
   // WP-I7-05 §2.2 and WP-I7-06 §2.1.4: the provider reads its own cari ekstre and exports
   // it — scoped to its organization, watermarked, audited per download. Never

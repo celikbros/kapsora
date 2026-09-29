@@ -229,7 +229,9 @@ export function BatchPage() {
       />
       <p className="text-fg-muted text-sm">
         {formatDate(record.periodFrom)} – {formatDate(record.periodTo)} · {record.currencyCode} ·{' '}
-        {t('billing.provider.invoiceCount', { count: record.invoiceCount })}
+        {t('billing.provider.invoiceCount', {
+          count: isDraft ? record.invoices.length : record.invoiceCount,
+        })}
       </p>
 
       {isDraft ? (
@@ -311,7 +313,7 @@ export function BatchPage() {
               size="sm"
               onClick={() => void onSubmit()}
               loading={submit.isPending}
-              disabled={record.invoiceCount === 0}
+              disabled={record.invoices.length === 0}
               data-testid="batch-submit"
             >
               {t('billing.provider.submitBatch')}

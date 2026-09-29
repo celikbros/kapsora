@@ -8,6 +8,7 @@ type S<K extends keyof components['schemas']> = components['schemas'][K];
 const base = process.env['E2E_EXISTING_UI_URL'] ?? '';
 const claimId = process.env['E2E_HEALTH_BILLING_CLAIM'] ?? '';
 const resumeInvoiceId = process.env['E2E_HEALTH_BILLING_INVOICE'] ?? '';
+const resumeDocumentId = process.env['E2E_HEALTH_BILLING_DOCUMENT'] ?? '';
 const resumeBatchId = process.env['E2E_HEALTH_BILLING_BATCH'] ?? '';
 const resumeSettlementId = process.env['E2E_HEALTH_BILLING_SETTLEMENT'] ?? '';
 const password = process.env['KAPSORA_SEED_DEMO_PASSWORD'] ?? 'demo parola 2026 kapsora';
@@ -92,26 +93,26 @@ test('accepted inpatient claim reaches a scanned invoice, worker settlement and 
     // number also catches a draft created before its claim allocation was saved.
     // A draft batch created before membership still requires its explicit resume ID.
     const invoiceNumber = `PC05-${claimId}`;
-    const invoicePage = (
-      await billing.call<S<'InvoicePage'>>(
-        'GET',
-        `/api/v1/invoices?providerOrganizationId=${claim.providerOrganizationId}&limit=100`,
-      )
-    ).data;
-    expect(
-      invoicePage.nextCursor,
-      'invoice preflight must inspect every existing invoice',
-    ).toBeNull();
-    const invoices = invoicePage.items;
-    const linked = (
-      await Promise.all(
-        invoices.map(
-          async (item) =>
-            (await billing.call<S<'Invoice'>>('GET', `/api/v1/invoices/${item.id}`)).data,
-        ),
-      )
-    ).filter((item) => item.allocations.some((allocation) => allocation.claimId === claimId));
     if (!resumeInvoiceId) {
+      const invoicePage = (
+        await billing.call<S<'InvoicePage'>>(
+          'GET',
+          `/api/v1/invoices?providerOrganizationId=${claim.providerOrganizationId}&limit=100`,
+        )
+      ).data;
+      expect(
+        invoicePage.nextCursor,
+        'invoice preflight must inspect every existing invoice',
+      ).toBeNull();
+      const invoices = invoicePage.items;
+      const linked = (
+        await Promise.all(
+          invoices.map(
+            async (item) =>
+              (await billing.call<S<'Invoice'>>('GET', `/api/v1/invoices/${item.id}`)).data,
+          ),
+        )
+      ).filter((item) => item.allocations.some((allocation) => allocation.claimId === claimId));
       expect(
         invoices.filter((item) => item.invoiceNumber === invoiceNumber),
         'existing draft requires explicit invoice resume ID',
@@ -186,25 +187,32 @@ test('accepted inpatient claim reaches a scanned invoice, worker settlement and 
       exact(invoice.data.allocationTotal, '800');
       exact(invoice.data.allocationDifference, '0');
       if (!invoice.data.documentId) {
-        const filename = `pc05-${invoiceId.slice(0, 8)}.pdf`;
-        const upload = providerPage.getByTestId('document-upload-form');
-        await expect(upload, 'billing role must be able to upload its invoice image').toBeVisible();
-        await upload.getByLabel(/Dosya se\u00e7/).setInputFiles({
-          name: filename,
-          mimeType: 'application/pdf',
-          buffer: syntheticPDF(),
-        });
-        await upload.getByLabel(/Belge t\u00fcr\u00fc/).selectOption('INVOICE');
-        const reservation = providerPage.waitForResponse(
-          (r) =>
-            new URL(r.url()).pathname === '/api/v1/documents' && r.request().method() === 'POST',
-          { timeout: 15_000 },
-        );
-        await upload.getByRole('button', { name: 'Belge y\u00fckle', exact: true }).click();
-        const reserved = await reservation;
-        expect(reserved.status(), 'document upload reservation').toBe(201);
-        ids['documentId'] = ((await reserved.json()) as { document: S<'Document'> }).document.id;
-        await stage(ids, 'image-reserved');
+        if (resumeDocumentId) {
+          ids['documentId'] = resumeDocumentId;
+        } else {
+          const filename = `pc05-${invoiceId.slice(0, 8)}.pdf`;
+          const upload = providerPage.getByTestId('document-upload-form');
+          await expect(
+            upload,
+            'billing role must be able to upload its invoice image',
+          ).toBeVisible();
+          await upload.getByLabel(/Dosya se\u00e7/).setInputFiles({
+            name: filename,
+            mimeType: 'application/pdf',
+            buffer: syntheticPDF(),
+          });
+          await upload.getByLabel(/Belge t\u00fcr\u00fc/).selectOption('INVOICE');
+          const reservation = providerPage.waitForResponse(
+            (r) =>
+              new URL(r.url()).pathname === '/api/v1/documents' && r.request().method() === 'POST',
+            { timeout: 15_000 },
+          );
+          await upload.getByRole('button', { name: 'Belge y\u00fckle', exact: true }).click();
+          const reserved = await reservation;
+          expect(reserved.status(), 'document upload reservation').toBe(201);
+          ids['documentId'] = ((await reserved.json()) as { document: S<'Document'> }).document.id;
+          await stage(ids, 'image-reserved');
+        }
         const documentPath = `/api/v1/documents/${ids['documentId']}`;
         await expect
           .poll(
@@ -216,7 +224,16 @@ test('accepted inpatient claim reaches a scanned invoice, worker settlement and 
           .toBe('CLEAN');
         invoice = await billing.call<S<'Invoice'>>('GET', invoicePath);
         await providerPage.reload();
+        const attached = providerPage.waitForResponse(
+          (r) => new URL(r.url()).pathname === invoicePath && r.request().method() === 'PATCH',
+        );
         await providerPage.getByRole('button', { name: 'Kaydet', exact: true }).click();
+        const attachResponse = await attached;
+        const attachBody = await attachResponse.json();
+        expect(
+          attachResponse.status(),
+          `invoice image attachment: ${attachBody.code ?? 'no problem code'}`,
+        ).toBe(200);
         await expect
           .poll(async () => (await billing.call<S<'Invoice'>>('GET', invoicePath)).data.documentId)
           .toBe(ids['documentId']);
@@ -280,13 +297,23 @@ test('accepted inpatient claim reaches a scanned invoice, worker settlement and 
     expect(batch.data.currencyCode).toBe('TRY');
     if (batch.data.status === 'DRAFT') {
       await providerPage.goto(base + `/portal/billing/batches/${batchId}`);
-      if (batch.data.invoiceCount === 0) {
+      if (batch.data.invoices.length === 0) {
         await providerPage.locator(`#inv-${invoiceId}`).check();
+        const saved = providerPage.waitForResponse(
+          (r) =>
+            new URL(r.url()).pathname === batchPath + '/invoices' && r.request().method() === 'PUT',
+        );
         await providerPage
           .getByRole('button', { name: 'Faturalar\u0131 kaydet', exact: true })
           .click();
+        const savedResponse = await saved;
+        const savedBody = await savedResponse.json();
+        expect(
+          savedResponse.status(),
+          `batch membership: ${savedBody.code ?? 'no problem code'}`,
+        ).toBe(200);
         await expect
-          .poll(async () => (await billing.call<S<'Batch'>>('GET', batchPath)).data.invoiceCount)
+          .poll(async () => (await billing.call<S<'Batch'>>('GET', batchPath)).data.invoices.length)
           .toBe(1);
       }
       batch = await billing.call<S<'Batch'>>('GET', batchPath);
@@ -497,6 +524,20 @@ test('accepted inpatient claim reaches a scanned invoice, worker settlement and 
         expect(message.safeVariables['deep_link']).toContain(settlementId);
         expect(message.safeVariables['currency']).toBe('TRY');
       }
+    }
+    await approverPage.reload();
+    await expect(approverPage.getByTestId('payment-form')).toHaveCount(0);
+    await expect(approverPage.getByTestId('paid')).toContainText('800');
+    await mkdir('.impeccable/review/health-billing', { recursive: true });
+    for (const width of [1440, 390]) {
+      await approverPage.setViewportSize({ width, height: 1000 });
+      await expect
+        .poll(() => approverPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
+        .toBe(true);
+      await approverPage.screenshot({
+        path: `.impeccable/review/health-billing/paid-${width}.png`,
+        fullPage: true,
+      });
     }
     await stage(ids, 'paid-and-notified');
   } finally {

@@ -124,7 +124,7 @@ func RoleTemplates() []RoleTemplate {
 			Description: "Claim, dış fatura, icmal ve settlement takibi; klinik belgeye minimum erişim.",
 			Permissions: []string{"claim.read", "claim.create", "claim.submit", "claim.cancel",
 				"invoice.read", "invoice.manage", "batch.create",
-				"batch.submit", "settlement.read", "fiscal.edocument.read", "document.read",
+				"batch.submit", "settlement.read", "fiscal.edocument.read", "document.upload", "document.read",
 				// WP-I7-05 §2.2: the provider reads its own cari ekstre -- what it billed, what the
 				// payer decided, what was settled and what is still open -- and, per WP-I7-06
 				// §2.1.4, exports it. The export is scoped to the caller's organization by the
