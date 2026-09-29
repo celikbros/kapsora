@@ -9,6 +9,7 @@ import {
   Input,
   PageHeader,
   ProblemAlert,
+  Select,
   Spinner,
   TBody,
   TD,
@@ -40,6 +41,7 @@ import { invoiceTone } from './status';
 import { useClaimSummaries } from './claims';
 
 interface HeaderForm {
+  domainCode: string;
   invoiceNumber: string;
   invoiceDate: string;
   lineExtensionAmount: string;
@@ -51,6 +53,7 @@ interface HeaderForm {
 
 function headerOf(record: Invoice | null): HeaderForm {
   return {
+    domainCode: record?.domainCode ?? '',
     invoiceNumber: record?.invoiceNumber ?? '',
     invoiceDate: record?.invoiceDate ?? new Date().toISOString().slice(0, 10),
     lineExtensionAmount: record?.lineExtensionAmount ?? '',
@@ -80,9 +83,10 @@ export function InvoiceNewPage() {
 
   function submit(e: FormEvent) {
     e.preventDefault();
-    if (!providerId) return;
+    if (!providerId || !form.domainCode || create.isPending) return;
     const body: CreateInvoice = {
       providerOrganizationId: providerId,
+      domainCode: form.domainCode,
       invoiceNumber: form.invoiceNumber.trim(),
       invoiceDate: form.invoiceDate,
       lineExtensionAmount: form.lineExtensionAmount.trim(),
@@ -125,7 +129,10 @@ export function InvoiceNewPage() {
             onClick={(e) => submit(e as unknown as FormEvent)}
             loading={create.isPending}
             disabled={
-              !providerId || form.invoiceNumber.trim() === '' || form.payableAmount.trim() === ''
+              !providerId ||
+              !form.domainCode ||
+              form.invoiceNumber.trim() === '' ||
+              form.payableAmount.trim() === ''
             }
           >
             {t('common.save')}
@@ -179,6 +186,31 @@ function HeaderFields({
           name="invoiceDate"
           value={form.invoiceDate}
           onChange={(e) => set('invoiceDate')(e.target.value)}
+          disabled={disabled}
+          required
+        />
+      </FormField>
+      <FormField
+        label={t('billing.provider.domain')}
+        required
+        requiredLabel={t('common.requiredMark')}
+      >
+        <Select
+          name="domainCode"
+          value={form.domainCode}
+          onChange={(e) => set('domainCode')(e.target.value)}
+          placeholder={t('billing.provider.chooseDomain')}
+          options={[
+            'HEALTH',
+            'ACCOMMODATION',
+            'GENERIC',
+            'ASSISTANCE',
+            'EDUCATION',
+            'SPORT',
+            'TRANSPORT',
+            'CARE',
+            'OTHER',
+          ].map((value) => ({ value, label: t(`catalog.domains.${value}`) }))}
           disabled={disabled}
           required
         />
@@ -282,8 +314,9 @@ export function InvoicePage() {
 
   function saveHeader(e: FormEvent) {
     e.preventDefault();
-    if (!record) return;
+    if (!record || !opened.domainCode || patch.isPending) return;
     const body: PatchInvoiceDraft = {
+      domainCode: opened.domainCode,
       invoiceNumber: opened.invoiceNumber.trim(),
       invoiceDate: opened.invoiceDate,
       lineExtensionAmount: opened.lineExtensionAmount.trim(),
@@ -316,6 +349,7 @@ export function InvoicePage() {
     create.mutate(
       {
         providerOrganizationId: providerId,
+        domainCode: record.domainCode,
         invoiceNumber: record.invoiceNumber,
         invoiceDate: record.invoiceDate,
         lineExtensionAmount: record.lineExtensionAmount,

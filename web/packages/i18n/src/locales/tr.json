@@ -1218,6 +1218,7 @@
       "parent": "Üst kategori",
       "category": "Kategori",
       "domain": "Alan",
+      "chooseDomain": "Hizmet alanı seçin",
       "fulfillmentMode": "Karşılama biçimi",
       "defaultUnitType": "Varsayılan birim",
       "requiresProvider": "Sağlayıcı gerekir",

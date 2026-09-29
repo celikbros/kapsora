@@ -906,6 +906,44 @@ committed end response, retries, closes the case and checks no balance change. D
 screenshots remain ignored under `.impeccable/review`. PC-03 is still active; inpatient
 privacy and acceptance remain PC-04, followed by PC-05 and PC-06 in order.
 
+### PC-05 invoice entry checkpoint (2026-09-29)
+
+The first real billing run created HEALTH invoice `01a0ede0-4f89-7406-bfd9-910961ebc123`
+(number `PC05-01a0edc6-d807-7570-bc69-3c91949159d7`) from the accepted inpatient
+claim `01a0edc6-d807-7570-bc69-3c91949159d7`. The invoice remains DRAFT with exactly
+one allocation: 800 TRY payable, 800 allocated, zero difference. No document, batch,
+settlement or payment was created by this run. Resume this invoice explicitly; do not
+create another invoice for the same claim.
+
+Two frontend defects are fixed: invoice creation now requires an explicit service domain,
+draft edits send it, and corrections preserve the returned invoice's domain; the shared
+invoice PATCH operation now sends `application/merge-patch+json` instead of JSON (the old
+request was refused with 415). Four new regressions cover health/accommodation creation,
+required selection, repairing a generic draft and preserving an accommodation correction.
+The 38 focused provider/invoice tests pass. The full web suite passed all 545 tests
+across 65 files with two workers (196.69 s); the first high-concurrency run had three
+5-second timeouts. All workspace TypeScript checks, scoped ESLint/format checks and the
+provider production build pass. The 390px/1440px captures fit without horizontal overflow. The available Impeccable
+CLI scan is clean; its skill package was unavailable, so this is a manual finish review
+against PRODUCT.md/DESIGN.md, not a claimed skill execution.
+
+Live upload exposed the next blocker: PROVIDER_BILLING lacks `document.upload`, so its
+required invoice-image form is absent. A system-role grant is prepared for existing and
+new tenants; automatic approval review rejected the persistent all-tenant migration pending
+explicit owner approval. No migration was created or applied; role-template/mock permission changes are also
+deferred until approval. The local schema remains 52.
+Existing provider ownership and clinical-download permission tests pass. The grant is read
+from the database per request, so this correction would not require a server restart.
+
+`tests/e2e/real-health-billing.spec.ts` contains the remaining opt-in browser/worker/payment
+acceptance, **not yet passed**. Set `E2E_HEALTH_BILLING_CLAIM` and
+`E2E_HEALTH_BILLING_INVOICE` to the IDs above; use emitted `E2E_HEALTH_BILLING_BATCH` and
+`E2E_HEALTH_BILLING_SETTLEMENT` IDs after later partial attempts. A newly created empty
+batch has no invoice backlink yet and must be resumed explicitly. The 800 TRY fixture is
+below the checker/step-up thresholds; it cannot prove required high-value challenges.
+PC-05 remains ACTIVE; return/cut/rejection, reimbursement, statement/export and reconciliation
+acceptance remain open. All six CI checks on preceding head `7abfd71` passed.
+
 ## 3. Get it running
 
 Requirements: Go 1.27+, a local PostgreSQL 18, Node 24 + pnpm 10. No Docker, ever (§6).

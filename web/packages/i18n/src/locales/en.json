@@ -1772,6 +1772,7 @@
       "periodFrom": "Period from",
       "periodTo": "Period to",
       "domain": "Domain",
+      "chooseDomain": "Choose a service domain",
       "membership": "Invoices in the batch",
       "membershipHint": "Submitted invoices only; one payer, one domain, one currency.",
       "saveMembership": "Save invoices",

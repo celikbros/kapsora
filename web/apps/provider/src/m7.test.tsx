@@ -66,6 +66,76 @@ describe('earnings', () => {
 });
 
 describe('the invoice', () => {
+  it.each(['HEALTH', 'ACCOMMODATION'])(
+    'requires and stores the chosen %s domain on a new invoice',
+    async (domainCode) => {
+      mount('/billing/invoices/new?currency=TRY');
+      const user = await login();
+      const header = await screen.findByTestId('invoice-header');
+      const field = (name: string) => header.querySelector(`[name="${name}"]`)!;
+      fireEvent.change(field('invoiceNumber'), { target: { value: `PC05-${domainCode}` } });
+      fireEvent.change(field('lineExtensionAmount'), { target: { value: '100' } });
+      fireEvent.change(field('taxAmount'), { target: { value: '0' } });
+      fireEvent.change(field('payableAmount'), { target: { value: '100' } });
+      const save = screen.getByRole('button', { name: 'Kaydet' });
+      expect(save).toBeDisabled();
+      const before = api.world.invoices.length;
+      fireEvent.submit(header);
+      expect(api.world.invoices).toHaveLength(before);
+      await user.selectOptions(field('domainCode'), domainCode);
+      await user.click(save);
+      await waitFor(() => expect(api.world.invoices).toHaveLength(before + 1));
+      expect(
+        api.world.invoices.find((i) => i.invoiceNumber === `PC05-${domainCode}`)?.domainCode,
+      ).toBe(domainCode);
+      expect(await screen.findByTestId('invoice-status')).toHaveTextContent('Taslak');
+    },
+  );
+
+  it('lets the provider repair an existing generic draft domain', async () => {
+    const draft = api.world.invoices.find(
+      (i) => i.status === 'DRAFT' && i.supersedesInvoiceId === null,
+    )!;
+    draft.domainCode = 'GENERIC';
+    mount(`/billing/invoices/${draft.id}`);
+    const user = await login();
+    const header = await screen.findByTestId('invoice-header');
+    const domain = header.querySelector('[name="domainCode"]')!;
+    expect(domain).toHaveValue('GENERIC');
+    await user.selectOptions(domain, 'HEALTH');
+    await user.click(screen.getByRole('button', { name: 'Ba\u015fl\u0131\u011f\u0131 kaydet' }));
+    await waitFor(() =>
+      expect(api.world.invoices.find((i) => i.id === draft.id)?.domainCode).toBe('HEALTH'),
+    );
+  });
+
+  it('preserves the accommodation domain when correcting a returned invoice', async () => {
+    const returned = api.world.invoices.find(
+      (i) => i.status === 'RETURNED' && !i.supersededByInvoiceId,
+    )!;
+    returned.domainCode = 'ACCOMMODATION';
+    for (const invoice of api.world.invoices) {
+      if (invoice.supersedesInvoiceId === returned.id) invoice.status = 'CANCELLED';
+    }
+    const beforeIds = new Set(api.world.invoices.map((i) => i.id));
+    mount(`/billing/invoices/${returned.id}`);
+    const user = await login();
+    const header = await screen.findByTestId('invoice-header');
+    expect(header.querySelector('[name="domainCode"]')).toBeDisabled();
+    await user.click(screen.getByTestId('invoice-correct'));
+    await waitFor(() =>
+      expect(
+        api.world.invoices.find(
+          (i) => i.supersedesInvoiceId === returned.id && !beforeIds.has(i.id),
+        ),
+      ).toBeDefined(),
+    );
+    expect(
+      api.world.invoices.find((i) => i.supersedesInvoiceId === returned.id && !beforeIds.has(i.id))
+        ?.domainCode,
+    ).toBe('ACCOMMODATION');
+  });
+
   it('shows the allocation difference the server computed and is refused while it is not zero', async () => {
     const mismatch = api.world.invoices.find(
       (i) => i.status === 'DRAFT' && i.supersedesInvoiceId === null,

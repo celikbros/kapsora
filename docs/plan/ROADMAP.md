@@ -24,7 +24,7 @@ the existing work-package contracts rather than starting their implementation ag
 
 ### Baseline and delivery sequence
 
-- Local schema: 000051 (dirty=false); operator restart and live authorization confirmation passed. API, worker, scheduler and the three apps run through the
+- Local schema: 000052 (dirty=false); operator restart and live inpatient acceptance passed. API, worker, scheduler and the three apps run through the
   operator's single door at `http://127.0.0.1:5181`; API port 8090. PostgreSQL, MinIO,
   ClamAV and Mailpit are the existing native dependencies.
 - PC-01 passed twice in the real browser on 2026-09-22 (15.8 s total). All six GitHub
@@ -291,6 +291,44 @@ evidence; race, duplicate-delivery and ledger invariants may use focused databas
 | H15 | Inpatient claim becomes invoice-ready without duplicate consumption | PC-04 | PASSED for defined local demo scope: default and split claims invoice-ready at 800/0 TRY, consuming exactly two days each; overstay does not consume. |
 
 ### PC-05 — health invoice, batch, settlement and payment
+
+**Invoice entry checkpoint (2026-09-29)**
+
+The first real billing run created HEALTH invoice `01a0ede0-4f89-7406-bfd9-910961ebc123`
+(number `PC05-01a0edc6-d807-7570-bc69-3c91949159d7`) from the accepted inpatient
+claim `01a0edc6-d807-7570-bc69-3c91949159d7`. The invoice remains DRAFT with exactly
+one allocation: 800 TRY payable, 800 allocated, zero difference. No document, batch,
+settlement or payment was created by this run. Resume this invoice explicitly; do not
+create another invoice for the same claim.
+
+Two frontend defects are fixed: invoice creation now requires an explicit service domain,
+draft edits send it, and corrections preserve the returned invoice's domain; the shared
+invoice PATCH operation now sends `application/merge-patch+json` instead of JSON (the old
+request was refused with 415). Four new regressions cover health/accommodation creation,
+required selection, repairing a generic draft and preserving an accommodation correction.
+The 38 focused provider/invoice tests pass. The full web suite passed all 545 tests
+across 65 files with two workers (196.69 s); the first high-concurrency run had three
+5-second timeouts. All workspace TypeScript checks, scoped ESLint/format checks and the
+provider production build pass. The 390px/1440px captures fit without horizontal overflow. The available Impeccable
+CLI scan is clean; its skill package was unavailable, so this is a manual finish review
+against PRODUCT.md/DESIGN.md, not a claimed skill execution.
+
+Live upload exposed the next blocker: PROVIDER_BILLING lacks `document.upload`, so its
+required invoice-image form is absent. A system-role grant is prepared for existing and
+new tenants; automatic approval review rejected the persistent all-tenant migration pending
+explicit owner approval. No migration was created or applied; role-template/mock permission changes are also
+deferred until approval. The local schema remains 52.
+Existing provider ownership and clinical-download permission tests pass. The grant is read
+from the database per request, so this correction would not require a server restart.
+
+`tests/e2e/real-health-billing.spec.ts` contains the remaining opt-in browser/worker/payment
+acceptance, **not yet passed**. Set `E2E_HEALTH_BILLING_CLAIM` and
+`E2E_HEALTH_BILLING_INVOICE` to the IDs above; use emitted `E2E_HEALTH_BILLING_BATCH` and
+`E2E_HEALTH_BILLING_SETTLEMENT` IDs after later partial attempts. A newly created empty
+batch has no invoice backlink yet and must be resumed explicitly. The 800 TRY fixture is
+below the checker/step-up thresholds; it cannot prove required high-value challenges.
+PC-05 remains ACTIVE; return/cut/rejection, reimbursement, statement/export and reconciliation
+acceptance remain open. All six CI checks on preceding head `7abfd71` passed.
 
 PC-05 read-only event audit: [WP-I7-02](../delegation/WP-I7-02-invoice-manual-entry-and-allocation.md) requires publishing `invoice.submitted`;
 invoice/claim submit freezes and moves synchronously, with no automatic batch requirement.
