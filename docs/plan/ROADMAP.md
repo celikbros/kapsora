@@ -44,7 +44,7 @@ the existing work-package contracts rather than starting their implementation ag
 | PC-01 | Member import | VERIFIED locally; PR open | Existing identity/member setup | Upload → password step-up → invalid-row skip → one created member → search → logout; no duplicate effect |
 | PC-02 | Eligibility, service request and authorization | VERIFIED locally for the defined demo acceptance scope (2026-09-29) | Verified member/scenario prerequisites | A real provider can request covered care; approvals/refusals and the authorization/entitlement effects agree |
 | PC-03 | Outpatient care, reports and health claims | ACTIVE; H05 passed; live standard report-free episode pending operator API restart | PC-02 | Case, encounter and diagnosis, then a clean report, review and invoice-ready claim |
-| PC-04 | Inpatient care | QUEUED | PC-03 and admission configuration | Preauthorization → admission → extension → discharge → invoice-ready claim; entitlement reconciles |
+| PC-04 | Inpatient care | PREPARATION; early-discharge regression and inpatient-program seeder verified locally; real browser scenario pending | PC-03 and admission configuration | Preauthorization → admission → extension → discharge → invoice-ready claim; entitlement reconciles |
 | PC-05 | Invoice, batch, settlement and payment | QUEUED | An invoice-ready health claim from PC-03/04 | The same episode reaches invoice, payer decision and a reconciled local payment record |
 | PC-06 | Accommodation and combined product acceptance | QUEUED | PC-05; existing lodging implementation | Booking and its financial consequences work; cross-app regression and owner walkthrough complete |
 
@@ -127,6 +127,48 @@ References: existing [M5 packages](#m5-work-packages-issued-2026-09-05),
 | PC-04.3 | Record permitted bed/companion segments; refuse prohibited overlaps. Request an extension, prevent a second undecided extension, and exercise approval/refusal with the correct additional authorization. |
 | PC-04.4 | Discharge with actual dates. Verify partial-day calculation and unused reservation release across both original and extension authorizations. Verify consumption in the subsequent claim/fulfillment path. Overstay is surfaced for review. Repeated discharge/event delivery has no extra ledger effect. |
 | PC-04.5 | Exercise cancellation/date boundaries, preserve clinical privacy, and take the resulting inpatient claim through required review to invoice readiness. |
+
+**PC-04 preparation and claim allocation design (2026-09-29):**
+
+- [real-inpatient.spec.ts](../../tests/e2e/real-inpatient.spec.ts) is prepared with API
+  clinical setup and provider UI paths for admission, segments, extension approval/refusal
+  and discharge. TypeScript strict checking, lint and formatting pass; the browser scenario
+  has not been executed. It is intended to verify the worker advances the existing stay to
+  AUTHORIZED and creates the authorization, plus per-hold ledger state (18 available /
+  2 reserved / 0 consumed). This is not invoice or claim proof.
+- A local early-discharge fix releases unused authorization from the latest approved
+  extension first, then the original hold. Three focused PostgreSQL tests passed (11 s):
+  with original 5 + extension 3 and actual use 2, release of the unused 6 leaves original
+  2 and extension 0; consuming 2 and replaying preserves conservation. The partial case
+  with one unit consumed before discharge also reconciles without counting it twice.
+- Planned claim change: one claim version stores a line-to-authorization quantity allocation
+  table in a new migration. Inpatient source is the discharged stay and its original plus
+  approved extension holds. Add an atomic multi-hold preflight/consume transaction that
+  rolls back on failure, plus stored per-hold consumption allocations so return/correction
+  can undo exactly the prior deltas. Cancellation/rejection releases all unused holds; use
+  stable idempotency keys per hold. Keep outpatient behavior unchanged and hide allocation
+  links from clinical/financial projections. Overstay remains pending medical review with
+  zero consumption; existing manual approval does not create funding or consumption.
+  Allocation example: actual use 6 against original 5 + extension 3 releases 2 from the
+  latest extension hold, then allocates consumption as original 5 + extension 1 within the
+  same claim version.
+- The per-version allocation table keeps a single claim's duplicate checks and history
+  coherent; splitting the stay across separate claims would bypass the current claim model.
+  The seeder in `cmd/seed/inpatientprogram.go` is registered with the seed command and
+  locally verified, not live-verified. Its disposable-PostgreSQL integration test passed
+  (5.75 s), covering first publish and rerun, two distinct programs sharing one contract /
+  version while keeping separate plans, and candidate selection. The bounded tariff is a
+  dedicated marked program with manual review, a 20 NIGHT plan, factor 1, and a maximum
+  31-day NIGHT/UNIT tariff at 400 TRY with no member share. The candidate is uniquely
+  selected at admission -25 h and extension +8 d; an insufficient window and foreign
+  competing tariff are refused before plan mutation. Scoped `go vet` and
+  `golangci-lint ./cmd/seed/...` passed (0 issues); no live demo
+  records were changed. `E2E_INPATIENT_PROGRAM` reuses the marked window only while it remains
+  valid; do not expand a published tariff. Applying the fixture to the running demo and the
+  real browser scenario are pending. H15 needs a fully covered 5 + 1 allocation case; the overstay
+  path must be tested for review/refusal only. All six GitHub CI checks passed on `336e1c9`
+  [run 36530650005](https://github.com/celikbros/kapsora/actions/runs/36530650005).
+  PC-03's live standard report-free episode still awaits the operator API restart.
 
 **Exit:** admission with an approved extension and early discharge reconciles each
 authorization separately; a refused/invalid admission or extension behaves correctly;

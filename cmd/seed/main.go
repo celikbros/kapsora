@@ -7,6 +7,7 @@
 //	seed document-rule <dedicated-person-id> [retire]  scoped local acceptance fixture
 //	seed health-scope <fixture-uuid>  closed cross-provider/tenant acceptance reports
 //	seed automatic-program <dedicated-program-id> [disable]  isolated automatic decision fixture
+//	seed inpatient-program <dedicated-program-id>  isolated inpatient benefit and contract fixture
 //
 // Generated passwords are printed once and never stored in plaintext. Set
 // KAPSORA_SEED_DEMO_PASSWORD to give every demo user the same known password (local only).
@@ -203,6 +204,24 @@ func run(args []string) error {
 			return err
 		}
 		return json.NewEncoder(os.Stdout).Encode(result)
+	case "inpatient-program":
+		if len(args) != 2 {
+			return fmt.Errorf("usage: seed inpatient-program <dedicated-program-id>")
+		}
+		id, err := uuid.Parse(args[1])
+		if err != nil {
+			return fmt.Errorf("invalid fixture program id")
+		}
+		// The inpatient fixture needs provider and contract services, but writes no files.
+		deps.Store = objectstore.NewMemory()
+		if s.biz, err = newVerticals(deps); err != nil {
+			return err
+		}
+		result, err := s.inpatientProgram(ctx, id)
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(os.Stdout).Encode(result)
 	case "automatic-program":
 		if len(args) < 2 || len(args) > 3 || (len(args) == 3 && args[2] != "disable") {
 			return fmt.Errorf("usage: seed automatic-program <dedicated-program-id> [disable]")
@@ -267,7 +286,7 @@ func run(args []string) error {
 		}
 		return s.demo(ctx)
 	default:
-		return fmt.Errorf("unknown command %q; use account, demo, document-rule, claim-review-rule, automatic-program, health-scope or health-case-scope", args[0])
+		return fmt.Errorf("unknown command %q; use account, demo, document-rule, claim-review-rule, automatic-program, inpatient-program, health-scope or health-case-scope", args[0])
 	}
 }
 

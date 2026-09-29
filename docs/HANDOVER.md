@@ -41,8 +41,9 @@ Member import is locally verified. PC-02 is VERIFIED locally for its defined dem
 acceptance scope as of 2026-09-29; its dated evidence and limits are recorded below and in
 the roadmap. PC-03 still needs a live standard report-free episode after the operator API
 restart. PC-04 remains a separate inpatient acceptance gate spanning admission, extension,
-discharge, claim and privacy, followed by PC-05
-invoice/batch/payment and PC-06 accommodation plus combined acceptance. The roadmap records
+discharge, claim and privacy. Its early-discharge regression and inpatient-program seeder
+are verified locally; applying the fixture to the running demo and browser acceptance remain
+pending. PC-05 invoice/batch/payment and PC-06 accommodation plus combined acceptance follow. The roadmap records
 task dependencies, 15 health acceptance scenarios, role handoffs, evidence gates and
 confirmed source/fixture gaps.
 The first live health checkpoint passed: provider catalog access, single-enrollment
@@ -750,6 +751,41 @@ full claim application database suite passed (168.685 s); the full web suite pas
 across 64 files (55.82 s), and `golangci-lint ./internal/claim/...` reported zero issues.
 Request notifications are retained real-worker evidence only: they do not prove a fresh send, SMTP delivery or member inbox UI.
 Tenant isolation is supported by isolated-database tests, not a live DEMO_B walkthrough.
+
+**PC-04 preparation (2026-09-29):** the early-discharge fix releases the latest approved
+extension hold before the original; three focused PostgreSQL tests passed (11 s). With
+original 5 + extension 3 and actual use 2, releasing the unused 6 leaves original 2 and
+extension 0; consuming 2 and replaying preserves conservation. The partial case with one
+unit consumed before discharge also reconciles. The worker advances the existing stay to
+AUTHORIZED and creates the authorization; it does not create the stay. The planned claim
+allocation design and boundaries are in the roadmap. `real-inpatient.spec.ts` is prepared; strict TypeScript,
+lint and formatting pass, but it has not been executed. Its intended ledger check is 18 available /
+2 reserved / 0 consumed; this is not invoice or claim evidence. The `cmd/seed/inpatientprogram.go`
+command is registered and locally verified, not live-verified: its disposable-PostgreSQL
+integration test passed (5.75 s), including first publish/rerun, two distinct programs
+sharing one contract/version with separate plans, and candidate selection. The bounded tariff
+uses a marked manual-review program, a 20 NIGHT plan, factor 1, and a maximum 31-day
+NIGHT/UNIT price of 400 TRY with no member share. Admission at -25 h and extension at +8 d
+select it uniquely; insufficient windows and a foreign competing tariff fail before plan
+mutation. Scoped `go vet` and `golangci-lint ./cmd/seed/...` passed (0 issues); no live demo
+records changed. `E2E_INPATIENT_PROGRAM`
+reuses the marked window only while valid; do not expand a published tariff. Applying the
+fixture to the running demo and the real browser scenario remain pending. Overstay is for medical review/refusal with zero
+consumption; approval alone provides no funding or consumption. All six CI checks passed on `336e1c9`
+([run](https://github.com/celikbros/kapsora/actions/runs/36530650005)). PC-03's live
+standard report-free episode still awaits the operator API restart. Resume it after restart with:
+
+```powershell
+$env:E2E_REAL_API = '1'
+$env:E2E_EXISTING_UI_URL = 'http://127.0.0.1:5181'
+$env:E2E_STANDARD_OUTPATIENT_SOURCE_REQUEST = '01a0ebc5-cece-7cbf-8e81-43984ad51314'
+pnpm e2e real-standard-outpatient.spec.ts --project chromium --trace off
+Remove-Item Env:E2E_REAL_API, Env:E2E_EXISTING_UI_URL, Env:E2E_STANDARD_OUTPATIENT_SOURCE_REQUEST
+```
+
+The source request's program `01a0ebc5-a96a-7267-84e2-a474e5e48fc6` has recorded
+`validTo: 2026-10-01`. If that window expires, create a fresh request through the explicit
+automatic-request harness; never edit the published plan.
 
 A separate read-only browser layout check used intercepted case data to expose the new
 form without changing a database record. It found a clipped date field inside the mobile
