@@ -27,13 +27,13 @@ export function useClaims(status: string) {
   });
 }
 
-export function useClaimsOfCase(caseId: string) {
+export function useClaimsOfCase(caseId: string, canRead: boolean) {
   const ops = useOps();
   const tenantId = useTenantId();
   return useQuery({
     queryKey: ['provider', tenantId, 'claims', 'case', caseId],
     queryFn: () => ops.claims.list(tenantId, { caseId, limit: 50 }),
-    enabled: caseId !== '',
+    enabled: caseId !== '' && canRead,
   });
 }
 

@@ -204,7 +204,7 @@ describe('the claim world', () => {
 
 describe('the submit pipeline', () => {
   it('decides the priced line at the AUTO stage and leaves the unpriced one for a person', async () => {
-    const provider = await signIn('provider.a');
+    const provider = await signIn('billing.a');
     // GP_VISIT is contracted; LAB_PANEL_AMBIGUOUS deliberately has two equally specific
     // prices, so the ladder cannot choose and the line goes to a person with the reason.
     const created = await createClaim(provider, [
@@ -232,7 +232,7 @@ describe('the submit pipeline', () => {
   });
 
   it('raises a duplicate as an exception naming the other claim, and settles a lone claim', async () => {
-    const provider = await signIn('provider.a');
+    const provider = await signIn('billing.a');
     const first = await createClaim(provider, [clinicalLine(1, 'GP_VISIT', '1', '450')]);
     const firstSubmitted = await submit(provider, first.data.id);
 
@@ -252,7 +252,7 @@ describe('the submit pipeline', () => {
   });
 
   it('raises an over-consumption as an exception and consumes nothing at all', async () => {
-    const provider = await signIn('provider.a');
+    const provider = await signIn('billing.a');
     const hold = api.world.claimAuthorizations[0]!;
     const item = hold.items[0]!;
     item.consumedQuantity = '2.000000'; // two of four used
@@ -275,7 +275,7 @@ describe('the submit pipeline', () => {
   });
 
   it('consumes exactly the claimed quantity when the hold covers it', async () => {
-    const provider = await signIn('provider.a');
+    const provider = await signIn('billing.a');
     const hold = api.world.claimAuthorizations[0]!;
     const item = hold.items[0]!;
     item.consumedQuantity = '0.000000';
@@ -290,7 +290,7 @@ describe('the submit pipeline', () => {
 
 describe('the freeze and the correction', () => {
   it('returns the actual hold draw before consuming the corrected version', async () => {
-    let provider = await signIn('provider.a');
+    let provider = await signIn('billing.a');
     const control = await createClaim(provider, [clinicalLine(1, 'PHYSIO_SESSION', '1', '250')]);
     await submit(provider, control.data.id);
     const hold = api.world.claimAuthorizations[0]!;
@@ -319,7 +319,7 @@ describe('the freeze and the correction', () => {
     );
     expect(returned.data.currentVersionNo).toBe(2);
     expect(item.consumedQuantity).toBe('0');
-    provider = await signIn('provider.a');
+    provider = await signIn('billing.a');
     await unwrap(
       provider.c.PUT('/api/v1/claims/{claimId}/lines', {
         params: {
@@ -368,7 +368,7 @@ describe('the freeze and the correction', () => {
   });
 
   it('refuses to edit a submitted version and opens version n+1 on a return', async () => {
-    const provider = await signIn('provider.a');
+    const provider = await signIn('billing.a');
     const created = await createClaim(provider, [
       clinicalLine(1, 'GP_VISIT', '1', '450'),
       clinicalLine(2, 'LAB_PANEL_AMBIGUOUS', '1', '200'),
@@ -700,7 +700,7 @@ describe('invoice readiness', () => {
 
   it('refuses the question about a claim nobody has decided', async () => {
     const draft = claimIn('DRAFT');
-    const provider = await signIn('provider.a');
+    const provider = await signIn('billing.a');
     const refused = await refusal(
       provider.c.GET('/api/v1/claims/{claimId}/invoice-readiness', {
         params: { header: tenant(provider), path: { claimId: draft.id } },
@@ -947,4 +947,120 @@ it('financial case handoff preserves private links, scopes sources and replays o
   await expect(ops.claims.getCaseSource(s.tenantId, outsider.id)).rejects.toMatchObject({
     problem: { status: 404 },
   });
+});
+
+it('hands a standard authorized outpatient source to billing without a report link', async () => {
+  const s = await signIn('billing.a');
+  const world = api.world;
+  const original = world.healthCases.find(
+    (c) => c.tenantId === s.tenantId && c.caseType === 'OUTPATIENT',
+  )!;
+  const request = world.serviceRequests.find(
+    (r) =>
+      r.tenantId === s.tenantId && r.providerOrganizationId === original.providerOrganizationId,
+  )!;
+  request.status = 'APPROVED';
+  const item = currentVersionOf(world, request)!.items[0]!;
+  const row = {
+    ...original,
+    id: world.nextId(),
+    personId: request.personId,
+    programId: request.programId,
+    enrollmentId: request.enrollmentId,
+    serviceRequestId: request.id,
+  };
+  world.healthCases.push(row);
+  const encounter = {
+    ...world.encounters[0]!,
+    id: world.nextId(),
+    tenantId: s.tenantId,
+    caseId: row.id,
+    endedAt: new Date().toISOString(),
+  };
+  world.encounters.push(encounter);
+  const diagnosis = {
+    ...world.diagnoses[0]!,
+    id: world.nextId(),
+    tenantId: s.tenantId,
+    encounterId: encounter.id,
+    diagnosisType: 'PRIMARY' as const,
+  };
+  world.diagnoses.push(diagnosis);
+  const now = new Date().toISOString();
+  mockAuthorizations(world).push({
+    id: world.nextId(),
+    tenantId: s.tenantId,
+    requestId: request.id,
+    reference: 'AUT-STANDARD',
+    status: 'ACTIVE',
+    validFrom: now,
+    validTo: new Date(Date.now() + 86400000).toISOString(),
+    approvedAt: now,
+    approvedBy: s.actorId,
+    createdAt: now,
+    rowVersion: 1,
+    consumedTotal: '0',
+    reservedTotal: '1',
+    vouchers: [],
+    items: [
+      {
+        id: world.nextId(),
+        requestItemId: item.id,
+        serviceDefinitionId: item.serviceDefinitionId,
+        approvedQuantity: '1',
+        consumedQuantity: '0',
+        memberAmount: '0',
+        entitlementReservationId: world.nextId(),
+      },
+    ],
+  });
+  const ops = createOperations(s.c);
+  const detail = await ops.claims.getCaseSource(s.tenantId, row.id);
+  expect(detail.data.lines).toHaveLength(1);
+  expect(JSON.stringify(detail.data)).not.toContain(diagnosis.id);
+  const expiredReport = {
+    ...world.medicalReports[0]!,
+    id: world.nextId(),
+    tenantId: s.tenantId,
+    caseId: row.id,
+    personId: row.personId,
+    issuingProviderOrganizationId: row.providerOrganizationId,
+    status: 'EXPIRED' as const,
+  };
+  world.medicalReports.push(expiredReport);
+  const expiredService = {
+    ...world.medicalReportServices[0]!,
+    id: world.nextId(),
+    tenantId: s.tenantId,
+    reportId: expiredReport.id,
+    serviceDefinitionId: item.serviceDefinitionId,
+  };
+  world.medicalReportServices.push(expiredService);
+  await expect(ops.claims.getCaseSource(s.tenantId, row.id)).rejects.toMatchObject({
+    problem: { code: 'CLAIM_SOURCE_NOT_READY' },
+  });
+  world.medicalReportServices.pop();
+  world.medicalReports.pop();
+  const created = await ops.claims.createFromCase(
+    s.tenantId,
+    row.id,
+    {
+      lines: [
+        { serviceDefinitionId: item.serviceDefinitionId, quantity: '1', lineAmount: '400.50' },
+      ],
+    },
+    detail.etag,
+    key(),
+  );
+  expect(created.data.projection).toBe('FINANCIAL');
+  const version = world.claimVersions.find((v) => v.claimId === created.data.id)!;
+  expect(world.claimLines.find((l) => l.versionId === version.id)).toMatchObject({
+    diagnosisId: diagnosis.id,
+  });
+  expect(world.claimLines.find((l) => l.versionId === version.id)!.medicalReportId).toBeNull();
+  expect(
+    world.medicalReportUsages.filter(
+      (u) => u.usedByType === 'CLAIM' && u.usedById === created.data.id,
+    ),
+  ).toHaveLength(0);
 });

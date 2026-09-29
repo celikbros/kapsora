@@ -1498,6 +1498,7 @@ const REVIEWER_PERMISSIONS = [
 const PROVIDER_PERMISSIONS = [
   'member.read',
   'eligibility.check',
+  'catalog.read',
   'service_request.read',
   'service_request.create',
   'service_request.submit',
@@ -1512,14 +1513,6 @@ const PROVIDER_PERMISSIONS = [
   'document.read',
   'document.link',
   'pricing.quote',
-  'organization.read',
-  'catalog.read',
-  'provider.read',
-  // The provider's billing side (WP-I5-04): raise, send, and take back a claim.
-  'claim.read',
-  'claim.create',
-  'claim.submit',
-  'claim.cancel',
 ];
 
 /**

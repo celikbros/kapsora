@@ -2495,6 +2495,7 @@
       "closed": "Vaka kapatıldı.",
       "financialNote": "Bu hesapla vakanın klinik yarısı görünmez: tanı, branş ve klinik not sunucudan gelmedi.",
       "sensitiveNote": "Bu vaka hassas bir tanı kategorisi taşıyor. Klinik detayı yalnızca ek yetkisi olan hesaplar görür.",
+      "claimsRestricted": "Claim kayıtlarını görmek için ek yetki gerekir.",
       "sections": {
         "encounters": "Muayeneler",
         "documents": "Belgeler",

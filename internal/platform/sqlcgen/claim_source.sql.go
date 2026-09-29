@@ -40,7 +40,12 @@ SELECT ai.service_definition_id, sd.code AS service_code, sd.name AS service_nam
          WHERE m.tenant_id=ai.tenant_id AND m.case_id=$1 AND m.person_id=$2
            AND m.issuing_provider_organization_id=$3 AND m.status='APPROVED'
            AND m.valid_from<=$4::date AND m.valid_to>=$4::date
-           AND ms.service_definition_id=ai.service_definition_id),'[]'::jsonb) AS report_ids
+           AND ms.service_definition_id=ai.service_definition_id),'[]'::jsonb) AS report_ids,
+       EXISTS (SELECT 1 FROM health.medical_report m
+         JOIN health.medical_report_service ms ON ms.tenant_id=m.tenant_id AND ms.report_id=m.id
+         WHERE m.tenant_id=ai.tenant_id AND m.case_id=$1 AND m.person_id=$2
+           AND m.issuing_provider_organization_id=$3
+           AND ms.service_definition_id=ai.service_definition_id) AS has_report_candidate
 FROM service.authorization_item ai
 JOIN catalog.service_definition sd ON sd.tenant_id=ai.tenant_id AND sd.id=ai.service_definition_id
 JOIN service.service_request_item ri ON ri.tenant_id=ai.tenant_id AND ri.id=ai.request_item_id
@@ -65,6 +70,7 @@ type ClaimSourceLinesRow struct {
 	UnitType            string
 	Quantity            string
 	ReportIds           interface{}
+	HasReportCandidate  bool
 }
 
 func (q *Queries) ClaimSourceLines(ctx context.Context, arg ClaimSourceLinesParams) ([]ClaimSourceLinesRow, error) {
@@ -90,6 +96,7 @@ func (q *Queries) ClaimSourceLines(ctx context.Context, arg ClaimSourceLinesPara
 			&i.UnitType,
 			&i.Quantity,
 			&i.ReportIds,
+			&i.HasReportCandidate,
 		); err != nil {
 			return nil, err
 		}

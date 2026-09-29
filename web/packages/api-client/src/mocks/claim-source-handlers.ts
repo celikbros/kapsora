@@ -107,25 +107,28 @@ export function claimSourceHandlers(
     )
       return notReady();
     const auth = source.authorizations[0]!;
-    const lines: (Schemas['ClaimCaseSourceLine'] & { reportId: string })[] = [];
+    const lines: (Schemas['ClaimCaseSourceLine'] & { reportId?: string })[] = [];
     for (const item of auth.items.filter(
       (i) => toMicros(i.approvedQuantity) > toMicros(i.consumedQuantity),
     )) {
-      const reports = api.world.medicalReports.filter(
+      const reportCandidates = api.world.medicalReports.filter(
         (r) =>
           r.tenantId === tenantId &&
           r.caseId === id &&
           r.personId === source.row.personId &&
           r.issuingProviderOrganizationId === source.row.providerOrganizationId &&
-          r.status === 'APPROVED' &&
-          r.validFrom <= source.request.serviceDate &&
-          r.validTo >= source.request.serviceDate &&
           api.world.medicalReportServices.some(
             (s) =>
               s.tenantId === tenantId &&
               s.reportId === r.id &&
               s.serviceDefinitionId === item.serviceDefinitionId,
           ),
+      );
+      const reports = reportCandidates.filter(
+        (r) =>
+          r.status === 'APPROVED' &&
+          r.validFrom <= source.request.serviceDate &&
+          r.validTo >= source.request.serviceDate,
       );
       const service = api.world.serviceDefinitions.find(
         (s) => s.tenantId === tenantId && s.id === item.serviceDefinitionId,
@@ -134,7 +137,8 @@ export function claimSourceHandlers(
         (i) => i.id === item.requestItemId,
       );
       if (
-        reports.length !== 1 ||
+        reports.length > 1 ||
+        (reports.length === 0 && reportCandidates.length > 0) ||
         !service ||
         !requestItem ||
         lines.some((l) => l.serviceDefinitionId === service.id)
@@ -146,7 +150,7 @@ export function claimSourceHandlers(
         serviceName: service.name,
         unitType: requestItem.unitType,
         quantity: fromMicros(toMicros(item.approvedQuantity) - toMicros(item.consumedQuantity)),
-        reportId: reports[0]!.id,
+        ...(reports.length ? { reportId: reports[0]!.id } : {}),
       });
     }
     if (!lines.length) return notReady();
@@ -236,7 +240,7 @@ export function claimSourceHandlers(
           lineAmount: charge.lineAmount,
           currencyCode: 'TRY',
           diagnosisId: found.diagnosisId,
-          medicalReportId: line.reportId,
+          ...(line.reportId ? { medicalReportId: line.reportId } : {}),
         });
       }
       const row = found.source.row;

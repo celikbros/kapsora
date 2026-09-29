@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/celikbros/kapsora/internal/claim/application"
+	"github.com/celikbros/kapsora/internal/claim/domain"
 	"github.com/celikbros/kapsora/internal/identity"
 )
 
@@ -148,4 +149,60 @@ func TestCaseSourceScopeAndIncompleteRefusal(t *testing.T) {
 	if _, err := f.claims.GetCaseSource(ctx, rc, f.caseID); !errors.Is(err, application.ErrSourceNotReady) {
 		t.Fatalf("expired authorization=%v", err)
 	}
+}
+
+// A routine authorized consultation can become an invoice-ready claim without a treatment
+// report. The source still resolves the diagnosis privately and consumes the authorization.
+func TestCaseSourceStandardConsultationWithoutReport(t *testing.T) {
+	f := newFixture(t)
+	authorization := f.authorizeService(t, f.consult, "COUNT", "1")
+	f.h.AdminExec(`UPDATE health.health_case SET service_request_id=(SELECT request_id FROM service.authorization WHERE id=$2) WHERE id=$1`, f.caseID, authorization)
+	ctx := context.Background()
+	source, err := f.claims.GetCaseSource(ctx, f.providerRC(), f.caseID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(source.Lines) != 1 || source.Lines[0].ServiceID != f.consult || source.Lines[0].HasReportCandidate || len(source.Lines[0].ReportIDs) != 0 {
+		t.Fatalf("standard consultation source: %+v", source.Lines)
+	}
+	draft, err := f.claims.CreateFromCase(ctx, f.providerRC(), f.caseID, source.RowVersion,
+		[]application.CaseCharge{{ServiceID: f.consult, Quantity: "1", LineAmount: consultPrice}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if draft.Projection != application.ProjectionFinancial || draft.Lines[0].Line.MedicalReportID != nil || draft.Lines[0].Line.DiagnosisID != nil {
+		t.Fatal("financial projection disclosed clinical links")
+	}
+	clinical, err := f.claims.GetClaim(ctx, f.medicalRC(), draft.Claim.ID, application.AccessRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if clinical.Lines[0].Line.MedicalReportID != nil || clinical.Lines[0].Line.DiagnosisID == nil || *clinical.Lines[0].Line.DiagnosisID != f.diagnosisID {
+		t.Fatal("clinical consultation associations incorrect")
+	}
+	submitted := submitClaim(t, f, draft)
+	if submitted.Claim.Status != domain.StatusApproved {
+		t.Fatalf("status=%s", submitted.Claim.Status)
+	}
+	if submitted.Lines[0].Decision == nil || submitted.Lines[0].Decision.Stage != domain.StageAuto {
+		t.Fatal("consultation lacked automatic line decision")
+	}
+	ready, err := f.claims.InvoiceReadiness(ctx, f.financialRC(), submitted.Claim.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ready.Ready || ready.ApprovedTotal != consultPrice || ready.PayerTotal != consultPayer || ready.MemberTotal != consultMember {
+		t.Fatalf("readiness: %+v", ready)
+	}
+	if got := f.consumedTotal(t, authorization); got != "1" {
+		t.Fatalf("consumed=%s", got)
+	}
+	var usages int
+	if err := f.h.Admin.QueryRow(ctx, `SELECT count(*) FROM health.medical_report_usage WHERE tenant_id=$1 AND used_by_type='CLAIM' AND used_by_id=$2`, f.tenant, submitted.Claim.ID).Scan(&usages); err != nil {
+		t.Fatal(err)
+	}
+	if usages != 0 {
+		t.Fatalf("report usages=%d", usages)
+	}
+	f.ledgerConserved(t)
 }

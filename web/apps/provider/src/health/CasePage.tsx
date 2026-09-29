@@ -430,9 +430,10 @@ export function CasePage() {
   const canManage = usePermission('health.case.manage');
   const canReport = usePermission('health.medical_report.manage');
   const canClaim = usePermission('claim.create');
+  const canReadClaims = usePermission('claim.read');
   const reports = useReportsOfCase(caseId);
   const stays = useStaysOfCase(caseId);
-  const claims = useClaimsOfCase(caseId);
+  const claims = useClaimsOfCase(caseId, canReadClaims);
   const close = useCloseCase(caseId);
   const personName = usePersonName(query.data?.data.personId);
   const [adding, setAdding] = useState(false);
@@ -757,7 +758,7 @@ export function CasePage() {
           ) : null}
         </Card>
 
-        <Card>
+        <Card data-testid="case-claims-card">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="flex flex-wrap items-center gap-2 text-base font-semibold">
               {t('health.case.sections.claims')}
@@ -773,7 +774,9 @@ export function CasePage() {
               </Link>
             ) : null}
           </div>
-          {claims.isPending ? (
+          {!canReadClaims ? (
+            <p className="text-fg-muted mt-2 text-sm">{t('health.case.claimsRestricted')}</p>
+          ) : claims.isPending ? (
             <p className="text-fg-muted mt-2 text-sm">{t('common.loading')}</p>
           ) : (claims.data?.items.length ?? 0) === 0 ? (
             <p className="text-fg-muted mt-2 text-sm">{t('claims.empty')}</p>

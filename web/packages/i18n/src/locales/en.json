@@ -722,6 +722,7 @@
       "closed": "Case closed.",
       "financialNote": "This account does not see the clinical half: diagnosis, branch and clinical notes were not sent by the server.",
       "sensitiveNote": "This case carries a sensitive diagnosis category. Only accounts with the additional grant see its clinical detail.",
+      "claimsRestricted": "Viewing claims requires an additional permission.",
       "sections": {
         "encounters": "Encounters",
         "documents": "Documents",

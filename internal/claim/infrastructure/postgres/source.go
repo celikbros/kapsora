@@ -86,7 +86,7 @@ func (Repository) CaseSourceLines(ctx context.Context, tx pgx.Tx, tenant uuid.UU
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, application.CaseSourceLine{ServiceID: r.ServiceDefinitionID, Code: r.ServiceCode, Name: r.ServiceName, UnitType: r.UnitType, Quantity: r.Quantity, ReportIDs: reports})
+		out = append(out, application.CaseSourceLine{ServiceID: r.ServiceDefinitionID, Code: r.ServiceCode, Name: r.ServiceName, UnitType: r.UnitType, Quantity: r.Quantity, ReportIDs: reports, HasReportCandidate: r.HasReportCandidate})
 	}
 	return out, nil
 }

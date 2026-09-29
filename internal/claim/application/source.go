@@ -43,6 +43,9 @@ type CaseSourceLine struct {
 	ServiceID                      uuid.UUID
 	Code, Name, UnitType, Quantity string
 	ReportIDs                      []uuid.UUID
+	// A report already associated with this case/service must resolve to exactly one usable version.
+	// This is source ambiguity evidence, not a catalog-level requirement for a report.
+	HasReportCandidate bool
 }
 
 // CaseSourceQuery pages within the caller's provider boundary.
@@ -119,7 +122,7 @@ func (s *Service) readySource(ctx context.Context, tx pgx.Tx, rc identity.Reques
 	}
 	seen := map[uuid.UUID]bool{}
 	for _, line := range source.Lines {
-		if len(line.ReportIDs) != 1 || seen[line.ServiceID] {
+		if len(line.ReportIDs) > 1 || (len(line.ReportIDs) == 0 && line.HasReportCandidate) || seen[line.ServiceID] {
 			return CaseSource{}, ErrSourceNotReady
 		}
 		seen[line.ServiceID] = true
@@ -164,9 +167,13 @@ func (s *Service) CreateFromCase(ctx context.Context, rc identity.RequestContext
 				return fieldError("lines", "SOURCE_QUANTITY", "Miktar ayrılan hakkı aşamaz.")
 			}
 			currency := "TRY"
+			var reportID *uuid.UUID
+			if len(line.ReportIDs) == 1 {
+				reportID = &line.ReportIDs[0]
+			}
 			in.Lines = append(in.Lines, NewLineInput{LineNo: i + 1, ServiceDefinitionID: line.ServiceID, UnitType: line.UnitType,
 				Quantity: charge.Quantity, LineAmount: charge.LineAmount, CurrencyCode: &currency,
-				DiagnosisID: &source.DiagnosisIDs[0], MedicalReportID: &line.ReportIDs[0]})
+				DiagnosisID: &source.DiagnosisIDs[0], MedicalReportID: reportID})
 		}
 		if err := validateLineInputs(in.Lines); err != nil {
 			return err

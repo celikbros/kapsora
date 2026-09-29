@@ -486,6 +486,10 @@ func (f *fixture) labLine(lineNo int) application.NewLineInput {
 // authorization WP-I4-02 creates from it. Nothing is faked, so the consume the claim performs
 // moves a real ledger balance.
 func (f *fixture) authorizeSessions(t *testing.T, sessions string) uuid.UUID {
+	return f.authorizeService(t, f.physio, "SESSION", sessions)
+}
+
+func (f *fixture) authorizeService(t *testing.T, serviceID uuid.UUID, unitType, quantity string) uuid.UUID {
 	t.Helper()
 	ctx := context.Background()
 	rc := f.requestRC()
@@ -495,8 +499,8 @@ func (f *fixture) authorizeSessions(t *testing.T, sessions string) uuid.UUID {
 		EnrollmentID: f.enrollment, ProviderOrganizationID: &provider,
 		ServiceDate: serviceDay, Channel: "PROVIDER_PORTAL",
 		Items: []servicerequestdomain.ItemInput{{
-			ServiceDefinitionID: f.physio.String(), RequestedQuantity: sessions,
-			UnitType: "SESSION",
+			ServiceDefinitionID: serviceID.String(), RequestedQuantity: quantity,
+			UnitType: unitType,
 		}},
 	})
 	if err != nil {

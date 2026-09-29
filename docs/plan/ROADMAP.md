@@ -36,13 +36,14 @@ the existing work-package contracts rather than starting their implementation ag
   not complete health-chain acceptance. See the checkpoint below.
 - Quantity/money pricing passes local regression and live confirmation after the operator's
   2026-09-22 restart. All six CI jobs passed on code head `9b50aa7`. Authorization, enrollment choice, request correction and retry coverage now have live
-  evidence; document/automatic gate and remaining scoped acceptance are tracked below.
+  evidence; document, automatic-decision, role/queue and notification evidence is now recorded
+  in the PC-02 scope-closure checkpoint below.
 
 | Order | Stage | Current status | Depends on | Result required to close |
 | --- | --- | --- | --- | --- |
 | PC-01 | Member import | VERIFIED locally; PR open | Existing identity/member setup | Upload → password step-up → invalid-row skip → one created member → search → logout; no duplicate effect |
-| PC-02 | Eligibility, service request and authorization | ACTIVE; provider-to-medical approval verified, remaining gates open | Verified member/scenario prerequisites | A real provider can request covered care; approvals/refusals and the authorization/entitlement effects agree |
-| PC-03 | Outpatient care, reports and health claims | ACTIVE; automatic and medical/financial browser handoffs passed; exception/privacy gates remain | PC-02 | Real case → encounter/diagnosis → clean report → review → claim ready for invoicing |
+| PC-02 | Eligibility, service request and authorization | VERIFIED locally for the defined demo acceptance scope (2026-09-29) | Verified member/scenario prerequisites | A real provider can request covered care; approvals/refusals and the authorization/entitlement effects agree |
+| PC-03 | Outpatient care, reports and health claims | ACTIVE; H05 passed; live standard report-free episode pending operator API restart | PC-02 | Case, encounter and diagnosis, then a clean report, review and invoice-ready claim |
 | PC-04 | Inpatient care | QUEUED | PC-03 and admission configuration | Preauthorization → admission → extension → discharge → invoice-ready claim; entitlement reconciles |
 | PC-05 | Invoice, batch, settlement and payment | QUEUED | An invoice-ready health claim from PC-03/04 | The same episode reaches invoice, payer decision and a reconciled local payment record |
 | PC-06 | Accommodation and combined product acceptance | QUEUED | PC-05; existing lodging implementation | Booking and its financial consequences work; cross-app regression and owner walkthrough complete |
@@ -50,6 +51,18 @@ the existing work-package contracts rather than starting their implementation ag
 **Health completion has two explicit checkpoints.** Clinical and health-claim acceptance
 closes after PC-02–PC-04 and all health privacy gates pass. The health episode's financial
 journey closes after PC-05. Neither checkpoint includes deferred fiscal/ERP integrations.
+
+### PC-02 scope closure: 2026-09-29
+
+Review of the linked acceptance evidence found no concrete unmet task for the defined demo
+acceptance scope; PC-02 is VERIFIED locally for that scope. The full claim application
+database suite passed (168.685 s); the full web suite passed 538 tests across 64 files
+(55.82 s), and `golangci-lint ./internal/claim/...` reported zero issues. H03 is verified
+for the demo flow, including live manual/automatic decisions, return/correction/resubmission,
+queue ownership and retained notification-worker behavior. The notification test used a
+historical APPROVED request, so it does not prove a fresh send, SMTP delivery or member inbox
+UI acceptance. Tenant isolation has isolated-database evidence, not a live DEMO_B walkthrough.
+Broader product sign-off is not implied.
 
 ### PC-01 — member import: completed evidence
 
@@ -132,9 +145,9 @@ evidence; race, duplicate-delivery and ledger invariants may use focused databas
 | --- | --- | --- | --- |
 | H01 | Provider finds a member, selects service/enrollment and gets the correct eligibility result | PC-02 | Verified for demo: single and real multiple-enrollment selection passed |
 | H02 | Invalid date/enrollment or insufficient balance is explained; ambiguous enrollment is selectable | PC-02 | Verified for demo: insufficient quantity, real ambiguity and exclusive enrollment end passed |
-| H03 | Automatic/manual request decision and return/correct/resubmit reach the provider | PC-02 | Partial: live approval/correction/rejection/cancellation and combined document gate passed; live scoped automatic decision passed; queue own-file fix confirmed live after restart |
+| H03 | Automatic/manual request decision and return/correct/resubmit reach the provider | PC-02 | VERIFIED locally for defined demo scope: live manual/automatic decisions, correction/resubmission, document gate, queue ownership and notification-worker behavior; see scope limits in PC-02 scope closure |
 | H04 | Authorization/fulfillment and exact entitlement effects agree; retries do not duplicate | PC-02 | Generic path and automatic clinical claim consumption verified live; retries preserve exact balances and one usage |
-| H05 | Same episode reaches case, encounter and valid diagnosis | PC-03 | Partial: original closed-encounter path passed; missing open-encounter end command implemented and locally verified. Live diagnosis/closure/retry acceptance awaits operator API restart |
+| H05 | Same episode reaches case, encounter and valid diagnosis | PC-03 | PASSED 2026-09-29 for open-encounter ending, diagnosis rules, closure/retry and unchanged accounts; see live acceptance checkpoint below |
 | H06 | Browser-uploaded evidence is scanned CLEAN; missing/unsafe evidence cannot pass submission | PC-03 | PASSED 2026-09-23: real clean PDF and EICAR rejection; unsafe download/submit refused with no queue/usage; clean replacement completes the same episode |
 | H07 | Report review, coverage and immutable correction history work | PC-03 | PASSED 2026-09-23: live approval/correction, immutable history, separate scanned evidence and unchanged prior claim/usage; coverage exceptions verified in isolated PostgreSQL tests |
 | H08 | Clinical provider → billing → medical → financial handoff reaches invoice-ready claim | PC-03 | PASSED 2026-09-23: real browser handoff, two return/correction cycles, preserved contract price, final 400/400/0 TRY and one net session consumed |
@@ -225,7 +238,7 @@ backend change is concrete and locally checked.
 | Session quantity no longer caps money | Live PHYSIO_SESSION quote is contract/payer/member 400/400/0 TRY with unchanged balances | Preserve regression; verify same-episode claim pricing at PC-03 |
 | Mapping-aware authorization is implemented | Factor-2 and fractional integration tests pass; real selected-enrollment factor-1 reserve/consume/release passes | Keep clinical usage and inpatient partial release acceptance separate |
 | Checked-in seed lacks admission service; seeded CLEAN report bypasses upload scanning | `cmd/seed/business.go`, `businessplan.go`, `staffmember.go`; live catalog read on 2026-09-23 confirms INPATIENT_DAY absent; real outpatient CLEAN/EICAR scan now passed | PC-04.1 admission fixtures; PC-03.2 genuine upload/scan |
-| Dedicated provider/member projects still use their test ports; single-door provider/backoffice handoff now works | `real-health.spec.ts` runs under chromium with explicit `/portal/` routes and logout between actors | PC-02.3 partially verified; member handoff and dedicated-project URL generalization remain pending |
+| Dedicated provider/member projects now use the shared single-door URL; cross-app redirects and logout invalidation pass | `real-provider-member-handoff.spec.ts` passes both dedicated projects on 5181; `E2E_EXISTING_UI_URL` works in both | PC-02.3 shared-door handoff verified; broader PC-02 gates remain open |
 | `invoice.submitted` has no consumer; `settlement.approved` is the deferred M9 posting boundary | Observed startup warnings plus worker/port inspection; settlement notification is published separately, so local failure is not established | PC-05.6 document event handling policy and test required local effects; do not invent automatic batch creation |
 | Historical UI list/detail gaps may already have changed | Dated status-log notes are not current reproduction evidence | Check while exercising their scenario; create fixes only for reproduced gaps |
 
@@ -245,10 +258,13 @@ Repeated setup confirms the request and existing case/claim fixtures are unchang
 queue/authorization/consumption is created. Source episode and balances remain unchanged.
 The corresponding [tenant regression](../../internal/servicerequest/application/tenant_scope_test.go)
 passed on isolated PostgreSQL (3.4 s) with the same permissions in a distinct tenant.
-This closes the request provider-boundary evidence gap in PC-02.7; it does not replace
-H05's pending live end-command test or inpatient acceptance.
+This closes the request provider-boundary evidence gap in PC-02.7. H05 live end-command
+acceptance is recorded below; inpatient acceptance remains separate.
 
-### PC-03 exception and boundary checkpoint — 2026-09-23
+### PC-03 exception and boundary checkpoint — 2026-09-23 (historical status)
+
+The H05 restart-pending note in this dated checkpoint was superseded by the 2026-09-29
+live acceptance below. Later checkpoints record the current PC-03 acceptance requirement.
 
 - [Real claim exceptions](../../tests/e2e/real-claim-exceptions.spec.ts) passed (5.3 s total):
   DUPLICATE_SUSPECTED routes to financial review; AUTHORIZATION_EXCEEDED,
@@ -273,11 +289,47 @@ H05's pending live end-command test or inpatient acceptance.
   leaving case closure unreachable. `endEncounter` now validates time/version, serializes
   against case closure, enforces provider/clinical permissions and records an audit event.
   Provider UI preserves the exact command after an uncertain response and explicitly reloads
-  stale data. HTTP, concurrent-command/projection and UI retry tests pass. The operator
-  restart is pending; [live acceptance](../../tests/e2e/real-encounter.spec.ts) is prepared,
-  and H05/PC-03 are not marked complete before it passes.
+  stale data. HTTP, concurrent-command/projection and UI retry tests passed. The restart-pending
+  status recorded here was superseded by the 2026-09-29 live acceptance below.
 
-### PC-02 checkpoint — 2026-09-22
+### H05 live acceptance: 2026-09-29
+
+[real-encounter.spec.ts](../../tests/e2e/real-encounter.spec.ts) passed in 5.1 s
+(6.5 s total) after the operator restart, using source case
+`01a0cea7-9065-7661-af37-b132c171758b`. It created closed case
+`01a0ebb8-c6ee-78ca-b972-5c8e540f24e2` and ended encounter
+`01a0ebb8-c707-7c4d-9e31-1a1a020bf9d8`. Duplicate primary diagnosis returned 422 without
+replacing diagnoses; secondary-only diagnosis was accepted; open encounters blocked case
+closure; HR access returned 403, stale ETag 412, and invalid end time 422. An aborted commit
+response followed by the exact same idempotency key/body/ETag retry produced a single
+version; a second end returned 409. The provider UI closed the case, while encounter edit
+and creation on the closed case returned 409. Accounts were unchanged. Reviewed 1440px and
+390px screenshots in ignored `.impeccable/review` show the end form fits. H05 is passed for
+this scope. PC-03 still requires a live standard report-free episode; inpatient privacy remains PC-04.
+
+### Shared-door and request notification checkpoint: 2026-09-29
+
+- [real-provider-member-handoff.spec.ts](../../tests/e2e/real-provider-member-handoff.spec.ts)
+  passed on shared `http://127.0.0.1:5181` in both dedicated projects (8.0 s and 5.4 s;
+  16.2 s total). Real login opens the correct app, a wrong-app second-tab visit redirects,
+  and logout invalidates the session. `E2E_EXISTING_UI_URL` is honored by both projects.
+- [real-request-notification.spec.ts](../../tests/e2e/real-request-notification.spec.ts)
+  passed (824 ms / 2.0 s total) against historical APPROVED request
+  `01a0cf87-3e6d-7380-b4f3-d9c76c46f0b0`. PERSON and ORG each had exactly one SENT INAPP
+  notification and one ACCEPTED INAPP_RECORDER delivery. EMAIL was SUPPRESSED/NO_ADDRESS
+  with zero attempts; exactly four safe variables were present; provider list returned 403;
+  source request remained unchanged. This is retained real-worker evidence, not a fresh send,
+  SMTP delivery or member-notification UI acceptance. Read-only RLS app-role DB probe showed
+  request create/submit/gate/approve each returned SUCCESS once.
+- Mock provider-role parity now removes six extra grants to match real `PROVIDER_STAFF`;
+  billing grants are unchanged. Validation passed: 128 mock tests, 12 UI tests, TypeScript
+  typecheck and lint. A fresh automatic-program live run passed in 13.3 s (15.3 s total),
+  replacing the expired fixture. The standard report-free handoff is implemented with local tests passing; live
+  verification awaits operator API restart. PC-03 still requires a live standard report-free
+  episode; inpatient privacy remains PC-04. PC-02's defined demo acceptance scope is
+  verified locally as recorded in the closure checkpoint below.
+
+### PC-02 checkpoint — 2026-09-22 (historical evidence)
 
 - **Delivered:** `PROVIDER_STAFF` can read service/diagnosis catalogs in the provider app.
   Reproduced `GET /service-definitions` 403 before the fix, then 200 in the real browser.

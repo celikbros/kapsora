@@ -37,17 +37,19 @@ keep them current as you build.
 **Current owner priority (reconfirmed 2026-09-22): complete the running product, with
 health first.** The detailed plan for the approved sequence is the
 [PC-01–PC-06 product completion roadmap](plan/ROADMAP.md#current-product-completion-roadmap-2026-09-22).
-Member import is locally verified. PC-02 eligibility/request/authorization has substantial
-live evidence with scoped gates still open; the first PC-03 outpatient checkpoint passed.
-Next are the remaining PC-03 handoff/exception gates, PC-04 inpatient health,
-PC-05 invoice/batch/payment, and PC-06
-accommodation plus combined acceptance. The roadmap records task dependencies, 15 health
-acceptance scenarios, role handoffs, evidence gates and confirmed source/fixture gaps.
+Member import is locally verified. PC-02 is VERIFIED locally for its defined demo
+acceptance scope as of 2026-09-29; its dated evidence and limits are recorded below and in
+the roadmap. PC-03 still needs a live standard report-free episode after the operator API
+restart. PC-04 remains a separate inpatient acceptance gate spanning admission, extension,
+discharge, claim and privacy, followed by PC-05
+invoice/batch/payment and PC-06 accommodation plus combined acceptance. The roadmap records
+task dependencies, 15 health acceptance scenarios, role handoffs, evidence gates and
+confirmed source/fixture gaps.
 The first live health checkpoint passed: provider catalog access, single-enrollment
 eligibility, insufficient-quantity refusal, request submission, medical approval and the
 provider's updated status. Migration 000050 fixes the reproduced catalog 403 for system
 PROVIDER_STAFF in current/new tenants; no catalog maintenance or billing grant was added.
-PC-02 is not complete. The quantity-versus-money quote fix now passes local pricing,
+The quantity-versus-money quote fix now passes local pricing,
 HTTP and eligibility regression tests: monetary entitlements cap money; session/night/count
 entitlements gate service quantity, including mapping factors and shared per-quote pools.
 The operator restarted `dev.ps1 up` on 2026-09-22 and live confirmation passed: the 400 TRY
@@ -217,10 +219,11 @@ permission proof. The full seed package passes with PostgreSQL enabled (13.0 s),
 positive/negative cases, repeated setup/retirement and unchanged grants. Scoped Go lint,
 vet/build, harness TypeScript and ESLint pass. Schema remains 51; no server restart needed.
 
-PC-02 remains active: finish automatic-decision and scoped queue/ownership/role acceptance,
-then proceed to PC-03 case/report/claim. Automatic decisions have isolated PostgreSQL
-evidence; this live run proves the demo program retains manual review. Clinical reports and infected
-file refusal are not certified by the synthetic INVOICE test.
+**Historical checkpoint (2026-09-22, superseded by the 2026-09-29 PC-02 closure):**
+PC-02 still had automatic-decision and scoped queue/ownership/role acceptance outstanding.
+Automatic decisions then had isolated PostgreSQL evidence; that live run proved the demo
+program retained manual review. Clinical reports and infected-file refusal were not certified
+by the synthetic INVOICE test.
 
 **Automatic decision and worklist checkpoint (2026-09-23):** all six CI checks passed
 on `2c60a2b`. The live automatic-request test passed (8.7 s total): a new short-lived
@@ -707,7 +710,7 @@ permissions in another tenant cannot read/list/history/edit/submit/cancel the or
 request, which remains unchanged. This is isolated database evidence for tenant isolation,
 not a DEMO_B browser review. All six CI checks passed on the preceding UI head `918ef0c`.
 
-**H05 open-encounter closure fix — implemented, live verification pending:** the API
+**H05 open-encounter closure fix: live acceptance passed 2026-09-29:** the API
 allowed open encounters but had no end command. Added POST `/api/v1/encounters/{id}/end`,
 If-Match/idempotency, parent-case locking, end-time validation, audit event and projected
 response. Existing case/manage plus clinical/read permissions and provider/tenant scope
@@ -715,21 +718,44 @@ apply. The provider form sits below the encounter table; a lost response retries
 same key/body/ETag, while stale/definitive failures require an explicit reload. No migration.
 Three focused HTTP tests passed (10.7 s), including simultaneous commands and sensitive
 projection; eight UI tests passed (12.6 s), along with provider build, typecheck/lint,
-Go lint and OpenAPI lint (11 pre-existing description warnings). The complete health Go
-suite also passed, including application (89.5 s) and HTTP (126.8 s) packages. All six GitHub CI checks passed on `6bb51a3`. New backend needs the operator's `dev.ps1 up` restart, already requested;
-H05 remains partial until the following live test runs:
+Go lint and OpenAPI lint (11 pre-existing description warnings). Health application tests
+passed (89.5 s). All six GitHub CI checks passed on `6bb51a3`. After the operator restarted
+`dev.ps1 up`,
+[real-encounter.spec.ts](../tests/e2e/real-encounter.spec.ts) passed in 5.1 s
+(6.5 s total) against source case `01a0cea7-9065-7661-af37-b132c171758b`. It created
+closed case `01a0ebb8-c6ee-78ca-b972-5c8e540f24e2` and ended encounter
+`01a0ebb8-c707-7c4d-9e31-1a1a020bf9d8`. Coverage confirmed duplicate-primary diagnosis
+returns 422 without replacing diagnoses, valid secondary-only diagnosis is accepted,
+open encounters block closure, HR access returns 403, stale ETag returns 412, and invalid
+end time returns 422. An aborted commit response followed by the exact same key/body/ETag
+retry produced one version; a second end returned 409. The provider UI closed the case;
+editing or creating encounters on the closed case returned 409. Accounts were unchanged.
+The inspected 1440px and 390px captures under ignored `.impeccable/review` show the end
+form fits. H05 is passed for this scope. PC-03 still requires a live standard report-free
+episode; inpatient privacy remains PC-04.
 
-```powershell
-$env:E2E_ENCOUNTER_SOURCE_CASE = '01a0cea7-9065-7661-af37-b132c171758b'
-pnpm e2e real-encounter.spec.ts --project chromium --trace off
-Remove-Item Env:E2E_ENCOUNTER_SOURCE_CASE
-```
+**2026-09-29 shared-door and request notification evidence:** [real-provider-member-handoff.spec.ts](../tests/e2e/real-provider-member-handoff.spec.ts) passed against shared `http://127.0.0.1:5181` in both dedicated projects (8.0 s and 5.4 s; 16.2 s total). `E2E_EXISTING_UI_URL` now works in both projects. Real login reaches the correct app, a wrong-app second-tab visit redirects, and logout invalidates the session.
+
+[real-request-notification.spec.ts](../tests/e2e/real-request-notification.spec.ts) passed (824 ms / 2.0 s total) using historical APPROVED request `01a0cf87-3e6d-7380-b4f3-d9c76c46f0b0`. Each PERSON and ORG received exactly one SENT INAPP notification with one ACCEPTED INAPP_RECORDER delivery. EMAIL was SUPPRESSED/NO_ADDRESS with zero attempts; the event had exactly four safe variables, provider list access returned 403, and the source request was unchanged. This is retained real-worker evidence, not a fresh send, SMTP delivery or member-notification UI acceptance.
+
+A read-only RLS app-role DB probe confirmed request create, submit, gate and approve each returned SUCCESS once. Mock provider role parity now matches real `PROVIDER_STAFF` after removing six extra grants; billing grants are unchanged. Validation passed: 128 mock tests, 12 UI tests, TypeScript typecheck and lint. A fresh automatic-program live run passed (13.3 s / 15.3 s total), replacing the expired fixture.
+
+The standard report-free handoff is implemented and local tests pass; live verification
+awaits the operator API restart. PC-03 still requires a live standard report-free episode;
+inpatient privacy remains PC-04.
+
+**PC-02 closure checkpoint (2026-09-29):** Review of the linked acceptance evidence found no concrete unmet
+task for the defined demo acceptance scope; PC-02 is VERIFIED locally for that scope. The
+full claim application database suite passed (168.685 s); the full web suite passed 538 tests
+across 64 files (55.82 s), and `golangci-lint ./internal/claim/...` reported zero issues.
+Request notifications are retained real-worker evidence only: they do not prove a fresh send, SMTP delivery or member inbox UI.
+Tenant isolation is supported by isolated-database tests, not a live DEMO_B walkthrough.
 
 A separate read-only browser layout check used intercepted case data to expose the new
 form without changing a database record. It found a clipped date field inside the mobile
 scrolling table. The form now sits below that table, with one active end form; the 1440px
-and 390px captures were inspected, and the eight focused UI tests passed again. This layout
-check does not replace the pending live end-command test.
+and 390px captures were inspected, and the eight focused UI tests passed again. The later
+live acceptance above verifies the end command and closure path.
 
 That test creates its own case/encounter, validates primary-diagnosis rules, intercepts a
 committed end response, retries, closes the case and checks no balance change. Desktop/mobile

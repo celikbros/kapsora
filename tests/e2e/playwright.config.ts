@@ -7,7 +7,7 @@ const PROVIDER_PORT = 5198;
 const MEMBER_PORT = 5197;
 // E2E_REAL_API=1 turns the mock worker off and proxies /api to KAPSORA_API_URL.
 const REAL = process.env['E2E_REAL_API'] === '1';
-// Reuse the operator's single-door server for real backoffice tests.
+// Reuse the operator's single-door server for all real app projects.
 const EXISTING_UI_URL = REAL ? process.env['E2E_EXISTING_UI_URL'] : undefined;
 const API_URL = process.env['KAPSORA_API_URL'] ?? 'http://127.0.0.1:8080';
 // Where each app lives on these ports, for the single sign-in's hand-over between them.
@@ -40,7 +40,10 @@ export default defineConfig({
     {
       name: 'provider',
       testMatch: /(provider[a-z-]*|review-capture)\.spec\.ts$/,
-      use: { ...devices['Desktop Chrome'], baseURL: `http://127.0.0.1:${PROVIDER_PORT}` },
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: EXISTING_UI_URL ?? `http://127.0.0.1:${PROVIDER_PORT}`,
+      },
     },
     {
       // The member PWA is phone-first: its flows run at a phone viewport.
@@ -49,7 +52,7 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 390, height: 844 },
-        baseURL: `http://127.0.0.1:${MEMBER_PORT}`,
+        baseURL: EXISTING_UI_URL ?? `http://127.0.0.1:${MEMBER_PORT}`,
       },
     },
   ],
