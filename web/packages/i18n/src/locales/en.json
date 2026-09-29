@@ -1711,7 +1711,7 @@
       "payable": "Payable",
       "paid": "Paid",
       "remaining": "Remaining",
-      "arithmetic": "The figures are the server's; the screen adds nothing."
+      "arithmetic": "Amounts reflect recorded approvals and payments."
     },
     "provider": {
       "earningsTitle": "Earnings",
@@ -1763,6 +1763,7 @@
       "batch": "Batch",
       "noBatch": "Not in a batch",
       "pickClaims": "Invoiceable claims",
+      "showMoreClaims": "Show more claims",
       "pickHint": "An allocation above the approved total is refused by the server.",
       "noInvoiceable": "No invoiceable claim in this currency.",
       "batchesTitle": "Batches",
@@ -1881,6 +1882,9 @@
       "receiptHint": "A photo or a PDF. The file is scanned; the request cannot be sent before the scan finishes.",
       "receiptScanning": "Scanning the receipt…",
       "receiptClean": "Receipt ready.",
+      "gateCheck": "Check this request",
+      "gateStopped": "This request cannot continue. Return to your reimbursements to start a new request.",
+      "gateReturn": "Back to my reimbursements",
       "iban": "IBAN",
       "ibanHint": "Typed once; afterwards only the last four characters show.",
       "ibanMasked": "Account •••• {{tail}}",
@@ -1968,7 +1972,7 @@
         "ERP_MISMATCH": "Disagrees with the ERP"
       },
       "erpTotal": "ERP total",
-      "erpPending": "The ERP side is empty until M9.",
+      "erpPending": "The accounting system has not been compared yet.",
       "dashboardTitle": "Operations dashboard",
       "asOf": "As of",
       "claimsByStatus": "Claims by status",

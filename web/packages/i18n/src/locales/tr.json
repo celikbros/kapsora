@@ -3485,7 +3485,7 @@
       "payable": "Ödenecek",
       "paid": "Ödenen",
       "remaining": "Kalan",
-      "arithmetic": "Rakamlar sunucunundur; ekran toplamaz."
+      "arithmetic": "Tutarlar kayıtlı onay ve ödemelere göre gösterilir."
     },
     "provider": {
       "earningsTitle": "Hakediş",
@@ -3537,6 +3537,7 @@
       "batch": "İcmal",
       "noBatch": "İcmale alınmadı",
       "pickClaims": "Faturalanabilir claim'ler",
+      "showMoreClaims": "Diğer claim'leri göster",
       "pickHint": "Onaylı toplamın üstünde dağıtım sunucu tarafından reddedilir.",
       "noInvoiceable": "Bu para biriminde faturalanabilir claim yok.",
       "batchesTitle": "İcmaller",
@@ -3654,6 +3655,9 @@
       "receiptHint": "Fotoğraf ya da PDF. Yüklenen dosya taranır; tarama bitmeden başvuru gönderilemez.",
       "receiptScanning": "Makbuz taranıyor…",
       "receiptClean": "Makbuz hazır.",
+      "gateCheck": "Talebi kontrol et",
+      "gateStopped": "Bu başvuruyla devam edilemiyor. Geri ödemelerinize dönüp yeni bir başvuru açabilirsiniz.",
+      "gateReturn": "Geri ödemelerime dön",
       "iban": "IBAN",
       "ibanHint": "Bir kez yazılır, sonra yalnızca son dört hanesi görünür.",
       "ibanMasked": "Hesap •••• {{tail}}",
@@ -3741,7 +3745,7 @@
         "ERP_MISMATCH": "ERP ile uyuşmuyor"
       },
       "erpTotal": "ERP toplamı",
-      "erpPending": "ERP tarafı M9'a kadar boş.",
+      "erpPending": "Muhasebe sistemiyle karşılaştırma henüz yapılmadı.",
       "dashboardTitle": "Operasyon panosu",
       "asOf": "Şu an itibarıyla",
       "claimsByStatus": "Claim'ler duruma göre",

@@ -1,3 +1,4 @@
+import type { CreateServiceRequest, ServiceRequestStatus } from '@kapsora/api-client';
 import { formatDate, useTranslation } from '@kapsora/i18n';
 import {
   Badge,
@@ -20,6 +21,7 @@ import { useMyPersonId } from '../lodging/queries';
 import {
   useCreateReimbursement,
   useCreateRequest,
+  useSubmitRequest,
   useDocument,
   useMyPerson,
   useProviders,
@@ -44,6 +46,7 @@ export function NewReimbursementPage() {
   const definitions = useServiceDefinitions();
   const providers = useProviders();
   const createRequest = useCreateRequest();
+  const submitRequestGate = useSubmitRequest();
   const upload = useUploadReceipt();
   const createReimbursement = useCreateReimbursement();
 
@@ -52,6 +55,16 @@ export function NewReimbursementPage() {
   const [providerOrganizationId, setProvider] = useState('');
   const [amount, setAmount] = useState('');
   const [requestId, setRequestId] = useState<string | null>(null);
+  const [requestEtag, setRequestEtag] = useState<string | null>(null);
+  const [gateStatus, setGateStatus] = useState<ServiceRequestStatus | null>(null);
+  const [requestLocked, setRequestLocked] = useState(false);
+  const createAttempt = useRef<{
+    key: string;
+    body: CreateServiceRequest;
+    enrollmentId: string;
+  } | null>(null);
+  const submitAttempt = useRef<{ requestId: string; etag: string; key: string } | null>(null);
+  const submitInFlight = useRef(false);
   const [enrollmentId, setEnrollmentId] = useState<string | null>(null);
   const [documentId, setDocumentId] = useState<string | null>(null);
   const [account, setAccount] = useState('');
@@ -59,6 +72,10 @@ export function NewReimbursementPage() {
   const document = useDocument(documentId);
   const scan = document.data?.data.scanStatus ?? null;
   const receiptReady = scan === 'CLEAN';
+  const gateReady =
+    gateStatus === 'PENDING_REVIEW' ||
+    gateStatus === 'APPROVED' ||
+    gateStatus === 'PARTIALLY_APPROVED';
 
   const enrollments = (me.data?.enrollments ?? []).filter((e) => e.status === 'ACTIVE');
   const serviceName = definitions.data?.items.find((d) => d.id === serviceDefinitionId)?.name;
@@ -68,48 +85,79 @@ export function NewReimbursementPage() {
 
   function submitRequest(e: FormEvent) {
     e.preventDefault();
-    if (!personId) return;
-    // The enrollment that covers the service date; the server refuses one that does not.
-    const enrollment =
-      enrollments.find(
-        (en) => en.validFrom <= serviceDate && (!en.validTo || en.validTo > serviceDate),
-      ) ?? enrollments[0];
-    if (!enrollment) return;
-    createRequest.mutate(
-      {
-        requestType: 'REIMBURSEMENT',
-        personId,
+    if (!personId || createRequest.isPending || requestId) return;
+    if (!createAttempt.current) {
+      // The enrollment that covers the service date; the server checks it again.
+      const enrollment =
+        enrollments.find(
+          (en) => en.validFrom <= serviceDate && (!en.validTo || en.validTo > serviceDate),
+        ) ?? enrollments[0];
+      if (!enrollment) return;
+      createAttempt.current = {
+        key: crypto.randomUUID(),
         enrollmentId: enrollment.id,
-        providerOrganizationId,
-        serviceDate,
-        channel: 'MEMBER_PORTAL',
-        items: [
-          {
-            serviceDefinitionId,
-            unitType: 'MONEY',
-            requestedQuantity: '1',
-            requestedAmount: amount.trim(),
-            currencyCode: 'TRY',
-          },
-        ],
-      },
+        body: {
+          requestType: 'REIMBURSEMENT',
+          personId,
+          enrollmentId: enrollment.id,
+          providerOrganizationId,
+          serviceDate,
+          channel: 'MEMBER_PORTAL',
+          items: [
+            {
+              serviceDefinitionId,
+              unitType: 'MONEY',
+              requestedQuantity: '1',
+              requestedAmount: amount.trim(),
+              currencyCode: 'TRY',
+            },
+          ],
+        },
+      };
+      setRequestLocked(true);
+    }
+    // An uncertain response replays the exact same body and key. The fields remain frozen
+    // until the server has answered, so the visible form still describes that attempt.
+    const attempt = createAttempt.current;
+    createRequest.mutate(
+      { body: attempt.body, key: attempt.key },
       {
         onSuccess: (created) => {
           setRequestId(created.data.id);
-          setEnrollmentId(enrollment.id);
+          setRequestEtag(created.etag);
+          setEnrollmentId(attempt.enrollmentId);
+        },
+        onError: (error) => {
+          // A definite validation refusal has created no request; the member may correct it.
+          if ([400, 422].includes(problemOf(error).status)) {
+            createAttempt.current = null;
+            setRequestLocked(false);
+          }
         },
       },
     );
   }
-
   function onFile(file: File | null) {
     if (!file || !requestId) return;
     upload.mutate({ file, requestId }, { onSuccess: (doc) => setDocumentId(doc.id) });
   }
 
+  function submitServiceRequest() {
+    if (!requestId || !requestEtag || !receiptReady || submitInFlight.current || gateStatus) return;
+    // Retry an uncertain reply with the original command key and If-Match. A fresh key or
+    // ETag could turn one submit into a second command after the first already committed.
+    submitAttempt.current ??= { requestId, etag: requestEtag, key: crypto.randomUUID() };
+    submitInFlight.current = true;
+    submitRequestGate.mutate(submitAttempt.current, {
+      onSuccess: (submitted) => setGateStatus(submitted.data.status),
+      onSettled: () => {
+        submitInFlight.current = false;
+      },
+    });
+  }
   function submitAccount(e: FormEvent) {
     e.preventDefault();
-    if (!requestId || !documentId) return;
+    if (!requestId || !documentId || !gateReady) return;
     createReimbursement.mutate(
       {
         serviceRequestId: requestId,
@@ -143,7 +191,7 @@ export function NewReimbursementPage() {
     });
   }
 
-  const step = !requestId ? 1 : !receiptReady ? 2 : 3;
+  const step = !requestId ? 1 : !gateReady ? 2 : 3;
   const unbound = personId === null || (me.isSuccess && enrollments.length === 0);
 
   return (
@@ -207,7 +255,7 @@ export function NewReimbursementPage() {
                     label: d.name,
                   }))}
                   placeholder="—"
-                  disabled={requestId !== null}
+                  disabled={requestLocked || requestId !== null}
                 />
               )}
             </FormField>
@@ -222,7 +270,7 @@ export function NewReimbursementPage() {
                 value={serviceDate}
                 max={new Date().toISOString().slice(0, 10)}
                 onChange={(e) => setDate(e.target.value)}
-                disabled={requestId !== null}
+                disabled={requestLocked || requestId !== null}
                 required
               />
             </FormField>
@@ -240,7 +288,7 @@ export function NewReimbursementPage() {
                   label: p.organizationName,
                 }))}
                 placeholder="—"
-                disabled={requestId !== null}
+                disabled={requestLocked || requestId !== null}
               />
             </FormField>
             <FormField
@@ -254,7 +302,7 @@ export function NewReimbursementPage() {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 className="font-mono"
-                disabled={requestId !== null}
+                disabled={requestLocked || requestId !== null}
                 required
               />
             </FormField>
@@ -325,10 +373,44 @@ export function NewReimbursementPage() {
                 )}
               </p>
             )}
+            {receiptReady && !gateStatus ? (
+              <div className="mt-3 grid gap-2">
+                <ProblemAlert
+                  problem={submitRequestGate.isError ? problemOf(submitRequestGate.error) : null}
+                />
+                <Button
+                  onClick={submitServiceRequest}
+                  loading={submitRequestGate.isPending}
+                  data-testid="submit-request"
+                >
+                  {t('billing.member.gateCheck')}
+                </Button>
+              </div>
+            ) : null}
+            {gateStatus ? (
+              <div
+                role="status"
+                data-testid="request-gate-status"
+                className="mt-3 grid gap-2 text-sm"
+              >
+                <p>{t(`requests.status.${gateStatus}`)}</p>
+                {!gateReady ? (
+                  <>
+                    <p>{t('billing.member.gateStopped')}</p>
+                    <Link
+                      to="/reimbursements"
+                      className="text-primary underline underline-offset-4"
+                    >
+                      {t('billing.member.gateReturn')}
+                    </Link>
+                  </>
+                ) : null}
+              </div>
+            ) : null}
           </Card>
         ) : null}
 
-        {receiptReady ? (
+        {gateReady ? (
           <Card>
             <h2 className="text-base font-semibold">3. {t('billing.member.step.account')}</h2>
             <form
