@@ -11,6 +11,7 @@ registerBillingAcceptance({
   domain: 'ACCOMMODATION',
   sourceType: 'BOOKING',
   total: '1800',
+  dueDays: 14,
   paidText: '1.800,00',
   net: '1500',
   tax: '300',

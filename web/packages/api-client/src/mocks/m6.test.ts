@@ -1416,7 +1416,7 @@ describe('a no-show', () => {
     ['wrong aggregate', 403],
     ['sets permission', 403],
     ['missing grant', 403],
-  ] as const)('limits a proposed desk evidence grant: %s', async (kind, status) => {
+  ] as const)('limits the desk evidence grant: %s', async (kind, status) => {
     const admin = await signIn('admin.a');
     const booking = await confirmedStay(
       admin,
@@ -1439,9 +1439,10 @@ describe('a no-show', () => {
     api.world.documents.push(doc);
     const desk = await signIn('reservation.a');
     const membership = api.session!.account.memberships.find((m) => m.tenantCode === 'DEMO_A')!;
-    // Test-only grant. The production/default mock role remains unchanged pending approval.
-    if (kind !== 'missing grant')
-      membership.permissions = [...membership.permissions, 'document.booking_evidence.link'];
+    if (kind === 'missing grant')
+      membership.permissions = membership.permissions.filter(
+        (permission) => permission !== 'document.booking_evidence.link',
+      );
     if (kind === 'absent scope') membership.scopes = [];
     if (kind === 'empty scope') membership.scopes = [{ type: 'ORGANIZATION', id: null }];
     if (kind === 'pending booking')

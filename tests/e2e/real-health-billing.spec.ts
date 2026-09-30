@@ -9,6 +9,7 @@ registerBillingAcceptance({
   domain: 'HEALTH',
   sourceType: 'HEALTH_CASE',
   total: '800',
+  dueDays: 30,
   paidText: '800,00',
   net: '666.67',
   tax: '133.33',

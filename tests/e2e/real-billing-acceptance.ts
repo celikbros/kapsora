@@ -1,4 +1,4 @@
-﻿import { mkdir } from 'node:fs/promises';
+import { mkdir } from 'node:fs/promises';
 import { expect, request as apiRequest, test, type Page } from '@playwright/test';
 import type { components } from '../../web/packages/api-client/src/generated/kapsora-v1';
 import { Actor } from './real-api-actor';
@@ -13,6 +13,7 @@ export interface BillingAcceptance {
   domain: 'HEALTH' | 'ACCOMMODATION';
   sourceType: 'HEALTH_CASE' | 'BOOKING';
   total: string;
+  dueDays: number;
   paidText: string;
   net: string;
   tax: string;
@@ -446,7 +447,7 @@ export function registerBillingAcceptance(config: BillingAcceptance) {
       exact(settlement.data.withheldAmount, '0');
       exact(settlement.data.payableAmount, config.total);
       const due = new Date(batch.data.decidedAt!.slice(0, 10) + 'T00:00:00Z');
-      due.setUTCDate(due.getUTCDate() + 30);
+      due.setUTCDate(due.getUTCDate() + config.dueDays);
       expect(settlement.data.dueDate).toBe(due.toISOString().slice(0, 10));
       if (settlement.data.status === 'PENDING_APPROVAL') {
         // This synthetic fixture is below the configured 50,000 TRY checker threshold.

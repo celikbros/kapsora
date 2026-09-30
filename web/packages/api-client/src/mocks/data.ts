@@ -1687,6 +1687,7 @@ const PROVIDER_RESERVATION_PERMISSIONS = [
   // The desk reports a no-show with evidence, so it uploads and reads documents.
   'document.read',
   'document.upload',
+  'document.booking_evidence.link',
 ];
 
 const ORG_PREFIXES = [

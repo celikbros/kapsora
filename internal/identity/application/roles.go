@@ -142,9 +142,11 @@ func RoleTemplates() []RoleTemplate {
 			Description: "Konaklama kontenjanı, rezervasyon, check-in/out; sağlık verisine erişemez.",
 			// document.read and document.upload: a no-show is reported with evidence, and the
 			// desk that reports it is the one that has the evidence (WP-I6-03 §2.4).
+			// The narrow evidence grant excludes generic linking, unlinking and clinical data.
 			Permissions: []string{"accommodation.property.read", "accommodation.inventory.manage",
 				"accommodation.booking.manage", "accommodation.waitlist.manage",
-				"member.read", "eligibility.check", "document.read", "document.upload"}},
+				"member.read", "eligibility.check", "document.read", "document.upload",
+				"document.booking_evidence.link"}},
 		// The sponsor's own HR user. It exists so the acceptance criterion of WP-I5-01 has a
 		// subject: this is the role that may see that a member has an open health case, and
 		// may never see what the case is about. health.clinical.read is absent on purpose,
