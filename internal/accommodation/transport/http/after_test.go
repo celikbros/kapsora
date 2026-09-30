@@ -1205,3 +1205,74 @@ func mustMoment(t *testing.T, text string) time.Time {
 	}
 	return moment.UTC()
 }
+
+// Evidence that can start a charge review must belong to the booking's provider,
+// have the promised type and still point to retained, scanned bytes.
+func TestNoShowEvidenceBoundaries(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		allowed bool
+	}{
+		{"own provider", true}, {"tenant document", true}, {"retained duplicate", true},
+		{"wrong type", false}, {"other provider", false}, {"quarantine", false},
+		{"purged object", false}, {"purged canonical", false}, {"foreign canonical", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := newServer(t)
+			s.grantNights(t, 10)
+			s.putLodgingTerms(t)
+			s.clock.At(t, insideFreeWindow)
+			ctx, cancel := s.h.Ctx()
+			defer cancel()
+			booking := s.confirmBooking(t, s.person, s.roomType)
+			evidence := s.linkCleanBookingDocument(t, booking.Booking.ID)
+			switch tc.name {
+			case "tenant document":
+				s.h.AdminExec(`UPDATE document.object SET owner_tenant_organization_id=NULL WHERE tenant_id=$1 AND id=$2`, s.tenant, evidence)
+			case "wrong type":
+				s.h.AdminExec(`UPDATE document.link SET document_type_code='INVOICE' WHERE tenant_id=$1 AND object_id=$2`, s.tenant, evidence)
+			case "other provider":
+				s.h.AdminExec(`UPDATE document.object SET owner_tenant_organization_id=$3 WHERE tenant_id=$1 AND id=$2`, s.tenant, evidence, s.otherOr)
+			case "quarantine":
+				s.h.AdminExec(`UPDATE document.object SET bucket='quarantine' WHERE tenant_id=$1 AND id=$2`, s.tenant, evidence)
+			case "purged object":
+				s.h.AdminExec(`UPDATE document.object SET purged_at=clock_timestamp() WHERE tenant_id=$1 AND id=$2`, s.tenant, evidence)
+			case "retained duplicate", "purged canonical", "foreign canonical":
+				canonical := s.linkCleanBookingDocument(t, uuid.New())
+				s.h.AdminExec(`UPDATE document.object o SET duplicate_of_object_id=c.id, object_key=c.object_key, sha256=c.sha256 FROM document.object c WHERE o.tenant_id=$1 AND o.id=$2 AND c.tenant_id=o.tenant_id AND c.id=$3`, s.tenant, evidence, canonical)
+				if tc.name == "purged canonical" {
+					s.h.AdminExec(`UPDATE document.object SET purged_at=clock_timestamp() WHERE tenant_id=$1 AND id=$2`, s.tenant, canonical)
+				}
+				if tc.name == "foreign canonical" {
+					s.h.AdminExec(`UPDATE document.object SET owner_tenant_organization_id=$3 WHERE tenant_id=$1 AND id=$2`, s.tenant, canonical, s.otherOr)
+				}
+			}
+			s.clock.At(t, afterCheckInCloses)
+			clerk := s.h.CreateActor("evidence-desk", "Otel Resepsiyon")
+			_, err := s.svc.ReportNoShow(ctx, s.providerContext(clerk), booking.Booking.ID, application.ReportNoShowInput{EvidenceDocumentID: &evidence})
+			if tc.allowed {
+				if err != nil {
+					t.Fatalf("valid evidence refused: %v", err)
+				}
+			} else if !isError(err, application.ErrNoShowEvidenceRequired) {
+				t.Errorf("invalid evidence answered %v, want NO_SHOW_EVIDENCE_REQUIRED", err)
+			}
+			var reports int
+			if err := s.h.Admin.QueryRow(ctx, `SELECT count(*) FROM accommodation.no_show WHERE tenant_id=$1 AND booking_id=$2`, s.tenant, booking.Booking.ID).Scan(&reports); err != nil {
+				t.Fatal(err)
+			}
+			want := 0
+			if tc.allowed {
+				want = 1
+			}
+			if reports != want {
+				t.Errorf("reports=%d, want %d", reports, want)
+			}
+			available, reserved, consumed := s.balances(t)
+			if available != "9.000000" || reserved != "3.000000" || consumed != "0.000000" {
+				t.Errorf("evidence check moved balance: %s/%s/%s", available, reserved, consumed)
+			}
+			s.assertConservation(t, "evidence validation")
+		})
+	}
+}

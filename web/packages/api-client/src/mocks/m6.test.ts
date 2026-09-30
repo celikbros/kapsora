@@ -19,7 +19,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { createKapsoraClient, randomId, type KapsoraClient } from '../client';
 import { createOperations } from '../operations';
 import { ApiError, unwrap, type Problem } from '../problem';
-import { fromMicros, toMicros, type Decimal } from './data';
+import { fromMicros, toMicros, type Decimal, type StoredDocument } from './data';
 import { createMockServer } from './node';
 
 const { api, server } = createMockServer({ organizationsPerTenant: 6 });
@@ -1397,6 +1397,79 @@ describe('check-in and check-out', () => {
 });
 
 describe('a no-show', () => {
+  it.each([
+    ['own provider', true],
+    ['tenant document', true],
+    ['retained duplicate', true],
+    ['wrong type', false],
+    ['other provider', false],
+    ['quarantine', false],
+    ['purged object', false],
+    ['purged canonical', false],
+    ['foreign canonical', false],
+  ] as const)('validates evidence: %s', async (kind, allowed) => {
+    const admin = await signIn('admin.a');
+    const booking = await confirmedStay(
+      admin,
+      personByFirstName('Kaan').id,
+      roomTypeByCode('STD_DBL').id,
+    );
+    const property = api.world.properties.find((p) => p.id === booking.propertyId)!;
+    const template = api.world.documents.find(
+      (d) => d.scanStatus === 'CLEAN' && d.bucket === 'secure' && !d.purgedAt,
+    )!;
+    const doc: StoredDocument = {
+      ...template,
+      id: api.world.nextId(),
+      tenantId: admin.tenantId,
+      ownerOrganizationId: property.providerOrganizationId,
+      duplicateOfDocumentId: null,
+      purgedAt: null,
+    };
+    api.world.documents.push(doc);
+    const link = {
+      ...api.world.documentLinks[0]!,
+      id: api.world.nextId(),
+      tenantId: admin.tenantId,
+      documentId: doc.id,
+      aggregateType: 'BOOKING',
+      aggregateId: booking.id,
+      documentTypeCode: kind === 'wrong type' ? 'INVOICE' : 'NO_SHOW_EVIDENCE',
+    };
+    api.world.documentLinks.push(link);
+    if (kind === 'tenant document') doc.ownerOrganizationId = null;
+    if (kind === 'other provider') doc.ownerOrganizationId = api.world.nextId();
+    if (kind === 'quarantine') doc.bucket = 'quarantine';
+    if (kind === 'purged object') doc.purgedAt = new Date().toISOString();
+    if (
+      kind === 'retained duplicate' ||
+      kind === 'purged canonical' ||
+      kind === 'foreign canonical'
+    ) {
+      const canonical = { ...doc, id: api.world.nextId() };
+      if (kind === 'purged canonical') canonical.purgedAt = new Date().toISOString();
+      if (kind === 'foreign canonical') canonical.ownerOrganizationId = api.world.nextId();
+      api.world.documents.push(canonical);
+      doc.duplicateOfDocumentId = canonical.id;
+    }
+    const desk = await signIn('reservation.a');
+    const call = unwrap(
+      desk.c.POST('/api/v1/accommodation/bookings/{bookingId}/no-show', {
+        params: {
+          header: { ...tenant(desk), 'Idempotency-Key': key() },
+          path: { bookingId: booking.id },
+        },
+        body: { at: `${addDays(booking.checkIn, 2)}T12:00:00Z`, evidenceDocumentId: doc.id },
+      }),
+    );
+    if (allowed) expect((await call).data.report.status).toBe('REPORTED');
+    else expect((await refusal(call)).code).toBe('NO_SHOW_EVIDENCE_REQUIRED');
+    expect(api.world.noShows.filter((n) => n.bookingId === booking.id)).toHaveLength(
+      allowed ? 1 : 0,
+    );
+    expect(api.world.bookings.find((b) => b.id === booking.id)?.status).toBe('CONFIRMED');
+  });
+
   /**
    * The rule the member is protected by: a report costs them nothing, and the person who
    * filed it may not be the person who decides it.

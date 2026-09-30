@@ -31,6 +31,7 @@
 import { HttpResponse, http, type HttpHandler } from 'msw';
 
 import {
+  documentDownloadable,
   type MockWorld,
   type StoredBooking,
   type StoredCancellation,
@@ -689,15 +690,34 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
               'sonra bildirin.',
           });
         }
-        // The evidence: a clean document linked to this booking. A claim that costs a member
-        // money and rests on nothing is a claim nobody can review.
+        // Match the server's provider boundary and retained canonical bytes check.
+        const property = world().properties.find(
+          (p) => p.tenantId === g.tenantId && p.id === booking.propertyId,
+        );
         const evidence = world().documentLinks.find(
           (l) =>
             l.tenantId === g.tenantId &&
             l.aggregateType === 'BOOKING' &&
             l.aggregateId === booking.id &&
+            l.documentTypeCode === 'NO_SHOW_EVIDENCE' &&
             (!body?.evidenceDocumentId || l.documentId === body.evidenceDocumentId) &&
-            world().documents.some((d) => d.id === l.documentId && d.scanStatus === 'CLEAN'),
+            world().documents.some((d) => {
+              if (d.tenantId !== g.tenantId || d.id !== l.documentId || !property) return false;
+              const stored = d.duplicateOfDocumentId
+                ? world().documents.find(
+                    (c) => c.tenantId === g.tenantId && c.id === d.duplicateOfDocumentId,
+                  )
+                : d;
+              return (
+                documentDownloadable(d) &&
+                (d.ownerOrganizationId === null ||
+                  d.ownerOrganizationId === property.providerOrganizationId) &&
+                !!stored &&
+                documentDownloadable(stored) &&
+                (stored.ownerOrganizationId === null ||
+                  stored.ownerOrganizationId === property.providerOrganizationId)
+              );
+            }),
         );
         if (!evidence) {
           return problem(
