@@ -11157,8 +11157,10 @@ type ReportNoShowRequest struct {
 	At *time.Time `json:"at,omitempty"`
 
 	// EvidenceDocumentId The document object the provider is pointing at. It must be linked to this
-	// booking and cleared by the scanner. Omitted, any clean document linked to the
-	// booking satisfies the gate; a booking with none is refused either way.
+	// booking as NO_SHOW_EVIDENCE. Both the linked and canonical objects must be
+	// CLEAN, secure, retained and owned by this property's provider or the tenant.
+	// Omitted, any linked document meeting those conditions satisfies the gate;
+	// a booking with none is refused either way.
 	EvidenceDocumentId *openapi_types.UUID `json:"evidenceDocumentId,omitempty"`
 }
 

@@ -323,9 +323,11 @@ export interface paths {
          *
          *     Two refusals happen here. A report before the check-in window has closed is
          *     NO_SHOW_TOO_EARLY: a guest who is late is not a guest who did not come. And a report
-         *     with no **clean** document linked to the booking is NO_SHOW_EVIDENCE_REQUIRED - a
-         *     claim that costs a member money and rests on nothing is a claim nobody can review, and
-         *     a link to a file still in quarantine is not a document a reviewer can open.
+         *     with no usable NO_SHOW_EVIDENCE document linked to the booking is
+         *     NO_SHOW_EVIDENCE_REQUIRED. Both the linked object and its canonical stored object
+         *     must be CLEAN, in the secure bucket, retained, and owned by the property's provider
+         *     or the tenant. A wrong document type, foreign provider, quarantined object or purged
+         *     canonical copy cannot support a fee review.
          *
          *     The assessed fee comes from the frozen policy's no-show rate applied to the member's
          *     own share, and `payerAmount + memberAmount == assessedFeeAmount` exactly. It is a claim
@@ -11796,8 +11798,10 @@ export interface components {
             /**
              * Format: uuid
              * @description The document object the provider is pointing at. It must be linked to this
-             *     booking and cleared by the scanner. Omitted, any clean document linked to the
-             *     booking satisfies the gate; a booking with none is refused either way.
+             *     booking as NO_SHOW_EVIDENCE. Both the linked and canonical objects must be
+             *     CLEAN, secure, retained and owned by this property's provider or the tenant.
+             *     Omitted, any linked document meeting those conditions satisfies the gate;
+             *     a booking with none is refused either way.
              */
             evidenceDocumentId?: string;
         };
