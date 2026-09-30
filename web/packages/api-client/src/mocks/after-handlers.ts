@@ -164,6 +164,7 @@ export interface AfterTools {
     checkOut: string,
     adults: number,
     children: number,
+    enrollmentId: string,
   ): StoredBooking | null;
   /** Confirms a hold, exactly as `confirmBooking` does. */
   confirmHold(tenantId: string, booking: StoredBooking): Response | null;
@@ -389,6 +390,7 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
           entry.checkOut,
           entry.adults,
           entry.children,
+          entry.enrollmentId,
         );
         if (!held) continue;
         entry.status = 'OFFERED';
@@ -933,7 +935,16 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
         if (!room) return problem(api, 404, 'ROOM_TYPE_NOT_FOUND', 'Oda tipi bulunamadı');
       }
       const enrollment = world().enrollments.find(
-        (e) => e.tenantId === g.tenantId && e.personId === whose.personId && e.status === 'ACTIVE',
+        (e) =>
+          e.tenantId === g.tenantId &&
+          e.personId === whose.personId &&
+          e.status === 'ACTIVE' &&
+          e.validFrom <= body.checkIn &&
+          (!e.validTo || body.checkIn < e.validTo) &&
+          (!body.programId || e.programId === body.programId) &&
+          world().programs.some(
+            (p) => p.tenantId === g.tenantId && p.id === e.programId && p.status === 'ACTIVE',
+          ),
       );
       if (!enrollment) {
         return problem(

@@ -1276,3 +1276,81 @@ func TestNoShowEvidenceBoundaries(t *testing.T) {
 		})
 	}
 }
+
+// A queued member already chose the enrollment that will fund the stay. The scheduler
+// must preserve that program rather than silently spending a different one.
+func TestWaitlistOfferKeepsSelectedProgram(t *testing.T) {
+	s := newServer(t)
+	s.grantNights(t, 10)
+	s.putLodgingTerms(t)
+	s.clock.At(t, insideFreeWindow)
+	ctx, cancel := s.h.Ctx()
+	defer cancel()
+	// The second active program intentionally has no lodging entitlement.
+	var otherProgram, otherPlan uuid.UUID
+	if err := s.h.Admin.QueryRow(ctx, `INSERT INTO benefit.program (tenant_id,sponsor_tenant_organization_id,payer_tenant_organization_id,code,name,program_type,status,valid_period)
+ SELECT tenant_id,sponsor_tenant_organization_id,payer_tenant_organization_id,'OTHER','Other program',program_type,status,valid_period FROM benefit.program WHERE tenant_id=$1 AND id=$2 RETURNING id`, s.tenant, s.program).Scan(&otherProgram); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.h.Admin.QueryRow(ctx, `INSERT INTO benefit.plan (tenant_id,program_id,code,name,status) VALUES ($1,$2,'OTHER','Other plan','ACTIVE') RETURNING id`, s.tenant, otherProgram).Scan(&otherPlan); err != nil {
+		t.Fatal(err)
+	}
+	s.h.AdminExec(`INSERT INTO benefit.plan_version (tenant_id,plan_id,version_no,status,valid_period) SELECT tenant_id,$3,1,'DRAFT',valid_period FROM benefit.plan_version WHERE tenant_id=$1 AND id=$2`, s.tenant, s.planVersion, otherPlan)
+	s.h.AdminExec(`UPDATE benefit.plan_version SET status='PUBLISHED',published_at=clock_timestamp(),published_by=$3 WHERE tenant_id=$1 AND plan_id=$2`, s.tenant, otherPlan, s.actor)
+	s.h.AdminExec(`INSERT INTO benefit.enrollment (tenant_id,sponsor_membership_id,plan_id,status,valid_period) SELECT tenant_id,sponsor_membership_id,$3,'ACTIVE',valid_period FROM benefit.enrollment WHERE tenant_id=$1 AND id=$2`, s.tenant, s.enrollment, otherPlan)
+	entry, err := s.svc.JoinWaitlist(ctx, s.memberContext(), application.JoinWaitlistInput{
+		PersonID: s.person, PropertyID: s.property, RoomTypeID: &s.roomType, ProgramID: &s.program,
+		CheckIn: mustDay(checkIn), CheckOut: mustDay(checkOut), Adults: 2,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if entry.Entry.EnrollmentID != s.enrollment {
+		t.Fatal("join lost the selected enrollment")
+	}
+	offered, err := s.svc.OfferWaitlistRooms(ctx, s.clock.Now())
+	if err != nil || offered != 1 {
+		t.Fatalf("selected-program sweep offered %d: %v", offered, err)
+	}
+	recorded := s.waitlistEntry(t, entry.Entry.ID)
+	if recorded.OfferedBookingID == nil {
+		t.Fatal("missing offered booking")
+	}
+	held, err := s.svc.GetBooking(ctx, s.memberContext(), *recorded.OfferedBookingID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if held.Booking.EnrollmentID != s.enrollment || held.Booking.ProgramID != s.program {
+		t.Fatal("offer used another program")
+	}
+	if _, err := s.svc.CancelWaitlistEntry(ctx, s.memberContext(), entry.Entry.ID); err != nil {
+		t.Fatal(err)
+	}
+	available, reserved, consumed := s.balances(t)
+	if available != "12.000000" || reserved != "0.000000" || consumed != "0.000000" {
+		t.Fatalf("cancelling offer left %s/%s/%s", available, reserved, consumed)
+	}
+	s.assertConservation(t, "selected-program waitlist cancellation")
+	// An unfunded selection must stay waiting, not fall back to the funded program.
+	unfunded, err := s.svc.JoinWaitlist(ctx, s.memberContext(), application.JoinWaitlistInput{
+		PersonID: s.person, PropertyID: s.property, RoomTypeID: &s.roomType, ProgramID: &otherProgram,
+		CheckIn: mustDay(checkIn), CheckOut: mustDay(checkOut), Adults: 2,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if unfunded.Entry.EnrollmentID == s.enrollment {
+		t.Fatal("join ignored the other program")
+	}
+	offered, err = s.svc.OfferWaitlistRooms(ctx, s.clock.Now())
+	if err != nil || offered != 0 {
+		t.Fatalf("unfunded selected program silently fell back: offered=%d err=%v", offered, err)
+	}
+	if s.waitlistStatus(t, unfunded.Entry.ID) != application.WaitlistWaiting {
+		t.Fatal("unfunded selection did not stay waiting")
+	}
+	available, reserved, consumed = s.balances(t)
+	if available != "12.000000" || reserved != "0.000000" || consumed != "0.000000" {
+		t.Fatalf("unselected program changed: %s/%s/%s", available, reserved, consumed)
+	}
+}

@@ -462,6 +462,18 @@ func (s *Service) expireWaitlistOffers(ctx context.Context, rc identity.RequestC
 // refusal is exactly what "this entry's turn has not come" means -- so it is passed over
 // silently and the next entry is tried.
 func (s *Service) offerOne(ctx context.Context, rc identity.RequestContext, entry WaitlistRecord) (bool, error) {
+	var programID uuid.UUID
+	err := s.withTx(ctx, rc, func(ctx context.Context, tx pgx.Tx) error {
+		var err error
+		programID, err = s.bookings.WaitlistEnrollmentProgram(ctx, tx, rc.TenantID, entry.ID)
+		return err
+	})
+	if errors.Is(err, ErrEnrollmentNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
 	roomTypes, err := s.offerCandidates(ctx, rc, entry)
 	if err != nil {
 		return false, err
@@ -469,6 +481,7 @@ func (s *Service) offerOne(ctx context.Context, rc identity.RequestContext, entr
 	for _, roomTypeID := range roomTypes {
 		view, err := s.CreateHold(ctx, rc, HoldInput{
 			PersonID: entry.PersonID, RoomTypeID: roomTypeID,
+			ProgramID: &programID, ExpectedEnrollmentID: &entry.EnrollmentID,
 			CheckIn: entry.CheckIn, CheckOut: entry.CheckOut,
 			Adults: entry.Adults, Children: entry.Children,
 			Channel: domain.ChannelBackoffice,

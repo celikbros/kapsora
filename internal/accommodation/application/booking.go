@@ -72,8 +72,10 @@ type HoldInput struct {
 	Adults     int
 	Children   int
 	ProgramID  *uuid.UUID
-	Guests     []GuestInput
-	Channel    string
+	// ExpectedEnrollmentID pins scheduler offers to the queue entry; never set by HTTP input.
+	ExpectedEnrollmentID *uuid.UUID
+	Guests               []GuestInput
+	Channel              string
 }
 
 // BookingView is a booking with its nights and its guests.
@@ -249,6 +251,9 @@ func (s *Service) prepareHold(ctx context.Context, rc identity.RequestContext, i
 			checkIn, in.ProgramID)
 		if err != nil {
 			return err
+		}
+		if in.ExpectedEnrollmentID != nil && plan.EnrollmentID != *in.ExpectedEnrollmentID {
+			return ErrEnrollmentNotFound
 		}
 		out.plan = plan
 

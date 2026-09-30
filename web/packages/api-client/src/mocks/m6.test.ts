@@ -1634,6 +1634,58 @@ describe('a no-show', () => {
 });
 
 describe('the waiting list', () => {
+  it('keeps an unfunded selected program waiting rather than spending another program', async () => {
+    const s = await signIn('reservation.a');
+    const person = personByFirstName('Kaan');
+    const room = roomTypeByCode('STD_DBL');
+    const checkIn = freeNight(room.id, 64);
+    const funded = api.world.enrollments.find(
+      (e) => e.tenantId === s.tenantId && e.personId === person.id && e.status === 'ACTIVE',
+    )!;
+    const program = api.world.programs.find((p) => p.id === funded.programId)!;
+    const unfundedProgram = { ...program, id: api.world.nextId(), code: 'UNFUNDED' };
+    api.world.programs.push(unfundedProgram);
+    const plan = api.world.plans.find((p) => p.id === funded.planId)!;
+    const unfundedPlan = {
+      ...plan,
+      id: api.world.nextId(),
+      programId: unfundedProgram.id,
+      code: 'UNFUNDED',
+    };
+    api.world.plans.push(unfundedPlan);
+    const unfunded = {
+      ...funded,
+      id: api.world.nextId(),
+      programId: unfundedProgram.id,
+      planId: unfundedPlan.id,
+    };
+    api.world.enrollments.push(unfunded);
+    const joined = (
+      await unwrap(
+        s.c.POST('/api/v1/accommodation/waitlist', {
+          params: { header: { ...tenant(s), 'Idempotency-Key': key() } },
+          body: {
+            personId: person.id,
+            propertyId: room.propertyId,
+            roomTypeId: room.id,
+            checkIn,
+            checkOut: addDays(checkIn, 3),
+            adults: 2,
+            programId: unfundedProgram.id,
+          },
+        }),
+      )
+    ).data;
+    expect(joined.enrollmentId).toBe(unfunded.id);
+    await unwrap(s.c.GET('/api/v1/accommodation/waitlist', { params: { header: tenant(s) } }));
+    const row = api.world.waitlistEntries.find((e) => e.id === joined.id)!;
+    expect(row.status).toBe('WAITING');
+    expect(row.offeredBookingId).toBeNull();
+    expect(
+      api.world.bookings.filter((b) => b.personId === person.id && b.checkIn === checkIn),
+    ).toEqual([]);
+  });
+
   /**
    * The acceptance criterion of the queue: a freed room reaches the front of it without
    * anybody watching, and priority beats arrival order.

@@ -335,3 +335,16 @@ SELECT id
    AND property_id = sqlc.arg('property_id')
    AND status = 'ACTIVE'
  ORDER BY code, id;
+
+-- name: GetWaitlistEnrollmentProgram :one
+-- An offer must use the enrollment selected when joining, never another active program.
+SELECT pl.program_id
+  FROM accommodation.waitlist_entry w
+  JOIN benefit.enrollment e ON e.tenant_id = w.tenant_id AND e.id = w.enrollment_id
+  JOIN party.sponsor_membership m ON m.tenant_id = e.tenant_id AND m.id = e.sponsor_membership_id
+  JOIN benefit.plan pl ON pl.tenant_id = e.tenant_id AND pl.id = e.plan_id
+  JOIN benefit.program pr ON pr.tenant_id = pl.tenant_id AND pr.id = pl.program_id
+ WHERE w.tenant_id = sqlc.arg('tenant_id') AND w.id = sqlc.arg('entry_id')
+   AND w.status = 'WAITING' AND m.person_id = w.person_id
+   AND e.status = 'ACTIVE' AND pr.status = 'ACTIVE'
+   AND e.valid_period @> w.check_in;
