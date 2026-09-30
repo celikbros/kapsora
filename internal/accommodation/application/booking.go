@@ -559,31 +559,7 @@ func (s *Service) giveBackRoom(ctx context.Context, tx pgx.Tx, rc identity.Reque
 		record.CheckIn, record.LastNight(), -1); err != nil {
 		return err
 	}
-	if record.EntitlementReservationID == nil {
-		return nil
-	}
-	// The room spans every booked night, but the ledger holds only the part the
-	// plan carries. Releasing the full stay would exceed a partial reservation and
-	// strand the member's balance after the booking has already been closed.
-	snapshot, err := decodeQuoteSnapshot(record.QuoteSnapshot)
-	if err != nil {
-		return err
-	}
-	quantity, err := benefitdomain.ParseQuantity(fmt.Sprintf("%d", snapshot.CoveredNights))
-	if err != nil {
-		return fmt.Errorf("accommodation: night quantity: %w", err)
-	}
-	_, err = s.ledger.Release(ctx, tx, ledger.MovementInput{
-		TenantID: rc.TenantID, ReservationID: *record.EntitlementReservationID,
-		Quantity: quantity, Key: bookingReleaseKey(record.ID, reason),
-		ReasonCode: reason, ActorID: rc.Principal.ActorID,
-	})
-	switch {
-	case errors.Is(err, ledger.ErrIdempotentReplay), errors.Is(err, ledger.ErrReservationClosed):
-		return nil
-	default:
-		return err
-	}
+	return s.releaseReservationOnly(ctx, tx, rc, record, reason)
 }
 
 // GetBooking returns one booking with its nights and its guests, inside the caller's own

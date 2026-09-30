@@ -357,12 +357,10 @@ test('abandoning a partly covered live hold returns only its reserved entitlemen
       key,
     });
     id = held.data.id;
-    await test
-      .info()
-      .attach('pc06-partial-release', {
-        contentType: 'application/json',
-        body: JSON.stringify({ bookingId: id }),
-      });
+    await test.info().attach('pc06-partial-release', {
+      contentType: 'application/json',
+      body: JSON.stringify({ bookingId: id }),
+    });
     expect(
       (await member.call<S<'Booking'>>('POST', root + '/holds', body, { expected: 201, key })).data,
     ).toEqual(held.data);

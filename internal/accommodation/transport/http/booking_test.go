@@ -1353,7 +1353,7 @@ func (s *server) seedConcurrencyWorld(t *testing.T, people, rooms int) uuid.UUID
 // A partly covered stay reserves only the covered nights. All ways of abandoning a
 // hold must return that exact amount, rather than asking the ledger for the entire stay.
 func TestPartiallyCoveredHoldReturnsOnlyReservedNights(t *testing.T) {
-	for _, terminal := range []string{"release", "expiry", "rejection"} {
+	for _, terminal := range []string{"release", "expiry", "rejection", "pending cancellation"} {
 		t.Run(terminal, func(t *testing.T) {
 			s := newServer(t)
 			s.putLodgingTerms(t)
@@ -1385,6 +1385,16 @@ func TestPartiallyCoveredHoldReturnsOnlyReservedNights(t *testing.T) {
 				}
 				if count, err := s.svc.ExpireHolds(ctx, time.Now().UTC()); err != nil || count != 0 {
 					t.Fatalf("repeat expire = %d, %v", count, err)
+				}
+			case "pending cancellation":
+				if _, err := s.svc.ConfirmBooking(ctx, s.memberContext(), view.Booking.ID); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := s.svc.CancelBooking(ctx, s.memberContext(), view.Booking.ID, ""); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := s.svc.CancelBooking(ctx, s.memberContext(), view.Booking.ID, ""); err == nil {
+					t.Fatal("duplicate cancellation accepted")
 				}
 			case "rejection":
 				confirmed, err := s.svc.ConfirmBooking(ctx, s.memberContext(), view.Booking.ID)
