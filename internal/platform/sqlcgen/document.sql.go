@@ -12,6 +12,49 @@ import (
 	"github.com/google/uuid"
 )
 
+const bookingEvidenceLinkAllowed = `-- name: BookingEvidenceLinkAllowed :one
+SELECT EXISTS (
+    SELECT 1
+      FROM accommodation.booking b
+      JOIN accommodation.property p ON p.tenant_id = b.tenant_id AND p.id = b.property_id
+      JOIN document.object o ON o.tenant_id = b.tenant_id AND o.id = $1
+      JOIN document.object stored ON stored.tenant_id = o.tenant_id
+           AND stored.id = COALESCE(o.duplicate_of_object_id, o.id)
+     WHERE b.tenant_id = $2 AND b.id = $3
+       AND b.status = 'CONFIRMED'
+       AND p.provider_organization_id = ANY($4::uuid[])
+       AND o.owner_tenant_organization_id = p.provider_organization_id
+       AND stored.owner_tenant_organization_id = p.provider_organization_id
+       AND o.classification <> 'HEALTH' AND stored.classification <> 'HEALTH'
+       AND o.purged_at IS NULL AND stored.purged_at IS NULL
+       AND NOT EXISTS (
+           SELECT 1 FROM document.link l WHERE l.tenant_id = o.tenant_id
+             AND l.object_id IN (o.id, stored.id) AND l.required_permission IS NOT NULL
+       )
+) AS allowed
+`
+
+type BookingEvidenceLinkAllowedParams struct {
+	DocumentID uuid.UUID
+	TenantID   uuid.UUID
+	BookingID  uuid.UUID
+	ScopeIds   []uuid.UUID
+}
+
+// A narrow desk grant never becomes tenant-wide when organization scope is absent.
+// Linking can precede scanning; reportNoShow separately requires retained CLEAN bytes.
+func (q *Queries) BookingEvidenceLinkAllowed(ctx context.Context, arg BookingEvidenceLinkAllowedParams) (bool, error) {
+	row := q.db.QueryRow(ctx, bookingEvidenceLinkAllowed,
+		arg.DocumentID,
+		arg.TenantID,
+		arg.BookingID,
+		arg.ScopeIds,
+	)
+	var allowed bool
+	err := row.Scan(&allowed)
+	return allowed, err
+}
+
 const createDocumentLegalHold = `-- name: CreateDocumentLegalHold :one
 INSERT INTO document.legal_hold (
     tenant_id, object_id, person_id, aggregate_type, aggregate_id, reason, placed_by)

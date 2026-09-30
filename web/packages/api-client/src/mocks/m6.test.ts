@@ -1398,6 +1398,109 @@ describe('check-in and check-out', () => {
 
 describe('a no-show', () => {
   it.each([
+    ['own clean evidence', 201],
+    ['scanning evidence', 201],
+    ['own duplicate', 201],
+    ['pending booking', 404],
+    ['other provider target', 404],
+    ['other provider document', 404],
+    ['health document', 404],
+    ['restricted document', 404],
+    ['purged canonical', 404],
+    ['foreign canonical', 404],
+    ['health canonical', 404],
+    ['unknown target', 404],
+    ['absent scope', 404],
+    ['empty scope', 404],
+    ['wrong type', 403],
+    ['wrong aggregate', 403],
+    ['sets permission', 403],
+    ['missing grant', 403],
+  ] as const)('limits a proposed desk evidence grant: %s', async (kind, status) => {
+    const admin = await signIn('admin.a');
+    const booking = await confirmedStay(
+      admin,
+      personByFirstName('Kaan').id,
+      roomTypeByCode('STD_DBL').id,
+    );
+    const property = api.world.properties.find((p) => p.id === booking.propertyId)!;
+    const template = api.world.documents.find(
+      (d) => d.scanStatus === 'CLEAN' && d.bucket === 'secure' && !d.purgedAt,
+    )!;
+    const doc: StoredDocument = {
+      ...template,
+      id: api.world.nextId(),
+      tenantId: admin.tenantId,
+      ownerOrganizationId: property.providerOrganizationId,
+      classification: 'INTERNAL',
+      duplicateOfDocumentId: null,
+      purgedAt: null,
+    };
+    api.world.documents.push(doc);
+    const desk = await signIn('reservation.a');
+    const membership = api.session!.account.memberships.find((m) => m.tenantCode === 'DEMO_A')!;
+    // Test-only grant. The production/default mock role remains unchanged pending approval.
+    if (kind !== 'missing grant')
+      membership.permissions = [...membership.permissions, 'document.booking_evidence.link'];
+    if (kind === 'absent scope') membership.scopes = [];
+    if (kind === 'empty scope') membership.scopes = [{ type: 'ORGANIZATION', id: null }];
+    if (kind === 'pending booking')
+      api.world.bookings.find((b) => b.id === booking.id)!.status = 'PENDING_APPROVAL';
+    if (kind === 'other provider target') property.providerOrganizationId = api.world.nextId();
+    if (kind === 'other provider document') doc.ownerOrganizationId = api.world.nextId();
+    if (kind === 'health document') doc.classification = 'HEALTH';
+    if (kind === 'scanning evidence') {
+      doc.scanStatus = 'SCANNING';
+      doc.bucket = 'quarantine';
+    }
+    if (kind === 'restricted document')
+      api.world.documentLinks.push({
+        ...api.world.documentLinks[0]!,
+        id: api.world.nextId(),
+        documentId: doc.id,
+        tenantId: desk.tenantId,
+        requiredPermission: 'health.clinical.read',
+      });
+    if (
+      kind === 'own duplicate' ||
+      kind === 'purged canonical' ||
+      kind === 'foreign canonical' ||
+      kind === 'health canonical'
+    ) {
+      const canonical = { ...doc, id: api.world.nextId() };
+      if (kind === 'purged canonical') canonical.purgedAt = new Date().toISOString();
+      if (kind === 'foreign canonical') canonical.ownerOrganizationId = api.world.nextId();
+      if (kind === 'health canonical') canonical.classification = 'HEALTH';
+      api.world.documents.push(canonical);
+      doc.duplicateOfDocumentId = canonical.id;
+    }
+    const result = await desk.c.POST('/api/v1/documents/{documentId}/links', {
+      params: {
+        header: { ...tenant(desk), 'Idempotency-Key': key() },
+        path: { documentId: doc.id },
+      },
+      body: {
+        aggregateType: kind === 'wrong aggregate' ? 'MEDICAL_REPORT' : 'BOOKING',
+        aggregateId: kind === 'unknown target' ? randomId() : booking.id,
+        documentTypeCode: kind === 'wrong type' ? 'INVOICE' : 'NO_SHOW_EVIDENCE',
+        ...(kind === 'sets permission' ? { requiredPermission: 'health.clinical.read' } : {}),
+      },
+    });
+    expect(result.response.status).toBe(status);
+    const links = api.world.documentLinks.filter(
+      (l) => l.documentId === doc.id && l.aggregateId === booking.id,
+    );
+    expect(links).toHaveLength(status === 201 ? 1 : 0);
+    if (status === 201) {
+      const removed = await desk.c.DELETE('/api/v1/documents/{documentId}/links/{linkId}', {
+        params: { header: tenant(desk), path: { documentId: doc.id, linkId: links[0]!.id } },
+      });
+      expect(removed.response.status).toBe(403);
+      expect(api.world.documentLinks.some((l) => l.id === links[0]!.id)).toBe(true);
+    }
+  });
+
+  it.each([
     ['own provider', true],
     ['tenant document', true],
     ['retained duplicate', true],

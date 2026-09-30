@@ -28,6 +28,24 @@ type NewLinkInput struct {
 func (s *Service) LinkDocument(ctx context.Context, rc identity.RequestContext,
 	documentID uuid.UUID, in NewLinkInput,
 ) (LinkRecord, error) {
+	return s.linkDocument(ctx, rc, documentID, in, false)
+}
+
+// LinkBookingEvidence is the desk's narrow alternative to the general document.link grant.
+// The repository checks both ends of the link in this transaction, not just the object.
+func (s *Service) LinkBookingEvidence(ctx context.Context, rc identity.RequestContext,
+	documentID uuid.UUID, in NewLinkInput,
+) (LinkRecord, error) {
+	if !rc.Has(PermissionBookingEvidenceLink) || in.AggregateType != "BOOKING" ||
+		in.DocumentTypeCode != "NO_SHOW_EVIDENCE" || in.RequiredPermission != "" {
+		return LinkRecord{}, identity.ErrPermissionDenied
+	}
+	return s.linkDocument(ctx, rc, documentID, in, true)
+}
+
+func (s *Service) linkDocument(ctx context.Context, rc identity.RequestContext,
+	documentID uuid.UUID, in NewLinkInput, bookingEvidenceOnly bool,
+) (LinkRecord, error) {
 	if err := domain.ValidateLink(in.AggregateType, in.DocumentTypeCode, in.Purpose,
 		in.RequiredPermission); err != nil {
 		return LinkRecord{}, err
@@ -41,6 +59,15 @@ func (s *Service) LinkDocument(ctx context.Context, rc identity.RequestContext,
 		object, err := s.repo.GetObject(ctx, tx, rc.TenantID, documentID, scopeOf(rc))
 		if err != nil {
 			return err
+		}
+		if bookingEvidenceOnly {
+			allowed, err := s.repo.BookingEvidenceLinkAllowed(ctx, tx, rc.TenantID, in.AggregateID, object.ID, scopeOf(rc))
+			if err != nil {
+				return err
+			}
+			if !allowed {
+				return ErrObjectNotFound
+			}
 		}
 		out, err = s.repo.CreateLink(ctx, tx, rc.TenantID, NewLinkRow{
 			ObjectID: object.ID, AggregateType: in.AggregateType, AggregateID: in.AggregateID,

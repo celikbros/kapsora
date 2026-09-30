@@ -2152,6 +2152,15 @@ export interface paths {
          *     document may be linked to several records, which is what stops the same file being
          *     uploaded once per place it is needed.
          *
+         *     Requires document.link. A caller holding only document.booking_evidence.link may
+         *     instead attach NO_SHOW_EVIDENCE to a CONFIRMED BOOKING at a provider in its explicit
+         *     organization scope. Both the document and its canonical object must belong to that
+         *     provider, be retained and non-HEALTH, with no permission-restricted existing link.
+         *     Scanning may still be in progress; reporting the no-show separately requires CLEAN
+         *     evidence. This narrow grant cannot set requiredPermission or remove links, and
+         *     cannot attach another document type or target another kind of record. Inaccessible
+         *     documents and booking targets both answer DOCUMENT_NOT_FOUND.
+         *
          *     requiredPermission narrows who may download through the link. Every link on a
          *     document is checked, so attaching a file to a clinical record makes it clinical
          *     everywhere rather than only when reached from that record.
