@@ -2,6 +2,7 @@
 // environment and is idempotent: running it twice leaves one set of data.
 //
 //	seed account <username> <display name> [email]   one login with a random password
+//	seed hotel-billing  explicit local DEMO_A hotel billing account fixture
 //	seed demo                                        tenants DEMO_A / DEMO_B, demo users, grants
 //	seed claim-review-rule <dedicated-person-id> [retire]  scoped local claim review fixture
 //	seed document-rule <dedicated-person-id> [retire]  scoped local acceptance fixture
@@ -174,6 +175,15 @@ func run(args []string) error {
 	}
 
 	switch args[0] {
+	case "hotel-billing":
+		if len(args) != 1 {
+			return fmt.Errorf("usage: seed hotel-billing")
+		}
+		result, err := s.hotelBilling(ctx, os.Getenv("KAPSORA_SEED_DEMO_PASSWORD"))
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(os.Stdout).Encode(result)
 	case "health-case-scope":
 		if len(args) != 3 {
 			return fmt.Errorf("usage: seed health-case-scope <source-claim-uuid> <fixture-uuid>")

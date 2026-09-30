@@ -7,6 +7,7 @@ type S<K extends keyof components['schemas']> = components['schemas'][K];
 
 const base = process.env['E2E_EXISTING_UI_URL'] ?? '';
 const root = '/api/v1/accommodation';
+const expireNaturally = process.env['E2E_LODGING_WAITLIST_EXPIRE'] === '1';
 test.use({ trace: 'off' });
 test.skip(
   process.env['E2E_REAL_API'] !== '1' || !base || process.env['E2E_LODGING_WAITLIST'] !== '1',
@@ -41,178 +42,244 @@ const balance = (a: S<'EntitlementAccount'>) => [
 const counts = (days: S<'InventoryDay'>[]) =>
   days.map((d) => [d.stayDate, d.capacity, d.held, d.confirmed, d.available]);
 
-test('real scheduler offers the selected enrollment once and leaving returns its room and nights', async () => {
-  test.setTimeout(420000);
-  expect(new URL(base).hostname).toMatch(/^(localhost|127\.0\.0\.1)$/);
-  const member = new Actor(await request.newContext(), 'member', true);
-  const desk = new Actor(await request.newContext(), 'provider', true);
-  let entryId = '';
-  let closed = false;
-  try {
-    await member.login('member.a');
-    await desk.login('reservation.a');
-    const me = (await member.call<S<'MyPerson'>>('GET', '/api/v1/me/person')).data;
-    const property = (
-      await member.call<S<'PropertyPage'>>('GET', root + '/properties?status=ACTIVE&limit=100')
-    ).data.items.find((p) => p.code === 'DEMO_OTEL');
-    expect(property).toBeDefined();
-    const entries = async () => {
-      const list = (
-        await member.call<S<'WaitlistEntryList'>>(
-          'GET',
-          root + `/waitlist?propertyId=${property!.id}&limit=200`,
-        )
-      ).data.items;
-      expect(list.length, 'do not rely on a truncated queue').toBeLessThan(200);
-      return list;
-    };
-    const current = (await entries()).filter(
-      (e) => e.status === 'WAITING' || e.status === 'OFFERED',
-    );
-    expect(current, 'finish existing member queue entries before creating another').toEqual([]);
-    const search = (
-      await member.call<S<'AvailabilitySearchResult'>>('POST', root + '/availability/search', {
+test(
+  expireNaturally
+    ? 'real scheduler expires an unaccepted offer and requeues without losing nights or rooms'
+    : 'real scheduler offers the selected enrollment once and leaving returns its room and nights',
+  async () => {
+    test.setTimeout(expireNaturally ? 1800000 : 420000);
+    expect(new URL(base).hostname).toMatch(/^(localhost|127\.0\.0\.1)$/);
+    const member = new Actor(await request.newContext(), 'member', true);
+    const desk = new Actor(await request.newContext(), 'provider', true);
+    let entryId = '';
+    let closed = false;
+    try {
+      await member.login('member.a');
+      await desk.login('reservation.a');
+      const me = (await member.call<S<'MyPerson'>>('GET', '/api/v1/me/person')).data;
+      const property = (
+        await member.call<S<'PropertyPage'>>('GET', root + '/properties?status=ACTIVE&limit=100')
+      ).data.items.find((p) => p.code === 'DEMO_OTEL');
+      expect(property).toBeDefined();
+      const entries = async () => {
+        const list = (
+          await member.call<S<'WaitlistEntryList'>>(
+            'GET',
+            root + `/waitlist?propertyId=${property!.id}&limit=200`,
+          )
+        ).data.items;
+        expect(list.length, 'do not rely on a truncated queue').toBeLessThan(200);
+        return list;
+      };
+      const current = (await entries()).filter(
+        (e) => e.status === 'WAITING' || e.status === 'OFFERED',
+      );
+      expect(current, 'finish existing member queue entries before creating another').toEqual([]);
+      const search = (
+        await member.call<S<'AvailabilitySearchResult'>>('POST', root + '/availability/search', {
+          propertyId: property!.id,
+          checkIn: day(20),
+          checkOut: day(22),
+          adults: 2,
+          children: 0,
+        })
+      ).data;
+      expect(search.eligible).toBe(true);
+      const room = search.results.find((r) => r.roomType.code === 'STD');
+      expect(room?.quote).toBeTruthy();
+      expect(room!.available).toBeGreaterThan(0);
+      const accounts = async () =>
+        (
+          await member.call<{ items: S<'EntitlementAccount'>[] }>(
+            'GET',
+            `/api/v1/people/${me.person.id}/entitlements?asOf=${search.checkIn}`,
+          )
+        ).data.items;
+      const before = (await accounts()).find(
+        (a) =>
+          a.definition.unitType === 'NIGHT' &&
+          a.definition.code === search.entitlement?.entitlementCode,
+      );
+      expect(before).toBeDefined();
+      const account = async () => (await accounts()).find((a) => a.id === before!.id)!;
+      const inventory = async () =>
+        (
+          await desk.call<S<'RoomTypeInventoryRange'>>(
+            'GET',
+            `${root}/room-types/${room!.roomType.id}/inventory?from=${day(20)}&to=${day(21)}`,
+          )
+        ).data.days;
+      const inventoryBefore = await inventory();
+      expect(inventoryBefore).toHaveLength(2);
+      const input = {
         propertyId: property!.id,
-        checkIn: day(20),
-        checkOut: day(22),
+        roomTypeId: room!.roomType.id,
+        checkIn: search.checkIn,
+        checkOut: search.checkOut,
         adults: 2,
         children: 0,
-      })
-    ).data;
-    expect(search.eligible).toBe(true);
-    const room = search.results.find((r) => r.roomType.code === 'STD');
-    expect(room?.quote).toBeTruthy();
-    expect(room!.available).toBeGreaterThan(0);
-    const accounts = async () =>
-      (
-        await member.call<{ items: S<'EntitlementAccount'>[] }>(
-          'GET',
-          `/api/v1/people/${me.person.id}/entitlements?asOf=${search.checkIn}`,
-        )
-      ).data.items;
-    const before = (await accounts()).find(
-      (a) =>
-        a.definition.unitType === 'NIGHT' &&
-        a.definition.code === search.entitlement?.entitlementCode,
-    );
-    expect(before).toBeDefined();
-    const account = async () => (await accounts()).find((a) => a.id === before!.id)!;
-    const inventory = async () =>
-      (
-        await desk.call<S<'RoomTypeInventoryRange'>>(
-          'GET',
-          `${root}/room-types/${room!.roomType.id}/inventory?from=${day(20)}&to=${day(21)}`,
-        )
-      ).data.days;
-    const inventoryBefore = await inventory();
-    expect(inventoryBefore).toHaveLength(2);
-    const input = {
-      propertyId: property!.id,
-      roomTypeId: room!.roomType.id,
-      checkIn: search.checkIn,
-      checkOut: search.checkOut,
-      adults: 2,
-      children: 0,
-    };
-    const key = randomUUID();
-    const joined = (
-      await member.call<S<'WaitlistEntry'>>('POST', root + '/waitlist', input, {
-        expected: 201,
-        key,
-      })
-    ).data;
-    entryId = joined.id;
-    await test.info().attach('pc06-waitlist-entry', {
-      contentType: 'application/json',
-      body: JSON.stringify({ entryId }),
-    });
-    expect(joined.enrollmentId).toBe(before!.enrollmentId);
-    expect(joined.priority).toBe(0);
-    expect(
-      (
+      };
+      const key = randomUUID();
+      const joined = (
         await member.call<S<'WaitlistEntry'>>('POST', root + '/waitlist', input, {
           expected: 201,
           key,
         })
-      ).data,
-    ).toEqual(joined);
-    await member.call('POST', root + '/waitlist', input, { expected: 409 });
-    // Observe the real five-minute scheduler. Do not call the sweep or alter production time.
-    await expect
-      .poll(async () => (await entries()).find((e) => e.id === entryId)?.status, {
-        timeout: 360000,
-        intervals: [5000],
-      })
-      .toBe('OFFERED');
-    const offered = (await entries()).find((e) => e.id === entryId)!;
-    const booking = offered.offer!;
-    expect(booking).toBeTruthy();
-    expect(booking.id).toBe(offered.offeredBookingId);
-    expect(booking.status).toBe('HOLD');
-    expect(booking.enrollmentId).toBe(joined.enrollmentId);
-    expect(new Date(booking.holdExpiresAt!).getTime()).toBe(
-      new Date(offered.offerExpiresAt!).getTime(),
-    );
-    expect(booking.quoteSnapshot.coveredNights).toBe(2);
-    expect(balance(await account())).toEqual([
-      units(before!.available) - 2000000n,
-      units(before!.reserved) + 2000000n,
-      units(before!.consumed),
-    ]);
-    expect(counts(await inventory())).toEqual(
-      inventoryBefore.map((d) => [
-        d.stayDate,
-        d.capacity,
-        d.held + 1,
-        d.confirmed,
-        d.available - 1,
-      ]),
-    );
-    const cancelKey = randomUUID();
-    const cancelled = (
-      await member.call<S<'WaitlistEntry'>>(
-        'POST',
-        `${root}/waitlist/${entryId}/cancel`,
-        undefined,
-        { key: cancelKey },
-      )
-    ).data;
-    closed = true;
-    expect(cancelled.status).toBe('CANCELLED');
-    expect(
-      (
+      ).data;
+      entryId = joined.id;
+      await test.info().attach('pc06-waitlist-entry', {
+        contentType: 'application/json',
+        body: JSON.stringify({ entryId }),
+      });
+      expect(joined.enrollmentId).toBe(before!.enrollmentId);
+      expect(joined.priority).toBe(0);
+      expect(
+        (
+          await member.call<S<'WaitlistEntry'>>('POST', root + '/waitlist', input, {
+            expected: 201,
+            key,
+          })
+        ).data,
+      ).toEqual(joined);
+      await member.call('POST', root + '/waitlist', input, { expected: 409 });
+      // Observe the real five-minute scheduler. Do not call the sweep or alter production time.
+      await expect
+        .poll(async () => (await entries()).find((e) => e.id === entryId)?.status, {
+          timeout: 360000,
+          intervals: [5000],
+        })
+        .toBe('OFFERED');
+      const offered = (await entries()).find((e) => e.id === entryId)!;
+      const booking = offered.offer!;
+      expect(booking).toBeTruthy();
+      expect(booking.id).toBe(offered.offeredBookingId);
+      expect(booking.status).toBe('HOLD');
+      expect(booking.enrollmentId).toBe(joined.enrollmentId);
+      expect(new Date(booking.holdExpiresAt!).getTime()).toBe(
+        new Date(offered.offerExpiresAt!).getTime(),
+      );
+      expect(booking.quoteSnapshot.coveredNights).toBe(2);
+      expect(balance(await account())).toEqual([
+        units(before!.available) - 2000000n,
+        units(before!.reserved) + 2000000n,
+        units(before!.consumed),
+      ]);
+      expect(counts(await inventory())).toEqual(
+        inventoryBefore.map((d) => [
+          d.stayDate,
+          d.capacity,
+          d.held + 1,
+          d.confirmed,
+          d.available - 1,
+        ]),
+      );
+      if (expireNaturally) {
+        const expiresAt = new Date(booking.holdExpiresAt!).getTime();
+        const remaining = expiresAt - Date.now();
+        expect(remaining).toBeGreaterThan(0);
+        expect(
+          remaining,
+          'do not silently wait beyond the normal demo hold window',
+        ).toBeLessThanOrEqual(20 * 60000);
+        // Only observe real time. Neither expiry nor requeue is invoked by this test.
+        process.stdout.write(
+          `[pc06] Observing natural expiry at ${new Date(expiresAt).toISOString()}\n`,
+        );
+        await test.info().attach('pc06-waitlist-expiry-source', {
+          contentType: 'application/json',
+          body: JSON.stringify({
+            entryId,
+            bookingId: booking.id,
+            expiresAt: booking.holdExpiresAt,
+          }),
+        });
+        await expect
+          .poll(
+            async () =>
+              (await member.call<S<'Booking'>>('GET', `${root}/bookings/${booking.id}`)).data
+                .status,
+            { timeout: remaining + 120000, intervals: [10000] },
+          )
+          .toBe('EXPIRED');
+        // The five-minute queue sweep may immediately offer another room to the same
+        // member. In either case, its queue timestamp must advance past the old offer.
+        await expect
+          .poll(
+            async () => {
+              const entry = (await entries()).find((e) => e.id === entryId)!;
+              return (
+                new Date(entry.createdAt).getTime() > new Date(joined.createdAt).getTime() &&
+                entry.offeredBookingId !== booking.id
+              );
+            },
+            { timeout: 360000, intervals: [5000] },
+          )
+          .toBe(true);
+        const requeued = (await entries()).find((e) => e.id === entryId)!;
+        expect(['WAITING', 'OFFERED']).toContain(requeued.status);
+        expect(requeued.enrollmentId).toBe(joined.enrollmentId);
+        if (requeued.offer) {
+          expect(requeued.offer.status).toBe('HOLD');
+          expect(requeued.offer.enrollmentId).toBe(joined.enrollmentId);
+        }
+        await test.info().attach('pc06-waitlist-requeued', {
+          contentType: 'application/json',
+          body: JSON.stringify({
+            entryId,
+            originalBookingId: booking.id,
+            reofferedBookingId: requeued.offeredBookingId ?? null,
+            status: requeued.status,
+          }),
+        });
+      }
+      const cancelKey = randomUUID();
+      const cancelled = (
         await member.call<S<'WaitlistEntry'>>(
           'POST',
           `${root}/waitlist/${entryId}/cancel`,
           undefined,
           { key: cancelKey },
         )
-      ).data,
-    ).toEqual(cancelled);
-    await member.call('POST', `${root}/waitlist/${entryId}/cancel`, undefined, { expected: 409 });
-    expect(balance(await account())).toEqual(balance(before!));
-    expect(counts(await inventory())).toEqual(counts(inventoryBefore));
-    expect(
-      (await member.call<S<'Booking'>>('GET', `${root}/bookings/${booking.id}`)).data.status,
-    ).toBe('CANCELLED');
-    const ledger = (
-      await member.call<S<'LedgerPage'>>(
-        'GET',
-        `/api/v1/entitlement-accounts/${before!.id}/ledger?limit=100`,
-      )
-    ).data;
-    expect(ledger.nextCursor).toBeFalsy();
-    const moves = ledger.items.filter((e) => e.reservationId === booking.entitlementReservationId);
-    expect(moves.map((e) => e.movementType).sort()).toEqual(['RELEASE', 'RESERVE']);
-    expect(moves.reduce((sum, e) => sum + units(e.deltaConsumed), 0n)).toBe(0n);
-    await test.info().attach('pc06-waitlist-release', {
-      contentType: 'application/json',
-      body: JSON.stringify({ entryId, bookingId: booking.id, accountId: before!.id }),
-    });
-  } finally {
-    // Only release this run's queue/hold; never cancel unrelated member entries.
-    if (entryId && !closed) await member.call('POST', `${root}/waitlist/${entryId}/cancel`);
-    await desk.close();
-    await member.close();
-  }
-});
+      ).data;
+      closed = true;
+      expect(cancelled.status).toBe('CANCELLED');
+      expect(
+        (
+          await member.call<S<'WaitlistEntry'>>(
+            'POST',
+            `${root}/waitlist/${entryId}/cancel`,
+            undefined,
+            { key: cancelKey },
+          )
+        ).data,
+      ).toEqual(cancelled);
+      await member.call('POST', `${root}/waitlist/${entryId}/cancel`, undefined, { expected: 409 });
+      expect(balance(await account())).toEqual(balance(before!));
+      expect(counts(await inventory())).toEqual(counts(inventoryBefore));
+      expect(
+        (await member.call<S<'Booking'>>('GET', `${root}/bookings/${booking.id}`)).data.status,
+      ).toBe(expireNaturally ? 'EXPIRED' : 'CANCELLED');
+      const ledger = (
+        await member.call<S<'LedgerPage'>>(
+          'GET',
+          `/api/v1/entitlement-accounts/${before!.id}/ledger?limit=100`,
+        )
+      ).data;
+      expect(ledger.nextCursor).toBeFalsy();
+      const moves = ledger.items.filter(
+        (e) => e.reservationId === booking.entitlementReservationId,
+      );
+      expect(moves.map((e) => e.movementType).sort()).toEqual(['RELEASE', 'RESERVE']);
+      expect(moves.reduce((sum, e) => sum + units(e.deltaConsumed), 0n)).toBe(0n);
+      await test.info().attach('pc06-waitlist-release', {
+        contentType: 'application/json',
+        body: JSON.stringify({ entryId, bookingId: booking.id, accountId: before!.id }),
+      });
+    } finally {
+      // Only release this run's queue/hold; never cancel unrelated member entries.
+      if (entryId && !closed) await member.call('POST', `${root}/waitlist/${entryId}/cancel`);
+      await desk.close();
+      await member.close();
+    }
+  },
+);
