@@ -22,6 +22,7 @@ import (
 const (
 	PermissionBookingCreate = "accommodation.booking.create"
 	PermissionBookingManage = "accommodation.booking.manage"
+	PermissionNoShowReview  = "accommodation.no_show.review"
 )
 
 // Errors of the booking half, mapped by the transport to problem codes.

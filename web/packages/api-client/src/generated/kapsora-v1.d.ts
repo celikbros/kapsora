@@ -359,9 +359,11 @@ export interface paths {
          *
          *     **The reviewer may not be the reporter.** It is refused with NO_SHOW_SAME_ACTOR, and a
          *     CHECK on the row refuses it again whatever reaches the table. The two sides are told
-         *     apart by scope: a provider clerk holds `accommodation.booking.manage` on an
-         *     ORGANIZATION grant and a payer reviewer holds it tenant-wide, and only the second is a
-         *     second pair of eyes.
+         *     apart by scope: the payer holds `accommodation.no_show.review` tenant-wide.
+         *     Legacy tenant-wide `accommodation.booking.manage` is also accepted. Provider and member
+         *     apps, PERSON bindings and any non-TENANT scope are refused with PERMISSION_DENIED,
+         *     even when the caller holds either permission. System PROGRAM_MANAGER receives only
+         *     the narrow review permission, not booking or inventory management.
          *
          *     The three answers do three different things. CONFIRMED closes the booking as NO_SHOW,
          *     frees the room for the rest of the allotment, consumes what the policy's rate says off

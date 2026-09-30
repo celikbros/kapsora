@@ -47,7 +47,7 @@ func RoleTemplates() []RoleTemplate {
 				"catalog.read", "catalog.manage", "pricing.quote", "authorization.manage", "fulfilment.record",
 				"voucher.redeem", "claim.read", "report.read", "report.export",
 				"worklist.read", "worklist.claim",
-				"accommodation.property.read", "accommodation.waitlist.manage",
+				"accommodation.property.read", "accommodation.waitlist.manage", "accommodation.no_show.review",
 				"notification.read"}},
 		{Code: "PLAN_PUBLISHER", Name: "Plan Onaylayıcı", Scope: ScopeTenant,
 			Description: "Plan sürümü yayınlar ve hak düzeltmelerini onaylar (checker).",

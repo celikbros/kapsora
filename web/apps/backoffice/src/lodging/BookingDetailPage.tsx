@@ -1,5 +1,5 @@
 import type { Booking, LodgingPolicySnapshot, NoShowResult } from '@kapsora/api-client';
-import { usePermission } from '@kapsora/auth';
+import { usePermission, useSelfPersonId } from '@kapsora/auth';
 import {
   formatDate,
   formatDateTime,
@@ -15,6 +15,7 @@ import {
   FormField,
   HelpHint,
   PageHeader,
+  OwnFileNotice,
   ProblemAlert,
   Spinner,
   Textarea,
@@ -234,7 +235,10 @@ function NoShowSection({ booking }: { booking: Booking }) {
 function NoShowReview({ booking, result }: { booking: Booking; result: NoShowResult }) {
   const { t } = useTranslation();
   const toast = useToast();
-  const canReview = usePermission('accommodation.booking.manage');
+  const canManage = usePermission('accommodation.booking.manage');
+  const canReviewNoShow = usePermission('accommodation.no_show.review');
+  const own = useSelfPersonId() === booking.personId;
+  const canReview = (canManage || canReviewNoShow) && !own;
   const review = useReviewNoShow(booking.id);
   const [comment, setComment] = useState('');
   const report = result.report;
@@ -280,6 +284,14 @@ function NoShowReview({ booking, result }: { booking: Booking; result: NoShowRes
         <>
           <dt className="text-fg-muted">{t('lodging.office.noShow.reviewedAt')}</dt>
           <dd>{formatDateTime(report.reviewedAt)}</dd>
+        </>
+      ) : null}
+      {report.status === 'REPORTED' && own ? (
+        <>
+          <dt className="text-fg-muted">{t('lodging.office.noShow.review')}</dt>
+          <dd>
+            <OwnFileNotice />
+          </dd>
         </>
       ) : null}
       {report.status === 'REPORTED' && canReview ? (

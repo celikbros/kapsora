@@ -215,7 +215,11 @@ func (h *Handler) ReportNoShow(w http.ResponseWriter, r *http.Request) {
 
 // ReviewNoShow serves POST /accommodation/bookings/{bookingId}/no-show/review.
 func (h *Handler) ReviewNoShow(w http.ResponseWriter, r *http.Request) {
-	rc, ok := h.require(w, r, application.PermissionBookingManage)
+	permission := application.PermissionNoShowReview
+	if caller, exists := identity.FromContext(r.Context()); exists && !caller.Has(permission) && caller.Has(application.PermissionBookingManage) {
+		permission = application.PermissionBookingManage
+	}
+	rc, ok := h.require(w, r, permission)
 	if !ok {
 		return
 	}

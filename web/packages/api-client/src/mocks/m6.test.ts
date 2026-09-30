@@ -1579,6 +1579,12 @@ describe('a no-show', () => {
    * filed it may not be the person who decides it.
    */
   it('leaves the booking alone until a second person confirms it', async () => {
+    const manager = api.world.accounts.find((a) => a.username === 'admin.a')!;
+    for (const membership of manager.memberships) {
+      membership.permissions = membership.permissions.filter(
+        (p) => p !== 'accommodation.booking.manage',
+      );
+    }
     const payer = await signIn('admin.a');
     const seeded = api.world.noShows[0]!;
     const booking = api.world.bookings.find((b) => b.id === seeded.bookingId)!;
@@ -1632,6 +1638,27 @@ describe('a no-show', () => {
     expect(reviewed.booking.status).toBe('NO_SHOW');
     expect(reviewed.report.consumedNights).toBeGreaterThan(0);
   });
+});
+
+it('refuses a different hotel clerk reviewing the reported no-show', async () => {
+  const desk = await signIn('reservation.a');
+  const report = api.world.noShows.find((n) => n.status === 'REPORTED')!;
+  report.reportedByActorId = randomId();
+  const booking = api.world.bookings.find((b) => b.id === report.bookingId)!;
+  const before = structuredClone({ report, booking });
+  const denied = await refusal(
+    unwrap(
+      desk.c.POST('/api/v1/accommodation/bookings/{bookingId}/no-show/review', {
+        params: {
+          header: { ...tenant(desk), 'Idempotency-Key': key() },
+          path: { bookingId: booking.id },
+        },
+        body: { status: 'CONFIRMED' },
+      }),
+    ),
+  );
+  expect(denied.code).toBe('PERMISSION_DENIED');
+  expect({ report, booking }).toEqual(before);
 });
 
 describe('the waiting list', () => {

@@ -1460,6 +1460,7 @@ const ADMIN_PERMISSIONS = [
   // The back office books for a member who telephoned. `booking.manage` and not
   // `booking.create`: the first is holding a room for somebody else, which is exactly what a
   // desk does, and the second is a member booking for themselves.
+  'accommodation.no_show.review',
   'accommodation.booking.manage',
 ];
 const REVIEWER_PERMISSIONS = [
