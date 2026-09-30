@@ -20,7 +20,7 @@ export class Actor {
     path: string,
     body?: unknown,
     options: {
-      expected?: number;
+      expected?: number | readonly number[];
       etag?: string;
       key?: string;
       access?: { purpose?: string; reason?: string; projection?: 'FINANCIAL' };
@@ -45,27 +45,39 @@ export class Actor {
       },
       ...(body === undefined ? {} : { data: body }),
     };
-    let response = await this.context.fetch(base + path, requestOptions);
+    const expected = Array.isArray(options.expected) ? options.expected : [options.expected ?? 200];
+    const fetch = async () => {
+      try {
+        return await this.context.fetch(base + path, { ...requestOptions, timeout: 30_000 });
+      } catch {
+        // Playwright's transport error embeds request headers, including session/CSRF.
+        // Keep credentials out of failure reports as well as ordinary attachments.
+        throw new Error(`Transport failed: ${method} ${path.split('?')[0]}`);
+      }
+    };
+    let response = await fetch();
     // Opt-in for long acceptance flows: honor server backpressure with the exact same
     // command key/body/ETag, never by raising limits or replaying other failures.
     for (
       let retry = 0;
-      this.retryRateLimit && options.expected !== 429 && response.status() === 429 && retry < 3;
+      this.retryRateLimit && !expected.includes(429) && response.status() === 429 && retry < 3;
       retry++
     ) {
       const seconds = Number(response.headers()['retry-after']);
       if (!Number.isFinite(seconds) || seconds <= 0 || seconds > 30) break;
       await delay(seconds * 1000);
-      response = await this.context.fetch(base + path, requestOptions);
+      response = await fetch();
     }
     const cookie = response
       .headersArray()
       .find((h) => h.name.toLowerCase() === 'set-cookie' && !h.value.startsWith('__Host-csrf'));
     if (cookie) this.cookie = cookie.value.split(';')[0]!;
     // Do not include response bodies: a failed auth request may carry sensitive detail.
-    expect(response.status(), `${method} ${path.split('?')[0]}`).toBe(options.expected ?? 200);
+    expect(expected, `${method} ${path.split('?')[0]} returned ${response.status()}`).toContain(
+      response.status(),
+    );
     const data = response.status() === 204 ? null : await response.json();
-    return { data: data as T, etag: response.headers()['etag'] ?? '' };
+    return { data: data as T, etag: response.headers()['etag'] ?? '', status: response.status() };
   }
   async login(username: string) {
     const login = await this.call<{ csrfToken: string }>('POST', '/api/v1/session/login', {
