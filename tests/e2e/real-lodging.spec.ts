@@ -389,3 +389,55 @@ test('abandoning a partly covered live hold returns only its reserved entitlemen
     await member.close();
   }
 });
+
+test('edited lodging search cannot act on an old quote', async ({ browser }) => {
+  expect(new URL(base).hostname).toMatch(/^(localhost|127\.0\.0\.1)$/);
+  const page = await browser.newPage({ locale: 'tr-TR', timezoneId: 'Europe/Istanbul' });
+  const member = new Actor(page.request, 'member', true);
+  const attemptedWrites: string[] = [];
+  try {
+    await member.login('member.a');
+    await page.route('**/api/v1/accommodation/**', async (route) => {
+      const req = route.request();
+      if (req.method() !== 'GET' && !new URL(req.url()).pathname.endsWith('/availability/search')) {
+        attemptedWrites.push(new URL(req.url()).pathname);
+        await route.abort();
+      } else await route.continue();
+    });
+    const properties = (
+      await member.call<S<'PropertyPage'>>('GET', root + '/properties?status=ACTIVE&limit=100')
+    ).data;
+    const property = properties.items.find((p) => p.code === 'DEMO_OTEL');
+    expect(property).toBeDefined();
+    await page.goto(base + '/uye/search');
+    await page.getByLabel(/^Giriş/).fill(day(30));
+    await page.getByLabel(/^Çıkış/).fill(day(33));
+    await page.getByLabel(/^Nerede/).selectOption('property:' + property!.id);
+    await page.getByRole('button', { name: 'Ara', exact: true }).click();
+    const row = page.getByTestId('room-row').filter({ hasText: 'Standart oda' });
+    await row.getByRole('button', { name: 'Seç', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Odayı tut', exact: true })).toBeVisible();
+    await page.getByLabel(/^Yetişkin/).fill('1');
+    await expect(page.getByTestId('room-list')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Odayı tut', exact: true })).toHaveCount(0);
+    await page.getByLabel(/^Yetişkin/).fill('2');
+    await expect(page.getByTestId('room-list')).toHaveCount(0);
+    await mkdir('.impeccable/review/lodging', { recursive: true });
+    for (const width of [390, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await expect
+        .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
+        .toBe(true);
+      await page.screenshot({
+        path: `.impeccable/review/lodging/search-edited-${width}.png`,
+        fullPage: true,
+      });
+    }
+    await page.getByRole('button', { name: 'Ara', exact: true }).click();
+    await expect(page.getByTestId('room-list')).toBeVisible();
+    expect(attemptedWrites).toEqual([]);
+  } finally {
+    await member.close();
+    await page.close();
+  }
+});
