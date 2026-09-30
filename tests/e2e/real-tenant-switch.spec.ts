@@ -1,3 +1,4 @@
+import { setTimeout as delay } from 'node:timers/promises';
 import { expect, test, type Page } from '@playwright/test';
 import type { components } from '../../web/packages/api-client/src/generated/kapsora-v1';
 
@@ -42,14 +43,32 @@ async function exportsFor(page: Page, tenantId: string) {
 test('real tenant switching replaces export context and hides the previous tenant record', async ({
   page,
 }) => {
-  test.setTimeout(90000);
+  test.setTimeout(120000);
   expect(new URL(base).hostname).toMatch(/^(localhost|127\.0\.0\.1)$/);
   await page.goto(base + '/auth/login');
   await page.getByLabel(/^Kullanıcı adı/).fill('both.ab');
   await page
     .getByLabel(/^Parola/)
     .fill(process.env['KAPSORA_SEED_DEMO_PASSWORD'] ?? 'demo parola 2026 kapsora');
-  await page.getByRole('button', { name: 'Giriş yap', exact: true }).click();
+  // Combined acceptance shares the real per-address login limit. Only retry a
+  // rejected login, honoring the server's delay without changing its limits.
+  for (let attempt = 0; ; attempt++) {
+    const response = page.waitForResponse(
+      (r) =>
+        r.request().method() === 'POST' && new URL(r.url()).pathname === '/api/v1/session/login',
+    );
+    await page.getByRole('button', { name: 'Giriş yap', exact: true }).click();
+    const result = await response;
+    if (result.status() !== 429 || attempt === 3) {
+      expect(result.status(), 'browser login').toBe(200);
+      break;
+    }
+    const seconds = Number(result.headers()['retry-after']);
+    expect(Number.isFinite(seconds) && seconds > 0 && seconds <= 30, 'bounded Retry-After').toBe(
+      true,
+    );
+    await delay(seconds * 1000);
+  }
   await expect(page).toHaveURL(/auth\/tenant/);
   const tenantA = await choose(page, 'DEMO_A');
   const exportsA = await exportsFor(page, tenantA);
