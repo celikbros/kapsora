@@ -226,7 +226,7 @@ test('hotel desk checks in by voucher and checks out once, releasing unused nigh
     booking = await getBooking();
     expect(booking.status).toBe('COMPLETED');
     expect(booking.actualNights).toBe(1);
-    expect(booking.overBooking).toBe(false);
+    expect.soft(booking.overBooking).toBe(false);
     const after = await accountNow();
     await desk.call('POST', `${root}/bookings/${bookingId}/check-out`, {}, { expected: 409 });
     expect(await accountNow()).toEqual(after);
@@ -275,7 +275,31 @@ test('hotel desk checks in by voucher and checks out once, releasing unused nigh
     };
     await expect.poll(async () => (await claims()).length, { timeout: 45000 }).toBe(1);
     const claim = (await claims())[0]!;
-    const detail = (await finance.call<S<'Claim'>>('GET', `/api/v1/claims/${claim.id}`)).data;
+    const claimPath = `/api/v1/claims/${claim.id}`;
+    let reviewed = await finance.call<S<'Claim'>>('GET', claimPath);
+    // The worker records the frozen line decision, but a financial reviewer still
+    // closes every lodging claim. Resume a decided claim without another decision.
+    if (reviewed.data.status === 'PENDING_FINANCIAL') {
+      expect(reviewed.data.lines).toHaveLength(1);
+      const decision = reviewed.data.lines[0]!.decision;
+      expect(decision?.decision).toBe('APPROVED');
+      expect(micros(decision!.payerAmount)).toBe(micros(booking.nightlyAmounts[0]!.payerAmount));
+      expect(micros(decision!.memberAmount)).toBe(0n);
+      const notReady = await finance.call<S<'Problem'>>(
+        'GET',
+        claimPath + '/invoice-readiness',
+        undefined,
+        { expected: 409 },
+      );
+      expect(notReady.data.code).toBe('CLAIM_NOT_DECIDED');
+      reviewed = await finance.call<S<'Claim'>>(
+        'POST',
+        claimPath + '/approve',
+        { reasonCode: 'PC06_LODGING_REVIEW' },
+        { etag: reviewed.etag },
+      );
+    }
+    const detail = reviewed.data;
     expect(detail.status).toBe('APPROVED');
     expect(detail.lines).toHaveLength(1);
     expect(detail.lines[0]!.unitType).toBe('NIGHT');
