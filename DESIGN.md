@@ -822,6 +822,12 @@ one link and one plain description for reconciliation and exports. It reads the 
 tenant's grants, adds no report request of its own, and offers no financial decision action.
 The billing tab strip shows only lists the account may open.
 
+**Billing opens a permitted list.** Home and sidebar resolve the same destination for the
+active role. Reading figures does not imply authority to review, approve or pay. Show only
+permitted commands in valid states; changing account, tenant or grants closes open forms.
+References to inaccessible member or claim pages remain plain text. Optional name and
+catalog lookups without a read grant settle to their existing fallback without a request.
+
 **Wallets reuse member discovery.** The member list offers a direct entitlement-tab link;
 its URL keeps the selected tab on reload and history navigation. Ledger movements show
 changes in each balance bucket, so a transfer with no total change is still understandable.

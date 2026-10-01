@@ -41,6 +41,7 @@ import { PropertiesPage } from './lodging/PropertiesPage';
 import { PropertyDetailPage } from './lodging/PropertyDetailPage';
 import { WaitlistPage } from './lodging/WaitlistPage';
 import { BatchReviewListPage } from './billing/BatchReviewListPage';
+import { BillingAccess } from './billing/BillingAccess';
 import { BatchReviewPage } from './billing/BatchReviewPage';
 import { ReimbursementListPage } from './billing/ReimbursementListPage';
 import { ReimbursementPage } from './billing/ReimbursementPage';
@@ -253,34 +254,58 @@ const billingBatchesRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/billing/batches',
   validateSearch: statusSearch,
-  component: BatchReviewListPage,
+  component: () => (
+    <BillingAccess permission="invoice.read">
+      <BatchReviewListPage />
+    </BillingAccess>
+  ),
 });
 const billingBatchRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/billing/batches/$batchId',
-  component: BatchReviewPage,
+  component: () => (
+    <BillingAccess permission="invoice.read">
+      <BatchReviewPage />
+    </BillingAccess>
+  ),
 });
 const billingSettlementsRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/billing/settlements',
   validateSearch: statusSearch,
-  component: SettlementListPage,
+  component: () => (
+    <BillingAccess permission="settlement.read">
+      <SettlementListPage />
+    </BillingAccess>
+  ),
 });
 const billingSettlementRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/billing/settlements/$settlementId',
-  component: SettlementPage,
+  component: () => (
+    <BillingAccess permission="settlement.read">
+      <SettlementPage />
+    </BillingAccess>
+  ),
 });
 const billingReimbursementsRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/billing/reimbursements',
   validateSearch: statusSearch,
-  component: ReimbursementListPage,
+  component: () => (
+    <BillingAccess permission="claim.financial.review">
+      <ReimbursementListPage />
+    </BillingAccess>
+  ),
 });
 const billingReimbursementRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/billing/reimbursements/$reimbursementId',
-  component: ReimbursementPage,
+  component: () => (
+    <BillingAccess permission="claim.financial.review">
+      <ReimbursementPage />
+    </BillingAccess>
+  ),
 });
 const billingReconciliationRoute = createRoute({
   getParentRoute: () => appRoute,

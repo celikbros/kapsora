@@ -51,6 +51,10 @@ financial decisions without being offered clinical report access.
 The backoffice Reports entry leads staff with `report.read` to recorded reconciliation runs
 and export requests. Requesting or downloading exports remains a separate permission.
 
+The main Billing entry opens a list the active role can read: invoice batches, settlements
+or reimbursements. Approval, cancellation and payment controls require their own existing
+grants; reading a record alone does not enable a financial command.
+
 The wallet entry helps staff allowed to read members and entitlements find a person, open
 their balances and inspect account movements without changing those balances.
 

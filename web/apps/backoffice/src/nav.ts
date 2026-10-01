@@ -125,7 +125,6 @@ export const NAV_ENTRIES: NavEntry[] = [
     path: '/billing/batches',
     labelKey: 'nav.billing',
     implemented: true,
-    permission: 'settlement.read',
     match: '/billing',
   },
   {
@@ -178,12 +177,25 @@ export function canDiscoverWallets(permissions: readonly string[]): boolean {
   return permissions.includes('member.read') && permissions.includes('entitlement.read');
 }
 
+/** First billing list the active role can actually read. */
+export function billingLanding(permissions: readonly string[]): string | null {
+  if (permissions.includes('invoice.read')) return '/billing/batches';
+  if (permissions.includes('settlement.read')) return '/billing/settlements';
+  if (permissions.includes('claim.financial.review')) return '/billing/reimbursements';
+  return null;
+}
+
 /** The sidebar and home tiles must agree on which sections are reachable. */
 export function visibleNavEntries(permissions: readonly string[]): NavEntry[] {
-  return NAV_ENTRIES.filter((entry) => {
-    if (entry.key === 'health') return Object.values(healthAccess(permissions)).some(Boolean);
-    if (entry.key === 'wallets') return canDiscoverWallets(permissions);
-    return !entry.permission || permissions.includes(entry.permission);
+  return NAV_ENTRIES.flatMap((entry) => {
+    if (entry.key === 'health')
+      return Object.values(healthAccess(permissions)).some(Boolean) ? [entry] : [];
+    if (entry.key === 'wallets') return canDiscoverWallets(permissions) ? [entry] : [];
+    if (entry.key === 'billing') {
+      const path = billingLanding(permissions);
+      return path ? [{ ...entry, path }] : [];
+    }
+    return !entry.permission || permissions.includes(entry.permission) ? [entry] : [];
   });
 }
 
