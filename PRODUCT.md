@@ -44,6 +44,10 @@ It replaces spreadsheets, e-mail approvals and per-provider portals with one aud
 record shared by payer, provider and member, with tenant isolation enforced in the
 database (RLS), not just in the UI.
 
+The backoffice Health entry leads to the operator's existing medical or financial review
+work and record lists according to their active-tenant permissions. Financial staff enter
+financial decisions without being offered clinical report access.
+
 Success is a payer operator onboarding a provider, a provider checking eligibility and
 submitting a request, and a member seeing the result, without anyone leaving the
 product or asking whose data they are looking at.

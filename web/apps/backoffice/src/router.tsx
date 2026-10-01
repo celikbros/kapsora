@@ -23,6 +23,7 @@ import { ClaimDetailPage } from './claims/ClaimDetailPage';
 import { ClaimListPage, type ClaimListSearch } from './claims/ClaimListPage';
 import { ReportReviewListPage } from './health/ReportReviewListPage';
 import { ReportReviewPage } from './health/ReportReviewPage';
+import { HealthServicesPage } from './health/HealthServicesPage';
 import { RequestCreatePage } from './requests/RequestCreatePage';
 import { RequestDetailPage } from './requests/RequestDetailPage';
 import { RequestListPage, type RequestListSearch } from './requests/RequestListPage';
@@ -575,6 +576,11 @@ const importDetailRoute = createRoute({
 const soonRoutes = SOON_PATHS.map((path) =>
   createRoute({ getParentRoute: () => appRoute, path, component: SoonPage }),
 );
+const healthServicesRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/health-services',
+  component: HealthServicesPage,
+});
 
 const routeTree = rootRoute.addChildren([
   loginRoute,
@@ -623,6 +629,7 @@ const routeTree = rootRoute.addChildren([
     requestDetailRoute,
     claimsRoute,
     claimDetailRoute,
+    healthServicesRoute,
     lodgingPropertiesRoute,
     lodgingPropertyRoute,
     lodgingBookingsRoute,

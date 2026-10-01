@@ -303,6 +303,13 @@ two emphasising Açık bakiye — and it never nests inside a table.
 `Badge` tone union. Every app re-exports it rather than writing its own switch, so a
 member and an operator looking at the same record see the same colour.
 
+**A workflow entry offers only reachable work.** The backoffice Health entry is a compact
+list of existing review and record destinations, selected by the active tenant's grants.
+Medical and financial decisions have separate named links; a person without either reads
+only the record lists they can access. The sidebar and home use the same visibility rule.
+The entry loads no case/report/claim records and invents no summary figures. A direct visit
+without a usable grant explains the missing access instead of offering dead links.
+
 **A section navigation** is the tab-strip rule applied one level down: the main navigation
 names the section once, `BillingNav` names its five lists — İcmal incelemesi · Ödeme
 mutabakatları · Geri ödeme incelemesi · Günlük mutabakat · Dışa aktarım — as square

@@ -98,7 +98,7 @@ export const NAV_ENTRIES: NavEntry[] = [
     implemented: true,
     permission: 'service_request.read',
   },
-  { key: 'health', path: '/health-services', labelKey: 'nav.health', implemented: false },
+  { key: 'health', path: '/health-services', labelKey: 'nav.health', implemented: true },
   {
     key: 'lodging',
     path: '/lodging/bookings',
@@ -147,6 +147,28 @@ export const NAV_ENTRIES: NavEntry[] = [
   { key: 'admin', path: '/admin', labelKey: 'nav.admin', implemented: false },
   { key: 'security', path: '/security', labelKey: 'nav.security', implemented: false },
 ];
+
+/** Destinations on the health landing, based on grants in the active tenant. */
+export function healthAccess(permissions: readonly string[]) {
+  const has = (permission: string) => permissions.includes(permission);
+  const claims = has('claim.read');
+  return {
+    reports: has('health.medical_report.review'),
+    medicalClaims: claims && has('claim.medical.review'),
+    financialClaims: claims && has('claim.financial.review'),
+    claimRecords: claims,
+    requests: has('service_request.read'),
+    personRecords: has('member.read') && (has('health.case.read') || claims),
+  };
+}
+
+/** The sidebar and home tiles must agree on which sections are reachable. */
+export function visibleNavEntries(permissions: readonly string[]): NavEntry[] {
+  return NAV_ENTRIES.filter((entry) => {
+    if (entry.key === 'health') return Object.values(healthAccess(permissions)).some(Boolean);
+    return !entry.permission || permissions.includes(entry.permission);
+  });
+}
 
 /** Paths that currently render the "coming soon" page. */
 export const SOON_PATHS = NAV_ENTRIES.filter((e) => !e.implemented).map((e) => e.path);

@@ -635,6 +635,20 @@
     ]
   },
 
+  "healthServices": {
+    "title": "Sağlık",
+    "purpose": "Bu sayfa, erişiminiz olan sağlık incelemelerine ve kayıtlara bağlantılar sunar.",
+    "sections": [
+      {
+        "label": "İnceleme",
+        "body": "Yetkinize göre tıbbi raporları ve tıbbi ya da mali karar bekleyen claim kayıtlarını açabilirsiniz."
+      },
+      {
+        "label": "Kayıtlar",
+        "body": "Claim, talep ve kişi bağlantıları yalnızca ilgili kayıtları görme yetkiniz varsa gösterilir."
+      }
+    ]
+  },
   "medicalReports": {
     "title": "Tıbbi inceleme",
     "purpose": "Tıbbi incelemede bekleyen tedavi raporları. Referansa basmak raporun inceleme sayfasını açar.",

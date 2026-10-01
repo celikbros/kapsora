@@ -3,7 +3,7 @@ import { useTranslation } from '@kapsora/i18n';
 import { Card, PageHeader } from '@kapsora/ui';
 import { Link } from '@tanstack/react-router';
 import { Dashboard } from '../billing/Dashboard';
-import { NAV_ENTRIES } from '../nav';
+import { visibleNavEntries } from '../nav';
 
 export function HomePage() {
   const { t } = useTranslation();
@@ -22,18 +22,18 @@ export function HomePage() {
         </div>
       ) : null}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {NAV_ENTRIES.filter(
-          (e) => e.key !== 'home' && (!e.permission || active?.permissions.includes(e.permission)),
-        ).map((entry) => (
-          <Card key={entry.key} className="p-4">
-            <Link to={entry.path} className="font-medium underline-offset-2 hover:underline">
-              {t(entry.labelKey)}
-            </Link>
-            <p className="text-fg-muted mt-1 text-xs">
-              {entry.implemented ? '' : t('app.soonTitle')}
-            </p>
-          </Card>
-        ))}
+        {visibleNavEntries(active?.permissions ?? [])
+          .filter((e) => e.key !== 'home')
+          .map((entry) => (
+            <Card key={entry.key} className="p-4">
+              <Link to={entry.path} className="font-medium underline-offset-2 hover:underline">
+                {t(entry.labelKey)}
+              </Link>
+              <p className="text-fg-muted mt-1 text-xs">
+                {entry.implemented ? '' : t('app.soonTitle')}
+              </p>
+            </Card>
+          ))}
       </div>
     </>
   );

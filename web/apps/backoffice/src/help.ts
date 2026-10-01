@@ -44,6 +44,7 @@ export const HELP_ROUTES: Readonly<Record<string, string>> = {
   '/worklist': 'worklist',
   '/claims': 'claims',
   '/claims/$claimId': 'claim',
+  '/health-services': 'healthServices',
   '/medical-reports': 'medicalReports',
   '/medical-reports/$reportId': 'medicalReport',
   '/lodging/properties': 'properties',

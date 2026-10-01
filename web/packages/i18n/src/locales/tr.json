@@ -37,6 +37,22 @@
     "medicalReports": "Tıbbi inceleme",
     "billing": "İcmal ve Ödeme"
   },
+  "healthServices": {
+    "title": "Sağlık",
+    "intro": "Erişiminiz olan sağlık incelemeleri ve kayıtları.",
+    "reports": "Tıbbi rapor incelemesi",
+    "reportsDescription": "İnceleme bekleyen tedavi raporlarını açın.",
+    "medicalClaims": "Tıbbi değerlendirme",
+    "medicalClaimsDescription": "Tıbbi karar bekleyen claim kayıtlarını açın.",
+    "financialClaims": "Mali değerlendirme",
+    "financialClaimsDescription": "Mali karar bekleyen claim kayıtlarını açın.",
+    "claimRecords": "Başvuru kayıtları",
+    "claimRecordsDescription": "Geçmiş kararlar dahil tüm claim kayıtlarını görüntüleyin.",
+    "requests": "Hizmet talepleri",
+    "requestsDescription": "Hizmet taleplerini ve durumlarını görüntüleyin.",
+    "personRecords": "Hak sahibinin sağlık kayıtları",
+    "personRecordsDescription": "Hak sahibini açıp Sağlık sekmesinden kayıtlarını görüntüleyin."
+  },
   "ownFile": {
     "title": "Bu dosya size ait.",
     "body": "Kendi dosyanıza karar veremezsiniz; başka bir değerlendirici karar vermeli."

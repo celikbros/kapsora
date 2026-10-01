@@ -32,6 +32,22 @@
     "medicalReports": "Medical review",
     "billing": "Batches and payments"
   },
+  "healthServices": {
+    "title": "Health",
+    "intro": "Health reviews and records available to you.",
+    "reports": "Medical report review",
+    "reportsDescription": "Open treatment reports awaiting review.",
+    "medicalClaims": "Medical review",
+    "medicalClaimsDescription": "Open claims awaiting a medical decision.",
+    "financialClaims": "Financial review",
+    "financialClaimsDescription": "Open claims awaiting a financial decision.",
+    "claimRecords": "Claim records",
+    "claimRecordsDescription": "View claim records, including past decisions.",
+    "requests": "Service requests",
+    "requestsDescription": "View service requests and their status.",
+    "personRecords": "Member health records",
+    "personRecordsDescription": "Open a member and view their Health tab."
+  },
   "ownFile": {
     "title": "This file is yours.",
     "body": "You cannot decide your own file; another reviewer has to decide it."
