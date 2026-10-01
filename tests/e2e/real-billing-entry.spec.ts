@@ -26,7 +26,9 @@ for (const username of ['payer.approver', 'financial.reviewer', 'sponsor.hr', 'd
       await actor.login(username);
       page.on('request', (request) => {
         const path = new URL(request.url()).pathname;
-        if (/^\/api\/v1\/(batches|settlements|invoices|reimbursements)(\/|$)/.test(path)) {
+        if (
+          /^\/api\/v1\/(batches|settlements|invoices|reimbursements|work-items)(\/|$)/.test(path)
+        ) {
           if (request.method() === 'GET') reads.push(path);
           else commands.push(path);
         }
@@ -49,6 +51,27 @@ for (const username of ['payer.approver', 'financial.reviewer', 'sponsor.hr', 'd
         expect(reads).toEqual([]);
         expect(commands).toEqual([]);
         return;
+      }
+      const dashboard = page.getByTestId('dashboard');
+      await expect(dashboard).toBeVisible();
+      const claimLinks = dashboard.getByTestId('dashboard-claims').locator('a');
+      const workLinks = dashboard.getByTestId('dashboard-workitems').locator('a');
+      if (username === 'payer.approver') {
+        await expect(claimLinks).toHaveCount(0);
+        await expect(workLinks).toHaveCount(1);
+        const workLoaded = page.waitForResponse(
+          (response) =>
+            new URL(response.url()).pathname === '/api/v1/work-items' &&
+            response.request().method() === 'GET',
+        );
+        await workLinks.click();
+        expect((await workLoaded).status()).toBe(200);
+        await expect(page).toHaveURL(/\/worklist\?view=overdue$/);
+        await page.getByRole('link', { name: 'KAPSORA', exact: true }).click();
+        await expect(page).toHaveURL(base + '/');
+      } else {
+        await expect(claimLinks.first()).toBeVisible();
+        await expect(workLinks).toHaveCount(username === 'financial.reviewer' ? 1 : 0);
       }
       const path = username === 'payer.approver' ? '/billing/settlements' : '/billing/batches';
       const endpoint = username === 'payer.approver' ? '/api/v1/settlements' : '/api/v1/batches';
@@ -134,7 +157,7 @@ for (const username of ['financial.reviewer', 'payer.approver']) {
       page.on('request', (request) => {
         const path = new URL(request.url()).pathname;
         if (
-          /^\/api\/v1\/(batches|settlements|invoices|reimbursements)(\/|$)/.test(path) &&
+          /^\/api\/v1\/(batches|settlements|invoices|reimbursements|work-items)(\/|$)/.test(path) &&
           request.method() !== 'GET'
         )
           commands.push(path);
@@ -177,7 +200,7 @@ test('denied billing direct visits make no protected data requests', async ({ br
     await actor.login('doctor.a');
     page.on('request', (request) => {
       const path = new URL(request.url()).pathname;
-      if (/^\/api\/v1\/(batches|settlements|invoices|reimbursements)(\/|$)/.test(path))
+      if (/^\/api\/v1\/(batches|settlements|invoices|reimbursements|work-items)(\/|$)/.test(path))
         reads.push(path);
     });
     const id = '00000000-0000-4000-8000-000000000000';
@@ -224,7 +247,9 @@ test('finance reads the existing paid reimbursement without forbidden lookups', 
         lookups.push(pathname);
       }
       if (
-        /^\/api\/v1\/(batches|settlements|invoices|reimbursements)(\/|$)/.test(pathname) &&
+        /^\/api\/v1\/(batches|settlements|invoices|reimbursements|work-items)(\/|$)/.test(
+          pathname,
+        ) &&
         request.method() !== 'GET'
       )
         commands.push(pathname);
