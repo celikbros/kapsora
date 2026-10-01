@@ -48,6 +48,20 @@
     "personRecords": "Member health records",
     "personRecordsDescription": "Open a member and view their Health tab."
   },
+  "walletsServices": {
+    "title": "Entitlement wallets",
+    "intro": "Wallets belong to members. Search for a member, then open Entitlements to view balances and account movements.",
+    "people": "Find a member",
+    "peopleDescription": "Search by name and use the Entitlements link in the result to open that member's wallet."
+  },
+  "reportsServices": {
+    "title": "Reports",
+    "intro": "Reporting records available to you.",
+    "reconciliation": "Reconciliation",
+    "reconciliationDescription": "View recorded reconciliation runs and their differences.",
+    "exports": "Exports",
+    "exportsDescription": "View export requests and their status. Available actions depend on your permissions."
+  },
   "ownFile": {
     "title": "This file is yours.",
     "body": "You cannot decide your own file; another reviewer has to decide it."
@@ -473,6 +487,7 @@
   },
   "people": {
     "title": "Members",
+    "columns": { "wallet": "Entitlements" },
     "new": "New member",
     "search": "Search by name",
     "identifierSearch": "Search by identifier",
@@ -562,8 +577,16 @@
   },
   "entitlements": {
     "title": "Entitlements",
+    "columns": {
+      "available": "Available",
+      "reserved": "Reserved",
+      "consumed": "Consumed",
+      "expired": "Expired",
+      "total": "Total"
+    },
     "ledger": {
-      "title": "Movements"
+      "title": "Movements",
+      "columns": { "balanceChanges": "Balance changes" }
     }
   },
   "eligibility": {
@@ -1977,6 +2000,10 @@
       "ranAt": "Ran at",
       "provider": "Provider",
       "tenantWide": "Tenant-wide",
+      "providerSourceHint": "Providers in billing records you can access.",
+      "loadMoreProviders": "Load more providers",
+      "retryProviders": "Retry loading providers",
+      "providersEmpty": "No providers found in accessible records.",
       "differences": "Differences",
       "noDifferences": "No differences; the day balances.",
       "differenceCount_one": "{{count}} difference",

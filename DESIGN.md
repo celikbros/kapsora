@@ -817,6 +817,15 @@ cancellation stay locked; retry preserves its body, ETag and command key. A defi
 conflict offers an explicit reload before a new attempt. Ending the last open encounter
 makes the existing case-close action available after the case refresh.
 
+**Reports open existing records.** The Reports landing uses the same quiet rows as Health:
+one link and one plain description for reconciliation and exports. It reads the active
+tenant's grants, adds no report request of its own, and offers no financial decision action.
+The billing tab strip shows only lists the account may open.
+
+**Wallets reuse member discovery.** The member list offers a direct entitlement-tab link;
+its URL keeps the selected tab on reload and history navigation. Ledger movements show
+changes in each balance bucket, so a transfer with no total change is still understandable.
+
 ## Motion
 
 Toasts slide up 160ms ease-out. The member surface adds the system's one authored moment:

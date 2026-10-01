@@ -27,7 +27,7 @@ export const NAV_ENTRIES: NavEntry[] = [
     implemented: true,
     permission: 'program.read',
   },
-  { key: 'wallets', path: '/wallets', labelKey: 'nav.wallets', implemented: false },
+  { key: 'wallets', path: '/wallets', labelKey: 'nav.wallets', implemented: true },
   {
     key: 'adjustments',
     path: '/entitlement-adjustments',
@@ -142,7 +142,13 @@ export const NAV_ENTRIES: NavEntry[] = [
     implemented: true,
     permission: 'notification.read',
   },
-  { key: 'reports', path: '/reports', labelKey: 'nav.reports', implemented: false },
+  {
+    key: 'reports',
+    path: '/reports',
+    labelKey: 'nav.reports',
+    implemented: true,
+    permission: 'report.read',
+  },
   { key: 'integrations', path: '/integrations', labelKey: 'nav.integrations', implemented: false },
   { key: 'admin', path: '/admin', labelKey: 'nav.admin', implemented: false },
   { key: 'security', path: '/security', labelKey: 'nav.security', implemented: false },
@@ -162,10 +168,15 @@ export function healthAccess(permissions: readonly string[]) {
   };
 }
 
+export function canDiscoverWallets(permissions: readonly string[]): boolean {
+  return permissions.includes('member.read') && permissions.includes('entitlement.read');
+}
+
 /** The sidebar and home tiles must agree on which sections are reachable. */
 export function visibleNavEntries(permissions: readonly string[]): NavEntry[] {
   return NAV_ENTRIES.filter((entry) => {
     if (entry.key === 'health') return Object.values(healthAccess(permissions)).some(Boolean);
+    if (entry.key === 'wallets') return canDiscoverWallets(permissions);
     return !entry.permission || permissions.includes(entry.permission);
   });
 }

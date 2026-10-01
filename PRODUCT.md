@@ -48,6 +48,12 @@ The backoffice Health entry leads to the operator's existing medical or financia
 work and record lists according to their active-tenant permissions. Financial staff enter
 financial decisions without being offered clinical report access.
 
+The backoffice Reports entry leads staff with `report.read` to recorded reconciliation runs
+and export requests. Requesting or downloading exports remains a separate permission.
+
+The wallet entry helps staff allowed to read members and entitlements find a person, open
+their balances and inspect account movements without changing those balances.
+
 Success is a payer operator onboarding a provider, a provider checking eligibility and
 submitting a request, and a member seeing the result, without anyone leaving the
 product or asking whose data they are looking at.

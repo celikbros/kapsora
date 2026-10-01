@@ -53,6 +53,20 @@
     "personRecords": "Hak sahibinin sağlık kayıtları",
     "personRecordsDescription": "Hak sahibini açıp Sağlık sekmesinden kayıtlarını görüntüleyin."
   },
+  "walletsServices": {
+    "title": "Hak Cüzdanları",
+    "intro": "Hak cüzdanları hak sahiplerine bağlıdır. Kişiyi arayıp Haklar bağlantısını açarak bakiyelerini ve hesap hareketlerini görüntüleyin.",
+    "people": "Hak sahibi ara",
+    "peopleDescription": "Ada göre kişi arayın; sonuç satırındaki Haklar bağlantısı kişinin hak cüzdanını açar."
+  },
+  "reportsServices": {
+    "title": "Raporlar",
+    "intro": "Erişiminiz olan raporlama kayıtları.",
+    "reconciliation": "Mutabakat",
+    "reconciliationDescription": "Kaydedilmiş mutabakat çalışmalarını ve farklarını görüntüleyin.",
+    "exports": "Dışa aktarımlar",
+    "exportsDescription": "Dışa aktarım taleplerini ve durumlarını görüntüleyin. Kullanılabilen işlemler yetkilerinize bağlıdır."
+  },
   "ownFile": {
     "title": "Bu dosya size ait.",
     "body": "Kendi dosyanıza karar veremezsiniz; başka bir değerlendirici karar vermeli."
@@ -152,7 +166,8 @@
       "displayName": "Görünen ad",
       "kind": "Tür",
       "role": "Rol",
-      "status": "Durum"
+      "status": "Durum",
+      "wallet": "Haklar"
     },
     "empty": "Kayıt bulunamadı.",
     "emptyHint": "Filtreleri temizleyin ya da yeni bir kurum ekleyin.",
@@ -1001,6 +1016,7 @@
       "available": "Kullanılabilir",
       "reserved": "Bloke",
       "consumed": "Kullanılan",
+      "expired": "Süresi dolan",
       "total": "Toplam",
       "status": "Durum"
     },
@@ -1019,6 +1035,7 @@
         "movement": "Hareket",
         "effectiveAt": "Tarih",
         "quantity": "Miktar",
+        "balanceChanges": "Bakiye değişimleri",
         "reference": "Referans",
         "reason": "Sebep"
       },
@@ -3750,6 +3767,10 @@
       "ranAt": "Çalıştı",
       "provider": "Sağlayıcı",
       "tenantWide": "Kurum geneli",
+      "providerSourceHint": "Erişebildiğiniz faturalama kayıtlarındaki sağlayıcılar.",
+      "loadMoreProviders": "Daha fazla sağlayıcı yükle",
+      "retryProviders": "Sağlayıcıları yüklemeyi yeniden dene",
+      "providersEmpty": "Erişebildiğiniz kayıtlarda sağlayıcı bulunamadı.",
       "differences": "Farklar",
       "noDifferences": "Fark yok; gün dengede.",
       "differenceCount_one": "{{count}} fark",

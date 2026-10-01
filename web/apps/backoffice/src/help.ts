@@ -8,6 +8,7 @@ export const HELP_ROUTES: Readonly<Record<string, string>> = {
   '/people': 'people',
   '/people/new': 'personNew',
   '/people/$personId': 'person',
+  '/wallets': 'wallets',
   '/programs': 'programs',
   '/programs/new': 'programNew',
   '/programs/$programId': 'program',
@@ -61,6 +62,7 @@ export const HELP_ROUTES: Readonly<Record<string, string>> = {
   '/billing/reconciliation': 'reconciliation',
   '/billing/reconciliation/$runId': 'reconciliationRun',
   '/billing/exports': 'exports',
+  '/reports': 'reports',
   '/notifications': 'notifications',
   '/profile': 'profile',
 };

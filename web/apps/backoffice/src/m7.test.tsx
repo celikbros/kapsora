@@ -198,6 +198,29 @@ describe('the reconciliation', () => {
 });
 
 describe('the exports', () => {
+  it('offers invoice providers to a financial reviewer and sends the selected ID', async () => {
+    const providerId = api.world.invoices.find(
+      (row) => row.providerOrganizationId,
+    )?.providerOrganizationId;
+    expect(providerId).toBeTruthy();
+    const before = new Set(api.world.exports.map((row) => row.id));
+    mount('/billing/exports');
+    const user = await login('financial.reviewer');
+    const form = await screen.findByTestId('export-form');
+    const picker = await screen.findByTestId('export-provider-select');
+    await waitFor(() => expect(picker.querySelector(`option[value="${providerId}"]`)).toBeTruthy());
+    await user.selectOptions(within(form).getByLabelText(/^Rapor/), 'PROVIDER_STATEMENT');
+    await user.selectOptions(picker, providerId!);
+    await user.click(screen.getByTestId('request-export'));
+    await waitFor(() => {
+      expect(
+        api.world.exports.find(
+          (row) => !before.has(row.id) && row.providerOrganizationId === providerId,
+        ),
+      ).toBeTruthy();
+    });
+  });
+
   it('queues a file, shows it ready, and opens it through an audited download with the watermark', async () => {
     const opened = vi.fn();
     window.open = opened as unknown as typeof window.open;

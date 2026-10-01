@@ -71,6 +71,8 @@ import { PersonCreatePage } from './people/PersonCreatePage';
 import { PersonDetailPage } from './people/PersonDetailPage';
 import { PersonListPage, type PersonListSearch } from './people/PersonListPage';
 import { HomePage } from './pages/HomePage';
+import { ReportsPage } from './pages/ReportsPage';
+import { WalletsPage } from './pages/WalletsPage';
 import { LoginPage } from './pages/LoginPage';
 import { LogoutPage } from './pages/LogoutPage';
 import { AppChooserPage } from './pages/AppChooserPage';
@@ -294,6 +296,11 @@ const billingExportsRoute = createRoute({
   path: '/billing/exports',
   component: ExportsPage,
 });
+const reportsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/reports',
+  component: ReportsPage,
+});
 const medicalReportsRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/medical-reports',
@@ -384,8 +391,25 @@ const personCreateRoute = createRoute({
 const personDetailRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/people/$personId',
+  validateSearch: (raw: Record<string, unknown>): { tab?: string } => {
+    const tab = raw['tab'];
+    return typeof tab === 'string' && PERSON_TABS.includes(tab) ? { tab } : {};
+  },
   component: PersonDetailPage,
 });
+
+const PERSON_TABS = [
+  'identity',
+  'family',
+  'memberships',
+  'enrollments',
+  'entitlements',
+  'eligibility',
+  'health',
+  'lodging',
+  'reimbursements',
+  'accessLog',
+];
 
 function programListSearch(raw: Record<string, unknown>): ProgramListSearch {
   const out: ProgramListSearch = {};
@@ -581,6 +605,11 @@ const healthServicesRoute = createRoute({
   path: '/health-services',
   component: HealthServicesPage,
 });
+const walletsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/wallets',
+  component: WalletsPage,
+});
 
 const routeTree = rootRoute.addChildren([
   loginRoute,
@@ -630,6 +659,7 @@ const routeTree = rootRoute.addChildren([
     claimsRoute,
     claimDetailRoute,
     healthServicesRoute,
+    walletsRoute,
     lodgingPropertiesRoute,
     lodgingPropertyRoute,
     lodgingBookingsRoute,
@@ -644,6 +674,7 @@ const routeTree = rootRoute.addChildren([
     billingReconciliationRoute,
     billingReconciliationRunRoute,
     billingExportsRoute,
+    reportsRoute,
     medicalReportsRoute,
     medicalReportRoute,
     worklistRoute,

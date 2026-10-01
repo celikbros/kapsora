@@ -243,7 +243,7 @@ export function useLedger(accountId: string, query: LedgerQuery) {
   return useQuery({
     queryKey: benefitKeys.ledger(tenantId, accountId, query),
     queryFn: () => ops.entitlements.listLedger(tenantId, accountId, query),
-    placeholderData: (previous) => previous,
+    enabled: accountId !== '',
   });
 }
 
