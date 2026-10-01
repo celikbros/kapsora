@@ -63,6 +63,7 @@ export const HELP_ROUTES: Readonly<Record<string, string>> = {
   '/billing/reconciliation/$runId': 'reconciliationRun',
   '/billing/exports': 'exports',
   '/reports': 'reports',
+  '/security': 'security',
   '/notifications': 'notifications',
   '/profile': 'profile',
 };

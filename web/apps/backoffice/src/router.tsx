@@ -72,6 +72,7 @@ import { PersonDetailPage } from './people/PersonDetailPage';
 import { PersonListPage, type PersonListSearch } from './people/PersonListPage';
 import { HomePage } from './pages/HomePage';
 import { ReportsPage } from './pages/ReportsPage';
+import { SecurityPage } from './pages/SecurityPage';
 import { WalletsPage } from './pages/WalletsPage';
 import { LoginPage } from './pages/LoginPage';
 import { LogoutPage } from './pages/LogoutPage';
@@ -300,6 +301,11 @@ const reportsRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/reports',
   component: ReportsPage,
+});
+const securityRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/security',
+  component: SecurityPage,
 });
 const medicalReportsRoute = createRoute({
   getParentRoute: () => appRoute,
@@ -675,6 +681,7 @@ const routeTree = rootRoute.addChildren([
     billingReconciliationRunRoute,
     billingExportsRoute,
     reportsRoute,
+    securityRoute,
     medicalReportsRoute,
     medicalReportRoute,
     worklistRoute,

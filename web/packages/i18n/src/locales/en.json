@@ -22,7 +22,7 @@
     "reports": "Reports",
     "integrations": "Integrations",
     "admin": "Administration",
-    "security": "Security and audit",
+    "security": "Health access log",
     "profile": "My profile and permissions",
     "organizations": "Organizations",
     "mainMenu": "Main menu",
@@ -61,6 +61,22 @@
     "reconciliationDescription": "View recorded reconciliation runs and their differences.",
     "exports": "Exports",
     "exportsDescription": "View export requests and their status. Available actions depend on your permissions."
+  },
+  "securityAccess": {
+    "title": "Health data access log",
+    "intro": "A tenant-wide record of health data access and denied attempts. This page does not include other security events.",
+    "empty": "No health data access events were found.",
+    "retry": "Retry",
+    "previous": "Previous page",
+    "next": "Next page",
+    "at": "Time",
+    "outcome": "Outcome",
+    "actor": "Actor",
+    "person": "Member ID",
+    "resource": "Resource and ID",
+    "access": "Access",
+    "purpose": "Purpose",
+    "reason": "Reason"
   },
   "ownFile": {
     "title": "This file is yours.",

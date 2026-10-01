@@ -54,6 +54,9 @@ and export requests. Requesting or downloading exports remains a separate permis
 The wallet entry helps staff allowed to read members and entitlements find a person, open
 their balances and inspect account movements without changing those balances.
 
+The backoffice Security entry shows tenant-wide health data access records to staff with
+`audit.read`, including denied attempts. It does not represent a general security event log.
+
 Success is a payer operator onboarding a provider, a provider checking eligibility and
 submitting a request, and a member seeing the result, without anyone leaving the
 product or asking whose data they are looking at.

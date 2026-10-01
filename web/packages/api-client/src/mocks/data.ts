@@ -1557,9 +1557,9 @@ const MEDICAL_REVIEWER_PERMISSIONS = [
   'claim.read',
   'claim.medical.review',
   'document.read',
+  'document.link',
   'worklist.read',
   'worklist.claim',
-  'audit.read',
 ];
 
 /**

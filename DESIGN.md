@@ -826,6 +826,11 @@ The billing tab strip shows only lists the account may open.
 its URL keeps the selected tab on reload and history navigation. Ledger movements show
 changes in each balance bucket, so a transfer with no total change is still understandable.
 
+**A health access log can stand alone.** Auditors with `audit.read` see the tenant's health
+access events without opening a member record. Each row retains the actor, person and resource
+identifiers, access type, outcome, purpose and reason. Pages load in bounded groups; the mobile
+layout presents each event as a readable card.
+
 ## Motion
 
 Toasts slide up 160ms ease-out. The member surface adds the system's one authored moment:

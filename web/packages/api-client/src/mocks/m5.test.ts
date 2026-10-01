@@ -171,6 +171,11 @@ describe('the M5 review and billing accounts', () => {
     expect(permissionsOf('financial.reviewer')).toEqual(goRolePermissions('FINANCIAL_REVIEWER'));
   });
 
+  it('grants doctor.a exactly the Go MEDICAL_REVIEWER list', () => {
+    expect(permissionsOf('doctor.a')).toEqual(goRolePermissions('MEDICAL_REVIEWER'));
+    expect(permissionsOf('doctor.a')).not.toContain('audit.read');
+  });
+
   it('grants billing.a exactly the Go PROVIDER_BILLING list', () => {
     expect(permissionsOf('billing.a')).toEqual(goRolePermissions('PROVIDER_BILLING'));
   });
@@ -374,7 +379,7 @@ describe('the clinical projection', () => {
       }),
     );
 
-    const auditor = await signIn('doctor.a');
+    const auditor = await signIn('admin.a');
     const log = await unwrap(
       auditor.c.GET('/api/v1/health-access-log', {
         params: { header: tenant(auditor), query: { personId: standard.personId } },
@@ -398,7 +403,7 @@ describe('the clinical projection', () => {
         }),
       );
     }
-    const auditor = await signIn('doctor.a');
+    const auditor = await signIn('admin.a');
     const log = await unwrap(
       auditor.c.GET('/api/v1/health-access-log', {
         params: { header: tenant(auditor), query: { personId: standard.personId } },
@@ -453,9 +458,10 @@ describe('a sensitive case', () => {
     expect(problem.code).toBe('ACCESS_PURPOSE_REQUIRED');
 
     // The refusal is on the record: "who tried" is as much of it as "who looked".
+    const auditor = await signIn('admin.a');
     const log = await unwrap(
-      s.c.GET('/api/v1/health-access-log', {
-        params: { header: tenant(s), query: { personId: sensitive.personId } },
+      auditor.c.GET('/api/v1/health-access-log', {
+        params: { header: tenant(auditor), query: { personId: sensitive.personId } },
       }),
     );
     expect(log.data.items.some((e) => e.outcome === 'DENIED')).toBe(true);
@@ -491,9 +497,10 @@ describe('a sensitive case', () => {
     expect(diagnoses.data.items[0]!.code).toBe('F32.1');
     expect(diagnoses.data.items[0]!.sensitive).toBe(true);
 
+    const auditor = await signIn('admin.a');
     const log = await unwrap(
-      s.c.GET('/api/v1/health-access-log', {
-        params: { header: tenant(s), query: { personId: sensitive.personId } },
+      auditor.c.GET('/api/v1/health-access-log', {
+        params: { header: tenant(auditor), query: { personId: sensitive.personId } },
       }),
     );
     // Both reads are on it — the case and the diagnoses — and each carries the purpose it
@@ -537,8 +544,10 @@ describe('a sensitive case', () => {
     // "financial only" is the reviewer declining to look, and choosing not to look is not a
     // look: no precondition, no clinical field, and nothing on the member's access log.
     const s = await signIn('doctor.a');
+    const personIds: string[] = [];
     for (const sensitivity of ['SENSITIVE', 'STANDARD'] as const) {
       const row = caseWithSensitivity(sensitivity);
+      personIds.push(row.personId);
       const one = await unwrap(
         s.c.GET('/api/v1/health-cases/{caseId}', {
           params: {
@@ -551,10 +560,12 @@ describe('a sensitive case', () => {
       expect(one.data.sensitivity).toBeUndefined();
       expect(one.data.encounters.every((e) => e.notesClinical === undefined)).toBe(true);
       expect(JSON.stringify(one.data)).not.toContain('SENSITIVE');
-
+    }
+    const auditor = await signIn('admin.a');
+    for (const personId of personIds) {
       const log = await unwrap(
-        s.c.GET('/api/v1/health-access-log', {
-          params: { header: tenant(s), query: { personId: row.personId } },
+        auditor.c.GET('/api/v1/health-access-log', {
+          params: { header: tenant(auditor), query: { personId } },
         }),
       );
       expect(log.data.items.filter((e) => e.actorId === s.actorId)).toHaveLength(0);

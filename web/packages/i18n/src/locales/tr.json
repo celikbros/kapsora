@@ -23,7 +23,7 @@
     "reports": "Raporlar",
     "integrations": "Entegrasyonlar",
     "admin": "Yönetim",
-    "security": "Güvenlik ve Audit",
+    "security": "Sağlık verisi erişim kayıtları",
     "profile": "Profilim ve Yetkilerim",
     "organizations": "Kurumlar",
     "mainMenu": "Ana menü",
@@ -66,6 +66,22 @@
     "reconciliationDescription": "Kaydedilmiş mutabakat çalışmalarını ve farklarını görüntüleyin.",
     "exports": "Dışa aktarımlar",
     "exportsDescription": "Dışa aktarım taleplerini ve durumlarını görüntüleyin. Kullanılabilen işlemler yetkilerinize bağlıdır."
+  },
+  "securityAccess": {
+    "title": "Sağlık verisi erişim kayıtları",
+    "intro": "Kurumdaki sağlık verisi erişimleri ve reddedilen girişimler. Diğer güvenlik olayları bu sayfada yer almaz.",
+    "empty": "Sağlık verisi erişim kaydı bulunamadı.",
+    "retry": "Yeniden dene",
+    "previous": "Önceki sayfa",
+    "next": "Sonraki sayfa",
+    "at": "Zaman",
+    "outcome": "Sonuç",
+    "actor": "İşlemi yapan",
+    "person": "Hak sahibi kimliği",
+    "resource": "Kaynak ve kimliği",
+    "access": "Erişim",
+    "purpose": "Amaç",
+    "reason": "Gerekçe"
   },
   "ownFile": {
     "title": "Bu dosya size ait.",

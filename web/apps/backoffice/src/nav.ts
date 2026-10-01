@@ -151,7 +151,13 @@ export const NAV_ENTRIES: NavEntry[] = [
   },
   { key: 'integrations', path: '/integrations', labelKey: 'nav.integrations', implemented: false },
   { key: 'admin', path: '/admin', labelKey: 'nav.admin', implemented: false },
-  { key: 'security', path: '/security', labelKey: 'nav.security', implemented: false },
+  {
+    key: 'security',
+    path: '/security',
+    labelKey: 'nav.security',
+    implemented: true,
+    permission: 'audit.read',
+  },
 ];
 
 /** Destinations on the health landing, based on grants in the active tenant. */

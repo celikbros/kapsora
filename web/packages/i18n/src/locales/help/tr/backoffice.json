@@ -649,6 +649,20 @@
       }
     ]
   },
+  "security": {
+    "title": "Sağlık verisi erişim kayıtları",
+    "purpose": "Kurumdaki sağlık verisi erişimlerini ve reddedilen girişimleri denetler. Bu sayfa genel güvenlik olaylarını göstermez.",
+    "sections": [
+      {
+        "label": "Kayıtlar",
+        "body": "Her satır erişim zamanını, sonucu, işlemi yapanı, hak sahibini, kaynağı, erişim türünü, amacı ve gerekçeyi gösterir."
+      },
+      {
+        "label": "Sayfalar",
+        "body": "Sonraki ve önceki düğmeleri kayıtları ellişer gösterir. Kayıtlar yalnızca bu kuruma aittir."
+      }
+    ]
+  },
   "reports": {
     "title": "Raporlar",
     "purpose": "Bu sayfa, mutabakat kayıtlarına ve dışa aktarım taleplerine bağlantılar sunar. Yalnızca raporları görme yetkisi olanlara açıktır.",
