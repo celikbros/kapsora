@@ -473,6 +473,9 @@ test(
       await expect(officePage.getByTestId('no-show-status')).toHaveText('Onayland\u0131');
       for (const width of [390, 1440]) {
         await officePage.setViewportSize({ width, height: 1000 });
+        // A full-page capture otherwise retains the sticky header's previous scroll position.
+        await officePage.evaluate(() => window.scrollTo(0, 0));
+        await expect.poll(() => officePage.evaluate(() => window.scrollY)).toBe(0);
         expect(
           await officePage.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
         ).toBe(true);
