@@ -46,11 +46,12 @@ async function sha256Hex(file: File): Promise<string> {
 export function useLinkedDocuments(aggregateType: string, aggregateId: string) {
   const ops = useOps();
   const tenantId = useTenantId();
+  const canRead = usePermission('document.read');
   const query: DocumentListQuery = { aggregateType, aggregateId, limit: 100 };
   return useQuery({
     queryKey: ['provider', tenantId, 'documents', query],
     queryFn: () => ops.documents.list(tenantId, query),
-    enabled: aggregateId !== '',
+    enabled: canRead && aggregateId !== '',
     refetchInterval: (q) =>
       q.state.data?.items.some((d) => d.scanStatus === 'PENDING' || d.scanStatus === 'SCANNING')
         ? 2_000
@@ -139,13 +140,18 @@ export function DocumentsPanel({
 }) {
   const { t } = useTranslation();
   const toast = useToast();
+  const canRead = usePermission('document.read');
   const canUpload = usePermission('document.upload');
+  const canLink = usePermission('document.link');
+  const canLinkBookingEvidence = usePermission('document.booking_evidence.link');
   const documents = useLinkedDocuments(aggregateType, aggregateId);
   const upload = useUploadDocument();
   const download = useDownloadDocument();
   const [file, setFile] = useState<File | null>(null);
   const [typeCode, setTypeCode] = useState('');
   const [classification, setClassification] = useState<DocumentClassification>('PERSONAL');
+
+  if (!canRead) return null;
 
   const rows: Document[] = documents.data?.items ?? [];
   const linkedTypes = new Set(
@@ -165,7 +171,13 @@ export function DocumentsPanel({
 
   async function submitUpload(event: FormEvent) {
     event.preventDefault();
-    if (!file || !typeCode.trim()) return;
+    if (
+      !canUpload ||
+      !(canLink || (aggregateType === 'BOOKING' && canLinkBookingEvidence)) ||
+      !file ||
+      !typeCode.trim()
+    )
+      return;
     try {
       await upload.mutateAsync({
         file,
@@ -280,7 +292,9 @@ export function DocumentsPanel({
         </Table>
       )}
 
-      {canUpload && !readOnly ? (
+      {canUpload &&
+      (canLink || (aggregateType === 'BOOKING' && canLinkBookingEvidence)) &&
+      !readOnly ? (
         <form
           onSubmit={submitUpload}
           className="border-line grid gap-3 rounded-md border p-3 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end"

@@ -1,5 +1,5 @@
 import type { Claim } from '@kapsora/api-client';
-import { usePermission } from '@kapsora/auth';
+import { useSession } from '@kapsora/auth';
 import { formatDate, useTranslation } from '@kapsora/i18n';
 import {
   Badge,
@@ -20,6 +20,7 @@ import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 
 import { usePersonName } from '../health/queries';
+import { canOpen } from '../access';
 import { claimTone } from '../health/words';
 import { problemOf } from '../problems';
 import { useClaims } from './queries';
@@ -43,7 +44,7 @@ function NameCell({ personId }: { personId: string }) {
 /** The billing desk's list: the reference, where each claim stands, and what it covers. */
 export function ClaimListPage() {
   const { t } = useTranslation();
-  const canCreate = usePermission('claim.create');
+  const canCreate = useSession((s) => canOpen('claimNew', s.activeTenant?.permissions ?? []));
   const [status, setStatus] = useState('');
   const query = useClaims(status);
   const rows = query.data?.items ?? [];

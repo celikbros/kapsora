@@ -1,4 +1,5 @@
 import type { BatchStatus } from '@kapsora/api-client';
+import { usePermission } from '@kapsora/auth';
 import { formatDate, formatMoney, useTranslation } from '@kapsora/i18n';
 import {
   Badge,
@@ -37,6 +38,7 @@ const STATUSES: BatchStatus[] = [
 export function BatchListPage() {
   const { t } = useTranslation();
   const wide = useMinWidth(768);
+  const canCreate = usePermission('batch.create');
   const [status, setStatus] = useState('');
   const batches = useBatches(status ? { status: status as BatchStatus } : {});
   const rows = batches.data?.items ?? [];
@@ -46,9 +48,11 @@ export function BatchListPage() {
       <PageHeader
         title={t('billing.provider.batchesTitle')}
         actions={
-          <Link to="/billing/batches/new">
-            <Button size="sm">{t('billing.provider.newBatch')}</Button>
-          </Link>
+          canCreate ? (
+            <Link to="/billing/batches/new">
+              <Button size="sm">{t('billing.provider.newBatch')}</Button>
+            </Link>
+          ) : null
         }
       />
       <FormField label={t('billing.provider.status')}>

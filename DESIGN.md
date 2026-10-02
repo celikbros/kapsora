@@ -828,6 +828,12 @@ permitted commands in valid states; changing account, tenant or grants closes op
 References to inaccessible member or claim pages remain plain text. Optional name and
 catalog lookups without a read grant settle to their existing fallback without a request.
 
+**The provider desk follows the active role.** Shared sign-in opens the first permitted task;
+clinical requests, financial work and reservations use their own entry screens. Hide links
+whose prerequisites are missing, and deny direct URLs before mounting record readers. Actor,
+tenant, scope or grant changes discard cached records and form state. Financial claim labels
+use the existing financial projection or plain fallback when member/catalog reads are unavailable.
+
 **Wallets reuse member discovery.** The member list offers a direct entitlement-tab link;
 its URL keeps the selected tab on reload and history navigation. Ledger movements show
 changes in each balance bucket, so a transfer with no total change is still understandable.

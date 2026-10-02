@@ -2,7 +2,7 @@ import { ApiError } from '@kapsora/api-client';
 import { createMockServer } from '@kapsora/api-client/mocks/node';
 import { initI18n } from '@kapsora/i18n';
 import { createMemoryHistory } from '@tanstack/react-router';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterAll, afterEach, beforeAll, expect, it, vi } from 'vitest';
 import { App } from './App';
@@ -136,6 +136,75 @@ it('hides cancellation without its separate permission', async () => {
   );
   await mount(row.id);
   expect(screen.queryByRole('button', { name: 'Talebi iptal et' })).toBeNull();
+});
+
+it('discards a cancellation response after the actor changes', async () => {
+  const { row } = fixture();
+  const { user, services } = await mount(row.id);
+  const original = services.ops.requests.cancel.bind(services.ops.requests);
+  let release!: () => void;
+  const pending = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const cancel = vi
+    .spyOn(services.ops.requests, 'cancel')
+    .mockImplementationOnce(async (...args) => {
+      const result = await original(...args);
+      await pending;
+      return result;
+    });
+  await user.click(screen.getByRole('button', { name: 'Talebi iptal et' }));
+  const dialog = await screen.findByRole('dialog');
+  await user.selectOptions(within(dialog).getByLabelText(/İptal gerekçesi/), 'INPUT_ERROR');
+  const write = vi.spyOn(services.queryClient, 'setQueryData');
+  await user.click(within(dialog).getByRole('button', { name: 'Talebi iptal et' }));
+  await waitFor(() => expect(cancel).toHaveBeenCalledOnce());
+  await act(async () => {
+    services.store.setState((state) => ({
+      session: { ...state.session!, actorId: 'replacement-actor' },
+    }));
+    release();
+  });
+  expect(write).not.toHaveBeenCalled();
+});
+
+it('discards a delayed explicit reload after organization scope changes', async () => {
+  const { row } = fixture();
+  const { user, services } = await mount(row.id);
+  await user.click(screen.getByRole('button', { name: 'Talebi iptal et' }));
+  const dialog = await screen.findByRole('dialog');
+  await user.selectOptions(within(dialog).getByLabelText(/İptal gerekçesi/), 'INPUT_ERROR');
+  row.rowVersion += 1;
+  await user.click(within(dialog).getByRole('button', { name: 'Talebi iptal et' }));
+  await within(dialog).findByRole('alert');
+  const original = services.ops.requests.get.bind(services.ops.requests);
+  let release!: () => void;
+  const pending = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const get = vi.spyOn(services.ops.requests, 'get').mockImplementationOnce(async (...args) => {
+    const result = await original(...args);
+    await pending;
+    return result;
+  });
+  const write = vi.spyOn(services.queryClient, 'setQueryData');
+  await user.click(within(dialog).getByRole('button', { name: 'Güncel kaydı yükle' }));
+  await waitFor(() => expect(get).toHaveBeenCalledOnce());
+  await act(async () => {
+    services.store.setState((state) => ({
+      activeTenant: {
+        ...state.activeTenant!,
+        scopes:
+          state.activeTenant!.scopes?.map((scope) =>
+            scope.type === 'ORGANIZATION'
+              ? { ...scope, id: '00000000-0000-4000-8000-000000000001' }
+              : scope,
+          ) ?? [],
+      },
+    }));
+    release();
+  });
+  expect(write).not.toHaveBeenCalled();
 });
 
 it.each([

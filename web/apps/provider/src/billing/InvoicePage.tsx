@@ -1,4 +1,5 @@
 import type { CreateInvoice, Invoice, PatchInvoiceDraft } from '@kapsora/api-client';
+import { usePermission } from '@kapsora/auth';
 import { formatDate, formatMoney, useTranslation } from '@kapsora/i18n';
 import {
   Badge,
@@ -290,6 +291,8 @@ export function InvoicePage() {
   const search = useSearch({ from: '/app/billing/invoices/$invoiceId' });
   const { t } = useTranslation();
   const toast = useToast();
+  const canManage = usePermission('invoice.manage');
+  const canReadClaims = usePermission('claim.read');
   const navigate = useNavigate();
   const invoice = useInvoice(invoiceId);
   const chain = useInvoiceChain(invoiceId);
@@ -314,7 +317,7 @@ export function InvoicePage() {
 
   function saveHeader(e: FormEvent) {
     e.preventDefault();
-    if (!record || !opened.domainCode || patch.isPending) return;
+    if (!canManage || !record || !opened.domainCode || patch.isPending) return;
     const body: PatchInvoiceDraft = {
       domainCode: opened.domainCode,
       invoiceNumber: opened.invoiceNumber.trim(),
@@ -337,7 +340,7 @@ export function InvoicePage() {
   }
 
   function attachImage() {
-    if (!cleanImage) return;
+    if (!canManage || !cleanImage) return;
     patch.mutate(
       { etag, body: { documentId: cleanImage.id } },
       { onSuccess: () => toast.notify({ tone: 'success', title: t('billing.provider.saved') }) },
@@ -345,7 +348,7 @@ export function InvoicePage() {
   }
 
   function correct() {
-    if (!record || !providerId) return;
+    if (!canManage || !record || !providerId) return;
     create.mutate(
       {
         providerOrganizationId: providerId,
@@ -393,10 +396,15 @@ export function InvoicePage() {
       <Card>
         <h2 className="text-base font-semibold">{t('billing.provider.invoice')}</h2>
         <div className="mt-3">
-          <HeaderFields form={opened} set={set} onSubmit={saveHeader} disabled={!isDraft} />
+          <HeaderFields
+            form={opened}
+            set={set}
+            onSubmit={saveHeader}
+            disabled={!isDraft || !canManage}
+          />
         </div>
         <ProblemAlert problem={patch.isError ? problemOf(patch.error) : null} className="mt-3" />
-        {isDraft ? (
+        {isDraft && canManage ? (
           <div className="mt-3">
             <Button
               size="sm"
@@ -418,10 +426,10 @@ export function InvoicePage() {
             aggregateType="INVOICE"
             aggregateId={record.id}
             requiredTypes={['INVOICE']}
-            readOnly={!isDraft}
+            readOnly={!isDraft || !canManage}
           />
         </div>
-        {isDraft && cleanImage && record.documentId !== cleanImage.id ? (
+        {isDraft && canManage && cleanImage && record.documentId !== cleanImage.id ? (
           <div className="mt-2">
             <Button size="sm" variant="secondary" onClick={attachImage} loading={patch.isPending}>
               {t('common.save')}
@@ -433,9 +441,11 @@ export function InvoicePage() {
       <AllocationsCard
         record={record}
         etag={etag}
-        editable={isDraft}
+        editable={isDraft && canManage && canReadClaims}
         candidateIds={(search.claims ?? '').split(',').filter(Boolean)}
         onSave={(allocations) =>
+          canManage &&
+          canReadClaims &&
           putAllocations.mutate(
             { etag, body: { allocations } },
             {
@@ -462,7 +472,7 @@ export function InvoicePage() {
           className="mb-3"
         />
         <div className="flex flex-wrap gap-2">
-          {isDraft ? (
+          {isDraft && canManage ? (
             <Button
               onClick={() =>
                 submit.mutate(etag, {
@@ -476,12 +486,12 @@ export function InvoicePage() {
               {t('billing.provider.submit')}
             </Button>
           ) : null}
-          {record.status === 'RETURNED' ? (
+          {record.status === 'RETURNED' && canManage ? (
             <Button onClick={correct} loading={create.isPending} data-testid="invoice-correct">
               {t('billing.provider.correct')}
             </Button>
           ) : null}
-          {isDraft || record.status === 'RETURNED' ? (
+          {canManage && (isDraft || record.status === 'RETURNED') ? (
             <Button
               variant="secondary"
               onClick={() =>

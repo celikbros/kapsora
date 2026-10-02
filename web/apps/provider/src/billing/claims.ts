@@ -1,4 +1,4 @@
-import { useTenantId } from '@kapsora/auth';
+import { usePermission, useTenantId } from '@kapsora/auth';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useOps } from '../services';
@@ -16,17 +16,20 @@ export function useClaimSummaries(ids: string[]): {
 } {
   const ops = useOps();
   const tenantId = useTenantId();
+  const canRead = usePermission('claim.read');
   const queryClient = useQueryClient();
   const result = useQuery({
     queryKey: ['provider', tenantId, 'billing', 'claim-summaries', ids],
-    enabled: ids.length > 0,
-    queryFn: async (): Promise<[string, ClaimSummary][]> => {
+    enabled: canRead && ids.length > 0,
+    queryFn: async ({ signal }): Promise<[string, ClaimSummary][]> => {
       const rows: [string, ClaimSummary][] = [];
       for (const id of ids) {
+        if (signal.aborted) break;
         const summary = await queryClient.fetchQuery({
           queryKey: ['provider', tenantId, 'billing', 'claim-summary', id],
-          queryFn: async (): Promise<ClaimSummary> => {
+          queryFn: async ({ signal: innerSignal }): Promise<ClaimSummary> => {
             const claim = await ops.claims.get(tenantId, id);
+            if (innerSignal.aborted) throw new DOMException('Session changed', 'AbortError');
             const readiness = await ops.claims.readiness(tenantId, id);
             return {
               reference: claim.data.reference,
@@ -36,6 +39,7 @@ export function useClaimSummaries(ids: string[]): {
           },
           staleTime: 60_000,
         });
+        if (signal.aborted) break;
         rows.push([id, summary]);
       }
       return rows;
@@ -43,5 +47,8 @@ export function useClaimSummaries(ids: string[]): {
     placeholderData: (previous) => previous,
     staleTime: 60_000,
   });
-  return { summaries: new Map(result.data ?? []), error: result.error };
+  return {
+    summaries: new Map(canRead ? (result.data ?? []) : []),
+    error: canRead ? result.error : null,
+  };
 }

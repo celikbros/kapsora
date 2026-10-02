@@ -4,14 +4,14 @@ import {
   type ServiceRequestItems,
   type Versioned,
 } from '@kapsora/api-client';
-import { usePermission, useTenantId } from '@kapsora/auth';
+import { usePermission, useSessionStore, useTenantId } from '@kapsora/auth';
 import { useTranslation } from '@kapsora/i18n';
 import { Button, Card, FormField, Input, ProblemAlert, Select, useToast } from '@kapsora/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { problemOf } from './problems';
 import { useServiceDefinitions } from './queries';
-import { useOps } from './services';
+import { sessionFingerprint, useOps } from './services';
 
 type Line = ServiceRequestItems['items'][number];
 const editableLines = (request: ServiceRequest): Line[] =>
@@ -34,6 +34,8 @@ export function RequestCorrection({
   const { t } = useTranslation();
   const tenantId = useTenantId();
   const ops = useOps();
+  const store = useSessionStore();
+  const context = sessionFingerprint(store.getState());
   const client = useQueryClient();
   const toast = useToast();
   const canEdit = usePermission('service_request.create');
@@ -54,21 +56,25 @@ export function RequestCorrection({
   const changedLines = JSON.stringify(lines) !== JSON.stringify(editableLines(request));
   const dirty = date !== request.serviceDate || changedLines;
   const stale = current.etag !== snapshot.etag;
-  const accept = async (result: Versioned<ServiceRequest>, message: string) => {
+  const accept = async (result: Versioned<ServiceRequest>, message: string, origin: string) => {
+    if (origin !== sessionFingerprint(store.getState())) return;
     setSnapshot(result);
     setDate(result.data.serviceDate);
     setLines(editableLines(result.data));
     setSubmitKey(randomId());
     client.setQueryData(['provider', tenantId, 'request', request.id], result);
     await client.invalidateQueries({ queryKey: ['provider', tenantId, 'requests'] });
+    if (origin !== sessionFingerprint(store.getState())) return;
     toast.notify({ tone: 'success', title: t(message) });
   };
   const save = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (origin: string) => {
+      if (origin !== sessionFingerprint(store.getState())) return snapshot;
       let result = snapshot;
       if (date !== request.serviceDate) {
         result = await ops.requests.patch(tenantId, request.id, result.etag, { serviceDate: date });
       }
+      if (origin !== sessionFingerprint(store.getState())) return result;
       if (changedLines)
         result = await ops.requests.putItems(tenantId, request.id, result.etag, {
           items: lines.map((line) => {
@@ -79,11 +85,14 @@ export function RequestCorrection({
         });
       return result;
     },
-    onSuccess: (result) => accept(result, 'provider.correction.saved'),
+    onSuccess: (result, origin) => accept(result, 'provider.correction.saved', origin),
   });
   const submit = useMutation({
-    mutationFn: () => ops.requests.submit(tenantId, request.id, snapshot.etag, submitKey),
-    onSuccess: (result) => accept(result, 'provider.correction.sent'),
+    mutationFn: (origin: string) =>
+      origin === sessionFingerprint(store.getState())
+        ? ops.requests.submit(tenantId, request.id, snapshot.etag, submitKey)
+        : Promise.resolve(snapshot),
+    onSuccess: (result, origin) => accept(result, 'provider.correction.sent', origin),
   });
   const locked =
     stale || save.isPending || submit.isPending || Boolean(save.error || submit.error) || reloading;
@@ -104,7 +113,7 @@ export function RequestCorrection({
     dateValid && lines.length > 0 && errors.every((line) => !Object.values(line).some(Boolean));
   function saveChanges(event: FormEvent) {
     event.preventDefault();
-    if (canEdit && dirty && valid && !locked) save.mutate();
+    if (canEdit && dirty && valid && !locked) save.mutate(context);
   }
 
   return (
@@ -264,7 +273,7 @@ export function RequestCorrection({
               type="button"
               loading={submit.isPending}
               onClick={() => {
-                if (!submit.isPending && !reloading) submit.mutate();
+                if (!submit.isPending && !reloading) submit.mutate(context);
               }}
             >
               {t('provider.correction.submit')}

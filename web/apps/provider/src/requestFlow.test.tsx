@@ -1,7 +1,7 @@
 import { createMockServer } from '@kapsora/api-client/mocks/node';
 import { initI18n } from '@kapsora/i18n';
 import { createMemoryHistory } from '@tanstack/react-router';
-import { render, screen, waitFor, within, act } from '@testing-library/react';
+import { render, screen, waitFor, within, act, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterAll, afterEach, beforeAll, expect, it, vi } from 'vitest';
 import { App } from './App';
@@ -158,6 +158,41 @@ it('refuses stale edits and reloads only on request without overwriting the newe
       within(screen.getByTestId('request-correction')).getAllByLabelText(/^Miktar/)[0],
     ).toHaveValue(original),
   );
+}, 20_000);
+
+it('stops correction after the first command when the actor changes', async () => {
+  const request = returnedRequest();
+  const { user, services } = await mount(`/requests/${request.id}`);
+  const form = await screen.findByTestId('request-correction');
+  const nextDate = new Date(Date.parse(`${request.serviceDate}T00:00:00Z`) + 86_400_000)
+    .toISOString()
+    .slice(0, 10);
+  fireEvent.change(within(form).getByLabelText(/^Hizmet tarihi/), { target: { value: nextDate } });
+  const quantity = within(form).getAllByLabelText(/^Miktar/)[0]!;
+  await user.clear(quantity);
+  await user.type(quantity, '2');
+  const original = services.ops.requests.patch.bind(services.ops.requests);
+  let release!: () => void;
+  const pending = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const patch = vi.spyOn(services.ops.requests, 'patch').mockImplementationOnce(async (...args) => {
+    const result = await original(...args);
+    await pending;
+    return result;
+  });
+  const put = vi.spyOn(services.ops.requests, 'putItems');
+  const write = vi.spyOn(services.queryClient, 'setQueryData');
+  await user.click(within(form).getByRole('button', { name: 'Değişiklikleri kaydet' }));
+  await waitFor(() => expect(patch).toHaveBeenCalledOnce());
+  await act(async () => {
+    services.store.setState((state) => ({
+      session: { ...state.session!, actorId: 'replacement-actor' },
+    }));
+    release();
+  });
+  expect(put).not.toHaveBeenCalled();
+  expect(write).not.toHaveBeenCalled();
 }, 20_000);
 
 it('explains invalid correction fields and accepts comma decimals without floating point conversion', async () => {

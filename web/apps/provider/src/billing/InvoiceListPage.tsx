@@ -1,4 +1,5 @@
 import type { InvoiceStatus } from '@kapsora/api-client';
+import { usePermission } from '@kapsora/auth';
 import { formatDate, formatMoney, useTranslation } from '@kapsora/i18n';
 import {
   Badge,
@@ -39,6 +40,7 @@ const STATUSES: InvoiceStatus[] = [
 export function InvoiceListPage() {
   const { t } = useTranslation();
   const wide = useMinWidth(768);
+  const canReadEarnings = usePermission('claim.read');
   const [status, setStatus] = useState('');
   const invoices = useInvoices(status ? { status: status as InvoiceStatus } : {});
   const rows = invoices.data?.items ?? [];
@@ -48,12 +50,14 @@ export function InvoiceListPage() {
       <PageHeader
         title={t('billing.provider.invoicesTitle')}
         actions={
-          <Link
-            to="/billing"
-            className="text-primary self-center text-sm underline-offset-4 hover:underline"
-          >
-            {t('billing.provider.earningsTitle')}
-          </Link>
+          canReadEarnings ? (
+            <Link
+              to="/billing"
+              className="text-primary self-center text-sm underline-offset-4 hover:underline"
+            >
+              {t('billing.provider.earningsTitle')}
+            </Link>
+          ) : null
         }
       />
       <FormField label={t('billing.provider.status')}>

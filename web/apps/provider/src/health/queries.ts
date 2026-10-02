@@ -13,7 +13,7 @@ import type {
   PutStaySegments,
 } from '@kapsora/api-client';
 import { etagOf } from '@kapsora/api-client';
-import { useTenantId } from '@kapsora/auth';
+import { usePermission, useTenantId } from '@kapsora/auth';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useOps } from '../services';
@@ -330,13 +330,15 @@ export function useStayCommands(stayId: string) {
 export function usePersonName(personId: string | null | undefined): string | null | undefined {
   const ops = useOps();
   const tenantId = useTenantId();
+  const canRead = usePermission('member.read');
   const q = useQuery({
     queryKey: ['provider', tenantId, 'person-name', personId ?? ''],
     queryFn: () => ops.people.get(tenantId, personId!),
-    enabled: Boolean(personId),
+    enabled: canRead && Boolean(personId),
     staleTime: 5 * 60_000,
     retry: false,
   });
+  if (!canRead) return null;
   if (q.isPending && q.fetchStatus !== 'idle') return undefined;
   return q.data?.data.displayName ?? null;
 }

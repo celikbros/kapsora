@@ -4,13 +4,13 @@ import {
   type ServiceRequest,
   type Versioned,
 } from '@kapsora/api-client';
-import { usePermission, useTenantId } from '@kapsora/auth';
+import { usePermission, useSessionStore, useTenantId } from '@kapsora/auth';
 import { useTranslation } from '@kapsora/i18n';
 import { Button, Dialog, FormField, ProblemAlert, Select, Textarea, useToast } from '@kapsora/ui';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { problemOf } from './problems';
-import { useOps } from './services';
+import { sessionFingerprint, useOps } from './services';
 
 const CANCELLABLE = new Set([
   'DRAFT',
@@ -20,7 +20,7 @@ const CANCELLABLE = new Set([
   'ELIGIBILITY_FAILED',
 ]);
 const REASONS = ['PROVIDER_WITHDRAWN', 'DUPLICATE_REQUEST', 'INPUT_ERROR'] as const;
-type Attempt = { etag: string; key: string; body: ReasonCommand };
+type Attempt = { etag: string; key: string; body: ReasonCommand; context: string };
 
 /** Withdrawal closes an undecided request. It never cancels an approved authorization. */
 export function RequestCancel({ current }: { current: Versioned<ServiceRequest> }) {
@@ -28,6 +28,8 @@ export function RequestCancel({ current }: { current: Versioned<ServiceRequest> 
   const allowed = usePermission('service_request.cancel');
   const tenantId = useTenantId();
   const ops = useOps();
+  const store = useSessionStore();
+  const context = sessionFingerprint(store.getState());
   const client = useQueryClient();
   const toast = useToast();
   const [open, setOpen] = useState(false);
@@ -39,8 +41,11 @@ export function RequestCancel({ current }: { current: Versioned<ServiceRequest> 
   const [reloading, setReloading] = useState(false);
   const cancel = useMutation({
     mutationFn: (command: Attempt) =>
-      ops.requests.cancel(tenantId, current.data.id, command.etag, command.body, command.key),
-    onSuccess: (result) => {
+      command.context === sessionFingerprint(store.getState())
+        ? ops.requests.cancel(tenantId, current.data.id, command.etag, command.body, command.key)
+        : Promise.resolve(snapshot),
+    onSuccess: (result, command) => {
+      if (command.context !== sessionFingerprint(store.getState())) return;
       client.setQueryData(['provider', tenantId, 'request', result.data.id], result);
       void client.invalidateQueries({ queryKey: ['provider', tenantId, 'requests'] });
       setOpen(false);
@@ -62,10 +67,12 @@ export function RequestCancel({ current }: { current: Versioned<ServiceRequest> 
   const valid = REASONS.some((value) => value === reason) && text.trim().length <= 1000;
   const canSend = !busy && !refused && (attempt !== null || (!stale && valid));
   async function reload() {
+    if (context !== sessionFingerprint(store.getState())) return;
     setReloading(true);
     setReloadError(null);
     try {
       const result = await ops.requests.get(tenantId, current.data.id);
+      if (context !== sessionFingerprint(store.getState())) return;
       client.setQueryData(['provider', tenantId, 'request', result.data.id], result);
       setSnapshot(result);
       setAttempt(null);
@@ -73,9 +80,9 @@ export function RequestCancel({ current }: { current: Versioned<ServiceRequest> 
       // Loading observes the outcome; it never issues another cancellation.
       if (!CANCELLABLE.has(result.data.status)) setOpen(false);
     } catch (error) {
-      setReloadError(error);
+      if (context === sessionFingerprint(store.getState())) setReloadError(error);
     } finally {
-      setReloading(false);
+      if (context === sessionFingerprint(store.getState())) setReloading(false);
     }
   }
   return (
@@ -110,6 +117,7 @@ export function RequestCancel({ current }: { current: Versioned<ServiceRequest> 
             const command = attempt ?? {
               etag: snapshot.etag,
               key: randomId(),
+              context,
               body: {
                 reasonCode: reason,
                 ...(text.trim() ? { reasonText: text.trim() } : {}),

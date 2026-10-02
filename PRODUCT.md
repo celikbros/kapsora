@@ -55,6 +55,11 @@ The main Billing entry opens a list the active role can read: invoice batches, s
 or reimbursements. Approval, cancellation and payment controls require their own existing
 grants; reading a record alone does not enable a financial command.
 
+The provider portal opens the account's permitted work: clinical staff start a request,
+billing staff open earnings, and reservation staff open the lodging desk. Navigation and
+direct links use the same existing permissions. Switching the account or its tenant scope
+clears cached records and open forms before the new context reads data.
+
 Price Query supplies the provider and service labels needed to calculate a quote through
 its existing pricing permission. Staff also need member access to choose a person. These
 choices do not promise coverage, and calculating a quote moves no entitlement balance.

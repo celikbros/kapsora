@@ -429,8 +429,8 @@ export function CasePage() {
   const query = useCase(caseId);
   const canManage = usePermission('health.case.manage');
   const canReport = usePermission('health.medical_report.manage');
-  const canClaim = usePermission('claim.create');
   const canReadClaims = usePermission('claim.read');
+  const canClaim = usePermission('claim.create') && canReadClaims;
   const reports = useReportsOfCase(caseId);
   const stays = useStaysOfCase(caseId);
   const claims = useClaimsOfCase(caseId, canReadClaims);

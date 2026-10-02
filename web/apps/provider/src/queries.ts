@@ -3,7 +3,7 @@ import type {
   EligibilityCheckRequest,
   ServiceRequestListQuery,
 } from '@kapsora/api-client';
-import { useSession, useTenantId } from '@kapsora/auth';
+import { usePermission, useSession, useTenantId } from '@kapsora/auth';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useMemo } from 'react';
@@ -56,9 +56,10 @@ export function usePersonEnrollments(personId: string) {
 export function useServiceDefinitions(enabled = true) {
   const ops = useOps();
   const tenantId = useTenantId();
+  const canRead = usePermission('catalog.read');
   return useQuery({
     queryKey: ['provider', tenantId, 'service-definitions'],
-    enabled,
+    enabled: enabled && canRead,
     queryFn: () => ops.catalog.listDefinitions(tenantId, { limit: 200 }),
     staleTime: 5 * 60_000,
     select: (page) =>
@@ -73,13 +74,15 @@ export function useServiceDefinitions(enabled = true) {
 export function useServiceName(definitionId: string | null | undefined): string | null | undefined {
   const ops = useOps();
   const tenantId = useTenantId();
+  const canRead = usePermission('catalog.read');
   const q = useQuery({
     queryKey: ['provider', tenantId, 'service-name', definitionId ?? ''],
     queryFn: () => ops.catalog.getDefinition(tenantId, definitionId!),
-    enabled: Boolean(definitionId),
+    enabled: canRead && Boolean(definitionId),
     staleTime: 5 * 60_000,
     retry: false,
   });
+  if (!canRead) return null;
   if (q.isPending && q.fetchStatus !== 'idle') return undefined;
   return q.data?.data.name ?? null;
 }

@@ -1,5 +1,5 @@
 import { formatDate, formatDateTime, useTranslation } from '@kapsora/i18n';
-import { usePermission } from '@kapsora/auth';
+import { useSession } from '@kapsora/auth';
 import { Badge, Breadcrumb, Button, Card, PageHeader, ProblemAlert, Spinner } from '@kapsora/ui';
 import { Link, useParams } from '@tanstack/react-router';
 
@@ -10,6 +10,7 @@ import { RequestAuthorization } from './RequestAuthorization';
 import { DocumentsPanel } from './documents';
 import { useRequest, useServiceName } from './queries';
 import { problemOf } from './problems';
+import { canOpen } from './access';
 
 /**
  * One of the provider's requests: what it is, what it is waiting for, and — when it is
@@ -21,7 +22,9 @@ export function RequestPage() {
   const { requestId } = useParams({ from: '/app/requests/$requestId' });
   const query = useRequest(requestId);
   const [editorEpoch, setEditorEpoch] = useState(0);
-  const canOpenCase = usePermission('health.case.manage');
+  const canOpenCase = useSession((s) =>
+    canOpen('caseOpen', s.activeTenant?.permissions ?? [], true),
+  );
   // The name is on the row (WP-I5-05 section 2.6); the request is read once either way.
   const personName = query.data?.data.personDisplayName;
   const serviceName = useServiceName(query.data?.data.items[0]?.serviceDefinitionId);

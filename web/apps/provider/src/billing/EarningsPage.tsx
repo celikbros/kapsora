@@ -1,3 +1,4 @@
+import { usePermission } from '@kapsora/auth';
 import { formatMoney, useTranslation } from '@kapsora/i18n';
 import {
   Button,
@@ -38,6 +39,9 @@ function today(): string {
 export function EarningsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const canReadInvoices = usePermission('invoice.read');
+  const canReadStatement = usePermission('report.read');
+  const canManageInvoice = usePermission('invoice.manage');
   const providerId = useProviderOrganizationId();
   const [from, setFrom] = useState(monthStart);
   const [to, setTo] = useState(today);
@@ -54,24 +58,30 @@ export function EarningsPage() {
         title={t('billing.provider.earningsTitle')}
         actions={
           <div className="flex gap-2">
-            <Link
-              to="/billing/invoices"
-              className="text-primary self-center text-sm underline-offset-4 hover:underline"
-            >
-              {t('billing.provider.invoicesTitle')}
-            </Link>
-            <Link
-              to="/billing/batches"
-              className="text-primary self-center text-sm underline-offset-4 hover:underline"
-            >
-              {t('billing.provider.batchesTitle')}
-            </Link>
-            <Link
-              to="/billing/statement"
-              className="text-primary self-center text-sm underline-offset-4 hover:underline"
-            >
-              {t('billing.report.statementTitle')}
-            </Link>
+            {canReadInvoices ? (
+              <Link
+                to="/billing/invoices"
+                className="text-primary self-center text-sm underline-offset-4 hover:underline"
+              >
+                {t('billing.provider.invoicesTitle')}
+              </Link>
+            ) : null}
+            {canReadInvoices ? (
+              <Link
+                to="/billing/batches"
+                className="text-primary self-center text-sm underline-offset-4 hover:underline"
+              >
+                {t('billing.provider.batchesTitle')}
+              </Link>
+            ) : null}
+            {canReadStatement ? (
+              <Link
+                to="/billing/statement"
+                className="text-primary self-center text-sm underline-offset-4 hover:underline"
+              >
+                {t('billing.report.statementTitle')}
+              </Link>
+            ) : null}
           </div>
         }
       />
@@ -153,7 +163,7 @@ export function EarningsPage() {
                 {formatMoney(c.invoiceableTotal, c.currencyCode)}
               </dd>
             </dl>
-            {c.invoiceableClaimIds.length > 0 ? (
+            {canManageInvoice && c.invoiceableClaimIds.length > 0 ? (
               <div className="mt-3">
                 <Button
                   size="sm"
