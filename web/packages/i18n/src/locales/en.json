@@ -1637,7 +1637,7 @@
         "assessed": "Assessed fee",
         "payer": "Payer share",
         "member": "Member share",
-        "consumedNights": "Nights to consume",
+        "consumedNights": "Consumed nights",
         "status": {
           "REPORTED": "Reported",
           "CONFIRMED": "Confirmed",

@@ -184,8 +184,12 @@ export function BookingDetailPage() {
           />
           <Row
             label={t('lodging.office.bookings.labels.reason')}
-            value={record.cancelReasonCode ?? '—'}
-            mono
+            value={
+              record.cancelReasonCode === 'NO_SHOW'
+                ? t('lodging.booking.status.NO_SHOW')
+                : (record.cancelReasonCode ?? '—')
+            }
+            mono={record.cancelReasonCode !== 'NO_SHOW'}
           />
           <NoShowSection booking={record} />
         </Step>

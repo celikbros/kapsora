@@ -3412,7 +3412,7 @@
         "assessed": "Hesaplanan ücret",
         "payer": "Ödeyen payı",
         "member": "Üye payı",
-        "consumedNights": "Düşülecek gece",
+        "consumedNights": "Harcanan gece",
         "status": {
           "REPORTED": "Bildirildi",
           "CONFIRMED": "Onaylandı",
