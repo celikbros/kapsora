@@ -34,19 +34,19 @@ keep them current as you build.
 
 ## 2. Where things stand
 
-**Current owner priority (reconfirmed 2026-09-22): complete the running product, with
-health first.** The detailed plan for the approved sequence is the
-[PC-01–PC-06 product completion roadmap](plan/ROADMAP.md#current-product-completion-roadmap-2026-09-22).
-Member import is locally verified. PC-02 is VERIFIED locally for its defined demo
-acceptance scope as of 2026-09-29; its dated evidence and limits are recorded below and in
-the roadmap. PC-03 is VERIFIED locally for the defined outpatient acceptance scope after
-the live standard outpatient run. PC-04 is VERIFIED locally for its defined inpatient demo
-acceptance scope after operator restart and live admission, extension, discharge, claim,
-cancellation and privacy acceptance. The health financial journey remains open at PC-05.
-Split-claim evidence proves allocation quantities, not chronological coverage. PC-05
-invoice/batch/payment is active; PC-06 accommodation plus combined acceptance is pending. The roadmap records
-task dependencies, 15 health acceptance scenarios, role handoffs, evidence gates and
-confirmed source/fixture gaps.
+**Current owner priority: complete the running product, with health first.**
+The [product completion roadmap](plan/ROADMAP.md#current-product-completion-roadmap-2026-09-22)
+records the approved sequence and acceptance criteria.
+
+**Current snapshot (2026-10-03):** PC-01 through PC-04 are VERIFIED locally for their
+specified demo acceptance scopes. PC-05 remains ACTIVE: the financial journeys passed
+local technical acceptance; formal owner acceptance and retained scheduler checks remain
+open. PC-06 has passed live technical acceptance, with the same remaining gates. Schema 55
+was applied cleanly. PR #11 remains draft and unmerged. All six CI checks passed on code
+head `299420d` ([run 37062439141](https://github.com/celikbros/kapsora/actions/runs/37062439141)).
+This snapshot and the latest checkpoint below supersede dated next-step instructions in
+the historical evidence. Split-claim quantities still do not prove chronological coverage.
+
 The first live health checkpoint passed: provider catalog access, single-enrollment
 eligibility, insufficient-quantity refusal, request submission, medical approval and the
 provider's updated status. Migration 000050 fixes the reproduced catalog 403 for system
@@ -1058,15 +1058,48 @@ Request: `01a0ee4d-7c93-76ba-9b33-fc9408a8d02c`; receipt:
 `01a0ee4d-7d42-70e2-b2a0-13bd3974e99d`; reimbursement:
 `01a0ee4d-97a9-77eb-8192-e993b3a6f955`; account:
 `01a09098-b235-756a-96bf-37f676c23925`. Resume with these explicit IDs; do not create a
-second application. The follow-up paid-state desktop/mobile screenshot command did not
-execute: automatic approval review timed out twice, and the local patch tool failed to
-prepare its Windows sandbox. The functional test passed; final screenshots remain pending.
-All six CI checks on preceding implementation head `3ddaa33` passed.
+second application. Same-ID paid-state read-only desktop/mobile verification is complete
+at 390px and 1440px.
+All six CI checks passed on the final head `299420d` ([run
+37062439141](https://github.com/celikbros/kapsora/actions/runs/37062439141)).
 
-PC-06 audit: the business seed supplies hotel/room inventory, published lodging terms and
-a member NIGHT entitlement but no booking. Existing lodging Playwright tests use mocks;
-a dedicated live/resumable accommodation harness remains necessary. No accommodation
-booking or business setting was changed by this audit.
+### PC-06 technical acceptance checkpoint (2026-10-03)
+
+Lodging acceptance covers fully and partly covered bookings, member contribution, free
+and penalized cancellation, check-in, early checkout, reviewed no-show and natural waitlist
+expiry. Inventory and entitlement restoration/consumption reconcile without duplicate
+operations. Stay and cancellation claims reached hotel invoices, batches, local payments
+and scoped statements. The reviewed no-show had zero fee; it does not prove a fee-bearing
+no-show claim. Local payment records do not certify a bank transfer or fiscal submission.
+
+Approved migrations 000054 and 000055 provide booking-specific evidence linking for system
+PROVIDER_RESERVATION and narrow payer no-show review for system PROGRAM_MANAGER. Custom
+roles remain excluded. Later entry/navigation fixes added no grants or schema changes.
+
+The retained combined acceptance regression passed 11/11. Subsequent fixes made Health,
+Reports, Wallets, billing and pricing reachable under their actual read/action grants.
+The security surface covers health access events only, not general security administration.
+Shared provider sign-in opens each role's permitted task; member home reaches reimbursement.
+Actor, tenant and grant/scope changes clear stale records/forms, and delayed responses cannot
+restore an old context. Already-issued server commands are not undone by a context change.
+
+The full frontend suite passed 679/679 tests in 79 files on `7e348f2`. The final no-show copy
+fix on `299420d` passed the eight focused backoffice m6 tests, typecheck, scoped lint/format
+and build; all six GitHub CI jobs passed on that code head. The known NO_SHOW reason now
+uses its localized label, preserving unknown/missing fallbacks; consumed nights are labeled
+as actual consumption rather than a future deduction.
+
+Final agent review covered six existing accepted screens: the no-show booking, paid health
+and hotel settlements, both provider statements and paid member reimbursement. Their twelve
+1440px/390px views had no observed page overflow, business commands or forbidden supporting
+reads. This visual review used synthetic financial/lodging records; clinical and health
+access-log screens were excluded. Detailed fixture identifiers and images remain local.
+
+No concrete date-independent implementation blocker remains in this approved pass. Formal
+owner acceptance remains open, as do genuine scheduler checks on 2026-10-14 (hotel) and
+2026-10-29 (health). Preserve the accepted episodes and their dates; do not force the clock,
+settings or due dates or create replacement payments to close these gates. Global
+administration and integrations remain outside this pass. PR #11 is not merged or released.
 
 ## 3. Get it running
 
@@ -1077,7 +1110,7 @@ cp .env.example .env              # fill CHANGE_ME with your local PostgreSQL cr
 make tools                        # sqlc, oapi-codegen, oasdiff, golangci-lint, govulncheck
 make native-install && make native-up   # MinIO, ClamAV, Mailpit as native processes
 make db-init                      # role kapsora_app + database kapsora
-make migrate-up                   # schema to 000053
+make migrate-up                   # schema to 000055
 make test-unit && make test-db    # should both be green before you write anything
 ```
 
@@ -1138,7 +1171,8 @@ It uses `/portal/` and backoffice on the existing single door, signing out betwe
 provider and medical reviewer. Each run creates and approves one synthetic request in
 DEMO_A. It checks service access, eligible/insufficient quantity, submission, medical
 approval and provider follow-up. It creates no authorization, case or claim and does not
-certify reservation, consumption or financial correctness. Member-app acceptance is pending.
+certify reservation, consumption or financial correctness. This harness does not exercise
+the member app; its later acceptance evidence is recorded in the current checkpoint above.
 
 Enable the verified authorization extension of that same real flow:
 

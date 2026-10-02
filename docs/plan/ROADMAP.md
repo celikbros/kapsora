@@ -14,6 +14,19 @@ Authoritative sources: [docs/plan/KAPSORA_Master_Plan_v2.0.md](KAPSORA_Master_Pl
 (Turkish, normative), [docs/adr](../adr/README.md), the frozen v1.2 specification under
 [docs/baseline-v1.2](../baseline-v1.2/). When they disagree, the master plan and ADRs win.
 
+## Current snapshot (2026-10-03)
+
+This snapshot supersedes dated next-step instructions in the historical status log.
+PC-01 through PC-04 are VERIFIED locally within their defined demo scopes. PC-05 remains
+ACTIVE: its financial journeys passed local technical acceptance; formal owner acceptance
+and retained scheduler checks remain open. PC-06 has passed live technical acceptance,
+with the same remaining gates. Schema 55 was applied cleanly. PR #11 remains draft/unmerged;
+all six CI checks passed on code head `299420d`
+([run 37062439141](https://github.com/celikbros/kapsora/actions/runs/37062439141)).
+No concrete date-independent implementation blocker remains in this approved pass.
+Global administration and integrations are outside its scope; no production release,
+fiscal submission or bank transfer is certified.
+
 ## Current product completion roadmap (2026-09-22)
 
 This is the owner's approved execution order: finish the running product, with health
@@ -24,7 +37,7 @@ the existing work-package contracts rather than starting their implementation ag
 
 ### Baseline and delivery sequence
 
-- Local schema: 000053 (dirty=false); operator restart and live inpatient acceptance passed. API, worker, scheduler and the three apps run through the
+- Local schema: 000055 (dirty=false); lodging and combined technical acceptance passed. API, worker, scheduler and the three apps run through the
   operator's single door at `http://127.0.0.1:5181`; API port 8090. PostgreSQL, MinIO,
   ClamAV and Mailpit are the existing native dependencies.
 - PC-01 passed twice in the real browser on 2026-09-22 (15.8 s total). All six GitHub
@@ -46,7 +59,7 @@ the existing work-package contracts rather than starting their implementation ag
 | PC-03 | Outpatient care, reports and health claims | VERIFIED locally for the defined outpatient acceptance scope (2026-09-29); PC-04/05 remain separate | PC-02 | Case, encounter and diagnosis, then a clean report, review and invoice-ready claim |
 | PC-04 | Inpatient care | VERIFIED locally for the defined inpatient demo acceptance scope (2026-09-29); PC-05 active | PC-03 and admission configuration | Preauthorization -> admission -> extension -> discharge -> invoice-ready claim; entitlement reconciles |
 | PC-05 | Invoice, batch, settlement and payment | ACTIVE | An invoice-ready health claim from PC-03/04 | The same episode reaches invoice, payer decision and a reconciled local payment record |
-| PC-06 | Accommodation and combined product acceptance | QUEUED | PC-05; existing lodging implementation | Booking and its financial consequences work; cross-app regression and owner walkthrough complete |
+| PC-06 | Accommodation and combined product acceptance | TECHNICAL ACCEPTANCE PASSED; owner/calendar pending | PC-05; existing lodging implementation | Booking and its financial consequences work; cross-app regression and owner walkthrough complete |
 
 **Health completion has two explicit checkpoints.** Clinical and health-claim acceptance
 closes after PC-02–PC-04 and all health privacy gates pass. The health episode's financial
@@ -360,10 +373,9 @@ live verification; `real-health-reimbursement.spec.ts` is prepared, not yet exec
 After the operator restart, live member reimbursement passed (15.1 s): real CLEAN
 receipt, request gate, duplicate refusal, financial approval, one exact 125.50 TRY
 HEALTH_MONEY consumption and local PAID status. Creation/submission and payment recording
-caused no extra consumption. Same-ID desktop/mobile follow-up remains pending because
-command approval review timed out twice and the local Windows sandbox failed. The dated
-HANDOVER checkpoint carries resume IDs and the distinction between passed functional
-acceptance and pending visual verification. All six CI jobs on `3ddaa33` passed.
+caused no extra consumption. Same-ID read-only desktop/mobile verification subsequently
+passed at 390px and 1440px. Functional reimbursement acceptance and its visual review are
+complete; broader owner/scheduler gates remain open. All six CI jobs on `3ddaa33` passed.
 
 PC-05 read-only event audit: [WP-I7-02](../delegation/WP-I7-02-invoice-manual-entry-and-allocation.md) requires publishing `invoice.submitted`;
 invoice/claim submit freezes and moves synchronously, with no automatic batch requirement.
@@ -401,6 +413,51 @@ This is local product financial acceptance, not a claim of fiscal submission or 
 References: [M7 work packages](#m7-work-packages-issued-2026-09-07).
 
 ### PC-06 — accommodation and combined acceptance
+
+**Live technical acceptance passed; formal owner acceptance and scheduler checks remain
+open.** Lodging covers fully/partly covered bookings, member contribution, cancellation
+penalties, check-in/early checkout, reviewed no-show and natural waitlist expiry. Inventory
+and entitlement effects reconcile without duplicates. Hotel stay/cancellation claims
+reached invoices, batches, local payments and scoped statements. The zero-fee no-show does
+not prove a fee-bearing no-show claim.
+
+Approved migration 000054 adds booking-specific evidence linking to system
+PROVIDER_RESERVATION; 000055 adds narrow no-show review to system PROGRAM_MANAGER.
+Custom roles are excluded. Later entry/navigation fixes add no permissions or schema.
+
+The retained combined regression passed 11/11. Subsequent Health, Reports, Wallets,
+health-only access audit, billing, pricing and provider navigation checks passed under
+actual grants, with actor/tenant/grant isolation for records and forms. This does not
+certify general administration or a general security audit. The full frontend suite passed
+679/679 tests in 79 files on `7e348f2`; the final no-show copy fix on `299420d` passed eight
+focused backoffice m6 tests and its build/type/lint checks. All six CI checks passed on
+`299420d`. See the [handover checkpoint](../HANDOVER.md#pc-06-technical-acceptance-checkpoint-2026-10-03)
+for scope and limitations.
+
+The final agent review inspected six accepted screens at 1440px and 390px (twelve views).
+There was no observed page overflow, business command or forbidden supporting read.
+Clinical/access-log screens were excluded from this synthetic financial/lodging review.
+Agent review is complete; formal owner acceptance has not been given.
+
+For owner review, use the existing accepted records through shared sign-in and ordinary
+navigation; no new booking, invoice or payment is needed. Sign out between roles.
+
+| Review role | Existing screen and result |
+| --- | --- |
+| Administrator | Confirmed no-show: consumed nights and fee; no further decision controls |
+| Member | Home -> reimbursement list -> paid detail -> list/home; readable on mobile |
+| Payer approver | Paid health/hotel settlements: payment histories agree with payable totals |
+| Hospital/hotel billing | Role landing -> statement: paid rows and remaining balances agree |
+
+For both statements select 2026-09-01 through 2026-10-29 to include the accepted September
+invoices and future-due settlements. Other demo open rows are separate from the paid health
+episode. A report-period selection changes neither payment status nor scheduler evidence.
+
+Genuine scheduler checks remain pending for 2026-10-14 (hotel) and 2026-10-29 (health).
+Keep the same paid episodes and real dates; do not force the clock/settings or create
+replacement records. PR #11 remains draft. Global administration, integrations, fiscal/ERP,
+deployment and merge remain outside this pass. The following steps define acceptance
+criteria; passed technical paths need not be recreated without a new failure.
 
 1. Verify the member's person scope, property/room inventory, valid lodging terms and
    explicit member contribution. Search → quote → hold → approval/confirmation → voucher.
