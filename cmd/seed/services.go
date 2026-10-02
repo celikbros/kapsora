@@ -144,7 +144,7 @@ func newVerticals(d seedDeps) (*verticals, error) {
 	programs := rulesapp.NewProgramCache(rulesapp.DefaultCacheSize)
 	pricing, err := pricingapp.New(pricingapp.Deps{
 		Pool: d.Pool, Repo: pricingpg.New(), Audit: auditpg.New(),
-		Programs: programs, Logger: logger, Now: now,
+		Programs: programs, Logger: logger, Now: now, Cursors: cursors,
 	})
 	if err != nil {
 		return nil, err

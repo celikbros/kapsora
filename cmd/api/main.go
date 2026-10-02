@@ -217,7 +217,7 @@ func run() error {
 	// evaluates.
 	pricingSvc, err := pricingapp.New(pricingapp.Deps{
 		Pool: pool, Repo: pricingpg.New(), Audit: auditpg.New(),
-		Programs: pricingPrograms, Logger: logger,
+		Programs: pricingPrograms, Logger: logger, Cursors: cursors,
 	})
 	if err != nil {
 		return err

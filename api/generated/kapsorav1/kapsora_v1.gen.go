@@ -10360,6 +10360,18 @@ type PriceListList struct {
 // or a category above it in the catalog tree.
 type PriceMatchTarget string
 
+// PriceProviderOption defines model for PriceProviderOption.
+type PriceProviderOption struct {
+	OrganizationName  string             `json:"organizationName"`
+	ProviderProfileId openapi_types.UUID `json:"providerProfileId"`
+}
+
+// PriceProviderOptionPage defines model for PriceProviderOptionPage.
+type PriceProviderOptionPage struct {
+	Items      []PriceProviderOption `json:"items"`
+	NextCursor *string               `json:"nextCursor"`
+}
+
 // PriceQuote defines model for PriceQuote.
 type PriceQuote struct {
 	ContractAmount string `json:"contractAmount"`
@@ -10484,6 +10496,19 @@ type PriceQuoteRequestItem struct {
 
 	// ServiceDefinitionId The service being priced. Exactly one of this and packageDefinitionId.
 	ServiceDefinitionId *openapi_types.UUID `json:"serviceDefinitionId,omitempty"`
+}
+
+// PriceServiceOption defines model for PriceServiceOption.
+type PriceServiceOption struct {
+	Code                string             `json:"code"`
+	Name                string             `json:"name"`
+	ServiceDefinitionId openapi_types.UUID `json:"serviceDefinitionId"`
+}
+
+// PriceServiceOptionPage defines model for PriceServiceOptionPage.
+type PriceServiceOptionPage struct {
+	Items      []PriceServiceOption `json:"items"`
+	NextCursor *string              `json:"nextCursor"`
 }
 
 // PricingMethod How the amount of a price item is arrived at. FIXED and UNIT carry an amount,
@@ -15769,6 +15794,26 @@ type ResolvePriceParams struct {
 	XCSRFToken *CsrfHeader `json:"X-CSRF-Token,omitempty"`
 }
 
+// ListPriceProviderOptionsParams defines parameters for ListPriceProviderOptions.
+type ListPriceProviderOptionsParams struct {
+	Q      *string `form:"q,omitempty" json:"q,omitempty"`
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// ListPriceServiceOptionsParams defines parameters for ListPriceServiceOptions.
+type ListPriceServiceOptionsParams struct {
+	Q      *string `form:"q,omitempty" json:"q,omitempty"`
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
 // CreatePriceQuoteParams defines parameters for CreatePriceQuote.
 type CreatePriceQuoteParams struct {
 	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
@@ -18161,6 +18206,12 @@ type ServerInterface interface {
 	// (POST /api/v1/prices:resolve)
 	ResolvePrice(w http.ResponseWriter, r *http.Request, params ResolvePriceParams)
 
+	// (GET /api/v1/pricing/options/providers)
+	ListPriceProviderOptions(w http.ResponseWriter, r *http.Request, params ListPriceProviderOptionsParams)
+
+	// (GET /api/v1/pricing/options/services)
+	ListPriceServiceOptions(w http.ResponseWriter, r *http.Request, params ListPriceServiceOptionsParams)
+
 	// (POST /api/v1/pricing/quotes)
 	CreatePriceQuote(w http.ResponseWriter, r *http.Request, params CreatePriceQuoteParams)
 
@@ -19538,6 +19589,16 @@ func (_ Unimplemented) PutPriceItems(w http.ResponseWriter, r *http.Request, pri
 
 // (POST /api/v1/prices:resolve)
 func (_ Unimplemented) ResolvePrice(w http.ResponseWriter, r *http.Request, params ResolvePriceParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/pricing/options/providers)
+func (_ Unimplemented) ListPriceProviderOptions(w http.ResponseWriter, r *http.Request, params ListPriceProviderOptionsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/pricing/options/services)
+func (_ Unimplemented) ListPriceServiceOptions(w http.ResponseWriter, r *http.Request, params ListPriceServiceOptionsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -38572,6 +38633,174 @@ func (siw *ServerInterfaceWrapper) ResolvePrice(w http.ResponseWriter, r *http.R
 	handler.ServeHTTP(w, r)
 }
 
+// ListPriceProviderOptions operation middleware
+func (siw *ServerInterfaceWrapper) ListPriceProviderOptions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListPriceProviderOptionsParams
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListPriceProviderOptions(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListPriceServiceOptions operation middleware
+func (siw *ServerInterfaceWrapper) ListPriceServiceOptions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListPriceServiceOptionsParams
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListPriceServiceOptions(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // CreatePriceQuote operation middleware
 func (siw *ServerInterfaceWrapper) CreatePriceQuote(w http.ResponseWriter, r *http.Request) {
 
@@ -47294,6 +47523,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/rule-evaluations/{ruleEvaluationId}", wrapper.GetRuleEvaluation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/pricing/options/providers", wrapper.ListPriceProviderOptions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/pricing/options/services", wrapper.ListPriceServiceOptions)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/pricing/quotes", wrapper.CreatePriceQuote)
@@ -67320,6 +67555,142 @@ func (response ResolvePrice422ApplicationProblemPlusJSONResponse) VisitResolvePr
 	return err
 }
 
+type ListPriceProviderOptionsRequestObject struct {
+	Params ListPriceProviderOptionsParams
+}
+
+type ListPriceProviderOptionsResponseObject interface {
+	VisitListPriceProviderOptionsResponse(w http.ResponseWriter) error
+}
+
+type ListPriceProviderOptions200JSONResponse PriceProviderOptionPage
+
+func (response ListPriceProviderOptions200JSONResponse) VisitListPriceProviderOptionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPriceProviderOptions400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListPriceProviderOptions400ApplicationProblemPlusJSONResponse) VisitListPriceProviderOptionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPriceProviderOptions403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListPriceProviderOptions403ApplicationProblemPlusJSONResponse) VisitListPriceProviderOptionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPriceProviderOptions422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListPriceProviderOptions422ApplicationProblemPlusJSONResponse) VisitListPriceProviderOptionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPriceServiceOptionsRequestObject struct {
+	Params ListPriceServiceOptionsParams
+}
+
+type ListPriceServiceOptionsResponseObject interface {
+	VisitListPriceServiceOptionsResponse(w http.ResponseWriter) error
+}
+
+type ListPriceServiceOptions200JSONResponse PriceServiceOptionPage
+
+func (response ListPriceServiceOptions200JSONResponse) VisitListPriceServiceOptionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPriceServiceOptions400ApplicationProblemPlusJSONResponse Problem
+
+func (response ListPriceServiceOptions400ApplicationProblemPlusJSONResponse) VisitListPriceServiceOptionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPriceServiceOptions403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListPriceServiceOptions403ApplicationProblemPlusJSONResponse) VisitListPriceServiceOptionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPriceServiceOptions422ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListPriceServiceOptions422ApplicationProblemPlusJSONResponse) VisitListPriceServiceOptionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type CreatePriceQuoteRequestObject struct {
 	Params CreatePriceQuoteParams
 	Body   *CreatePriceQuoteJSONRequestBody
@@ -77486,6 +77857,12 @@ type StrictServerInterface interface {
 	// (POST /api/v1/prices:resolve)
 	ResolvePrice(ctx context.Context, request ResolvePriceRequestObject) (ResolvePriceResponseObject, error)
 
+	// (GET /api/v1/pricing/options/providers)
+	ListPriceProviderOptions(ctx context.Context, request ListPriceProviderOptionsRequestObject) (ListPriceProviderOptionsResponseObject, error)
+
+	// (GET /api/v1/pricing/options/services)
+	ListPriceServiceOptions(ctx context.Context, request ListPriceServiceOptionsRequestObject) (ListPriceServiceOptionsResponseObject, error)
+
 	// (POST /api/v1/pricing/quotes)
 	CreatePriceQuote(ctx context.Context, request CreatePriceQuoteRequestObject) (CreatePriceQuoteResponseObject, error)
 
@@ -84363,6 +84740,58 @@ func (sh *strictHandler) ResolvePrice(w http.ResponseWriter, r *http.Request, pa
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ResolvePriceResponseObject); ok {
 		if err := validResponse.VisitResolvePriceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListPriceProviderOptions operation middleware
+func (sh *strictHandler) ListPriceProviderOptions(w http.ResponseWriter, r *http.Request, params ListPriceProviderOptionsParams) {
+	var request ListPriceProviderOptionsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListPriceProviderOptions(ctx, request.(ListPriceProviderOptionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListPriceProviderOptions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListPriceProviderOptionsResponseObject); ok {
+		if err := validResponse.VisitListPriceProviderOptionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListPriceServiceOptions operation middleware
+func (sh *strictHandler) ListPriceServiceOptions(w http.ResponseWriter, r *http.Request, params ListPriceServiceOptionsParams) {
+	var request ListPriceServiceOptionsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListPriceServiceOptions(ctx, request.(ListPriceServiceOptionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListPriceServiceOptions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListPriceServiceOptionsResponseObject); ok {
+		if err := validResponse.VisitListPriceServiceOptionsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

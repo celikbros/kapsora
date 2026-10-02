@@ -6036,6 +6036,70 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /api/v1/pricing/options/providers:
+    get:
+      tags: [Pricing]
+      operationId: listPriceProviderOptions
+      description: Active provider profiles available when composing a quote. Requires pricing.quote. Organization-scoped callers see only matching providers. These options do not promise a matching contract or price.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: q
+          in: query
+          schema: {type: string, minLength: 2, maxLength: 120}
+        - name: cursor
+          in: query
+          schema: {type: string}
+        - name: limit
+          in: query
+          schema: {type: integer, minimum: 1, maximum: 100, default: 50}
+      responses:
+        '200':
+          description: Provider input options
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceProviderOptionPage'
+        '400':
+          description: Invalid cursor
+          content:
+            application/problem+json:
+              schema: {$ref: '#/components/schemas/Problem'}
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/pricing/options/services:
+    get:
+      tags: [Pricing]
+      operationId: listPriceServiceOptions
+      description: Active tenant service definitions available when composing a quote. Requires pricing.quote. The options are normal service metadata and do not promise provider or contract eligibility.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: q
+          in: query
+          schema: {type: string, minLength: 2, maxLength: 120}
+        - name: cursor
+          in: query
+          schema: {type: string}
+        - name: limit
+          in: query
+          schema: {type: integer, minimum: 1, maximum: 100, default: 50}
+      responses:
+        '200':
+          description: Service input options
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceServiceOptionPage'
+        '400':
+          description: Invalid cursor
+          content:
+            application/problem+json:
+              schema: {$ref: '#/components/schemas/Problem'}
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
   /api/v1/pricing/quotes:
     post:
       tags: [Pricing]
@@ -19696,6 +19760,39 @@ components:
           description: |
             What the provider asked for, as an exact decimal string. A PERCENT_OF_LIST price
             is a percentage of it.
+    PriceProviderOption:
+      type: object
+      additionalProperties: false
+      required: [providerProfileId, organizationName]
+      properties:
+        providerProfileId: {type: string, format: uuid}
+        organizationName: {type: string}
+    PriceProviderOptionPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/PriceProviderOption'}
+        nextCursor: {type: [string, 'null']}
+    PriceServiceOption:
+      type: object
+      additionalProperties: false
+      required: [serviceDefinitionId, code, name]
+      properties:
+        serviceDefinitionId: {type: string, format: uuid}
+        code: {type: string}
+        name: {type: string}
+    PriceServiceOptionPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/PriceServiceOption'}
+        nextCursor: {type: [string, 'null']}
     CreatePriceQuoteRequest:
       type: object
       additionalProperties: false

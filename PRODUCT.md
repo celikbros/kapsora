@@ -55,6 +55,10 @@ The main Billing entry opens a list the active role can read: invoice batches, s
 or reimbursements. Approval, cancellation and payment controls require their own existing
 grants; reading a record alone does not enable a financial command.
 
+Price Query supplies the provider and service labels needed to calculate a quote through
+its existing pricing permission. Staff also need member access to choose a person. These
+choices do not promise coverage, and calculating a quote moves no entitlement balance.
+
 The wallet entry helps staff allowed to read members and entitlements find a person, open
 their balances and inspect account movements without changing those balances.
 

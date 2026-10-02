@@ -14,6 +14,7 @@ import (
 	benefitdomain "github.com/celikbros/kapsora/internal/benefit/domain"
 	"github.com/celikbros/kapsora/internal/identity"
 	"github.com/celikbros/kapsora/internal/platform/dbtest"
+	"github.com/celikbros/kapsora/internal/platform/httpx"
 	"github.com/celikbros/kapsora/internal/pricing/application"
 	pricingpg "github.com/celikbros/kapsora/internal/pricing/infrastructure/postgres"
 )
@@ -67,7 +68,8 @@ func newFixtureWithEntitlement(t *testing.T, unit, initial string) *fixture {
 	h := dbtest.New(t)
 	svc, err := application.New(application.Deps{
 		Pool: h.App, Repo: pricingpg.New(), Audit: auditpg.New(),
-		Now: func() time.Time { return time.Date(2026, 6, 15, 9, 30, 0, 0, time.UTC) },
+		Cursors: testCursorCodec(),
+		Now:     func() time.Time { return time.Date(2026, 6, 15, 9, 30, 0, 0, time.UTC) },
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -75,6 +77,11 @@ func newFixtureWithEntitlement(t *testing.T, unit, initial string) *fixture {
 	f := &fixture{h: h, svc: svc}
 	f.seed(t, unit, initial)
 	return f
+}
+
+func testCursorCodec() *httpx.CursorCodec {
+	c, _ := httpx.NewCursorCodec([]byte("pricing-test-cursor-key-0123456789"))
+	return c
 }
 
 func (f *fixture) seed(t *testing.T, unit, initial string) { //nolint:funlen // one linear fixture reads better whole
@@ -529,7 +536,8 @@ func TestExpiredQuoteIsReportedNotHidden(t *testing.T) {
 
 	late, err := application.New(application.Deps{
 		Pool: f.h.App, Repo: pricingpg.New(), Audit: auditpg.New(),
-		Now: func() time.Time { return quote.ExpiresAt.Add(time.Hour) },
+		Cursors: testCursorCodec(),
+		Now:     func() time.Time { return quote.ExpiresAt.Add(time.Hour) },
 	})
 	if err != nil {
 		t.Fatal(err)

@@ -248,6 +248,9 @@ export type {
   PriceQuoteItem,
   PriceQuoteOutcome,
   PriceQuoteRequestItem,
+  PriceOptionQuery,
+  PriceProviderOptionPage,
+  PriceServiceOptionPage,
 } from './pricing';
 export { serviceRequestOperations } from './servicerequest';
 export type {

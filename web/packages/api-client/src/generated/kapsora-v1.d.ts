@@ -4549,6 +4549,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/pricing/options/providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Active provider profiles available when composing a quote. Requires pricing.quote. Organization-scoped callers see only matching providers. These options do not promise a matching contract or price. */
+        get: operations["listPriceProviderOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pricing/options/services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Active tenant service definitions available when composing a quote. Requires pricing.quote. The options are normal service metadata and do not promise provider or contract eligibility. */
+        get: operations["listPriceServiceOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/pricing/quotes": {
         parameters: {
             query?: never;
@@ -11018,6 +11052,15 @@ export interface components {
          * @enum {string}
          */
         PriceMatchTarget: "DEFINITION" | "PACKAGE" | "CATEGORY";
+        PriceProviderOption: {
+            organizationName: string;
+            /** Format: uuid */
+            providerProfileId: string;
+        };
+        PriceProviderOptionPage: {
+            items: components["schemas"]["PriceProviderOption"][];
+            nextCursor: string | null;
+        };
         PriceQuote: {
             contractAmount: string;
             /**
@@ -11147,6 +11190,16 @@ export interface components {
              * @description The service being priced. Exactly one of this and packageDefinitionId.
              */
             serviceDefinitionId?: string;
+        };
+        PriceServiceOption: {
+            code: string;
+            name: string;
+            /** Format: uuid */
+            serviceDefinitionId: string;
+        };
+        PriceServiceOptionPage: {
+            items: components["schemas"]["PriceServiceOption"][];
+            nextCursor: string | null;
         };
         /**
          * @description How the amount of a price item is arrived at. FIXED and UNIT carry an amount,
@@ -13755,11 +13808,15 @@ export type SchemaPriceList = components['schemas']['PriceList'];
 export type SchemaPriceListInput = components['schemas']['PriceListInput'];
 export type SchemaPriceListList = components['schemas']['PriceListList'];
 export type SchemaPriceMatchTarget = components['schemas']['PriceMatchTarget'];
+export type SchemaPriceProviderOption = components['schemas']['PriceProviderOption'];
+export type SchemaPriceProviderOptionPage = components['schemas']['PriceProviderOptionPage'];
 export type SchemaPriceQuote = components['schemas']['PriceQuote'];
 export type SchemaPriceQuoteExplanation = components['schemas']['PriceQuoteExplanation'];
 export type SchemaPriceQuoteItem = components['schemas']['PriceQuoteItem'];
 export type SchemaPriceQuoteOutcome = components['schemas']['PriceQuoteOutcome'];
 export type SchemaPriceQuoteRequestItem = components['schemas']['PriceQuoteRequestItem'];
+export type SchemaPriceServiceOption = components['schemas']['PriceServiceOption'];
+export type SchemaPriceServiceOptionPage = components['schemas']['PriceServiceOptionPage'];
 export type SchemaPricingMethod = components['schemas']['PricingMethod'];
 export type SchemaProblem = components['schemas']['Problem'];
 export type SchemaProgram = components['schemas']['Program'];
@@ -24215,6 +24272,82 @@ export interface operations {
             };
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    listPriceProviderOptions: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                q?: string;
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Provider input options */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PriceProviderOptionPage"];
+                };
+            };
+            /** @description Invalid cursor */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    listPriceServiceOptions: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                q?: string;
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Service input options */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PriceServiceOptionPage"];
+                };
+            };
+            /** @description Invalid cursor */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
             422: components["responses"]["ValidationError"];
         };
     };

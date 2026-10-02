@@ -832,6 +832,12 @@ catalog lookups without a read grant settle to their existing fallback without a
 its URL keeps the selected tab on reload and history navigation. Ledger movements show
 changes in each balance bucket, so a transfer with no total change is still understandable.
 
+**Pricing choices belong to pricing.** The quote form asks its own narrow lookups for active
+provider and service labels, without requiring access to directory or catalog maintenance
+screens. Search and explicit continuation keep choices bounded; loading, empty results and
+retryable failures are distinct. Member discovery still requires its own read grant. Input
+or account changes clear the previous answer; inaccessible contract references are plain text.
+
 **A health access log can stand alone.** Auditors with `audit.read` see the tenant's health
 access events without opening a member record. Each row retains the actor, person and resource
 identifiers, access type, outcome, purpose and reason. Pages load in bounded groups; the mobile

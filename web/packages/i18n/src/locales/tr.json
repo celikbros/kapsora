@@ -1956,6 +1956,13 @@
   },
   "pricing": {
     "title": "Fiyat sorgusu",
+    "searchProviders": "Sağlayıcı ara",
+    "searchServices": "Hizmet ara",
+    "noProviders": "Bu aramada sağlayıcı bulunamadı.",
+    "noServices": "Bu aramada hizmet bulunamadı.",
+    "noPeople": "Bu aramada hak sahibi bulunamadı.",
+    "loadMore": "Daha fazla yükle",
+    "validation": "Hak sahibi, sağlayıcı, geçerli hizmet tarihi ve her satır için hizmet ile sıfırdan büyük miktar seçin (en fazla 100 satır).",
     "intro": "Bu hizmet, bu sağlayıcıda, bu tarihte ne tutar; ne kadarını plan karşılar, ne kadarını hak sahibi öder.",
     "run": "Hesapla",
     "running": "Hesaplanıyor…",

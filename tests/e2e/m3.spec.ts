@@ -114,19 +114,25 @@ test('a quote explains its figures and shows none when the price is ambiguous', 
   await expect(person.locator('option').nth(1)).toBeAttached();
   await person.selectOption({ index: 1 });
 
-  const provider = page.getByLabel(/^Sağlayıcı/);
+  const provider = page.getByRole('combobox', { name: /^Sağlayıcı/ });
   await expect(provider.locator('option').nth(1)).toBeAttached();
   await provider.selectOption({ index: 1 });
 
-  const service = page.getByLabel('Hizmet', { exact: true });
+  const service = page.getByRole('combobox', { name: /^Hizmet/ });
   await expect(service.locator('option').nth(1)).toBeAttached();
   await service.selectOption({ index: 1 });
 
+  const reply = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === '/api/v1/pricing/quotes' &&
+      response.request().method() === 'POST',
+  );
   await page.getByRole('button', { name: 'Hesapla' }).click();
+  const quote = (await (await reply).json()) as { disclaimer: string };
 
   await expect(page.getByTestId('quote-table')).toBeVisible();
   // A quote is not an authorization, and the screen says so under the figures.
-  await expect(page.getByText(/ön onay değildir/)).toBeVisible();
+  await expect(page.getByText(quote.disclaimer, { exact: true })).toBeVisible();
   // And it names what the numbers came from rather than asserting them.
   await expect(page.getByText('Bu sonuç neye dayanıyor')).toBeVisible();
 });

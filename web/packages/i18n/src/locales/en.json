@@ -2115,6 +2115,15 @@
       "purposeRequired": "Choose why you are downloading."
     }
   },
+  "pricing": {
+    "searchProviders": "Search providers",
+    "searchServices": "Search services",
+    "noProviders": "No providers found for this search.",
+    "noServices": "No services found for this search.",
+    "noPeople": "No members found for this search.",
+    "loadMore": "Load more",
+    "validation": "Choose a member, provider, valid service date, and a service and positive quantity for each line (up to 100 lines)."
+  },
   "authorization": {
     "title": "Entitlement reservation",
     "empty": "The request is approved; entitlement has not been reserved yet.",

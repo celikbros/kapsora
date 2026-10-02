@@ -123,7 +123,7 @@ func newFixture(t *testing.T) *fixture {
 		t.Fatal(err)
 	}
 	pricing, err := pricingapp.New(pricingapp.Deps{
-		Pool: h.App, Repo: pricingpg.New(), Audit: auditpg.New(), Logger: logger, Now: clock,
+		Pool: h.App, Repo: pricingpg.New(), Audit: auditpg.New(), Logger: logger, Now: clock, Cursors: cursors,
 	})
 	if err != nil {
 		t.Fatal(err)
