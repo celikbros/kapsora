@@ -1096,8 +1096,13 @@ reads. This visual review used synthetic financial/lodging records; clinical and
 access-log screens were excluded. Detailed fixture identifiers and images remain local.
 
 No concrete date-independent implementation blocker remains in this approved pass. Formal
-owner acceptance remains open, as do genuine scheduler checks on 2026-10-14 (hotel) and
-2026-10-29 (health). Preserve the accepted episodes and their dates; do not force the clock,
+owner acceptance remains open. The retained due periods are 2026-10-14 (hotel) and
+2026-10-29 (health). The scheduler reconciles yesterday UTC: the corresponding execution
+windows are 2026-10-15 and 2026-10-30 UTC, beginning at 03:00 Europe/Istanbul and ending
+at 03:00 the following local day. The operator-owned scheduler must actually run in those
+windows; this is not an automatic future appointment or evidence of a completed transition.
+A later daily run targets a different period; do not assume missed days are caught up.
+Preserve the accepted episodes and their dates; do not force the clock,
 settings or due dates or create replacement payments to close these gates. Global
 administration and integrations remain outside this pass. PR #11 is not merged or released.
 
@@ -1146,6 +1151,45 @@ passed. The operator's existing API and three UI process IDs were unchanged.
 After the next operator restart, read-only Win32 checks confirmed API 8090 and UI
 5181/5182/5183 all belonged to the new launcher's Job Object, with matching supervisor
 PID creation time. No stop command was issued; literal Ctrl+C remains untested.
+
+### Retained calendar reconciliation check
+
+The [opt-in checker](../tests/e2e/real-pc05-calendar.spec.ts) reads the same accepted hotel
+and health settlements using a private baseline file. It sends financial GET requests and
+authentication/session requests only; its dedicated configuration has no server launcher,
+and it creates no business records.
+The baseline must retain the accepted provider, settlement, due date, currency, payable/paid
+amounts and every payment ID, amount and status. Keep it ignored/local; never regenerate it
+from a replacement episode or attach it to the PR.
+
+After privately loading the existing `.env` values (including `KAPSORA_DATABASE_URL`):
+
+```powershell
+$env:E2E_REAL_API = '1'
+$env:E2E_EXISTING_UI_URL = 'http://127.0.0.1:5181'
+$env:E2E_PC05_CALENDAR_CONFIG = (Resolve-Path 'tmp/pc05-calendar-baseline.json').Path
+pnpm exec playwright test --config tests/e2e/pc05-calendar.config.ts --project chromium
+```
+
+Before its eligible UTC day, each case is PENDING/skipped, not accepted. Once due, the
+checker requires unchanged fully paid records now RECONCILED, exact report arithmetic and
+provider isolation, plus a successful `billing.reconcile` execution on the correct UTC day.
+A read-only database helper matches report timestamps to that job's start/finish interval.
+This is observational provenance: the schema has no report-to-job foreign key. The checker
+can read retained evidence after the execution window; it does not run or backfill the job.
+A missing successful eligible-day job after that day is a failed verification, not acceptance.
+
+Preparation verified on 2026-10-03: three pure model tests, scoped TypeScript/ESLint and
+Go vet/lint checks pass. The helper's real read-only database connection returned no future
+job evidence. The explicit private-baseline preflight skipped both future cases as PENDING;
+it is not live reconciliation acceptance. Separate GET-only baseline capture verified the
+same two PAID settlements and their four recorded payments without financial commands.
+
+Local pure date/decimal/checker tests run without the API or scheduler:
+
+```powershell
+node --test tests/e2e/pc05-calendar-model.unit.ts
+```
 
 To run the real member-import browser regression against that already running system:
 

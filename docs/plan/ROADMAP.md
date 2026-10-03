@@ -453,8 +453,18 @@ For both statements select 2026-09-01 through 2026-10-29 to include the accepted
 invoices and future-due settlements. Other demo open rows are separate from the paid health
 episode. A report-period selection changes neither payment status nor scheduler evidence.
 
-Genuine scheduler checks remain pending for 2026-10-14 (hotel) and 2026-10-29 (health).
-Keep the same paid episodes and real dates; do not force the clock/settings or create
+Genuine scheduler evidence remains pending for due periods 2026-10-14 (hotel) and
+2026-10-29 (health). `billing.reconcile` processes yesterday UTC. Its matching execution
+windows are therefore 2026-10-15 and 2026-10-30 UTC: from 03:00 Europe/Istanbul until
+03:00 the following local day. Keep the operator-owned scheduler running during the
+window; a later daily execution targets another period, not an automatic catch-up.
+The [read-only calendar checker](../../tests/e2e/real-pc05-calendar.spec.ts) binds the
+accepted settlement, unchanged payments and matching report period to a successful
+scheduler execution. Its [runbook](../HANDOVER.md#retained-calendar-reconciliation-check)
+uses an ignored private baseline. A pre-date skip is PENDING, not passed acceptance.
+Job start/finish overlap supplies observational provenance; the schema has no report/job
+foreign key. Historical report readability alone does not prove this transition. Keep the
+same paid episodes and real dates; do not force the clock/settings or create
 replacement records. PR #11 remains draft. Global administration, integrations, fiscal/ERP,
 deployment and merge remain outside this pass. The following steps define acceptance
 criteria; passed technical paths need not be recreated without a new failure.
