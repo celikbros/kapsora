@@ -60,6 +60,7 @@ type authorizationItem struct {
 	MemberAmount             string
 	EntitlementReservationID uuid.NullUUID
 	ConsumedQuantity         string
+	EntitlementUnitFactor    string
 	RowVersion               int64
 }
 
@@ -74,13 +75,14 @@ func lockedItemRow(r sqlcgen.LockAuthorizationItemsRow) authorizationItem {
 func authorizationItemOf(r authorizationItem) application.AuthorizationItemRecord {
 	return application.AuthorizationItemRecord{
 		ID: r.ID, AuthorizationID: r.AuthorizationID, RequestItemID: r.RequestItemID,
-		ServiceDefinitionID: r.ServiceDefinitionID,
-		ApprovedQuantity:    trimDecimal(r.ApprovedQuantity),
-		ApprovedAmount:      trimDecimalPtr(r.ApprovedAmount),
-		MemberAmount:        trimDecimal(r.MemberAmount),
-		ReservationID:       uuidPtr(r.EntitlementReservationID),
-		ConsumedQuantity:    trimDecimal(r.ConsumedQuantity),
-		RowVersion:          r.RowVersion,
+		ServiceDefinitionID:   r.ServiceDefinitionID,
+		ApprovedQuantity:      trimDecimal(r.ApprovedQuantity),
+		ApprovedAmount:        trimDecimalPtr(r.ApprovedAmount),
+		MemberAmount:          trimDecimal(r.MemberAmount),
+		ReservationID:         uuidPtr(r.EntitlementReservationID),
+		ConsumedQuantity:      trimDecimal(r.ConsumedQuantity),
+		EntitlementUnitFactor: trimDecimal(r.EntitlementUnitFactor),
+		RowVersion:            r.RowVersion,
 	}
 }
 

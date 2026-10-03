@@ -1,7 +1,7 @@
 import { createMockServer } from '@kapsora/api-client/mocks/node';
 import { formatMoney, initI18n } from '@kapsora/i18n';
 import { createMemoryHistory } from '@tanstack/react-router';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
@@ -28,6 +28,15 @@ function mount(path: string) {
   const history = createMemoryHistory({ initialEntries: [path] });
   render(<App services={services} history={history} />);
   return { services, history };
+}
+
+function setDashboardPermissions(
+  services: ReturnType<typeof createServices>,
+  permissions: string[],
+) {
+  const activeTenant = services.store.getState().activeTenant;
+  if (!activeTenant) throw new Error('Expected an active tenant');
+  act(() => services.store.setState({ activeTenant: { ...activeTenant, permissions } }));
 }
 
 async function login(username: string) {
@@ -167,6 +176,58 @@ describe('the operations dashboard', () => {
     await waitFor(() => expect(history.location.pathname).toBe('/claims'));
     expect(history.location.search).toContain('APPROVED');
   });
+
+  it.each([
+    [
+      'financial reviewer',
+      'financial.reviewer',
+      ['report.read', 'claim.read', 'worklist.read'],
+      true,
+      true,
+    ],
+    ['payer approver', 'payer.approver', ['report.read', 'worklist.read'], false, true],
+    ['report-only reader', 'financial.reviewer', ['report.read'], false, false],
+    ['report and claim reader', 'financial.reviewer', ['report.read', 'claim.read'], true, false],
+  ])(
+    'shows only permitted exact links for %s',
+    async (_role, username, permissions, hasClaimLink, hasWorklistLink) => {
+      const { services } = mount('/');
+      await login(username);
+      const dashboard = await screen.findByTestId('dashboard');
+      const approved = within(dashboard).getByTestId('claims-APPROVED');
+      const workItems = within(dashboard).getByTestId('dashboard-workitems');
+      const claimFigure = approved.textContent;
+      const worklistFigure = workItems.textContent;
+      setDashboardPermissions(services, permissions);
+
+      await waitFor(() => {
+        expect(within(approved).queryByRole('link') !== null).toBe(hasClaimLink);
+        expect(within(workItems).queryByRole('link') !== null).toBe(hasWorklistLink);
+      });
+      expect(approved.textContent).toBe(claimFigure);
+      expect(workItems.textContent).toBe(worklistFigure);
+    },
+  );
+
+  it('removes links immediately when a read grant is lost and keeps the report values', async () => {
+    const { services } = mount('/');
+    await login('financial.reviewer');
+    const dashboard = await screen.findByTestId('dashboard');
+    const approved = within(dashboard).getByTestId('claims-APPROVED');
+    const workItems = within(dashboard).getByTestId('dashboard-workitems');
+    const claimFigure = approved.textContent;
+    const worklistFigure = workItems.textContent;
+    expect(within(approved).getByRole('link')).toBeInTheDocument();
+    expect(within(workItems).getByRole('link')).toBeInTheDocument();
+
+    setDashboardPermissions(services, ['report.read']);
+    await waitFor(() => {
+      expect(within(approved).queryByRole('link')).toBeNull();
+      expect(within(workItems).queryByRole('link')).toBeNull();
+    });
+    expect(approved.textContent).toBe(claimFigure);
+    expect(workItems.textContent).toBe(worklistFigure);
+  });
 });
 
 describe('the reconciliation', () => {
@@ -198,6 +259,29 @@ describe('the reconciliation', () => {
 });
 
 describe('the exports', () => {
+  it('offers invoice providers to a financial reviewer and sends the selected ID', async () => {
+    const providerId = api.world.invoices.find(
+      (row) => row.providerOrganizationId,
+    )?.providerOrganizationId;
+    expect(providerId).toBeTruthy();
+    const before = new Set(api.world.exports.map((row) => row.id));
+    mount('/billing/exports');
+    const user = await login('financial.reviewer');
+    const form = await screen.findByTestId('export-form');
+    const picker = await screen.findByTestId('export-provider-select');
+    await waitFor(() => expect(picker.querySelector(`option[value="${providerId}"]`)).toBeTruthy());
+    await user.selectOptions(within(form).getByLabelText(/^Rapor/), 'PROVIDER_STATEMENT');
+    await user.selectOptions(picker, providerId!);
+    await user.click(screen.getByTestId('request-export'));
+    await waitFor(() => {
+      expect(
+        api.world.exports.find(
+          (row) => !before.has(row.id) && row.providerOrganizationId === providerId,
+        ),
+      ).toBeTruthy();
+    });
+  });
+
   it('queues a file, shows it ready, and opens it through an audited download with the watermark', async () => {
     const opened = vi.fn();
     window.open = opened as unknown as typeof window.open;

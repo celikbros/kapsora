@@ -236,6 +236,7 @@ type gateDecision struct {
 	Status                  string
 	ReasonCode              string
 	RequiredDocumentTypes   []string
+	DocumentEvidence        []DocumentEvidence
 	EligibilityEvaluationID *uuid.UUID
 	RuleEvaluationID        *uuid.UUID
 	EligibilityOutcome      string
@@ -283,8 +284,30 @@ func (s *Service) runGate(ctx context.Context, tx pgx.Tx, rc identity.RequestCon
 		return gateDecision{}, err
 	}
 
+	out.RequiredDocumentTypes = append([]string{}, documents...)
+	missing := len(documents) > 0
+	if missing {
+		evidence, err := s.repo.ListDocumentEvidence(ctx, tx, rc.TenantID, request.ID,
+			request.ProviderOrganizationID, documents)
+		if err != nil {
+			return gateDecision{}, err
+		}
+		out.DocumentEvidence = evidence
+		satisfied := make(map[string]bool, len(evidence))
+		for _, document := range evidence {
+			satisfied[document.DocumentTypeCode] = true
+		}
+		missing = false
+		for _, code := range documents {
+			if !satisfied[code] {
+				missing = true
+				break
+			}
+		}
+	}
+
 	switch {
-	case len(documents) > 0:
+	case missing:
 		// A missing document blocks before a review does: nobody can review what has not
 		// been produced yet, and asking for both at once tells a member two things to do
 		// when only one of them is possible.
@@ -310,9 +333,7 @@ func (s *Service) runGate(ctx context.Context, tx pgx.Tx, rc identity.RequestCon
 	if err != nil {
 		return gateDecision{}, err
 	}
-	// An empty non-nil slice says "the rules were asked and required nothing", which is a
-	// different statement from the NULL a request that has never been submitted carries.
-	out.RequiredDocumentTypes = []string{}
+	// Keep every required type, including those satisfied by retained attachments.
 	if required {
 		out.Status, out.ReasonCode = domain.StatusPendingReview, "PROGRAM_REVIEW_REQUIRED"
 		return out, nil

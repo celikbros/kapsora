@@ -381,11 +381,29 @@ export function documentHandlers(api: MockApi): HttpHandler[] {
 
     http.post(`${ANY}/api/v1/documents/:documentId/links`, async ({ request, params }) => {
       await wait(api);
-      const g = guardTenant(api, request, 'document.link', true);
+      const narrowGrant = 'document.booking_evidence.link';
+      const tenantId = api.session?.activeTenantId;
+      const permission =
+        api.session &&
+        tenantId &&
+        !hasPermission(api, api.session, tenantId, 'document.link') &&
+        hasPermission(api, api.session, tenantId, narrowGrant)
+          ? narrowGrant
+          : 'document.link';
+      const g = guardTenant(api, request, permission, true);
       if ('error' in g) return g.error;
       const missingKey = requireIdempotencyKey(api, request);
       if (missingKey) return missingKey;
       const body = await readJson<Schemas['CreateDocumentLink']>(request);
+      const narrow = permission === narrowGrant;
+      if (
+        narrow &&
+        (body?.aggregateType !== 'BOOKING' ||
+          body?.documentTypeCode !== 'NO_SHOW_EVIDENCE' ||
+          body?.requiredPermission)
+      ) {
+        return problem(api, 403, 'PERMISSION_DENIED', 'Bu işlem için yetkiniz yok');
+      }
       const errors: FieldError[] = [];
       if (typeof body?.aggregateType !== 'string' || !AGGREGATE_TYPE.test(body.aggregateType)) {
         errors.push({ field: 'aggregateType', code: 'FORMAT' });
@@ -403,6 +421,41 @@ export function documentHandlers(api: MockApi): HttpHandler[] {
       if (errors.length > 0) return validationFailed(api, errors);
       const doc = find(g.session, g.tenantId, pathParam(params, 'documentId'));
       if (!doc) return documentNotFound(api);
+      if (narrow) {
+        const scope = organizationScope(api, g.session, g.tenantId);
+        const booking = world().bookings.find(
+          (b) =>
+            b.tenantId === g.tenantId && b.id === body!.aggregateId && b.status === 'CONFIRMED',
+        );
+        const property =
+          booking &&
+          world().properties.find((p) => p.tenantId === g.tenantId && p.id === booking.propertyId);
+        const stored = doc.duplicateOfDocumentId
+          ? world().documents.find(
+              (d) => d.tenantId === g.tenantId && d.id === doc.duplicateOfDocumentId,
+            )
+          : doc;
+        if (
+          !property ||
+          scope === null ||
+          !withinScope(scope, property.providerOrganizationId) ||
+          doc.ownerOrganizationId !== property.providerOrganizationId ||
+          !stored ||
+          stored.ownerOrganizationId !== property.providerOrganizationId ||
+          doc.classification === 'HEALTH' ||
+          stored.classification === 'HEALTH' ||
+          doc.purgedAt ||
+          stored.purgedAt ||
+          world().documentLinks.some(
+            (l) =>
+              l.tenantId === g.tenantId &&
+              (l.documentId === doc.id || l.documentId === stored.id) &&
+              l.requiredPermission !== null,
+          )
+        ) {
+          return documentNotFound(api);
+        }
+      }
       if (
         world().documentLinks.some(
           (l) =>

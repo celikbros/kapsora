@@ -498,3 +498,15 @@ func waitlistOf(c waitlistColumns) application.WaitlistRecord {
 		RowVersion: c.RowVersion,
 	}
 }
+
+// WaitlistEnrollmentProgram returns the still-active program selected by the queued member.
+func (Bookings) WaitlistEnrollmentProgram(ctx context.Context, tx pgx.Tx, tenantID, entryID uuid.UUID) (uuid.UUID, error) {
+	id, err := sqlcgen.New(tx).GetWaitlistEnrollmentProgram(ctx, sqlcgen.GetWaitlistEnrollmentProgramParams{TenantID: tenantID, EntryID: entryID})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return uuid.Nil, application.ErrEnrollmentNotFound
+	}
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("accommodation: waitlist enrollment program: %w", err)
+	}
+	return id, nil
+}

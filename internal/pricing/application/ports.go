@@ -22,6 +22,7 @@ import (
 	benefitdomain "github.com/celikbros/kapsora/internal/benefit/domain"
 	"github.com/celikbros/kapsora/internal/benefit/eligibility"
 	contractapp "github.com/celikbros/kapsora/internal/contract/application"
+	"github.com/celikbros/kapsora/internal/platform/httpx"
 	"github.com/celikbros/kapsora/internal/rules/engine"
 )
 
@@ -77,6 +78,27 @@ type ProviderRecord struct {
 	Status               string
 }
 
+// The option records expose only identifiers and labels needed to compose a quote.
+type ProviderOptionRecord struct {
+	ProviderProfileID uuid.UUID
+	OrganizationName  string
+	CreatedAt         time.Time
+}
+
+type ServiceOptionRecord struct {
+	ServiceDefinitionID uuid.UUID
+	Code                string
+	Name                string
+	CreatedAt           time.Time
+}
+
+type OptionQuery struct {
+	Pattern         string
+	After           *httpx.Cursor
+	PageSize        int32
+	OrganizationIDs []uuid.UUID // nil is tenant-wide; an empty nonnil slice denies all.
+}
+
 // EligibilityInput is everything the pure eligibility resolver reads, loaded in one
 // transaction. It is the resolver's own Input with the plan version already looked up.
 type EligibilityInput struct {
@@ -89,6 +111,7 @@ type EligibilityInput struct {
 	// that were never opened are simply absent: a quote must not open one, because
 	// opening an account posts a GRANT movement and the ledger has to stay untouched.
 	Accounts []eligibility.Account
+	Mappings map[uuid.UUID]eligibility.Mapping
 }
 
 // PriceRuleVersion is one published PRICE rule set version with its rules, ready to be
@@ -192,6 +215,8 @@ type QuoteItemRecord struct {
 // which the service has already bound to the tenant, so RLS is active for every statement
 // and no method here can be called outside one.
 type Repository interface {
+	ListProviderOptions(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, q OptionQuery) ([]ProviderOptionRecord, error)
+	ListServiceOptions(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, q OptionQuery) ([]ServiceOptionRecord, error)
 	// QuoteTTLHours reads the tenant setting pricing.quote_ttl_hours. found is false when
 	// the tenant never set one, which is not an error: the service falls back.
 	QuoteTTLHours(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID) (hours int, found bool, err error)

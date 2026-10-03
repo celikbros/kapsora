@@ -323,9 +323,11 @@ export interface paths {
          *
          *     Two refusals happen here. A report before the check-in window has closed is
          *     NO_SHOW_TOO_EARLY: a guest who is late is not a guest who did not come. And a report
-         *     with no **clean** document linked to the booking is NO_SHOW_EVIDENCE_REQUIRED - a
-         *     claim that costs a member money and rests on nothing is a claim nobody can review, and
-         *     a link to a file still in quarantine is not a document a reviewer can open.
+         *     with no usable NO_SHOW_EVIDENCE document linked to the booking is
+         *     NO_SHOW_EVIDENCE_REQUIRED. Both the linked object and its canonical stored object
+         *     must be CLEAN, in the secure bucket, retained, and owned by the property's provider
+         *     or the tenant. A wrong document type, foreign provider, quarantined object or purged
+         *     canonical copy cannot support a fee review.
          *
          *     The assessed fee comes from the frozen policy's no-show rate applied to the member's
          *     own share, and `payerAmount + memberAmount == assessedFeeAmount` exactly. It is a claim
@@ -357,9 +359,11 @@ export interface paths {
          *
          *     **The reviewer may not be the reporter.** It is refused with NO_SHOW_SAME_ACTOR, and a
          *     CHECK on the row refuses it again whatever reaches the table. The two sides are told
-         *     apart by scope: a provider clerk holds `accommodation.booking.manage` on an
-         *     ORGANIZATION grant and a payer reviewer holds it tenant-wide, and only the second is a
-         *     second pair of eyes.
+         *     apart by scope: the payer holds `accommodation.no_show.review` tenant-wide.
+         *     Legacy tenant-wide `accommodation.booking.manage` is also accepted. Provider and member
+         *     apps, PERSON bindings and any non-TENANT scope are refused with PERMISSION_DENIED,
+         *     even when the caller holds either permission. System PROGRAM_MANAGER receives only
+         *     the narrow review permission, not booking or inventory management.
          *
          *     The three answers do three different things. CONFIRMED closes the booking as NO_SHOW,
          *     frees the room for the rest of the allotment, consumes what the policy's rate says off
@@ -1320,6 +1324,8 @@ export interface paths {
          *     provider organization carries no tax identity to invoice against,
          *     `CURRENCY_NOT_SINGLE` when the lines are not all in one currency, and
          *     `LINE_NOT_DECIDED` when a line of the current version still has no decision.
+         *     A decided inpatient claim without its complete consumption receipt returns 409
+         *     CLAIM_INPATIENT_ALLOCATION_MISSING instead of a readiness result.
          *
          *     Only an APPROVED or PARTIALLY_APPROVED claim has an answer; anything else is 409
          *     CLAIM_NOT_DECIDED, because "is this invoiceable" is not a question about a draft.
@@ -1524,6 +1530,50 @@ export interface paths {
         get: operations["getClaimVersion"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/claims/case-sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Financial-only outpatient and discharged inpatient handoff candidates; requires claim.create and provider scope. No clinical fields. */
+        get: operations["listClaimCaseSources"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/claims/case-sources/{caseId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Returns financial service choices, never diagnosis or report references. Incomplete or ambiguous clinical handoffs are refused. */
+        get: operations["getClaimCaseSource"];
+        put?: never;
+        /**
+         * @description Requires claim.create. Locks and rechecks the scoped source, derives its person,
+         *     program, enrollment, provider, authorization, diagnosis and report associations
+         *     inside the create transaction. Requires one unambiguous primary diagnosis. When
+         *     a report is associated with the case/service, exactly one approved in-window report
+         *     must resolve. Inpatient cases require one discharged stay, use its admission diagnosis
+         *     when present, and bill its actual days in full; original and approved extension holds
+         *     are allocated internally. The caller supplies only service, quantity and requested amount. One non-cancelled claim per case through this path;
+         *     retry with the same idempotency key. Financial projection is always returned.
+         */
+        post: operations["createClaimFromCase"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2104,6 +2154,15 @@ export interface paths {
          *     document may be linked to several records, which is what stops the same file being
          *     uploaded once per place it is needed.
          *
+         *     Requires document.link. A caller holding only document.booking_evidence.link may
+         *     instead attach NO_SHOW_EVIDENCE to a CONFIRMED BOOKING at a provider in its explicit
+         *     organization scope. Both the document and its canonical object must belong to that
+         *     provider, be retained and non-HEALTH, with no permission-restricted existing link.
+         *     Scanning may still be in progress; reporting the no-show separately requires CLEAN
+         *     evidence. This narrow grant cannot set requiredPermission or remove links, and
+         *     cannot attach another document type or target another kind of record. Inaccessible
+         *     documents and booking targets both answer DOCUMENT_NOT_FOUND.
+         *
          *     requiredPermission narrows who may download through the link. Every link on a
          *     document is checked, so attaching a file to a clinical record makes it clinical
          *     everywhere rather than only when reached from that record.
@@ -2220,9 +2279,11 @@ export interface paths {
          */
         get: operations["listEncounterDiagnoses"];
         /**
-         * @description Replaces the encounter's diagnoses as a whole: the set is the unit, and a diagnosis
-         *     id is not something anything else hangs off. A second PRIMARY is refused with 422 —
-         *     every downstream rule asks "what was this for" and expects one answer.
+         * @description Replaces the encounter's diagnoses as a whole. A diagnosis referenced by an
+         *     inpatient stay or claim line cannot be removed through this operation; the request
+         *     is refused with 409 DIAGNOSIS_IN_USE and the stored set remains unchanged. Correct
+         *     the dependent clinical record before replacing that diagnosis. A second PRIMARY is
+         *     refused with 422; every downstream rule expects one answer.
          *
          *     `sensitive` is not accepted from the caller. It is read from each code value's own
          *     category in the catalogue, and the case's sensitivity is recomputed from the
@@ -2230,6 +2291,29 @@ export interface paths {
          */
         put: operations["putEncounterDiagnoses"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/encounters/{encounterId}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Ends an open encounter without changing its clinical content. Requires
+         *     health.case.manage and health.clinical.read within the provider scope.
+         *     The case must be open; endedAt cannot precede startedAt. The encounter ETag
+         *     prevents stale updates. Replaying the same idempotency key returns the same result;
+         *     a fresh command for an already ended encounter is refused.
+         */
+        post: operations["endEncounter"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4459,6 +4543,40 @@ export interface paths {
          *     Changes no state.
          */
         post: operations["resolvePrice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pricing/options/providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Active provider profiles available when composing a quote. Requires pricing.quote. Organization-scoped callers see only matching providers. These options do not promise a matching contract or price. */
+        get: operations["listPriceProviderOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pricing/options/services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Active tenant service definitions available when composing a quote. Requires pricing.quote. The options are normal service metadata and do not promise provider or contract eligibility. */
+        get: operations["listPriceServiceOptions"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -7221,6 +7339,40 @@ export interface components {
          * @enum {string}
          */
         ClaimAdjustmentType: "CUT" | "RECOVERY" | "CORRECTION" | "REVERSAL";
+        ClaimCaseCharge: {
+            lineAmount: string;
+            quantity: string;
+            /** Format: uuid */
+            serviceDefinitionId: string;
+        };
+        ClaimCaseSource: {
+            /** Format: uuid */
+            caseId: string;
+            /** Format: date-time */
+            openedAt: string;
+            personDisplayName: string;
+            requestReference: string;
+            /** Format: int64 */
+            rowVersion: number;
+            /** Format: date */
+            serviceDate: string;
+        };
+        ClaimCaseSourceDetail: {
+            lines: components["schemas"]["ClaimCaseSourceLine"][];
+            source: components["schemas"]["ClaimCaseSource"];
+        };
+        ClaimCaseSourceLine: {
+            quantity: string;
+            serviceCode: string;
+            /** Format: uuid */
+            serviceDefinitionId: string;
+            serviceName: string;
+            unitType: string;
+        };
+        ClaimCaseSourcePage: {
+            items: components["schemas"]["ClaimCaseSource"][];
+            nextCursor?: string;
+        };
         /**
          * @description What was decided about one line. CUT is a reduction the payer applied to an otherwise
          *     valid line; PARTIALLY_APPROVED is a smaller quantity than was claimed. They are two
@@ -7407,7 +7559,8 @@ export interface components {
         };
         /**
          * @description What a claim was raised from. It is one vocabulary for every vertical, so a settlement
-         *     never has to know which module wrote a claim.
+         *     never has to know which module wrote a claim. Inpatient claims use HEALTH_CASE
+         *     with the case ID as sourceId; the exact stay and authorization allocation remain internal.
          * @enum {string}
          */
         ClaimSourceType: "HEALTH_CASE" | "BOOKING" | "REIMBURSEMENT";
@@ -7775,6 +7928,9 @@ export interface components {
              * @description Makes this a REVERSAL of that adjustment and nothing else.
              */
             reversesAdjustmentId?: string | null;
+        };
+        CreateClaimFromCase: {
+            lines: components["schemas"]["ClaimCaseCharge"][];
         };
         CreateCodeSystemRequest: {
             authority: components["schemas"]["CodeSystemAuthority"];
@@ -8859,6 +9015,10 @@ export interface components {
         };
         /** @enum {string} */
         EncounterType: "OUTPATIENT" | "INPATIENT" | "EMERGENCY" | "TELEHEALTH";
+        EndEncounter: {
+            /** Format: date-time */
+            endedAt: string;
+        };
         EndPeriodCommand: {
             /** Format: date */
             endsOn: string;
@@ -10892,6 +11052,15 @@ export interface components {
          * @enum {string}
          */
         PriceMatchTarget: "DEFINITION" | "PACKAGE" | "CATEGORY";
+        PriceProviderOption: {
+            organizationName: string;
+            /** Format: uuid */
+            providerProfileId: string;
+        };
+        PriceProviderOptionPage: {
+            items: components["schemas"]["PriceProviderOption"][];
+            nextCursor: string | null;
+        };
         PriceQuote: {
             contractAmount: string;
             /**
@@ -11021,6 +11190,16 @@ export interface components {
              * @description The service being priced. Exactly one of this and packageDefinitionId.
              */
             serviceDefinitionId?: string;
+        };
+        PriceServiceOption: {
+            code: string;
+            name: string;
+            /** Format: uuid */
+            serviceDefinitionId: string;
+        };
+        PriceServiceOptionPage: {
+            items: components["schemas"]["PriceServiceOption"][];
+            nextCursor: string | null;
         };
         /**
          * @description How the amount of a price item is arrived at. FIXED and UNIT carry an amount,
@@ -11683,8 +11862,10 @@ export interface components {
             /**
              * Format: uuid
              * @description The document object the provider is pointing at. It must be linked to this
-             *     booking and cleared by the scanner. Omitted, any clean document linked to the
-             *     booking satisfies the gate; a booking with none is refused either way.
+             *     booking as NO_SHOW_EVIDENCE. Both the linked and canonical objects must be
+             *     CLEAN, secure, retained and owned by this property's provider or the tenant.
+             *     Omitted, any linked document meeting those conditions satisfies the gate;
+             *     a booking with none is refused either way.
              */
             evidenceDocumentId?: string;
         };
@@ -13367,6 +13548,11 @@ export type SchemaClaimAdjustmentList = components['schemas']['ClaimAdjustmentLi
 export type SchemaClaimAdjustmentResult = components['schemas']['ClaimAdjustmentResult'];
 export type SchemaClaimAdjustmentSource = components['schemas']['ClaimAdjustmentSource'];
 export type SchemaClaimAdjustmentType = components['schemas']['ClaimAdjustmentType'];
+export type SchemaClaimCaseCharge = components['schemas']['ClaimCaseCharge'];
+export type SchemaClaimCaseSource = components['schemas']['ClaimCaseSource'];
+export type SchemaClaimCaseSourceDetail = components['schemas']['ClaimCaseSourceDetail'];
+export type SchemaClaimCaseSourceLine = components['schemas']['ClaimCaseSourceLine'];
+export type SchemaClaimCaseSourcePage = components['schemas']['ClaimCaseSourcePage'];
 export type SchemaClaimDecisionKind = components['schemas']['ClaimDecisionKind'];
 export type SchemaClaimDecisionReason = components['schemas']['ClaimDecisionReason'];
 export type SchemaClaimDecisionStage = components['schemas']['ClaimDecisionStage'];
@@ -13410,6 +13596,7 @@ export type SchemaCreateBatch = components['schemas']['CreateBatch'];
 export type SchemaCreateBookingGuest = components['schemas']['CreateBookingGuest'];
 export type SchemaCreateClaim = components['schemas']['CreateClaim'];
 export type SchemaCreateClaimAdjustment = components['schemas']['CreateClaimAdjustment'];
+export type SchemaCreateClaimFromCase = components['schemas']['CreateClaimFromCase'];
 export type SchemaCreateCodeSystemRequest = components['schemas']['CreateCodeSystemRequest'];
 export type SchemaCreateContractRequest = components['schemas']['CreateContractRequest'];
 export type SchemaCreateContractVersionRequest = components['schemas']['CreateContractVersionRequest'];
@@ -13478,6 +13665,7 @@ export type SchemaEligibilityCheckResult = components['schemas']['EligibilityChe
 export type SchemaEligibilityEvaluation = components['schemas']['EligibilityEvaluation'];
 export type SchemaEncounter = components['schemas']['Encounter'];
 export type SchemaEncounterType = components['schemas']['EncounterType'];
+export type SchemaEndEncounter = components['schemas']['EndEncounter'];
 export type SchemaEndPeriodCommand = components['schemas']['EndPeriodCommand'];
 export type SchemaEnrollment = components['schemas']['Enrollment'];
 export type SchemaEnrollmentPage = components['schemas']['EnrollmentPage'];
@@ -13620,11 +13808,15 @@ export type SchemaPriceList = components['schemas']['PriceList'];
 export type SchemaPriceListInput = components['schemas']['PriceListInput'];
 export type SchemaPriceListList = components['schemas']['PriceListList'];
 export type SchemaPriceMatchTarget = components['schemas']['PriceMatchTarget'];
+export type SchemaPriceProviderOption = components['schemas']['PriceProviderOption'];
+export type SchemaPriceProviderOptionPage = components['schemas']['PriceProviderOptionPage'];
 export type SchemaPriceQuote = components['schemas']['PriceQuote'];
 export type SchemaPriceQuoteExplanation = components['schemas']['PriceQuoteExplanation'];
 export type SchemaPriceQuoteItem = components['schemas']['PriceQuoteItem'];
 export type SchemaPriceQuoteOutcome = components['schemas']['PriceQuoteOutcome'];
 export type SchemaPriceQuoteRequestItem = components['schemas']['PriceQuoteRequestItem'];
+export type SchemaPriceServiceOption = components['schemas']['PriceServiceOption'];
+export type SchemaPriceServiceOptionPage = components['schemas']['PriceServiceOptionPage'];
 export type SchemaPricingMethod = components['schemas']['PricingMethod'];
 export type SchemaProblem = components['schemas']['Problem'];
 export type SchemaProgram = components['schemas']['Program'];
@@ -16433,7 +16625,10 @@ export interface operations {
             };
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            /** @description The claim has not been decided. CLAIM_NOT_DECIDED. */
+            /**
+             * @description The claim has not been decided (CLAIM_NOT_DECIDED), or an inpatient claim
+             *     lacks its complete consumption receipt (CLAIM_INPATIENT_ALLOCATION_MISSING).
+             */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -16941,6 +17136,128 @@ export interface operations {
             404: components["responses"]["NotFound"];
             422: components["responses"]["ValidationError"];
             /** @description The claim belongs to a sensitive case and the caller stated no access purpose. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listClaimCaseSources: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Candidate cases with an active authorization and no existing non-cancelled claim */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimCaseSourcePage"];
+                };
+            };
+            /** @description Invalid cursor */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getClaimCaseSource: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                caseId: components["parameters"]["CaseId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Financial source and available service quantities */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimCaseSourceDetail"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    createClaimFromCase: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                caseId: components["parameters"]["CaseId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateClaimFromCase"];
+            };
+        };
+        responses: {
+            /** @description Linked draft created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Claim"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description Stale version */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match required */
             428: {
                 headers: {
                     [name: string]: unknown;
@@ -18658,6 +18975,63 @@ export interface operations {
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             422: components["responses"]["ValidationError"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    endEncounter: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                encounterId: components["parameters"]["EncounterId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EndEncounter"];
+            };
+        };
+        responses: {
+            /** @description Encounter ended */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Encounter"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description The encounter changed since the caller read it */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationError"];
+            /** @description If-Match is missing */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             429: components["responses"]["TooManyRequests"];
         };
     };
@@ -23898,6 +24272,82 @@ export interface operations {
             };
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    listPriceProviderOptions: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                q?: string;
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Provider input options */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PriceProviderOptionPage"];
+                };
+            };
+            /** @description Invalid cursor */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    listPriceServiceOptions: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                q?: string;
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Service input options */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PriceServiceOptionPage"];
+                };
+            };
+            /** @description Invalid cursor */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
             422: components["responses"]["ValidationError"];
         };
     };

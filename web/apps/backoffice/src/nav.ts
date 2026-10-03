@@ -27,7 +27,7 @@ export const NAV_ENTRIES: NavEntry[] = [
     implemented: true,
     permission: 'program.read',
   },
-  { key: 'wallets', path: '/wallets', labelKey: 'nav.wallets', implemented: false },
+  { key: 'wallets', path: '/wallets', labelKey: 'nav.wallets', implemented: true },
   {
     key: 'adjustments',
     path: '/entitlement-adjustments',
@@ -98,7 +98,7 @@ export const NAV_ENTRIES: NavEntry[] = [
     implemented: true,
     permission: 'service_request.read',
   },
-  { key: 'health', path: '/health-services', labelKey: 'nav.health', implemented: false },
+  { key: 'health', path: '/health-services', labelKey: 'nav.health', implemented: true },
   {
     key: 'lodging',
     path: '/lodging/bookings',
@@ -125,7 +125,6 @@ export const NAV_ENTRIES: NavEntry[] = [
     path: '/billing/batches',
     labelKey: 'nav.billing',
     implemented: true,
-    permission: 'settlement.read',
     match: '/billing',
   },
   {
@@ -142,11 +141,63 @@ export const NAV_ENTRIES: NavEntry[] = [
     implemented: true,
     permission: 'notification.read',
   },
-  { key: 'reports', path: '/reports', labelKey: 'nav.reports', implemented: false },
+  {
+    key: 'reports',
+    path: '/reports',
+    labelKey: 'nav.reports',
+    implemented: true,
+    permission: 'report.read',
+  },
   { key: 'integrations', path: '/integrations', labelKey: 'nav.integrations', implemented: false },
   { key: 'admin', path: '/admin', labelKey: 'nav.admin', implemented: false },
-  { key: 'security', path: '/security', labelKey: 'nav.security', implemented: false },
+  {
+    key: 'security',
+    path: '/security',
+    labelKey: 'nav.security',
+    implemented: true,
+    permission: 'audit.read',
+  },
 ];
+
+/** Destinations on the health landing, based on grants in the active tenant. */
+export function healthAccess(permissions: readonly string[]) {
+  const has = (permission: string) => permissions.includes(permission);
+  const claims = has('claim.read');
+  return {
+    reports: has('health.medical_report.review'),
+    medicalClaims: claims && has('claim.medical.review'),
+    financialClaims: claims && has('claim.financial.review'),
+    claimRecords: claims,
+    requests: has('service_request.read'),
+    personRecords: has('member.read') && (has('health.case.read') || claims),
+  };
+}
+
+export function canDiscoverWallets(permissions: readonly string[]): boolean {
+  return permissions.includes('member.read') && permissions.includes('entitlement.read');
+}
+
+/** First billing list the active role can actually read. */
+export function billingLanding(permissions: readonly string[]): string | null {
+  if (permissions.includes('invoice.read')) return '/billing/batches';
+  if (permissions.includes('settlement.read')) return '/billing/settlements';
+  if (permissions.includes('claim.financial.review')) return '/billing/reimbursements';
+  return null;
+}
+
+/** The sidebar and home tiles must agree on which sections are reachable. */
+export function visibleNavEntries(permissions: readonly string[]): NavEntry[] {
+  return NAV_ENTRIES.flatMap((entry) => {
+    if (entry.key === 'health')
+      return Object.values(healthAccess(permissions)).some(Boolean) ? [entry] : [];
+    if (entry.key === 'wallets') return canDiscoverWallets(permissions) ? [entry] : [];
+    if (entry.key === 'billing') {
+      const path = billingLanding(permissions);
+      return path ? [{ ...entry, path }] : [];
+    }
+    return !entry.permission || permissions.includes(entry.permission) ? [entry] : [];
+  });
+}
 
 /** Paths that currently render the "coming soon" page. */
 export const SOON_PATHS = NAV_ENTRIES.filter((e) => !e.implemented).map((e) => e.path);

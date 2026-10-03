@@ -289,6 +289,7 @@ func bookingView(in application.BookingView) kapsorav1.Booking {
 	out.CancelledAt = record.CancelledAt
 	out.CancelReasonCode = record.CancelReasonCode
 	out.ActualNights = record.ActualNights
+	out.OverBooking = &record.OverBooking
 	if !record.UpdatedAt.IsZero() {
 		updated := record.UpdatedAt
 		out.UpdatedAt = &updated

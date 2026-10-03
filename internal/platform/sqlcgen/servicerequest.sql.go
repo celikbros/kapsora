@@ -554,6 +554,62 @@ func (q *Queries) ListPublishedRuleSetVersionsForPurposes(ctx context.Context, a
 	return items, nil
 }
 
+const listServiceRequestDocumentEvidence = `-- name: ListServiceRequestDocumentEvidence :many
+SELECT o.id, l.document_type_code
+  FROM document.link l
+  JOIN document.object o ON o.tenant_id = l.tenant_id AND o.id = l.object_id
+  JOIN document.object stored ON stored.tenant_id = o.tenant_id
+       AND stored.id = COALESCE(o.duplicate_of_object_id, o.id)
+ WHERE l.tenant_id = $1
+   AND l.aggregate_type = 'SERVICE_REQUEST'
+   AND l.aggregate_id = $2
+   AND l.document_type_code = ANY($3::text[])
+   AND o.scan_status = 'CLEAN' AND o.bucket = 'secure' AND o.purged_at IS NULL
+   AND stored.scan_status = 'CLEAN' AND stored.bucket = 'secure' AND stored.purged_at IS NULL
+   AND ($4::uuid IS NULL OR o.owner_tenant_organization_id IS NULL
+        OR o.owner_tenant_organization_id = $4::uuid)
+ ORDER BY l.document_type_code, o.id
+`
+
+type ListServiceRequestDocumentEvidenceParams struct {
+	TenantID      uuid.UUID
+	RequestID     uuid.UUID
+	RequiredTypes []string
+	ProviderID    uuid.NullUUID
+}
+
+type ListServiceRequestDocumentEvidenceRow struct {
+	ID               uuid.UUID
+	DocumentTypeCode string
+}
+
+// A link alone is not proof: both the linked object and its canonical bytes must
+// still be clean and retained. Do not use another provider's attachment.
+func (q *Queries) ListServiceRequestDocumentEvidence(ctx context.Context, arg ListServiceRequestDocumentEvidenceParams) ([]ListServiceRequestDocumentEvidenceRow, error) {
+	rows, err := q.db.Query(ctx, listServiceRequestDocumentEvidence,
+		arg.TenantID,
+		arg.RequestID,
+		arg.RequiredTypes,
+		arg.ProviderID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListServiceRequestDocumentEvidenceRow
+	for rows.Next() {
+		var i ListServiceRequestDocumentEvidenceRow
+		if err := rows.Scan(&i.ID, &i.DocumentTypeCode); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listServiceRequestItems = `-- name: ListServiceRequestItems :many
 SELECT id, service_request_version_id, line_no, service_definition_id,
        requested_quantity::text AS requested_quantity,

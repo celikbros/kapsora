@@ -465,6 +465,11 @@ func claimView(view application.ClaimView) kapsorav1.Claim {
 	}
 	if record.SourceType != nil {
 		source := kapsorav1.ClaimSourceType(*record.SourceType)
+		// API v1 identifies the health episode; exact inpatient provenance stays internal.
+		if *record.SourceType == "INPATIENT_STAY" {
+			source = kapsorav1.ClaimSourceType("HEALTH_CASE")
+			out.SourceId = record.CaseID
+		}
 		out.SourceType = &source
 	}
 	return out

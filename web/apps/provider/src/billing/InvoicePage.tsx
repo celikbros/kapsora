@@ -1,4 +1,5 @@
 import type { CreateInvoice, Invoice, PatchInvoiceDraft } from '@kapsora/api-client';
+import { usePermission } from '@kapsora/auth';
 import { formatDate, formatMoney, useTranslation } from '@kapsora/i18n';
 import {
   Badge,
@@ -9,6 +10,7 @@ import {
   Input,
   PageHeader,
   ProblemAlert,
+  Select,
   Spinner,
   TBody,
   TD,
@@ -40,6 +42,7 @@ import { invoiceTone } from './status';
 import { useClaimSummaries } from './claims';
 
 interface HeaderForm {
+  domainCode: string;
   invoiceNumber: string;
   invoiceDate: string;
   lineExtensionAmount: string;
@@ -51,6 +54,7 @@ interface HeaderForm {
 
 function headerOf(record: Invoice | null): HeaderForm {
   return {
+    domainCode: record?.domainCode ?? '',
     invoiceNumber: record?.invoiceNumber ?? '',
     invoiceDate: record?.invoiceDate ?? new Date().toISOString().slice(0, 10),
     lineExtensionAmount: record?.lineExtensionAmount ?? '',
@@ -80,9 +84,10 @@ export function InvoiceNewPage() {
 
   function submit(e: FormEvent) {
     e.preventDefault();
-    if (!providerId) return;
+    if (!providerId || !form.domainCode || create.isPending) return;
     const body: CreateInvoice = {
       providerOrganizationId: providerId,
+      domainCode: form.domainCode,
       invoiceNumber: form.invoiceNumber.trim(),
       invoiceDate: form.invoiceDate,
       lineExtensionAmount: form.lineExtensionAmount.trim(),
@@ -125,7 +130,10 @@ export function InvoiceNewPage() {
             onClick={(e) => submit(e as unknown as FormEvent)}
             loading={create.isPending}
             disabled={
-              !providerId || form.invoiceNumber.trim() === '' || form.payableAmount.trim() === ''
+              !providerId ||
+              !form.domainCode ||
+              form.invoiceNumber.trim() === '' ||
+              form.payableAmount.trim() === ''
             }
           >
             {t('common.save')}
@@ -179,6 +187,31 @@ function HeaderFields({
           name="invoiceDate"
           value={form.invoiceDate}
           onChange={(e) => set('invoiceDate')(e.target.value)}
+          disabled={disabled}
+          required
+        />
+      </FormField>
+      <FormField
+        label={t('billing.provider.domain')}
+        required
+        requiredLabel={t('common.requiredMark')}
+      >
+        <Select
+          name="domainCode"
+          value={form.domainCode}
+          onChange={(e) => set('domainCode')(e.target.value)}
+          placeholder={t('billing.provider.chooseDomain')}
+          options={[
+            'HEALTH',
+            'ACCOMMODATION',
+            'GENERIC',
+            'ASSISTANCE',
+            'EDUCATION',
+            'SPORT',
+            'TRANSPORT',
+            'CARE',
+            'OTHER',
+          ].map((value) => ({ value, label: t(`catalog.domains.${value}`) }))}
           disabled={disabled}
           required
         />
@@ -258,6 +291,8 @@ export function InvoicePage() {
   const search = useSearch({ from: '/app/billing/invoices/$invoiceId' });
   const { t } = useTranslation();
   const toast = useToast();
+  const canManage = usePermission('invoice.manage');
+  const canReadClaims = usePermission('claim.read');
   const navigate = useNavigate();
   const invoice = useInvoice(invoiceId);
   const chain = useInvoiceChain(invoiceId);
@@ -282,8 +317,9 @@ export function InvoicePage() {
 
   function saveHeader(e: FormEvent) {
     e.preventDefault();
-    if (!record) return;
+    if (!canManage || !record || !opened.domainCode || patch.isPending) return;
     const body: PatchInvoiceDraft = {
+      domainCode: opened.domainCode,
       invoiceNumber: opened.invoiceNumber.trim(),
       invoiceDate: opened.invoiceDate,
       lineExtensionAmount: opened.lineExtensionAmount.trim(),
@@ -304,7 +340,7 @@ export function InvoicePage() {
   }
 
   function attachImage() {
-    if (!cleanImage) return;
+    if (!canManage || !cleanImage) return;
     patch.mutate(
       { etag, body: { documentId: cleanImage.id } },
       { onSuccess: () => toast.notify({ tone: 'success', title: t('billing.provider.saved') }) },
@@ -312,10 +348,11 @@ export function InvoicePage() {
   }
 
   function correct() {
-    if (!record || !providerId) return;
+    if (!canManage || !record || !providerId) return;
     create.mutate(
       {
         providerOrganizationId: providerId,
+        domainCode: record.domainCode,
         invoiceNumber: record.invoiceNumber,
         invoiceDate: record.invoiceDate,
         lineExtensionAmount: record.lineExtensionAmount,
@@ -359,10 +396,15 @@ export function InvoicePage() {
       <Card>
         <h2 className="text-base font-semibold">{t('billing.provider.invoice')}</h2>
         <div className="mt-3">
-          <HeaderFields form={opened} set={set} onSubmit={saveHeader} disabled={!isDraft} />
+          <HeaderFields
+            form={opened}
+            set={set}
+            onSubmit={saveHeader}
+            disabled={!isDraft || !canManage}
+          />
         </div>
         <ProblemAlert problem={patch.isError ? problemOf(patch.error) : null} className="mt-3" />
-        {isDraft ? (
+        {isDraft && canManage ? (
           <div className="mt-3">
             <Button
               size="sm"
@@ -384,10 +426,10 @@ export function InvoicePage() {
             aggregateType="INVOICE"
             aggregateId={record.id}
             requiredTypes={['INVOICE']}
-            readOnly={!isDraft}
+            readOnly={!isDraft || !canManage}
           />
         </div>
-        {isDraft && cleanImage && record.documentId !== cleanImage.id ? (
+        {isDraft && canManage && cleanImage && record.documentId !== cleanImage.id ? (
           <div className="mt-2">
             <Button size="sm" variant="secondary" onClick={attachImage} loading={patch.isPending}>
               {t('common.save')}
@@ -399,9 +441,11 @@ export function InvoicePage() {
       <AllocationsCard
         record={record}
         etag={etag}
-        editable={isDraft}
+        editable={isDraft && canManage && canReadClaims}
         candidateIds={(search.claims ?? '').split(',').filter(Boolean)}
         onSave={(allocations) =>
+          canManage &&
+          canReadClaims &&
           putAllocations.mutate(
             { etag, body: { allocations } },
             {
@@ -428,7 +472,7 @@ export function InvoicePage() {
           className="mb-3"
         />
         <div className="flex flex-wrap gap-2">
-          {isDraft ? (
+          {isDraft && canManage ? (
             <Button
               onClick={() =>
                 submit.mutate(etag, {
@@ -442,12 +486,12 @@ export function InvoicePage() {
               {t('billing.provider.submit')}
             </Button>
           ) : null}
-          {record.status === 'RETURNED' ? (
+          {record.status === 'RETURNED' && canManage ? (
             <Button onClick={correct} loading={create.isPending} data-testid="invoice-correct">
               {t('billing.provider.correct')}
             </Button>
           ) : null}
-          {isDraft || record.status === 'RETURNED' ? (
+          {canManage && (isDraft || record.status === 'RETURNED') ? (
             <Button
               variant="secondary"
               onClick={() =>
@@ -523,10 +567,17 @@ function AllocationsCard({
   const invoiceable =
     earnings.data?.currencies.find((c) => c.currencyCode === record.currencyCode)
       ?.invoiceableClaimIds ?? [];
-  const ids = Array.from(
+  // Keep every candidate from the earnings link. Hydrate only the rows the provider opens.
+  // Existing allocations come first; amounts entered on earlier rows remain in state.
+  const allIds = Array.from(
     new Set([...record.allocations.map((a) => a.claimId), ...candidateIds, ...invoiceable]),
   );
-  const summaries = useClaimSummaries(
+  const [visibleCount, setVisibleCount] = useState(() =>
+    Math.min(3, new Set([...record.allocations.map((a) => a.claimId), ...candidateIds]).size),
+  );
+  const ids = editable ? allIds.slice(0, visibleCount) : record.allocations.map((a) => a.claimId);
+  const hasMore = editable && visibleCount < allIds.length;
+  const { summaries, error: summaryError } = useClaimSummaries(
     ids.filter((id) => !record.allocations.some((a) => a.claimId === id)),
   );
   const [amounts, setAmounts] = useState<Record<string, string>>(() =>
@@ -550,8 +601,11 @@ function AllocationsCard({
     <Card className="min-w-0">
       <h2 className="text-base font-semibold">{t('billing.provider.allocations')}</h2>
       <p className="text-fg-muted mt-1 text-sm">{t('billing.provider.pickHint')}</p>
+      <ProblemAlert problem={summaryError ? problemOf(summaryError) : null} className="mt-3" />
       {rows.length === 0 ? (
-        <p className="text-fg-muted mt-3 text-sm">{t('billing.provider.noInvoiceable')}</p>
+        hasMore ? null : (
+          <p className="text-fg-muted mt-3 text-sm">{t('billing.provider.noInvoiceable')}</p>
+        )
       ) : !wide ? (
         <ul className="mt-3 grid gap-2" data-testid="allocation-table">
           {rows.map((row) => (
@@ -639,6 +693,17 @@ function AllocationsCard({
           </Table>
         </div>
       )}
+      {hasMore ? (
+        <Button
+          size="sm"
+          variant="secondary"
+          className="mt-3"
+          onClick={() => setVisibleCount((count) => count + 3)}
+          data-testid="allocation-show-more"
+        >
+          {t('billing.provider.showMoreClaims')}
+        </Button>
+      ) : null}
       <dl
         className="mt-3 max-w-sm grid grid-cols-[max-content_minmax(0,1fr)] gap-x-6 gap-y-1 text-sm"
         data-testid="allocation-totals"
@@ -665,9 +730,9 @@ function AllocationsCard({
             variant="secondary"
             onClick={() =>
               onSave(
-                rows
-                  .filter((r) => r.amount.trim() !== '')
-                  .map((r) => ({ claimId: r.claimId, allocatedAmount: r.amount.trim() })),
+                Object.entries(amounts)
+                  .filter(([, amount]) => amount.trim() !== '')
+                  .map(([claimId, amount]) => ({ claimId, allocatedAmount: amount.trim() })),
               )
             }
             loading={saving}

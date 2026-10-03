@@ -48,6 +48,7 @@ type snapshotItemResult struct {
 // than only on the request, so a version that was later superseded still says why it landed
 // where it did.
 type snapshotGate struct {
+	DocumentEvidence        []DocumentEvidence    `json:"documentEvidence,omitempty"`
 	Status                  string                `json:"status"`
 	ReasonCode              string                `json:"reasonCode"`
 	EligibilityOutcome      string                `json:"eligibilityOutcome"`
@@ -93,7 +94,8 @@ func buildSnapshot(request RequestRecord, items []ItemRecord, decision gateDecis
 		Channel: request.Channel, VersionNo: request.CurrentVersionNo, SubmittedAt: submittedAt,
 		Items: snapshotItems(items, nil),
 		Gate: snapshotGate{
-			Status: decision.Status, ReasonCode: decision.ReasonCode,
+			DocumentEvidence: decision.DocumentEvidence,
+			Status:           decision.Status, ReasonCode: decision.ReasonCode,
 			EligibilityOutcome:      decision.EligibilityOutcome,
 			EligibilityEvaluationID: decision.EligibilityEvaluationID,
 			RuleEvaluationID:        decision.RuleEvaluationID,

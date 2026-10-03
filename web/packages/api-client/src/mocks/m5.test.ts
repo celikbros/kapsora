@@ -140,12 +140,40 @@ function permissionsOf(username: string): string[] {
 }
 
 describe('the M5 review and billing accounts', () => {
+  it('grants provider.a exactly the Go PROVIDER_STAFF list', () => {
+    expect(permissionsOf('provider.a')).toEqual(goRolePermissions('PROVIDER_STAFF'));
+    for (const permissions of [goRolePermissions('PROVIDER_STAFF'), permissionsOf('provider.a')]) {
+      expect(permissions).toContain('catalog.read');
+      expect(permissions).not.toContain('catalog.manage');
+    }
+    // Billing belongs to a separate real role; do not copy the mock's legacy extra grants.
+    expect(goRolePermissions('PROVIDER_STAFF')).not.toContain('claim.create');
+  });
+  it('keeps demo import access aligned with the real program manager role', () => {
+    expect(goRolePermissions('PROGRAM_MANAGER')).toContain('import.execute');
+    expect(goRolePermissions('TENANT_ADMIN')).not.toContain('import.execute');
+    expect(permissionsOf('admin.a')).toContain('import.execute');
+    for (const username of [
+      'sponsor.hr',
+      'financial.reviewer',
+      'payer.approver',
+      'provider.a',
+      'member.a',
+    ]) {
+      expect(permissionsOf(username)).not.toContain('import.execute');
+    }
+  });
   it('grants sponsor.hr exactly the Go SPONSOR_HR list', () => {
     expect(permissionsOf('sponsor.hr')).toEqual(goRolePermissions('SPONSOR_HR'));
   });
 
   it('grants financial.reviewer exactly the Go FINANCIAL_REVIEWER list', () => {
     expect(permissionsOf('financial.reviewer')).toEqual(goRolePermissions('FINANCIAL_REVIEWER'));
+  });
+
+  it('grants doctor.a exactly the Go MEDICAL_REVIEWER list', () => {
+    expect(permissionsOf('doctor.a')).toEqual(goRolePermissions('MEDICAL_REVIEWER'));
+    expect(permissionsOf('doctor.a')).not.toContain('audit.read');
   });
 
   it('grants billing.a exactly the Go PROVIDER_BILLING list', () => {
@@ -351,7 +379,7 @@ describe('the clinical projection', () => {
       }),
     );
 
-    const auditor = await signIn('doctor.a');
+    const auditor = await signIn('admin.a');
     const log = await unwrap(
       auditor.c.GET('/api/v1/health-access-log', {
         params: { header: tenant(auditor), query: { personId: standard.personId } },
@@ -375,7 +403,7 @@ describe('the clinical projection', () => {
         }),
       );
     }
-    const auditor = await signIn('doctor.a');
+    const auditor = await signIn('admin.a');
     const log = await unwrap(
       auditor.c.GET('/api/v1/health-access-log', {
         params: { header: tenant(auditor), query: { personId: standard.personId } },
@@ -430,9 +458,10 @@ describe('a sensitive case', () => {
     expect(problem.code).toBe('ACCESS_PURPOSE_REQUIRED');
 
     // The refusal is on the record: "who tried" is as much of it as "who looked".
+    const auditor = await signIn('admin.a');
     const log = await unwrap(
-      s.c.GET('/api/v1/health-access-log', {
-        params: { header: tenant(s), query: { personId: sensitive.personId } },
+      auditor.c.GET('/api/v1/health-access-log', {
+        params: { header: tenant(auditor), query: { personId: sensitive.personId } },
       }),
     );
     expect(log.data.items.some((e) => e.outcome === 'DENIED')).toBe(true);
@@ -468,9 +497,10 @@ describe('a sensitive case', () => {
     expect(diagnoses.data.items[0]!.code).toBe('F32.1');
     expect(diagnoses.data.items[0]!.sensitive).toBe(true);
 
+    const auditor = await signIn('admin.a');
     const log = await unwrap(
-      s.c.GET('/api/v1/health-access-log', {
-        params: { header: tenant(s), query: { personId: sensitive.personId } },
+      auditor.c.GET('/api/v1/health-access-log', {
+        params: { header: tenant(auditor), query: { personId: sensitive.personId } },
       }),
     );
     // Both reads are on it — the case and the diagnoses — and each carries the purpose it
@@ -514,8 +544,10 @@ describe('a sensitive case', () => {
     // "financial only" is the reviewer declining to look, and choosing not to look is not a
     // look: no precondition, no clinical field, and nothing on the member's access log.
     const s = await signIn('doctor.a');
+    const personIds: string[] = [];
     for (const sensitivity of ['SENSITIVE', 'STANDARD'] as const) {
       const row = caseWithSensitivity(sensitivity);
+      personIds.push(row.personId);
       const one = await unwrap(
         s.c.GET('/api/v1/health-cases/{caseId}', {
           params: {
@@ -528,10 +560,12 @@ describe('a sensitive case', () => {
       expect(one.data.sensitivity).toBeUndefined();
       expect(one.data.encounters.every((e) => e.notesClinical === undefined)).toBe(true);
       expect(JSON.stringify(one.data)).not.toContain('SENSITIVE');
-
+    }
+    const auditor = await signIn('admin.a');
+    for (const personId of personIds) {
       const log = await unwrap(
-        s.c.GET('/api/v1/health-access-log', {
-          params: { header: tenant(s), query: { personId: row.personId } },
+        auditor.c.GET('/api/v1/health-access-log', {
+          params: { header: tenant(auditor), query: { personId } },
         }),
       );
       expect(log.data.items.filter((e) => e.actorId === s.actorId)).toHaveLength(0);

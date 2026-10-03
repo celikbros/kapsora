@@ -23,7 +23,7 @@
     "reports": "Raporlar",
     "integrations": "Entegrasyonlar",
     "admin": "Yönetim",
-    "security": "Güvenlik ve Audit",
+    "security": "Sağlık verisi erişim kayıtları",
     "profile": "Profilim ve Yetkilerim",
     "organizations": "Kurumlar",
     "mainMenu": "Ana menü",
@@ -36,6 +36,52 @@
     "notifications": "Bildirimler",
     "medicalReports": "Tıbbi inceleme",
     "billing": "İcmal ve Ödeme"
+  },
+  "healthServices": {
+    "title": "Sağlık",
+    "intro": "Erişiminiz olan sağlık incelemeleri ve kayıtları.",
+    "reports": "Tıbbi rapor incelemesi",
+    "reportsDescription": "İnceleme bekleyen tedavi raporlarını açın.",
+    "medicalClaims": "Tıbbi değerlendirme",
+    "medicalClaimsDescription": "Tıbbi karar bekleyen claim kayıtlarını açın.",
+    "financialClaims": "Mali değerlendirme",
+    "financialClaimsDescription": "Mali karar bekleyen claim kayıtlarını açın.",
+    "claimRecords": "Başvuru kayıtları",
+    "claimRecordsDescription": "Geçmiş kararlar dahil tüm claim kayıtlarını görüntüleyin.",
+    "requests": "Hizmet talepleri",
+    "requestsDescription": "Hizmet taleplerini ve durumlarını görüntüleyin.",
+    "personRecords": "Hak sahibinin sağlık kayıtları",
+    "personRecordsDescription": "Hak sahibini açıp Sağlık sekmesinden kayıtlarını görüntüleyin."
+  },
+  "walletsServices": {
+    "title": "Hak Cüzdanları",
+    "intro": "Hak cüzdanları hak sahiplerine bağlıdır. Kişiyi arayıp Haklar bağlantısını açarak bakiyelerini ve hesap hareketlerini görüntüleyin.",
+    "people": "Hak sahibi ara",
+    "peopleDescription": "Ada göre kişi arayın; sonuç satırındaki Haklar bağlantısı kişinin hak cüzdanını açar."
+  },
+  "reportsServices": {
+    "title": "Raporlar",
+    "intro": "Erişiminiz olan raporlama kayıtları.",
+    "reconciliation": "Mutabakat",
+    "reconciliationDescription": "Kaydedilmiş mutabakat çalışmalarını ve farklarını görüntüleyin.",
+    "exports": "Dışa aktarımlar",
+    "exportsDescription": "Dışa aktarım taleplerini ve durumlarını görüntüleyin. Kullanılabilen işlemler yetkilerinize bağlıdır."
+  },
+  "securityAccess": {
+    "title": "Sağlık verisi erişim kayıtları",
+    "intro": "Kurumdaki sağlık verisi erişimleri ve reddedilen girişimler. Diğer güvenlik olayları bu sayfada yer almaz.",
+    "empty": "Sağlık verisi erişim kaydı bulunamadı.",
+    "retry": "Yeniden dene",
+    "previous": "Önceki sayfa",
+    "next": "Sonraki sayfa",
+    "at": "Zaman",
+    "outcome": "Sonuç",
+    "actor": "İşlemi yapan",
+    "person": "Hak sahibi kimliği",
+    "resource": "Kaynak ve kimliği",
+    "access": "Erişim",
+    "purpose": "Amaç",
+    "reason": "Gerekçe"
   },
   "ownFile": {
     "title": "Bu dosya size ait.",
@@ -136,7 +182,8 @@
       "displayName": "Görünen ad",
       "kind": "Tür",
       "role": "Rol",
-      "status": "Durum"
+      "status": "Durum",
+      "wallet": "Haklar"
     },
     "empty": "Kayıt bulunamadı.",
     "emptyHint": "Filtreleri temizleyin ya da yeni bir kurum ekleyin.",
@@ -255,7 +302,7 @@
     "CLAIM_ADJUSTMENT_NOT_REVERSIBLE": "İptal kaydı iptal edilemez",
     "CLAIM_ADJUSTMENT_REVERSED": "Bu düzeltme zaten iptal edilmiş",
     "CLAIM_BOOKING_UNKNOWN": "Rezervasyon bulunamadı",
-    "CLAIM_SOURCE_ALREADY_CLAIMED": "Bu rezervasyon için açık bir dosya zaten var",
+    "CLAIM_SOURCE_ALREADY_CLAIMED": "Bu kaynak için bir dosya zaten var. Dosya listesini kontrol edin.",
     "ELIGIBILITY_EVALUATION_NOT_FOUND": "Uygunluk değerlendirmesi bulunamadı",
     "ENROLLMENT_TRANSITION_INVALID": "Bu durum geçişi yapılamaz",
     "ENTITLEMENT_ADJUSTMENT_DECIDED": "Bu düzeltme zaten karara bağlandı",
@@ -544,7 +591,13 @@
     "NO_SHOW_EVIDENCE_REQUIRED": "Gelmeme bildirimi için kanıt belgesi gerekli.",
     "NO_SHOW_SAME_REVIEWER": "Bildirimi yapan kişi kendi bildirimini onaylayamaz.",
     "WAITLIST_DUPLICATE": "Bu tarihler için zaten bekleme listesindesiniz.",
-    "VOUCHER_NOT_AVAILABLE": "Rezervasyon onaylanmadan kupon üretilemez."
+    "VOUCHER_NOT_AVAILABLE": "Rezervasyon onaylanmadan kupon üretilemez.",
+    "CLAIM_CASE_ALREADY_CLAIMED": "Bu vaka için dosya zaten oluşturulmuş. Dosya listesini kontrol edin.",
+    "CLAIM_SOURCE_NOT_FOUND": "Faturalandırılacak vaka bulunamadı. Vaka listesini yenileyin.",
+    "CLAIM_SOURCE_NOT_READY": "Vaka faturalamaya hazır değil. Klinik ekibin kayıtları ve provizyonu kontrol etmesini isteyin.",
+    "CLAIM_INPATIENT_ALLOCATION_MISSING": "Yatış günlerinin provizyon tüketimi tamamlanmamış. Gün sayısını ve onayları kontrol edin.",
+    "DIAGNOSIS_IN_USE": "Tanı bir yatış veya talep satırında kullanılıyor. Bağlı kaydı düzeltmeden tanıyı değiştiremezsiniz.",
+    "ENCOUNTER_ALREADY_ENDED": "Muayene zaten sonlandırılmış. Kaydı yenileyiniz."
   },
   "fieldErrors": {
     "RULE_COMPILE_FAILED": "Kural koşulu derlenemedi",
@@ -979,6 +1032,7 @@
       "available": "Kullanılabilir",
       "reserved": "Bloke",
       "consumed": "Kullanılan",
+      "expired": "Süresi dolan",
       "total": "Toplam",
       "status": "Durum"
     },
@@ -997,6 +1051,7 @@
         "movement": "Hareket",
         "effectiveAt": "Tarih",
         "quantity": "Miktar",
+        "balanceChanges": "Bakiye değişimleri",
         "reference": "Referans",
         "reason": "Sebep"
       },
@@ -1212,6 +1267,7 @@
       "parent": "Üst kategori",
       "category": "Kategori",
       "domain": "Alan",
+      "chooseDomain": "Hizmet alanı seçin",
       "fulfillmentMode": "Karşılama biçimi",
       "defaultUnitType": "Varsayılan birim",
       "requiresProvider": "Sağlayıcı gerekir",
@@ -1900,6 +1956,13 @@
   },
   "pricing": {
     "title": "Fiyat sorgusu",
+    "searchProviders": "Sağlayıcı ara",
+    "searchServices": "Hizmet ara",
+    "noProviders": "Bu aramada sağlayıcı bulunamadı.",
+    "noServices": "Bu aramada hizmet bulunamadı.",
+    "noPeople": "Bu aramada hak sahibi bulunamadı.",
+    "loadMore": "Daha fazla yükle",
+    "validation": "Hak sahibi, sağlayıcı, geçerli hizmet tarihi ve her satır için hizmet ile sıfırdan büyük miktar seçin (en fazla 100 satır).",
     "intro": "Bu hizmet, bu sağlayıcıda, bu tarihte ne tutar; ne kadarını plan karşılar, ne kadarını hak sahibi öder.",
     "run": "Hesapla",
     "running": "Hesaplanıyor…",
@@ -2307,7 +2370,8 @@
       "eligible": "Uygun",
       "notEligible": "Uygun değil",
       "resultNote": "Bu bir ön bilgidir; karar, talep gönderildiğinde verilir.",
-      "reviewRequired": "İnceleme gerekli"
+      "reviewRequired": "İnceleme gerekli",
+      "enrollmentHint": "Birden fazla geçerli plan var. Kullanılacak planı seçiniz; uygunluk yeniden hesaplanır."
     },
     "myRequests": {
       "title": "Taleplerim",
@@ -2383,6 +2447,40 @@
         "assessedFee": "Hesaplanan ücret",
         "noShowReviewNote": "Ödeyen kurumdan ikinci bir kişi onaylayana kadar kayıt incelemede kalır."
       }
+    },
+    "correction": {
+      "title": "Talebi düzeltiniz",
+      "intro": "Değişiklikleri kaydediniz, ardından talebi yeniden gönderiniz.",
+      "draftTitle": "Talebi tamamlayınız",
+      "save": "Değişiklikleri kaydet",
+      "submit": "Talebi gönder",
+      "saved": "Değişiklikler kaydedildi.",
+      "sent": "Talep gönderildi.",
+      "reload": "Güncel kaydı yükle",
+      "reloadHint": "Kayıt değişmiş veya işlem tamamlanmış olabilir. Güncel kaydı yükleyip kontrol ediniz. Kaydedilmemiş değişiklikleriniz silinir.",
+      "retryHint": "Gönderim sonucu alınamadı. Aynı işlemi yeniden deneyebilir veya güncel kaydı yükleyebilirsiniz.",
+      "line": "Hizmet {{number}}",
+      "currency": "Para birimi",
+      "dateError": "Geçerli bir hizmet tarihi seçiniz.",
+      "serviceError": "Bir hizmet seçiniz.",
+      "quantityError": "Sıfırdan büyük bir miktar giriniz. En fazla 6 ondalık basamak kullanınız; örnek: 1,5.",
+      "amountError": "Sıfır veya daha büyük bir tutar giriniz. En fazla 6 ondalık basamak kullanınız; örnek: 400,50.",
+      "currencyError": "Üç harfli para birimi kodunu giriniz; örnek: TRY."
+    },
+    "cancellation": {
+      "action": "Talebi iptal et",
+      "confirm": "{{reference}} numaralı talep kapanacak. İptal geri alınamaz.",
+      "done": "Talep iptal edildi.",
+      "reason": "İptal gerekçesi",
+      "choose": "Gerekçe seçiniz",
+      "optional": "İsteğe bağlı, en fazla 1000 karakter.",
+      "changed": "İşlem uygulanamadı veya talep değişti. Güncel kaydı yükleyip durumunu kontrol ediniz.",
+      "uncertain": "İptalin sonucu doğrulanamadı. Aynı işlemi yeniden deneyebilir veya güncel kaydı yükleyebilirsiniz.",
+      "reasons": {
+        "PROVIDER_WITHDRAWN": "Talep geri çekildi",
+        "DUPLICATE_REQUEST": "Aynı hizmet için başka talep var",
+        "INPUT_ERROR": "Talep yanlış açıldı"
+      }
     }
   },
   "units": {
@@ -2456,6 +2554,7 @@
       "closed": "Vaka kapatıldı.",
       "financialNote": "Bu hesapla vakanın klinik yarısı görünmez: tanı, branş ve klinik not sunucudan gelmedi.",
       "sensitiveNote": "Bu vaka hassas bir tanı kategorisi taşıyor. Klinik detayı yalnızca ek yetkisi olan hesaplar görür.",
+      "claimsRestricted": "Claim kayıtlarını görmek için ek yetki gerekir.",
       "sections": {
         "encounters": "Muayeneler",
         "documents": "Belgeler",
@@ -2496,7 +2595,16 @@
       "created": "Muayene kaydedildi.",
       "diagnoses": "Tanılar",
       "editDiagnoses": "Tanıları düzenle",
-      "noDiagnosis": "Tanı girilmedi"
+      "noDiagnosis": "Tanı girilmedi",
+      "end": {
+        "action": "Muayeneyi sonlandır",
+        "done": "Muayene sonlandırıldı",
+        "hint": "Başlangıç: {{started}}. Bitiş zamanı kaydedildikten sonra değiştirilemez.",
+        "invalid": "Bitiş zamanı başlangıçtan önce olamaz.",
+        "reload": "Kaydı yeniden yükleyip güncel durumu kontrol ediniz.",
+        "uncertain": "İşlemin sonucu alınamadı. Aynı bitiş zamanıyla tekrar deneyebilir veya kaydı yenileyebilirsiniz.",
+        "refresh": "Kaydı yenile"
+      }
     },
     "diagnoses": {
       "title": "Tanılar",
@@ -2926,6 +3034,24 @@
         "CURRENCY_NOT_SINGLE": "Satırlar tek para biriminde değil",
         "LINE_NOT_DECIDED": "Karara bağlanmamış satır var"
       }
+    },
+    "handoff": {
+      "intro": "Kurumunuzun vakasını seçin, hizmet miktarlarını ve talep ettiğiniz tutarları yazın.",
+      "case": "Faturalandırılacak vaka",
+      "caseHint": "Aktif provizyonu olan ayaktan vakalar ve taburcu edilmiş yatışlar listelenir. Daha önce dosya açılan vakalar gösterilmez.",
+      "choose": "Vaka seçin",
+      "more": "Daha fazla vaka yükle",
+      "empty": "Faturalandırılacak vaka yok",
+      "emptyHint": "Klinik ekip vaka kaydını tamamladıktan ve provizyon alındıktan sonra burada görünecektir.",
+      "charges": "Hizmetler ve tutarlar",
+      "date": "Hizmet tarihi: {{date}}",
+      "reserved": "Faturalandırılabilir miktar: {{quantity}} {{unit}}",
+      "amount": "Talep edilen tutar (TRY)",
+      "links": "Yatışlarda gerçekleşen gün sayısını tam olarak girin. Vaka ve provizyon bağlantıları korunur; klinik bilgiler burada gösterilmez.",
+      "uncertain": "İşlemin sonucu doğrulanamadı. Aynı istekle yeniden deneyin.",
+      "edit": "Bilgileri düzenle",
+      "quantityError": "Sıfırdan büyük bir miktar girin (ör. 1 veya 1,5; en fazla 6 ondalık basamak).",
+      "amountError": "Sıfır veya daha büyük bir tutar girin (ör. 400,50; en fazla 6 ondalık basamak)."
     }
   },
   "review": {
@@ -3286,7 +3412,7 @@
         "assessed": "Hesaplanan ücret",
         "payer": "Ödeyen payı",
         "member": "Üye payı",
-        "consumedNights": "Düşülecek gece",
+        "consumedNights": "Harcanan gece",
         "status": {
           "REPORTED": "Bildirildi",
           "CONFIRMED": "Onaylandı",
@@ -3415,7 +3541,7 @@
       "payable": "Ödenecek",
       "paid": "Ödenen",
       "remaining": "Kalan",
-      "arithmetic": "Rakamlar sunucunundur; ekran toplamaz."
+      "arithmetic": "Tutarlar kayıtlı onay ve ödemelere göre gösterilir."
     },
     "provider": {
       "earningsTitle": "Hakediş",
@@ -3467,6 +3593,7 @@
       "batch": "İcmal",
       "noBatch": "İcmale alınmadı",
       "pickClaims": "Faturalanabilir claim'ler",
+      "showMoreClaims": "Diğer claim'leri göster",
       "pickHint": "Onaylı toplamın üstünde dağıtım sunucu tarafından reddedilir.",
       "noInvoiceable": "Bu para biriminde faturalanabilir claim yok.",
       "batchesTitle": "İcmaller",
@@ -3584,6 +3711,9 @@
       "receiptHint": "Fotoğraf ya da PDF. Yüklenen dosya taranır; tarama bitmeden başvuru gönderilemez.",
       "receiptScanning": "Makbuz taranıyor…",
       "receiptClean": "Makbuz hazır.",
+      "gateCheck": "Talebi kontrol et",
+      "gateStopped": "Bu başvuruyla devam edilemiyor. Geri ödemelerinize dönüp yeni bir başvuru açabilirsiniz.",
+      "gateReturn": "Geri ödemelerime dön",
       "iban": "IBAN",
       "ibanHint": "Bir kez yazılır, sonra yalnızca son dört hanesi görünür.",
       "ibanMasked": "Hesap •••• {{tail}}",
@@ -3594,6 +3724,9 @@
       "requested": "İstenen",
       "approved": "Onaylanan",
       "reason": "Gerekçe",
+      "decisionReasons": {
+        "REIMBURSEMENT_APPROVED": "Geri ödeme onaylandı"
+      },
       "paidTo": "Ödendi",
       "sequence": "Ne oldu",
       "decided": "Karar",
@@ -3657,6 +3790,10 @@
       "ranAt": "Çalıştı",
       "provider": "Sağlayıcı",
       "tenantWide": "Kurum geneli",
+      "providerSourceHint": "Erişebildiğiniz faturalama kayıtlarındaki sağlayıcılar.",
+      "loadMoreProviders": "Daha fazla sağlayıcı yükle",
+      "retryProviders": "Sağlayıcıları yüklemeyi yeniden dene",
+      "providersEmpty": "Erişebildiğiniz kayıtlarda sağlayıcı bulunamadı.",
       "differences": "Farklar",
       "noDifferences": "Fark yok; gün dengede.",
       "differenceCount_one": "{{count}} fark",
@@ -3671,7 +3808,7 @@
         "ERP_MISMATCH": "ERP ile uyuşmuyor"
       },
       "erpTotal": "ERP toplamı",
-      "erpPending": "ERP tarafı M9'a kadar boş.",
+      "erpPending": "Muhasebe sistemiyle karşılaştırma henüz yapılmadı.",
       "dashboardTitle": "Operasyon panosu",
       "asOf": "Şu an itibarıyla",
       "claimsByStatus": "Claim'ler duruma göre",
@@ -3750,6 +3887,26 @@
         "MANAGEMENT_REPORT": "Yönetim raporu"
       },
       "purposeRequired": "İndirmenin amacını seçin."
+    }
+  },
+  "authorization": {
+    "title": "Hak ayırma",
+    "empty": "Talep onaylandı; henüz hak ayrılmadı.",
+    "none": "Bu talep için hak ayırma kaydı yok.",
+    "providerEmpty": "Bu talep için hak ayırma kaydı yok. Talep onayı, tek başına hak ayırmaz.",
+    "deadline": "Geçerlilik sonu",
+    "futureDate": "Şimdiden sonraki bir tarih ve saat seçin.",
+    "reserve": "Hak ayır",
+    "reserving": "Hak ayrılıyor…",
+    "retry": "Hak ayırmayı yeniden dene",
+    "effect": "Onaylanan hizmetler için hak ayrılır. Bu işlem hizmet kullanımı veya ödeme kaydı oluşturmaz. Tarih ve saat yerel saat diliminizdedir.",
+    "validUntil": "Geçerlilik sonu: {{date}}",
+    "status": {
+      "ACTIVE": "Ayrıldı",
+      "PARTIALLY_USED": "Kısmen kullanıldı",
+      "USED": "Kullanıldı",
+      "EXPIRED": "Süresi doldu",
+      "CANCELLED": "İptal edildi"
     }
   }
 }

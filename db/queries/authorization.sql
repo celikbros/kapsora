@@ -164,10 +164,11 @@ UPDATE service.authorization
 -- a reference. The reservation id is written back by SetAuthorizationItemReservation.
 INSERT INTO service.authorization_item (
     tenant_id, authorization_id, request_item_id, service_definition_id,
-    approved_quantity, approved_amount, member_amount)
+    approved_quantity, approved_amount, member_amount, entitlement_unit_factor)
 VALUES (sqlc.arg('tenant_id'), sqlc.arg('authorization_id'), sqlc.arg('request_item_id'),
         sqlc.arg('service_definition_id'), sqlc.arg('approved_quantity')::text::numeric,
-        sqlc.narg('approved_amount')::text::numeric, sqlc.arg('member_amount')::text::numeric)
+        sqlc.narg('approved_amount')::text::numeric, sqlc.arg('member_amount')::text::numeric,
+        sqlc.arg('entitlement_unit_factor')::text::numeric)
 RETURNING id, created_at, row_version;
 
 -- name: SetAuthorizationItemReservation :execrows
@@ -182,6 +183,7 @@ SELECT id, authorization_id, request_item_id, service_definition_id,
        member_amount::text AS member_amount,
        entitlement_reservation_id,
        consumed_quantity::text AS consumed_quantity,
+       entitlement_unit_factor::text AS entitlement_unit_factor,
        row_version
   FROM service.authorization_item
  WHERE tenant_id = sqlc.arg('tenant_id')
@@ -197,6 +199,7 @@ SELECT id, authorization_id, request_item_id, service_definition_id,
        member_amount::text AS member_amount,
        entitlement_reservation_id,
        consumed_quantity::text AS consumed_quantity,
+       entitlement_unit_factor::text AS entitlement_unit_factor,
        row_version
   FROM service.authorization_item
  WHERE tenant_id = sqlc.arg('tenant_id')

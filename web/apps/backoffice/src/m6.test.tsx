@@ -52,6 +52,12 @@ describe('bookings', () => {
   });
 
   it('reads one booking as the sequence that produced it, and confirms a no-show as a second person', async () => {
+    const manager = api.world.accounts.find((a) => a.username === 'admin.a')!;
+    for (const membership of manager.memberships) {
+      membership.permissions = membership.permissions.filter(
+        (p) => p !== 'accommodation.booking.manage',
+      );
+    }
     const report = api.world.noShows.find((n) => n.status === 'REPORTED')!;
     mount(`/lodging/bookings/${report.bookingId}`);
     const user = await login();
@@ -69,6 +75,36 @@ describe('bookings', () => {
       expect(screen.getByTestId('booking-status')).toHaveTextContent('Gelinmedi'),
     );
   });
+});
+
+it('hides the no-show decision controls without either review permission', async () => {
+  const manager = api.world.accounts.find((a) => a.username === 'admin.a')!;
+  for (const membership of manager.memberships) {
+    membership.permissions = membership.permissions.filter(
+      (p) => p !== 'accommodation.booking.manage' && p !== 'accommodation.no_show.review',
+    );
+  }
+  const report = api.world.noShows.find((n) => n.status === 'REPORTED')!;
+  mount(`/lodging/bookings/${report.bookingId}`);
+  await login();
+  await screen.findByTestId('no-show-status');
+  expect(screen.queryByTestId('no-show-review')).toBeNull();
+});
+
+it('shows the existing own-file notice instead of no-show decision controls', async () => {
+  const report = api.world.noShows.find((n) => n.status === 'REPORTED')!;
+  const booking = api.world.bookings.find((b) => b.id === report.bookingId)!;
+  api.world.accounts
+    .find((a) => a.username === 'admin.a')!
+    .memberships.push({
+      tenantCode: 'DEMO_A',
+      permissions: [],
+      scopes: [{ type: 'PERSON', id: booking.personId }],
+    });
+  mount(`/lodging/bookings/${report.bookingId}`);
+  await login();
+  await screen.findByTestId('own-file-notice');
+  expect(screen.queryByTestId('no-show-review')).toBeNull();
 });
 
 describe('the waiting list', () => {

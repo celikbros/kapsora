@@ -322,6 +322,36 @@ func (q *Queries) DeleteEncounterDiagnoses(ctx context.Context, arg DeleteEncoun
 	return err
 }
 
+const endEncounter = `-- name: EndEncounter :execrows
+UPDATE health.encounter
+   SET ended_at = $1, updated_by = $2
+ WHERE tenant_id = $3 AND id = $4
+   AND row_version = $5 AND ended_at IS NULL
+`
+
+type EndEncounterParams struct {
+	EndedAt         *time.Time
+	ActorID         uuid.NullUUID
+	TenantID        uuid.UUID
+	ID              uuid.UUID
+	ExpectedVersion int64
+}
+
+// The application holds the parent case lock, shared by close/create/diagnosis commands.
+func (q *Queries) EndEncounter(ctx context.Context, arg EndEncounterParams) (int64, error) {
+	result, err := q.db.Exec(ctx, endEncounter,
+		arg.EndedAt,
+		arg.ActorID,
+		arg.TenantID,
+		arg.ID,
+		arg.ExpectedVersion,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const getEncounter = `-- name: GetEncounter :one
 SELECT e.id, e.case_id, e.encounter_type, e.started_at, e.ended_at, e.location_id,
        e.practitioner_id, e.branch_code, e.notes_clinical, e.created_at, e.row_version

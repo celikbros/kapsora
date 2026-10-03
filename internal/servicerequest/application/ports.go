@@ -78,6 +78,13 @@ func scopeOf(rc identity.RequestContext) Scope {
 	return Scope{OrganizationIDs: ids}
 }
 
+// DocumentEvidence names a clean, retained attachment used by the submit gate.
+// The frozen version keeps these IDs even if a link is subsequently removed.
+type DocumentEvidence struct {
+	DocumentID       uuid.UUID `json:"documentId"`
+	DocumentTypeCode string    `json:"documentTypeCode"`
+}
+
 // RequestRecord is one service.service_request row.
 type RequestRecord struct {
 	ID                      uuid.UUID
@@ -437,6 +444,10 @@ type Repository interface {
 		purposes []string, serviceDate time.Time) ([]RuleVersion, error)
 	CreateRuleEvaluation(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
 		in NewRuleEvaluationRow, results []RuleEvaluationResultRow) (uuid.UUID, error)
+
+	// ListDocumentEvidence reads only clean, retained attachments of this request.
+	ListDocumentEvidence(ctx context.Context, tx pgx.Tx, tenantID, requestID uuid.UUID,
+		providerID *uuid.UUID, requiredTypes []string) ([]DocumentEvidence, error)
 
 	// ReviewRequired answers whether a program's requests still need a person to look at
 	// them once nothing has objected. It is configuration rather than a hard-coded rule,

@@ -14,7 +14,7 @@ import {
 import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
 import { useState } from 'react';
 import { HELP_ROUTES } from '../help';
-import { NAV_ENTRIES } from '../nav';
+import { visibleNavEntries } from '../nav';
 import { currentTheme, toggleTheme } from '../theme';
 
 /** Header + sidebar shell for every signed-in screen. */
@@ -111,15 +111,16 @@ export function AppLayout() {
         </Badge>
       ) : null}
       <div className="ml-auto flex min-w-0 shrink-0 items-center gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="hidden sm:inline-flex"
-          onClick={() => setTheme(toggleTheme())}
-          aria-label={`${t('header.theme')}: ${theme === 'dark' ? t('header.themeDark') : t('header.themeLight')}`}
-        >
-          {theme === 'dark' ? <MoonIcon /> : <SunIcon />}
-        </Button>
+        <div className="hidden sm:block">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setTheme(toggleTheme())}
+            aria-label={`${t('header.theme')}: ${theme === 'dark' ? t('header.themeDark') : t('header.themeLight')}`}
+          >
+            {theme === 'dark' ? <MoonIcon /> : <SunIcon />}
+          </Button>
+        </div>
         <HelpButton label={t('help.open')} expanded={helpOpen} onClick={() => setHelpOpen(true)} />
         <HelpDrawer open={helpOpen} onOpenChange={setHelpOpen} page={help} />
         <DropdownMenu
@@ -156,32 +157,28 @@ export function AppLayout() {
   const nav = (
     <nav aria-label={t('nav.mainMenu')} className="p-3">
       <ul className="grid gap-0.5">
-        {NAV_ENTRIES.filter((e) => !e.permission || active?.permissions.includes(e.permission)).map(
-          (entry) => {
-            const current =
-              entry.path === '/'
-                ? pathname === '/'
-                : pathname.startsWith(entry.match ?? entry.path);
-            return (
-              <li key={entry.key}>
-                <Link
-                  to={entry.path}
-                  aria-current={current ? 'page' : undefined}
-                  className={cn(
-                    'block rounded-md px-3 py-2 text-sm',
-                    current
-                      ? 'bg-primary-soft text-primary-strong font-medium'
-                      : 'text-fg hover:bg-surface-raised',
-                    !entry.implemented && 'text-fg-muted',
-                  )}
-                >
-                  {t(entry.labelKey)}
-                  {!entry.implemented ? <span className="ml-1 text-xs opacity-70">·</span> : null}
-                </Link>
-              </li>
-            );
-          },
-        )}
+        {visibleNavEntries(active?.permissions ?? []).map((entry) => {
+          const current =
+            entry.path === '/' ? pathname === '/' : pathname.startsWith(entry.match ?? entry.path);
+          return (
+            <li key={entry.key}>
+              <Link
+                to={entry.path}
+                aria-current={current ? 'page' : undefined}
+                className={cn(
+                  'block rounded-md px-3 py-2 text-sm',
+                  current
+                    ? 'bg-primary-soft text-primary-strong font-medium'
+                    : 'text-fg hover:bg-surface-raised',
+                  !entry.implemented && 'text-fg-muted',
+                )}
+              >
+                {t(entry.labelKey)}
+                {!entry.implemented ? <span className="ml-1 text-xs opacity-70">·</span> : null}
+              </Link>
+            </li>
+          );
+        })}
       </ul>
     </nav>
   );

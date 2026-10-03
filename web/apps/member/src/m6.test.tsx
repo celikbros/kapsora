@@ -1,9 +1,9 @@
 import { createMockServer } from '@kapsora/api-client/mocks/node';
 import { formatMoney, initI18n } from '@kapsora/i18n';
 import { createMemoryHistory } from '@tanstack/react-router';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { createServices } from './services';
 
@@ -22,6 +22,7 @@ beforeAll(() => {
   server.listen({ onUnhandledRequest: 'error' });
 });
 afterEach(() => {
+  vi.restoreAllMocks();
   api.reset();
   window.localStorage.clear();
   window.sessionStorage.clear();
@@ -132,6 +133,86 @@ describe('search, hold, confirm', () => {
     await waitFor(() =>
       expect(screen.getByTestId('booking-status')).toHaveTextContent('Onaylandı'),
     );
+  });
+
+  it.each(['checkIn', 'checkOut', 'adults', 'children', 'where'] as const)(
+    'requires a fresh search after changing %s, even when the old input is restored',
+    async (field) => {
+      mount('/search');
+      const user = await login();
+      const property = api.world.properties[0]!;
+      const room = api.world.roomTypes.find((r) => r.propertyId === property.id)!;
+      const days = api.world.inventoryDays
+        .filter((d) => d.roomTypeId === room.id)
+        .map((d) => d.stayDate)
+        .sort();
+      const checkIn = days[30]!,
+        checkOut = days[33]!;
+      await user.type(await screen.findByLabelText(/^Giriş/), checkIn);
+      await user.type(screen.getByLabelText(/^Çıkış/), checkOut);
+      await user.selectOptions(screen.getByLabelText(/^Nerede/), `property:${property.id}`);
+      await user.click(screen.getByRole('button', { name: 'Ara' }));
+      const row = (await screen.findAllByTestId('room-row')).find((r) =>
+        within(r).queryByTestId('room-member-amount'),
+      )!;
+      await user.click(within(row).getByRole('button', { name: 'Seç' }));
+      expect(screen.getByRole('button', { name: 'Odayı tut' })).toBeInTheDocument();
+      const control = document.querySelector(`[name="${field}"]`) as HTMLInputElement;
+      const old = control.value;
+      const next = {
+        checkIn: days[31]!,
+        checkOut: days[34]!,
+        adults: '1',
+        children: '1',
+        where: '',
+      }[field];
+      fireEvent.change(control, { target: { value: next } });
+      expect(screen.queryByTestId('room-list')).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Odayı tut' })).toBeNull();
+      fireEvent.change(control, { target: { value: old } });
+      expect(screen.queryByTestId('room-list')).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Odayı tut' })).toBeNull();
+      await user.click(screen.getByRole('button', { name: 'Ara' }));
+      expect(await screen.findByTestId('room-list')).toBeInTheDocument();
+    },
+  );
+
+  it('ignores an in-flight quote after the search inputs change', async () => {
+    const { services } = mount('/search');
+    const user = await login();
+    const property = api.world.properties[0]!;
+    const room = api.world.roomTypes.find((r) => r.propertyId === property.id)!;
+    const days = api.world.inventoryDays
+      .filter((d) => d.roomTypeId === room.id)
+      .map((d) => d.stayDate)
+      .sort();
+    await user.type(await screen.findByLabelText(/^Giriş/), days[30]!);
+    await user.type(screen.getByLabelText(/^Çıkış/), days[33]!);
+    await user.selectOptions(screen.getByLabelText(/^Nerede/), `property:${property.id}`);
+    const search = services.ops.lodging.search.bind(services.ops.lodging);
+    let release!: () => void;
+    const pending = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const spy = vi.spyOn(services.ops.lodging, 'search').mockImplementationOnce(async (...args) => {
+      const result = await search(...args);
+      await pending;
+      return result;
+    });
+    await user.click(screen.getByRole('button', { name: 'Ara' }));
+    await waitFor(() => expect(spy).toHaveBeenCalledTimes(1));
+    fireEvent.change(screen.getByLabelText(/^Yetişkin/), { target: { value: '1' } });
+    await act(async () => {
+      release();
+      await spy.mock.results[0]!.value;
+      // Flush the mutation observer notification as well as the request promise.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(screen.queryByTestId('room-list')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Odayı tut' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Ara' }));
+    expect(await screen.findByTestId('room-list')).toBeInTheDocument();
+    expect(spy.mock.calls[1]![1].adults).toBe(1);
   });
 
   it('shows the way back when the hold expired while the screen slept', async () => {

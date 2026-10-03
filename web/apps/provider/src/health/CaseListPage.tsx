@@ -1,4 +1,5 @@
 import type { HealthCase } from '@kapsora/api-client';
+import { useSession } from '@kapsora/auth';
 import { formatDate, useTranslation } from '@kapsora/i18n';
 import {
   Badge,
@@ -19,6 +20,7 @@ import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 
 import { problemOf } from '../problems';
+import { canOpen } from '../access';
 import { usePersonName, useCases } from './queries';
 import { caseTone } from './words';
 
@@ -34,6 +36,7 @@ function NameCell({ personId }: { personId: string }) {
  */
 export function CaseListPage() {
   const { t } = useTranslation();
+  const canOpenCase = useSession((s) => canOpen('caseOpen', s.activeTenant?.permissions ?? []));
   const [status, setStatus] = useState('OPEN');
   const query = useCases(status);
   const rows: HealthCase[] = query.data?.items ?? [];
@@ -44,9 +47,11 @@ export function CaseListPage() {
         title={t('health.cases.title')}
         description={t('health.cases.intro')}
         actions={
-          <Link to="/cases/new">
-            <Button size="sm">{t('health.cases.open')}</Button>
-          </Link>
+          canOpenCase ? (
+            <Link to="/cases/new">
+              <Button size="sm">{t('health.cases.open')}</Button>
+            </Link>
+          ) : null
         }
       />
       <div className="mb-3 flex flex-wrap items-end gap-3">

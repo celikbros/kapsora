@@ -1349,3 +1349,78 @@ func (s *server) seedConcurrencyWorld(t *testing.T, people, rooms int) uuid.UUID
 	}
 	return roomType
 }
+
+// A partly covered stay reserves only the covered nights. All ways of abandoning a
+// hold must return that exact amount, rather than asking the ledger for the entire stay.
+func TestPartiallyCoveredHoldReturnsOnlyReservedNights(t *testing.T) {
+	for _, terminal := range []string{"release", "expiry", "rejection", "pending cancellation"} {
+		t.Run(terminal, func(t *testing.T) {
+			s := newServer(t)
+			s.putLodgingTerms(t)
+			ctx, cancel := s.h.Ctx()
+			defer cancel()
+			_, heldBefore, confirmedBefore := s.inventoryOf(t, s.roomType, checkIn)
+			view, err := s.svc.CreateHold(ctx, s.memberContext(), s.holdInput(s.person, s.roomType))
+			if err != nil {
+				t.Fatal(err)
+			}
+			available, reserved := s.accountBalances(t)
+			if available != "0.000000" || reserved != "2.000000" {
+				t.Fatalf("partial hold balances = %s/%s, want 0/2", available, reserved)
+			}
+			switch terminal {
+			case "release":
+				if _, err := s.svc.ReleaseHold(ctx, s.memberContext(), view.Booking.ID); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := s.svc.ReleaseHold(ctx, s.memberContext(), view.Booking.ID); err == nil {
+					t.Fatal("duplicate release accepted")
+				}
+			case "expiry":
+				if _, err := s.h.Admin.Exec(ctx, `UPDATE accommodation.booking SET hold_expires_at = clock_timestamp() - interval '1 minute' WHERE tenant_id=$1 AND id=$2`, s.tenant, view.Booking.ID); err != nil {
+					t.Fatal(err)
+				}
+				if count, err := s.svc.ExpireHolds(ctx, time.Now().UTC()); err != nil || count != 1 {
+					t.Fatalf("expire = %d, %v", count, err)
+				}
+				if count, err := s.svc.ExpireHolds(ctx, time.Now().UTC()); err != nil || count != 0 {
+					t.Fatalf("repeat expire = %d, %v", count, err)
+				}
+			case "pending cancellation":
+				if _, err := s.svc.ConfirmBooking(ctx, s.memberContext(), view.Booking.ID); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := s.svc.CancelBooking(ctx, s.memberContext(), view.Booking.ID, ""); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := s.svc.CancelBooking(ctx, s.memberContext(), view.Booking.ID, ""); err == nil {
+					t.Fatal("duplicate cancellation accepted")
+				}
+			case "rejection":
+				confirmed, err := s.svc.ConfirmBooking(ctx, s.memberContext(), view.Booking.ID)
+				if err != nil {
+					t.Fatal(err)
+				}
+				s.decideRequest(t, *confirmed.Booking.ServiceRequestID, servicerequestdomain.StatusRejected)
+				s.deliverDecision(t, *confirmed.Booking.ServiceRequestID)
+				s.deliverDecision(t, *confirmed.Booking.ServiceRequestID)
+			}
+			available, reserved = s.accountBalances(t)
+			if available != "2.000000" || reserved != "0.000000" {
+				t.Errorf("terminal balances = %s/%s, want 2/0", available, reserved)
+			}
+			_, held, confirmed := s.inventoryOf(t, s.roomType, checkIn)
+			if held != heldBefore || confirmed != confirmedBefore {
+				t.Errorf("inventory = %d/%d, want %d/%d", held, confirmed, heldBefore, confirmedBefore)
+			}
+			var releases int
+			var released, consumed string
+			if err := s.h.Admin.QueryRow(ctx, `SELECT count(*), coalesce(sum(delta_available),0)::text, coalesce(sum(delta_consumed),0)::text FROM benefit.entitlement_ledger WHERE tenant_id=$1 AND reservation_id=$2 AND movement_type='RELEASE'`, s.tenant, *view.Booking.EntitlementReservationID).Scan(&releases, &released, &consumed); err != nil {
+				t.Fatal(err)
+			}
+			if releases != 1 || released != "2.000000" || consumed != "0.000000" {
+				t.Errorf("release ledger = %d/%s/%s, want 1/2/0", releases, released, consumed)
+			}
+		})
+	}
+}

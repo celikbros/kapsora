@@ -31,6 +31,7 @@
 import { HttpResponse, http, type HttpHandler } from 'msw';
 
 import {
+  documentDownloadable,
   type MockWorld,
   type StoredBooking,
   type StoredCancellation,
@@ -41,7 +42,9 @@ import type { MockApi, MockSession } from './handlers';
 import {
   ANY,
   guardTenant,
+  grantsFor,
   organizationScope,
+  ownFile,
   parseLimit,
   pathParam,
   personScope,
@@ -163,6 +166,7 @@ export interface AfterTools {
     checkOut: string,
     adults: number,
     children: number,
+    enrollmentId: string,
   ): StoredBooking | null;
   /** Confirms a hold, exactly as `confirmBooking` does. */
   confirmHold(tenantId: string, booking: StoredBooking): Response | null;
@@ -388,6 +392,7 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
           entry.checkOut,
           entry.adults,
           entry.children,
+          entry.enrollmentId,
         );
         if (!held) continue;
         entry.status = 'OFFERED';
@@ -689,15 +694,34 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
               'sonra bildirin.',
           });
         }
-        // The evidence: a clean document linked to this booking. A claim that costs a member
-        // money and rests on nothing is a claim nobody can review.
+        // Match the server's provider boundary and retained canonical bytes check.
+        const property = world().properties.find(
+          (p) => p.tenantId === g.tenantId && p.id === booking.propertyId,
+        );
         const evidence = world().documentLinks.find(
           (l) =>
             l.tenantId === g.tenantId &&
             l.aggregateType === 'BOOKING' &&
             l.aggregateId === booking.id &&
+            l.documentTypeCode === 'NO_SHOW_EVIDENCE' &&
             (!body?.evidenceDocumentId || l.documentId === body.evidenceDocumentId) &&
-            world().documents.some((d) => d.id === l.documentId && d.scanStatus === 'CLEAN'),
+            world().documents.some((d) => {
+              if (d.tenantId !== g.tenantId || d.id !== l.documentId || !property) return false;
+              const stored = d.duplicateOfDocumentId
+                ? world().documents.find(
+                    (c) => c.tenantId === g.tenantId && c.id === d.duplicateOfDocumentId,
+                  )
+                : d;
+              return (
+                documentDownloadable(d) &&
+                (d.ownerOrganizationId === null ||
+                  d.ownerOrganizationId === property.providerOrganizationId) &&
+                !!stored &&
+                documentDownloadable(stored) &&
+                (stored.ownerOrganizationId === null ||
+                  stored.ownerOrganizationId === property.providerOrganizationId)
+              );
+            }),
         );
         if (!evidence) {
           return problem(
@@ -751,7 +775,8 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
       `${ANY}/api/v1/accommodation/bookings/:bookingId/no-show/review`,
       async ({ request, params }) => {
         await wait(api);
-        const g = guardTenant(api, request, PERMISSION_BOOKING_MANAGE, true);
+        let g = guardTenant(api, request, 'accommodation.no_show.review', true);
+        if ('error' in g) g = guardTenant(api, request, PERMISSION_BOOKING_MANAGE, true);
         if ('error' in g) return g.error;
         const booking = findBooking(g.session, g.tenantId, pathParam(params, 'bookingId'));
         if (!booking) return bookingNotFound();
@@ -777,6 +802,21 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
             detail: 'Gelmedi bildirimini değerlendiren, bildiren kullanıcıdan farklı olmalı.',
           });
         }
+
+        const tenantCode = world().tenants.find((t) => t.id === g.tenantId)!.code;
+        const reviewScopes = grantsFor(g.session, tenantCode).scopes;
+        if (
+          g.session.app === 'provider' ||
+          g.session.app === 'member' ||
+          organizationScope(api, g.session, g.tenantId) !== null ||
+          personScope(api, g.session, g.tenantId) !== null ||
+          reviewScopes.some((s) => s.type !== 'TENANT')
+        ) {
+          return problem(api, 403, 'PERMISSION_DENIED', 'Bu işlem için yetkiniz yok');
+        }
+
+        const own = ownFile(api, g.session, g.tenantId, booking.personId);
+        if (own) return own;
 
         let consumed = 0;
         if (body.status === 'CONFIRMED') {
@@ -913,7 +953,16 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
         if (!room) return problem(api, 404, 'ROOM_TYPE_NOT_FOUND', 'Oda tipi bulunamadı');
       }
       const enrollment = world().enrollments.find(
-        (e) => e.tenantId === g.tenantId && e.personId === whose.personId && e.status === 'ACTIVE',
+        (e) =>
+          e.tenantId === g.tenantId &&
+          e.personId === whose.personId &&
+          e.status === 'ACTIVE' &&
+          e.validFrom <= body.checkIn &&
+          (!e.validTo || body.checkIn < e.validTo) &&
+          (!body.programId || e.programId === body.programId) &&
+          world().programs.some(
+            (p) => p.tenantId === g.tenantId && p.id === e.programId && p.status === 'ACTIVE',
+          ),
       );
       if (!enrollment) {
         return problem(

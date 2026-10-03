@@ -26,6 +26,7 @@ import { providerHandlers } from './provider-handlers';
 import { reimbursementHandlers } from './reimbursement-handlers';
 import { reportHandlers } from './report-handlers';
 import { rulesHandlers } from './rules-handlers';
+import { authorizationHandlers } from './authorization-handlers';
 import { serviceRequestHandlers } from './servicerequest-handlers';
 import { settlementHandlers } from './settlement-handlers';
 import { workflowHandlers } from './workflow-handlers';
@@ -1619,6 +1620,7 @@ export function createHandlers(api: MockApi): HttpHandler[] {
     ...pricingHandlers(api),
     // M4: the request lifecycle, the worklist, the document pipeline and notifications.
     ...serviceRequestHandlers(api),
+    ...authorizationHandlers(api),
     ...workflowHandlers(api),
     ...documentHandlers(api),
     ...notificationHandlers(api),

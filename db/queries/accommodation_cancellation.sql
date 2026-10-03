@@ -119,19 +119,26 @@ SELECT id, booking_id, cancelled_at, cancelled_by, reason_code, policy_snapshot,
 -- ---------------------------------------------------------------------------
 
 -- name: CountCleanBookingDocuments :one
--- The evidence half of the no-show gate: is a document actually linked to this booking, and
--- did the scanner clear it. A link to an object still in quarantine is not evidence a
--- reviewer can open, and a no-show reported without one is a reviewer asked to decide on
--- nothing. `aggregate_type = 'BOOKING'` is the link WP-I4-04 writes for a stay.
+-- A no-show fee review needs its own evidence type, within the property's provider
+-- boundary. Both the linked row and the canonical bytes must still be clean and retained.
 SELECT count(*)
   FROM document.link l
   JOIN document.object o ON o.tenant_id = l.tenant_id AND o.id = l.object_id
+  JOIN document.object stored ON stored.tenant_id = o.tenant_id
+       AND stored.id = COALESCE(o.duplicate_of_object_id, o.id)
+  JOIN accommodation.booking b ON b.tenant_id = l.tenant_id AND b.id = l.aggregate_id
+  JOIN accommodation.property p ON p.tenant_id = b.tenant_id AND p.id = b.property_id
  WHERE l.tenant_id = sqlc.arg('tenant_id')
    AND l.aggregate_type = 'BOOKING'
    AND l.aggregate_id = sqlc.arg('booking_id')
+   AND l.document_type_code = 'NO_SHOW_EVIDENCE'
    AND (sqlc.narg('object_id')::uuid IS NULL OR o.id = sqlc.narg('object_id')::uuid)
-   AND o.scan_status = 'CLEAN'
-   AND o.purged_at IS NULL;
+   AND o.scan_status = 'CLEAN' AND o.bucket = 'secure' AND o.purged_at IS NULL
+   AND stored.scan_status = 'CLEAN' AND stored.bucket = 'secure' AND stored.purged_at IS NULL
+   AND (o.owner_tenant_organization_id IS NULL
+        OR o.owner_tenant_organization_id = p.provider_organization_id)
+   AND (stored.owner_tenant_organization_id IS NULL
+        OR stored.owner_tenant_organization_id = p.provider_organization_id);
 
 -- name: CreateNoShow :one
 INSERT INTO accommodation.no_show (
@@ -328,3 +335,16 @@ SELECT id
    AND property_id = sqlc.arg('property_id')
    AND status = 'ACTIVE'
  ORDER BY code, id;
+
+-- name: GetWaitlistEnrollmentProgram :one
+-- An offer must use the enrollment selected when joining, never another active program.
+SELECT pl.program_id
+  FROM accommodation.waitlist_entry w
+  JOIN benefit.enrollment e ON e.tenant_id = w.tenant_id AND e.id = w.enrollment_id
+  JOIN party.sponsor_membership m ON m.tenant_id = e.tenant_id AND m.id = e.sponsor_membership_id
+  JOIN benefit.plan pl ON pl.tenant_id = e.tenant_id AND pl.id = e.plan_id
+  JOIN benefit.program pr ON pr.tenant_id = pl.tenant_id AND pr.id = pl.program_id
+ WHERE w.tenant_id = sqlc.arg('tenant_id') AND w.id = sqlc.arg('entry_id')
+   AND w.status = 'WAITING' AND m.person_id = w.person_id
+   AND e.status = 'ACTIVE' AND pr.status = 'ACTIVE'
+   AND e.valid_period @> w.check_in;

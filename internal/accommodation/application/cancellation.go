@@ -365,7 +365,14 @@ func (s *Service) releaseReservationOnly(ctx context.Context, tx pgx.Tx,
 	if record.EntitlementReservationID == nil {
 		return nil
 	}
-	quantity, err := benefitdomain.ParseQuantity(fmt.Sprintf("%d", record.Nights))
+	// The room spans every booked night, but the ledger holds only the part the
+	// plan carries. Releasing the full stay would exceed a partial reservation and
+	// strand the member's balance after the booking has already been closed.
+	snapshot, err := decodeQuoteSnapshot(record.QuoteSnapshot)
+	if err != nil {
+		return err
+	}
+	quantity, err := benefitdomain.ParseQuantity(fmt.Sprintf("%d", snapshot.CoveredNights))
 	if err != nil {
 		return fmt.Errorf("accommodation: night quantity: %w", err)
 	}
@@ -375,10 +382,7 @@ func (s *Service) releaseReservationOnly(ctx context.Context, tx pgx.Tx,
 		ReasonCode: reason, ActorID: rc.Principal.ActorID,
 	})
 	switch {
-	case errors.Is(err, ledger.ErrIdempotentReplay), errors.Is(err, ledger.ErrReservationClosed),
-		errors.Is(err, ledger.ErrQuantityRemainder):
-		// The entitlement is already where it belongs. Refusing here would leave a booking
-		// nobody can cancel.
+	case errors.Is(err, ledger.ErrIdempotentReplay), errors.Is(err, ledger.ErrReservationClosed):
 		return nil
 	default:
 		return err

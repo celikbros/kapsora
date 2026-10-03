@@ -17,6 +17,8 @@ export type {
   UpdateOrganizationRequest,
   UserContext,
 } from './operations';
+export { authorizationOperations } from './authorization';
+export type { Authorization, CreateAuthorization, AuthorizationListQuery } from './authorization';
 export type { Versioned } from './versioned';
 export {
   isValidTCKN,
@@ -246,6 +248,9 @@ export type {
   PriceQuoteItem,
   PriceQuoteOutcome,
   PriceQuoteRequestItem,
+  PriceOptionQuery,
+  PriceProviderOptionPage,
+  PriceServiceOptionPage,
 } from './pricing';
 export { serviceRequestOperations } from './servicerequest';
 export type {
@@ -319,6 +324,7 @@ export type {
   AccessPurpose,
   CloseHealthCase,
   CreateEncounter,
+  EndEncounter,
   CreateHealthCase,
   Diagnosis,
   DiagnosisInput,

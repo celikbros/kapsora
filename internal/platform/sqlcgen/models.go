@@ -848,6 +848,19 @@ type ClaimClaimLine struct {
 	RowVersion          int64
 }
 
+type ClaimClaimLineAuthorizationAllocation struct {
+	ID              uuid.UUID
+	TenantID        uuid.UUID
+	VersionID       uuid.UUID
+	LineID          uuid.UUID
+	AuthorizationID uuid.UUID
+	AllocationOrder int32
+	PlannedQuantity pgtype.Numeric
+	AppliedQuantity pgtype.Numeric
+	IdempotencyKey  string
+	CreatedAt       time.Time
+}
+
 type ClaimClaimVersion struct {
 	ID               uuid.UUID
 	TenantID         uuid.UUID
@@ -2010,6 +2023,7 @@ type ServiceAuthorizationItem struct {
 	CreatedAt                time.Time
 	UpdatedAt                time.Time
 	RowVersion               int64
+	EntitlementUnitFactor    pgtype.Numeric
 }
 
 type ServiceCancellation struct {

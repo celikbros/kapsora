@@ -44,6 +44,32 @@ It replaces spreadsheets, e-mail approvals and per-provider portals with one aud
 record shared by payer, provider and member, with tenant isolation enforced in the
 database (RLS), not just in the UI.
 
+The backoffice Health entry leads to the operator's existing medical or financial review
+work and record lists according to their active-tenant permissions. Financial staff enter
+financial decisions without being offered clinical report access.
+
+The backoffice Reports entry leads staff with `report.read` to recorded reconciliation runs
+and export requests. Requesting or downloading exports remains a separate permission.
+
+The main Billing entry opens a list the active role can read: invoice batches, settlements
+or reimbursements. Approval, cancellation and payment controls require their own existing
+grants; reading a record alone does not enable a financial command.
+
+The provider portal opens the account's permitted work: clinical staff start a request,
+billing staff open earnings, and reservation staff open the lodging desk. Navigation and
+direct links use the same existing permissions. Switching the account or its tenant scope
+clears cached records and open forms before the new context reads data.
+
+Price Query supplies the provider and service labels needed to calculate a quote through
+its existing pricing permission. Staff also need member access to choose a person. These
+choices do not promise coverage, and calculating a quote moves no entitlement balance.
+
+The wallet entry helps staff allowed to read members and entitlements find a person, open
+their balances and inspect account movements without changing those balances.
+
+The backoffice Security entry shows tenant-wide health data access records to staff with
+`audit.read`, including denied attempts. It does not represent a general security event log.
+
 Success is a payer operator onboarding a provider, a provider checking eligibility and
 submitting a request, and a member seeing the result, without anyone leaving the
 product or asking whose data they are looking at.

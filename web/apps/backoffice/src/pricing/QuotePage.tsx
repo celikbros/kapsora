@@ -1,5 +1,10 @@
-import { randomId, type PriceQuote, type PriceQuoteItem } from '@kapsora/api-client';
-import { usePermission } from '@kapsora/auth';
+import {
+  randomId,
+  type CreatePriceQuoteRequest,
+  type PriceQuote,
+  type PriceQuoteItem,
+} from '@kapsora/api-client';
+import { usePermission, useSession } from '@kapsora/auth';
 import { formatDate, useTranslation } from '@kapsora/i18n';
 import {
   Badge,
@@ -17,12 +22,15 @@ import {
   type BadgeTone,
 } from '@kapsora/ui';
 import { Link } from '@tanstack/react-router';
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 
-import { useDefinitionOptions } from '../catalogOptions';
-import { usePersonList } from '../people/queries';
 import { problemOf } from '../problems';
-import { useCreateQuote, useProviderOptions } from './queries';
+import {
+  useCreateQuote,
+  usePriceProviderOptions,
+  usePriceServiceOptions,
+  useQuotePeople,
+} from './queries';
 
 interface RequestLine {
   key: string;
@@ -32,6 +40,22 @@ interface RequestLine {
 
 function emptyLine(): RequestLine {
   return { key: randomId(), serviceDefinitionId: '', quantity: '1' };
+}
+
+function localDate(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+function validDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split('-').map(Number);
+  const date = new Date(year!, month! - 1, day!);
+  return date.getFullYear() === year && date.getMonth() + 1 === month && date.getDate() === day;
+}
+
+function validQuantity(value: string): boolean {
+  return /^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/.test(value) && !/^0(?:\.0+)?$/.test(value);
 }
 
 /** An outcome is a judgement, so it is coloured like one. */
@@ -60,19 +84,11 @@ function outcomeTone(outcome: string): BadgeTone {
 export function QuotePage() {
   const { t } = useTranslation();
   const canQuote = usePermission('pricing.quote');
-  const providers = useProviderOptions();
-  const definitions = useDefinitionOptions();
-  const quote = useCreateQuote();
-
-  const [personQuery, setPersonQuery] = useState('');
-  const [personId, setPersonId] = useState('');
-  const [providerProfileId, setProviderProfileId] = useState('');
-  const [serviceDate, setServiceDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [lines, setLines] = useState<RequestLine[]>([emptyLine()]);
-  const [problem, setProblem] = useState<ReturnType<typeof problemOf> | null>(null);
-  const [result, setResult] = useState<PriceQuote | null>(null);
-
-  if (!canQuote) {
+  const canReadMembers = usePermission('member.read');
+  const context = useSession(
+    (s) => `${s.session?.actorId ?? ''}:${JSON.stringify(s.activeTenant ?? null)}`,
+  );
+  if (!canQuote || !canReadMembers) {
     return (
       <>
         <PageHeader title={t('pricing.title')} description={t('pricing.intro')} />
@@ -80,27 +96,113 @@ export function QuotePage() {
       </>
     );
   }
+  return <QuoteWorkbench key={context} />;
+}
+
+function QuoteWorkbench() {
+  const { t } = useTranslation();
+  const quote = useCreateQuote();
+
+  const [personQuery, setPersonQuery] = useState('');
+  const [personId, setPersonId] = useState('');
+  const [providerQuery, setProviderQuery] = useState('');
+  const [serviceQuery, setServiceQuery] = useState('');
+  const [providerProfileId, setProviderProfileId] = useState('');
+  const [serviceDate, setServiceDate] = useState(localDate);
+  const [lines, setLines] = useState<RequestLine[]>([emptyLine()]);
+  const [problem, setProblem] = useState<ReturnType<typeof problemOf> | null>(null);
+  const [result, setResult] = useState<PriceQuote | null>(null);
+  const [validation, setValidation] = useState('');
+  const revision = useRef(0);
+  const lastAttempt = useRef<{ signature: string; key: string } | null>(null);
+  const providers = usePriceProviderOptions(
+    providerQuery.trim().length >= 2 ? providerQuery.trim() : '',
+  );
+  const services = usePriceServiceOptions(
+    serviceQuery.trim().length >= 2 ? serviceQuery.trim() : '',
+  );
+  const providerOptions = [
+    ...new Map(
+      (providers.data?.pages ?? []).flatMap((page) =>
+        page.items.map(
+          (item) =>
+            [
+              item.providerProfileId,
+              { value: item.providerProfileId, label: item.organizationName },
+            ] as const,
+        ),
+      ),
+    ).values(),
+  ];
+  const serviceOptions = [
+    ...new Map(
+      (services.data?.pages ?? []).flatMap((page) =>
+        page.items.map(
+          (item) =>
+            [
+              item.serviceDefinitionId,
+              { value: item.serviceDefinitionId, label: `${item.code} · ${item.name}` },
+            ] as const,
+        ),
+      ),
+    ).values(),
+  ];
+
+  function changed() {
+    revision.current += 1;
+    lastAttempt.current = null;
+    setResult(null);
+    setProblem(null);
+    setValidation('');
+  }
 
   function updateLine(key: string, patch: Partial<RequestLine>) {
+    changed();
     setLines((current) => current.map((l) => (l.key === key ? { ...l, ...patch } : l)));
   }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    setProblem(null);
-    try {
-      const answer = await quote.mutateAsync({
-        personId,
-        providerProfileId,
-        serviceDate,
-        items: lines
-          .filter((l) => l.serviceDefinitionId !== '')
-          .map((l) => ({ serviceDefinitionId: l.serviceDefinitionId, quantity: l.quantity })),
-      });
-      setResult(answer);
-    } catch (err) {
+    if (quote.isPending) return;
+    if (
+      !personId ||
+      !providerProfileId ||
+      !validDate(serviceDate) ||
+      lines.length < 1 ||
+      lines.length > 100 ||
+      lines.some((line) => !line.serviceDefinitionId || !validQuantity(line.quantity))
+    ) {
+      setValidation(t('pricing.validation'));
       setResult(null);
-      setProblem(problemOf(err));
+      return;
+    }
+    const body: CreatePriceQuoteRequest = {
+      personId,
+      providerProfileId,
+      serviceDate,
+      items: lines.map((line) => ({
+        serviceDefinitionId: line.serviceDefinitionId,
+        quantity: line.quantity,
+      })),
+    };
+    const signature = JSON.stringify(body);
+    if (lastAttempt.current?.signature !== signature)
+      lastAttempt.current = { signature, key: randomId() };
+    const idempotencyKey = lastAttempt.current.key;
+    const submittedRevision = revision.current;
+    setProblem(null);
+    setValidation('');
+    try {
+      const answer = await quote.mutateAsync({ body, idempotencyKey });
+      if (submittedRevision === revision.current) {
+        lastAttempt.current = null;
+        setResult(answer);
+      }
+    } catch (err) {
+      if (submittedRevision === revision.current) {
+        setResult(null);
+        setProblem(problemOf(err));
+      }
     }
   }
 
@@ -113,23 +215,63 @@ export function QuotePage() {
           <div className="grid gap-4 md:grid-cols-3">
             <PersonPicker
               query={personQuery}
-              onQueryChange={setPersonQuery}
+              onQueryChange={(value) => {
+                changed();
+                setPersonId('');
+                setPersonQuery(value);
+              }}
               personId={personId}
-              onPick={setPersonId}
+              onPick={(value) => {
+                changed();
+                setPersonId(value);
+              }}
             />
-            <FormField
-              label={t('pricing.fields.provider')}
-              required
-              requiredLabel={t('common.requiredMark')}
-            >
-              <Select
-                name="providerProfileId"
-                value={providerProfileId}
-                onChange={(e) => setProviderProfileId(e.target.value)}
-                placeholder={t('common.none')}
-                options={providers.data ?? []}
+            <div className="grid gap-2">
+              <FormField label={t('pricing.searchProviders')}>
+                <Input
+                  name="providerSearch"
+                  maxLength={120}
+                  value={providerQuery}
+                  onChange={(e) => {
+                    changed();
+                    setProviderProfileId('');
+                    setProviderQuery(e.target.value);
+                  }}
+                  autoComplete="off"
+                />
+              </FormField>
+              <FormField
+                label={t('pricing.fields.provider')}
+                required
+                requiredLabel={t('common.requiredMark')}
+              >
+                <Select
+                  data-testid="price-provider-select"
+                  name="providerProfileId"
+                  value={providerProfileId}
+                  onChange={(e) => {
+                    changed();
+                    setProviderProfileId(e.target.value);
+                  }}
+                  placeholder={t('common.none')}
+                  options={providerOptions}
+                />
+              </FormField>
+              <OptionStatus
+                kind="providers"
+                pending={providers.isPending}
+                error={providers.isError}
+                next={providers.hasNextPage}
+                loadingNext={providers.isFetchingNextPage}
+                empty={providerOptions.length === 0}
+                retry={() =>
+                  void (providers.isFetchNextPageError
+                    ? providers.fetchNextPage()
+                    : providers.refetch())
+                }
+                loadMore={() => void providers.fetchNextPage()}
               />
-            </FormField>
+            </div>
             <FormField
               label={t('pricing.fields.serviceDate')}
               required
@@ -139,24 +281,61 @@ export function QuotePage() {
                 name="serviceDate"
                 type="date"
                 value={serviceDate}
-                onChange={(e) => setServiceDate(e.target.value)}
+                onChange={(e) => {
+                  changed();
+                  setServiceDate(e.target.value);
+                }}
               />
             </FormField>
           </div>
 
           <div className="grid gap-3">
-            {lines.map((line) => (
+            <div className="grid gap-1">
+              <FormField label={t('pricing.searchServices')}>
+                <Input
+                  name="serviceSearch"
+                  maxLength={120}
+                  value={serviceQuery}
+                  onChange={(e) => {
+                    changed();
+                    setServiceQuery(e.target.value);
+                    setLines((current) =>
+                      current.map((line) => ({ ...line, serviceDefinitionId: '' })),
+                    );
+                  }}
+                  autoComplete="off"
+                />
+              </FormField>
+              <OptionStatus
+                kind="services"
+                pending={services.isPending}
+                error={services.isError}
+                next={services.hasNextPage}
+                loadingNext={services.isFetchingNextPage}
+                empty={serviceOptions.length === 0}
+                retry={() =>
+                  void (services.isFetchNextPageError
+                    ? services.fetchNextPage()
+                    : services.refetch())
+                }
+                loadMore={() => void services.fetchNextPage()}
+              />
+            </div>
+            {lines.map((line, index) => (
               <div key={line.key} className="flex flex-wrap items-end gap-3">
-                <FormField label={t('pricing.fields.service')} className="min-w-64 flex-1">
+                <FormField
+                  label={`${t('pricing.fields.service')} ${index + 1}`}
+                  className="min-w-64 flex-1"
+                >
                   <Select
                     name={`service-${line.key}`}
                     value={line.serviceDefinitionId}
                     onChange={(e) => updateLine(line.key, { serviceDefinitionId: e.target.value })}
                     placeholder={t('common.none')}
-                    options={definitions.data ?? []}
+                    options={serviceOptions}
                   />
                 </FormField>
-                <FormField label={t('pricing.fields.quantity')}>
+                <FormField label={`${t('pricing.fields.quantity')} ${index + 1}`}>
                   <Input
                     name={`quantity-${line.key}`}
                     value={line.quantity}
@@ -166,9 +345,13 @@ export function QuotePage() {
                   />
                 </FormField>
                 <Button
+                  type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() => setLines((c) => c.filter((l) => l.key !== line.key))}
+                  onClick={() => {
+                    changed();
+                    setLines((c) => c.filter((l) => l.key !== line.key));
+                  }}
                   disabled={lines.length === 1}
                 >
                   {t('pricing.fields.removeItem')}
@@ -178,16 +361,29 @@ export function QuotePage() {
           </div>
 
           <div className="flex justify-between gap-2">
-            <Button variant="secondary" onClick={() => setLines((c) => [...c, emptyLine()])}>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={lines.length >= 100}
+              onClick={() => {
+                changed();
+                setLines((c) => [...c, emptyLine()]);
+              }}
+            >
               {t('pricing.fields.addItem')}
             </Button>
-            <Button type="submit" loading={quote.isPending}>
+            <Button type="submit" loading={quote.isPending} disabled={quote.isPending}>
               {t('pricing.run')}
             </Button>
           </div>
         </form>
       </Card>
 
+      {validation ? (
+        <p role="alert" className="text-danger mb-4 text-sm">
+          {validation}
+        </p>
+      ) : null}
       <ProblemAlert problem={problem} className="mb-4" />
 
       {quote.isPending ? (
@@ -221,9 +417,7 @@ function PersonPicker({
 }) {
   const { t } = useTranslation();
   const trimmed = query.trim();
-  const people = usePersonList(
-    trimmed.length >= 2 ? { q: trimmed, status: 'ACTIVE', limit: 20 } : { limit: 20 },
-  );
+  const people = useQuotePeople(trimmed.length >= 2 ? trimmed : '');
   const options = (people.data?.items ?? []).map((person) => ({
     value: person.id,
     label: person.displayName,
@@ -252,12 +446,86 @@ function PersonPicker({
           options={options}
         />
       </FormField>
+      {people.isPending ? (
+        <p className="text-fg-muted text-xs" aria-busy="true">
+          {t('common.loading')}
+        </p>
+      ) : null}
+      {people.isError ? (
+        <Button type="button" size="sm" variant="secondary" onClick={() => void people.refetch()}>
+          {t('common.retry')}
+        </Button>
+      ) : null}
+      {people.isSuccess && options.length === 0 ? (
+        <p className="text-fg-muted text-xs">{t('pricing.noPeople')}</p>
+      ) : null}
     </>
+  );
+}
+
+function OptionStatus({
+  kind,
+  pending,
+  error,
+  next,
+  loadingNext,
+  empty,
+  retry,
+  loadMore,
+}: {
+  kind: 'providers' | 'services';
+  pending: boolean;
+  error: boolean;
+  next: boolean;
+  loadingNext: boolean;
+  empty: boolean;
+  retry: () => void;
+  loadMore: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="mt-1 grid gap-1">
+      {pending ? (
+        <p className="text-fg-muted flex items-center gap-2 text-xs" aria-busy="true">
+          <Spinner />
+          {t('common.loading')}
+        </p>
+      ) : null}
+      {error ? (
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          data-testid={`price-${kind}-retry`}
+          onClick={retry}
+        >
+          {t('common.retry')}
+        </Button>
+      ) : null}
+      {!pending && !error && empty ? (
+        <p className="text-fg-muted text-xs">
+          {t(kind === 'providers' ? 'pricing.noProviders' : 'pricing.noServices')}
+        </p>
+      ) : null}
+      {next && !error ? (
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          data-testid={`price-${kind}-more`}
+          loading={loadingNext}
+          onClick={loadMore}
+        >
+          {t('pricing.loadMore')}
+        </Button>
+      ) : null}
+    </div>
   );
 }
 
 function QuoteResult({ quote }: { quote: PriceQuote }) {
   const { t } = useTranslation();
+  const canReadContract = usePermission('contract.read');
   const review = quote.outcome === 'REVIEW_REQUIRED';
 
   return (
@@ -308,7 +576,12 @@ function QuoteResult({ quote }: { quote: PriceQuote }) {
             </thead>
             <tbody>
               {quote.items.map((item) => (
-                <QuoteLine key={item.lineNo} item={item} currency={quote.currencyCode} />
+                <QuoteLine
+                  key={item.lineNo}
+                  item={item}
+                  currency={quote.currencyCode}
+                  review={review}
+                />
               ))}
             </tbody>
             <tfoot className="border-line border-t-2">
@@ -318,14 +591,18 @@ function QuoteResult({ quote }: { quote: PriceQuote }) {
                   {quote.contractAmount} {quote.currencyCode}
                 </td>
                 <td className="px-3 py-2 text-right font-mono">{quote.coveredAmount}</td>
-                <td className="px-3 py-2 text-right font-mono">{quote.payerAmount}</td>
-                <td className="px-3 py-2 text-right font-mono">{quote.memberAmount}</td>
+                <td className="px-3 py-2 text-right font-mono">
+                  {review ? '—' : quote.payerAmount}
+                </td>
+                <td className="px-3 py-2 text-right font-mono">
+                  {review ? '—' : quote.memberAmount}
+                </td>
               </tr>
             </tfoot>
           </table>
         </div>
 
-        <p className="text-fg-muted mt-4 text-xs">{t('pricing.disclaimer')}</p>
+        <p className="text-fg-muted mt-4 text-xs">{quote.disclaimer || t('pricing.disclaimer')}</p>
       </Card>
 
       <Card>
@@ -333,7 +610,7 @@ function QuoteResult({ quote }: { quote: PriceQuote }) {
         <dl className="mt-3 grid grid-cols-[max-content_minmax(0,1fr)] [&>dd]:min-w-0 [&>dd]:break-words gap-x-6 gap-y-2 text-sm">
           <dt className="text-fg-muted">{t('pricing.sources.contractVersion')}</dt>
           <dd>
-            {quote.contractVersionId ? (
+            {quote.contractVersionId && canReadContract ? (
               <Link
                 to="/contract-versions/$contractVersionId"
                 params={{ contractVersionId: quote.contractVersionId }}
@@ -342,7 +619,7 @@ function QuoteResult({ quote }: { quote: PriceQuote }) {
                 {quote.contractVersionId}
               </Link>
             ) : (
-              t('common.none')
+              (quote.contractVersionId ?? t('common.none'))
             )}
           </dd>
           <dt className="text-fg-muted">{t('pricing.sources.planVersion')}</dt>
@@ -365,7 +642,15 @@ function QuoteResult({ quote }: { quote: PriceQuote }) {
  * One line, with its explanations directly beneath it rather than collected at the bottom
  * of the page: the reason a figure is what it is belongs next to the figure.
  */
-function QuoteLine({ item, currency }: { item: PriceQuoteItem; currency: string }) {
+function QuoteLine({
+  item,
+  currency,
+  review,
+}: {
+  item: PriceQuoteItem;
+  currency: string;
+  review: boolean;
+}) {
   const { t } = useTranslation();
   return (
     <>
@@ -380,8 +665,12 @@ function QuoteLine({ item, currency }: { item: PriceQuoteItem; currency: string 
           {item.contractAmount} {currency}
         </td>
         <td className="px-3 py-2 text-right font-mono">{item.coveredAmount}</td>
-        <td className="px-3 py-2 text-right font-mono">{item.payerAmount}</td>
-        <td className="px-3 py-2 text-right font-mono">{item.memberAmount}</td>
+        <td className="px-3 py-2 text-right font-mono">
+          {review || item.outcome === 'REVIEW_REQUIRED' ? '—' : item.payerAmount}
+        </td>
+        <td className="px-3 py-2 text-right font-mono">
+          {review || item.outcome === 'REVIEW_REQUIRED' ? '—' : item.memberAmount}
+        </td>
       </tr>
       {(item.explanations ?? []).length > 0 ? (
         <tr>

@@ -635,6 +635,62 @@
     ]
   },
 
+  "wallets": {
+    "title": "Hak Cüzdanları",
+    "purpose": "Bu sayfa, kişinin hak cüzdanına giden yolu gösterir. Hesaplar kişi kaydında tutulur; tüm kuruma ait cüzdanları listeleyen bir ekran yoktur.",
+    "sections": [
+      {
+        "label": "Hak sahibini bulun",
+        "body": "Hak Sahipleri bağlantısıyla kişiyi ada göre arayın. Sonuç satırındaki Haklar bağlantısı, kişinin hak bakiyelerini açar. Kişi adındaki bağlantı ise kimlik sekmesini açar."
+      },
+      {
+        "label": "Hesap hareketleri",
+        "body": "Kişinin Haklar sekmesinde bir hesabın Hareketler düğmesini kullanarak o hesaba ait hareketleri görüntüleyin."
+      }
+    ]
+  },
+  "security": {
+    "title": "Sağlık verisi erişim kayıtları",
+    "purpose": "Kurumdaki sağlık verisi erişimlerini ve reddedilen girişimleri denetler. Bu sayfa genel güvenlik olaylarını göstermez.",
+    "sections": [
+      {
+        "label": "Kayıtlar",
+        "body": "Her satır erişim zamanını, sonucu, işlemi yapanı, hak sahibini, kaynağı, erişim türünü, amacı ve gerekçeyi gösterir."
+      },
+      {
+        "label": "Sayfalar",
+        "body": "Sonraki ve önceki düğmeleri kayıtları ellişer gösterir. Kayıtlar yalnızca bu kuruma aittir."
+      }
+    ]
+  },
+  "reports": {
+    "title": "Raporlar",
+    "purpose": "Bu sayfa, mutabakat kayıtlarına ve dışa aktarım taleplerine bağlantılar sunar. Yalnızca raporları görme yetkisi olanlara açıktır.",
+    "sections": [
+      {
+        "label": "Mutabakat",
+        "body": "Kaydedilmiş mutabakat çalışmalarını, sonuçlarını ve farklarını inceleyebilirsiniz. Bu bağlantı yeni bir çalışma başlatmaz."
+      },
+      {
+        "label": "Dışa aktarımlar",
+        "body": "Mevcut talepleri ve durumlarını görebilirsiniz. Yeni talep ve dosya indirme ayrı yetki gerektirir."
+      }
+    ]
+  },
+  "healthServices": {
+    "title": "Sağlık",
+    "purpose": "Bu sayfa, erişiminiz olan sağlık incelemelerine ve kayıtlara bağlantılar sunar.",
+    "sections": [
+      {
+        "label": "İnceleme",
+        "body": "Yetkinize göre tıbbi raporları ve tıbbi ya da mali karar bekleyen claim kayıtlarını açabilirsiniz."
+      },
+      {
+        "label": "Kayıtlar",
+        "body": "Claim, talep ve kişi bağlantıları yalnızca ilgili kayıtları görme yetkiniz varsa gösterilir."
+      }
+    ]
+  },
   "medicalReports": {
     "title": "Tıbbi inceleme",
     "purpose": "Tıbbi incelemede bekleyen tedavi raporları. Referansa basmak raporun inceleme sayfasını açar.",

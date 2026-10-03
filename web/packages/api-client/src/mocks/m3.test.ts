@@ -658,6 +658,40 @@ describe('rules', () => {
 });
 
 describe('price quotes', () => {
+  it('offers bounded quote inputs to finance without catalog or provider read grants', async () => {
+    const { o, tenantId } = await signIn('financial.reviewer');
+    const memberships = api.session?.account.memberships ?? [];
+    const grants = memberships.flatMap((m) => m.permissions);
+    expect(grants).toContain('pricing.quote');
+    expect(grants).not.toContain('provider.read');
+    expect(grants).not.toContain('catalog.read');
+    const before = JSON.stringify({
+      quotes: api.world.priceQuotes,
+      ledger: api.world.ledgerEntries,
+    });
+    const providers = await o.pricing.listProviderOptions(tenantId);
+    expect(providers.items).toEqual([
+      { providerProfileId: theProvider().id, organizationName: expect.any(String) },
+    ]);
+    expect(Object.keys(providers.items[0]!).sort()).toEqual([
+      'organizationName',
+      'providerProfileId',
+    ]);
+    const first = await o.pricing.listServiceOptions(tenantId, { limit: 1 });
+    expect(first.items).toHaveLength(1);
+    expect(first.nextCursor).toEqual(expect.any(String));
+    const second = await o.pricing.listServiceOptions(tenantId, {
+      limit: 1,
+      cursor: first.nextCursor!,
+    });
+    expect(second.items[0]?.serviceDefinitionId).not.toBe(first.items[0]?.serviceDefinitionId);
+    expect(Object.keys(first.items[0]!).sort()).toEqual(['code', 'name', 'serviceDefinitionId']);
+    expect((await o.pricing.listServiceOptions(tenantId, { q: '__' })).items).toEqual([]);
+    expect(JSON.stringify({ quotes: api.world.priceQuotes, ledger: api.world.ledgerEntries })).toBe(
+      before,
+    );
+  });
+
   /** A deep copy of everything a reservation would have moved. */
   function balancesSnapshot(): string {
     return JSON.stringify({

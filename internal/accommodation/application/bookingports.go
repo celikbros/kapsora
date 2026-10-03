@@ -22,6 +22,7 @@ import (
 const (
 	PermissionBookingCreate = "accommodation.booking.create"
 	PermissionBookingManage = "accommodation.booking.manage"
+	PermissionNoShowReview  = "accommodation.no_show.review"
 )
 
 // Errors of the booking half, mapped by the transport to problem codes.
@@ -395,6 +396,8 @@ type BookingRepository interface {
 	LockWaitlistEntry(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID) (WaitlistRecord, error)
 	ListWaitlistEntries(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
 		q WaitlistQuery) ([]WaitlistRecord, error)
+	// WaitlistEnrollmentProgram resolves only the still-active enrollment saved by the entry.
+	WaitlistEnrollmentProgram(ctx context.Context, tx pgx.Tx, tenantID, entryID uuid.UUID) (uuid.UUID, error)
 	// ListWaitlistQueue is the sweep's read: WAITING entries in queue order -- priority
 	// first, then whoever asked first -- taken FOR UPDATE SKIP LOCKED. The ordering is part
 	// of the contract, like LockInventoryNights': a sweep that ignored priority would be a

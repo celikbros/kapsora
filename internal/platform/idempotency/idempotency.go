@@ -13,7 +13,10 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"mime"
+	"mime/multipart"
 	"net/http"
+	"net/textproto"
 	"path"
 	"strconv"
 	"strings"
@@ -322,8 +325,44 @@ func requestHash(r *http.Request, scope Scope, body []byte) []byte {
 	h.Write([]byte{0})
 	h.Write([]byte(scope.TenantID.String()))
 	h.Write([]byte{0})
-	h.Write(canonicalBody(body))
+	h.Write(canonicalRequestBody(r, body))
 	return h.Sum(nil)
+}
+
+// canonicalRequestBody ignores the transport boundary of multipart uploads while
+// preserving part order, headers, duplicate fields and every byte of file content.
+// The caller already bounded the body. Invalid forms retain their original bytes.
+func canonicalRequestBody(r *http.Request, body []byte) []byte {
+	mediaType, params, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	if err != nil || mediaType != "multipart/form-data" {
+		return canonicalBody(body)
+	}
+	type partValue struct {
+		Headers textproto.MIMEHeader
+		Body    []byte
+	}
+	var parts []partValue
+	reader := multipart.NewReader(bytes.NewReader(body), params["boundary"])
+	for {
+		part, err := reader.NextRawPart()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return body
+		}
+		content, err := io.ReadAll(part)
+		if err != nil {
+			return body
+		}
+		parts = append(parts, partValue{Headers: part.Header, Body: content})
+	}
+	encoded, err := json.Marshal(parts)
+	if err != nil {
+		return body
+	}
+	// Separate multipart representations from JSON bodies in the same key scope.
+	return append([]byte("multipart/form-data\x00"), encoded...)
 }
 
 // canonicalBody re-encodes JSON with sorted object keys so key order never changes the hash.
