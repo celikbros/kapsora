@@ -192,6 +192,20 @@ func TestDirectoryTenantIsolationPagingAndResponseAllowlist(t *testing.T) {
 	if code, body := directoryCall(s, cookie, s.tenantA, "/api/v1/admin/users/"+otherAID.String(), "backoffice"); code != http.StatusOK || body["membership"].(map[string]any)["validityEmpty"] != true || body["assignedRoles"].([]any)[0].(map[string]any)["validityEmpty"] != true {
 		t.Fatal("empty period not distinguished from unbounded")
 	}
+	if code, body := directoryCall(s, cookie, s.tenantA, "/api/v1/admin/users?limit=10", "backoffice"); code != http.StatusOK {
+		t.Fatalf("list with empty period: %d", code)
+	} else {
+		foundEmpty := false
+		for _, raw := range body["items"].([]any) {
+			item := raw.(map[string]any)
+			if item["id"] == otherAID.String() {
+				foundEmpty = item["validityEmpty"] == true && item["validFrom"] == nil && item["validTo"] == nil
+			}
+		}
+		if !foundEmpty {
+			t.Fatal("list omitted empty period validity")
+		}
+	}
 	if code, body := directoryCall(s, cookie, s.tenantA, "/api/v1/admin/users?status=BOGUS", "backoffice"); code != http.StatusBadRequest || body["code"] != "DIRECTORY_QUERY_INVALID" {
 		t.Fatal("invalid status accepted")
 	}

@@ -21,7 +21,7 @@ PC-01 through PC-04 are VERIFIED locally within their defined demo scopes. PC-05
 ACTIVE: its financial journeys passed local technical acceptance; formal owner acceptance
 and retained scheduler checks remain open. PC-06 has passed live technical acceptance,
 with the same remaining gates. Schema 55 was applied cleanly. PR #11 remains draft/unmerged;
-all six CI checks passed on calendar-preparation head `5bb2349`
+the recorded calendar-preparation CI baseline passed all six checks on `5bb2349`
 ([run 37152681278](https://github.com/celikbros/kapsora/actions/runs/37152681278)).
 No concrete date-independent implementation blocker remains in the completed PC review
 scope. On 2026-10-04 the owner chose to advance the product rather than investigate an
@@ -37,7 +37,7 @@ administration commands. Existing organization CRUD remains its own delivered wo
 
 | Order | Stage | Current status | Result required |
 | --- | --- | --- | --- |
-| MGT-01 | Tenant user membership directory | ACTIVE; implemented, CI/live read pending | Real list/filter/paging and membership detail with assigned-role validity; tenant-wide permission and strict data projection |
+| MGT-01 | Tenant user membership directory | ACTIVE; implemented, live read pending | Real list/filter/paging and membership detail with assigned-role validity; tenant-wide permission and strict data projection |
 | MGT-02 | Account onboarding and membership lifecycle | QUEUED | Explicit public command contracts, validation, scoped lifecycle effects and retry/audit behavior |
 | MGT-03 | Role assignment and revocation | QUEUED | Step-up, privileged maker-checker rules, scoped commands and recorded history |
 | MGT-04 | Typed tenant settings | QUEUED | Named supported settings and validated changes; no arbitrary JSON editor |
@@ -68,8 +68,20 @@ identity lint, tracked-tree vet, contract lint/compatibility and regeneration. F
 synthetic desktop/mobile views pass, including long codes and empty/unbounded validity.
 Directory integration cases compile but are locally SKIPPED; the existing dbtest harness
 also resets a shared application-role password. The added CI PostgreSQL step supplies
-isolated, non-skipped authorization/isolation evidence. Its result and live reads after
-the operator restart remain pending; the technical implementation does not close those gates.
+isolated, non-skipped authorization/isolation evidence; use PR #11's current checks for
+the latest result. Live reads after the operator restart remain pending; the technical
+implementation does not close that gate.
+
+**Queued next task, MGT-02a:** tenant membership suspension from directory detail, before
+account onboarding. Define an explicit tenant-scoped command with correlated
+`identity.user.manage`, step-up, CSRF, ETag/idempotency and transactional audit. Protect
+self/last usable tenant-administrator access and concurrent commands. Change membership
+status only: global actor/credentials, other memberships, historical grants and global
+sessions must remain intact. Prove that an already-open session loses access only to the
+suspended tenant on its next request. This is a planned task, not a delivered command.
+Consent-based invitations/acceptance follow separately; do not wrap global CreateAccount,
+RevokeAllForActor or a password reset in tenant administration. Reactivation and privileged
+role restoration belong with the later role-approval design.
 
 ## Current product completion roadmap (2026-09-22)
 

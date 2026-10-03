@@ -403,9 +403,9 @@ func (q *Queries) GetTenantIDByCode(ctx context.Context, code string) (uuid.UUID
 const getTenantUser = `-- name: GetTenantUser :one
 SELECT m.id, a.display_name, a.actor_type, a.status AS actor_status,
        m.membership_status,
-       CASE WHEN lower_inf(m.valid_period) OR lower(m.valid_period) = '-infinity'::date
+       CASE WHEN isempty(m.valid_period) OR lower_inf(m.valid_period) OR lower(m.valid_period) = '-infinity'::date
             THEN '' ELSE lower(m.valid_period)::text END AS valid_from,
-       CASE WHEN upper_inf(m.valid_period) OR upper(m.valid_period) = 'infinity'::date
+       CASE WHEN isempty(m.valid_period) OR upper_inf(m.valid_period) OR upper(m.valid_period) = 'infinity'::date
             THEN '' ELSE upper(m.valid_period)::text END AS valid_to,
        isempty(m.valid_period) AS validity_empty, m.created_at
   FROM iam.tenant_membership m JOIN iam.actor a ON a.id = m.actor_id
@@ -628,9 +628,9 @@ func (q *Queries) ListTenantUserRoles(ctx context.Context, arg ListTenantUserRol
 const listTenantUsers = `-- name: ListTenantUsers :many
 SELECT m.id, a.display_name, a.actor_type, a.status AS actor_status,
        m.membership_status,
-       CASE WHEN lower_inf(m.valid_period) OR lower(m.valid_period) = '-infinity'::date
+       CASE WHEN isempty(m.valid_period) OR lower_inf(m.valid_period) OR lower(m.valid_period) = '-infinity'::date
             THEN '' ELSE lower(m.valid_period)::text END AS valid_from,
-       CASE WHEN upper_inf(m.valid_period) OR upper(m.valid_period) = 'infinity'::date
+       CASE WHEN isempty(m.valid_period) OR upper_inf(m.valid_period) OR upper(m.valid_period) = 'infinity'::date
             THEN '' ELSE upper(m.valid_period)::text END AS valid_to,
        isempty(m.valid_period) AS validity_empty, m.created_at
   FROM iam.tenant_membership m JOIN iam.actor a ON a.id = m.actor_id

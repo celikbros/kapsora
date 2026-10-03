@@ -42,8 +42,9 @@ records the approved sequence and acceptance criteria.
 specified demo acceptance scopes. PC-05 remains ACTIVE: the financial journeys passed
 local technical acceptance; formal owner acceptance and retained scheduler checks remain
 open. PC-06 has passed live technical acceptance, with the same remaining gates. Schema 55
-was applied cleanly. PR #11 remains draft and unmerged. All six CI checks passed on code
-head `5bb2349` ([run 37152681278](https://github.com/celikbros/kapsora/actions/runs/37152681278)).
+was applied cleanly. PR #11 remains draft and unmerged. All six CI checks passed on
+calendar-preparation code head `5bb2349` ([run 37152681278](https://github.com/celikbros/kapsora/actions/runs/37152681278));
+current Management CI is tracked in PR #11's checks.
 This snapshot and the latest checkpoint below supersede dated next-step instructions in
 the historical evidence. Split-claim quantities still do not prove chronological coverage.
 
@@ -1092,8 +1093,12 @@ unbounded assignment periods. No private user directory screenshots are retained
 
 The new Directory PostgreSQL/HTTP tests are compiled but locally SKIPPED: the shared local
 dbtest harness resets the application role password, so that integration run is left to
-the added step in the existing isolated GitHub PostgreSQL job. CI and live read-only
-confirmation after the operator's API restart are the remaining MGT-01 checks.
+the added step in the existing isolated GitHub PostgreSQL job; use PR #11's current checks
+for its latest result. Live read-only confirmation still requires the operator's API restart.
+The next queued implementation is MGT-02a tenant membership suspension, with step-up,
+concurrency/retry/audit and self/last-administrator protections. It must preserve global
+credentials/sessions and other tenants; onboarding and privileged role restoration are
+separate later slices. No membership command is included in the directory delivery.
 
 ### PC-06 technical acceptance checkpoint (2026-10-03)
 
