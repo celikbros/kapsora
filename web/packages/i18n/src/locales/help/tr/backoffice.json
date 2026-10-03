@@ -649,6 +649,30 @@
       }
     ]
   },
+  "adminUsers": {
+    "title": "Kullanıcılar",
+    "purpose": "Seçili kurumun üyeliklerini okuyun. Bu dizin giriş ve iletişim bilgilerini göstermez; hesap değişikliği sunmaz.",
+    "sections": [
+      {
+        "label": "Üyelik durumu",
+        "body": "Üyelikleri kendi durumlarına göre süzün. Hesap durumu ve üyelik geçerliliği ayrı bilgilerdir."
+      },
+      {
+        "label": "Sayfalar",
+        "body": "Sonraki ve Önceki düğmeleri yalnızca bu kurumun sınırlı üyelik sayfalarını gösterir."
+      }
+    ]
+  },
+  "adminUser": {
+    "title": "Üyelik ayrıntısı",
+    "purpose": "Bir kurum üyeliğini ve ona atanmış rolleri okuyun.",
+    "sections": [
+      {
+        "label": "Atanmış roller",
+        "body": "Rol gelecekte başlayabilir veya süresi dolmuş olabilir. Atanmış olması erişimin şu anda etkin olduğunu kanıtlamaz. Kapsam adları başka kurumları veya kişileri açığa çıkarmaz."
+      }
+    ]
+  },
   "security": {
     "title": "Sağlık verisi erişim kayıtları",
     "purpose": "Kurumdaki sağlık verisi erişimlerini ve reddedilen girişimleri denetler. Bu sayfa genel güvenlik olaylarını göstermez.",

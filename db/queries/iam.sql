@@ -2,6 +2,59 @@
 -- tenant provisioning. Membership lookups run under db.WithActorTx (policy
 -- actor_self_membership); everything tenant-owned runs under db.WithTenantTx.
 
+-- Management Users reads: each query runs under db.WithTenantTx. The permission and
+-- TENANT scope must belong to the same active grant; flattened request-context fields
+-- cannot establish this correlation.
+-- name: CanReadTenantUsers :one
+SELECT EXISTS (
+  SELECT 1 FROM iam.tenant_membership m
+  JOIN iam.access_grant g ON g.tenant_id = m.tenant_id AND g.tenant_membership_id = m.id
+  JOIN iam.role_permission rp ON rp.tenant_id = g.tenant_id AND rp.role_id = g.role_id
+ WHERE m.tenant_id = $1 AND m.id = $2 AND m.actor_id = $3
+   AND m.membership_status = 'ACTIVE' AND m.valid_period @> CURRENT_DATE
+   AND g.scope_type = 'TENANT' AND g.valid_period @> clock_timestamp()
+   AND rp.permission_code = 'identity.user.read'
+);
+
+-- name: ListTenantUsers :many
+SELECT m.id, a.display_name, a.actor_type, a.status AS actor_status,
+       m.membership_status,
+       CASE WHEN lower_inf(m.valid_period) OR lower(m.valid_period) = '-infinity'::date
+            THEN '' ELSE lower(m.valid_period)::text END AS valid_from,
+       CASE WHEN upper_inf(m.valid_period) OR upper(m.valid_period) = 'infinity'::date
+            THEN '' ELSE upper(m.valid_period)::text END AS valid_to,
+       isempty(m.valid_period) AS validity_empty, m.created_at
+  FROM iam.tenant_membership m JOIN iam.actor a ON a.id = m.actor_id
+ WHERE m.tenant_id = $1
+   AND (sqlc.narg('membership_status')::text IS NULL OR m.membership_status = sqlc.narg('membership_status'))
+   AND (sqlc.narg('after_at')::timestamptz IS NULL
+        OR (m.created_at, m.id) < (sqlc.narg('after_at')::timestamptz, sqlc.narg('after_id')::uuid))
+ ORDER BY m.created_at DESC, m.id DESC
+ LIMIT sqlc.arg('page_limit');
+
+-- name: GetTenantUser :one
+SELECT m.id, a.display_name, a.actor_type, a.status AS actor_status,
+       m.membership_status,
+       CASE WHEN lower_inf(m.valid_period) OR lower(m.valid_period) = '-infinity'::date
+            THEN '' ELSE lower(m.valid_period)::text END AS valid_from,
+       CASE WHEN upper_inf(m.valid_period) OR upper(m.valid_period) = 'infinity'::date
+            THEN '' ELSE upper(m.valid_period)::text END AS valid_to,
+       isempty(m.valid_period) AS validity_empty, m.created_at
+  FROM iam.tenant_membership m JOIN iam.actor a ON a.id = m.actor_id
+ WHERE m.tenant_id = $1 AND m.id = $2;
+
+-- name: ListTenantUserRoles :many
+SELECT role.code, role.name, role.is_system_role, g.scope_type,
+       CASE WHEN lower_inf(g.valid_period) OR lower(g.valid_period) = '-infinity'::timestamptz
+            THEN '' ELSE to_char(lower(g.valid_period) AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') END AS valid_from,
+       CASE WHEN upper_inf(g.valid_period) OR upper(g.valid_period) = 'infinity'::timestamptz
+            THEN '' ELSE to_char(upper(g.valid_period) AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') END AS valid_to,
+       isempty(g.valid_period) AS validity_empty
+  FROM iam.access_grant g
+  JOIN iam.role role ON role.tenant_id = g.tenant_id AND role.id = g.role_id
+ WHERE g.tenant_id = $1 AND g.tenant_membership_id = $2
+ ORDER BY role.code, lower(g.valid_period), g.id;
+
 -- name: FindActiveMembership :one
 SELECT m.id, m.tenant_id, t.code, t.display_name, t.status, t.default_locale, t.default_time_zone
   FROM iam.tenant_membership m

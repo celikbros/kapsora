@@ -14,18 +14,62 @@ Authoritative sources: [docs/plan/KAPSORA_Master_Plan_v2.0.md](KAPSORA_Master_Pl
 (Turkish, normative), [docs/adr](../adr/README.md), the frozen v1.2 specification under
 [docs/baseline-v1.2](../baseline-v1.2/). When they disagree, the master plan and ADRs win.
 
-## Current snapshot (2026-10-03)
+## Current snapshot (2026-10-04)
 
 This snapshot supersedes dated next-step instructions in the historical status log.
 PC-01 through PC-04 are VERIFIED locally within their defined demo scopes. PC-05 remains
 ACTIVE: its financial journeys passed local technical acceptance; formal owner acceptance
 and retained scheduler checks remain open. PC-06 has passed live technical acceptance,
 with the same remaining gates. Schema 55 was applied cleanly. PR #11 remains draft/unmerged;
-all six CI checks passed on code head `299420d`
-([run 37062439141](https://github.com/celikbros/kapsora/actions/runs/37062439141)).
-No concrete date-independent implementation blocker remains in this approved pass.
-Global administration and integrations are outside its scope; no production release,
-fiscal submission or bank transfer is certified.
+all six CI checks passed on calendar-preparation head `5bb2349`
+([run 37152681278](https://github.com/celikbros/kapsora/actions/runs/37152681278)).
+No concrete date-independent implementation blocker remains in the completed PC review
+scope. On 2026-10-04 the owner chose to advance the product rather than investigate an
+unidentified defect; Management starts as the separate sequence below. Integrations,
+production release and fiscal/bank-transfer acceptance remain separate.
+
+## Management completion sequence (2026-10-04)
+
+This follow-on starts after the PC-01--PC-06 technical review and calendar-check preparation.
+It neither closes the retained owner/calendar gates nor reopens passed financial journeys.
+Use the existing IAM model and permissions; seed/provisioning helpers are not public
+administration commands. Existing organization CRUD remains its own delivered workflow.
+
+| Order | Stage | Current status | Result required |
+| --- | --- | --- | --- |
+| MGT-01 | Tenant user membership directory | ACTIVE; implemented, CI/live read pending | Real list/filter/paging and membership detail with assigned-role validity; tenant-wide permission and strict data projection |
+| MGT-02 | Account onboarding and membership lifecycle | QUEUED | Explicit public command contracts, validation, scoped lifecycle effects and retry/audit behavior |
+| MGT-03 | Role assignment and revocation | QUEUED | Step-up, privileged maker-checker rules, scoped commands and recorded history |
+| MGT-04 | Typed tenant settings | QUEUED | Named supported settings and validated changes; no arbitrary JSON editor |
+
+**MGT-01 first delivery:** `GET /api/v1/admin/users` and membership-ID detail, opened from
+Management. Require an active TENANT-scoped grant carrying `identity.user.read`, rather
+than correlating flattened permission/scope lists in the browser. Organization-only
+provider administration does not authorize this tenant-wide view, including with an
+omitted or forged app header. The server supplies a narrowly computed
+`canReadTenantUsers` capability for navigation; absent capability denies entry.
+
+Rows show display name, actor type/status, membership status and validity. Detail shows
+this tenant's assigned role code/name/system flag, scope type and validity. Unbounded dates
+and empty validity periods are distinct. Assigned roles are not presented as an unconditional
+list of effective permissions. Credentials, contact
+or login identifiers, other-tenant memberships/roles, raw grant reasons and scope/person IDs
+are excluded. This first delivery has no user or role mutation controls.
+
+**Exit:** focused DB/HTTP evidence for tenant isolation, correlated authorization,
+expired/scoped-only denial, bounded stable pagination and response allowlists; UI evidence
+for list/detail/back navigation, denied direct access, validity labels, context changes
+and synthetic desktop/mobile readability. Live read-only verification follows an operator
+restart after the backend change is concrete and tested. No new schema or grants are planned.
+
+**Implementation checkpoint:** 679 existing frontend tests and six focused directory
+tests pass, along with workspace type/lint/format/build checks, focused Go tests and
+identity lint, tracked-tree vet, contract lint/compatibility and regeneration. Four
+synthetic desktop/mobile views pass, including long codes and empty/unbounded validity.
+Directory integration cases compile but are locally SKIPPED; the existing dbtest harness
+also resets a shared application-role password. The added CI PostgreSQL step supplies
+isolated, non-skipped authorization/isolation evidence. Its result and live reads after
+the operator restart remain pending; the technical implementation does not close those gates.
 
 ## Current product completion roadmap (2026-09-22)
 

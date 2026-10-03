@@ -70,6 +70,13 @@ their balances and inspect account movements without changing those balances.
 The backoffice Security entry shows tenant-wide health data access records to staff with
 `audit.read`, including denied attempts. It does not represent a general security event log.
 
+Management's user directory is for tenant administrators to inspect who belongs to the
+active tenant and which roles are assigned. It separates account and membership status,
+validity and assigned-role validity. Unbounded validity and an empty validity period are
+distinguished explicitly. Reading that directory does not enable provisioning, role changes
+or settings changes, and provider-scoped administration does not imply access
+to all tenant users.
+
 Success is a payer operator onboarding a provider, a provider checking eligibility and
 submitting a request, and a member seeing the result, without anyone leaving the
 product or asking whose data they are looking at.

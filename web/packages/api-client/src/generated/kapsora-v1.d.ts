@@ -758,6 +758,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Read-only tenant membership directory. Requires identity.user.read on a currently
+         *     valid TENANT-scoped grant for the caller's active membership. Organization-scoped
+         *     grants never authorize this endpoint. Rows contain no login or contact identifiers.
+         */
+        get: operations["listTenantUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{membershipId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Tenant-owned membership and assigned role metadata, including future and expired
+         *     assignments. Assignment does not by itself assert currently effective access.
+         */
+        get: operations["getTenantUser"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/approval-policies": {
         parameters: {
             query?: never;
@@ -12885,12 +12926,32 @@ export interface components {
          * @enum {string}
          */
         TaxBehaviour: "EXCLUSIVE" | "INCLUSIVE" | "EXEMPT";
+        TenantAssignedRole: {
+            code: string;
+            isSystemRole: boolean;
+            name: string;
+            /** @enum {string} */
+            scopeType: "TENANT" | "ORGANIZATION" | "PROGRAM" | "PROVIDER_LOCATION" | "WORK_QUEUE" | "PERSON";
+            /** Format: date-time */
+            validFrom: string | null;
+            /** @description True when the stored assignment period contains no instants. */
+            validityEmpty: boolean;
+            /** Format: date-time */
+            validTo: string | null;
+        };
         TenantContext: {
             /**
              * @description The apps the account has work in here, from all of its grants. The single
              *     sign-in sends a person straight to the one app, or offers the choice.
              */
             apps: ("backoffice" | "provider" | "member")[];
+            /**
+             * @description Server-computed Management Users capability. True only when identity.user.read
+             *     belongs to an active TENANT-scoped grant in this tenant and the request uses
+             *     the backoffice or unrestricted app context; flattened permissions and scopes
+             *     cannot establish that correlation.
+             */
+            canReadTenantUsers?: boolean;
             permissions: string[];
             /**
              * Format: uuid
@@ -12916,6 +12977,8 @@ export interface components {
             selfPersonId?: string | null;
             tenant: components["schemas"]["TenantSummary"];
         };
+        /** @enum {string} */
+        TenantMembershipStatus: "PENDING" | "ACTIVE" | "SUSPENDED" | "REVOKED";
         TenantSummary: {
             code: string;
             defaultLocale?: string;
@@ -12925,6 +12988,34 @@ export interface components {
             id: string;
             /** @enum {string} */
             status: "PROVISIONING" | "ACTIVE" | "SUSPENDED" | "CLOSED";
+        };
+        TenantUser: {
+            /** @enum {string} */
+            actorStatus: "INVITED" | "ACTIVE" | "SUSPENDED" | "CLOSED";
+            /** @enum {string} */
+            actorType: "HUMAN" | "SERVICE_ACCOUNT" | "SYSTEM";
+            displayName: string;
+            /**
+             * Format: uuid
+             * @description Tenant membership ID; never a global actor ID.
+             */
+            id: string;
+            membershipStatus: components["schemas"]["TenantMembershipStatus"];
+            /** Format: date */
+            validFrom: string | null;
+            /** @description True when the stored membership period contains no dates. */
+            validityEmpty: boolean;
+            /** Format: date */
+            validTo: string | null;
+        };
+        TenantUserDetail: {
+            /** @description Assignments can be future or expired and are not effective permissions. */
+            assignedRoles: components["schemas"]["TenantAssignedRole"][];
+            membership: components["schemas"]["TenantUser"];
+        };
+        TenantUserPage: {
+            items: components["schemas"]["TenantUser"][];
+            nextCursor: string | null;
         };
         /** @description Merge-patch body; code and version are absent because they are immutable. */
         UpdateCodeSystemRequest: {
@@ -13962,8 +14053,13 @@ export type SchemaStaySegment = components['schemas']['StaySegment'];
 export type SchemaStaySegmentInput = components['schemas']['StaySegmentInput'];
 export type SchemaStaySegmentType = components['schemas']['StaySegmentType'];
 export type SchemaTaxBehaviour = components['schemas']['TaxBehaviour'];
+export type SchemaTenantAssignedRole = components['schemas']['TenantAssignedRole'];
 export type SchemaTenantContext = components['schemas']['TenantContext'];
+export type SchemaTenantMembershipStatus = components['schemas']['TenantMembershipStatus'];
 export type SchemaTenantSummary = components['schemas']['TenantSummary'];
+export type SchemaTenantUser = components['schemas']['TenantUser'];
+export type SchemaTenantUserDetail = components['schemas']['TenantUserDetail'];
+export type SchemaTenantUserPage = components['schemas']['TenantUserPage'];
 export type SchemaUpdateCodeSystemRequest = components['schemas']['UpdateCodeSystemRequest'];
 export type SchemaUpdateContractRequest = components['schemas']['UpdateContractRequest'];
 export type SchemaUpdateContractVersionRequest = components['schemas']['UpdateContractVersionRequest'];
@@ -15293,6 +15389,65 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+        };
+    };
+    listTenantUsers: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                status?: components["schemas"]["TenantMembershipStatus"];
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current tenant membership page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantUserPage"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getTenantUser: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                membershipId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tenant membership and assignments */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantUserDetail"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     listApprovalPolicies: {

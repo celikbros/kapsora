@@ -38,12 +38,12 @@ keep them current as you build.
 The [product completion roadmap](plan/ROADMAP.md#current-product-completion-roadmap-2026-09-22)
 records the approved sequence and acceptance criteria.
 
-**Current snapshot (2026-10-03):** PC-01 through PC-04 are VERIFIED locally for their
+**Current snapshot (2026-10-04):** PC-01 through PC-04 are VERIFIED locally for their
 specified demo acceptance scopes. PC-05 remains ACTIVE: the financial journeys passed
 local technical acceptance; formal owner acceptance and retained scheduler checks remain
 open. PC-06 has passed live technical acceptance, with the same remaining gates. Schema 55
 was applied cleanly. PR #11 remains draft and unmerged. All six CI checks passed on code
-head `299420d` ([run 37062439141](https://github.com/celikbros/kapsora/actions/runs/37062439141)).
+head `5bb2349` ([run 37152681278](https://github.com/celikbros/kapsora/actions/runs/37152681278)).
 This snapshot and the latest checkpoint below supersede dated next-step instructions in
 the historical evidence. Split-claim quantities still do not prove chronological coverage.
 
@@ -1062,6 +1062,38 @@ second application. Same-ID paid-state read-only desktop/mobile verification is 
 at 390px and 1440px.
 All six CI checks passed on the final head `299420d` ([run
 37062439141](https://github.com/celikbros/kapsora/actions/runs/37062439141)).
+
+### Management follow-on started (2026-10-04)
+
+The owner clarified that no unidentified screen defect should hold up the next product
+work. MGT-01 implements the actual tenant user membership directory; the
+[Management sequence](plan/ROADMAP.md#management-completion-sequence-2026-10-04) records
+its boundaries and later lifecycle, role-change and typed-setting steps. Existing tenant
+admin permissions support the first read-only delivery; no new grants or migration are
+added. Health/lodging owner acceptance and genuine scheduler evidence remain open.
+
+The first directory uses membership identity, scoped paging/filtering and explicit actor/
+membership validity. Detail exposes only this tenant's assigned-role metadata, excluding
+credentials/contact/login identifiers, raw grant reasons, scope IDs and other tenants.
+An active TENANT grant must carry `identity.user.read`; organization-scoped provider
+administration cannot widen this read through the app header or an unrelated tenant grant.
+A server-computed `canReadTenantUsers` capability gates the UI before its protected reads.
+Unbounded dates and empty validity periods are distinguished; long role codes wrap on
+phones. Exact actor/session/tenant/capability/grant context changes cancel and remove the
+directory's cached reads, preventing late responses from restoring an old context.
+User provisioning, role changes and tenant settings are not delivered by this first slice.
+
+Local checks pass: 679 existing frontend regressions plus six focused directory tests,
+workspace typecheck/lint/format and all app builds, focused Go tests and identity lint,
+tracked-tree Go vet, Spectral (zero errors), nonbreaking OpenAPI comparison and zero
+generated Go/TS/sqlc drift. Four synthetic 1440/390 list/detail views pass with no overflow,
+unexpected API reads or browser errors, including a 64-character role code and empty/
+unbounded assignment periods. No private user directory screenshots are retained.
+
+The new Directory PostgreSQL/HTTP tests are compiled but locally SKIPPED: the shared local
+dbtest harness resets the application role password, so that integration run is left to
+the added step in the existing isolated GitHub PostgreSQL job. CI and live read-only
+confirmation after the operator's API restart are the remaining MGT-01 checks.
 
 ### PC-06 technical acceptance checkpoint (2026-10-03)
 

@@ -2112,19 +2112,19 @@ func (e NotificationMessageStatus) Valid() bool {
 
 // Defines values for NotificationRecipientType.
 const (
-	ACTOR        NotificationRecipientType = "ACTOR"
-	ORGANIZATION NotificationRecipientType = "ORGANIZATION"
-	PERSON       NotificationRecipientType = "PERSON"
+	NotificationRecipientTypeACTOR        NotificationRecipientType = "ACTOR"
+	NotificationRecipientTypeORGANIZATION NotificationRecipientType = "ORGANIZATION"
+	NotificationRecipientTypePERSON       NotificationRecipientType = "PERSON"
 )
 
 // Valid indicates whether the value is a known member of the NotificationRecipientType enum.
 func (e NotificationRecipientType) Valid() bool {
 	switch e {
-	case ACTOR:
+	case NotificationRecipientTypeACTOR:
 		return true
-	case ORGANIZATION:
+	case NotificationRecipientTypeORGANIZATION:
 		return true
-	case PERSON:
+	case NotificationRecipientTypePERSON:
 		return true
 	default:
 		return false
@@ -4033,6 +4033,36 @@ func (e TaxBehaviour) Valid() bool {
 	}
 }
 
+// Defines values for TenantAssignedRoleScopeType.
+const (
+	TenantAssignedRoleScopeTypeORGANIZATION     TenantAssignedRoleScopeType = "ORGANIZATION"
+	TenantAssignedRoleScopeTypePERSON           TenantAssignedRoleScopeType = "PERSON"
+	TenantAssignedRoleScopeTypePROGRAM          TenantAssignedRoleScopeType = "PROGRAM"
+	TenantAssignedRoleScopeTypePROVIDERLOCATION TenantAssignedRoleScopeType = "PROVIDER_LOCATION"
+	TenantAssignedRoleScopeTypeTENANT           TenantAssignedRoleScopeType = "TENANT"
+	TenantAssignedRoleScopeTypeWORKQUEUE        TenantAssignedRoleScopeType = "WORK_QUEUE"
+)
+
+// Valid indicates whether the value is a known member of the TenantAssignedRoleScopeType enum.
+func (e TenantAssignedRoleScopeType) Valid() bool {
+	switch e {
+	case TenantAssignedRoleScopeTypeORGANIZATION:
+		return true
+	case TenantAssignedRoleScopeTypePERSON:
+		return true
+	case TenantAssignedRoleScopeTypePROGRAM:
+		return true
+	case TenantAssignedRoleScopeTypePROVIDERLOCATION:
+		return true
+	case TenantAssignedRoleScopeTypeTENANT:
+		return true
+	case TenantAssignedRoleScopeTypeWORKQUEUE:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for TenantContextApps.
 const (
 	TenantContextAppsBackoffice TenantContextApps = "backoffice"
@@ -4048,6 +4078,30 @@ func (e TenantContextApps) Valid() bool {
 	case TenantContextAppsMember:
 		return true
 	case TenantContextAppsProvider:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TenantMembershipStatus.
+const (
+	TenantMembershipStatusACTIVE    TenantMembershipStatus = "ACTIVE"
+	TenantMembershipStatusPENDING   TenantMembershipStatus = "PENDING"
+	TenantMembershipStatusREVOKED   TenantMembershipStatus = "REVOKED"
+	TenantMembershipStatusSUSPENDED TenantMembershipStatus = "SUSPENDED"
+)
+
+// Valid indicates whether the value is a known member of the TenantMembershipStatus enum.
+func (e TenantMembershipStatus) Valid() bool {
+	switch e {
+	case TenantMembershipStatusACTIVE:
+		return true
+	case TenantMembershipStatusPENDING:
+		return true
+	case TenantMembershipStatusREVOKED:
+		return true
+	case TenantMembershipStatusSUSPENDED:
 		return true
 	default:
 		return false
@@ -4072,6 +4126,51 @@ func (e TenantSummaryStatus) Valid() bool {
 	case TenantSummaryStatusPROVISIONING:
 		return true
 	case TenantSummaryStatusSUSPENDED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TenantUserActorStatus.
+const (
+	TenantUserActorStatusACTIVE    TenantUserActorStatus = "ACTIVE"
+	TenantUserActorStatusCLOSED    TenantUserActorStatus = "CLOSED"
+	TenantUserActorStatusINVITED   TenantUserActorStatus = "INVITED"
+	TenantUserActorStatusSUSPENDED TenantUserActorStatus = "SUSPENDED"
+)
+
+// Valid indicates whether the value is a known member of the TenantUserActorStatus enum.
+func (e TenantUserActorStatus) Valid() bool {
+	switch e {
+	case TenantUserActorStatusACTIVE:
+		return true
+	case TenantUserActorStatusCLOSED:
+		return true
+	case TenantUserActorStatusINVITED:
+		return true
+	case TenantUserActorStatusSUSPENDED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TenantUserActorType.
+const (
+	HUMAN          TenantUserActorType = "HUMAN"
+	SERVICEACCOUNT TenantUserActorType = "SERVICE_ACCOUNT"
+	SYSTEM         TenantUserActorType = "SYSTEM"
+)
+
+// Valid indicates whether the value is a known member of the TenantUserActorType enum.
+func (e TenantUserActorType) Valid() bool {
+	switch e {
+	case HUMAN:
+		return true
+	case SERVICEACCOUNT:
+		return true
+	case SYSTEM:
 		return true
 	default:
 		return false
@@ -12263,12 +12362,34 @@ type StaySegmentType string
 // TaxBehaviour Whether the agreed amounts already include VAT, exclude it, or are exempt.
 type TaxBehaviour string
 
+// TenantAssignedRole defines model for TenantAssignedRole.
+type TenantAssignedRole struct {
+	Code         string                      `json:"code"`
+	IsSystemRole bool                        `json:"isSystemRole"`
+	Name         string                      `json:"name"`
+	ScopeType    TenantAssignedRoleScopeType `json:"scopeType"`
+	ValidFrom    *time.Time                  `json:"validFrom"`
+	ValidTo      *time.Time                  `json:"validTo"`
+
+	// ValidityEmpty True when the stored assignment period contains no instants.
+	ValidityEmpty bool `json:"validityEmpty"`
+}
+
+// TenantAssignedRoleScopeType defines model for TenantAssignedRole.ScopeType.
+type TenantAssignedRoleScopeType string
+
 // TenantContext defines model for TenantContext.
 type TenantContext struct {
 	// Apps The apps the account has work in here, from all of its grants. The single
 	// sign-in sends a person straight to the one app, or offers the choice.
-	Apps        []TenantContextApps `json:"apps"`
-	Permissions []string            `json:"permissions"`
+	Apps []TenantContextApps `json:"apps"`
+
+	// CanReadTenantUsers Server-computed Management Users capability. True only when identity.user.read
+	// belongs to an active TENANT-scoped grant in this tenant and the request uses
+	// the backoffice or unrestricted app context; flattened permissions and scopes
+	// cannot establish that correlation.
+	CanReadTenantUsers *bool    `json:"canReadTenantUsers,omitempty"`
+	Permissions        []string `json:"permissions"`
 
 	// PersonId The person this account acts for in this tenant, from its PERSON-scoped access
 	// grant (migration 000039). It is null for every actor that is not a member: a
@@ -12292,6 +12413,9 @@ type TenantContext struct {
 // TenantContextApps defines model for TenantContext.Apps.
 type TenantContextApps string
 
+// TenantMembershipStatus defines model for TenantMembershipStatus.
+type TenantMembershipStatus string
+
 // TenantSummary defines model for TenantSummary.
 type TenantSummary struct {
 	Code            string              `json:"code"`
@@ -12304,6 +12428,41 @@ type TenantSummary struct {
 
 // TenantSummaryStatus defines model for TenantSummary.Status.
 type TenantSummaryStatus string
+
+// TenantUser defines model for TenantUser.
+type TenantUser struct {
+	ActorStatus TenantUserActorStatus `json:"actorStatus"`
+	ActorType   TenantUserActorType   `json:"actorType"`
+	DisplayName string                `json:"displayName"`
+
+	// Id Tenant membership ID; never a global actor ID.
+	Id               openapi_types.UUID     `json:"id"`
+	MembershipStatus TenantMembershipStatus `json:"membershipStatus"`
+	ValidFrom        *openapi_types.Date    `json:"validFrom"`
+	ValidTo          *openapi_types.Date    `json:"validTo"`
+
+	// ValidityEmpty True when the stored membership period contains no dates.
+	ValidityEmpty bool `json:"validityEmpty"`
+}
+
+// TenantUserActorStatus defines model for TenantUser.ActorStatus.
+type TenantUserActorStatus string
+
+// TenantUserActorType defines model for TenantUser.ActorType.
+type TenantUserActorType string
+
+// TenantUserDetail defines model for TenantUserDetail.
+type TenantUserDetail struct {
+	// AssignedRoles Assignments can be future or expired and are not effective permissions.
+	AssignedRoles []TenantAssignedRole `json:"assignedRoles"`
+	Membership    TenantUser           `json:"membership"`
+}
+
+// TenantUserPage defines model for TenantUserPage.
+type TenantUserPage struct {
+	Items      []TenantUser `json:"items"`
+	NextCursor *string      `json:"nextCursor"`
+}
 
 // UpdateCodeSystemRequest Merge-patch body; code and version are absent because they are immutable.
 type UpdateCodeSystemRequest struct {
@@ -13212,6 +13371,23 @@ type CancelWaitlistEntryParams struct {
 
 	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ListTenantUsersParams defines parameters for ListTenantUsers.
+type ListTenantUsersParams struct {
+	// Cursor Opaque cursor from the previous response.
+	Cursor *Cursor                 `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit                  `form:"limit,omitempty" json:"limit,omitempty"`
+	Status *TenantMembershipStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// GetTenantUserParams defines parameters for GetTenantUser.
+type GetTenantUserParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
 }
 
 // ListApprovalPoliciesParams defines parameters for ListApprovalPolicies.
@@ -17642,6 +17818,12 @@ type ServerInterface interface {
 	// (POST /api/v1/accommodation/waitlist/{waitlistEntryId}/cancel)
 	CancelWaitlistEntry(w http.ResponseWriter, r *http.Request, waitlistEntryId WaitlistEntryId, params CancelWaitlistEntryParams)
 
+	// (GET /api/v1/admin/users)
+	ListTenantUsers(w http.ResponseWriter, r *http.Request, params ListTenantUsersParams)
+
+	// (GET /api/v1/admin/users/{membershipId})
+	GetTenantUser(w http.ResponseWriter, r *http.Request, membershipId openapi_types.UUID, params GetTenantUserParams)
+
 	// (GET /api/v1/approval-policies)
 	ListApprovalPolicies(w http.ResponseWriter, r *http.Request, params ListApprovalPoliciesParams)
 
@@ -18649,6 +18831,16 @@ func (_ Unimplemented) AcceptWaitlistOffer(w http.ResponseWriter, r *http.Reques
 
 // (POST /api/v1/accommodation/waitlist/{waitlistEntryId}/cancel)
 func (_ Unimplemented) CancelWaitlistEntry(w http.ResponseWriter, r *http.Request, waitlistEntryId WaitlistEntryId, params CancelWaitlistEntryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/admin/users)
+func (_ Unimplemented) ListTenantUsers(w http.ResponseWriter, r *http.Request, params ListTenantUsersParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/admin/users/{membershipId})
+func (_ Unimplemented) GetTenantUser(w http.ResponseWriter, r *http.Request, membershipId openapi_types.UUID, params GetTenantUserParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -22176,6 +22368,144 @@ func (siw *ServerInterfaceWrapper) CancelWaitlistEntry(w http.ResponseWriter, r 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CancelWaitlistEntry(w, r, waitlistEntryId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListTenantUsers operation middleware
+func (siw *ServerInterfaceWrapper) ListTenantUsers(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListTenantUsersParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListTenantUsers(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetTenantUser operation middleware
+func (siw *ServerInterfaceWrapper) GetTenantUser(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "membershipId" -------------
+	var membershipId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "membershipId", chi.URLParam(r, "membershipId"), &membershipId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "membershipId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetTenantUserParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetTenantUser(w, r, membershipId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -47054,6 +47384,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/users", wrapper.ListTenantUsers)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/users/{membershipId}", wrapper.GetTenantUser)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/health/live", wrapper.GetLiveness)
 	})
 	r.Group(func(r chi.Router) {
@@ -50331,6 +50667,147 @@ func (response CancelWaitlistEntry409ApplicationProblemPlusJSONResponse) VisitCa
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListTenantUsersRequestObject struct {
+	Params ListTenantUsersParams
+}
+
+type ListTenantUsersResponseObject interface {
+	VisitListTenantUsersResponse(w http.ResponseWriter) error
+}
+
+type ListTenantUsers200JSONResponse TenantUserPage
+
+func (response ListTenantUsers200JSONResponse) VisitListTenantUsersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListTenantUsers400ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListTenantUsers400ApplicationProblemPlusJSONResponse) VisitListTenantUsersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListTenantUsers401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response ListTenantUsers401ApplicationProblemPlusJSONResponse) VisitListTenantUsersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListTenantUsers403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListTenantUsers403ApplicationProblemPlusJSONResponse) VisitListTenantUsersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetTenantUserRequestObject struct {
+	MembershipId openapi_types.UUID `json:"membershipId"`
+	Params       GetTenantUserParams
+}
+
+type GetTenantUserResponseObject interface {
+	VisitGetTenantUserResponse(w http.ResponseWriter) error
+}
+
+type GetTenantUser200JSONResponse TenantUserDetail
+
+func (response GetTenantUser200JSONResponse) VisitGetTenantUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetTenantUser401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GetTenantUser401ApplicationProblemPlusJSONResponse) VisitGetTenantUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetTenantUser403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetTenantUser403ApplicationProblemPlusJSONResponse) VisitGetTenantUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetTenantUser404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetTenantUser404ApplicationProblemPlusJSONResponse) VisitGetTenantUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -77293,6 +77770,12 @@ type StrictServerInterface interface {
 	// (POST /api/v1/accommodation/waitlist/{waitlistEntryId}/cancel)
 	CancelWaitlistEntry(ctx context.Context, request CancelWaitlistEntryRequestObject) (CancelWaitlistEntryResponseObject, error)
 
+	// (GET /api/v1/admin/users)
+	ListTenantUsers(ctx context.Context, request ListTenantUsersRequestObject) (ListTenantUsersResponseObject, error)
+
+	// (GET /api/v1/admin/users/{membershipId})
+	GetTenantUser(ctx context.Context, request GetTenantUserRequestObject) (GetTenantUserResponseObject, error)
+
 	// (GET /api/v1/approval-policies)
 	ListApprovalPolicies(ctx context.Context, request ListApprovalPoliciesRequestObject) (ListApprovalPoliciesResponseObject, error)
 
@@ -79018,6 +79501,59 @@ func (sh *strictHandler) CancelWaitlistEntry(w http.ResponseWriter, r *http.Requ
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(CancelWaitlistEntryResponseObject); ok {
 		if err := validResponse.VisitCancelWaitlistEntryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListTenantUsers operation middleware
+func (sh *strictHandler) ListTenantUsers(w http.ResponseWriter, r *http.Request, params ListTenantUsersParams) {
+	var request ListTenantUsersRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListTenantUsers(ctx, request.(ListTenantUsersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListTenantUsers")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListTenantUsersResponseObject); ok {
+		if err := validResponse.VisitListTenantUsersResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetTenantUser operation middleware
+func (sh *strictHandler) GetTenantUser(w http.ResponseWriter, r *http.Request, membershipId openapi_types.UUID, params GetTenantUserParams) {
+	var request GetTenantUserRequestObject
+
+	request.MembershipId = membershipId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetTenantUser(ctx, request.(GetTenantUserRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetTenantUser")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetTenantUserResponseObject); ok {
+		if err := validResponse.VisitGetTenantUserResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

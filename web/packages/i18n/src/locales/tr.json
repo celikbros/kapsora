@@ -67,6 +67,58 @@
     "exports": "Dışa aktarımlar",
     "exportsDescription": "Dışa aktarım taleplerini ve durumlarını görüntüleyin. Kullanılabilen işlemler yetkilerinize bağlıdır."
   },
+  "adminUsers": {
+    "title": "Kullanıcılar",
+    "intro": "Seçili kurumun üyelikleri. Bu dizin yalnızca okunur.",
+    "detailIntro": "Seçili kurumdaki üyelik durumu ve atanmış roller.",
+    "statusFilter": "Üyelik durumu",
+    "allStatuses": "Tüm durumlar",
+    "empty": "Bu duruma uygun üyelik bulunamadı.",
+    "notFound": "Üyelik bulunamadı.",
+    "back": "Kullanıcılara dön",
+    "name": "Ad",
+    "membershipId": "Üyelik kimliği",
+    "actorType": "Hesap türü",
+    "actorStatus": "Hesap durumu",
+    "membership": "Üyelik durumu",
+    "validity": "Geçerlilik",
+    "validFrom": "Başlangıç",
+    "validTo": "Bitiş",
+    "noStart": "Başlangıç sınırı yok",
+    "noEnd": "Bitiş sınırı yok",
+    "emptyValidity": "Boş geçerlilik aralığı",
+    "roles": "Atanmış roller",
+    "rolesHint": "Atamalar gelecekte başlayabilir veya süresi dolmuş olabilir. Listelenmeleri şu anda etkin erişim sağladıkları anlamına gelmez.",
+    "noRoles": "Atanmış rol yok.",
+    "scope": "Kapsam",
+    "roleKind": "Rol türü",
+    "systemRole": "Sistem rolü",
+    "localRole": "Kurum rolü",
+    "pages": "Üyelik sayfaları",
+    "previous": "Önceki sayfa",
+    "next": "Sonraki sayfa",
+    "membershipStatus": {
+      "PENDING": "Bekliyor",
+      "ACTIVE": "Aktif",
+      "SUSPENDED": "Askıda",
+      "REVOKED": "İptal edildi"
+    },
+    "actorStatusValues": {
+      "INVITED": "Davet edildi",
+      "ACTIVE": "Aktif",
+      "SUSPENDED": "Askıda",
+      "CLOSED": "Kapatıldı"
+    },
+    "actorTypeValues": { "HUMAN": "Kişi", "SERVICE_ACCOUNT": "Servis hesabı", "SYSTEM": "Sistem" },
+    "scopes": {
+      "TENANT": "Kurum",
+      "ORGANIZATION": "Sağlayıcı kuruluş",
+      "PROGRAM": "Program",
+      "PROVIDER_LOCATION": "Sağlayıcı konumu",
+      "WORK_QUEUE": "İş kuyruğu",
+      "PERSON": "Kişi"
+    }
+  },
   "securityAccess": {
     "title": "Sağlık verisi erişim kayıtları",
     "intro": "Kurumdaki sağlık verisi erişimleri ve reddedilen girişimler. Diğer güvenlik olayları bu sayfada yer almaz.",
@@ -280,6 +332,8 @@
     "continue": "Devam et"
   },
   "problems": {
+    "DIRECTORY_QUERY_INVALID": "Geçerli bir üyelik durumu veya sayfa seçin.",
+    "MEMBERSHIP_NOT_FOUND": "Bu üyelik seçili kurumda bulunamadı.",
     "ALLOCATION_MISMATCH": "Tahsis toplamı fatura tutarıyla uyuşmuyor",
     "APP_HEADER_INVALID": "Uygulama başlığı geçersiz",
     "BATCH_FROZEN": "Gönderilmiş icmalin içeriği değiştirilemez",

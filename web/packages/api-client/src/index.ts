@@ -3,6 +3,14 @@ export type { ClientOptions, KapsoraClient } from './client';
 export { ApiError, NETWORK_ERROR, networkProblem, toProblem, unwrap } from './problem';
 export type { FieldError, Problem } from './problem';
 export { createOperations, organizationOperations, sessionOperations } from './operations';
+export { adminOperations } from './admin';
+export type {
+  TenantUser,
+  TenantUserPage,
+  TenantUserDetail,
+  TenantMembershipStatus,
+  TenantUserQuery,
+} from './admin';
 export type {
   CreateOrganizationRequest,
   Operations,

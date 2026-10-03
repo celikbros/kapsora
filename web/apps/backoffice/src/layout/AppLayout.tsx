@@ -157,28 +157,32 @@ export function AppLayout() {
   const nav = (
     <nav aria-label={t('nav.mainMenu')} className="p-3">
       <ul className="grid gap-0.5">
-        {visibleNavEntries(active?.permissions ?? []).map((entry) => {
-          const current =
-            entry.path === '/' ? pathname === '/' : pathname.startsWith(entry.match ?? entry.path);
-          return (
-            <li key={entry.key}>
-              <Link
-                to={entry.path}
-                aria-current={current ? 'page' : undefined}
-                className={cn(
-                  'block rounded-md px-3 py-2 text-sm',
-                  current
-                    ? 'bg-primary-soft text-primary-strong font-medium'
-                    : 'text-fg hover:bg-surface-raised',
-                  !entry.implemented && 'text-fg-muted',
-                )}
-              >
-                {t(entry.labelKey)}
-                {!entry.implemented ? <span className="ml-1 text-xs opacity-70">·</span> : null}
-              </Link>
-            </li>
-          );
-        })}
+        {visibleNavEntries(active?.permissions ?? [], active?.canReadTenantUsers === true).map(
+          (entry) => {
+            const current =
+              entry.path === '/'
+                ? pathname === '/'
+                : pathname.startsWith(entry.match ?? entry.path);
+            return (
+              <li key={entry.key}>
+                <Link
+                  to={entry.path}
+                  aria-current={current ? 'page' : undefined}
+                  className={cn(
+                    'block rounded-md px-3 py-2 text-sm',
+                    current
+                      ? 'bg-primary-soft text-primary-strong font-medium'
+                      : 'text-fg hover:bg-surface-raised',
+                    !entry.implemented && 'text-fg-muted',
+                  )}
+                >
+                  {t(entry.labelKey)}
+                  {!entry.implemented ? <span className="ml-1 text-xs opacity-70">·</span> : null}
+                </Link>
+              </li>
+            );
+          },
+        )}
       </ul>
     </nav>
   );

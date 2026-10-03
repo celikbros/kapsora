@@ -62,6 +62,62 @@
     "exports": "Exports",
     "exportsDescription": "View export requests and their status. Available actions depend on your permissions."
   },
+  "adminUsers": {
+    "title": "Users",
+    "intro": "Memberships in the selected organization. This is a read-only directory.",
+    "detailIntro": "Membership state and assigned roles in the selected organization.",
+    "statusFilter": "Membership status",
+    "allStatuses": "All statuses",
+    "empty": "No memberships match this status.",
+    "notFound": "Membership not found.",
+    "back": "Back to users",
+    "name": "Name",
+    "membershipId": "Membership ID",
+    "actorType": "Account type",
+    "actorStatus": "Account status",
+    "membership": "Membership status",
+    "validity": "Validity",
+    "validFrom": "Valid from",
+    "validTo": "Valid until",
+    "noStart": "No start limit",
+    "noEnd": "No end limit",
+    "emptyValidity": "Empty validity period",
+    "roles": "Assigned roles",
+    "rolesHint": "Assignments can start later or expire. Their presence does not mean access is currently effective.",
+    "noRoles": "No assigned roles.",
+    "scope": "Scope",
+    "roleKind": "Role type",
+    "systemRole": "System role",
+    "localRole": "Organization role",
+    "pages": "Membership pages",
+    "previous": "Previous page",
+    "next": "Next page",
+    "membershipStatus": {
+      "PENDING": "Pending",
+      "ACTIVE": "Active",
+      "SUSPENDED": "Suspended",
+      "REVOKED": "Revoked"
+    },
+    "actorStatusValues": {
+      "INVITED": "Invited",
+      "ACTIVE": "Active",
+      "SUSPENDED": "Suspended",
+      "CLOSED": "Closed"
+    },
+    "actorTypeValues": {
+      "HUMAN": "Person",
+      "SERVICE_ACCOUNT": "Service account",
+      "SYSTEM": "System"
+    },
+    "scopes": {
+      "TENANT": "Organization",
+      "ORGANIZATION": "Provider organization",
+      "PROGRAM": "Program",
+      "PROVIDER_LOCATION": "Provider location",
+      "WORK_QUEUE": "Work queue",
+      "PERSON": "Person"
+    }
+  },
   "securityAccess": {
     "title": "Health data access log",
     "intro": "A tenant-wide record of health data access and denied attempts. This page does not include other security events.",
@@ -274,6 +330,8 @@
     "continue": "Continue"
   },
   "problems": {
+    "DIRECTORY_QUERY_INVALID": "Choose a valid membership status or page.",
+    "MEMBERSHIP_NOT_FOUND": "This membership was not found in the selected organization.",
     "PERSON_NOT_FOUND": "The member could not be found.",
     "PLAN_NOT_FOUND": "The plan could not be found.",
     "ENROLLMENT_NOT_FOUND": "The enrollment could not be found.",

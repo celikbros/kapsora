@@ -22,7 +22,7 @@ export function HomePage() {
         </div>
       ) : null}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {visibleNavEntries(active?.permissions ?? [])
+        {visibleNavEntries(active?.permissions ?? [], active?.canReadTenantUsers === true)
           .filter((e) => e.key !== 'home')
           .map((entry) => (
             <Card key={entry.key} className="p-4">

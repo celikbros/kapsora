@@ -155,6 +155,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	ident.directory = application.NewDirectoryService(identitypg.NewDirectoryRepository(pool), cursors)
 	orgSvc, err := orgapp.New(orgapp.Deps{
 		Pool: pool, Repo: organizationpg.New(), Cipher: keys, Index: keys,
 		Audit: auditpg.New(), Cursors: cursors,
@@ -515,8 +516,9 @@ func newDocuments(cfg config.Config, pool *pgxpool.Pool, cursors *httpx.CursorCo
 
 // identityDeps bundles the identity module's services for the router.
 type identityDeps struct {
-	service *application.Service
-	authz   *application.Authorizer
+	service   *application.Service
+	authz     *application.Authorizer
+	directory *application.DirectoryService
 }
 
 func newIdentity(cfg config.Config, pool *pgxpool.Pool, logger *slog.Logger) (identityDeps, error) {
@@ -578,6 +580,7 @@ func newRouter(d routerDeps) http.Handler {
 	sessions := identityhttp.NewMiddleware(d.ident.service, cookies, signingKey, d.logger).WithAuthorizer(d.ident.authz)
 	sessionHandler := identityhttp.NewHandler(d.ident.service, cookies, signingKey, d.logger)
 	contextHandler := identityhttp.NewContextHandler(d.ident.service, d.ident.authz, d.logger)
+	directoryHandler := identityhttp.NewDirectoryHandler(d.ident.directory, sessions, d.logger)
 
 	r := chi.NewRouter()
 	r.Use(httpx.RequestID)
@@ -621,6 +624,7 @@ func newRouter(d routerDeps) http.Handler {
 			tenant.Use(sessions.RequireCSRF)
 			tenant.Use(sessions.RequireTenantContext)
 			tenant.Use(ratelimit.Middleware(d.limiter, ratelimit.ScopedKey("api", tenantScope), apiRateLimit, d.logger))
+			tenant.Route("/admin/users", directoryHandler.Routes)
 
 			orgHandler := organizationhttp.NewHandler(d.orgs, sessions, d.logger)
 			tenant.Route("/organizations", func(r chi.Router) {

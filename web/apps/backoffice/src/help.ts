@@ -64,6 +64,8 @@ export const HELP_ROUTES: Readonly<Record<string, string>> = {
   '/billing/exports': 'exports',
   '/reports': 'reports',
   '/security': 'security',
+  '/admin': 'adminUsers',
+  '/admin/users/$membershipId': 'adminUser',
   '/notifications': 'notifications',
   '/profile': 'profile',
 };

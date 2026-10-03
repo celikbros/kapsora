@@ -73,6 +73,63 @@ tags:
   - name: Reports
     description: Cari ekstre, günlük mutabakat, operasyon panosu ve filigranlı dışa aktarma
 paths:
+  /api/v1/admin/users:
+    get:
+      tags: [Identity]
+      operationId: listTenantUsers
+      description: |
+        Read-only tenant membership directory. Requires identity.user.read on a currently
+        valid TENANT-scoped grant for the caller's active membership. Organization-scoped
+        grants never authorize this endpoint. Rows contain no login or contact identifiers.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/TenantMembershipStatus'
+      responses:
+        '200':
+          description: Current tenant membership page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantUserPage'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/v1/admin/users/{membershipId}:
+    get:
+      tags: [Identity]
+      operationId: getTenantUser
+      description: |
+        Tenant-owned membership and assigned role metadata, including future and expired
+        assignments. Assignment does not by itself assert currently effective access.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: membershipId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Tenant membership and assignments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantUserDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /health/live:
     get:
       tags: [Health]
@@ -14745,6 +14802,13 @@ components:
           type: array
           items:
             type: string
+        canReadTenantUsers:
+          type: boolean
+          description: |
+            Server-computed Management Users capability. True only when identity.user.read
+            belongs to an active TENANT-scoped grant in this tenant and the request uses
+            the backoffice or unrestricted app context; flattened permissions and scopes
+            cannot establish that correlation.
         scopes:
           type: array
           items:
@@ -14757,6 +14821,83 @@ components:
               id:
                 type: [string, 'null']
                 format: uuid
+    TenantMembershipStatus:
+      type: string
+      enum: [PENDING, ACTIVE, SUSPENDED, REVOKED]
+    TenantUser:
+      type: object
+      additionalProperties: false
+      required: [id, displayName, actorType, actorStatus, membershipStatus, validFrom, validTo, validityEmpty]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Tenant membership ID; never a global actor ID.
+        displayName:
+          type: string
+        actorType:
+          type: string
+          enum: [HUMAN, SERVICE_ACCOUNT, SYSTEM]
+        actorStatus:
+          type: string
+          enum: [INVITED, ACTIVE, SUSPENDED, CLOSED]
+        membershipStatus:
+          $ref: '#/components/schemas/TenantMembershipStatus'
+        validFrom:
+          type: [string, 'null']
+          format: date
+        validTo:
+          type: [string, 'null']
+          format: date
+        validityEmpty:
+          type: boolean
+          description: True when the stored membership period contains no dates.
+    TenantUserPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TenantUser'
+        nextCursor:
+          type: [string, 'null']
+    TenantAssignedRole:
+      type: object
+      additionalProperties: false
+      required: [code, name, isSystemRole, scopeType, validFrom, validTo, validityEmpty]
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        isSystemRole:
+          type: boolean
+        scopeType:
+          type: string
+          enum: [TENANT, ORGANIZATION, PROGRAM, PROVIDER_LOCATION, WORK_QUEUE, PERSON]
+        validFrom:
+          type: [string, 'null']
+          format: date-time
+        validTo:
+          type: [string, 'null']
+          format: date-time
+        validityEmpty:
+          type: boolean
+          description: True when the stored assignment period contains no instants.
+    TenantUserDetail:
+      type: object
+      additionalProperties: false
+      required: [membership, assignedRoles]
+      properties:
+        membership:
+          $ref: '#/components/schemas/TenantUser'
+        assignedRoles:
+          type: array
+          description: Assignments can be future or expired and are not effective permissions.
+          items:
+            $ref: '#/components/schemas/TenantAssignedRole'
     TenantSummary:
       type: object
       additionalProperties: false

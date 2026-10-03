@@ -7,6 +7,9 @@ import {
   type RouterHistory,
 } from '@tanstack/react-router';
 import { AdjustmentQueuePage } from './adjustments/AdjustmentQueuePage';
+import { AdminAccess } from './admin/AdminAccess';
+import { AdminUsersPage } from './admin/AdminUsersPage';
+import { AdminUserDetailPage } from './admin/AdminUserDetailPage';
 import type { AppServices } from './api';
 import { CategoryTreePage } from './catalog/CategoryTreePage';
 import { CodeSystemDetailPage } from './catalog/CodeSystemDetailPage';
@@ -631,6 +634,24 @@ const importDetailRoute = createRoute({
 const soonRoutes = SOON_PATHS.map((path) =>
   createRoute({ getParentRoute: () => appRoute, path, component: SoonPage }),
 );
+const adminUsersRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/admin',
+  component: () => (
+    <AdminAccess>
+      <AdminUsersPage />
+    </AdminAccess>
+  ),
+});
+const adminUserDetailRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/admin/users/$membershipId',
+  component: () => (
+    <AdminAccess>
+      <AdminUserDetailPage />
+    </AdminAccess>
+  ),
+});
 const healthServicesRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/health-services',
@@ -706,6 +727,8 @@ const routeTree = rootRoute.addChildren([
     billingReconciliationRunRoute,
     billingExportsRoute,
     reportsRoute,
+    adminUsersRoute,
+    adminUserDetailRoute,
     securityRoute,
     medicalReportsRoute,
     medicalReportRoute,

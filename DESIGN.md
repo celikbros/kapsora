@@ -849,6 +849,16 @@ access events without opening a member record. Each row retains the actor, perso
 identifiers, access type, outcome, purpose and reason. Pages load in bounded groups; the mobile
 layout presents each event as a readable card.
 
+**Management starts with tenant membership.** The user directory lists the current
+institution's memberships, with separate account/membership statuses and validity dates.
+Detail presents assigned roles, scope types and assignment validity; assignment is not an
+unconditional promise of effective access. Unbounded dates and an empty validity period
+have distinct labels. The server's tenant-user-read capability gates navigation and direct
+routes before mounting readers. Changing actor, tenant or access
+context discards the previous page's records. Credentials, contact/login identifiers and
+scope/person identifiers are not part of this view. Read-only delivery presents no inactive
+provisioning or role-change controls.
+
 ## Motion
 
 Toasts slide up 160ms ease-out. The member surface adds the system's one authored moment:

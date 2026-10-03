@@ -28,6 +28,23 @@ export function createServices(
       queries: { retry: 1, staleTime: 15_000, refetchOnWindowFocus: false },
     },
   });
+  const directoryContext = (state: ReturnType<SessionStore['getState']>) =>
+    [
+      state.session?.actorId ?? '',
+      state.session?.expiresAt ?? '',
+      state.activeTenant?.tenant.id ?? '',
+      state.activeTenant?.canReadTenantUsers === true ? 'allowed' : 'denied',
+      state.activeTenant?.permissions.join('|') ?? '',
+      JSON.stringify(state.activeTenant?.scopes ?? []),
+    ].join(':');
+  let previousDirectoryContext = directoryContext(store.getState());
+  store.subscribe((state) => {
+    const current = directoryContext(state);
+    if (current === previousDirectoryContext) return;
+    previousDirectoryContext = current;
+    void queryClient.cancelQueries({ queryKey: ['admin-users'] });
+    queryClient.removeQueries({ queryKey: ['admin-users'] });
+  });
   return { ops, store, queryClient };
 }
 

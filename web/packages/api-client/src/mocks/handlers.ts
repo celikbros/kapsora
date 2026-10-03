@@ -199,6 +199,14 @@ export class MockApi {
             all.some((m) => appOfGrant(m.scopes) === a && m.permissions.length > 0),
           ),
           permissions: [...new Set(lens.flatMap((m) => m.permissions))],
+          canReadTenantUsers:
+            (app === null || app === 'backoffice') &&
+            all.some(
+              (grant) =>
+                grant.permissions.includes('identity.user.read') &&
+                ((grant.scopes?.length ?? 0) === 0 ||
+                  grant.scopes?.some((scope) => scope.type === 'TENANT') === true),
+            ),
           // The access grants that narrow the permissions above. A provider-side role is an
           // ORGANIZATION grant, and it is what every provider boundary in the API is read
           // from — there is no second, client-side rule that could disagree with it.
@@ -1060,6 +1068,98 @@ export function createHandlers(api: MockApi): HttpHandler[] {
         tenants: api.tenantContexts(a, api.session.app),
       };
       return HttpResponse.json(body);
+    }),
+
+    http.get(`${ANY}/api/v1/admin/users`, async ({ request }) => {
+      await wait(api);
+      const gate = guardTenant(api, request, 'identity.user.read', false);
+      if ('error' in gate) return gate.error;
+      const tenant = api.world.tenants.find((item) => item.id === gate.tenantId)!;
+      const app = appOfRequest(request);
+      const permitted = gate.session.account.memberships.some(
+        (grant) =>
+          grant.tenantCode === tenant.code &&
+          grant.permissions.includes('identity.user.read') &&
+          ((grant.scopes?.length ?? 0) === 0 ||
+            grant.scopes?.some((scope) => scope.type === 'TENANT') === true),
+      );
+      if (!permitted || (app !== null && app !== 'backoffice'))
+        return problem(api, 403, 'PERMISSION_DENIED', 'Bu işlem için yetkiniz yok');
+      const url = new URL(request.url);
+      const status = url.searchParams.get('status');
+      if (status && !['PENDING', 'ACTIVE', 'SUSPENDED', 'REVOKED'].includes(status))
+        return problem(api, 400, 'DIRECTORY_QUERY_INVALID', 'Geçersiz liste isteği');
+      const offset = decodeCursor(url.searchParams.get('cursor'));
+      const limit = parseLimit(url);
+      if (offset === null || limit === 'invalid')
+        return problem(api, 400, 'DIRECTORY_QUERY_INVALID', 'Geçersiz liste isteği');
+      const rows: Schemas['TenantUser'][] = api.world.accounts
+        .filter((account) =>
+          account.memberships.some((member) => member.tenantCode === tenant.code),
+        )
+        .map((account): Schemas['TenantUser'] => ({
+          id: `${tenant.id.slice(0, 8)}-${account.actorId.slice(9)}`,
+          displayName: account.displayName,
+          actorType: 'HUMAN',
+          actorStatus: 'ACTIVE',
+          membershipStatus: 'ACTIVE',
+          validFrom: '2026-01-01',
+          validTo: null,
+          validityEmpty: false,
+        }))
+        .sort((a, b) => a.id.localeCompare(b.id));
+      const filtered = status && status !== 'ACTIVE' ? [] : rows;
+      return HttpResponse.json({
+        items: filtered.slice(offset, offset + limit),
+        nextCursor: offset + limit < filtered.length ? encodeCursor(offset + limit) : null,
+      } satisfies Schemas['TenantUserPage']);
+    }),
+
+    http.get(`${ANY}/api/v1/admin/users/:membershipId`, async ({ request, params }) => {
+      await wait(api);
+      const gate = guardTenant(api, request, 'identity.user.read', false);
+      if ('error' in gate) return gate.error;
+      const tenant = api.world.tenants.find((item) => item.id === gate.tenantId)!;
+      const app = appOfRequest(request);
+      const permitted = gate.session.account.memberships.some(
+        (grant) =>
+          grant.tenantCode === tenant.code &&
+          grant.permissions.includes('identity.user.read') &&
+          ((grant.scopes?.length ?? 0) === 0 ||
+            grant.scopes?.some((scope) => scope.type === 'TENANT') === true),
+      );
+      if (!permitted || (app !== null && app !== 'backoffice'))
+        return problem(api, 403, 'PERMISSION_DENIED', 'Bu işlem için yetkiniz yok');
+      const membershipId = pathParam(params, 'membershipId');
+      const account = api.world.accounts.find(
+        (item) =>
+          item.memberships.some((member) => member.tenantCode === tenant.code) &&
+          `${tenant.id.slice(0, 8)}-${item.actorId.slice(9)}` === membershipId,
+      );
+      if (!account) return problem(api, 404, 'MEMBERSHIP_NOT_FOUND', 'Üyelik bulunamadı');
+      const membership: Schemas['TenantUser'] = {
+        id: membershipId,
+        displayName: account.displayName,
+        actorType: 'HUMAN',
+        actorStatus: 'ACTIVE',
+        membershipStatus: 'ACTIVE',
+        validFrom: '2026-01-01',
+        validTo: null,
+        validityEmpty: false,
+      };
+      const assignedRoles: Schemas['TenantAssignedRole'][] = account.memberships
+        .filter((grant) => grant.tenantCode === tenant.code)
+        .map((grant): Schemas['TenantAssignedRole'] => ({
+          code: grant.permissions.includes('identity.user.read') ? 'TENANT_ADMIN' : 'DEMO_ROLE',
+          name: grant.permissions.includes('identity.user.read') ? 'Kurum Yöneticisi' : 'Demo Rol',
+          isSystemRole: true,
+          scopeType: (grant.scopes?.[0]?.type ??
+            'TENANT') as Schemas['TenantAssignedRole']['scopeType'],
+          validFrom: '2026-01-01T00:00:00Z',
+          validTo: null,
+          validityEmpty: false,
+        }));
+      return HttpResponse.json({ membership, assignedRoles } satisfies Schemas['TenantUserDetail']);
     }),
 
     http.get(`${ANY}/api/v1/tenants`, async () => {

@@ -64,6 +64,10 @@ jobs:
         env:
           KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
         run: go test -count=1 -v -timeout 30m ./db/tests/...
+      - name: tenant user directory authorization and HTTP integration
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: go test -count=1 -v -timeout 30m ./internal/identity/transport/http -run '^TestDirectory'
 
   contracts:
     name: OpenAPI lint, generated code, breaking changes

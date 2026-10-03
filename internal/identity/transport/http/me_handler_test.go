@@ -20,6 +20,7 @@ import (
 	identitypg "github.com/celikbros/kapsora/internal/identity/infrastructure/postgres"
 	identityhttp "github.com/celikbros/kapsora/internal/identity/transport/http"
 	"github.com/celikbros/kapsora/internal/platform/dbtest"
+	"github.com/celikbros/kapsora/internal/platform/httpx"
 )
 
 type authzServer struct {
@@ -72,6 +73,12 @@ func newAuthzServer(t *testing.T) *authzServer {
 	mw := identityhttp.NewMiddleware(svc, cookies, signingKey, logger).WithAuthorizer(authz)
 	sessionHandler := identityhttp.NewHandler(svc, cookies, signingKey, logger)
 	contextHandler := identityhttp.NewContextHandler(svc, authz, logger)
+	cursors, err := httpx.NewCursorCodec(signingKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	directoryHandler := identityhttp.NewDirectoryHandler(
+		application.NewDirectoryService(identitypg.NewDirectoryRepository(h.App), cursors), mw, logger)
 
 	r := chi.NewRouter()
 	r.Route("/api/v1", func(api chi.Router) {
@@ -87,6 +94,7 @@ func newAuthzServer(t *testing.T) *authzServer {
 		api.Group(func(tenant chi.Router) {
 			tenant.Use(mw.RequireCSRF)
 			tenant.Use(mw.RequireTenantContext)
+			tenant.Route("/admin/users", directoryHandler.Routes)
 			tenant.Get("/probe", func(w http.ResponseWriter, r *http.Request) {
 				rc, err := identity.Require(r.Context(), "audit.read")
 				if err != nil {
