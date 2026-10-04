@@ -178,11 +178,17 @@ verification remains an operator action and separate evidence, not an implied re
 
 ## 6. Acceptance criteria
 
-- [ ] An authorized manager can suspend an ACTIVE membership through the real contract.
-- [ ] Self/last-manager and tenant/scope boundaries hold under concurrent commands.
-- [ ] Exact retries are safe; altered requests cannot reuse an accepted command key.
-- [ ] One transactional audit event accompanies the status change.
-- [ ] Other tenant access and global account/credential/session state remain unchanged.
-- [ ] Deferred step-up and response handling cannot act in or restore an obsolete context.
-- [ ] Focused isolated tests and synthetic visual review pass with evidence recorded.
+- [x] An authorized manager can suspend an ACTIVE membership through the real contract.
+- [x] Self/last-manager and tenant/scope boundaries hold under concurrent commands.
+- [x] Exact retries are safe; altered requests cannot reuse an accepted command key.
+- [x] One transactional audit event accompanies the status change.
+- [x] Other tenant access and global account/credential/session state remain unchanged.
+- [x] Deferred step-up and response handling cannot act in or restore an obsolete context.
+- [x] Focused isolated tests and synthetic visual review pass with evidence recorded.
+
+Evidence: all seven Directory PostgreSQL/HTTP cases passed without skips on `d432e74`
+([CI 37184545274](https://github.com/celikbros/kapsora/actions/runs/37184545274)); the same
+run passed 697 frontend tests, 25 browser smoke tests and all six jobs. Ten intercepted
+390/1440 views passed without overflow or real API requests. Local API read-back remains
+pending the operator's restart; no existing live membership was suspended.
 - [ ] No role/grant/schema change or existing live-membership mutation is used as proof.

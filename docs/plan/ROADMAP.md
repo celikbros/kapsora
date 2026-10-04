@@ -38,7 +38,7 @@ administration commands. Existing organization CRUD remains its own delivered wo
 | Order | Stage | Current status | Result required |
 | --- | --- | --- | --- |
 | MGT-01 | Tenant user membership directory | ACTIVE; implemented, live read pending | Real list/filter/paging and membership detail with assigned-role validity; tenant-wide permission and strict data projection |
-| MGT-02 | Account onboarding and membership lifecycle | ACTIVE; MGT-02a implemented, verification gates open | Explicit public command contracts, validation, scoped lifecycle effects and retry/audit behavior |
+| MGT-02 | Account onboarding and membership lifecycle | ACTIVE; MGT-02a technical checks passed, live reads pending | Explicit public command contracts, validation, scoped lifecycle effects and retry/audit behavior |
 | MGT-03 | Role assignment and revocation | QUEUED | Step-up, privileged maker-checker rules, scoped commands and recorded history |
 | MGT-04 | Typed tenant settings | QUEUED | Named supported settings and validated changes; no arbitrary JSON editor |
 
@@ -87,7 +87,10 @@ explicit conflict reload and guarded deferred authentication/context changes. Lo
 693-test frontend baseline, final focused directory/auth tests, scoped Go checks and ten
 intercepted desktop/mobile views pass. Five new Directory integration cases compile but
 are locally skipped; PR #11's isolated PostgreSQL step runs them with the two existing
-directory cases. Operator-restarted live reads remain separate exit evidence. No existing
+directory cases. All seven passed without skips on `d432e74`
+([CI 37184545274](https://github.com/celikbros/kapsora/actions/runs/37184545274)), with
+697 frontend tests, 25 browser smoke tests and all six jobs green.
+Operator-restarted live reads remain separate exit evidence. No existing
 live membership was suspended and no schema/grant change was made.
 Consent-based invitations/acceptance follow separately; do not wrap global CreateAccount,
 RevokeAllForActor or a password reset in tenant administration. Reactivation and privileged

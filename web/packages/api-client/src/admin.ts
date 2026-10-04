@@ -8,7 +8,8 @@ export type TenantUserPage = components['schemas']['TenantUserPage'];
 export type TenantUserDetail = components['schemas']['TenantUserDetail'];
 export type TenantMembershipStatus = components['schemas']['TenantMembershipStatus'];
 export type TenantUserQuery = { cursor?: string; limit?: number; status?: TenantMembershipStatus };
-export type SuspendTenantUserReasonCode = 'ACCESS_REVIEW' | 'STAFF_DEPARTURE' | 'SECURITY_CONCERN';
+export type SuspendTenantUserReasonCode =
+  components['schemas']['SuspendTenantUserRequest']['reasonCode'];
 
 export function adminOperations(client: KapsoraClient) {
   return {

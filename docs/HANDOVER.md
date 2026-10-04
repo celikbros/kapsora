@@ -1139,7 +1139,11 @@ conflict reload. It makes zero real API requests.
 Five new PostgreSQL/HTTP cases cover tenant/session isolation, replay/audit/rollback,
 same-version races, competing-manager suspension and the usable-manager predicate;
 they compile but are locally SKIPPED. The existing isolated CI Directory step runs all
-seven directory integration cases; use PR #11's current checks for the result.
+seven directory integration cases. All seven passed without skips on `d432e74`, alongside
+697 frontend tests in 81 files, 25 browser smoke tests and all six CI jobs
+([run 37184545274](https://github.com/celikbros/kapsora/actions/runs/37184545274)).
+The final client reason type is derived from the generated contract; its local typecheck
+passes. Use PR #11's current checks for later heads.
 Live read confirmation remains pending the operator's restart. No existing live member
 was suspended. Invitation/acceptance and later role restoration remain separate tasks.
 The unavailable Impeccable skill was not run; visual review used PRODUCT/DESIGN constraints.
