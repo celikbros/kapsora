@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 
 	kapsorav1 "github.com/celikbros/kapsora/api/generated/kapsorav1"
+	"github.com/celikbros/kapsora/internal/audit"
 	auditpg "github.com/celikbros/kapsora/internal/audit/postgres"
 	"github.com/celikbros/kapsora/internal/identity"
 	"github.com/celikbros/kapsora/internal/identity/application"
@@ -21,10 +22,12 @@ import (
 	identityhttp "github.com/celikbros/kapsora/internal/identity/transport/http"
 	"github.com/celikbros/kapsora/internal/platform/dbtest"
 	"github.com/celikbros/kapsora/internal/platform/httpx"
+	"github.com/celikbros/kapsora/internal/platform/idempotency"
 )
 
 type authzServer struct {
 	*server
+	svc     *application.Service
 	prov    *application.Provisioner
 	actor   uuid.UUID
 	tenantA uuid.UUID
@@ -33,7 +36,7 @@ type authzServer struct {
 
 // newAuthzServer mirrors the production router: session loading, CSRF, the pre-tenant
 // routes and a tenant-scoped group with two probe routes.
-func newAuthzServer(t *testing.T) *authzServer {
+func newAuthzServer(t *testing.T, recorder ...audit.Recorder) *authzServer {
 	t.Helper()
 	h := dbtest.New(t)
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
@@ -78,7 +81,7 @@ func newAuthzServer(t *testing.T) *authzServer {
 		t.Fatal(err)
 	}
 	directoryHandler := identityhttp.NewDirectoryHandler(
-		application.NewDirectoryService(identitypg.NewDirectoryRepository(h.App), cursors), mw, logger)
+		application.NewDirectoryService(identitypg.NewDirectoryRepository(h.App, recorder...), cursors), mw, logger)
 
 	r := chi.NewRouter()
 	r.Route("/api/v1", func(api chi.Router) {
@@ -88,13 +91,23 @@ func newAuthzServer(t *testing.T) *authzServer {
 			authed.Use(mw.RequireCSRF)
 			authed.Get("/session", sessionHandler.GetSession)
 			authed.Post("/session/switch-tenant", contextHandler.SwitchTenant)
+			authed.Post("/session/step-up", sessionHandler.StepUp)
 			authed.Get("/me", contextHandler.GetMe)
 			authed.Get("/tenants", contextHandler.ListTenants)
 		})
 		api.Group(func(tenant chi.Router) {
 			tenant.Use(mw.RequireCSRF)
 			tenant.Use(mw.RequireTenantContext)
-			tenant.Route("/admin/users", directoryHandler.Routes)
+			tenant.Route("/admin/users", func(r chi.Router) {
+				directoryHandler.Routes(r, idempotency.Middleware(h.App, idempotency.Options{
+					CommandCode: "tenant_membership.suspend",
+					Scope: func(req *http.Request) (idempotency.Scope, bool) {
+						rc, ok := identity.FromContext(req.Context())
+						return idempotency.Scope{TenantID: rc.TenantID, ActorID: rc.Principal.ActorID}, ok
+					},
+					HashHeaders: []string{"If-Match"},
+				}))
+			})
 			tenant.Get("/probe", func(w http.ResponseWriter, r *http.Request) {
 				rc, err := identity.Require(r.Context(), "audit.read")
 				if err != nil {
@@ -115,6 +128,7 @@ func newAuthzServer(t *testing.T) *authzServer {
 	})
 	return &authzServer{
 		server:  &server{h: h, handler: r, cookies: cookies},
+		svc:     svc,
 		prov:    prov,
 		actor:   actor,
 		tenantA: tenantA,

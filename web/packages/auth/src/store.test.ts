@@ -1,6 +1,6 @@
 import { createKapsoraClient, createOperations } from '@kapsora/api-client';
 import { createMockServer } from '@kapsora/api-client/mocks/node';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createSessionStore } from './store';
 
 const { api, server } = createMockServer({ organizationsPerTenant: 5 });
@@ -94,5 +94,104 @@ describe('session store', () => {
     api.session = null;
     expect(await store.checkAccount()).toBe('signed-out');
     expect(store.getState().status).toBe('anonymous');
+  });
+
+  it('does not fetch or restore a step-up session after the tenant changes during password confirmation', async () => {
+    const ops = createOperations(
+      createKapsoraClient({
+        baseUrl: 'http://mock.test',
+        csrfToken: () => store.getState().csrfToken,
+      }),
+    );
+    const store = createSessionStore(ops);
+    await store.login('admin.a', 'demo parola 2026 kapsora');
+    const original = ops.session.stepUp;
+    let finish!: () => void;
+    const deferred = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    const password = vi.spyOn(ops.session, 'stepUp').mockImplementationOnce(async (value) => {
+      await deferred;
+      return original(value);
+    });
+    const get = vi.spyOn(ops.session, 'get');
+    const pending = store.stepUp('demo parola 2026 kapsora');
+    expect(password).toHaveBeenCalledTimes(1);
+    const previousSession = store.getState().session;
+    store.setState({
+      activeTenant: null,
+      session: { ...previousSession!, activeTenantId: null },
+    });
+    finish();
+    await expect(pending).rejects.toThrow('Session changed during password confirmation');
+    expect(get).not.toHaveBeenCalled();
+    expect(store.getState().session?.activeTenantId).toBeNull();
+    vi.restoreAllMocks();
+  });
+
+  it('discards a late session read when the actor and CSRF context change', async () => {
+    const ops = createOperations(
+      createKapsoraClient({
+        baseUrl: 'http://mock.test',
+        csrfToken: () => store.getState().csrfToken,
+      }),
+    );
+    const store = createSessionStore(ops);
+    await store.login('admin.a', 'demo parola 2026 kapsora');
+    const originalGet = ops.session.get;
+    let finish!: () => void;
+    const deferred = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    const get = vi.spyOn(ops.session, 'get').mockImplementationOnce(async () => {
+      await deferred;
+      return originalGet();
+    });
+    const pending = store.stepUp('demo parola 2026 kapsora');
+    await vi.waitFor(() => expect(get).toHaveBeenCalledTimes(1));
+    const actorId = 'f0000000-0000-7000-8000-000000000099';
+    store.setState({
+      session: { ...store.getState().session!, actorId },
+      csrfToken: 'new-actor-csrf',
+    });
+    finish();
+    await expect(pending).rejects.toThrow('Session changed during password confirmation');
+    expect(store.getState().session?.actorId).toBe(actorId);
+    expect(store.getState().csrfToken).toBe('new-actor-csrf');
+    vi.restoreAllMocks();
+  });
+
+  it('rejects a step-up if authorization leaves and returns to the same value while pending', async () => {
+    const ops = createOperations(
+      createKapsoraClient({
+        baseUrl: 'http://mock.test',
+        csrfToken: () => store.getState().csrfToken,
+      }),
+    );
+    const store = createSessionStore(ops);
+    await store.login('admin.a', 'demo parola 2026 kapsora');
+    const original = ops.session.stepUp;
+    let finish!: () => void;
+    const deferred = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    vi.spyOn(ops.session, 'stepUp').mockImplementationOnce(async (value) => {
+      await deferred;
+      return original(value);
+    });
+    const pending = store.stepUp('demo parola 2026 kapsora');
+    const active = store.getState().activeTenant!;
+    store.setState({ activeTenant: { ...active, canManageTenantUsers: false } });
+    store.setState({ activeTenant: active });
+    finish();
+    await expect(pending).rejects.toThrow('Session changed during password confirmation');
+    vi.restoreAllMocks();
+  });
+
+  it('refreshes the step-up window when context stays the same', async () => {
+    const store = makeStore();
+    await store.login('admin.a', 'demo parola 2026 kapsora');
+    await store.stepUp('demo parola 2026 kapsora');
+    expect(Date.parse(store.getState().session!.stepUpExpiresAt!)).toBeGreaterThan(Date.now());
   });
 });

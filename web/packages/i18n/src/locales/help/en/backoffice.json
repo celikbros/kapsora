@@ -1,7 +1,7 @@
 {
   "adminUsers": {
     "title": "Users",
-    "purpose": "Read the memberships of the selected organization. This directory does not show login or contact details and offers no account changes.",
+    "purpose": "Read the memberships of the selected organization. Authorized administrators can suspend an active membership from its detail page. The directory does not show login or contact details.",
     "sections": [
       {
         "label": "Membership status",
@@ -15,7 +15,7 @@
   },
   "adminUser": {
     "title": "Membership detail",
-    "purpose": "Read one organization's membership and the roles assigned to it.",
+    "purpose": "Read one organization's membership and the roles assigned to it. Authorized administrators can suspend an active membership in this organization after choosing a reason and confirming its impact.",
     "sections": [
       {
         "label": "Assigned roles",

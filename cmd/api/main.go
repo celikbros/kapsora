@@ -624,7 +624,13 @@ func newRouter(d routerDeps) http.Handler {
 			tenant.Use(sessions.RequireCSRF)
 			tenant.Use(sessions.RequireTenantContext)
 			tenant.Use(ratelimit.Middleware(d.limiter, ratelimit.ScopedKey("api", tenantScope), apiRateLimit, d.logger))
-			tenant.Route("/admin/users", directoryHandler.Routes)
+			tenant.Route("/admin/users", func(r chi.Router) {
+				directoryHandler.Routes(r, idempotency.Middleware(d.pool, idempotency.Options{
+					CommandCode: "tenant_membership.suspend",
+					Scope:       idempotencyScope, Logger: d.logger,
+					HashHeaders: []string{"If-Match"},
+				}))
+			})
 
 			orgHandler := organizationhttp.NewHandler(d.orgs, sessions, d.logger)
 			tenant.Route("/organizations", func(r chi.Router) {

@@ -45,6 +45,7 @@ export function makeIdFactory(
 
 export interface MockAccount {
   actorId: string;
+  actorStatus?: Schemas['TenantUser']['actorStatus'];
   username: string;
   displayName: string;
   email: string;
@@ -59,6 +60,9 @@ export interface MockAccount {
     tenantCode: string;
     permissions: string[];
     scopes?: { type: string; id: string | null }[];
+    validFrom?: string | null;
+    validTo?: string | null;
+    validityEmpty?: boolean;
   }[];
 }
 

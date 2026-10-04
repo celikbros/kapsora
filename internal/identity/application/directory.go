@@ -24,6 +24,7 @@ type DirectoryMembership struct {
 	ValidTo          *string
 	ValidityEmpty    bool
 	CreatedAt        time.Time
+	RowVersion       int64
 }
 
 // AssignedRole reports assignments, including future and expired ones. It does not claim
@@ -52,6 +53,8 @@ type DirectoryFilter struct {
 type DirectoryRepository interface {
 	List(ctx context.Context, rc identity.RequestContext, filter DirectoryFilter) ([]DirectoryMembership, error)
 	Get(ctx context.Context, rc identity.RequestContext, membershipID uuid.UUID) (DirectoryDetail, error)
+	AuthorizeManage(ctx context.Context, rc identity.RequestContext) error
+	Suspend(ctx context.Context, rc identity.RequestContext, membershipID uuid.UUID, expectedVersion int64, reasonCode string) (DirectoryDetail, error)
 }
 
 type DirectoryService struct {

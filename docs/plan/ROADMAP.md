@@ -38,7 +38,7 @@ administration commands. Existing organization CRUD remains its own delivered wo
 | Order | Stage | Current status | Result required |
 | --- | --- | --- | --- |
 | MGT-01 | Tenant user membership directory | ACTIVE; implemented, live read pending | Real list/filter/paging and membership detail with assigned-role validity; tenant-wide permission and strict data projection |
-| MGT-02 | Account onboarding and membership lifecycle | QUEUED | Explicit public command contracts, validation, scoped lifecycle effects and retry/audit behavior |
+| MGT-02 | Account onboarding and membership lifecycle | ACTIVE; MGT-02a implemented, verification gates open | Explicit public command contracts, validation, scoped lifecycle effects and retry/audit behavior |
 | MGT-03 | Role assignment and revocation | QUEUED | Step-up, privileged maker-checker rules, scoped commands and recorded history |
 | MGT-04 | Typed tenant settings | QUEUED | Named supported settings and validated changes; no arbitrary JSON editor |
 
@@ -62,23 +62,33 @@ for list/detail/back navigation, denied direct access, validity labels, context 
 and synthetic desktop/mobile readability. Live read-only verification follows an operator
 restart after the backend change is concrete and tested. No new schema or grants are planned.
 
-**Implementation checkpoint:** 679 existing frontend tests and six focused directory
-tests pass, along with workspace type/lint/format/build checks, focused Go tests and
+**MGT-01 implementation checkpoint:** all six CI jobs passed on `de90aca`
+([run 37160262259](https://github.com/celikbros/kapsora/actions/runs/37160262259)), including
+685 frontend tests in 80 files, 25 browser smoke tests and both Directory PostgreSQL/HTTP
+tests without skips. Local workspace type/lint/format/build checks, focused Go tests and
 identity lint, tracked-tree vet, contract lint/compatibility and regeneration. Four
 synthetic desktop/mobile views pass, including long codes and empty/unbounded validity.
-Directory integration cases compile but are locally SKIPPED; the existing dbtest harness
-also resets a shared application-role password. The added CI PostgreSQL step supplies
-isolated, non-skipped authorization/isolation evidence; use PR #11's current checks for
-the latest result. Live reads after the operator restart remain pending; the technical
+Directory integration cases are locally SKIPPED because the existing dbtest harness
+also resets a shared application-role password; the successful CI PostgreSQL step supplies
+isolated, non-skipped authorization/isolation evidence. Live reads after the operator
+restart remain pending; the technical
 implementation does not close that gate.
 
-**Queued next task, MGT-02a:** tenant membership suspension from directory detail, before
+**Active task, MGT-02a:** [tenant membership suspension](../delegation/WP-MGT-02a-membership-suspension.md)
+from directory detail, before
 account onboarding. Define an explicit tenant-scoped command with correlated
 `identity.user.manage`, step-up, CSRF, ETag/idempotency and transactional audit. Protect
 self/last usable tenant-administrator access and concurrent commands. Change membership
 status only: global actor/credentials, other memberships, historical grants and global
 sessions must remain intact. Prove that an already-open session loses access only to the
-suspended tenant on its next request. This is a planned task, not a delivered command.
+suspended tenant on its next request. The command and UI are implemented: versioned
+detail, a bounded reason/tenant confirmation, password prompt, exact uncertain retries,
+explicit conflict reload and guarded deferred authentication/context changes. Local
+693-test frontend baseline, final focused directory/auth tests, scoped Go checks and ten
+intercepted desktop/mobile views pass. Five new Directory integration cases compile but
+are locally skipped; PR #11's isolated PostgreSQL step runs them with the two existing
+directory cases. Operator-restarted live reads remain separate exit evidence. No existing
+live membership was suspended and no schema/grant change was made.
 Consent-based invitations/acceptance follow separately; do not wrap global CreateAccount,
 RevokeAllForActor or a password reset in tenant administration. Reactivation and privileged
 role restoration belong with the later role-approval design.

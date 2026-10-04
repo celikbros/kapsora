@@ -120,6 +120,10 @@ paths:
       responses:
         '200':
           description: Tenant membership and assignments
+          headers:
+            ETag:
+              schema:
+                type: string
           content:
             application/json:
               schema:
@@ -130,6 +134,68 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /api/v1/admin/users/{membershipId}/suspend:
+    post:
+      tags: [Identity]
+      operationId: suspendTenantUser
+      description: |
+        Suspend one ACTIVE tenant membership without changing the global actor, credentials,
+        sessions, grants or any other tenant membership. Requires an active TENANT-scoped
+        identity.user.manage grant on the caller's current membership and password step-up.
+        A retry with the same idempotency key and request returns the recorded response.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - name: membershipId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuspendTenantUserRequest'
+      responses:
+        '200':
+          description: Suspended tenant membership and assigned roles
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantUserDetail'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Self-suspension, last usable tenant manager, invalid state or altered idempotency key
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: Membership ETag no longer matches
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '428':
+          description: If-Match is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
   /health/live:
     get:
       tags: [Health]
@@ -14809,6 +14875,11 @@ components:
             belongs to an active TENANT-scoped grant in this tenant and the request uses
             the backoffice or unrestricted app context; flattened permissions and scopes
             cannot establish that correlation.
+        canManageTenantUsers:
+          type: boolean
+          description: |
+            True only when identity.user.manage belongs to an active TENANT-scoped grant
+            in this tenant and the request uses backoffice or unrestricted app context.
         scopes:
           type: array
           items:
@@ -14827,7 +14898,7 @@ components:
     TenantUser:
       type: object
       additionalProperties: false
-      required: [id, displayName, actorType, actorStatus, membershipStatus, validFrom, validTo, validityEmpty]
+      required: [id, displayName, actorType, actorStatus, membershipStatus, validFrom, validTo, validityEmpty, rowVersion]
       properties:
         id:
           type: string
@@ -14852,6 +14923,19 @@ components:
         validityEmpty:
           type: boolean
           description: True when the stored membership period contains no dates.
+        rowVersion:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Concurrency version; use the detail ETag for suspension's If-Match.
+    SuspendTenantUserRequest:
+      type: object
+      additionalProperties: false
+      required: [reasonCode]
+      properties:
+        reasonCode:
+          type: string
+          enum: [ACCESS_REVIEW, STAFF_DEPARTURE, SECURITY_CONCERN]
     TenantUserPage:
       type: object
       additionalProperties: false

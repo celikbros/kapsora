@@ -62,10 +62,33 @@ function pickActive(me: UserContext, session: SessionInfo): TenantContext | null
   return me.tenants.find((t) => t.tenant.id === session.activeTenantId) ?? null;
 }
 
+function stepUpContext(state: SessionState): string {
+  return JSON.stringify([
+    state.status,
+    state.session?.actorId,
+    state.session?.expiresAt,
+    state.session?.activeTenantId,
+    state.csrfToken,
+    state.activeTenant?.tenant.id,
+    state.activeTenant?.canReadTenantUsers,
+    state.activeTenant?.canManageTenantUsers,
+    state.activeTenant?.permissions,
+    state.activeTenant?.scopes,
+  ]);
+}
+
 /** Creates the store bound to one Operations instance (one per app). */
 export function createSessionStore(ops: Operations): SessionStore {
   const store = createStore<SessionState>(() => ({ ...initial }));
   let inflight: Promise<SessionState> | null = null;
+  let contextRevision = 0;
+  let previousStepUpContext = stepUpContext(store.getState());
+  store.subscribe((state) => {
+    const next = stepUpContext(state);
+    if (next === previousStepUpContext) return;
+    previousStepUpContext = next;
+    contextRevision += 1;
+  });
 
   async function load(): Promise<SessionState> {
     store.setState({ status: 'loading', bootstrapError: null });
@@ -144,9 +167,27 @@ export function createSessionStore(ops: Operations): SessionStore {
       }
     },
     async stepUp(password) {
+      const before = store.getState();
+      const context = stepUpContext(before);
+      const revision = contextRevision;
+      if (before.status !== 'authenticated' || !before.session) {
+        throw new Error('Session changed during password confirmation');
+      }
       await ops.session.stepUp(password);
+      if (contextRevision !== revision || stepUpContext(store.getState()) !== context) {
+        throw new Error('Session changed during password confirmation');
+      }
       // The step-up window lives on the session, so read it back rather than guessing.
       const session = await ops.session.get();
+      if (
+        contextRevision !== revision ||
+        stepUpContext(store.getState()) !== context ||
+        session.actorId !== before.session.actorId ||
+        session.activeTenantId !== before.session.activeTenantId ||
+        session.expiresAt !== before.session.expiresAt
+      ) {
+        throw new Error('Session changed during password confirmation');
+      }
       store.setState({ session, csrfToken: session.csrfToken });
     },
     async switchTenant(tenantId) {

@@ -1091,14 +1091,58 @@ generated Go/TS/sqlc drift. Four synthetic 1440/390 list/detail views pass with 
 unexpected API reads or browser errors, including a 64-character role code and empty/
 unbounded assignment periods. No private user directory screenshots are retained.
 
-The new Directory PostgreSQL/HTTP tests are compiled but locally SKIPPED: the shared local
-dbtest harness resets the application role password, so that integration run is left to
-the added step in the existing isolated GitHub PostgreSQL job; use PR #11's current checks
-for its latest result. Live read-only confirmation still requires the operator's API restart.
-The next queued implementation is MGT-02a tenant membership suspension, with step-up,
+All six CI checks passed on directory head `de90aca`
+([run 37160262259](https://github.com/celikbros/kapsora/actions/runs/37160262259)), including
+685 frontend tests, 25 browser smoke tests and both Directory PostgreSQL/HTTP tests without
+skips. Those database tests remain locally SKIPPED because the shared dbtest harness resets
+the application role password; isolated CI supplies the database evidence.
+Live read-only confirmation still requires the operator's API restart.
+The active next implementation is [MGT-02a tenant membership suspension](delegation/WP-MGT-02a-membership-suspension.md), with step-up,
 concurrency/retry/audit and self/last-administrator protections. It must preserve global
 credentials/sessions and other tenants; onboarding and privileged role restoration are
 separate later slices. No membership command is included in the directory delivery.
+
+### Tenant membership suspension checkpoint (2026-10-04)
+
+MGT-02a now implements `POST /api/v1/admin/users/{membershipId}/suspend`. It requires
+correlated, currently valid TENANT `identity.user.manage`, CSRF, password step-up,
+quoted If-Match and idempotency. List/detail expose membership rowVersion; detail and
+command success carry ETag. The command changes only ACTIVE membership status to
+SUSPENDED. It preserves the global actor, credentials, sessions, validity, role history
+and other tenants. The next protected request rejects the suspended membership.
+
+Self-suspension is refused. Tenant serialization, target locking and reauthorization
+preserve an effective manager under competing commands. The effective-manager predicate
+uses active actor/membership, valid membership/grant periods and the actual TENANT
+management permission, including qualified service actors. One transactional ADMIN event
+records fixed old/new status and a bounded reason; audit failure rolls back the change.
+Authorization and step-up precede idempotent replay. This command alone opts into
+If-Match hashing, so a changed version cannot reuse its accepted key; other commands
+retain their existing hash behavior.
+
+The UI requires a selected reason and explicit current-institution confirmation. Pending,
+uncertain and in-progress retries, including password cancellation/reopen, preserve body,
+ETag and key. Definitive refusals require an explicit reload. Manage capability changes
+remount/reset the directory context; deferred commands and responses check live context.
+Shared authentication discards late step-up results, including context A-to-B-to-A changes,
+instead of overwriting a newer session/CSRF token. No new permissions or schema are added.
+
+Local evidence: the full frontend suite passed 693 tests in 81 files before four final
+auth regressions were added; final targeted directory UI (11) and auth store (9) tests pass.
+Workspace typecheck, formatting, all app builds, tracked-tree Go vet, scoped identity/
+idempotency/API lint, contract lint/compatibility and zero Go/TS/sqlc regeneration drift pass.
+Ten synthetic desktop/mobile views cover detail, confirmation, step-up, conflict and
+success with no overflow, unexpected API reads or browser errors. The intercepted flow
+retains the same key through step-up, then uses a newly loaded version only after explicit
+conflict reload. It makes zero real API requests.
+
+Five new PostgreSQL/HTTP cases cover tenant/session isolation, replay/audit/rollback,
+same-version races, competing-manager suspension and the usable-manager predicate;
+they compile but are locally SKIPPED. The existing isolated CI Directory step runs all
+seven directory integration cases; use PR #11's current checks for the result.
+Live read confirmation remains pending the operator's restart. No existing live member
+was suspended. Invitation/acceptance and later role restoration remain separate tasks.
+The unavailable Impeccable skill was not run; visual review used PRODUCT/DESIGN constraints.
 
 ### PC-06 technical acceptance checkpoint (2026-10-03)
 

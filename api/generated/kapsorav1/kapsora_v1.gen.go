@@ -4012,6 +4012,27 @@ func (e StaySegmentType) Valid() bool {
 	}
 }
 
+// Defines values for SuspendTenantUserRequestReasonCode.
+const (
+	ACCESSREVIEW    SuspendTenantUserRequestReasonCode = "ACCESS_REVIEW"
+	SECURITYCONCERN SuspendTenantUserRequestReasonCode = "SECURITY_CONCERN"
+	STAFFDEPARTURE  SuspendTenantUserRequestReasonCode = "STAFF_DEPARTURE"
+)
+
+// Valid indicates whether the value is a known member of the SuspendTenantUserRequestReasonCode enum.
+func (e SuspendTenantUserRequestReasonCode) Valid() bool {
+	switch e {
+	case ACCESSREVIEW:
+		return true
+	case SECURITYCONCERN:
+		return true
+	case STAFFDEPARTURE:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for TaxBehaviour.
 const (
 	EXCLUSIVE TaxBehaviour = "EXCLUSIVE"
@@ -12359,6 +12380,14 @@ type StaySegmentInput struct {
 // constraint, because a companion is in the room while the patient is.
 type StaySegmentType string
 
+// SuspendTenantUserRequest defines model for SuspendTenantUserRequest.
+type SuspendTenantUserRequest struct {
+	ReasonCode SuspendTenantUserRequestReasonCode `json:"reasonCode"`
+}
+
+// SuspendTenantUserRequestReasonCode defines model for SuspendTenantUserRequest.ReasonCode.
+type SuspendTenantUserRequestReasonCode string
+
 // TaxBehaviour Whether the agreed amounts already include VAT, exclude it, or are exempt.
 type TaxBehaviour string
 
@@ -12383,6 +12412,10 @@ type TenantContext struct {
 	// Apps The apps the account has work in here, from all of its grants. The single
 	// sign-in sends a person straight to the one app, or offers the choice.
 	Apps []TenantContextApps `json:"apps"`
+
+	// CanManageTenantUsers True only when identity.user.manage belongs to an active TENANT-scoped grant
+	// in this tenant and the request uses backoffice or unrestricted app context.
+	CanManageTenantUsers *bool `json:"canManageTenantUsers,omitempty"`
 
 	// CanReadTenantUsers Server-computed Management Users capability. True only when identity.user.read
 	// belongs to an active TENANT-scoped grant in this tenant and the request uses
@@ -12438,8 +12471,11 @@ type TenantUser struct {
 	// Id Tenant membership ID; never a global actor ID.
 	Id               openapi_types.UUID     `json:"id"`
 	MembershipStatus TenantMembershipStatus `json:"membershipStatus"`
-	ValidFrom        *openapi_types.Date    `json:"validFrom"`
-	ValidTo          *openapi_types.Date    `json:"validTo"`
+
+	// RowVersion Concurrency version; use the detail ETag for suspension's If-Match.
+	RowVersion int64               `json:"rowVersion"`
+	ValidFrom  *openapi_types.Date `json:"validFrom"`
+	ValidTo    *openapi_types.Date `json:"validTo"`
 
 	// ValidityEmpty True when the stored membership period contains no dates.
 	ValidityEmpty bool `json:"validityEmpty"`
@@ -13388,6 +13424,18 @@ type ListTenantUsersParams struct {
 type GetTenantUserParams struct {
 	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
 	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// SuspendTenantUserParams defines parameters for SuspendTenantUser.
+type SuspendTenantUserParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
 // ListApprovalPoliciesParams defines parameters for ListApprovalPolicies.
@@ -17133,6 +17181,9 @@ type PutRoomTypeInventoryJSONRequestBody = PutRoomTypeInventory
 // JoinWaitlistJSONRequestBody defines body for JoinWaitlist for application/json ContentType.
 type JoinWaitlistJSONRequestBody = JoinWaitlistRequest
 
+// SuspendTenantUserJSONRequestBody defines body for SuspendTenantUser for application/json ContentType.
+type SuspendTenantUserJSONRequestBody = SuspendTenantUserRequest
+
 // PutApprovalPoliciesJSONRequestBody defines body for PutApprovalPolicies for application/json ContentType.
 type PutApprovalPoliciesJSONRequestBody = PutApprovalPolicies
 
@@ -17823,6 +17874,9 @@ type ServerInterface interface {
 
 	// (GET /api/v1/admin/users/{membershipId})
 	GetTenantUser(w http.ResponseWriter, r *http.Request, membershipId openapi_types.UUID, params GetTenantUserParams)
+
+	// (POST /api/v1/admin/users/{membershipId}/suspend)
+	SuspendTenantUser(w http.ResponseWriter, r *http.Request, membershipId openapi_types.UUID, params SuspendTenantUserParams)
 
 	// (GET /api/v1/approval-policies)
 	ListApprovalPolicies(w http.ResponseWriter, r *http.Request, params ListApprovalPoliciesParams)
@@ -18841,6 +18895,11 @@ func (_ Unimplemented) ListTenantUsers(w http.ResponseWriter, r *http.Request, p
 
 // (GET /api/v1/admin/users/{membershipId})
 func (_ Unimplemented) GetTenantUser(w http.ResponseWriter, r *http.Request, membershipId openapi_types.UUID, params GetTenantUserParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/admin/users/{membershipId}/suspend)
+func (_ Unimplemented) SuspendTenantUser(w http.ResponseWriter, r *http.Request, membershipId openapi_types.UUID, params SuspendTenantUserParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -22506,6 +22565,106 @@ func (siw *ServerInterfaceWrapper) GetTenantUser(w http.ResponseWriter, r *http.
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetTenantUser(w, r, membershipId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SuspendTenantUser operation middleware
+func (siw *ServerInterfaceWrapper) SuspendTenantUser(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "membershipId" -------------
+	var membershipId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "membershipId", chi.URLParam(r, "membershipId"), &membershipId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "membershipId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SuspendTenantUserParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SuspendTenantUser(w, r, membershipId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -47390,6 +47549,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/v1/admin/users/{membershipId}", wrapper.GetTenantUser)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/users/{membershipId}/suspend", wrapper.SuspendTenantUser)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/health/live", wrapper.GetLiveness)
 	})
 	r.Group(func(r chi.Router) {
@@ -50750,15 +50912,25 @@ type GetTenantUserResponseObject interface {
 	VisitGetTenantUserResponse(w http.ResponseWriter) error
 }
 
-type GetTenantUser200JSONResponse TenantUserDetail
+type GetTenantUser200ResponseHeaders struct {
+	ETag *string
+}
+
+type GetTenantUser200JSONResponse struct {
+	Body    TenantUserDetail
+	Headers GetTenantUser200ResponseHeaders
+}
 
 func (response GetTenantUser200JSONResponse) VisitGetTenantUserResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
 		return err
 	}
 	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
 	w.WriteHeader(200)
 	_, err := buf.WriteTo(w)
 	return err
@@ -50808,6 +50980,146 @@ func (response GetTenantUser404ApplicationProblemPlusJSONResponse) VisitGetTenan
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SuspendTenantUserRequestObject struct {
+	MembershipId openapi_types.UUID `json:"membershipId"`
+	Params       SuspendTenantUserParams
+	Body         *SuspendTenantUserJSONRequestBody
+}
+
+type SuspendTenantUserResponseObject interface {
+	VisitSuspendTenantUserResponse(w http.ResponseWriter) error
+}
+
+type SuspendTenantUser200ResponseHeaders struct {
+	ETag *string
+}
+
+type SuspendTenantUser200JSONResponse struct {
+	Body    TenantUserDetail
+	Headers SuspendTenantUser200ResponseHeaders
+}
+
+func (response SuspendTenantUser200JSONResponse) VisitSuspendTenantUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SuspendTenantUser400ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response SuspendTenantUser400ApplicationProblemPlusJSONResponse) VisitSuspendTenantUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SuspendTenantUser401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response SuspendTenantUser401ApplicationProblemPlusJSONResponse) VisitSuspendTenantUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SuspendTenantUser403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response SuspendTenantUser403ApplicationProblemPlusJSONResponse) VisitSuspendTenantUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SuspendTenantUser404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response SuspendTenantUser404ApplicationProblemPlusJSONResponse) VisitSuspendTenantUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SuspendTenantUser409ApplicationProblemPlusJSONResponse Problem
+
+func (response SuspendTenantUser409ApplicationProblemPlusJSONResponse) VisitSuspendTenantUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SuspendTenantUser412ApplicationProblemPlusJSONResponse Problem
+
+func (response SuspendTenantUser412ApplicationProblemPlusJSONResponse) VisitSuspendTenantUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SuspendTenantUser428ApplicationProblemPlusJSONResponse Problem
+
+func (response SuspendTenantUser428ApplicationProblemPlusJSONResponse) VisitSuspendTenantUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -77776,6 +78088,9 @@ type StrictServerInterface interface {
 	// (GET /api/v1/admin/users/{membershipId})
 	GetTenantUser(ctx context.Context, request GetTenantUserRequestObject) (GetTenantUserResponseObject, error)
 
+	// (POST /api/v1/admin/users/{membershipId}/suspend)
+	SuspendTenantUser(ctx context.Context, request SuspendTenantUserRequestObject) (SuspendTenantUserResponseObject, error)
+
 	// (GET /api/v1/approval-policies)
 	ListApprovalPolicies(ctx context.Context, request ListApprovalPoliciesRequestObject) (ListApprovalPoliciesResponseObject, error)
 
@@ -79554,6 +79869,40 @@ func (sh *strictHandler) GetTenantUser(w http.ResponseWriter, r *http.Request, m
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetTenantUserResponseObject); ok {
 		if err := validResponse.VisitGetTenantUserResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SuspendTenantUser operation middleware
+func (sh *strictHandler) SuspendTenantUser(w http.ResponseWriter, r *http.Request, membershipId openapi_types.UUID, params SuspendTenantUserParams) {
+	var request SuspendTenantUserRequestObject
+
+	request.MembershipId = membershipId
+	request.Params = params
+
+	var body SuspendTenantUserJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SuspendTenantUser(ctx, request.(SuspendTenantUserRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SuspendTenantUser")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SuspendTenantUserResponseObject); ok {
+		if err := validResponse.VisitSuspendTenantUserResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

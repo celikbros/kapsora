@@ -651,7 +651,7 @@
   },
   "adminUsers": {
     "title": "Kullanıcılar",
-    "purpose": "Seçili kurumun üyeliklerini okuyun. Bu dizin giriş ve iletişim bilgilerini göstermez; hesap değişikliği sunmaz.",
+    "purpose": "Seçili kurumun üyeliklerini okuyun. Yetkili yöneticiler aktif üyeliği ayrıntı sayfasında askıya alabilir. Dizin giriş ve iletişim bilgilerini göstermez.",
     "sections": [
       {
         "label": "Üyelik durumu",
@@ -665,7 +665,7 @@
   },
   "adminUser": {
     "title": "Üyelik ayrıntısı",
-    "purpose": "Bir kurum üyeliğini ve ona atanmış rolleri okuyun.",
+    "purpose": "Bir kurum üyeliğini ve ona atanmış rolleri okuyun. Yetkili yöneticiler gerekçe seçip kuruma özgü etkiyi onaylayarak aktif üyeliği askıya alabilir.",
     "sections": [
       {
         "label": "Atanmış roller",

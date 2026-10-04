@@ -10,6 +10,7 @@ export type {
   TenantUserDetail,
   TenantMembershipStatus,
   TenantUserQuery,
+  SuspendTenantUserReasonCode,
 } from './admin';
 export type {
   CreateOrganizationRequest,

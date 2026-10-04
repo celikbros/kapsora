@@ -57,6 +57,9 @@ type Options struct {
 	MaxRequestBytes int64         // largest request body hashed; default 1 MiB
 	StaleInProgress time.Duration // abandoned IN_PROGRESS records are replaced after this; default 5m
 	Logger          *slog.Logger
+	// HashHeaders are included in this command's request identity. Other commands
+	// retain their existing body/path hash when this is empty.
+	HashHeaders []string
 }
 
 func (o Options) withDefaults() Options {
@@ -128,7 +131,7 @@ func Middleware(pool *pgxpool.Pool, opts Options) func(http.Handler) http.Handle
 				return
 			}
 			r.Body = io.NopCloser(bytes.NewReader(body))
-			hash := requestHash(r, scope, body)
+			hash := requestHashWithHeaders(r, scope, body, opts.HashHeaders)
 
 			ctx := r.Context()
 			tc := db.TenantContext{TenantID: scope.TenantID, ActorID: scope.ActorID}
@@ -318,6 +321,10 @@ func PurgeExpired(ctx context.Context, pool *pgxpool.Pool, tenantID uuid.UUID, b
 }
 
 func requestHash(r *http.Request, scope Scope, body []byte) []byte {
+	return requestHashWithHeaders(r, scope, body, nil)
+}
+
+func requestHashWithHeaders(r *http.Request, scope Scope, body []byte, headers []string) []byte {
 	h := sha256.New()
 	h.Write([]byte(r.Method))
 	h.Write([]byte{0})
@@ -326,6 +333,12 @@ func requestHash(r *http.Request, scope Scope, body []byte) []byte {
 	h.Write([]byte(scope.TenantID.String()))
 	h.Write([]byte{0})
 	h.Write(canonicalRequestBody(r, body))
+	for _, name := range headers {
+		h.Write([]byte{0})
+		h.Write([]byte(http.CanonicalHeaderKey(name)))
+		h.Write([]byte{0})
+		h.Write([]byte(strings.TrimSpace(r.Header.Get(name))))
+	}
 	return h.Sum(nil)
 }
 

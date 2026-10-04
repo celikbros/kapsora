@@ -68,8 +68,27 @@
     "exportsDescription": "Dışa aktarım taleplerini ve durumlarını görüntüleyin. Kullanılabilen işlemler yetkilerinize bağlıdır."
   },
   "adminUsers": {
+    "suspend": {
+      "action": "Üyeliği askıya al",
+      "title": "Kurum üyeliğini askıya al",
+      "impact": "{{name}} adlı kişinin {{tenant}} tarafından verilen erişimi durur. Diğer kurumlardaki hesabı etkilenmez.",
+      "target": "Üyelik: {{name}} — {{tenant}}",
+      "reason": "Gerekçe",
+      "chooseReason": "Gerekçe seçin",
+      "reasons": {
+        "ACCESS_REVIEW": "Erişim incelemesi",
+        "STAFF_DEPARTURE": "Personel ayrılışı",
+        "SECURITY_CONCERN": "Güvenlik endişesi"
+      },
+      "confirm": "{{tenant}} kurumundaki üyeliğin askıya alınacağını anlıyorum.",
+      "uncertain": "Sonuç belirsiz. Yeniden deneme aynı isteği gönderir ve ikinci bir askıya alma oluşturmaz.",
+      "conflict": "Üyelik değişti veya bu işlem engellendi. Yeniden denemeden önce güncel üyeliği yükleyin.",
+      "reload": "Üyeliği yeniden yükle",
+      "retry": "Aynı isteği yeniden dene",
+      "done": "Üyelik askıya alındı"
+    },
     "title": "Kullanıcılar",
-    "intro": "Seçili kurumun üyelikleri. Bu dizin yalnızca okunur.",
+    "intro": "Seçili kurumun üyelikleri. Yetkili yöneticiler aktif üyeliği ayrıntı sayfasından askıya alabilir.",
     "detailIntro": "Seçili kurumdaki üyelik durumu ve atanmış roller.",
     "statusFilter": "Üyelik durumu",
     "allStatuses": "Tüm durumlar",
@@ -446,6 +465,10 @@
     "INVALID_REQUEST_BODY": "İstek sunucu tarafından anlaşılamadı.",
     "RESOURCE_NOT_FOUND": "Kayıt bulunamadı ya da bu kurumda görünmüyor.",
     "ETAG_MISMATCH": "Kayıt siz düzenlerken değişti.",
+    "SELF_SUSPENSION_FORBIDDEN": "Kendi üyeliğinizi askıya alamazsınız.",
+    "LAST_TENANT_MANAGER": "Bu üyelik kurumun son aktif yöneticisine aittir.",
+    "MEMBERSHIP_STATE_CONFLICT": "Yalnızca aktif üyelik askıya alınabilir.",
+    "SUSPENSION_REASON_INVALID": "Üyeliği askıya almak için geçerli bir gerekçe seçin.",
     "IF_MATCH_REQUIRED": "Sürüm bilgisi eksik gönderildi. Sayfayı yenileyin.",
     "UNSUPPORTED_MEDIA_TYPE": "İstek biçimi desteklenmiyor.",
     "CURSOR_INVALID": "Sayfa imleci geçersiz. Listeyi baştan yükleyin.",

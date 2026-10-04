@@ -50,7 +50,7 @@ func TestDirectoryPermissionCorrelatesActiveTenantGrantWithReadPermission(t *tes
 	}); err != nil {
 		t.Fatal(err)
 	}
-	cookie, _ := directorySession(t, s)
+	cookie, csrf := directorySession(t, s)
 	for _, app := range []string{"", "backoffice", "provider"} {
 		code, body := directoryCall(s, cookie, s.tenantA, "/api/v1/admin/users", app)
 		if code != http.StatusForbidden || body["code"] != "PERMISSION_DENIED" {
@@ -60,14 +60,32 @@ func TestDirectoryPermissionCorrelatesActiveTenantGrantWithReadPermission(t *tes
 	me := s.do(call{method: http.MethodGet, path: "/api/v1/me", cookie: cookie})
 	var contextView struct {
 		Tenants []struct {
-			CanReadTenantUsers bool `json:"canReadTenantUsers"`
+			CanReadTenantUsers   bool `json:"canReadTenantUsers"`
+			CanManageTenantUsers bool `json:"canManageTenantUsers"`
 		} `json:"tenants"`
 	}
 	if err := json.Unmarshal(me.Body.Bytes(), &contextView); err != nil {
 		t.Fatal(err)
 	}
-	if len(contextView.Tenants) != 1 || contextView.Tenants[0].CanReadTenantUsers {
+	if len(contextView.Tenants) != 1 || contextView.Tenants[0].CanReadTenantUsers || contextView.Tenants[0].CanManageTenantUsers {
 		t.Fatal("organization grant became tenant directory capability")
+	}
+	stepUpDirectory(t, s, cookie, csrf)
+	var ownMembership uuid.UUID
+	if err := s.h.Admin.QueryRow(ctx, `SELECT id FROM iam.tenant_membership WHERE tenant_id=$1 AND actor_id=$2`, s.tenantA, s.actor).Scan(&ownMembership); err != nil {
+		t.Fatal(err)
+	}
+	for _, app := range []string{"", "backoffice", "provider"} {
+		key := "scoped-manage-denied-" + app + "-request"
+		headers := map[string]string{identityhttp.TenantHeader: s.tenantA.String(), "Idempotency-Key": key, "If-Match": `"1"`}
+		if app != "" {
+			headers[identity.AppHeader] = app
+		}
+		rec := s.do(call{method: http.MethodPost, path: "/api/v1/admin/users/" + ownMembership.String() + "/suspend", cookie: cookie, csrf: csrf,
+			headers: headers, body: `{"reasonCode":"ACCESS_REVIEW"}`})
+		if rec.Code != http.StatusForbidden || decodeBody(t, rec)["code"] != "PERMISSION_DENIED" {
+			t.Fatalf("organization-only management access with app %q: %d", app, rec.Code)
+		}
 	}
 
 	if _, err := s.prov.GrantRole(ctx, application.GrantRoleInput{TenantID: s.tenantA, ActorID: s.actor, RoleCode: "TENANT_ADMIN"}); err != nil {
@@ -152,14 +170,14 @@ func TestDirectoryTenantIsolationPagingAndResponseAllowlist(t *testing.T) {
 	if len(secondItems) != 1 || secondItems[0].(map[string]any)["id"] == items[0].(map[string]any)["id"] {
 		t.Fatal("keyset page repeated a membership")
 	}
-	assertKeys(t, items[0], []string{"actorStatus", "actorType", "displayName", "id", "membershipStatus", "validFrom", "validTo", "validityEmpty"})
+	assertKeys(t, items[0], []string{"actorStatus", "actorType", "displayName", "id", "membershipStatus", "rowVersion", "validFrom", "validTo", "validityEmpty"})
 	member := items[0].(map[string]any)
 	code, detail := directoryCall(s, cookie, s.tenantA, "/api/v1/admin/users/"+member["id"].(string), "backoffice")
 	if code != http.StatusOK {
 		t.Fatalf("detail: %d", code)
 	}
 	assertKeys(t, detail, []string{"assignedRoles", "membership"})
-	assertKeys(t, detail["membership"], []string{"actorStatus", "actorType", "displayName", "id", "membershipStatus", "validFrom", "validTo", "validityEmpty"})
+	assertKeys(t, detail["membership"], []string{"actorStatus", "actorType", "displayName", "id", "membershipStatus", "rowVersion", "validFrom", "validTo", "validityEmpty"})
 	roles := detail["assignedRoles"].([]any)
 	if len(roles) == 0 {
 		t.Fatal("assigned roles missing")

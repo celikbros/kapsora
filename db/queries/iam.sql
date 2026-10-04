@@ -16,6 +16,53 @@ SELECT EXISTS (
    AND rp.permission_code = 'identity.user.read'
 );
 
+-- name: CanManageTenantUsers :one
+SELECT EXISTS (
+  SELECT 1 FROM iam.tenant_membership m
+  JOIN iam.actor a ON a.id = m.actor_id
+  JOIN iam.access_grant g ON g.tenant_id = m.tenant_id AND g.tenant_membership_id = m.id
+  JOIN iam.role_permission rp ON rp.tenant_id = g.tenant_id AND rp.role_id = g.role_id
+ WHERE m.tenant_id = $1 AND m.id = $2 AND m.actor_id = $3
+   AND a.status = 'ACTIVE' AND m.membership_status = 'ACTIVE' AND m.valid_period @> CURRENT_DATE
+   AND g.scope_type = 'TENANT' AND g.valid_period @> clock_timestamp()
+   AND rp.permission_code = 'identity.user.manage'
+);
+
+-- name: LockTenantForUserManagement :one
+SELECT id FROM platform.tenant WHERE id = $1 FOR UPDATE;
+
+-- name: LockTenantUserForSuspension :one
+SELECT id, actor_id, membership_status, row_version
+  FROM iam.tenant_membership
+ WHERE tenant_id = $1 AND id = $2 FOR UPDATE;
+
+-- name: IsUsableTenantUserManager :one
+SELECT EXISTS (
+  SELECT 1 FROM iam.tenant_membership m
+  JOIN iam.actor a ON a.id = m.actor_id
+  JOIN iam.access_grant g ON g.tenant_id = m.tenant_id AND g.tenant_membership_id = m.id
+  JOIN iam.role_permission rp ON rp.tenant_id = g.tenant_id AND rp.role_id = g.role_id
+ WHERE m.tenant_id = $1 AND m.id = $2
+   AND a.status = 'ACTIVE' AND m.membership_status = 'ACTIVE' AND m.valid_period @> CURRENT_DATE
+   AND g.scope_type = 'TENANT' AND g.valid_period @> clock_timestamp()
+   AND rp.permission_code = 'identity.user.manage'
+);
+
+-- name: CountOtherUsableTenantUserManagers :one
+SELECT count(DISTINCT m.id) FROM iam.tenant_membership m
+  JOIN iam.actor a ON a.id = m.actor_id
+  JOIN iam.access_grant g ON g.tenant_id = m.tenant_id AND g.tenant_membership_id = m.id
+  JOIN iam.role_permission rp ON rp.tenant_id = g.tenant_id AND rp.role_id = g.role_id
+ WHERE m.tenant_id = $1 AND m.id <> $2
+   AND a.status = 'ACTIVE' AND m.membership_status = 'ACTIVE' AND m.valid_period @> CURRENT_DATE
+   AND g.scope_type = 'TENANT' AND g.valid_period @> clock_timestamp()
+   AND rp.permission_code = 'identity.user.manage';
+
+-- name: SuspendTenantUser :one
+UPDATE iam.tenant_membership SET membership_status = 'SUSPENDED'
+ WHERE tenant_id = $1 AND id = $2 AND membership_status = 'ACTIVE' AND row_version = $3
+ RETURNING row_version;
+
 -- name: ListTenantUsers :many
 SELECT m.id, a.display_name, a.actor_type, a.status AS actor_status,
        m.membership_status,
@@ -23,7 +70,7 @@ SELECT m.id, a.display_name, a.actor_type, a.status AS actor_status,
             THEN '' ELSE lower(m.valid_period)::text END AS valid_from,
        CASE WHEN isempty(m.valid_period) OR upper_inf(m.valid_period) OR upper(m.valid_period) = 'infinity'::date
             THEN '' ELSE upper(m.valid_period)::text END AS valid_to,
-       isempty(m.valid_period) AS validity_empty, m.created_at
+       isempty(m.valid_period) AS validity_empty, m.created_at, m.row_version
   FROM iam.tenant_membership m JOIN iam.actor a ON a.id = m.actor_id
  WHERE m.tenant_id = $1
    AND (sqlc.narg('membership_status')::text IS NULL OR m.membership_status = sqlc.narg('membership_status'))
@@ -39,7 +86,7 @@ SELECT m.id, a.display_name, a.actor_type, a.status AS actor_status,
             THEN '' ELSE lower(m.valid_period)::text END AS valid_from,
        CASE WHEN isempty(m.valid_period) OR upper_inf(m.valid_period) OR upper(m.valid_period) = 'infinity'::date
             THEN '' ELSE upper(m.valid_period)::text END AS valid_to,
-       isempty(m.valid_period) AS validity_empty, m.created_at
+       isempty(m.valid_period) AS validity_empty, m.created_at, m.row_version
   FROM iam.tenant_membership m JOIN iam.actor a ON a.id = m.actor_id
  WHERE m.tenant_id = $1 AND m.id = $2;
 

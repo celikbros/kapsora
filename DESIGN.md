@@ -859,6 +859,17 @@ context discards the previous page's records. Credentials, contact/login identif
 scope/person identifiers are not part of this view. Read-only delivery presents no inactive
 provisioning or role-change controls.
 
+**Membership suspension stays in its tenant.** A loaded ACTIVE membership offers the
+action only with the server's correlated management capability. Confirmation names the
+person and institution, explains the tenant-only effect and requires a reason and an
+explicit checkbox. Password confirmation and uncertain retries preserve the same body,
+ETag and command key; an in-progress response also retains that command. Cancelling the
+password prompt permits an identical retry. Definitive conflicts/refusals offer an
+explicit reload before a new attempt. The confirmed server membership replaces the
+detail immediately; account status and assigned-role history remain separate. Context
+changes close the form, block deferred dispatch and prevent late responses or password
+confirmation from restoring an obsolete session or directory cache.
+
 ## Motion
 
 Toasts slide up 160ms ease-out. The member surface adds the system's one authored moment:

@@ -1,10 +1,14 @@
 package identityhttp
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -24,9 +28,31 @@ func NewDirectoryHandler(svc *application.DirectoryService, middleware *Middlewa
 	return &DirectoryHandler{svc: svc, middleware: middleware, logger: logger}
 }
 
-func (h *DirectoryHandler) Routes(r chi.Router) {
+func (h *DirectoryHandler) Routes(r chi.Router, suspendMiddleware func(http.Handler) http.Handler) {
 	r.Get("/", h.List)
 	r.Get("/{membershipId}", h.Get)
+	r.With(h.SuspendAuthorization, suspendMiddleware).Post("/{membershipId}/suspend", h.Suspend)
+}
+
+// SuspendAuthorization runs outside idempotency so even stored replays require a
+// currently valid tenant management grant and fresh password step-up.
+func (h *DirectoryHandler) SuspendAuthorization(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rc, err := identity.RequireStepUp(r.Context(), "identity.user.manage")
+		if err == nil {
+			err = h.svc.AuthorizeManage(r.Context(), rc)
+		}
+		if err != nil {
+			if errors.Is(err, identity.ErrPermissionDenied) || errors.Is(err, identity.ErrStepUpRequired) || errors.Is(err, identity.ErrUnauthenticated) {
+				h.middleware.Deny(w, r, err, "identity.user.manage")
+			} else {
+				h.logger.Error("identity directory authorization failed", "error", err)
+				problem(w, r, http.StatusInternalServerError, "generic/internal-error", "INTERNAL_ERROR", "Beklenmeyen hata", "")
+			}
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (h *DirectoryHandler) require(w http.ResponseWriter, r *http.Request) (identity.RequestContext, bool) {
@@ -47,6 +73,7 @@ type membershipJSON struct {
 	ValidFrom        *string `json:"validFrom"`
 	ValidTo          *string `json:"validTo"`
 	ValidityEmpty    bool    `json:"validityEmpty"`
+	RowVersion       int64   `json:"rowVersion"`
 }
 
 type roleJSON struct {
@@ -62,7 +89,7 @@ type roleJSON struct {
 func membershipBody(m application.DirectoryMembership) membershipJSON {
 	return membershipJSON{ID: m.ID.String(), DisplayName: m.DisplayName, ActorType: m.ActorType,
 		ActorStatus: m.ActorStatus, MembershipStatus: m.MembershipStatus,
-		ValidFrom: m.ValidFrom, ValidTo: m.ValidTo, ValidityEmpty: m.ValidityEmpty}
+		ValidFrom: m.ValidFrom, ValidTo: m.ValidTo, ValidityEmpty: m.ValidityEmpty, RowVersion: m.RowVersion}
 }
 
 func (h *DirectoryHandler) List(w http.ResponseWriter, r *http.Request) {
@@ -120,6 +147,11 @@ func (h *DirectoryHandler) Get(w http.ResponseWriter, r *http.Request) {
 		h.writeError(w, r, err)
 		return
 	}
+	w.Header().Set("ETag", directoryETag(detail.Membership.RowVersion))
+	h.writeDetail(w, detail)
+}
+
+func (h *DirectoryHandler) writeDetail(w http.ResponseWriter, detail application.DirectoryDetail) {
 	roles := make([]roleJSON, 0, len(detail.AssignedRoles))
 	for _, role := range detail.AssignedRoles {
 		roles = append(roles, roleJSON{Code: role.Code, Name: role.Name, System: role.System,
@@ -130,6 +162,69 @@ func (h *DirectoryHandler) Get(w http.ResponseWriter, r *http.Request) {
 		Membership    membershipJSON `json:"membership"`
 		AssignedRoles []roleJSON     `json:"assignedRoles"`
 	}{membershipBody(detail.Membership), roles})
+}
+
+func directoryETag(version int64) string { return fmt.Sprintf(`"%d"`, version) }
+
+func (h *DirectoryHandler) Suspend(w http.ResponseWriter, r *http.Request) {
+	rc, err := identity.RequireStepUp(r.Context(), "identity.user.manage")
+	if err != nil {
+		h.middleware.Deny(w, r, err, "identity.user.manage")
+		return
+	}
+	id, err := uuid.Parse(chi.URLParam(r, "membershipId"))
+	if err != nil {
+		h.notFound(w, r)
+		return
+	}
+	rawVersion := strings.TrimSpace(r.Header.Get("If-Match"))
+	version, err := strconv.ParseInt(strings.Trim(rawVersion, `"`), 10, 64)
+	if err != nil || version < 1 || rawVersion != directoryETag(version) {
+		problem(w, r, http.StatusPreconditionRequired, "generic/precondition-required", "IF_MATCH_REQUIRED", "If-Match başlığı gerekli", "")
+		return
+	}
+	var body struct {
+		ReasonCode string `json:"reasonCode"`
+	}
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&body); err != nil {
+		problem(w, r, http.StatusBadRequest, "generic/invalid-request-body", "INVALID_REQUEST_BODY", "Geçersiz istek gövdesi", "")
+		return
+	}
+	if err := decoder.Decode(new(any)); !errors.Is(err, io.EOF) {
+		problem(w, r, http.StatusBadRequest, "generic/invalid-request-body", "INVALID_REQUEST_BODY", "Geçersiz istek gövdesi", "")
+		return
+	}
+	detail, err := h.svc.Suspend(r.Context(), rc, id, version, body.ReasonCode)
+	if err != nil {
+		h.writeSuspendError(w, r, err)
+		return
+	}
+	w.Header().Set("ETag", directoryETag(detail.Membership.RowVersion))
+	h.writeDetail(w, detail)
+}
+
+func (h *DirectoryHandler) writeSuspendError(w http.ResponseWriter, r *http.Request, err error) {
+	switch {
+	case errors.Is(err, identity.ErrPermissionDenied):
+		h.middleware.Deny(w, r, err, "identity.user.manage")
+	case errors.Is(err, application.ErrMembershipNotFound):
+		h.notFound(w, r)
+	case errors.Is(err, application.ErrDirectoryReasonInvalid):
+		problem(w, r, http.StatusBadRequest, "identity/suspension-reason-invalid", "SUSPENSION_REASON_INVALID", "Geçersiz askıya alma nedeni", "")
+	case errors.Is(err, application.ErrDirectorySelfSuspension):
+		problem(w, r, http.StatusConflict, "identity/self-suspension-forbidden", "SELF_SUSPENSION_FORBIDDEN", "Kendi üyeliğiniz askıya alınamaz", "")
+	case errors.Is(err, application.ErrDirectoryLastManager):
+		problem(w, r, http.StatusConflict, "identity/last-tenant-manager", "LAST_TENANT_MANAGER", "Son yönetici askıya alınamaz", "")
+	case errors.Is(err, application.ErrDirectoryStateConflict):
+		problem(w, r, http.StatusConflict, "identity/membership-state-conflict", "MEMBERSHIP_STATE_CONFLICT", "Üyelik etkin değil", "")
+	case errors.Is(err, application.ErrDirectoryVersionConflict):
+		problem(w, r, http.StatusPreconditionFailed, "generic/etag-mismatch", "ETAG_MISMATCH", "Üyelik değişti", "")
+	default:
+		h.logger.Error("identity directory suspension failed", "error", err)
+		problem(w, r, http.StatusInternalServerError, "generic/internal-error", "INTERNAL_ERROR", "Beklenmeyen hata", "")
+	}
 }
 
 func (h *DirectoryHandler) badQuery(w http.ResponseWriter, r *http.Request) {

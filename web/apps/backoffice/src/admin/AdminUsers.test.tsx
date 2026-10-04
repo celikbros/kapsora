@@ -1,3 +1,4 @@
+import { ApiError } from '@kapsora/api-client';
 import { createMockServer } from '@kapsora/api-client/mocks/node';
 import { initI18n } from '@kapsora/i18n';
 import { createMemoryHistory } from '@tanstack/react-router';
@@ -169,6 +170,7 @@ it('drops a delayed read when actor context changes even if the capability stays
         actorType: 'HUMAN',
         actorStatus: 'ACTIVE',
         membershipStatus: 'SUSPENDED',
+        rowVersion: 1,
         validFrom: null,
         validTo: null,
         validityEmpty: false,
@@ -189,4 +191,170 @@ it('drops a delayed read when actor context changes even if the capability stays
   expect(
     keys.every((key) => key.includes(newActorId) && !key.includes(state.session!.actorId)),
   ).toBe(true);
+});
+
+async function openSuspend(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole('link', { name: 'Refik İnceleyici' }));
+  const detail = await screen.findByTestId('admin-user-detail-page');
+  await user.click(within(detail).getByRole('button', { name: 'Üyeliği askıya al' }));
+  return screen.getByRole('dialog', { name: 'Kurum üyeliğini askıya al' });
+}
+
+async function chooseSuspension(user: ReturnType<typeof userEvent.setup>) {
+  const dialog = await openSuspend(user);
+  await user.selectOptions(within(dialog).getByLabelText('Gerekçe'), 'ACCESS_REVIEW');
+  await user.click(within(dialog).getByRole('checkbox'));
+  return dialog;
+}
+
+it('requires a reason and tenant-specific confirmation before suspending a membership', async () => {
+  const services = mount('/admin');
+  const user = await login('admin.a');
+  const suspend = vi.spyOn(services.ops.admin, 'suspendUser');
+  const dialog = await openSuspend(user);
+  expect(dialog).toHaveTextContent('Demo Banka');
+  expect(within(dialog).getByRole('button', { name: 'Üyeliği askıya al' })).toBeDisabled();
+  await user.selectOptions(within(dialog).getByLabelText('Gerekçe'), 'ACCESS_REVIEW');
+  expect(within(dialog).getByRole('button', { name: 'Üyeliği askıya al' })).toBeDisabled();
+  await user.click(within(dialog).getByRole('checkbox'));
+  await user.click(within(dialog).getByRole('button', { name: 'Üyeliği askıya al' }));
+  expect(suspend).toHaveBeenCalledTimes(1);
+  const stepUp = await screen.findByRole('dialog', { name: 'Parolanızı doğrulayın' });
+  await user.type(within(stepUp).getByLabelText(/^Parola/), 'demo parola 2026 kapsora');
+  await user.click(within(stepUp).getByRole('button', { name: 'Doğrula' }));
+  await waitFor(() =>
+    expect(screen.getByTestId('admin-user-detail-page')).toHaveTextContent('Askıda'),
+  );
+  expect(suspend).toHaveBeenCalledTimes(2);
+  expect(suspend.mock.calls[0]).toEqual(suspend.mock.calls[1]);
+});
+
+it('keeps the same command on an uncertain response and requires reload after a stale version', async () => {
+  const services = mount('/admin');
+  const user = await login('admin.a');
+  const original = services.ops.admin.suspendUser;
+  const suspend = vi
+    .spyOn(services.ops.admin, 'suspendUser')
+    .mockRejectedValueOnce(
+      new ApiError({
+        type: 'about:blank',
+        title: 'Network error',
+        status: 0,
+        code: 'NETWORK_ERROR',
+        traceId: '',
+      }),
+    )
+    .mockRejectedValueOnce(
+      new ApiError({
+        type: 'about:blank',
+        title: 'Conflict',
+        status: 412,
+        code: 'ETAG_MISMATCH',
+        traceId: '',
+      }),
+    )
+    .mockImplementation(original);
+  const dialog = await chooseSuspension(user);
+  await user.click(within(dialog).getByRole('button', { name: 'Üyeliği askıya al' }));
+  expect(await within(dialog).findByText(/Sonuç belirsiz/)).toBeInTheDocument();
+  await user.click(within(dialog).getByRole('button', { name: 'Vazgeç' }));
+  await user.click(screen.getByTestId('admin-user-detail-page').querySelector('button')!);
+  const reopened = screen.getByRole('dialog', { name: 'Kurum üyeliğini askıya al' });
+  await user.click(within(reopened).getByRole('button', { name: 'Aynı isteği yeniden dene' }));
+  expect(suspend).toHaveBeenCalledTimes(2);
+  expect(suspend.mock.calls[0]).toEqual(suspend.mock.calls[1]);
+  expect(
+    await within(reopened).findByRole('button', { name: 'Üyeliği yeniden yükle' }),
+  ).toBeInTheDocument();
+  await user.click(within(reopened).getByRole('button', { name: 'Üyeliği yeniden yükle' }));
+  expect(await within(reopened).findByRole('button', { name: 'Üyeliği askıya al' })).toBeDisabled();
+  expect(suspend).toHaveBeenCalledTimes(2);
+});
+
+it('keeps the directory readable but hides suspension when manage capability is absent', async () => {
+  const original = api.tenantContexts.bind(api);
+  vi.spyOn(api, 'tenantContexts').mockImplementation((account, app) =>
+    original(account, app).map((tenant) => {
+      const withoutManage = { ...tenant };
+      delete withoutManage.canManageTenantUsers;
+      return withoutManage;
+    }),
+  );
+  const services = mount('/admin');
+  const suspend = vi.spyOn(services.ops.admin, 'suspendUser');
+  const user = await login('admin.a');
+  await user.click(await screen.findByRole('link', { name: 'Refik İnceleyici' }));
+  expect(await screen.findByTestId('admin-user-detail-page')).toHaveTextContent('Refik İnceleyici');
+  expect(screen.queryByRole('button', { name: 'Üyeliği askıya al' })).not.toBeInTheDocument();
+  expect(suspend).not.toHaveBeenCalled();
+  vi.restoreAllMocks();
+});
+
+it('does not replay a delayed step-up after manage capability changes', async () => {
+  const services = mount('/admin');
+  const user = await login('admin.a');
+  const suspend = vi.spyOn(services.ops.admin, 'suspendUser');
+  const originalStepUp = services.ops.session.stepUp;
+  const getSession = vi.spyOn(services.ops.session, 'get');
+  let finish!: () => void;
+  const deferred = new Promise<void>((resolve) => {
+    finish = resolve;
+  });
+  const password = vi
+    .spyOn(services.ops.session, 'stepUp')
+    .mockImplementationOnce(async (value) => {
+      await deferred;
+      return originalStepUp(value);
+    });
+  const dialog = await chooseSuspension(user);
+  await user.click(within(dialog).getByRole('button', { name: 'Üyeliği askıya al' }));
+  const stepUp = await screen.findByRole('dialog', { name: 'Parolanızı doğrulayın' });
+  await user.type(within(stepUp).getByLabelText(/^Parola/), 'demo parola 2026 kapsora');
+  await user.click(within(stepUp).getByRole('button', { name: 'Doğrula' }));
+  await waitFor(() => expect(password).toHaveBeenCalledTimes(1));
+  const active = services.store.getState().activeTenant!;
+  act(() => services.store.setState({ activeTenant: { ...active, canManageTenantUsers: false } }));
+  expect(screen.queryByRole('button', { name: 'Üyeliği askıya al' })).not.toBeInTheDocument();
+  await act(async () => {
+    finish();
+    await password.mock.results[0]!.value;
+  });
+  expect(services.store.getState().activeTenant?.canManageTenantUsers).toBe(false);
+  expect(getSession).not.toHaveBeenCalled();
+  expect(suspend).toHaveBeenCalledTimes(1);
+});
+
+it('retries the pinned command after password cancellation and an in-progress response', async () => {
+  const services = mount('/admin');
+  const user = await login('admin.a');
+  const original = services.ops.admin.suspendUser;
+  const suspend = vi
+    .spyOn(services.ops.admin, 'suspendUser')
+    .mockRejectedValueOnce(
+      new ApiError({
+        type: 'about:blank',
+        title: 'In progress',
+        status: 409,
+        code: 'IDEMPOTENCY_IN_PROGRESS',
+        traceId: '',
+      }),
+    )
+    .mockImplementation(original);
+  const dialog = await chooseSuspension(user);
+  await user.click(within(dialog).getByRole('button', { name: 'Üyeliği askıya al' }));
+  expect(
+    await within(dialog).findByRole('button', { name: 'Aynı isteği yeniden dene' }),
+  ).toBeInTheDocument();
+  await user.click(within(dialog).getByRole('button', { name: 'Aynı isteği yeniden dene' }));
+  const stepUp = await screen.findByRole('dialog', { name: 'Parolanızı doğrulayın' });
+  await user.click(within(stepUp).getByRole('button', { name: 'Vazgeç' }));
+  expect(within(dialog).getByRole('button', { name: 'Aynı isteği yeniden dene' })).toBeEnabled();
+  await user.click(within(dialog).getByRole('button', { name: 'Vazgeç' }));
+  await user.click(screen.getByRole('button', { name: 'Üyeliği askıya al' }));
+  const reopened = screen.getByRole('dialog', { name: 'Kurum üyeliğini askıya al' });
+  await user.click(within(reopened).getByRole('button', { name: 'Aynı isteği yeniden dene' }));
+  expect(await screen.findByRole('dialog', { name: 'Parolanızı doğrulayın' })).toBeInTheDocument();
+  expect(suspend).toHaveBeenCalledTimes(3);
+  expect(suspend.mock.calls[0]).toEqual(suspend.mock.calls[1]);
+  expect(suspend.mock.calls[1]).toEqual(suspend.mock.calls[2]);
 });

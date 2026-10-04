@@ -10,13 +10,14 @@ import {
 } from '@kapsora/ui';
 import { Link, useParams } from '@tanstack/react-router';
 import { problemOf } from '../problems';
+import { SuspendMembership } from './SuspendMembership';
 import { useTenantUser } from './queries';
 
 export function AdminUserDetailPage() {
   const { t } = useTranslation();
   const { membershipId } = useParams({ from: '/app/admin/users/$membershipId' });
   const query = useTenantUser(membershipId);
-  const detail = query.data;
+  const detail = query.data?.data;
   return (
     <section data-testid="admin-user-detail-page">
       <Link to="/admin" className="text-primary mb-4 inline-block text-sm hover:underline">
@@ -84,6 +85,12 @@ export function AdminUserDetailPage() {
               </dd>
             </div>
           </dl>
+          <SuspendMembership
+            membershipId={membershipId}
+            detail={detail}
+            etag={query.data?.etag ?? ''}
+            onReload={async () => (await query.refetch()).isSuccess}
+          />
           <h2 className="mt-6 text-lg font-semibold">{t('adminUsers.roles')}</h2>
           <p className="text-fg-muted mb-3 text-sm">{t('adminUsers.rolesHint')}</p>
           {detail.assignedRoles.length === 0 ? (

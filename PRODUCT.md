@@ -77,6 +77,14 @@ distinguished explicitly. Reading that directory does not enable provisioning, r
 or settings changes, and provider-scoped administration does not imply access
 to all tenant users.
 
+Managers with a separate tenant-wide user-management grant can suspend an ACTIVE
+membership from its detail. They confirm the current institution and choose a bounded
+reason, then re-enter their password. The operation stops that membership's access on
+the next protected request while preserving the global account, credentials, historical
+roles and access to other institutions. Self-suspension is refused, and at least one
+effective tenant manager must remain. Onboarding and restoration of access are separate
+workflows.
+
 Success is a payer operator onboarding a provider, a provider checking eligibility and
 submitting a request, and a member seeing the result, without anyone leaving the
 product or asking whose data they are looking at.

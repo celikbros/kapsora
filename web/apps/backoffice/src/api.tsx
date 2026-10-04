@@ -10,6 +10,19 @@ export interface AppServices {
   queryClient: QueryClient;
 }
 
+/** A command and its cached reads belong to one exact authorization context. */
+export function directoryContextKey(state: ReturnType<SessionStore['getState']>): string {
+  return [
+    state.session?.actorId ?? '',
+    state.session?.expiresAt ?? '',
+    state.activeTenant?.tenant.id ?? '',
+    state.activeTenant?.canReadTenantUsers === true ? 'allowed' : 'denied',
+    state.activeTenant?.canManageTenantUsers === true ? 'manage' : 'read',
+    state.activeTenant?.permissions.join('|') ?? '',
+    JSON.stringify(state.activeTenant?.scopes ?? []),
+  ].join(':');
+}
+
 /** Builds the client, the session store and the query client wired together. */
 export function createServices(
   options: { baseUrl?: string; fetch?: typeof fetch } = {},
@@ -28,18 +41,9 @@ export function createServices(
       queries: { retry: 1, staleTime: 15_000, refetchOnWindowFocus: false },
     },
   });
-  const directoryContext = (state: ReturnType<SessionStore['getState']>) =>
-    [
-      state.session?.actorId ?? '',
-      state.session?.expiresAt ?? '',
-      state.activeTenant?.tenant.id ?? '',
-      state.activeTenant?.canReadTenantUsers === true ? 'allowed' : 'denied',
-      state.activeTenant?.permissions.join('|') ?? '',
-      JSON.stringify(state.activeTenant?.scopes ?? []),
-    ].join(':');
-  let previousDirectoryContext = directoryContext(store.getState());
+  let previousDirectoryContext = directoryContextKey(store.getState());
   store.subscribe((state) => {
-    const current = directoryContext(state);
+    const current = directoryContextKey(state);
     if (current === previousDirectoryContext) return;
     previousDirectoryContext = current;
     void queryClient.cancelQueries({ queryKey: ['admin-users'] });

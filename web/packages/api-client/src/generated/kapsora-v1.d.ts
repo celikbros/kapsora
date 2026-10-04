@@ -799,6 +799,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/users/{membershipId}/suspend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Suspend one ACTIVE tenant membership without changing the global actor, credentials,
+         *     sessions, grants or any other tenant membership. Requires an active TENANT-scoped
+         *     identity.user.manage grant on the caller's current membership and password step-up.
+         *     A retry with the same idempotency key and request returns the recorded response.
+         */
+        post: operations["suspendTenantUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/approval-policies": {
         parameters: {
             query?: never;
@@ -12921,6 +12943,10 @@ export interface components {
          * @enum {string}
          */
         StaySegmentType: "WARD" | "ICU" | "SURGERY" | "OBSERVATION" | "COMPANION";
+        SuspendTenantUserRequest: {
+            /** @enum {string} */
+            reasonCode: "ACCESS_REVIEW" | "STAFF_DEPARTURE" | "SECURITY_CONCERN";
+        };
         /**
          * @description Whether the agreed amounts already include VAT, exclude it, or are exempt.
          * @enum {string}
@@ -12945,6 +12971,11 @@ export interface components {
              *     sign-in sends a person straight to the one app, or offers the choice.
              */
             apps: ("backoffice" | "provider" | "member")[];
+            /**
+             * @description True only when identity.user.manage belongs to an active TENANT-scoped grant
+             *     in this tenant and the request uses backoffice or unrestricted app context.
+             */
+            canManageTenantUsers?: boolean;
             /**
              * @description Server-computed Management Users capability. True only when identity.user.read
              *     belongs to an active TENANT-scoped grant in this tenant and the request uses
@@ -13001,6 +13032,11 @@ export interface components {
              */
             id: string;
             membershipStatus: components["schemas"]["TenantMembershipStatus"];
+            /**
+             * Format: int64
+             * @description Concurrency version; use the detail ETag for suspension's If-Match.
+             */
+            rowVersion: number;
             /** Format: date */
             validFrom: string | null;
             /** @description True when the stored membership period contains no dates. */
@@ -14052,6 +14088,7 @@ export type SchemaStayReconciliation = components['schemas']['StayReconciliation
 export type SchemaStaySegment = components['schemas']['StaySegment'];
 export type SchemaStaySegmentInput = components['schemas']['StaySegmentInput'];
 export type SchemaStaySegmentType = components['schemas']['StaySegmentType'];
+export type SchemaSuspendTenantUserRequest = components['schemas']['SuspendTenantUserRequest'];
 export type SchemaTaxBehaviour = components['schemas']['TaxBehaviour'];
 export type SchemaTenantAssignedRole = components['schemas']['TenantAssignedRole'];
 export type SchemaTenantContext = components['schemas']['TenantContext'];
@@ -15439,6 +15476,7 @@ export interface operations {
             /** @description Tenant membership and assignments */
             200: {
                 headers: {
+                    ETag?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -15448,6 +15486,71 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    suspendTenantUser: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                membershipId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SuspendTenantUserRequest"];
+            };
+        };
+        responses: {
+            /** @description Suspended tenant membership and assigned roles */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantUserDetail"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Self-suspension, last usable tenant manager, invalid state or altered idempotency key */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Membership ETag no longer matches */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description If-Match is required */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
         };
     };
     listApprovalPolicies: {
