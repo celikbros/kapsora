@@ -1148,6 +1148,36 @@ Live read confirmation remains pending the operator's restart. No existing live 
 was suspended. Invitation/acceptance and later role restoration remain separate tasks.
 The unavailable Impeccable skill was not run; visual review used PRODUCT/DESIGN constraints.
 
+### Management live read checkpoint (2026-10-08)
+
+The operator started the current API and UI. The opt-in maintained checker
+`tests/e2e/management-directory-readonly.spec.ts` passed both cases (3.1 seconds):
+`admin.a` has server-computed read/manage capabilities and reads a bounded two-row list
+and versioned detail with exact response allowlists; `financial.reviewer` has neither
+capability and receives 403. Detail ETag and membership rowVersion agree. No membership
+command, role change, invitation or financial operation was issued. Authentication,
+explicit tenant selection, GET reads and session logout are the only live operations.
+No screenshots or traces were retained. This closes the pending MGT-01 live read gate;
+it is read evidence for the MGT-02a capability/version surface, not live suspension proof.
+All six CI checks passed on the preceding final head `163c3e5`, including 697 frontend
+tests, 25 browser smoke tests and seven Directory PostgreSQL/HTTP tests without skips
+([run 37184943565](https://github.com/celikbros/kapsora/actions/runs/37184943565)).
+
+Run the checker only against the operator's already-started local system:
+
+```powershell
+$env:E2E_REAL_API = '1'
+$env:E2E_MANAGEMENT_DIRECTORY_READONLY = '1'
+$env:E2E_EXISTING_UI_URL = 'http://127.0.0.1:5181'
+pnpm exec playwright test --config tests/e2e/playwright.config.ts tests/e2e/management-directory-readonly.spec.ts --project chromium --trace off
+```
+
+The active next implementation is consent-based invitations for existing accounts,
+[MGT-02b B1](delegation/WP-MGT-02b-membership-invitations.md). It must add no automatic
+role grants, account matching or password changes. New-account acceptance remains B2;
+role assignment remains MGT-03. Migration 000056 is reserved for B1, not yet applied
+to the operator database. Existing product/calendar acceptance gates remain unchanged.
+
 ### PC-06 technical acceptance checkpoint (2026-10-03)
 
 Lodging acceptance covers fully and partly covered bookings, member contribution, free

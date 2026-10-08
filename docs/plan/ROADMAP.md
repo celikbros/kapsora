@@ -37,8 +37,8 @@ administration commands. Existing organization CRUD remains its own delivered wo
 
 | Order | Stage | Current status | Result required |
 | --- | --- | --- | --- |
-| MGT-01 | Tenant user membership directory | ACTIVE; implemented, live read pending | Real list/filter/paging and membership detail with assigned-role validity; tenant-wide permission and strict data projection |
-| MGT-02 | Account onboarding and membership lifecycle | ACTIVE; MGT-02a technical checks passed, live reads pending | Explicit public command contracts, validation, scoped lifecycle effects and retry/audit behavior |
+| MGT-01 | Tenant user membership directory | VERIFIED; bounded live reads passed 2026-10-08 | Real list/filter/paging and membership detail with assigned-role validity; tenant-wide permission and strict data projection |
+| MGT-02 | Account onboarding and membership lifecycle | ACTIVE; MGT-02a technical checks and live reads passed; invitation B1 in progress | Explicit public command contracts, validation, scoped lifecycle effects and retry/audit behavior |
 | MGT-03 | Role assignment and revocation | QUEUED | Step-up, privileged maker-checker rules, scoped commands and recorded history |
 | MGT-04 | Typed tenant settings | QUEUED | Named supported settings and validated changes; no arbitrary JSON editor |
 
@@ -95,6 +95,19 @@ live membership was suspended and no schema/grant change was made.
 Consent-based invitations/acceptance follow separately; do not wrap global CreateAccount,
 RevokeAllForActor or a password reset in tenant administration. Reactivation and privileged
 role restoration belong with the later role-approval design.
+
+**Management checkpoint 2026-10-08:** the operator started the current API. Both maintained
+opt-in read checks passed (3.1 seconds): tenant manager list/detail/capabilities, strict
+field allowlists and ETag/rowVersion; financial-reviewer capability denial and directory 403. Only authentication, tenant selection, GETs and logout occurred. No existing member
+was suspended. This closes MGT-01's live read gate; isolated CI remains suspension-command
+evidence. Final head `163c3e5` passed all six CI jobs, 697 frontend tests, 25 browser smoke
+tests and seven Directory DB/HTTP cases without skips.
+
+**Active next task:** [MGT-02b B1 invitations for existing accounts](../delegation/WP-MGT-02b-membership-invitations.md),
+with manager create/list/detail/cancel, restricted local delivery and authenticated explicit
+recipient consent. Accepted membership has zero grants. Migration 000056 is reserved,
+not applied locally. New-account acceptance/recovery is B2; MGT-03 role changes and MGT-04
+settings remain queued. The retained owner/calendar gates are not closed by this work.
 
 ## Current product completion roadmap (2026-09-22)
 
