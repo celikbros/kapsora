@@ -234,8 +234,11 @@ UI/mock/auth checks and five mock-retention checks passed; 18 synthetic 1440/390
 zero actual API calls, overflow or browser errors. Manual Playwright review used product
 standards because Impeccable was unavailable. Full workspace lint, typecheck and formatting,
 all three app builds, tracked-package Go vet and nonbreaking contract compatibility pass.
-Spectral passes with zero errors and eleven existing warnings. Isolated CI is
-pending. Migration 000056 is implemented but not applied locally; the local schema remains
-55. Existing CI run [37843434242](https://github.com/celikbros/kapsora/actions/runs/37843434242)
-on checkpoint 829e2d9 is green across six jobs, but is not B1 CI evidence. B2 new-account
+Spectral passes with zero errors and eleven existing warnings. All six CI jobs passed on
+`89798a1` ([run 37847598222](https://github.com/celikbros/kapsora/actions/runs/37847598222)):
+713 frontend tests, 25 smoke tests and seven Directory/seven Invitation cases without
+skips, with six Invitation cases exercising PostgreSQL. Migration 000056 is applied
+locally at schema 56, dirty=false. Only local Mailpit loopback delivery is enabled in the
+ignored `.env`; defaults remain disabled. Opt-in invitation live reads await operator
+restart; no live invitation or membership acceptance was issued. B2 new-account
 acceptance and receipt recovery is next; MGT-03 roles and MGT-04 settings remain later work.

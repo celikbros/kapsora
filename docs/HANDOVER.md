@@ -1183,20 +1183,30 @@ recipients use session-proven inspect and accept-existing routes. Waiting member
 handled across the backoffice, provider portal and member app.
 
 Restricted local loopback SMTP is disabled by default. External SMTP is unavailable, so no
-external delivery is claimed. Local evidence so far includes 708/83 full frontend tests
-before the final follow-up, 23 targeted UI/mock/auth checks and five mock-retention checks;
+external delivery is claimed. Local focused UI/mock/auth and mock-retention checks pass;
 18 synthetic desktop/mobile views at 1440/390 had no real API calls, overflow or browser
 errors. The Impeccable skill was unavailable; this was manual Playwright review against the
 product standards. Full workspace lint, typecheck and formatting, plus all three app builds,
 now pass. Tracked-package Go vet and nonbreaking contract compatibility also pass. Spectral
-passes with zero errors and eleven existing warnings. Isolated CI for
-B1 is pending, and the local database remains at schema 55: migration 000056 has not been
-applied.
+passes with zero errors and eleven existing warnings.
+
+All six CI jobs passed on `89798a1`
+([run 37847598222](https://github.com/celikbros/kapsora/actions/runs/37847598222)):
+713 frontend tests in 84 files, 25 browser smoke tests, seven Directory cases and seven
+Invitation cases without skips. Six Invitation cases use isolated PostgreSQL; the seventh
+checks proof/email encoding. Normal smoke skips opt-in live/calendar tests, including the
+two new invitation read checks. Migration 000056 was then applied locally: schema 56,
+dirty=false. The ignored local `.env` enables only loopback Mailpit invitation delivery;
+`.env.example` stays disabled. Existing memberships and grants were not changed.
 
 MGT-01 live reads passed 2/2 in 3.1 seconds after the operator restart on 2026-10-08, with
-no commands issued. The latest checkpoint is 829e2d9; all six CI jobs are green on
-[run 37843434242](https://github.com/celikbros/kapsora/actions/runs/37843434242). This
-existing run is not B1 CI evidence. Draft PR #11 remains open; do not merge or release. B2
+no commands issued. B1 live reads await the operator's API/worker restart: the old API
+still returns 404 for the invitation route. The opt-in checker is
+`tests/e2e/management-invitations-readonly.spec.ts`; enable `E2E_REAL_API=1`,
+`E2E_MANAGEMENT_INVITATIONS_READONLY=1`, and the operator's `E2E_EXISTING_UI_URL`.
+It performs only login/tenant selection/logout and GETs; existing detail is checked only
+when the list already has a row. Do not create live invitations just to fill that list.
+Draft PR #11 remains open; do not merge or release. B2
 new-account acceptance and recovery is next; MGT-03 role assignment and MGT-04 typed settings
 remain later work. Existing product/calendar acceptance gates remain open.
 
@@ -1252,7 +1262,7 @@ cp .env.example .env              # fill CHANGE_ME with your local PostgreSQL cr
 make tools                        # sqlc, oapi-codegen, oasdiff, golangci-lint, govulncheck
 make native-install && make native-up   # MinIO, ClamAV, Mailpit as native processes
 make db-init                      # role kapsora_app + database kapsora
-make migrate-up                   # schema to 000055
+make migrate-up                   # schema to 000056
 make test-unit && make test-db    # should both be green before you write anything
 ```
 

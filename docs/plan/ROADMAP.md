@@ -38,7 +38,7 @@ administration commands. Existing organization CRUD remains its own delivered wo
 | Order | Stage | Current status | Result required |
 | --- | --- | --- | --- |
 | MGT-01 | Tenant user membership directory | VERIFIED; bounded live reads passed 2026-10-08 | Real list/filter/paging and membership detail with assigned-role validity; tenant-wide permission and strict data projection |
-| MGT-02 | Account onboarding and membership lifecycle | ACTIVE; MGT-02a technical checks/live reads passed; B1 implemented, isolated CI and local migration pending | Explicit public command contracts, validation, scoped lifecycle effects and retry/audit behavior |
+| MGT-02 | Account onboarding and membership lifecycle | ACTIVE; MGT-02a technical checks/live reads passed; B1 CI passed and local schema 56; B1 live reads pending | Explicit public command contracts, validation, scoped lifecycle effects and retry/audit behavior |
 | MGT-03 | Role assignment and revocation | QUEUED | Step-up, privileged maker-checker rules, scoped commands and recorded history |
 | MGT-04 | Typed tenant settings | QUEUED | Named supported settings and validated changes; no arbitrary JSON editor |
 
@@ -108,16 +108,19 @@ manager create/list/detail/cancel, restricted delivery, session-proven recipient
 explicit acceptance, and waiting membership in all three apps. Migration 000056 stores
 encrypted contact/delivery data and HMAC receipts. Membership grants remain empty and tenant
 switching is never automatic. Loopback SMTP is disabled by default; external SMTP is
-unavailable. The local schema remains 55, so migration 000056 is not applied. Earlier local
+unavailable. Migration 000056 is applied locally (schema 56, dirty=false). Earlier local
 evidence: 708/83 full frontend tests before the final follow-up, 23 targeted UI/mock/auth
 checks and five mock-retention checks, plus 18 synthetic 1440/390 views with zero actual API
 calls, overflow or browser errors. Impeccable was unavailable; manual Playwright review
 followed product standards. Full workspace lint, typecheck and formatting, all three app
 builds, tracked-package Go vet and nonbreaking contract compatibility pass. Spectral
-passes with zero errors and eleven existing warnings. Isolated CI for B1 is
-pending. Latest checkpoint 829e2d9 has all six existing CI jobs green on [run
-37843434242](https://github.com/celikbros/kapsora/actions/runs/37843434242), but this does
-not certify B1. Draft PR #11 remains open and unmerged. Next is B2 new-account
+passes with zero errors and eleven existing warnings. All six CI jobs passed on `89798a1`
+([run 37847598222](https://github.com/celikbros/kapsora/actions/runs/37847598222)), including
+713 frontend tests in 84 files, 25 smoke tests and seven Directory/seven Invitation cases
+without skips (six Invitation cases use PostgreSQL). The ignored local configuration
+enables only Mailpit loopback delivery; `.env.example` remains disabled. B1's opt-in live
+read checker awaits the operator's API/worker restart; no live invite/join was issued.
+Draft PR #11 remains open and unmerged. Next is B2 new-account
 acceptance/recovery; MGT-03 role changes and MGT-04 typed settings follow. Owner/calendar
 gates remain open.
 
@@ -131,7 +134,7 @@ the existing work-package contracts rather than starting their implementation ag
 
 ### Baseline and delivery sequence
 
-- Local schema: 000055 (dirty=false); lodging and combined technical acceptance passed. API, worker, scheduler and the three apps run through the
+- Local schema: 000056 (dirty=false); lodging/combined acceptance and B1 isolated checks passed. API, worker, scheduler and the three apps run through the
   operator's single door at `http://127.0.0.1:5181`; API port 8090. PostgreSQL, MinIO,
   ClamAV and Mailpit are the existing native dependencies.
 - PC-01 passed twice in the real browser on 2026-09-22 (15.8 s total). All six GitHub
