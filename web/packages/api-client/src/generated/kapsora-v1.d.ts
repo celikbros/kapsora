@@ -783,6 +783,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description Return the masked invitation summary for a manager with tenant-scoped identity.user.read access. */
         get: operations["getTenantInvitation"];
         put?: never;
         post?: never;

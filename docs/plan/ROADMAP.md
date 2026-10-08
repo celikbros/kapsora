@@ -114,7 +114,7 @@ checks and five mock-retention checks, plus 18 synthetic 1440/390 views with zer
 calls, overflow or browser errors. Impeccable was unavailable; manual Playwright review
 followed product standards. Full workspace lint, typecheck and formatting, all three app
 builds, tracked-package Go vet and nonbreaking contract compatibility pass. Spectral
-currently reports two pre-tenant exemption errors being corrected. Isolated CI for B1 is
+passes with zero errors and eleven existing warnings. Isolated CI for B1 is
 pending. Latest checkpoint 829e2d9 has all six existing CI jobs green on [run
 37843434242](https://github.com/celikbros/kapsora/actions/runs/37843434242), but this does
 not certify B1. Draft PR #11 remains open and unmerged. Next is B2 new-account
