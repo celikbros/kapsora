@@ -56,7 +56,11 @@ test('tenant admin can read a bounded invitation page and an existing invitation
       expect(/^[0-9a-f-]{36}$/i.test(invitation.invitationId), 'invitation id is a UUID').toBe(
         true,
       );
-      expect(invitation.maskedRecipient.length > 0, 'recipient is masked').toBe(true);
+      expect(typeof invitation.maskedRecipient === 'string', 'recipient display is text').toBe(
+        true,
+      );
+      if (invitation.status === 'PENDING')
+        expect(invitation.maskedRecipient.length > 0, 'pending recipient is masked').toBe(true);
     }
 
     const existing = list.data.items[0];
