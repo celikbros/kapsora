@@ -39,6 +39,17 @@ async function signInAs(username: string, path = '/') {
 }
 
 describe('the single sign-in from the provider portal', () => {
+  it('shows an active zero-grant institution before forwarding to another app', async () => {
+    const member = api.world.accounts.find((account) => account.username === 'member.a')!;
+    member.memberships.push({ tenantCode: 'DEMO_B', permissions: [], membershipOnly: true });
+    const { history, leave } = await signInAs('member.a');
+    expect(await screen.findByText('Yetki ataması bekleyen kurumlar')).toBeInTheDocument();
+    expect(
+      screen.getByText(api.world.tenants.find((tenant) => tenant.code === 'DEMO_B')!.displayName),
+    ).toBeInTheDocument();
+    expect(history.location.pathname).toBe('/auth/apps');
+    expect(leave).not.toHaveBeenCalled();
+  });
   it('hands a backoffice account straight to the backoffice', async () => {
     const { leave } = await signInAs('financial.reviewer');
     await waitFor(() => expect(leave).toHaveBeenCalledTimes(1));

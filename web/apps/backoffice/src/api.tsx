@@ -48,6 +48,8 @@ export function createServices(
     previousDirectoryContext = current;
     void queryClient.cancelQueries({ queryKey: ['admin-users'] });
     queryClient.removeQueries({ queryKey: ['admin-users'] });
+    void queryClient.cancelQueries({ queryKey: ['admin-invitations'] });
+    queryClient.removeQueries({ queryKey: ['admin-invitations'] });
   });
   return { ops, store, queryClient };
 }

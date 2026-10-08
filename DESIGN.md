@@ -870,6 +870,20 @@ detail immediately; account status and assigned-role history remain separate. Co
 changes close the form, block deferred dispatch and prevent late responses or password
 confirmation from restoring an obsolete session or directory cache.
 
+**Invitations require recipient consent.** The manager's invitation list shares the
+directory's bounded paging, compact mobile cards and explicit loading/error/empty states.
+It displays only masked contact and safe status metadata. Creating or cancelling uses
+password confirmation; uncertain retries preserve the original command key, input and
+version, while cancellation conflicts require an explicit reload. The recipient enters
+the proof on a fixed page outside the tenant shell after ordinary login, including for
+an account with no application grants. The code stays in component memory and never
+appears in a URL, query key or browser storage. Consent names the signed-in account and
+institution. Acceptance leaves the current tenant unchanged and shows either the
+zero-grant waiting state or preservation of an already active membership. Switching
+accounts clears the proof and any pending result. The ordinary app chooser lists active
+memberships awaiting role assignment, including when the account already has access to
+another application. It does not send a zero-grant member to a business dashboard.
+
 ## Motion
 
 Toasts slide up 160ms ease-out. The member surface adds the system's one authored moment:

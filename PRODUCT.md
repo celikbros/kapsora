@@ -85,6 +85,14 @@ roles and access to other institutions. Self-suspension is refused, and at least
 effective tenant manager must remain. Onboarding and restoration of access are separate
 workflows.
 
+An authorized manager can invite an existing account holder by email, review a masked
+recipient and delivery state, or cancel a pending invitation. The manager never sees the
+invitation code or whether the address already belongs to an account. The recipient signs
+in normally, pastes the emailed code on a fixed page, sees the institution, and explicitly
+confirms joining with the displayed account. A new membership starts without roles and
+shows that access awaits assignment. Account creation through invitations arrives in a
+later increment; this screen says that an existing account is required.
+
 Success is a payer operator onboarding a provider, a provider checking eligibility and
 submitting a request, and a member seeing the result, without anyone leaving the
 product or asking whose data they are looking at.

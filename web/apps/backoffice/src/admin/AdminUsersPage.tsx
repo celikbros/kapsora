@@ -67,6 +67,12 @@ export function AdminUsersPage() {
   return (
     <section data-testid="admin-users-page">
       <PageHeader title={t('adminUsers.title')} description={t('adminUsers.intro')} />
+      <Link
+        to="/admin/invitations"
+        className="text-primary mb-4 inline-block text-sm font-medium hover:underline"
+      >
+        {t('adminInvitations.title')} →
+      </Link>
       <label className="mb-4 grid max-w-56 gap-1 text-sm">
         <span className="font-medium">{t('adminUsers.statusFilter')}</span>
         <Select

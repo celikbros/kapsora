@@ -19,6 +19,36 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for AcceptExistingInvitationRequestConfirmed.
+const (
+	True AcceptExistingInvitationRequestConfirmed = true
+)
+
+// Valid indicates whether the value is a known member of the AcceptExistingInvitationRequestConfirmed enum.
+func (e AcceptExistingInvitationRequestConfirmed) Valid() bool {
+	switch e {
+	case True:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AcceptExistingInvitationResponseMembershipStatus.
+const (
+	AcceptExistingInvitationResponseMembershipStatusACTIVE AcceptExistingInvitationResponseMembershipStatus = "ACTIVE"
+)
+
+// Valid indicates whether the value is a known member of the AcceptExistingInvitationResponseMembershipStatus enum.
+func (e AcceptExistingInvitationResponseMembershipStatus) Valid() bool {
+	switch e {
+	case AcceptExistingInvitationResponseMembershipStatusACTIVE:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AssignmentPolicy.
 const (
 	AssignmentPolicyLEASTLOADED AssignmentPolicy = "LEAST_LOADED"
@@ -4105,6 +4135,54 @@ func (e TenantContextApps) Valid() bool {
 	}
 }
 
+// Defines values for TenantInvitationDeliveryStatus.
+const (
+	TenantInvitationDeliveryStatusCANCELLED TenantInvitationDeliveryStatus = "CANCELLED"
+	TenantInvitationDeliveryStatusFAILED    TenantInvitationDeliveryStatus = "FAILED"
+	TenantInvitationDeliveryStatusQUEUED    TenantInvitationDeliveryStatus = "QUEUED"
+	TenantInvitationDeliveryStatusSENT      TenantInvitationDeliveryStatus = "SENT"
+)
+
+// Valid indicates whether the value is a known member of the TenantInvitationDeliveryStatus enum.
+func (e TenantInvitationDeliveryStatus) Valid() bool {
+	switch e {
+	case TenantInvitationDeliveryStatusCANCELLED:
+		return true
+	case TenantInvitationDeliveryStatusFAILED:
+		return true
+	case TenantInvitationDeliveryStatusQUEUED:
+		return true
+	case TenantInvitationDeliveryStatusSENT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TenantInvitationStatus.
+const (
+	TenantInvitationStatusACCEPTED  TenantInvitationStatus = "ACCEPTED"
+	TenantInvitationStatusCANCELLED TenantInvitationStatus = "CANCELLED"
+	TenantInvitationStatusEXPIRED   TenantInvitationStatus = "EXPIRED"
+	TenantInvitationStatusPENDING   TenantInvitationStatus = "PENDING"
+)
+
+// Valid indicates whether the value is a known member of the TenantInvitationStatus enum.
+func (e TenantInvitationStatus) Valid() bool {
+	switch e {
+	case TenantInvitationStatusACCEPTED:
+		return true
+	case TenantInvitationStatusCANCELLED:
+		return true
+	case TenantInvitationStatusEXPIRED:
+		return true
+	case TenantInvitationStatusPENDING:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for TenantMembershipStatus.
 const (
 	TenantMembershipStatusACTIVE    TenantMembershipStatus = "ACTIVE"
@@ -5718,6 +5796,28 @@ func (e SwitchTenantParamsXKapsoraApp) Valid() bool {
 		return false
 	}
 }
+
+// AcceptExistingInvitationRequest defines model for AcceptExistingInvitationRequest.
+type AcceptExistingInvitationRequest struct {
+	Code      string                                   `json:"code"`
+	Confirmed AcceptExistingInvitationRequestConfirmed `json:"confirmed"`
+}
+
+// AcceptExistingInvitationRequestConfirmed defines model for AcceptExistingInvitationRequest.Confirmed.
+type AcceptExistingInvitationRequestConfirmed bool
+
+// AcceptExistingInvitationResponse defines model for AcceptExistingInvitationResponse.
+type AcceptExistingInvitationResponse struct {
+	// AccessPending True when the accepted membership currently has no effective role permissions.
+	AccessPending     bool                                             `json:"accessPending"`
+	MembershipId      openapi_types.UUID                               `json:"membershipId"`
+	MembershipStatus  AcceptExistingInvitationResponseMembershipStatus `json:"membershipStatus"`
+	TenantDisplayName string                                           `json:"tenantDisplayName"`
+	TenantId          openapi_types.UUID                               `json:"tenantId"`
+}
+
+// AcceptExistingInvitationResponseMembershipStatus defines model for AcceptExistingInvitationResponse.MembershipStatus.
+type AcceptExistingInvitationResponseMembershipStatus string
 
 // AddWorkItemComment defines model for AddWorkItemComment.
 type AddWorkItemComment struct {
@@ -7765,6 +7865,11 @@ type CreateServiceRequest struct {
 	SupersedesRequestId *openapi_types.UUID `json:"supersedesRequestId,omitempty"`
 }
 
+// CreateTenantInvitationRequest defines model for CreateTenantInvitationRequest.
+type CreateTenantInvitationRequest struct {
+	Email openapi_types.Email `json:"email"`
+}
+
 // CreateUpload defines model for CreateUpload.
 type CreateUpload struct {
 	// ByteSize The exact size of the file. It is signed into the upload URL, so the object
@@ -8823,6 +8928,18 @@ type InpatientStayPage struct {
 // REJECTED are not given by an endpoint of this module — they are what the stay becomes
 // when the reviewer decides its preauthorization request.
 type InpatientStayStatus string
+
+// InspectInvitationRequest defines model for InspectInvitationRequest.
+type InspectInvitationRequest struct {
+	Code string `json:"code"`
+}
+
+// InspectInvitationResponse defines model for InspectInvitationResponse.
+type InspectInvitationResponse struct {
+	ExpiresAt         time.Time              `json:"expiresAt"`
+	InvitationStatus  TenantInvitationStatus `json:"invitationStatus"`
+	TenantDisplayName string                 `json:"tenantDisplayName"`
+}
 
 // InventoryDay defines model for InventoryDay.
 type InventoryDay struct {
@@ -12446,6 +12563,29 @@ type TenantContext struct {
 // TenantContextApps defines model for TenantContext.Apps.
 type TenantContextApps string
 
+// TenantInvitation defines model for TenantInvitation.
+type TenantInvitation struct {
+	CreatedAt       time.Time                      `json:"createdAt"`
+	DeliveryStatus  TenantInvitationDeliveryStatus `json:"deliveryStatus"`
+	ExpiresAt       time.Time                      `json:"expiresAt"`
+	InvitationId    openapi_types.UUID             `json:"invitationId"`
+	MaskedRecipient string                         `json:"maskedRecipient"`
+	RowVersion      int64                          `json:"rowVersion"`
+	Status          TenantInvitationStatus         `json:"status"`
+}
+
+// TenantInvitationDeliveryStatus defines model for TenantInvitationDeliveryStatus.
+type TenantInvitationDeliveryStatus string
+
+// TenantInvitationPage defines model for TenantInvitationPage.
+type TenantInvitationPage struct {
+	Items      []TenantInvitation `json:"items"`
+	NextCursor *string            `json:"nextCursor"`
+}
+
+// TenantInvitationStatus defines model for TenantInvitationStatus.
+type TenantInvitationStatus string
+
 // TenantMembershipStatus defines model for TenantMembershipStatus.
 type TenantMembershipStatus string
 
@@ -13404,6 +13544,44 @@ type AcceptWaitlistOfferParams struct {
 type CancelWaitlistEntryParams struct {
 	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
 	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ListTenantInvitationsParams defines parameters for ListTenantInvitations.
+type ListTenantInvitationsParams struct {
+	// Cursor Opaque cursor from the previous response.
+	Cursor *Cursor                 `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit                  `form:"limit,omitempty" json:"limit,omitempty"`
+	Status *TenantInvitationStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// CreateTenantInvitationParams defines parameters for CreateTenantInvitation.
+type CreateTenantInvitationParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// GetTenantInvitationParams defines parameters for GetTenantInvitation.
+type GetTenantInvitationParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+}
+
+// CancelTenantInvitationParams defines parameters for CancelTenantInvitation.
+type CancelTenantInvitationParams struct {
+	// XTenantID Selected tenant UUID. It must be one of the actor's active memberships.
+	XTenantID TenantHeader `json:"X-Tenant-ID"`
+
+	// IfMatch Optimistic concurrency token returned as ETag.
+	IfMatch IfMatch `json:"If-Match"`
 
 	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
@@ -15191,6 +15369,12 @@ type PutStaySegmentsParamsXAccessPurpose string
 
 // PutStaySegmentsParamsXAccessProjection defines parameters for PutStaySegments.
 type PutStaySegmentsParamsXAccessProjection string
+
+// AcceptExistingInvitationParams defines parameters for AcceptExistingInvitation.
+type AcceptExistingInvitationParams struct {
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
 
 // ListInvoicesParams defines parameters for ListInvoices.
 type ListInvoicesParams struct {
@@ -17181,6 +17365,9 @@ type PutRoomTypeInventoryJSONRequestBody = PutRoomTypeInventory
 // JoinWaitlistJSONRequestBody defines body for JoinWaitlist for application/json ContentType.
 type JoinWaitlistJSONRequestBody = JoinWaitlistRequest
 
+// CreateTenantInvitationJSONRequestBody defines body for CreateTenantInvitation for application/json ContentType.
+type CreateTenantInvitationJSONRequestBody = CreateTenantInvitationRequest
+
 // SuspendTenantUserJSONRequestBody defines body for SuspendTenantUser for application/json ContentType.
 type SuspendTenantUserJSONRequestBody = SuspendTenantUserRequest
 
@@ -17360,6 +17547,12 @@ type ExtendInpatientStayJSONRequestBody = ExtendInpatientStay
 
 // PutStaySegmentsJSONRequestBody defines body for PutStaySegments for application/json ContentType.
 type PutStaySegmentsJSONRequestBody = PutStaySegments
+
+// AcceptExistingInvitationJSONRequestBody defines body for AcceptExistingInvitation for application/json ContentType.
+type AcceptExistingInvitationJSONRequestBody = AcceptExistingInvitationRequest
+
+// InspectInvitationJSONRequestBody defines body for InspectInvitation for application/json ContentType.
+type InspectInvitationJSONRequestBody = InspectInvitationRequest
 
 // CreateInvoiceJSONRequestBody defines body for CreateInvoice for application/json ContentType.
 type CreateInvoiceJSONRequestBody = CreateInvoice
@@ -17869,6 +18062,18 @@ type ServerInterface interface {
 	// (POST /api/v1/accommodation/waitlist/{waitlistEntryId}/cancel)
 	CancelWaitlistEntry(w http.ResponseWriter, r *http.Request, waitlistEntryId WaitlistEntryId, params CancelWaitlistEntryParams)
 
+	// (GET /api/v1/admin/invitations)
+	ListTenantInvitations(w http.ResponseWriter, r *http.Request, params ListTenantInvitationsParams)
+
+	// (POST /api/v1/admin/invitations)
+	CreateTenantInvitation(w http.ResponseWriter, r *http.Request, params CreateTenantInvitationParams)
+
+	// (GET /api/v1/admin/invitations/{invitationId})
+	GetTenantInvitation(w http.ResponseWriter, r *http.Request, invitationId openapi_types.UUID, params GetTenantInvitationParams)
+
+	// (POST /api/v1/admin/invitations/{invitationId}/cancel)
+	CancelTenantInvitation(w http.ResponseWriter, r *http.Request, invitationId openapi_types.UUID, params CancelTenantInvitationParams)
+
 	// (GET /api/v1/admin/users)
 	ListTenantUsers(w http.ResponseWriter, r *http.Request, params ListTenantUsersParams)
 
@@ -18219,6 +18424,12 @@ type ServerInterface interface {
 
 	// (PUT /api/v1/inpatient-stays/{stayId}/segments)
 	PutStaySegments(w http.ResponseWriter, r *http.Request, stayId StayId, params PutStaySegmentsParams)
+
+	// (POST /api/v1/invitations/accept-existing)
+	AcceptExistingInvitation(w http.ResponseWriter, r *http.Request, params AcceptExistingInvitationParams)
+
+	// (POST /api/v1/invitations/inspect)
+	InspectInvitation(w http.ResponseWriter, r *http.Request)
 
 	// (GET /api/v1/invoices)
 	ListInvoices(w http.ResponseWriter, r *http.Request, params ListInvoicesParams)
@@ -18888,6 +19099,26 @@ func (_ Unimplemented) CancelWaitlistEntry(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// (GET /api/v1/admin/invitations)
+func (_ Unimplemented) ListTenantInvitations(w http.ResponseWriter, r *http.Request, params ListTenantInvitationsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/admin/invitations)
+func (_ Unimplemented) CreateTenantInvitation(w http.ResponseWriter, r *http.Request, params CreateTenantInvitationParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /api/v1/admin/invitations/{invitationId})
+func (_ Unimplemented) GetTenantInvitation(w http.ResponseWriter, r *http.Request, invitationId openapi_types.UUID, params GetTenantInvitationParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/admin/invitations/{invitationId}/cancel)
+func (_ Unimplemented) CancelTenantInvitation(w http.ResponseWriter, r *http.Request, invitationId openapi_types.UUID, params CancelTenantInvitationParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // (GET /api/v1/admin/users)
 func (_ Unimplemented) ListTenantUsers(w http.ResponseWriter, r *http.Request, params ListTenantUsersParams) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -19470,6 +19701,16 @@ func (_ Unimplemented) GetInpatientStayReconciliation(w http.ResponseWriter, r *
 
 // (PUT /api/v1/inpatient-stays/{stayId}/segments)
 func (_ Unimplemented) PutStaySegments(w http.ResponseWriter, r *http.Request, stayId StayId, params PutStaySegmentsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/invitations/accept-existing)
+func (_ Unimplemented) AcceptExistingInvitation(w http.ResponseWriter, r *http.Request, params AcceptExistingInvitationParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/invitations/inspect)
+func (_ Unimplemented) InspectInvitation(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -22427,6 +22668,312 @@ func (siw *ServerInterfaceWrapper) CancelWaitlistEntry(w http.ResponseWriter, r 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CancelWaitlistEntry(w, r, waitlistEntryId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListTenantInvitations operation middleware
+func (siw *ServerInterfaceWrapper) ListTenantInvitations(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListTenantInvitationsParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListTenantInvitations(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateTenantInvitation operation middleware
+func (siw *ServerInterfaceWrapper) CreateTenantInvitation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateTenantInvitationParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateTenantInvitation(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetTenantInvitation operation middleware
+func (siw *ServerInterfaceWrapper) GetTenantInvitation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "invitationId" -------------
+	var invitationId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "invitationId", chi.URLParam(r, "invitationId"), &invitationId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "invitationId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetTenantInvitationParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetTenantInvitation(w, r, invitationId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CancelTenantInvitation operation middleware
+func (siw *ServerInterfaceWrapper) CancelTenantInvitation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "invitationId" -------------
+	var invitationId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "invitationId", chi.URLParam(r, "invitationId"), &invitationId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "invitationId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CancelTenantInvitationParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Tenant-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant-ID")]; found {
+		var XTenantID TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant-ID", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant-ID", valueList[0], &XTenantID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant-ID", Err: err})
+			return
+		}
+
+		params.XTenantID = XTenantID
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Tenant-ID is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Tenant-ID", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CancelTenantInvitation(w, r, invitationId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -33179,6 +33726,65 @@ func (siw *ServerInterfaceWrapper) PutStaySegments(w http.ResponseWriter, r *htt
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PutStaySegments(w, r, stayId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AcceptExistingInvitation operation middleware
+func (siw *ServerInterfaceWrapper) AcceptExistingInvitation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params AcceptExistingInvitationParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AcceptExistingInvitation(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// InspectInvitation operation middleware
+func (siw *ServerInterfaceWrapper) InspectInvitation(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.InspectInvitation(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -47543,6 +48149,24 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/invitations", wrapper.ListTenantInvitations)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/invitations", wrapper.CreateTenantInvitation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/invitations/{invitationId}", wrapper.GetTenantInvitation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/invitations/{invitationId}/cancel", wrapper.CancelTenantInvitation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/invitations/inspect", wrapper.InspectInvitation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/invitations/accept-existing", wrapper.AcceptExistingInvitation)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/admin/users", wrapper.ListTenantUsers)
 	})
 	r.Group(func(r chi.Router) {
@@ -50829,6 +51453,395 @@ func (response CancelWaitlistEntry409ApplicationProblemPlusJSONResponse) VisitCa
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListTenantInvitationsRequestObject struct {
+	Params ListTenantInvitationsParams
+}
+
+type ListTenantInvitationsResponseObject interface {
+	VisitListTenantInvitationsResponse(w http.ResponseWriter) error
+}
+
+type ListTenantInvitations200JSONResponse TenantInvitationPage
+
+func (response ListTenantInvitations200JSONResponse) VisitListTenantInvitationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListTenantInvitations400ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response ListTenantInvitations400ApplicationProblemPlusJSONResponse) VisitListTenantInvitationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListTenantInvitations401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response ListTenantInvitations401ApplicationProblemPlusJSONResponse) VisitListTenantInvitationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListTenantInvitations403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListTenantInvitations403ApplicationProblemPlusJSONResponse) VisitListTenantInvitationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateTenantInvitationRequestObject struct {
+	Params CreateTenantInvitationParams
+	Body   *CreateTenantInvitationJSONRequestBody
+}
+
+type CreateTenantInvitationResponseObject interface {
+	VisitCreateTenantInvitationResponse(w http.ResponseWriter) error
+}
+
+type CreateTenantInvitation200ResponseHeaders struct {
+	ETag *string
+}
+
+type CreateTenantInvitation200JSONResponse struct {
+	Body    TenantInvitation
+	Headers CreateTenantInvitation200ResponseHeaders
+}
+
+func (response CreateTenantInvitation200JSONResponse) VisitCreateTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateTenantInvitation400ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CreateTenantInvitation400ApplicationProblemPlusJSONResponse) VisitCreateTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateTenantInvitation401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response CreateTenantInvitation401ApplicationProblemPlusJSONResponse) VisitCreateTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateTenantInvitation403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CreateTenantInvitation403ApplicationProblemPlusJSONResponse) VisitCreateTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateTenantInvitation409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response CreateTenantInvitation409ApplicationProblemPlusJSONResponse) VisitCreateTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateTenantInvitation503ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateTenantInvitation503ApplicationProblemPlusJSONResponse) VisitCreateTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetTenantInvitationRequestObject struct {
+	InvitationId openapi_types.UUID `json:"invitationId"`
+	Params       GetTenantInvitationParams
+}
+
+type GetTenantInvitationResponseObject interface {
+	VisitGetTenantInvitationResponse(w http.ResponseWriter) error
+}
+
+type GetTenantInvitation200ResponseHeaders struct {
+	ETag *string
+}
+
+type GetTenantInvitation200JSONResponse struct {
+	Body    TenantInvitation
+	Headers GetTenantInvitation200ResponseHeaders
+}
+
+func (response GetTenantInvitation200JSONResponse) VisitGetTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetTenantInvitation401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GetTenantInvitation401ApplicationProblemPlusJSONResponse) VisitGetTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetTenantInvitation403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetTenantInvitation403ApplicationProblemPlusJSONResponse) VisitGetTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetTenantInvitation404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetTenantInvitation404ApplicationProblemPlusJSONResponse) VisitGetTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelTenantInvitationRequestObject struct {
+	InvitationId openapi_types.UUID `json:"invitationId"`
+	Params       CancelTenantInvitationParams
+}
+
+type CancelTenantInvitationResponseObject interface {
+	VisitCancelTenantInvitationResponse(w http.ResponseWriter) error
+}
+
+type CancelTenantInvitation200ResponseHeaders struct {
+	ETag *string
+}
+
+type CancelTenantInvitation200JSONResponse struct {
+	Body    TenantInvitation
+	Headers CancelTenantInvitation200ResponseHeaders
+}
+
+func (response CancelTenantInvitation200JSONResponse) VisitCancelTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelTenantInvitation401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response CancelTenantInvitation401ApplicationProblemPlusJSONResponse) VisitCancelTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelTenantInvitation403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CancelTenantInvitation403ApplicationProblemPlusJSONResponse) VisitCancelTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelTenantInvitation404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CancelTenantInvitation404ApplicationProblemPlusJSONResponse) VisitCancelTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelTenantInvitation409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response CancelTenantInvitation409ApplicationProblemPlusJSONResponse) VisitCancelTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelTenantInvitation412ApplicationProblemPlusJSONResponse Problem
+
+func (response CancelTenantInvitation412ApplicationProblemPlusJSONResponse) VisitCancelTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelTenantInvitation428ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response CancelTenantInvitation428ApplicationProblemPlusJSONResponse) VisitCancelTenantInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -61901,6 +62914,163 @@ func (response PutStaySegments428ApplicationProblemPlusJSONResponse) VisitPutSta
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptExistingInvitationRequestObject struct {
+	Params AcceptExistingInvitationParams
+	Body   *AcceptExistingInvitationJSONRequestBody
+}
+
+type AcceptExistingInvitationResponseObject interface {
+	VisitAcceptExistingInvitationResponse(w http.ResponseWriter) error
+}
+
+type AcceptExistingInvitation200JSONResponse AcceptExistingInvitationResponse
+
+func (response AcceptExistingInvitation200JSONResponse) VisitAcceptExistingInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptExistingInvitation400ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response AcceptExistingInvitation400ApplicationProblemPlusJSONResponse) VisitAcceptExistingInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptExistingInvitation401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response AcceptExistingInvitation401ApplicationProblemPlusJSONResponse) VisitAcceptExistingInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptExistingInvitation404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response AcceptExistingInvitation404ApplicationProblemPlusJSONResponse) VisitAcceptExistingInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptExistingInvitation409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response AcceptExistingInvitation409ApplicationProblemPlusJSONResponse) VisitAcceptExistingInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type InspectInvitationRequestObject struct {
+	Body *InspectInvitationJSONRequestBody
+}
+
+type InspectInvitationResponseObject interface {
+	VisitInspectInvitationResponse(w http.ResponseWriter) error
+}
+
+type InspectInvitation200JSONResponse InspectInvitationResponse
+
+func (response InspectInvitation200JSONResponse) VisitInspectInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type InspectInvitation400ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response InspectInvitation400ApplicationProblemPlusJSONResponse) VisitInspectInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type InspectInvitation401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response InspectInvitation401ApplicationProblemPlusJSONResponse) VisitInspectInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type InspectInvitation404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response InspectInvitation404ApplicationProblemPlusJSONResponse) VisitInspectInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -78082,6 +79252,18 @@ type StrictServerInterface interface {
 	// (POST /api/v1/accommodation/waitlist/{waitlistEntryId}/cancel)
 	CancelWaitlistEntry(ctx context.Context, request CancelWaitlistEntryRequestObject) (CancelWaitlistEntryResponseObject, error)
 
+	// (GET /api/v1/admin/invitations)
+	ListTenantInvitations(ctx context.Context, request ListTenantInvitationsRequestObject) (ListTenantInvitationsResponseObject, error)
+
+	// (POST /api/v1/admin/invitations)
+	CreateTenantInvitation(ctx context.Context, request CreateTenantInvitationRequestObject) (CreateTenantInvitationResponseObject, error)
+
+	// (GET /api/v1/admin/invitations/{invitationId})
+	GetTenantInvitation(ctx context.Context, request GetTenantInvitationRequestObject) (GetTenantInvitationResponseObject, error)
+
+	// (POST /api/v1/admin/invitations/{invitationId}/cancel)
+	CancelTenantInvitation(ctx context.Context, request CancelTenantInvitationRequestObject) (CancelTenantInvitationResponseObject, error)
+
 	// (GET /api/v1/admin/users)
 	ListTenantUsers(ctx context.Context, request ListTenantUsersRequestObject) (ListTenantUsersResponseObject, error)
 
@@ -78432,6 +79614,12 @@ type StrictServerInterface interface {
 
 	// (PUT /api/v1/inpatient-stays/{stayId}/segments)
 	PutStaySegments(ctx context.Context, request PutStaySegmentsRequestObject) (PutStaySegmentsResponseObject, error)
+
+	// (POST /api/v1/invitations/accept-existing)
+	AcceptExistingInvitation(ctx context.Context, request AcceptExistingInvitationRequestObject) (AcceptExistingInvitationResponseObject, error)
+
+	// (POST /api/v1/invitations/inspect)
+	InspectInvitation(ctx context.Context, request InspectInvitationRequestObject) (InspectInvitationResponseObject, error)
 
 	// (GET /api/v1/invoices)
 	ListInvoices(ctx context.Context, request ListInvoicesRequestObject) (ListInvoicesResponseObject, error)
@@ -79816,6 +81004,119 @@ func (sh *strictHandler) CancelWaitlistEntry(w http.ResponseWriter, r *http.Requ
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(CancelWaitlistEntryResponseObject); ok {
 		if err := validResponse.VisitCancelWaitlistEntryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListTenantInvitations operation middleware
+func (sh *strictHandler) ListTenantInvitations(w http.ResponseWriter, r *http.Request, params ListTenantInvitationsParams) {
+	var request ListTenantInvitationsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListTenantInvitations(ctx, request.(ListTenantInvitationsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListTenantInvitations")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListTenantInvitationsResponseObject); ok {
+		if err := validResponse.VisitListTenantInvitationsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateTenantInvitation operation middleware
+func (sh *strictHandler) CreateTenantInvitation(w http.ResponseWriter, r *http.Request, params CreateTenantInvitationParams) {
+	var request CreateTenantInvitationRequestObject
+
+	request.Params = params
+
+	var body CreateTenantInvitationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateTenantInvitation(ctx, request.(CreateTenantInvitationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateTenantInvitation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateTenantInvitationResponseObject); ok {
+		if err := validResponse.VisitCreateTenantInvitationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetTenantInvitation operation middleware
+func (sh *strictHandler) GetTenantInvitation(w http.ResponseWriter, r *http.Request, invitationId openapi_types.UUID, params GetTenantInvitationParams) {
+	var request GetTenantInvitationRequestObject
+
+	request.InvitationId = invitationId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetTenantInvitation(ctx, request.(GetTenantInvitationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetTenantInvitation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetTenantInvitationResponseObject); ok {
+		if err := validResponse.VisitGetTenantInvitationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CancelTenantInvitation operation middleware
+func (sh *strictHandler) CancelTenantInvitation(w http.ResponseWriter, r *http.Request, invitationId openapi_types.UUID, params CancelTenantInvitationParams) {
+	var request CancelTenantInvitationRequestObject
+
+	request.InvitationId = invitationId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CancelTenantInvitation(ctx, request.(CancelTenantInvitationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CancelTenantInvitation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CancelTenantInvitationResponseObject); ok {
+		if err := validResponse.VisitCancelTenantInvitationResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -83393,6 +84694,70 @@ func (sh *strictHandler) PutStaySegments(w http.ResponseWriter, r *http.Request,
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PutStaySegmentsResponseObject); ok {
 		if err := validResponse.VisitPutStaySegmentsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AcceptExistingInvitation operation middleware
+func (sh *strictHandler) AcceptExistingInvitation(w http.ResponseWriter, r *http.Request, params AcceptExistingInvitationParams) {
+	var request AcceptExistingInvitationRequestObject
+
+	request.Params = params
+
+	var body AcceptExistingInvitationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AcceptExistingInvitation(ctx, request.(AcceptExistingInvitationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AcceptExistingInvitation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AcceptExistingInvitationResponseObject); ok {
+		if err := validResponse.VisitAcceptExistingInvitationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// InspectInvitation operation middleware
+func (sh *strictHandler) InspectInvitation(w http.ResponseWriter, r *http.Request) {
+	var request InspectInvitationRequestObject
+
+	var body InspectInvitationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.InspectInvitation(ctx, request.(InspectInvitationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "InspectInvitation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(InspectInvitationResponseObject); ok {
+		if err := validResponse.VisitInspectInvitationResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

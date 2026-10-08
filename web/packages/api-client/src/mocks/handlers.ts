@@ -7,6 +7,8 @@ import { HttpResponse, http, type HttpHandler, type PathParams } from 'msw';
 
 import { accommodationHandlers } from './accommodation-handlers';
 import { adminHandlers, hasTenantUserPermission } from './admin-handlers';
+import { invitationHandlers } from './invitation-handlers';
+import { MockInvitationState } from './invitation-state';
 import { lodgingTermsHandlers } from './lodging-terms-handlers';
 import { batchHandlers } from './batch-handlers';
 import { benefitHandlers } from './benefit-handlers';
@@ -137,6 +139,7 @@ export interface MockTenantMembership {
 
 /** Everything the handlers share; exported so tests can reset or inspect it. */
 export class MockApi {
+  readonly invitations = new MockInvitationState();
   world: MockWorld;
   session: MockSession | null = null;
   private tenantMemberships = new Map<string, MockTenantMembership>();
@@ -159,6 +162,7 @@ export class MockApi {
   }
 
   reset(): void {
+    this.invitations.reset();
     this.world = buildWorld(this.options);
     this.session = null;
     this.idempotency.clear();
@@ -1665,6 +1669,7 @@ export function createHandlers(api: MockApi): HttpHandler[] {
   return [
     ...sessionHandlers,
     ...adminHandlers(api),
+    ...invitationHandlers(api),
     ...organizationHandlers,
     ...peopleHandlers,
     ...eligibilityHandlers(api),

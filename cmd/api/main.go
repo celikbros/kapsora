@@ -156,6 +156,8 @@ func run() error {
 		return err
 	}
 	ident.directory = application.NewDirectoryService(identitypg.NewDirectoryRepository(pool), cursors)
+	ident.invitations = application.NewInvitationService(identitypg.NewInvitationRepository(pool, keys, keys).WithDeliveryEnabled(cfg.Invitations.DeliveryEnabled))
+	ident.invitationCursors = cursors
 	orgSvc, err := orgapp.New(orgapp.Deps{
 		Pool: pool, Repo: organizationpg.New(), Cipher: keys, Index: keys,
 		Audit: auditpg.New(), Cursors: cursors,
@@ -516,9 +518,11 @@ func newDocuments(cfg config.Config, pool *pgxpool.Pool, cursors *httpx.CursorCo
 
 // identityDeps bundles the identity module's services for the router.
 type identityDeps struct {
-	service   *application.Service
-	authz     *application.Authorizer
-	directory *application.DirectoryService
+	service           *application.Service
+	authz             *application.Authorizer
+	directory         *application.DirectoryService
+	invitations       *application.InvitationService
+	invitationCursors *httpx.CursorCodec
 }
 
 func newIdentity(cfg config.Config, pool *pgxpool.Pool, logger *slog.Logger) (identityDeps, error) {
@@ -581,6 +585,7 @@ func newRouter(d routerDeps) http.Handler {
 	sessionHandler := identityhttp.NewHandler(d.ident.service, cookies, signingKey, d.logger)
 	contextHandler := identityhttp.NewContextHandler(d.ident.service, d.ident.authz, d.logger)
 	directoryHandler := identityhttp.NewDirectoryHandler(d.ident.directory, sessions, d.logger)
+	invitationHandler := identityhttp.NewInvitationHandler(d.ident.invitations, sessions, d.ident.invitationCursors, d.logger)
 
 	r := chi.NewRouter()
 	r.Use(httpx.RequestID)
@@ -615,6 +620,10 @@ func newRouter(d routerDeps) http.Handler {
 			authed.Post("/session/switch-tenant", contextHandler.SwitchTenant)
 			authed.Get("/me", contextHandler.GetMe)
 			authed.Get("/tenants", contextHandler.ListTenants)
+			authed.Route("/invitations", func(r chi.Router) {
+				r.Use(ratelimit.Middleware(d.limiter, ratelimit.ScopedKey("invitation.proof", sessionScope), ratelimit.Policy{PerMinute: 12, Burst: 5}, d.logger))
+				invitationHandler.RecipientRoutes(r)
+			})
 		})
 
 		// Tenant-scoped routes: everything above plus a validated X-Tenant-ID and a
@@ -629,6 +638,12 @@ func newRouter(d routerDeps) http.Handler {
 					CommandCode: "tenant_membership.suspend",
 					Scope:       idempotencyScope, Logger: d.logger,
 					HashHeaders: []string{"If-Match"},
+				}))
+			})
+			tenant.Route("/admin/invitations", func(r chi.Router) {
+				invitationHandler.ManagerRoutes(r, idempotency.Middleware(d.pool, idempotency.Options{
+					CommandCode: "tenant_invitation.cancel", Scope: idempotencyScope,
+					Logger: d.logger, HashHeaders: []string{"If-Match"},
 				}))
 			})
 

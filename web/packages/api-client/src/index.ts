@@ -11,6 +11,12 @@ export type {
   TenantMembershipStatus,
   TenantUserQuery,
   SuspendTenantUserReasonCode,
+  TenantInvitation,
+  TenantInvitationPage,
+  TenantInvitationQuery,
+  CreateTenantInvitationRequest,
+  InspectInvitationResponse,
+  AcceptExistingInvitationResponse,
 } from './admin';
 export type {
   CreateOrganizationRequest,

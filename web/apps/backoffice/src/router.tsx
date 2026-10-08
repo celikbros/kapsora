@@ -10,6 +10,9 @@ import { AdjustmentQueuePage } from './adjustments/AdjustmentQueuePage';
 import { AdminAccess } from './admin/AdminAccess';
 import { AdminUsersPage } from './admin/AdminUsersPage';
 import { AdminUserDetailPage } from './admin/AdminUserDetailPage';
+import { AdminInvitationsPage } from './admin/AdminInvitationsPage';
+import { AdminInvitationDetailPage } from './admin/AdminInvitationDetailPage';
+import { InvitationPage } from './pages/InvitationPage';
 import type { AppServices } from './api';
 import { CategoryTreePage } from './catalog/CategoryTreePage';
 import { CodeSystemDetailPage } from './catalog/CodeSystemDetailPage';
@@ -102,7 +105,13 @@ const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/auth/login',
   validateSearch: returnToSearch,
-  beforeLoad: ({ context }) => redirectIfAuthenticated(context.services.store, '/'),
+  beforeLoad: ({ context, location }) =>
+    redirectIfAuthenticated(
+      context.services.store,
+      new URLSearchParams(location.searchStr).get('returnTo') === '/invitation'
+        ? '/invitation'
+        : '/',
+    ),
   component: LoginPage,
 });
 
@@ -146,6 +155,18 @@ const appChooserRoute = createRoute({
       searchStr: location.searchStr,
     }),
   component: AppChooserPage,
+});
+
+/** The recipient enters the proof after normal sign-in, before selecting a tenant. */
+const invitationRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/invitation',
+  beforeLoad: ({ context, location }) =>
+    requireAuthenticated(context.services.store, {
+      pathname: location.pathname,
+      searchStr: location.searchStr,
+    }),
+  component: InvitationPage,
 });
 
 /** Everything under the shell needs a session and an active tenant. */
@@ -652,6 +673,24 @@ const adminUserDetailRoute = createRoute({
     </AdminAccess>
   ),
 });
+const adminInvitationsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/admin/invitations',
+  component: () => (
+    <AdminAccess>
+      <AdminInvitationsPage />
+    </AdminAccess>
+  ),
+});
+const adminInvitationDetailRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/admin/invitations/$invitationId',
+  component: () => (
+    <AdminAccess>
+      <AdminInvitationDetailPage />
+    </AdminAccess>
+  ),
+});
 const healthServicesRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/health-services',
@@ -669,6 +708,7 @@ const routeTree = rootRoute.addChildren([
   tenantRoute,
   passwordRoute,
   appChooserRoute,
+  invitationRoute,
   appRoute.addChildren([
     homeRoute,
     profileRoute,
@@ -729,6 +769,8 @@ const routeTree = rootRoute.addChildren([
     reportsRoute,
     adminUsersRoute,
     adminUserDetailRoute,
+    adminInvitationsRoute,
+    adminInvitationDetailRoute,
     securityRoute,
     medicalReportsRoute,
     medicalReportRoute,

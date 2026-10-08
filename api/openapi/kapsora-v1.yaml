@@ -73,6 +73,191 @@ tags:
   - name: Reports
     description: Cari ekstre, günlük mutabakat, operasyon panosu ve filigranlı dışa aktarma
 paths:
+  /api/v1/admin/invitations:
+    get:
+      tags: [Identity]
+      operationId: listTenantInvitations
+      description: Read the current tenant's masked invitations with a correlated TENANT identity.user.read grant.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/TenantInvitationStatus'
+      responses:
+        '200':
+          description: Masked invitation page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantInvitationPage'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Identity]
+      operationId: createTenantInvitation
+      description: Invite by contact without looking up or linking a global account. Requires correlated TENANT identity.user.manage and fresh password step-up. The secret is delivered by the restricted invitation worker only.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTenantInvitationRequest'
+      responses:
+        '200':
+          description: Invitation summary; never includes the code or raw contact
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantInvitation'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '503':
+          description: Restricted invitation delivery is disabled
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/admin/invitations/{invitationId}:
+    get:
+      tags: [Identity]
+      operationId: getTenantInvitation
+      description: Return the masked invitation summary for a manager with tenant-scoped identity.user.read access.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: invitationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Masked invitation summary
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantInvitation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/admin/invitations/{invitationId}/cancel:
+    post:
+      tags: [Identity]
+      operationId: cancelTenantInvitation
+      description: Cancel a pending invitation with fresh password step-up. The request body is empty.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - name: invitationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Cancelled invitation summary
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantInvitation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/Conflict'
+        '428':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/invitations/inspect:
+    post:
+      tags: [Identity]
+      operationId: inspectInvitation
+      description: An authenticated account proves a pasted code before any tenant details are returned. No active tenant is required.
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InspectInvitationRequest'
+      responses:
+        '200':
+          description: Valid invitation and tenant display
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InspectInvitationResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/invitations/accept-existing:
+    post:
+      tags: [Identity]
+      operationId: acceptExistingInvitation
+      description: The signed-in account explicitly consents to a zero-grant tenant membership. No automatic tenant switch or session change occurs. An exact retry by the same actor returns the safe result.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcceptExistingInvitationRequest'
+      responses:
+        '200':
+          description: Joined tenant awaiting role assignment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptExistingInvitationResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /api/v1/admin/users:
     get:
       tags: [Identity]
@@ -14892,6 +15077,108 @@ components:
               id:
                 type: [string, 'null']
                 format: uuid
+    TenantInvitationStatus:
+      type: string
+      enum: [PENDING, ACCEPTED, CANCELLED, EXPIRED]
+    TenantInvitationDeliveryStatus:
+      type: string
+      enum: [QUEUED, SENT, FAILED, CANCELLED]
+    TenantInvitation:
+      type: object
+      additionalProperties: false
+      required: [invitationId, maskedRecipient, status, createdAt, expiresAt, rowVersion, deliveryStatus]
+      properties:
+        invitationId:
+          type: string
+          format: uuid
+        maskedRecipient:
+          type: string
+        status:
+          $ref: '#/components/schemas/TenantInvitationStatus'
+        createdAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        rowVersion:
+          type: integer
+          format: int64
+          minimum: 1
+        deliveryStatus:
+          $ref: '#/components/schemas/TenantInvitationDeliveryStatus'
+    TenantInvitationPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TenantInvitation'
+        nextCursor:
+          type: [string, 'null']
+    CreateTenantInvitationRequest:
+      type: object
+      additionalProperties: false
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+    InspectInvitationRequest:
+      type: object
+      additionalProperties: false
+      required: [code]
+      properties:
+        code:
+          type: string
+          minLength: 75
+          maxLength: 160
+    InspectInvitationResponse:
+      type: object
+      additionalProperties: false
+      required: [tenantDisplayName, invitationStatus, expiresAt]
+      properties:
+        tenantDisplayName:
+          type: string
+        invitationStatus:
+          $ref: '#/components/schemas/TenantInvitationStatus'
+        expiresAt:
+          type: string
+          format: date-time
+    AcceptExistingInvitationRequest:
+      type: object
+      additionalProperties: false
+      required: [code, confirmed]
+      properties:
+        code:
+          type: string
+          minLength: 75
+          maxLength: 160
+        confirmed:
+          type: boolean
+          const: true
+    AcceptExistingInvitationResponse:
+      type: object
+      additionalProperties: false
+      required: [tenantId, tenantDisplayName, membershipId, membershipStatus, accessPending]
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        tenantDisplayName:
+          type: string
+        membershipId:
+          type: string
+          format: uuid
+        membershipStatus:
+          type: string
+          const: ACTIVE
+        accessPending:
+          type: boolean
+          description: True when the accepted membership currently has no effective role permissions.
     TenantMembershipStatus:
       type: string
       enum: [PENDING, ACTIVE, SUSPENDED, REVOKED]

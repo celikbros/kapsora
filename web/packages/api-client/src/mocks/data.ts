@@ -57,6 +57,8 @@ export interface MockAccount {
    * slice is on the server.
    */
   memberships: {
+    /** Membership without any role assignment, created only by explicit invitation consent. */
+    membershipOnly?: boolean;
     tenantCode: string;
     permissions: string[];
     scopes?: { type: string; id: string | null }[];

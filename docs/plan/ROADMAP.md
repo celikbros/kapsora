@@ -38,7 +38,7 @@ administration commands. Existing organization CRUD remains its own delivered wo
 | Order | Stage | Current status | Result required |
 | --- | --- | --- | --- |
 | MGT-01 | Tenant user membership directory | VERIFIED; bounded live reads passed 2026-10-08 | Real list/filter/paging and membership detail with assigned-role validity; tenant-wide permission and strict data projection |
-| MGT-02 | Account onboarding and membership lifecycle | ACTIVE; MGT-02a technical checks and live reads passed; invitation B1 in progress | Explicit public command contracts, validation, scoped lifecycle effects and retry/audit behavior |
+| MGT-02 | Account onboarding and membership lifecycle | ACTIVE; MGT-02a technical checks/live reads passed; B1 implemented, isolated CI and local migration pending | Explicit public command contracts, validation, scoped lifecycle effects and retry/audit behavior |
 | MGT-03 | Role assignment and revocation | QUEUED | Step-up, privileged maker-checker rules, scoped commands and recorded history |
 | MGT-04 | Typed tenant settings | QUEUED | Named supported settings and validated changes; no arbitrary JSON editor |
 
@@ -70,9 +70,9 @@ identity lint, tracked-tree vet, contract lint/compatibility and regeneration. F
 synthetic desktop/mobile views pass, including long codes and empty/unbounded validity.
 Directory integration cases are locally SKIPPED because the existing dbtest harness
 also resets a shared application-role password; the successful CI PostgreSQL step supplies
-isolated, non-skipped authorization/isolation evidence. Live reads after the operator
-restart remain pending; the technical
-implementation does not close that gate.
+isolated, non-skipped authorization/isolation evidence. Live reads passed after the
+operator restart on 2026-10-08, as recorded in the Management checkpoint below; the
+MGT-02a command itself still has no live suspension proof.
 
 **Active task, MGT-02a:** [tenant membership suspension](../delegation/WP-MGT-02a-membership-suspension.md)
 from directory detail, before
@@ -103,11 +103,23 @@ was suspended. This closes MGT-01's live read gate; isolated CI remains suspensi
 evidence. Final head `163c3e5` passed all six CI jobs, 697 frontend tests, 25 browser smoke
 tests and seven Directory DB/HTTP cases without skips.
 
-**Active next task:** [MGT-02b B1 invitations for existing accounts](../delegation/WP-MGT-02b-membership-invitations.md),
-with manager create/list/detail/cancel, restricted local delivery and authenticated explicit
-recipient consent. Accepted membership has zero grants. Migration 000056 is reserved,
-not applied locally. New-account acceptance/recovery is B2; MGT-03 role changes and MGT-04
-settings remain queued. The retained owner/calendar gates are not closed by this work.
+**MGT-02b B1 checkpoint (2026-10-09):** existing-account invitations are implemented across
+manager create/list/detail/cancel, restricted delivery, session-proven recipient inspect and
+explicit acceptance, and waiting membership in all three apps. Migration 000056 stores
+encrypted contact/delivery data and HMAC receipts. Membership grants remain empty and tenant
+switching is never automatic. Loopback SMTP is disabled by default; external SMTP is
+unavailable. The local schema remains 55, so migration 000056 is not applied. Earlier local
+evidence: 708/83 full frontend tests before the final follow-up, 23 targeted UI/mock/auth
+checks and five mock-retention checks, plus 18 synthetic 1440/390 views with zero actual API
+calls, overflow or browser errors. Impeccable was unavailable; manual Playwright review
+followed product standards. Full workspace lint, typecheck and formatting, all three app
+builds, tracked-package Go vet and nonbreaking contract compatibility pass. Spectral
+currently reports two pre-tenant exemption errors being corrected. Isolated CI for B1 is
+pending. Latest checkpoint 829e2d9 has all six existing CI jobs green on [run
+37843434242](https://github.com/celikbros/kapsora/actions/runs/37843434242), but this does
+not certify B1. Draft PR #11 remains open and unmerged. Next is B2 new-account
+acceptance/recovery; MGT-03 role changes and MGT-04 typed settings follow. Owner/calendar
+gates remain open.
 
 ## Current product completion roadmap (2026-09-22)
 

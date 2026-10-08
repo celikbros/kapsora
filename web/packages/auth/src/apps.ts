@@ -25,3 +25,21 @@ export function fitsApp(ctx: Placement, app: KapsoraApp): boolean {
 export function appsFor(tenants: readonly Placement[]): KapsoraApp[] {
   return KAPSORA_APPS.filter((app) => tenants.some((ctx) => fitsApp(ctx, app)));
 }
+
+/** Active memberships awaiting any role grant, including alongside usable apps. */
+type WaitingPlacement = {
+  tenant: Pick<TenantContext['tenant'], 'displayName' | 'status'>;
+  apps?: TenantContext['apps'];
+  permissions: readonly string[];
+};
+
+export function pendingOrganizationNames(tenants: readonly WaitingPlacement[]): string[] {
+  return tenants
+    .filter(
+      (ctx) =>
+        ctx.tenant.status === 'ACTIVE' &&
+        (ctx.apps ?? []).length === 0 &&
+        ctx.permissions.length === 0,
+    )
+    .map((ctx) => ctx.tenant.displayName);
+}

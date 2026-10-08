@@ -4,6 +4,7 @@ import {
   browser,
   useAccountWatch,
   fitsApp,
+  pendingOrganizationNames,
   requireAuthenticated,
   requireTenant,
   safeReturnTo,
@@ -122,6 +123,10 @@ function LoginPage() {
       const state = await store.login(user, pass);
       setPassword('');
       const target = safeReturnTo(search.returnTo, '/');
+      if (pendingOrganizationNames(state.me?.tenants ?? []).length > 0) {
+        await navigate({ href: `/auth/apps?returnTo=${encodeURIComponent(target)}` });
+        return;
+      }
       // The single sign-in: an account whose only app is another one goes there, one with
       // several chooses, one with none is told (APP_CHOOSER_PATH).
       const next = HANDS_OVER

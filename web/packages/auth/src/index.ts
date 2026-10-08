@@ -1,6 +1,6 @@
 export { createSessionStore } from './store';
 export type { SessionActions, SessionState, SessionStatus, SessionStore } from './store';
-export { KAPSORA_APPS, appsFor, fitsApp } from './apps';
+export { KAPSORA_APPS, appsFor, fitsApp, pendingOrganizationNames } from './apps';
 export type { KapsoraApp } from './apps';
 export { afterSignIn, appUrlsFrom, browser } from './signin';
 export type { AfterSignIn, AppUrls } from './signin';

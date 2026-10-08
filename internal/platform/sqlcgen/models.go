@@ -1463,6 +1463,37 @@ type IamSession struct {
 	RevokedAt      *time.Time
 }
 
+type IamTenantInvitation struct {
+	ID                   uuid.UUID
+	TenantID             uuid.UUID
+	ContactCipher        []byte
+	ContactHash          []byte
+	MaskedRecipient      *string
+	ProofDigest          []byte
+	DeliveryCipher       []byte
+	DeliveryGeneration   int32
+	DeliveryStatus       string
+	Status               string
+	AcceptedActorID      uuid.NullUUID
+	AcceptedMembershipID uuid.NullUUID
+	AcceptKey            *string
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
+	ExpiresAt            time.Time
+	TerminalAt           *time.Time
+	RowVersion           int64
+}
+
+type IamTenantInvitationCreateReceipt struct {
+	TenantID       uuid.UUID
+	ActorID        uuid.UUID
+	IdempotencyKey string
+	Fingerprint    []byte
+	InvitationID   uuid.UUID
+	ResponseJson   []byte
+	CreatedAt      time.Time
+}
+
 type IamTenantMembership struct {
 	ID               uuid.UUID
 	TenantID         uuid.UUID

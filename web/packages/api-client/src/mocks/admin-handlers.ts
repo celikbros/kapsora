@@ -62,7 +62,7 @@ function detail(api: MockApi, account: MockAccount, tenantId: string): Schemas['
   return {
     membership: projectMember(api, account, tenantId),
     assignedRoles: account.memberships
-      .filter((grant) => grant.tenantCode === tenant.code)
+      .filter((grant) => grant.tenantCode === tenant.code && !grant.membershipOnly)
       .map((grant) => ({
         code: grant.permissions.includes('identity.user.read') ? 'TENANT_ADMIN' : 'DEMO_ROLE',
         name: grant.permissions.includes('identity.user.read') ? 'Kurum Yöneticisi' : 'Demo Rol',

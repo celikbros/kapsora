@@ -1,4 +1,11 @@
-import { appsFor, browser, safeReturnTo, useSession, useSessionStore } from '@kapsora/auth';
+import {
+  appsFor,
+  browser,
+  pendingOrganizationNames,
+  safeReturnTo,
+  useSession,
+  useSessionStore,
+} from '@kapsora/auth';
 import { AppChooser } from '@kapsora/ui';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
@@ -24,8 +31,10 @@ export function AppChooserPage() {
   const me = useSession((s) => s.me);
   const [signingOut, setSigningOut] = useState(false);
   const fits = appsFor((me?.tenants ?? []).filter((t) => t.tenant.status === 'ACTIVE'));
+  const pendingOrganizations = pendingOrganizationNames(me?.tenants ?? []);
   const here = fits.includes('member');
-  const only = HANDS_OVER && !here && fits.length === 1 ? fits[0]! : null;
+  const only =
+    HANDS_OVER && !here && fits.length === 1 && pendingOrganizations.length === 0 ? fits[0]! : null;
 
   useEffect(() => {
     if (only) browser.assign(APP_URLS[only]);
@@ -47,6 +56,7 @@ export function AppChooserPage() {
         : {})}
       onSignOut={signOut}
       signingOut={signingOut}
+      pendingOrganizations={pendingOrganizations}
     />
   );
 }

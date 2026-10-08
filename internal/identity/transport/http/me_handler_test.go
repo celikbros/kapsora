@@ -1,6 +1,7 @@
 package identityhttp_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"io"
@@ -20,6 +21,7 @@ import (
 	"github.com/celikbros/kapsora/internal/identity/domain"
 	identitypg "github.com/celikbros/kapsora/internal/identity/infrastructure/postgres"
 	identityhttp "github.com/celikbros/kapsora/internal/identity/transport/http"
+	"github.com/celikbros/kapsora/internal/platform/crypto/localkey"
 	"github.com/celikbros/kapsora/internal/platform/dbtest"
 	"github.com/celikbros/kapsora/internal/platform/httpx"
 	"github.com/celikbros/kapsora/internal/platform/idempotency"
@@ -27,11 +29,13 @@ import (
 
 type authzServer struct {
 	*server
-	svc     *application.Service
-	prov    *application.Provisioner
-	actor   uuid.UUID
-	tenantA uuid.UUID
-	tenantB uuid.UUID
+	svc            *application.Service
+	prov           *application.Provisioner
+	actor          uuid.UUID
+	tenantA        uuid.UUID
+	tenantB        uuid.UUID
+	invitationRepo *identitypg.InvitationRepository
+	invitationKeys *localkey.Provider
 }
 
 // newAuthzServer mirrors the production router: session loading, CSRF, the pre-tenant
@@ -82,6 +86,12 @@ func newAuthzServer(t *testing.T, recorder ...audit.Recorder) *authzServer {
 	}
 	directoryHandler := identityhttp.NewDirectoryHandler(
 		application.NewDirectoryService(identitypg.NewDirectoryRepository(h.App, recorder...), cursors), mw, logger)
+	invitationKeys, err := localkey.New(bytes.Repeat([]byte{0x42}, 32))
+	if err != nil {
+		t.Fatal(err)
+	}
+	invitationRepo := identitypg.NewInvitationRepository(h.App, invitationKeys, invitationKeys, recorder...).WithDeliveryEnabled(true)
+	invitationHandler := identityhttp.NewInvitationHandler(application.NewInvitationService(invitationRepo), mw, cursors, logger)
 
 	r := chi.NewRouter()
 	r.Route("/api/v1", func(api chi.Router) {
@@ -94,6 +104,7 @@ func newAuthzServer(t *testing.T, recorder ...audit.Recorder) *authzServer {
 			authed.Post("/session/step-up", sessionHandler.StepUp)
 			authed.Get("/me", contextHandler.GetMe)
 			authed.Get("/tenants", contextHandler.ListTenants)
+			authed.Route("/invitations", invitationHandler.RecipientRoutes)
 		})
 		api.Group(func(tenant chi.Router) {
 			tenant.Use(mw.RequireCSRF)
@@ -101,6 +112,16 @@ func newAuthzServer(t *testing.T, recorder ...audit.Recorder) *authzServer {
 			tenant.Route("/admin/users", func(r chi.Router) {
 				directoryHandler.Routes(r, idempotency.Middleware(h.App, idempotency.Options{
 					CommandCode: "tenant_membership.suspend",
+					Scope: func(req *http.Request) (idempotency.Scope, bool) {
+						rc, ok := identity.FromContext(req.Context())
+						return idempotency.Scope{TenantID: rc.TenantID, ActorID: rc.Principal.ActorID}, ok
+					},
+					HashHeaders: []string{"If-Match"},
+				}))
+			})
+			tenant.Route("/admin/invitations", func(r chi.Router) {
+				invitationHandler.ManagerRoutes(r, idempotency.Middleware(h.App, idempotency.Options{
+					CommandCode: "tenant_invitation.cancel",
 					Scope: func(req *http.Request) (idempotency.Scope, bool) {
 						rc, ok := identity.FromContext(req.Context())
 						return idempotency.Scope{TenantID: rc.TenantID, ActorID: rc.Principal.ActorID}, ok
@@ -127,12 +148,14 @@ func newAuthzServer(t *testing.T, recorder ...audit.Recorder) *authzServer {
 		})
 	})
 	return &authzServer{
-		server:  &server{h: h, handler: r, cookies: cookies},
-		svc:     svc,
-		prov:    prov,
-		actor:   actor,
-		tenantA: tenantA,
-		tenantB: tenantB,
+		server:         &server{h: h, handler: r, cookies: cookies},
+		svc:            svc,
+		prov:           prov,
+		actor:          actor,
+		tenantA:        tenantA,
+		tenantB:        tenantB,
+		invitationRepo: invitationRepo,
+		invitationKeys: invitationKeys,
 	}
 }
 

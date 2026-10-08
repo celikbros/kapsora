@@ -1144,7 +1144,8 @@ seven directory integration cases. All seven passed without skips on `d432e74`, 
 ([run 37184545274](https://github.com/celikbros/kapsora/actions/runs/37184545274)).
 The final client reason type is derived from the generated contract; its local typecheck
 passes. Use PR #11's current checks for later heads.
-Live read confirmation remains pending the operator's restart. No existing live member
+The 2026-10-08 operator restart completed the MGT-01 read-only live check below; it did not
+prove the suspension command live. No existing live member
 was suspended. Invitation/acceptance and later role restoration remain separate tasks.
 The unavailable Impeccable skill was not run; visual review used PRODUCT/DESIGN constraints.
 
@@ -1172,11 +1173,32 @@ $env:E2E_EXISTING_UI_URL = 'http://127.0.0.1:5181'
 pnpm exec playwright test --config tests/e2e/playwright.config.ts tests/e2e/management-directory-readonly.spec.ts --project chromium --trace off
 ```
 
-The active next implementation is consent-based invitations for existing accounts,
-[MGT-02b B1](delegation/WP-MGT-02b-membership-invitations.md). It must add no automatic
-role grants, account matching or password changes. New-account acceptance remains B2;
-role assignment remains MGT-03. Migration 000056 is reserved for B1, not yet applied
-to the operator database. Existing product/calendar acceptance gates remain unchanged.
+### Membership invitation B1 implementation checkpoint (2026-10-09)
+
+MGT-02b B1 is implemented end to end for existing-account recipients. Migration 000056
+stores encrypted contact and delivery data plus tenant-keyed HMAC receipts. Acceptance
+creates membership with zero grants, requires explicit recipient consent, and never switches
+the active tenant automatically. Managers have step-up protected create/list/detail/cancel;
+recipients use session-proven inspect and accept-existing routes. Waiting membership is
+handled across the backoffice, provider portal and member app.
+
+Restricted local loopback SMTP is disabled by default. External SMTP is unavailable, so no
+external delivery is claimed. Local evidence so far includes 708/83 full frontend tests
+before the final follow-up, 23 targeted UI/mock/auth checks and five mock-retention checks;
+18 synthetic desktop/mobile views at 1440/390 had no real API calls, overflow or browser
+errors. The Impeccable skill was unavailable; this was manual Playwright review against the
+product standards. Full workspace lint, typecheck and formatting, plus all three app builds,
+now pass. Tracked-package Go vet and nonbreaking contract compatibility also pass. Spectral
+passes with zero errors and eleven existing warnings. Isolated CI for
+B1 is pending, and the local database remains at schema 55: migration 000056 has not been
+applied.
+
+MGT-01 live reads passed 2/2 in 3.1 seconds after the operator restart on 2026-10-08, with
+no commands issued. The latest checkpoint is 829e2d9; all six CI jobs are green on
+[run 37843434242](https://github.com/celikbros/kapsora/actions/runs/37843434242). This
+existing run is not B1 CI evidence. Draft PR #11 remains open; do not merge or release. B2
+new-account acceptance and recovery is next; MGT-03 role assignment and MGT-04 typed settings
+remain later work. Existing product/calendar acceptance gates remain open.
 
 ### PC-06 technical acceptance checkpoint (2026-10-03)
 

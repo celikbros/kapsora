@@ -19,6 +19,8 @@ export interface AppChooserProps {
   forwarding?: boolean;
   onSignOut: () => void;
   signingOut?: boolean;
+  /** Active memberships that have no application grants yet. */
+  pendingOrganizations?: readonly string[];
 }
 
 /**
@@ -36,6 +38,7 @@ export function AppChooser({
   forwarding = false,
   onSignOut,
   signingOut = false,
+  pendingOrganizations = [],
 }: AppChooserProps) {
   const { t } = useTranslation();
   const name = (app: AppKind) => t(`auth.apps.${app}`);
@@ -88,6 +91,20 @@ export function AppChooser({
             ))}
           </ul>
         ) : null}
+        {pendingOrganizations.length > 0 && (
+          <section
+            className="border-line mt-5 rounded-md border p-3 text-sm"
+            aria-label={t('auth.pendingOrganizationsTitle')}
+          >
+            <h2 className="font-semibold">{t('auth.pendingOrganizationsTitle')}</h2>
+            <p className="text-fg-muted mt-1">{t('auth.pendingOrganizationsBody')}</p>
+            <ul className="mt-2 list-inside list-disc">
+              {pendingOrganizations.map((name) => (
+                <li key={name}>{name}</li>
+              ))}
+            </ul>
+          </section>
+        )}
         <div className="mt-6">
           <Button variant="secondary" loading={signingOut} onClick={onSignOut}>
             {t('auth.notForAppSignOut')}

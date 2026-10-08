@@ -89,10 +89,11 @@ const canReadTenantUsers = `-- name: CanReadTenantUsers :one
 
 SELECT EXISTS (
   SELECT 1 FROM iam.tenant_membership m
+  JOIN iam.actor a ON a.id = m.actor_id
   JOIN iam.access_grant g ON g.tenant_id = m.tenant_id AND g.tenant_membership_id = m.id
   JOIN iam.role_permission rp ON rp.tenant_id = g.tenant_id AND rp.role_id = g.role_id
  WHERE m.tenant_id = $1 AND m.id = $2 AND m.actor_id = $3
-   AND m.membership_status = 'ACTIVE' AND m.valid_period @> CURRENT_DATE
+   AND a.status = 'ACTIVE' AND m.membership_status = 'ACTIVE' AND m.valid_period @> CURRENT_DATE
    AND g.scope_type = 'TENANT' AND g.valid_period @> clock_timestamp()
    AND rp.permission_code = 'identity.user.read'
 )

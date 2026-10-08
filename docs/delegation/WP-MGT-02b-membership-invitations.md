@@ -3,7 +3,7 @@
 | Field       | Value                                                                                                 |
 | ----------- | ----------------------------------------------------------------------------------------------------- |
 | Date        | 2026-10-08                                                                                            |
-| Status      | Implementation specification; no acceptance evidence yet                                              |
+| Status      | B1 implemented; isolated CI and local migration application pending; B2 not started |
 | Depends on  | MGT-01 directory; MGT-02a correlated manager capability; ADR-022                                      |
 | Delivery    | MGT-02b1 existing-account invitation journey, then MGT-02b2 new-account acceptance                    |
 | Migration   | B1: 000056, assigned by integrator on 2026-10-08 after checking current maximum 000055; B2 unassigned |
@@ -220,3 +220,22 @@ for development acceptance.
   proves UI behavior only; fake SMTP/isolated database tests prove delivery and atomicity.
 
 No acceptance box is complete merely because this specification exists.
+
+## 9. B1 implementation checkpoint (2026-10-09)
+
+B1 is implemented for existing-account recipients: manager step-up/create/list/detail/cancel,
+session-proven inspect and explicit accept-existing, encrypted contact and delivery data,
+tenant-keyed HMAC receipts, and zero-grant membership waiting states across backoffice,
+provider and member apps. There is no automatic tenant switch. Loopback SMTP is disabled by
+default and external SMTP is unavailable.
+
+Local checks to date: 708/83 full frontend tests before the final follow-up; 23 targeted
+UI/mock/auth checks and five mock-retention checks passed; 18 synthetic 1440/390 views showed
+zero actual API calls, overflow or browser errors. Manual Playwright review used product
+standards because Impeccable was unavailable. Full workspace lint, typecheck and formatting,
+all three app builds, tracked-package Go vet and nonbreaking contract compatibility pass.
+Spectral passes with zero errors and eleven existing warnings. Isolated CI is
+pending. Migration 000056 is implemented but not applied locally; the local schema remains
+55. Existing CI run [37843434242](https://github.com/celikbros/kapsora/actions/runs/37843434242)
+on checkpoint 829e2d9 is green across six jobs, but is not B1 CI evidence. B2 new-account
+acceptance and receipt recovery is next; MGT-03 roles and MGT-04 settings remain later work.
