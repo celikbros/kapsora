@@ -14,13 +14,16 @@ Authoritative sources: [docs/plan/KAPSORA_Master_Plan_v2.0.md](KAPSORA_Master_Pl
 (Turkish, normative), [docs/adr](../adr/README.md), the frozen v1.2 specification under
 [docs/baseline-v1.2](../baseline-v1.2/). When they disagree, the master plan and ADRs win.
 
-## Current snapshot (2026-10-04)
+## Current snapshot (2026-10-09)
 
 This snapshot supersedes dated next-step instructions in the historical status log.
 PC-01 through PC-04 are VERIFIED locally within their defined demo scopes. PC-05 remains
 ACTIVE: its financial journeys passed local technical acceptance; formal owner acceptance
 and retained scheduler checks remain open. PC-06 has passed live technical acceptance,
-with the same remaining gates. Schema 55 was applied cleanly. PR #11 remains draft/unmerged;
+with the same remaining gates. Schema 57 is applied cleanly. Management's invitation
+onboarding has isolated database proof and all six code CI checks passed; bounded anonymous live checks are
+tracked in the checkpoint below. The role-assignment specification is ready, with
+implementation still pending. PR #11 remains draft/unmerged;
 the recorded calendar-preparation CI baseline passed all six checks on `5bb2349`
 ([run 37152681278](https://github.com/celikbros/kapsora/actions/runs/37152681278)).
 No concrete date-independent implementation blocker remains in the completed PC review
@@ -38,8 +41,8 @@ administration commands. Existing organization CRUD remains its own delivered wo
 | Order | Stage | Current status | Result required |
 | --- | --- | --- | --- |
 | MGT-01 | Tenant user membership directory | VERIFIED; bounded live reads passed 2026-10-08 | Real list/filter/paging and membership detail with assigned-role validity; tenant-wide permission and strict data projection |
-| MGT-02 | Account onboarding and membership lifecycle | ACTIVE; B1 live list/denial reads passed; B2 new-account acceptance implemented, isolated verification pending | Explicit public command contracts, validation, scoped lifecycle effects and retry/audit behavior |
-| MGT-03 | Role assignment and revocation | QUEUED | Step-up, privileged maker-checker rules, scoped commands and recorded history |
+| MGT-02 | Account onboarding and membership lifecycle | ACTIVE; B2 code CI passed and local schema 57 clean; bounded anonymous live check awaits restart | Explicit public command contracts, validation, scoped lifecycle effects and retry/audit behavior |
+| MGT-03 | Role assignment and revocation | READY for bounded A implementation; Astra plan reviewed by Sol | Step-up, privileged maker-checker rules, scoped commands and recorded history |
 | MGT-04 | Typed tenant settings | QUEUED | Named supported settings and validated changes; no arbitrary JSON editor |
 
 **MGT-01 first delivery:** `GET /api/v1/admin/users` and membership-ID detail, opened from
@@ -127,9 +130,23 @@ Draft PR #11 remains open and unmerged. B2 new-account acceptance and private us
 recovery are implemented under [the Astra-planned B2 package](../delegation/WP-MGT-02b2-new-account-invitations.md).
 The synthetic browser review passed 14 states at 1440px/390px, with no overflow or real
 API commands; an aborted acceptance response retried the exact command after password
-re-entry, and direct username recovery required the current password. Isolated database
-CI, migration 57 landing and final API boundary reads remain pending. MGT-03 role changes
-and MGT-04 typed settings follow. Owner/calendar gates remain open.
+re-entry, and direct username recovery required the current password. Isolated PostgreSQL
+passed the 56-to-57 upgrade and seven Directory/fifteen Invitation cases without skips
+on `02fbf13` ([run 37889255894](https://github.com/celikbros/kapsora/actions/runs/37889255894)).
+The overall run failed on three missing problem messages, corrected on `2a7a426`; the
+earlier Go security finding is fixed by requiring Go 1.27.2. Local schema is now 57,
+dirty=false. All six code CI jobs passed on `2a7a426`
+([run 37889748595](https://github.com/celikbros/kapsora/actions/runs/37889748595)):
+725 frontend tests in 87 files, 25 smoke tests and isolated Directory/Invitation cases,
+with 102 opt-in live/calendar skips. Bounded anonymous API reads await the operator
+restart; the current API still returns RESOURCE_NOT_FOUND for inspect-new. No live
+account or grant was created. [MGT-03A](../delegation/WP-MGT-03-role-assignment.md)
+is specified and independently reviewed: activate a zero-access human membership with
+one supported non-privileged system role, then revoke that supported access. Mixed grant
+scopes and mutable permission templates are guarded explicitly; no grant is applied as
+planning evidence. Privileged maker-checker work remains a separate B specification,
+required before completing MGT-03. MGT-04 typed settings follow. Owner/calendar gates
+remain open.
 
 ## Current product completion roadmap (2026-09-22)
 

@@ -38,11 +38,16 @@ keep them current as you build.
 The [product completion roadmap](plan/ROADMAP.md#current-product-completion-roadmap-2026-09-22)
 records the approved sequence and acceptance criteria.
 
-**Current snapshot (2026-10-04):** PC-01 through PC-04 are VERIFIED locally for their
+**Current snapshot (2026-10-09):** PC-01 through PC-04 are VERIFIED locally for their
 specified demo acceptance scopes. PC-05 remains ACTIVE: the financial journeys passed
 local technical acceptance; formal owner acceptance and retained scheduler checks remain
-open. PC-06 has passed live technical acceptance, with the same remaining gates. Schema 55
-was applied cleanly. PR #11 remains draft and unmerged. All six CI checks passed on
+open. PC-06 has passed live technical acceptance, with the same remaining gates. Schema 57
+is applied cleanly. Management now includes the directory, tenant-only suspension,
+existing-account invitations and new-account invitation acceptance. B2 isolated database
+proof and all six code CI checks passed; bounded anonymous live checks await the operator
+restart, as recorded below. The next
+role-assignment package is specified, with implementation still pending. PR #11 remains
+draft and unmerged. All six CI checks passed on
 calendar-preparation code head `5bb2349` ([run 37152681278](https://github.com/celikbros/kapsora/actions/runs/37152681278));
 current Management CI is tracked in PR #11's checks.
 This snapshot and the latest checkpoint below supersede dated next-step instructions in
@@ -1232,9 +1237,35 @@ overflow, including exact uncertain retry after password re-entry and direct rec
 Product standards and manual Playwright review were used; Impeccable was unavailable.
 
 Local isolated-DB execution remains intentionally disabled because the shared harness
-resets the application-role password. Final isolated CI and local migration 57 landing
-are pending. No live invitation, account, membership or role grant was created by B2
+resets the application-role password. GitHub's isolated PostgreSQL job passed the real
+56-to-57 upgrade, seven Directory and fifteen Invitation cases without skips, including
+all eight B2 cases, on `02fbf13`
+([run 37889255894](https://github.com/celikbros/kapsora/actions/runs/37889255894)). That run's
+general Go job exposed three missing problem messages, corrected on `2a7a426`. An earlier
+security scan required Go 1.27.2; the module now pins that patched minimum. All local Go
+unit packages pass with integration DB execution disabled; local govulncheck reports no
+called vulnerable symbols. All 725 frontend tests pass, with workspace checks/builds and
+unchanged regeneration.
+
+All six CI jobs passed on final code head `2a7a426`
+([run 37889748595](https://github.com/celikbros/kapsora/actions/runs/37889748595)), including
+725 frontend tests in 87 files, 25 browser smoke tests, seven Directory/fifteen Invitation
+cases without skips and the real 56-to-57 upgrade. Normal smoke skipped 102 opt-in
+live/calendar tests; the new anonymous boundary checker is among those skipped cases.
+
+Migration 000057 was applied locally after isolated schema/invitation proof: schema 57,
+dirty=false. The operator restart for the bounded anonymous live check remains pending;
+the current API still returns RESOURCE_NOT_FOUND for an invalid synthetic inspect-new
+probe. Enable `E2E_REAL_API=1`, `E2E_MANAGEMENT_INVITATIONS_NEW_BOUNDARY=1`, and the
+operator's numeric-loopback `E2E_EXISTING_UI_URL`, then run
+`tests/e2e/management-invitations-new-boundary.spec.ts` with traces disabled. It creates
+no invitation/account/membership. No live invitation, account, membership or role grant was created by B2
 verification. Existing health/lodging financial sources remain unchanged.
+
+The [MGT-03 package](delegation/WP-MGT-03-role-assignment.md) is specified by Astra and
+reviewed by Sol. A activates zero-access membership with one supported non-privileged
+system role and can revoke that access; implementation remains next. The separate
+privileged maker-checker B specification is still required before completing MGT-03.
 
 ### PC-06 technical acceptance checkpoint (2026-10-03)
 

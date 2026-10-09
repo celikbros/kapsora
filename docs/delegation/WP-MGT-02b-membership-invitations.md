@@ -244,5 +244,7 @@ opt-in live checker passed 2/2 in 2.7 seconds for bounded admin list/capabilitie
 financial-reviewer denial. Existing-row detail is conditional; no live invitation or
 membership acceptance was issued. B2 new-account acceptance and private username recovery
 are implemented under [the focused B2 package](WP-MGT-02b2-new-account-invitations.md);
-isolated CI and local migration landing are pending. MGT-03 roles and MGT-04 settings
+isolated DB proof and all six code CI jobs passed on `2a7a426`
+([run 37889748595](https://github.com/celikbros/kapsora/actions/runs/37889748595)); local
+schema 57 is clean. Bounded anonymous live checks await the operator restart. MGT-03 roles and MGT-04 settings
 remain later work.

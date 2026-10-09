@@ -120,7 +120,16 @@ It does not create invitations, accounts or memberships.
 Eight new Invitation cases cover atomic/private acceptance, audit rollback, mode separation,
 Origin/body limits, concurrent acceptance/lockout, address limiting, exact sibling routes,
 cancel/new and existing/new races. Six require the isolated CI database; two are pure HTTP
-boundary tests. Their isolated execution and migration 57 application are still pending.
+boundary tests. All eight passed without skips in GitHub's isolated PostgreSQL job on
+`02fbf13` ([run 37889255894](https://github.com/celikbros/kapsora/actions/runs/37889255894)),
+alongside the 56-to-57 upgrade and B1 regressions. Local migration 57 is applied,
+dirty=false. All six code CI jobs passed on `2a7a426`
+([run 37889748595](https://github.com/celikbros/kapsora/actions/runs/37889748595)), including
+725 frontend tests in 87 files and 25 browser smoke tests. Normal smoke has 102 opt-in
+live/calendar skips, including this package's live boundary check. Local Go unit
+packages also pass. The module now requires Go 1.27.2 after the earlier standard-library
+vulnerability finding. Bounded live boundary checks await the operator restart; the
+current API still answers RESOURCE_NOT_FOUND for an invalid synthetic inspect-new probe.
 Audit failure injection verifies rollback of actor, credential, membership and consumption;
 separate insertion-stage failpoints have not been injected. Dummy-work call sites were
 statically reviewed, without direct invocation instrumentation or timing claims. These
