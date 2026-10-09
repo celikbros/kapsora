@@ -73,6 +73,16 @@ export function AppLayout() {
 
   const color = active ? tenantColor(active.tenant.code) : null;
   const multiTenant = (me?.tenants.length ?? 0) > 1;
+  const entries = visibleNavEntries(
+    active?.permissions ?? [],
+    active?.canReadTenantUsers === true,
+    active?.canManageTenantRoles === true,
+  );
+  const currentEntry = entries
+    .filter((entry) =>
+      entry.path === '/' ? pathname === '/' : pathname.startsWith(entry.match ?? entry.path),
+    )
+    .sort((a, b) => (b.match ?? b.path).length - (a.match ?? a.path).length)[0]?.key;
 
   async function logout() {
     try {
@@ -84,7 +94,11 @@ export function AppLayout() {
 
   const header = (
     <div className="flex h-14 items-center gap-2 px-3 sm:gap-4 sm:px-4 md:px-6">
-      <Link to="/" className="shrink-0 text-base font-semibold tracking-tight sm:text-lg">
+      <Link
+        to="/"
+        activeOptions={{ exact: true }}
+        className="shrink-0 text-base font-semibold tracking-tight sm:text-lg"
+      >
         {t('app.name')}
       </Link>
       {active && color ? (
@@ -157,32 +171,28 @@ export function AppLayout() {
   const nav = (
     <nav aria-label={t('nav.mainMenu')} className="p-3">
       <ul className="grid gap-0.5">
-        {visibleNavEntries(active?.permissions ?? [], active?.canReadTenantUsers === true).map(
-          (entry) => {
-            const current =
-              entry.path === '/'
-                ? pathname === '/'
-                : pathname.startsWith(entry.match ?? entry.path);
-            return (
-              <li key={entry.key}>
-                <Link
-                  to={entry.path}
-                  aria-current={current ? 'page' : undefined}
-                  className={cn(
-                    'block rounded-md px-3 py-2 text-sm',
-                    current
-                      ? 'bg-primary-soft text-primary-strong font-medium'
-                      : 'text-fg hover:bg-surface-raised',
-                    !entry.implemented && 'text-fg-muted',
-                  )}
-                >
-                  {t(entry.labelKey)}
-                  {!entry.implemented ? <span className="ml-1 text-xs opacity-70">·</span> : null}
-                </Link>
-              </li>
-            );
-          },
-        )}
+        {entries.map((entry) => {
+          const current = entry.key === currentEntry;
+          return (
+            <li key={entry.key}>
+              <Link
+                to={entry.path}
+                activeOptions={{ exact: true }}
+                aria-current={current ? 'page' : undefined}
+                className={cn(
+                  'block rounded-md px-3 py-2 text-sm',
+                  current
+                    ? 'bg-primary-soft text-primary-strong font-medium'
+                    : 'text-fg hover:bg-surface-raised',
+                  !entry.implemented && 'text-fg-muted',
+                )}
+              >
+                {t(entry.labelKey)}
+                {!entry.implemented ? <span className="ml-1 text-xs opacity-70">·</span> : null}
+              </Link>
+            </li>
+          );
+        })}
       </ul>
     </nav>
   );

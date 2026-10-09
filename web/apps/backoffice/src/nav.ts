@@ -151,6 +151,12 @@ export const NAV_ENTRIES: NavEntry[] = [
   { key: 'integrations', path: '/integrations', labelKey: 'nav.integrations', implemented: false },
   { key: 'admin', path: '/admin', labelKey: 'nav.admin', implemented: true },
   {
+    key: 'roleChanges',
+    path: '/admin/role-change-requests',
+    labelKey: 'nav.roleChanges',
+    implemented: true,
+  },
+  {
     key: 'security',
     path: '/security',
     labelKey: 'nav.security',
@@ -189,12 +195,14 @@ export function billingLanding(permissions: readonly string[]): string | null {
 export function visibleNavEntries(
   permissions: readonly string[],
   canReadTenantUsers = false,
+  canManageTenantRoles = false,
 ): NavEntry[] {
   return NAV_ENTRIES.flatMap((entry) => {
     if (entry.key === 'health')
       return Object.values(healthAccess(permissions)).some(Boolean) ? [entry] : [];
     if (entry.key === 'wallets') return canDiscoverWallets(permissions) ? [entry] : [];
     if (entry.key === 'admin') return canReadTenantUsers ? [entry] : [];
+    if (entry.key === 'roleChanges') return canManageTenantRoles ? [entry] : [];
     if (entry.key === 'billing') {
       const path = billingLanding(permissions);
       return path ? [{ ...entry, path }] : [];

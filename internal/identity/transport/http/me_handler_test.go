@@ -94,6 +94,8 @@ func newAuthzServer(t *testing.T, recorder ...audit.Recorder) *authzServer {
 		application.NewDirectoryService(identitypg.NewDirectoryRepository(h.App, recorder...), cursors), mw, logger)
 	roleHandler := identityhttp.NewRoleAssignmentHandler(
 		application.NewRoleAssignmentService(identitypg.NewRoleAssignmentRepository(h.App, recorder...), cursors), mw, logger)
+	roleChangeHandler := identityhttp.NewPrivilegedRoleChangeHandler(
+		application.NewPrivilegedRoleChangeService(identitypg.NewPrivilegedRoleChangeRepository(h.App, recorder...), cursors), mw, logger)
 	ruleService, err := rulesapp.New(rulesapp.Deps{Pool: h.App, Repo: rulespg.New(), Audit: auditpg.New(), Cursors: cursors})
 	if err != nil {
 		t.Fatal(err)
@@ -147,9 +149,18 @@ func newAuthzServer(t *testing.T, recorder ...audit.Recorder) *authzServer {
 				roleHandler.UserRoutes(r,
 					idempotency.Middleware(h.App, idempotency.Options{CommandCode: "access_grant.assign", Scope: roleScope, HashHeaders: []string{"If-Match"}}),
 					idempotency.Middleware(h.App, idempotency.Options{CommandCode: "access_grant.revoke", Scope: roleScope, HashHeaders: []string{"If-Match"}}))
+				roleChangeHandler.UserRoutes(r, idempotency.Middleware(h.App, idempotency.Options{CommandCode: "role_change.create", Scope: roleScope, HashHeaders: []string{"If-Match"}, BeforeStoredResult: roleChangeHandler.StoredResultGate}))
 			})
 			tenant.Route("/admin", func(r chi.Router) {
 				roleHandler.CatalogRoutes(r)
+				roleScope := func(req *http.Request) (idempotency.Scope, bool) {
+					rc, ok := identity.FromContext(req.Context())
+					return idempotency.Scope{TenantID: rc.TenantID, ActorID: rc.Principal.ActorID}, ok
+				}
+				roleChangeHandler.CatalogRoutes(r,
+					idempotency.Middleware(h.App, idempotency.Options{CommandCode: "role_change.approve", Scope: roleScope, HashHeaders: []string{"If-Match"}, BeforeStoredResult: roleChangeHandler.StoredResultGate}),
+					idempotency.Middleware(h.App, idempotency.Options{CommandCode: "role_change.reject", Scope: roleScope, HashHeaders: []string{"If-Match"}, BeforeStoredResult: roleChangeHandler.StoredResultGate}),
+					idempotency.Middleware(h.App, idempotency.Options{CommandCode: "role_change.cancel", Scope: roleScope, HashHeaders: []string{"If-Match"}, BeforeStoredResult: roleChangeHandler.StoredResultGate}))
 			})
 			tenant.Route("/rule-sets", func(r chi.Router) { ruleHandler.RuleSetRoutes(r, ruleshttp.Middlewares{}) })
 			tenant.Route("/providers", func(r chi.Router) { providerHandler.ProviderRoutes(r, providerhttp.Middlewares{}) })

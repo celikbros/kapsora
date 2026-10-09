@@ -36,9 +36,123 @@ export type TenantRoleGrantPage = components['schemas']['TenantRoleGrantPage'];
 export type TenantRoleGrantResult = components['schemas']['TenantRoleGrantResult'];
 export type AssignTenantRoleGrantRequest = components['schemas']['AssignTenantRoleGrantRequest'];
 export type RevokeTenantRoleGrantRequest = components['schemas']['RevokeTenantRoleGrantRequest'];
+export type PrivilegedRoleAssignmentOption =
+  components['schemas']['PrivilegedRoleAssignmentOption'];
+export type RoleChangeEligibility = components['schemas']['RoleChangeEligibility'];
+export type CreateRoleChangeRequest = components['schemas']['CreateRoleChangeRequest'];
+export type RoleChangeRequest = components['schemas']['RoleChangeRequest'];
+export type RoleChangeRequestDetail = components['schemas']['RoleChangeRequestDetail'];
+export type RoleChangeRequestPage = components['schemas']['RoleChangeRequestPage'];
+export type RoleChangeCommandResult = components['schemas']['RoleChangeCommandResult'];
+export type RoleChangeQuery = {
+  cursor?: string;
+  limit?: number;
+  status?: RoleChangeRequest['status'];
+  membershipId?: string;
+};
 
 export function adminOperations(client: KapsoraClient) {
   return {
+    async privilegedRoleOptions(tenantId: string): Promise<PrivilegedRoleAssignmentOption[]> {
+      return (
+        await unwrap(
+          client.GET('/api/v1/admin/privileged-role-assignment-options', {
+            params: { header: { 'X-Tenant-ID': tenantId } },
+          }),
+        )
+      ).data.items;
+    },
+    async roleChangeEligibility(
+      tenantId: string,
+      membershipId: string,
+    ): Promise<Versioned<RoleChangeEligibility>> {
+      const result = await unwrap(
+        client.GET('/api/v1/admin/users/{membershipId}/role-change-eligibility', {
+          params: { header: { 'X-Tenant-ID': tenantId }, path: { membershipId } },
+        }),
+      );
+      return versioned(result.data, result.response);
+    },
+    async createRoleChange(
+      tenantId: string,
+      membershipId: string,
+      body: CreateRoleChangeRequest,
+      etag: string,
+      key: string,
+    ): Promise<Versioned<RoleChangeCommandResult>> {
+      const result = await unwrap(
+        client.POST('/api/v1/admin/users/{membershipId}/role-change-requests', {
+          params: {
+            header: { 'X-Tenant-ID': tenantId, 'If-Match': etag, 'Idempotency-Key': key },
+            path: { membershipId },
+          },
+          body,
+        }),
+      );
+      return versioned(result.data, result.response);
+    },
+    async listRoleChanges(
+      tenantId: string,
+      query: RoleChangeQuery = {},
+    ): Promise<RoleChangeRequestPage> {
+      return (
+        await unwrap(
+          client.GET('/api/v1/admin/role-change-requests', {
+            params: { header: { 'X-Tenant-ID': tenantId }, query },
+          }),
+        )
+      ).data;
+    },
+    async getRoleChange(
+      tenantId: string,
+      requestId: string,
+    ): Promise<Versioned<RoleChangeRequestDetail>> {
+      const result = await unwrap(
+        client.GET('/api/v1/admin/role-change-requests/{requestId}', {
+          params: { header: { 'X-Tenant-ID': tenantId }, path: { requestId } },
+        }),
+      );
+      return versioned(result.data, result.response);
+    },
+    async decideRoleChange(
+      tenantId: string,
+      requestId: string,
+      action: 'approve' | 'reject' | 'cancel',
+      body:
+        | Record<string, never>
+        | { reasonCode: 'NOT_JUSTIFIED' | 'INCORRECT_ACCESS' | 'STALE_REQUEST' | 'WITHDRAWN' },
+      etag: string,
+      key: string,
+    ): Promise<Versioned<RoleChangeCommandResult>> {
+      const params = {
+        header: { 'X-Tenant-ID': tenantId, 'If-Match': etag, 'Idempotency-Key': key },
+        path: { requestId },
+      };
+      const result =
+        action === 'approve'
+          ? await unwrap(
+              client.POST('/api/v1/admin/role-change-requests/{requestId}/approve', {
+                params,
+                body: {},
+              }),
+            )
+          : action === 'reject'
+            ? await unwrap(
+                client.POST('/api/v1/admin/role-change-requests/{requestId}/reject', {
+                  params,
+                  body: body as {
+                    reasonCode: 'NOT_JUSTIFIED' | 'INCORRECT_ACCESS' | 'STALE_REQUEST';
+                  },
+                }),
+              )
+            : await unwrap(
+                client.POST('/api/v1/admin/role-change-requests/{requestId}/cancel', {
+                  params,
+                  body: { reasonCode: 'WITHDRAWN' },
+                }),
+              );
+      return versioned(result.data, result.response);
+    },
     async roleAssignmentOptions(tenantId: string): Promise<RoleAssignmentOption[]> {
       return (
         await unwrap(

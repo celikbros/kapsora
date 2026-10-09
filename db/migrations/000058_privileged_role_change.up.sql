@@ -106,6 +106,9 @@ DECLARE
     previous_code text;
     privileged boolean := false;
 BEGIN
+    IF NEW.maker_actor_id IS DISTINCT FROM platform.current_actor_id() THEN
+        RAISE EXCEPTION 'role change maker context mismatch' USING ERRCODE = 'integrity_constraint_violation';
+    END IF;
     IF NEW.status <> 'PENDING' OR jsonb_typeof(NEW.permission_snapshot) <> 'array'
        OR jsonb_array_length(NEW.permission_snapshot) = 0 THEN
         RAISE EXCEPTION 'invalid role change proposal' USING ERRCODE = 'check_violation';
@@ -200,6 +203,17 @@ CREATE TABLE iam.role_change_command_receipt (
         (command_code = 'CREATE' AND response_status = 201)
         OR (command_code <> 'CREATE' AND response_status = 200))
 );
+CREATE FUNCTION iam.tg_role_change_receipt_insert_guard()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+    IF NEW.actor_id IS DISTINCT FROM platform.current_actor_id() THEN
+        RAISE EXCEPTION 'role change receipt actor context mismatch' USING ERRCODE = 'integrity_constraint_violation';
+    END IF;
+    RETURN NEW;
+END
+$$;
+CREATE TRIGGER tg_role_change_receipt_insert_guard BEFORE INSERT ON iam.role_change_command_receipt
+    FOR EACH ROW EXECUTE FUNCTION iam.tg_role_change_receipt_insert_guard();
 SELECT platform.make_append_only('iam.role_change_command_receipt'::regclass);
 SELECT platform.enable_tenant_rls('iam.role_change_command_receipt'::regclass);
 SELECT platform.grant_app_schema_usage('iam');

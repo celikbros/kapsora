@@ -31,10 +31,18 @@ func TestDirectoryRoleRouteCoexistence(t *testing.T) {
 			users.Get("/{membershipId}/role-grants", marker("grants"))
 			users.Post("/{membershipId}/role-grants", marker("assign"))
 			users.Post("/{membershipId}/role-grants/{grantId}/revoke", marker("revoke"))
+			users.Get("/{membershipId}/role-change-eligibility", marker("role-change-eligibility"))
+			users.Post("/{membershipId}/role-change-requests", marker("role-change-create"))
 		})
 		api.Route("/admin", func(admin chi.Router) {
 			admin.Get("/role-assignment-options", marker("options"))
 			admin.Get("/role-assignment-organizations", marker("organizations"))
+			admin.Get("/privileged-role-assignment-options", marker("privileged-options"))
+			admin.Get("/role-change-requests", marker("role-change-list"))
+			admin.Get("/role-change-requests/{requestId}", marker("role-change-detail"))
+			admin.Post("/role-change-requests/{requestId}/approve", marker("role-change-approve"))
+			admin.Post("/role-change-requests/{requestId}/reject", marker("role-change-reject"))
+			admin.Post("/role-change-requests/{requestId}/cancel", marker("role-change-cancel"))
 		})
 		api.Route("/admin/invitations", func(invitations chi.Router) {
 			invitations.Get("/", marker("invitations"))
@@ -49,6 +57,14 @@ func TestDirectoryRoleRouteCoexistence(t *testing.T) {
 		{http.MethodPost, "/api/v1/admin/users/" + member + "/role-grants", "assign"},
 		{http.MethodPost, "/api/v1/admin/users/" + member + "/role-grants/" + grant + "/revoke", "revoke"},
 		{http.MethodGet, "/api/v1/admin/invitations/", "invitations"},
+		{http.MethodGet, "/api/v1/admin/users/" + member + "/role-change-eligibility", "role-change-eligibility"},
+		{http.MethodPost, "/api/v1/admin/users/" + member + "/role-change-requests", "role-change-create"},
+		{http.MethodGet, "/api/v1/admin/privileged-role-assignment-options", "privileged-options"},
+		{http.MethodGet, "/api/v1/admin/role-change-requests", "role-change-list"},
+		{http.MethodGet, "/api/v1/admin/role-change-requests/" + grant, "role-change-detail"},
+		{http.MethodPost, "/api/v1/admin/role-change-requests/" + grant + "/approve", "role-change-approve"},
+		{http.MethodPost, "/api/v1/admin/role-change-requests/" + grant + "/reject", "role-change-reject"},
+		{http.MethodPost, "/api/v1/admin/role-change-requests/" + grant + "/cancel", "role-change-cancel"},
 	} {
 		rec := httptest.NewRecorder()
 		r.ServeHTTP(rec, httptest.NewRequest(tc.method, tc.path, nil))

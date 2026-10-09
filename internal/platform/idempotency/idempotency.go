@@ -60,6 +60,10 @@ type Options struct {
 	// HashHeaders are included in this command's request identity. Other commands
 	// retain their existing body/path hash when this is empty.
 	HashHeaders []string
+	// BeforeStoredResult is a command-specific gate after claim's possible lock wait.
+	// It may write a fresher durable receipt or current authorization denial. Return
+	// true only when the response has been written. Ordinary commands leave it nil.
+	BeforeStoredResult func(http.ResponseWriter, *http.Request) bool
 }
 
 func (o Options) withDefaults() Options {
@@ -150,6 +154,9 @@ func Middleware(pool *pgxpool.Pool, opts Options) func(http.Handler) http.Handle
 			if err != nil {
 				opts.Logger.Error("idempotency claim failed", "command", opts.CommandCode, "error", err)
 				writeProblem(w, r, http.StatusInternalServerError, "INTERNAL_ERROR", "Beklenmeyen hata")
+				return
+			}
+			if outcome != outcomeExecute && opts.BeforeStoredResult != nil && opts.BeforeStoredResult(w, r) {
 				return
 			}
 			switch outcome {
@@ -340,6 +347,13 @@ func requestHashWithHeaders(r *http.Request, scope Scope, body []byte, headers [
 		h.Write([]byte(strings.TrimSpace(r.Header.Get(name))))
 	}
 	return h.Sum(nil)
+}
+
+// Fingerprint exposes the exact middleware request identity to command handlers
+// that persist a receipt in their business transaction. The caller must validate
+// the complete bounded request before using it for an early durable replay.
+func Fingerprint(r *http.Request, scope Scope, body []byte, headers []string) []byte {
+	return requestHashWithHeaders(r, scope, body, headers)
 }
 
 // canonicalRequestBody ignores the transport boundary of multipart uploads while

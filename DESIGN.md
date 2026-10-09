@@ -903,6 +903,30 @@ Account, session, tenant or capability changes clear the previous context's form
 busy state and suppress delayed callbacks. Waiting screens offer explicit access refresh
 with a retryable error, without polling, automatic login or automatic tenant selection.
 
+**Privileged access is proposed before it is applied.** User detail keeps immediate
+supported assignments and privileged approval requests in separate sections. Management's
+role-change queue starts with pending requests and offers explicit terminal-history
+filters; mobile rows remain readable cards. Person names come from authorized directory
+reads, with a safe membership reference and a retry when the name cannot be loaded.
+Request evidence itself contains no names or login identifiers.
+
+Confirmation names the person, institution, actual role duties and second-person
+requirement. Pending assignment says access has not begun; pending removal says existing
+access continues. Only a committed approval result says access changed. Detail presents
+the recorded permission snapshot behind an expandable disclosure. A missing eligible
+checker is a visible pending condition. The maker gets withdrawal, the target gets no
+decision controls, and a permitted different checker gets explicit approval/rejection.
+Drift requires deliberate rejection/withdrawal and a new proposal, never automatic rebasing.
+
+All four commands retain frozen input, key and original ETag through password confirmation
+and uncertain close/reopen retries. Cancelling the password prompt keeps an explicit retry
+available. A definitive conflict needs a successful explicit reload before another attempt.
+Committed evidence remains visible when refresh fails, with a separate retry for current
+detail. Session/context changes suppress dispatch and late results, including a return to
+the previous tenant. Revocation uses server eligibility across the entire grant history;
+bounded paging and repeat-cursor checks locate the referenced grant without treating one
+history page as complete authority.
+
 ## Motion
 
 Toasts slide up 160ms ease-out. The member surface adds the system's one authored moment:

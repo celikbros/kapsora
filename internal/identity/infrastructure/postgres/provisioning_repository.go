@@ -269,7 +269,7 @@ func (r *ProvisioningRepository) SyncSystemRoles(ctx context.Context, tenantID u
 			roleID, exists := roleByCode[tpl.Code]
 			if !exists {
 				res.RolesCreated = append(res.RolesCreated, tpl.Code)
-			} else if _, candidate := application.SupportedRoleScope(tpl.Code); candidate {
+			} else if _, candidate := application.SupportedRoleScope(tpl.Code); candidate || application.ProtectedPrivilegedRole(tpl.Code) {
 				current, err := q.ListRoleAssignmentPermissions(ctx, sqlcgen.ListRoleAssignmentPermissionsParams{TenantID: tenantID, RoleID: roleID})
 				if err != nil {
 					return fmt.Errorf("identity: read role permissions before sync: %w", err)

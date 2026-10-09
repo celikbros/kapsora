@@ -46,9 +46,8 @@ is applied cleanly. Management now includes the directory, tenant-only suspensio
 existing-account invitations and new-account invitation acceptance. B2 isolated database
 proof and all six code CI checks passed; bounded anonymous live checks await the operator
 restart, as recorded below. Bounded role assignment and revocation are implemented;
-isolated database acceptance passed on `e26bcc8`. Privileged role approval is specified
-and reviewed; explicit scope authorization is pending after automatic approval review
-rejected its initial OpenAPI write. PR #11 remains
+isolated database acceptance passed on `e26bcc8`. Privileged role approval is authorized
+and implemented with independent security review; isolated acceptance is pending. PR #11 remains
 draft and unmerged. All six CI checks passed on
 calendar-preparation code head `5bb2349` ([run 37152681278](https://github.com/celikbros/kapsora/actions/runs/37152681278));
 current Management CI is tracked in PR #11's checks.
@@ -1297,11 +1296,16 @@ retried on 2026-10-09 and still received RESOURCE_NOT_FOUND instead of the new h
 INVITATION_UNAVAILABLE. The operator API reload remains a separate live-read gate;
 no live account, membership or grant mutation occurred.
 The Astra-planned, Sol-reviewed [privileged B package](delegation/WP-MGT-03b-privileged-role-approval.md)
-is ready for implementation. Automatic approval review rejected its initial OpenAPI
-write because the continuation messages did not explicitly authorize new privileged-role
-scope; the concrete API/UI/migration-file and isolated-test authorization question is pending.
-No B source write was applied. Migration 000058 is allocated but not applied locally;
-B has no acceptance claim. B remains separate work before completing MGT-03;
+is authorized and implemented after the owner's response to the concrete scope
+question. The original OpenAPI write is now accepted; eight operation contracts and
+their generated bindings are present. Migration 000058 is allocated but not applied locally;
+B has no acceptance claim. Local checks pass: 754 frontend tests in 92 files, workspace
+format/type/lint, all app builds and 42 intercepted 390px/1440px visual/keyboard states
+with no real API traffic, overflow or browser errors. Sixteen new HTTP/database test
+functions and eight schema tests await integrated isolated CI. Existing-row preservation
+and seven schema cases passed on the initial contract/schema head; actor attribution guards
+and command mutation cases require the integrated run. Local DB tests remain disabled to
+protect the shared application-role password. B remains separate work before completing MGT-03;
 MGT-04 typed settings follows it.
 
 ### PC-06 technical acceptance checkpoint (2026-10-03)

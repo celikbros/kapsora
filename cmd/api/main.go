@@ -157,6 +157,7 @@ func run() error {
 	}
 	ident.directory = application.NewDirectoryService(identitypg.NewDirectoryRepository(pool), cursors)
 	ident.roleAssignment = application.NewRoleAssignmentService(identitypg.NewRoleAssignmentRepository(pool).WithIdleTimeout(cfg.Session.IdleTimeout), cursors)
+	ident.privilegedRoleChange = application.NewPrivilegedRoleChangeService(identitypg.NewPrivilegedRoleChangeRepository(pool).WithIdleTimeout(cfg.Session.IdleTimeout), cursors)
 	ident.invitations = application.NewInvitationService(identitypg.NewInvitationRepository(pool, keys, keys).WithDeliveryEnabled(cfg.Invitations.DeliveryEnabled))
 	ident.invitationCursors = cursors
 	orgSvc, err := orgapp.New(orgapp.Deps{
@@ -519,12 +520,13 @@ func newDocuments(cfg config.Config, pool *pgxpool.Pool, cursors *httpx.CursorCo
 
 // identityDeps bundles the identity module's services for the router.
 type identityDeps struct {
-	service           *application.Service
-	authz             *application.Authorizer
-	directory         *application.DirectoryService
-	roleAssignment    *application.RoleAssignmentService
-	invitations       *application.InvitationService
-	invitationCursors *httpx.CursorCodec
+	service              *application.Service
+	authz                *application.Authorizer
+	directory            *application.DirectoryService
+	roleAssignment       *application.RoleAssignmentService
+	privilegedRoleChange *application.PrivilegedRoleChangeService
+	invitations          *application.InvitationService
+	invitationCursors    *httpx.CursorCodec
 }
 
 func newIdentity(cfg config.Config, pool *pgxpool.Pool, logger *slog.Logger) (identityDeps, error) {
@@ -588,6 +590,7 @@ func newRouter(d routerDeps) http.Handler {
 	contextHandler := identityhttp.NewContextHandler(d.ident.service, d.ident.authz, d.logger)
 	directoryHandler := identityhttp.NewDirectoryHandler(d.ident.directory, sessions, d.logger)
 	roleAssignmentHandler := identityhttp.NewRoleAssignmentHandler(d.ident.roleAssignment, sessions, d.logger)
+	privilegedRoleChangeHandler := identityhttp.NewPrivilegedRoleChangeHandler(d.ident.privilegedRoleChange, sessions, d.logger)
 	invitationHandler := identityhttp.NewInvitationHandler(d.ident.invitations, sessions, d.ident.invitationCursors, d.logger)
 
 	r := chi.NewRouter()
@@ -659,9 +662,14 @@ func newRouter(d routerDeps) http.Handler {
 				roleAssignmentHandler.UserRoutes(r,
 					idempotency.Middleware(d.pool, idempotency.Options{CommandCode: "access_grant.assign", Scope: idempotencyScope, Logger: d.logger, HashHeaders: []string{"If-Match"}}),
 					idempotency.Middleware(d.pool, idempotency.Options{CommandCode: "access_grant.revoke", Scope: idempotencyScope, Logger: d.logger, HashHeaders: []string{"If-Match"}}))
+				privilegedRoleChangeHandler.UserRoutes(r, idempotency.Middleware(d.pool, idempotency.Options{CommandCode: "role_change.create", Scope: idempotencyScope, Logger: d.logger, HashHeaders: []string{"If-Match"}, BeforeStoredResult: privilegedRoleChangeHandler.StoredResultGate}))
 			})
 			tenant.Route("/admin", func(r chi.Router) {
 				roleAssignmentHandler.CatalogRoutes(r)
+				privilegedRoleChangeHandler.CatalogRoutes(r,
+					idempotency.Middleware(d.pool, idempotency.Options{CommandCode: "role_change.approve", Scope: idempotencyScope, Logger: d.logger, HashHeaders: []string{"If-Match"}, BeforeStoredResult: privilegedRoleChangeHandler.StoredResultGate}),
+					idempotency.Middleware(d.pool, idempotency.Options{CommandCode: "role_change.reject", Scope: idempotencyScope, Logger: d.logger, HashHeaders: []string{"If-Match"}, BeforeStoredResult: privilegedRoleChangeHandler.StoredResultGate}),
+					idempotency.Middleware(d.pool, idempotency.Options{CommandCode: "role_change.cancel", Scope: idempotencyScope, Logger: d.logger, HashHeaders: []string{"If-Match"}, BeforeStoredResult: privilegedRoleChangeHandler.StoredResultGate}))
 			})
 			tenant.Route("/admin/invitations", func(r chi.Router) {
 				invitationHandler.ManagerRoutes(r, idempotency.Middleware(d.pool, idempotency.Options{

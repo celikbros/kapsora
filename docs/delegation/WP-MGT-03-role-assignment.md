@@ -432,6 +432,6 @@ constraint; self-change compares global actor identity, with a dedicated isolate
 The provider-relationship ID is now verified in both command and history projections;
 historical same-actor membership self-protection has direct isolated coverage. The
 [B package](WP-MGT-03b-privileged-role-approval.md), planned by Astra and independently
-reviewed by Sol, is ready; explicit scope authorization is pending after an automatic
-approval-review rejection of the initial OpenAPI write. Its distinct maker/checker approval
+reviewed by Sol, is authorized and in implementation after the owner's response to the
+concrete scope question. Its distinct maker/checker approval
 pipeline and MGT-04 remain separate deliveries.

@@ -13,6 +13,7 @@ import { Link, useParams } from '@tanstack/react-router';
 import { problemOf } from '../problems';
 import { SuspendMembership } from './SuspendMembership';
 import { RoleGrants } from './RoleGrants';
+import { RoleChangeProposal } from './RoleChangeProposal';
 import { useTenantUser } from './queries';
 
 export function AdminUserDetailPage() {
@@ -95,12 +96,19 @@ export function AdminUserDetailPage() {
             onReload={async () => (await query.refetch()).isSuccess}
           />
           {canManageRoles && (
-            <RoleGrants
-              key={membershipId}
-              membershipId={membershipId}
-              detail={detail}
-              onReloadDetail={async () => (await query.refetch()).isSuccess}
-            />
+            <>
+              <RoleGrants
+                key={membershipId}
+                membershipId={membershipId}
+                detail={detail}
+                onReloadDetail={async () => (await query.refetch()).isSuccess}
+              />
+              <RoleChangeProposal
+                key={`proposal-${membershipId}`}
+                membershipId={membershipId}
+                detail={detail}
+              />
+            </>
           )}
           {!canManageRoles && (
             <>

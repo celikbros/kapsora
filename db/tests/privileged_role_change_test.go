@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/celikbros/kapsora/internal/platform/dbmigrate"
-	"github.com/celikbros/kapsora/internal/platform/dbtest"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+
+	"github.com/celikbros/kapsora/internal/platform/dbmigrate"
+	"github.com/celikbros/kapsora/internal/platform/dbtest"
 )
 
 const privilegedSnapshot = `[{"code":"security.break_glass","sensitivity":"PRIVILEGED"}]`
@@ -62,6 +63,14 @@ func defaultRoleChangeRequest(s roleChangeSeed) roleChangeRequestInput {
 func insertRoleChange(h *dbtest.Harness, s roleChangeSeed, in roleChangeRequestInput) (uuid.UUID, error) {
 	ctx, cancel := h.Ctx()
 	defer cancel()
+	tx, err := h.Admin.Begin(ctx)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	if _, err := tx.Exec(ctx, `SELECT set_config('app.actor_id',$1,true)`, in.makerActor.String()); err != nil {
+		return uuid.Nil, err
+	}
 	var id uuid.UUID
 	var grant any
 	var validPeriod any
@@ -71,7 +80,7 @@ func insertRoleChange(h *dbtest.Harness, s roleChangeSeed, in roleChangeRequestI
 	if in.revokeRange != "" {
 		validPeriod = in.revokeRange
 	}
-	err := h.Admin.QueryRow(ctx, `INSERT INTO iam.role_change_request(
+	err = tx.QueryRow(ctx, `INSERT INTO iam.role_change_request(
 	 tenant_id,operation,target_membership_id,target_actor_id,maker_membership_id,maker_actor_id,
 	 role_id,role_code,scope_type,permission_snapshot,configuration_hash,
 	 target_membership_version,revoke_grant_id,revoke_valid_period,reason_code)
@@ -79,7 +88,10 @@ func insertRoleChange(h *dbtest.Harness, s roleChangeSeed, in roleChangeRequestI
 	 RETURNING id`, s.tenant, in.operation, in.targetMember, in.targetActor,
 		in.makerMember, in.makerActor, in.role, in.scope, in.snapshot, in.hash,
 		in.version, grant, validPeriod, in.reason).Scan(&id)
-	return id, err
+	if err != nil {
+		return uuid.Nil, err
+	}
+	return id, tx.Commit(ctx)
 }
 
 func mustRoleChange(t *testing.T, h *dbtest.Harness, s roleChangeSeed, in roleChangeRequestInput) uuid.UUID {
@@ -99,6 +111,23 @@ func roleChangeDecision(h *dbtest.Harness, tenant, actor uuid.UUID, sql string, 
 		_, err := tx.Exec(ctx, sql, args...)
 		return err
 	})
+}
+
+func roleChangeAdminExecAs(h *dbtest.Harness, actor uuid.UUID, sql string, args ...any) error {
+	ctx, cancel := h.Ctx()
+	defer cancel()
+	tx, err := h.Admin.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	if _, err := tx.Exec(ctx, `SELECT set_config('app.actor_id',$1,true)`, actor.String()); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(ctx, sql, args...); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
 }
 
 func TestPrivilegedRoleMigration57To58PreservesIAMState(t *testing.T) {
@@ -203,6 +232,34 @@ func TestPrivilegedRoleRequestBindingAndSnapshotGuards(t *testing.T) {
 	}
 	_, err := insertRoleChange(h, s, base)
 	dbtest.ExpectSQLState(t, err, dbtest.SQLStateUniqueViolation, "second pending request for same target")
+}
+
+func TestPrivilegedRoleInsertActorEvidenceMatchesAppContext(t *testing.T) {
+	h := dbtest.New(t)
+	s := seedRoleChange(t, h, "ACTOR_CONTEXT")
+	requestID := mustRoleChange(t, h, s, defaultRoleChangeRequest(s))
+	const request = `INSERT INTO iam.role_change_request(
+	 tenant_id,operation,target_membership_id,target_actor_id,maker_membership_id,maker_actor_id,
+	 role_id,role_code,scope_type,permission_snapshot,configuration_hash,target_membership_version,reason_code)
+	 VALUES($1,'ASSIGN',$2,$3,$4,$5,$6,'TENANT_ADMIN','TENANT',$7::jsonb,$8,1,'ONBOARDING')`
+	requestArgs := []any{s.tenant, s.members[2], s.actors[2], s.members[1], s.actors[1],
+		s.role, privilegedSnapshot, make([]byte, 32)}
+	err := roleChangeDecision(h, s.tenant, s.actors[0], request, requestArgs...)
+	dbtest.ExpectSQLState(t, err, dbtest.SQLStateIntegrityConstraint, "another actor cannot insert a maker's proposal")
+	if err := roleChangeDecision(h, s.tenant, s.actors[1], request, requestArgs...); err != nil {
+		t.Fatalf("real maker can insert own proposal: %v", err)
+	}
+	const receipt = `INSERT INTO iam.role_change_command_receipt(
+	 tenant_id,actor_id,command_code,key_hash,request_hash,request_id,
+	 response_status,response_etag,response_body)
+	 VALUES($1,$2,'CREATE',sha256('actor-context-key'::bytea),
+	 sha256('actor-context-body'::bytea),$3,201,'"1"',$4)`
+	receiptArgs := []any{s.tenant, s.actors[1], requestID, []byte(`{"id":"synthetic"}`)}
+	err = roleChangeDecision(h, s.tenant, s.actors[2], receipt, receiptArgs...)
+	dbtest.ExpectSQLState(t, err, dbtest.SQLStateIntegrityConstraint, "another actor cannot insert a maker's receipt")
+	if err := roleChangeDecision(h, s.tenant, s.actors[1], receipt, receiptArgs...); err != nil {
+		t.Fatalf("real actor can insert own receipt: %v", err)
+	}
 }
 
 func TestPrivilegedRoleRequestTransitionsAreGuarded(t *testing.T) {
@@ -401,10 +458,10 @@ func TestPrivilegedRoleReceiptBoundsUniquenessAndAppendOnly(t *testing.T) {
 	key, fingerprint := make([]byte, 32), make([]byte, 32)
 	key[0], fingerprint[0] = 1, 2
 	args := []any{s.tenant, s.actors[1], "CREATE", key, fingerprint, id, 201, `"1"`, []byte(`{"request":{"id":"synthetic"}}`)}
-	if err := h.AdminExecErr(receipt, args...); err != nil {
+	if err := roleChangeAdminExecAs(h, s.actors[1], receipt, args...); err != nil {
 		t.Fatalf("valid command receipt: %v", err)
 	}
-	err := h.AdminExecErr(receipt, args...)
+	err := roleChangeAdminExecAs(h, s.actors[1], receipt, args...)
 	dbtest.ExpectSQLState(t, err, dbtest.SQLStateUniqueViolation, "duplicate actor command key")
 	for _, tc := range []struct {
 		name  string
@@ -428,7 +485,7 @@ func TestPrivilegedRoleReceiptBoundsUniquenessAndAppendOnly(t *testing.T) {
 			if tc.index != 3 {
 				changed[3] = newKey
 			}
-			_, err := h.Admin.Exec(context.Background(), receipt, changed...)
+			err := roleChangeAdminExecAs(h, s.actors[1], receipt, changed...)
 			want := dbtest.SQLStateCheckViolation
 			if tc.name == "foreign request" {
 				want = dbtest.SQLStateForeignKeyViolation
@@ -452,11 +509,13 @@ func TestPrivilegedRoleTablesEnforceTenantRLS(t *testing.T) {
 		if s.tenant == b.tenant {
 			bRequestID = id
 		}
-		h.AdminExec(`INSERT INTO iam.role_change_command_receipt(
+		if err := roleChangeAdminExecAs(h, s.actors[1], `INSERT INTO iam.role_change_command_receipt(
 		 tenant_id,actor_id,command_code,key_hash,request_hash,request_id,
 		 response_status,response_etag,response_body)
 		 VALUES($1,$2,'CREATE',sha256($3::bytea),sha256($4::bytea),$5,201,'"1"',$6)`,
-			s.tenant, s.actors[1], []byte("key"), []byte("fingerprint"), id, []byte(`{"id":"synthetic"}`))
+			s.tenant, s.actors[1], []byte("key"), []byte("fingerprint"), id, []byte(`{"id":"synthetic"}`)); err != nil {
+			t.Fatalf("seed command receipt: %v", err)
+		}
 	}
 	for _, table := range []string{"iam.role_change_request", "iam.role_change_command_receipt"} {
 		t.Run(table, func(t *testing.T) {
@@ -477,24 +536,18 @@ func TestPrivilegedRoleTablesEnforceTenantRLS(t *testing.T) {
 			}
 		})
 	}
-	err := h.AppTx(a.tenant, func(ctx context.Context, tx pgx.Tx) error {
-		_, err := tx.Exec(ctx, `INSERT INTO iam.role_change_request(
-		 tenant_id,operation,target_membership_id,target_actor_id,maker_membership_id,maker_actor_id,
-		 role_id,role_code,scope_type,permission_snapshot,configuration_hash,target_membership_version,reason_code)
-		 VALUES($1,'ASSIGN',$2,$3,$4,$5,$6,'TENANT_ADMIN','TENANT',$7::jsonb,$8,1,'ONBOARDING')`,
-			b.tenant, b.members[2], b.actors[2], b.members[1], b.actors[1], b.role,
-			privilegedSnapshot, make([]byte, 32))
-		return err
-	})
+	err := roleChangeDecision(h, a.tenant, b.actors[1], `INSERT INTO iam.role_change_request(
+	 tenant_id,operation,target_membership_id,target_actor_id,maker_membership_id,maker_actor_id,
+	 role_id,role_code,scope_type,permission_snapshot,configuration_hash,target_membership_version,reason_code)
+	 VALUES($1,'ASSIGN',$2,$3,$4,$5,$6,'TENANT_ADMIN','TENANT',$7::jsonb,$8,1,'ONBOARDING')`,
+		b.tenant, b.members[2], b.actors[2], b.members[1], b.actors[1], b.role,
+		privilegedSnapshot, make([]byte, 32))
 	dbtest.ExpectSQLState(t, err, dbtest.SQLStateInsufficientPrivilege, "cross-tenant request insert")
-	err = h.AppTx(a.tenant, func(ctx context.Context, tx pgx.Tx) error {
-		_, err := tx.Exec(ctx, `INSERT INTO iam.role_change_command_receipt(
+	err = roleChangeDecision(h, a.tenant, b.actors[1], `INSERT INTO iam.role_change_command_receipt(
 		 tenant_id,actor_id,command_code,key_hash,request_hash,request_id,
 		 response_status,response_etag,response_body)
 		 VALUES($1,$2,'CREATE',sha256('other-key'::bytea),sha256('other-body'::bytea),
 		 $3,201,'"1"','x'::bytea)`,
-			b.tenant, b.actors[1], bRequestID)
-		return err
-	})
+		b.tenant, b.actors[1], bRequestID)
 	dbtest.ExpectSQLState(t, err, dbtest.SQLStateInsufficientPrivilege, "cross-tenant receipt insert")
 }

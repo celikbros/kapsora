@@ -217,6 +217,8 @@ func (h *DirectoryHandler) writeSuspendError(w http.ResponseWriter, r *http.Requ
 		problem(w, r, http.StatusConflict, "identity/self-suspension-forbidden", "SELF_SUSPENSION_FORBIDDEN", "Kendi üyeliğiniz askıya alınamaz", "")
 	case errors.Is(err, application.ErrDirectoryLastManager):
 		problem(w, r, http.StatusConflict, "identity/last-tenant-manager", "LAST_TENANT_MANAGER", "Son yönetici askıya alınamaz", "")
+	case errors.Is(err, application.ErrLastTenantRoleManager):
+		problem(w, r, http.StatusConflict, "identity/last-tenant-role-manager", "LAST_TENANT_ROLE_MANAGER", "Son rol yöneticisi askıya alınamaz", "")
 	case errors.Is(err, application.ErrDirectoryStateConflict):
 		problem(w, r, http.StatusConflict, "identity/membership-state-conflict", "MEMBERSHIP_STATE_CONFLICT", "Üyelik etkin değil", "")
 	case errors.Is(err, application.ErrDirectoryVersionConflict):

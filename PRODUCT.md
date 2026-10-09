@@ -104,6 +104,16 @@ history. Privileged roles, person binding and combined-role assignments have sep
 approval and identity requirements. A waiting user can refresh their access in any app
 after assignment without signing in again.
 
+Privileged tenant roles use a separate request and approval flow. A manager proposes
+assignment or removal; another currently authorized person explicitly approves or rejects
+the recorded access. The requester, approver and target must be different people.
+Submitting a request leaves access unchanged. The Management queue shows pending requests
+and closed history; detail names the person, institution, role duties and recorded
+permissions. The requester can withdraw a pending request. Missing second-approver access
+is explained plainly, and the request remains pending until an eligible person can decide.
+Approval applies access immediately; rejection or withdrawal closes the request without
+changing access. Tenant administration does not confer clinical access automatically.
+
 Success is a payer operator onboarding a provider, a provider checking eligibility and
 submitting a request, and a member seeing the result, without anyone leaving the
 product or asking whose data they are looking at.

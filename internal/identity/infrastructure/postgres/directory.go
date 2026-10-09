@@ -216,11 +216,28 @@ func (r *DirectoryRepository) Suspend(ctx context.Context, rc identity.RequestCo
 				return application.ErrDirectoryLastManager
 			}
 		}
+		roleCheckAt, err := q.RoleAssignmentNow(ctx)
+		if err != nil {
+			return fmt.Errorf("identity: read role manager suspension time: %w", err)
+		}
+		roleManagersBefore, err := q.RoleChangeCountManagersAt(ctx, sqlcgen.RoleChangeCountManagersAtParams{TenantID: rc.TenantID, PermissionCode: "identity.role.manage", Column3: roleCheckAt})
+		if err != nil {
+			return fmt.Errorf("identity: count role managers before suspension: %w", err)
+		}
 		if _, err := q.SuspendTenantUser(ctx, sqlcgen.SuspendTenantUserParams{TenantID: rc.TenantID, ID: membershipID, RowVersion: expectedVersion}); err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return application.ErrDirectoryVersionConflict
 			}
 			return fmt.Errorf("identity: suspend tenant membership: %w", err)
+		}
+		if roleManagersBefore > 0 {
+			roleManagersAfter, err := q.RoleChangeCountManagersAt(ctx, sqlcgen.RoleChangeCountManagersAtParams{TenantID: rc.TenantID, PermissionCode: "identity.role.manage", Column3: roleCheckAt})
+			if err != nil {
+				return fmt.Errorf("identity: count role managers after suspension: %w", err)
+			}
+			if roleManagersAfter < 1 {
+				return application.ErrLastTenantRoleManager
+			}
 		}
 		out, err = loadDirectoryDetail(ctx, q, rc.TenantID, membershipID)
 		if err != nil {

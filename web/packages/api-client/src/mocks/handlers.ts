@@ -8,6 +8,7 @@ import { HttpResponse, http, type HttpHandler, type PathParams } from 'msw';
 import { accommodationHandlers } from './accommodation-handlers';
 import { adminHandlers, hasTenantUserPermission } from './admin-handlers';
 import { roleAssignmentHandlers } from './role-assignment-handlers';
+import { roleChangeHandlers } from './role-change-handlers';
 import { invitationHandlers } from './invitation-handlers';
 import { MockInvitationState } from './invitation-state';
 import { lodgingTermsHandlers } from './lodging-terms-handlers';
@@ -163,6 +164,25 @@ export class MockApi {
     string,
     { fingerprint: string; result: Schemas['TenantRoleGrantResult']; etag: string }
   >();
+  readonly roleChangeRequests: Array<{
+    tenantId: string;
+    makerActorId: string;
+    targetActorId: string;
+    request: Schemas['RoleChangeRequest'];
+  }> = [];
+  readonly roleChangeReceipts = new Map<
+    string,
+    {
+      fingerprint: string;
+      result: Schemas['RoleChangeCommandResult'];
+      etag: string;
+      status: number;
+    }
+  >();
+  readonly roleChangeEvents: Array<{
+    action: 'create' | 'approve' | 'reject' | 'cancel';
+    requestId: string;
+  }> = [];
   readonly rolePermissionOverrides = new Map<string, string[]>();
   readonly privilegedRoleOverrides = new Set<string>();
   private idempotency = new Map<string, { status: number; body: unknown; etag: string | null }>();
@@ -186,6 +206,9 @@ export class MockApi {
     this.membershipSuspensionEvents.length = 0;
     this.roleGrantEvents.length = 0;
     this.roleGrantReceipts.clear();
+    this.roleChangeRequests.length = 0;
+    this.roleChangeReceipts.clear();
+    this.roleChangeEvents.length = 0;
     this.rolePermissionOverrides.clear();
     this.privilegedRoleOverrides.clear();
     if (this.options.initialUser) {
@@ -1713,6 +1736,7 @@ export function createHandlers(api: MockApi): HttpHandler[] {
     ...sessionHandlers,
     ...adminHandlers(api),
     ...roleAssignmentHandlers(api),
+    ...roleChangeHandlers(api),
     ...invitationHandlers(api),
     ...organizationHandlers,
     ...peopleHandlers,

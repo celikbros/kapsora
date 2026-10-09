@@ -25,6 +25,14 @@ export type {
   TenantRoleGrantResult,
   AssignTenantRoleGrantRequest,
   RevokeTenantRoleGrantRequest,
+  PrivilegedRoleAssignmentOption,
+  RoleChangeEligibility,
+  CreateRoleChangeRequest,
+  RoleChangeRequest,
+  RoleChangeRequestDetail,
+  RoleChangeRequestPage,
+  RoleChangeCommandResult,
+  RoleChangeQuery,
 } from './admin';
 export type {
   CreateOrganizationRequest,

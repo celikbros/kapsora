@@ -68,6 +68,12 @@ export function createServices(
     queryClient.removeQueries({ queryKey: ['admin-role-options'] });
     void queryClient.cancelQueries({ queryKey: ['admin-role-organizations'] });
     queryClient.removeQueries({ queryKey: ['admin-role-organizations'] });
+    void queryClient.cancelQueries({ queryKey: ['admin-role-changes'] });
+    queryClient.removeQueries({ queryKey: ['admin-role-changes'] });
+    void queryClient.cancelQueries({ queryKey: ['admin-role-change-options'] });
+    queryClient.removeQueries({ queryKey: ['admin-role-change-options'] });
+    void queryClient.cancelQueries({ queryKey: ['admin-role-change-eligibility'] });
+    queryClient.removeQueries({ queryKey: ['admin-role-change-eligibility'] });
   });
   return { ops, store, queryClient };
 }

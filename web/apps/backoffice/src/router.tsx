@@ -12,6 +12,9 @@ import { AdminUsersPage } from './admin/AdminUsersPage';
 import { AdminUserDetailPage } from './admin/AdminUserDetailPage';
 import { AdminInvitationsPage } from './admin/AdminInvitationsPage';
 import { AdminInvitationDetailPage } from './admin/AdminInvitationDetailPage';
+import { AdminRoleAccess } from './admin/AdminRoleAccess';
+import { RoleChangeQueuePage } from './admin/RoleChangeQueuePage';
+import { RoleChangeDetailPage } from './admin/RoleChangeDetailPage';
 import { InvitationPage } from './pages/InvitationPage';
 import type { AppServices } from './api';
 import { CategoryTreePage } from './catalog/CategoryTreePage';
@@ -687,6 +690,24 @@ const adminInvitationDetailRoute = createRoute({
     </AdminAccess>
   ),
 });
+const roleChangeQueueRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/admin/role-change-requests',
+  component: () => (
+    <AdminRoleAccess>
+      <RoleChangeQueuePage />
+    </AdminRoleAccess>
+  ),
+});
+const roleChangeDetailRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/admin/role-change-requests/$requestId',
+  component: () => (
+    <AdminRoleAccess>
+      <RoleChangeDetailPage />
+    </AdminRoleAccess>
+  ),
+});
 const healthServicesRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/health-services',
@@ -767,6 +788,8 @@ const routeTree = rootRoute.addChildren([
     adminUserDetailRoute,
     adminInvitationsRoute,
     adminInvitationDetailRoute,
+    roleChangeQueueRoute,
+    roleChangeDetailRoute,
     securityRoute,
     medicalReportsRoute,
     medicalReportRoute,
