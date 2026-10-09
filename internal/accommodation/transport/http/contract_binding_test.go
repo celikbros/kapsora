@@ -118,7 +118,8 @@ func TestBookingContractBindingFirstNightPolicyWinsPreflightAndApproval(t *testi
 	}
 	public := s.do(t, http.MethodGet, "/api/v1/accommodation/bookings/"+hold.Booking.ID.String(),
 		bookerPermissions, nil, s.memberHeaders()...)
-	if public.Code != http.StatusOK || bytes.Contains(public.Body.Bytes(), []byte("firstNightContractVersionId")) {
+	if public.Code != http.StatusOK || !bytes.Contains(public.Body.Bytes(), []byte(`"version":1`)) ||
+		bytes.Contains(public.Body.Bytes(), []byte("firstNightContractVersionId")) {
 		t.Fatalf("public booking = %d %s; internal contract identity must stay private",
 			public.Code, public.Body.String())
 	}

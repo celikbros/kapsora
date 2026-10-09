@@ -349,6 +349,11 @@ func quoteSnapshotView(raw []byte) kapsorav1.BookingQuoteSnapshot {
 		CoveredNights: snapshot.CoveredNights, Eligible: snapshot.Eligible,
 		Nights: make([]kapsorav1.BookingQuoteNight, 0, len(snapshot.Nights)),
 	}
+	// The public quote snapshot remains the v1 wire shape. Version 2 is an
+	// internal confirmation format and its metadata must not escape this projection.
+	if snapshot.Version == 1 || snapshot.Version == application.QuoteSnapshotVersion {
+		out.Version = 1
+	}
 	for _, night := range snapshot.Nights {
 		day, err := time.Parse(time.DateOnly, night.StayDate)
 		if err != nil {
