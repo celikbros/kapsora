@@ -435,6 +435,13 @@ func (Bookings) RoomTypeBookingContext(ctx context.Context, tx pgx.Tx, tenantID,
 func (Bookings) PersonEnrollmentForStay(ctx context.Context, tx pgx.Tx, tenantID, personID uuid.UUID,
 	day time.Time, programID, enrollmentID *uuid.UUID,
 ) (application.PersonEnrollment, error) {
+	// nullUUID intentionally treats a zero UUID like an omitted filter elsewhere.
+	// Here a non-nil pointer is an explicit command choice: zero must select
+	// nothing, never widen the query to another enrollment or program.
+	if (programID != nil && *programID == uuid.Nil) ||
+		(enrollmentID != nil && *enrollmentID == uuid.Nil) {
+		return application.PersonEnrollment{}, application.ErrEnrollmentNotFound
+	}
 	row, err := sqlcgen.New(tx).GetPersonEnrollmentForStay(ctx, sqlcgen.GetPersonEnrollmentForStayParams{
 		TenantID: tenantID, PersonID: personID, ServiceDate: dateOf(day),
 		ProgramID: nullUUID(programID), EnrollmentID: nullUUID(enrollmentID),

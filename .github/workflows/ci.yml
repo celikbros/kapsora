@@ -60,6 +60,14 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - name: hold enrollment boundary preflight
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: go test -count=1 -v -timeout 5m ./internal/accommodation/transport/http -run '^(TestHoldAmbiguousProgramsRefuseBeforeEffects|TestHoldExplicitProgramPinsEvaluationPriceAndAccount|TestHoldSameProgramAmbiguityAndPinnedWaitlistContinuity|TestPinnedEnrollmentUnavailableLeavesQueueWaiting|TestPinnedUnfundedEnrollmentDoesNotBorrowSecondPlan|TestPinnedHoldRejectsWrongPersonProgramAndUnknownEnrollment)$'
+      - name: eligibility selected enrollment and shared account regression
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: go test -count=1 -v -timeout 30m ./internal/benefit/eligibility
       - name: migrations and schema invariants
         env:
           KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
@@ -72,10 +80,6 @@ jobs:
         env:
           KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
         run: go test -count=1 -v -timeout 30m ./internal/accommodation/transport/http
-      - name: eligibility selected enrollment and shared account regression
-        env:
-          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
-        run: go test -count=1 -v -timeout 30m ./internal/benefit/eligibility
       - name: accommodation payer boundary negative control
         env:
           KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable

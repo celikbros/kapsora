@@ -424,6 +424,18 @@ func TestPinnedHoldRejectsWrongPersonProgramAndUnknownEnrollment(t *testing.T) {
 			}
 		})
 	}
+	zeroProgram := uuid.Nil
+	in := s.holdInput(s.person, s.roomType)
+	in.ProgramID = &zeroProgram
+	if _, err := s.svc.CreateHold(ctx, s.memberContext(), in); !errors.Is(err, application.ErrEnrollmentNotFound) {
+		t.Fatalf("explicit zero program hold = %v, want no enrollment", err)
+	}
+	if _, err := s.svc.JoinWaitlist(ctx, s.memberContext(), application.JoinWaitlistInput{
+		PersonID: s.person, PropertyID: s.property, RoomTypeID: &s.roomType,
+		ProgramID: &zeroProgram, CheckIn: mustDay(checkIn), CheckOut: mustDay(checkOut), Adults: 2,
+	}); !errors.Is(err, application.ErrEnrollmentNotFound) {
+		t.Fatalf("explicit zero program join = %v, want no enrollment", err)
+	}
 	foreignTenant := s.h.CreateTenant("FOREIGN_PIN")
 	if err := db.WithTenantTx(ctx, s.h.App, db.TenantContext{
 		TenantID: foreignTenant, ActorID: s.actor,
