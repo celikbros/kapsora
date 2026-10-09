@@ -1325,12 +1325,24 @@ prices now use the enrollment-derived payer set before ranking. The isolated neg
 control restores the old unscoped behavior and both wrong-payer regressions detect it.
 Explicit-program narrowing and omitted-program union remain; full enrollment coherence
 is not certified. [Exact confirmation binding](delegation/WP-PC06-confirmation-contract-binding.md)
-is now ACTIVE: new holds retain first-night contract identity and both confirmation paths
-must read that contract's policy before new authorization adoption. Existing v1 history
-remains readable, but outstanding legacy held/pending rows require a separate rollout
-inspection/recovery decision; pending bookings do not automatically expire through the
-HOLD sweep. No live recovery action is authorized. Local schema 58 application still
-requires the pending explicit approval; server reload remains operator-owned.
+passed bounded isolated acceptance on `3f7582b`: all six jobs in
+[CI run 37956582067](https://github.com/celikbros/kapsora/actions/runs/37956582067),
+70 accommodation functions without skips (102.430 s), including 11 binding functions and
+the provider-wide negative control. New holds retain first-night contract identity;
+both confirmation paths read that contract's policy before new authorization adoption.
+Known stored v1/v2 quotes retain the public v1 shape without private identity metadata.
+Existing confirmed v1 read/redelivery/cancellation remains usable; new legacy confirmation
+refuses before side effects. Transient policy retry and locked preparation drift are tested.
+
+A separate app-role read-only inventory at 2026-10-09 16:15 UTC found no HOLD or
+PENDING_APPROVAL bookings in DEMO_A/DEMO_B. No live recovery action was needed or executed.
+Recheck before operator reload if the old API creates new v1 holds; other tenants and
+historical orphaned authorizations were not inspected. Pending bookings do not automatically
+expire through the HOLD sweep, and external authorization/status races are not made atomic
+by this correction. The same CI run passed 754 frontend tests/92 files, 25 mock smoke tests,
+29 privileged-role cases and eight schema cases; 106 opt-in live/calendar cases remain skipped.
+Local schema 58 application still requires the pending explicit approval; schema is 57,
+dirty=false, and server reload remains operator-owned.
 
 ### PC-06 technical acceptance checkpoint (2026-10-03)
 

@@ -2,11 +2,11 @@
 
 | Field | Value |
 | --- | --- |
-| Status | ACTIVE; isolated implementation pending |
+| Status | Bounded isolated technical acceptance passed on `3f7582b`; operator runtime verification remains separate |
 | Planned | 2026-10-09, gpt-6-astra; legacy compatibility decision accepted by integrator |
 | Outcome | New holds confirm under the actual first-night price contract's lodging terms |
 | Migration / public API / permissions | None; internal quote JSON version changes only |
-| Acceptance | Source and isolated synthetic tests authorized; rollout/live acceptance blocked on legacy inspection and recovery decision |
+| Acceptance | Isolated evidence accepted; operator runtime verification and fresh legacy inventory remain rollout gates |
 
 ## 1. Existing requirement and defect
 
@@ -182,3 +182,39 @@ Run focused pure tests and package compilation locally with database tests expli
 disabled; verify formatting, generation and scoped vet/lint. Integrator owns required
 isolated PostgreSQL/CI runs. Report exact commands, test names, skips and code head. No
 runtime or all-legacy acceptance claim follows from green isolated tests.
+
+## 7. Accepted isolated evidence — 2026-10-09
+
+The core correction is committed on `1a6b92e`, preparation/history proof on `25b00c1`,
+and public-version projection on `3f7582b`. All six jobs passed on that final source head in
+[CI run 37956582067](https://github.com/celikbros/kapsora/actions/runs/37956582067).
+The full accommodation HTTP/database suite passed 70 functions without skips (102.430 s),
+including 11 confirmation-binding functions. These prove exact same-payer first-night
+policy, post-hold distractor publication, later-night price transitions, selected-version
+retirement, missing selected terms before request/adoption, corrupt v2 refusal, both
+legacy requested states, confirmed v1 read/redelivery/cancellation, transient port-error
+retry and locked quote/timezone/status/deadline rechecks. Existing waitlist acceptance,
+oversell, expiry, adoption, cancellation and no-show regressions passed as part of the suite.
+
+New stored quotes contain internal v2 and the selected version UUID; known stored v1/v2
+project to the unchanged public v1 shape without that UUID. Unknown stored versions retain
+their previous projection behavior rather than being mislabeled as v1. The isolated
+negative control restores the deleted provider-wide policy selection in both paths, then
+the first-night test detects B's wrong 7-hour/50-percent policy instead of A's 48-hour/
+100-percent terms. Temporary runner mutations are restored. Payer negative controls,
+29 privileged-role and eight associated schema tests also passed in the same run; web
+checks passed 754 tests/92 files and 25 mock smoke tests, with 106 opt-in cases skipped.
+
+Local pure/compile checks, formatting, compatible lint (zero issues), vet and generated
+sqlc freshness pass with integration tests deliberately disabled. The transient test
+injects a port failure around a real gateway; it does not simulate a database outage.
+The controlled drift tests prove the command preparation boundary, not a new atomic
+transaction across external authorization and booking writes.
+
+At 2026-10-09 16:15 UTC, a separate authorized app-role read-only inventory verified both
+DEMO_A and DEMO_B and found no HOLD/PENDING_APPROVAL bookings. Each tenant transaction
+asserted read-only mode; no compensation, release or cancellation was executed. This
+resolves the need for a recovery action in those two demo tenants at that observation,
+not a future rollout or other-tenant guarantee. Recheck before operator reload if the old
+API can create more v1 holds. No absence of historical orphaned authorizations is claimed.
+Local schema remains 57, dirty=false; migration 58 approval and server reload are separate.

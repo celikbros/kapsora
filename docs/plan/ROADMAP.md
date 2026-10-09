@@ -43,8 +43,8 @@ administration commands. Existing organization CRUD remains its own delivered wo
 | --- | --- | --- | --- |
 | MGT-01 | Tenant user membership directory | VERIFIED; bounded live reads passed 2026-10-08 | Real list/filter/paging and membership detail with assigned-role validity; tenant-wide permission and strict data projection |
 | MGT-02 | Account onboarding and membership lifecycle | ACTIVE; B2 code CI passed and local schema 57 clean; bounded anonymous live check awaits restart | Explicit public command contracts, validation, scoped lifecycle effects and retry/audit behavior |
-| MGT-03 | Role assignment and revocation | ACTIVE; bounded A isolated acceptance passed; live reads await reload; bounded A+B isolated acceptance passed; local B migration/live reads pending | Step-up, privileged maker-checker rules, scoped commands and recorded history |
-| MGT-04 | Typed tenant settings | PLANNED; permission/impact gate and hold-consumer discrepancy retained | Named supported settings and validated changes; no arbitrary JSON editor |
+| MGT-03 | Role assignment and revocation | ACTIVE; bounded A+B isolated acceptance passed; local B migration/live reads pending | Step-up, privileged maker-checker rules, scoped commands and recorded history |
+| MGT-04 | Typed tenant settings | PLANNED; permission/impact gate retained; contract hold prerequisite fixed | Named supported settings and validated changes; no arbitrary JSON editor |
 
 **MGT-01 first delivery:** `GET /api/v1/admin/users` and membership-ID detail, opened from
 Management. Require an active TENANT-scoped grant carrying `identity.user.read`, rather
@@ -168,8 +168,14 @@ passed bounded isolated acceptance on `2128ee6`: all six jobs in
 [CI run 37952656758](https://github.com/celikbros/kapsora/actions/runs/37952656758),
 59 accommodation test functions without skips and the intended negative-control failures.
 [Exact confirmation-contract identity](../delegation/WP-PC06-confirmation-contract-binding.md)
-is ACTIVE for source/isolated tests; legacy pending inspection/recovery remains a rollout
-gate. Multi-enrollment coherence and owner/calendar gates remain separate.
+passed bounded isolated acceptance on `3f7582b` in
+[CI run 37956582067](https://github.com/celikbros/kapsora/actions/runs/37956582067): all
+six jobs, 70 accommodation functions without skips, exact-policy negative control and
+unchanged public v1 projection. The 16:15 UTC read-only DEMO_A/DEMO_B inventory found no
+HOLD/PENDING_APPROVAL booking to recover; recheck before operator reload if new v1 holds
+are created. No live compensation was performed. Other-tenant legacy recovery,
+multi-enrollment coherence, external authorization/status atomicity and owner/calendar
+gates remain separate. Migration 58 still awaits explicit local application approval.
 
 ## Current product completion roadmap (2026-09-22)
 
