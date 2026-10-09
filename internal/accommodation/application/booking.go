@@ -151,8 +151,9 @@ type QuoteBalance struct {
 	Remaining       string `json:"remaining"`
 }
 
-// CreateHold sets a room aside for the length of the tenant's accommodation.hold_minutes,
-// takes the entitlement the stay would spend, and freezes the quote the member was shown.
+// CreateHold sets a room aside for the selected contract's optional hold duration,
+// falling back to the tenant's accommodation.hold_minutes. It takes the entitlement
+// the stay would spend and freezes the quote the member was shown.
 //
 // The command has two halves and the split is the point. Everything that reads the world
 // and prices it -- the property, the contract, the eligibility evaluation, the pricing
@@ -203,6 +204,7 @@ type preparedHold struct {
 	room      RoomTypeBookingContext
 	plan      PersonEnrollment
 	quote     QuoteView
+	selection quoteSelection
 	snapshot  QuoteSnapshot
 	expiresAt time.Time
 }
@@ -288,11 +290,12 @@ func (s *Service) prepareHold(ctx context.Context, rc identity.RequestContext, i
 	if err != nil {
 		return preparedHold{}, err
 	}
-	quote, reason := s.quoteRoomType(world, property, room, verdict)
+	quote, selection, reason := s.quoteRoomTypeWithSelection(world, property, room, verdict)
 	if quote == nil {
 		return preparedHold{}, &QuoteUnavailable{Reason: reason}
 	}
 	out.quote = *quote
+	out.selection = selection
 	out.snapshot = snapshotOf(*quote, verdict, out, s.now().UTC())
 	// A plan that carries no night of this stay is the one refusal here. Fewer nights than
 	// the stay is long is not a refusal and must not become one: the search has already
@@ -301,8 +304,25 @@ func (s *Service) prepareHold(ctx context.Context, rc identity.RequestContext, i
 	if out.snapshot.CoveredNights == 0 {
 		return preparedHold{}, ErrEntitlementInsufficient
 	}
-	out.expiresAt = s.now().UTC().Add(time.Duration(out.settings.HoldMinutes) * time.Minute)
+	minutes, err := resolveHoldMinutes(out.settings.HoldMinutes, out.selection.HoldMinutes)
+	if err != nil {
+		return preparedHold{}, fmt.Errorf("accommodation: selected contract version %s: %w",
+			out.selection.ContractVersionID, err)
+	}
+	out.expiresAt = s.now().UTC().Add(time.Duration(minutes) * time.Minute)
 	return out, nil
+}
+
+// resolveHoldMinutes treats an absent term as the validated tenant setting. An invalid
+// present term is corrupt policy, never a request for the fallback.
+func resolveHoldMinutes(tenantMinutes int, contractMinutes *int32) (int, error) {
+	if contractMinutes == nil {
+		return tenantMinutes, nil
+	}
+	if *contractMinutes < 1 || *contractMinutes > 1440 {
+		return 0, fmt.Errorf("invalid lodging hold minutes %d", *contractMinutes)
+	}
+	return int(*contractMinutes), nil
 }
 
 // placeHold is the locked half: the nights, the counters, the reservation and the booking.

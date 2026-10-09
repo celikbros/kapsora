@@ -40,6 +40,7 @@ import (
 	"github.com/celikbros/kapsora/internal/identity"
 	"github.com/celikbros/kapsora/internal/platform/dbtest"
 	"github.com/celikbros/kapsora/internal/platform/httpx"
+	"github.com/celikbros/kapsora/internal/platform/idempotency"
 	servicerequestapp "github.com/celikbros/kapsora/internal/servicerequest/application"
 	servicerequestpg "github.com/celikbros/kapsora/internal/servicerequest/infrastructure/postgres"
 )
@@ -175,7 +176,7 @@ type server struct {
 	inactiveRoomType uuid.UUID
 }
 
-func newServer(t *testing.T) *server {
+func newServer(t *testing.T, withHoldIdempotency ...bool) *server {
 	t.Helper()
 	h := dbtest.New(t)
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
@@ -270,6 +271,21 @@ func newServer(t *testing.T) *server {
 
 	router := chi.NewRouter()
 	router.Use(fakeContext)
+	bookingMW := accommodationhttp.BookingMiddlewares{}
+	if len(withHoldIdempotency) > 0 && withHoldIdempotency[0] {
+		// cmd/api uses this same command code and scope for the create-hold route.
+		bookingMW.CreateHold = idempotency.Middleware(h.App, idempotency.Options{
+			CommandCode: "accommodation.booking.hold",
+			Scope: func(r *http.Request) (idempotency.Scope, bool) {
+				rc, ok := identity.FromContext(r.Context())
+				if !ok {
+					return idempotency.Scope{}, false
+				}
+				return idempotency.Scope{TenantID: rc.TenantID, ActorID: rc.Principal.ActorID}, true
+			},
+			Logger: logger,
+		})
+	}
 	router.Route("/api/v1/accommodation/properties", func(r chi.Router) {
 		handler.PropertyRoutes(r, accommodationhttp.Middlewares{})
 	})
@@ -280,7 +296,7 @@ func newServer(t *testing.T) *server {
 		handler.AvailabilityRoutes(r, accommodationhttp.Middlewares{})
 	})
 	router.Route("/api/v1/accommodation/holds", func(r chi.Router) {
-		handler.HoldRoutes(r, accommodationhttp.BookingMiddlewares{})
+		handler.HoldRoutes(r, bookingMW)
 	})
 	router.Route("/api/v1/accommodation/bookings", func(r chi.Router) {
 		handler.BookingRoutes(r, accommodationhttp.BookingMiddlewares{})

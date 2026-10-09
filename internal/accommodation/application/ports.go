@@ -293,6 +293,8 @@ type PriceCandidate struct {
 	VersionValidFrom  time.Time
 	// VersionValidTo is the zero value for an open-ended version.
 	VersionValidTo time.Time
+	// HoldMinutes is the selected version's optional lodging override; nil uses the tenant setting.
+	HoldMinutes *int32
 }
 
 // Repository is the persistence port. Every method runs inside the caller's transaction,

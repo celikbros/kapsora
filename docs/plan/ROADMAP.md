@@ -24,7 +24,7 @@ with the same remaining gates. Schema 57 is applied cleanly. Management's invita
 onboarding has isolated database proof and all six code CI checks passed; bounded anonymous live checks are
 tracked in the checkpoint below. Bounded role assignment and revocation are implemented;
 isolated database acceptance passed on `e26bcc8`. Privileged role approval is authorized
-and implemented with independent security review; isolated acceptance is pending. PR #11 remains draft/unmerged;
+and has bounded isolated acceptance on `9893196`; local migration and live reads remain separate. PR #11 remains draft/unmerged;
 the recorded calendar-preparation CI baseline passed all six checks on `5bb2349`
 ([run 37152681278](https://github.com/celikbros/kapsora/actions/runs/37152681278)).
 No concrete date-independent implementation blocker remains in the completed PC review
@@ -43,7 +43,7 @@ administration commands. Existing organization CRUD remains its own delivered wo
 | --- | --- | --- | --- |
 | MGT-01 | Tenant user membership directory | VERIFIED; bounded live reads passed 2026-10-08 | Real list/filter/paging and membership detail with assigned-role validity; tenant-wide permission and strict data projection |
 | MGT-02 | Account onboarding and membership lifecycle | ACTIVE; B2 code CI passed and local schema 57 clean; bounded anonymous live check awaits restart | Explicit public command contracts, validation, scoped lifecycle effects and retry/audit behavior |
-| MGT-03 | Role assignment and revocation | ACTIVE; bounded A isolated acceptance passed; live reads await reload; privileged B implemented; isolated acceptance pending | Step-up, privileged maker-checker rules, scoped commands and recorded history |
+| MGT-03 | Role assignment and revocation | ACTIVE; bounded A isolated acceptance passed; live reads await reload; bounded A+B isolated acceptance passed; local B migration/live reads pending | Step-up, privileged maker-checker rules, scoped commands and recorded history |
 | MGT-04 | Typed tenant settings | PLANNED; permission/impact gate and hold-consumer discrepancy retained | Named supported settings and validated changes; no arbitrary JSON editor |
 
 **MGT-01 first delivery:** `GET /api/v1/admin/users` and membership-ID detail, opened from
@@ -157,7 +157,7 @@ is planned by Astra, reviewed by Sol and authorized after the owner's concrete s
 response. The eight API operations, approval UI and transactional persistence are implemented. Migration 000058 is allocated, not applied
 locally. The full frontend suite passed 754 tests in 92 files; workspace checks, app builds
 and 42 intercepted desktop/mobile states pass. Twenty-nine B HTTP/database test functions and
-eight schema cases await integrated isolated CI; no local grant was changed. B is required before completing MGT-03. The [MGT-04 plan](../delegation/WP-MGT-04-typed-tenant-settings.md) is prepared by Astra and
+eight schema cases passed without skips in [CI run 37941918013](https://github.com/celikbros/kapsora/actions/runs/37941918013); no local grant was changed. MGT-03 bounded isolated acceptance is complete; local migration and live reads remain open. The [MGT-04 plan](../delegation/WP-MGT-04-typed-tenant-settings.md) is prepared by Astra and
 reviewed by Sol; it needs explicit new read/manage authority and records the effect on
 pending booking confirmations. A reproduced contract hold-duration discrepancy must be
 resolved or the field deferred before a hold editor is enabled. No settings grant or

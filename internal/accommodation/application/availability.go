@@ -509,6 +509,20 @@ func wholeNights(q benefitdomain.Quantity) int {
 func (s *Service) quoteRoomType(world searchWorld, property AvailabilityProperty,
 	room AvailabilityRoomType, verdict eligibilityVerdict,
 ) (*QuoteView, string) {
+	view, _, reason := s.quoteRoomTypeWithSelection(world, property, room, verdict)
+	return view, reason
+}
+
+// quoteSelection is private hold metadata from the price that won the check-in night.
+// It never enters the quote sent to a member or the pricing ladder.
+type quoteSelection struct {
+	ContractVersionID uuid.UUID
+	HoldMinutes       *int32
+}
+
+func (s *Service) quoteRoomTypeWithSelection(world searchWorld, property AvailabilityProperty,
+	room AvailabilityRoomType, verdict eligibilityVerdict,
+) (*QuoteView, quoteSelection, string) {
 	eligible := verdict.eligibleFor[room.ServiceDefinitionID]
 	coveredNights := verdict.remainingNights[room.ServiceDefinitionID]
 	money, hasMoney := verdict.remainingMoney[room.ServiceDefinitionID]
@@ -525,6 +539,7 @@ func (s *Service) quoteRoomType(world searchWorld, property AvailabilityProperty
 	items := make([]pricing.Item, 0, len(world.stayDates))
 	currency := ""
 	reason := ""
+	var firstNight quoteSelection
 	// The nights the plan is applied to, counted as they are decided rather than inferred
 	// afterwards from the figures. A night the plan covers whose split happens to leave the
 	// payer nothing is still a night drawn from the count, and reading the count back off
@@ -553,7 +568,7 @@ func (s *Service) quoteRoomType(world searchWorld, property AvailabilityProperty
 		}
 
 		request.ServiceDate = night
-		rows, details := applicableCandidates(world.candidates[property.ProviderProfileID], night)
+		rows, candidates := applicableCandidates(world.candidates[property.ProviderProfileID], night)
 		result := selection.Select(request, rows)
 		if result.Winner == nil {
 			item.NoPriceReason = string(result.Reason)
@@ -563,8 +578,14 @@ func (s *Service) quoteRoomType(world searchWorld, property AvailabilityProperty
 			items = append(items, item)
 			continue
 		}
-		detail := details[result.Winner.PriceItemID]
-		price, err := priceOf(detail)
+		winner := candidates[result.Winner.PriceItemID]
+		if i == 0 {
+			firstNight = quoteSelection{
+				ContractVersionID: winner.Candidate.ContractVersionID,
+				HoldMinutes:       winner.HoldMinutes,
+			}
+		}
+		price, err := priceOf(winner.Detail)
 		if err != nil {
 			if reason == "" {
 				reason = ReasonPriceFormulaUnknown
@@ -575,8 +596,8 @@ func (s *Service) quoteRoomType(world searchWorld, property AvailabilityProperty
 		}
 		switch {
 		case currency == "":
-			currency = detail.CurrencyCode
-		case currency != detail.CurrencyCode:
+			currency = winner.Detail.CurrencyCode
+		case currency != winner.Detail.CurrencyCode:
 			if reason == "" {
 				reason = ReasonCurrencyMismatch
 			}
@@ -586,17 +607,17 @@ func (s *Service) quoteRoomType(world searchWorld, property AvailabilityProperty
 	}
 
 	if reason != "" {
-		return nil, reason
+		return nil, quoteSelection{}, reason
 	}
 	if currency == "" {
-		return nil, ReasonPriceNotFound
+		return nil, quoteSelection{}, ReasonPriceNotFound
 	}
 
 	result := pricing.Calculate(items, pricingapp.MinorUnits(currency))
 	if result.Outcome == pricing.OutcomeReviewRequired {
 		// A line nobody could price makes the whole stay unquotable, and the calculation
 		// has already zeroed the split rather than showing a number that is not an answer.
-		return nil, unpriceableReason(result)
+		return nil, quoteSelection{}, unpriceableReason(result)
 	}
 
 	view := &QuoteView{
@@ -614,7 +635,7 @@ func (s *Service) quoteRoomType(world searchWorld, property AvailabilityProperty
 			PayerAmount: line.Payer.String(), MemberAmount: line.Member.String(),
 		})
 	}
-	return view, ""
+	return view, firstNight, ""
 }
 
 // applicableCandidates narrows the loaded prices to the ones whose contract version was
@@ -622,10 +643,10 @@ func (s *Service) quoteRoomType(world searchWorld, property AvailabilityProperty
 // its WHERE; the range query cannot, because a stay may straddle two versions, so the
 // filter is here and the specificity ladder that follows it is untouched.
 func applicableCandidates(candidates []PriceCandidate, night time.Time) (
-	[]selection.Candidate, map[uuid.UUID]contractapp.PriceDetail,
+	[]selection.Candidate, map[uuid.UUID]PriceCandidate,
 ) {
 	rows := make([]selection.Candidate, 0, len(candidates))
-	details := make(map[uuid.UUID]contractapp.PriceDetail, len(candidates))
+	details := make(map[uuid.UUID]PriceCandidate, len(candidates))
 	for _, candidate := range candidates {
 		if !candidate.VersionValidFrom.IsZero() && night.Before(candidate.VersionValidFrom) {
 			continue
@@ -634,7 +655,7 @@ func applicableCandidates(candidates []PriceCandidate, night time.Time) (
 			continue
 		}
 		rows = append(rows, candidate.Candidate)
-		details[candidate.Candidate.PriceItemID] = candidate.Detail
+		details[candidate.Candidate.PriceItemID] = candidate
 	}
 	return rows, details
 }

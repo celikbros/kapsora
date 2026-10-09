@@ -17,8 +17,10 @@ package accommodationhttp_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -77,6 +79,10 @@ func (s *server) grantNights(t *testing.T, extra int) {
 // putLodgingTerms writes the cancellation policy a confirmation freezes. Without it every
 // confirmation is LODGING_TERMS_MISSING, which is the point of one of the tests below.
 func (s *server) putLodgingTerms(t *testing.T) {
+	s.putLodgingTermsWithHold(t, nil)
+}
+
+func (s *server) putLodgingTermsWithHold(t *testing.T, holdMinutes *int32) {
 	t.Helper()
 	ctx, cancel := s.h.Ctx()
 	defer cancel()
@@ -92,8 +98,8 @@ func (s *server) putLodgingTerms(t *testing.T) {
 	if _, err := s.h.Admin.Exec(ctx, `
 		INSERT INTO contract.lodging_terms (tenant_id, contract_version_id,
 		                                    free_cancellation_hours_before, penalty_kind,
-		                                    penalty_nights, no_show_percent, min_nights)
-		VALUES ($1, $2, 48, 'NIGHTS', 1, 100, 1)`, s.tenant, s.contractVersion); err != nil {
+		                                    penalty_nights, no_show_percent, min_nights, hold_minutes)
+		VALUES ($1, $2, 48, 'NIGHTS', 1, 100, 1, $3)`, s.tenant, s.contractVersion, holdMinutes); err != nil {
 		t.Fatalf("seed lodging terms: %v", err)
 	}
 	if _, err := s.h.Admin.Exec(ctx, `
@@ -382,6 +388,156 @@ func isRoomUnavailable(err error) bool {
 // ---------------------------------------------------------------------------
 // The hold and giving it back
 // ---------------------------------------------------------------------------
+
+func TestBookingContractHoldDurationExpiryMatchesReservation(t *testing.T) {
+	for _, tc := range []struct {
+		name           string
+		terms          bool
+		contractMinute *int32
+		tenantMinute   int
+		wantMinute     int
+	}{
+		{"contract 30 over tenant 15", true, int32Ptr(30), 15, 30},
+		{"null contract uses tenant 15", true, nil, 15, 15},
+		{"missing terms uses tenant 15", false, nil, 15, 15},
+		{"null contract uses tenant 20", true, nil, 20, 20},
+		{"contract lower boundary", true, int32Ptr(1), 15, 1},
+		{"contract upper boundary", true, int32Ptr(1440), 15, 1440},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := newServer(t)
+			s.clock.At(t, "2026-06-13T09:00:00Z")
+			s.grantNights(t, 10)
+			if tc.terms {
+				s.putLodgingTermsWithHold(t, tc.contractMinute)
+			}
+			ctx, cancel := s.h.Ctx()
+			defer cancel()
+			if tc.tenantMinute != 15 {
+				if _, err := s.h.Admin.Exec(ctx, `
+					INSERT INTO platform.tenant_setting (tenant_id, setting_key, value_json)
+					VALUES ($1, 'accommodation.hold_minutes', to_jsonb($2::text))`,
+					s.tenant, fmt.Sprint(tc.tenantMinute)); err != nil {
+					t.Fatalf("set tenant hold minutes: %v", err)
+				}
+			}
+			now := s.clock.Now()
+			view, err := s.svc.CreateHold(ctx, s.memberContext(), s.holdInput(s.person, s.roomType))
+			if err != nil {
+				t.Fatalf("create hold: %v", err)
+			}
+			want := now.Add(time.Duration(tc.wantMinute) * time.Minute)
+			if view.Booking.HoldExpiresAt == nil || !view.Booking.HoldExpiresAt.Equal(want) {
+				t.Fatalf("booking expiry = %v, want %v", view.Booking.HoldExpiresAt, want)
+			}
+			if view.SecondsToExpiry != tc.wantMinute*60 {
+				t.Errorf("countdown = %d, want %d", view.SecondsToExpiry, tc.wantMinute*60)
+			}
+			if view.Booking.EntitlementReservationID == nil {
+				t.Fatal("hold has no entitlement reservation")
+			}
+			var bookingExpiry, reservationExpiry time.Time
+			if err := s.h.Admin.QueryRow(ctx, `
+				SELECT b.hold_expires_at, r.expires_at
+				  FROM accommodation.booking b
+				  JOIN benefit.entitlement_reservation r
+				    ON r.tenant_id = b.tenant_id AND r.id = b.entitlement_reservation_id
+				 WHERE b.tenant_id = $1 AND b.id = $2`, s.tenant, view.Booking.ID).
+				Scan(&bookingExpiry, &reservationExpiry); err != nil {
+				t.Fatalf("read persisted expiries: %v", err)
+			}
+			if !bookingExpiry.Equal(want) || !reservationExpiry.Equal(want) {
+				t.Errorf("persisted booking/reservation expiries = %v/%v, want %v",
+					bookingExpiry, reservationExpiry, want)
+			}
+			var reservations int
+			if err := s.h.Admin.QueryRow(ctx, `
+				SELECT count(*) FROM benefit.entitlement_reservation
+				 WHERE tenant_id = $1 AND reference_id = $2`, s.tenant, view.Booking.ID).
+				Scan(&reservations); err != nil {
+				t.Fatalf("count reservations: %v", err)
+			}
+			if reservations != 1 {
+				t.Errorf("reservations = %d, want one", reservations)
+			}
+		})
+	}
+}
+
+func int32Ptr(value int32) *int32 { return &value }
+
+func TestBookingContractHoldDurationIdempotentHTTPReplay(t *testing.T) {
+	s := newServer(t, true)
+	s.clock.At(t, "2026-06-13T09:00:00Z")
+	s.grantNights(t, 10)
+	s.putLodgingTermsWithHold(t, int32Ptr(30))
+	body := map[string]any{
+		"roomTypeId": s.roomType.String(), "checkIn": checkIn, "checkOut": checkOut,
+		"adults": 2, "personId": s.person.String(),
+	}
+	key := "contract-hold-duration-replay-0001"
+	headers := append(s.memberHeaders(), "Idempotency-Key", key)
+	first := s.do(t, http.MethodPost, "/api/v1/accommodation/holds", bookerPermissions,
+		body, headers...)
+	if first.Code != http.StatusCreated {
+		t.Fatalf("first hold = %d: %s", first.Code, first.Body.String())
+	}
+	var booked kapsorav1.Booking
+	if err := json.Unmarshal(first.Body.Bytes(), &booked); err != nil {
+		t.Fatalf("decode hold: %v", err)
+	}
+	if booked.SecondsToExpiry != 1800 || booked.HoldExpiresAt == nil ||
+		booked.EntitlementReservationId == nil {
+		t.Fatalf("hold countdown/expiry/reservation = %d/%v/%v, want 1800 and populated",
+			booked.SecondsToExpiry, booked.HoldExpiresAt, booked.EntitlementReservationId)
+	}
+	s.clock.Set(s.clock.Now().Add(5 * time.Minute))
+	replayed := s.do(t, http.MethodPost, "/api/v1/accommodation/holds", bookerPermissions,
+		body, headers...)
+	if replayed.Code != http.StatusCreated || replayed.Body.String() != first.Body.String() {
+		t.Fatalf("replay = %d %s; want original 201 response %s",
+			replayed.Code, replayed.Body.String(), first.Body.String())
+	}
+	changed := map[string]any{
+		"roomTypeId": s.roomType.String(), "checkIn": checkIn, "checkOut": checkOut,
+		"adults": 1, "personId": s.person.String(),
+	}
+	mismatch := s.do(t, http.MethodPost, "/api/v1/accommodation/holds", bookerPermissions,
+		changed, headers...)
+	if mismatch.Code != http.StatusConflict || !strings.Contains(mismatch.Body.String(), "IDEMPOTENCY_KEY_REUSED") {
+		t.Fatalf("same key with changed body = %d: %s", mismatch.Code, mismatch.Body.String())
+	}
+	fresh := append(s.memberHeaders(), "Idempotency-Key", "contract-hold-duration-fresh-0002")
+	duplicate := s.do(t, http.MethodPost, "/api/v1/accommodation/holds", bookerPermissions,
+		body, fresh...)
+	if duplicate.Code != http.StatusConflict {
+		t.Fatalf("fresh key for active duplicate booking = %d: %s", duplicate.Code, duplicate.Body.String())
+	}
+	ctx, cancel := s.h.Ctx()
+	defer cancel()
+	var bookings, reservations, movements int
+	if err := s.h.Admin.QueryRow(ctx, `
+		SELECT count(*) FROM accommodation.booking
+		 WHERE tenant_id = $1 AND room_type_id = $2`, s.tenant, s.roomType).Scan(&bookings); err != nil {
+		t.Fatalf("count bookings: %v", err)
+	}
+	if err := s.h.Admin.QueryRow(ctx, `
+		SELECT count(*) FROM benefit.entitlement_reservation
+		 WHERE tenant_id = $1 AND reference_id = $2`, s.tenant, booked.Id).Scan(&reservations); err != nil {
+		t.Fatalf("count reservations: %v", err)
+	}
+	if err := s.h.Admin.QueryRow(ctx, `
+		SELECT count(*) FROM benefit.entitlement_ledger
+		 WHERE tenant_id = $1 AND reference_id = $2 AND movement_type = 'RESERVE'`,
+		s.tenant, booked.Id).Scan(&movements); err != nil {
+		t.Fatalf("count reservation movements: %v", err)
+	}
+	_, held, _ := s.inventoryOf(t, s.roomType, checkIn)
+	if bookings != 1 || reservations != 1 || movements != 1 || held != 1 {
+		t.Errorf("bookings/reservations/movements/held = %d/%d/%d/%d, want 1 each",
+			bookings, reservations, movements, held)
+	}
+}
 
 // TestHoldFreezesTheQuoteAndTakesTheNights is the ordinary path: the room is set aside, the
 // countdown runs, the plan's nights are reserved with the hold's own deadline, and the

@@ -457,6 +457,7 @@ func (Repository) ListPriceCandidates(ctx context.Context, tx pgx.Tx, tenantID u
 			ProviderProfileID: r.ProviderProfileID,
 			VersionValidFrom:  dateTime(r.VersionValidFrom),
 			VersionValidTo:    dateTime(r.VersionValidTo),
+			HoldMinutes:       r.HoldMinutes,
 		})
 	}
 	return out, nil

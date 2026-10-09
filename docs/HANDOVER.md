@@ -47,7 +47,7 @@ existing-account invitations and new-account invitation acceptance. B2 isolated 
 proof and all six code CI checks passed; bounded anonymous live checks await the operator
 restart, as recorded below. Bounded role assignment and revocation are implemented;
 isolated database acceptance passed on `e26bcc8`. Privileged role approval is authorized
-and implemented with independent security review; isolated acceptance is pending. PR #11 remains
+and has bounded isolated acceptance on `9893196`; local migration and live reads remain separate. PR #11 remains
 draft and unmerged. All six CI checks passed on
 calendar-preparation code head `5bb2349` ([run 37152681278](https://github.com/celikbros/kapsora/actions/runs/37152681278));
 current Management CI is tracked in PR #11's checks.
@@ -1299,14 +1299,22 @@ The Astra-planned, Sol-reviewed [privileged B package](delegation/WP-MGT-03b-pri
 is authorized and implemented after the owner's response to the concrete scope
 question. The original OpenAPI write is now accepted; eight operation contracts and
 their generated bindings are present. Migration 000058 is allocated but not applied locally;
-B has no acceptance claim. Local checks pass: 754 frontend tests in 92 files, workspace
+B has bounded isolated acceptance; local runtime is not accepted yet. Local checks pass: 754 frontend tests in 92 files, workspace
 format/type/lint, all app builds and 42 intercepted 390px/1440px visual/keyboard states
 with no real API traffic, overflow or browser errors. Twenty-nine new HTTP/database test
-functions and eight schema tests await integrated isolated CI. Existing-row preservation
-and seven schema cases passed on the initial contract/schema head; actor attribution guards
-and command mutation cases require the integrated run. Local DB tests remain disabled to
-protect the shared application-role password. B remains separate work before completing MGT-03;
+functions and eight schema tests passed without skips on `9893196` in
+[CI run 37941918013](https://github.com/celikbros/kapsora/actions/runs/37941918013). All six jobs passed,
+including the actual 57-to-58 upgrade, IAM preservation, actor attribution, exact receipt
+recovery and command mutations/races. Local DB tests remain disabled to
+protect the shared application-role password. MGT-03 live reads remain separate;
 MGT-04 typed settings follows it.
+
+The Astra-planned, Sol-reviewed [contract hold-duration correction](delegation/WP-PC06-contract-hold-duration.md)
+is being verified independently. It honors the actual first-night price contract's nullable
+override and retains the tenant fallback, without changing prices, public API, grants or
+schema. No live booking/payment journey is rerun. The broader confirmation-contract selector
+and statically identified multi-payer candidate filtering concern remain separately recorded;
+this correction does not certify either boundary.
 
 ### PC-06 technical acceptance checkpoint (2026-10-03)
 
@@ -1360,7 +1368,7 @@ cp .env.example .env              # fill CHANGE_ME with your local PostgreSQL cr
 make tools                        # sqlc, oapi-codegen, oasdiff, golangci-lint, govulncheck
 make native-install && make native-up   # MinIO, ClamAV, Mailpit as native processes
 make db-init                      # role kapsora_app + database kapsora
-make migrate-up                   # schema to 000057
+make migrate-up                   # latest allocated migration, only within approved local scope
 make test-unit                    # clear KAPSORA_TEST_ADMIN_DATABASE_URL for local unit checks
 ```
 

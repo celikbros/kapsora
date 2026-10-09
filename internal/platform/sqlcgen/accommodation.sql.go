@@ -411,11 +411,13 @@ SELECT i.id AS price_item_id, i.price_list_id, l.contract_version_id,
        l.code AS price_list_code, l.priority AS list_priority,
        l.season_from, l.season_to, l.weekday_mask,
        v.version_no, v.currency_code, v.valid_from AS version_valid_from, v.valid_to AS version_valid_to,
-       c.id AS contract_id, c.code AS contract_code, c.provider_profile_id
+       c.id AS contract_id, c.code AS contract_code, c.provider_profile_id,
+       lt.hold_minutes
   FROM contract.price_item i
   JOIN contract.price_list l ON l.tenant_id = i.tenant_id AND l.id = i.price_list_id
   JOIN contract.contract_version v ON v.tenant_id = l.tenant_id AND v.id = l.contract_version_id
   JOIN contract.contract c ON c.tenant_id = v.tenant_id AND c.id = v.contract_id
+  LEFT JOIN contract.lodging_terms lt ON lt.tenant_id = v.tenant_id AND lt.contract_version_id = v.id
  WHERE i.tenant_id = $1
    AND v.status = 'PUBLISHED'
    AND c.status = 'ACTIVE'
@@ -471,6 +473,7 @@ type ListAccommodationPriceCandidatesRow struct {
 	ContractID          uuid.UUID
 	ContractCode        string
 	ProviderProfileID   uuid.UUID
+	HoldMinutes         *int32
 }
 
 // Every contracted price that could apply to any of these room types on any night of the
@@ -533,6 +536,7 @@ func (q *Queries) ListAccommodationPriceCandidates(ctx context.Context, arg List
 			&i.ContractID,
 			&i.ContractCode,
 			&i.ProviderProfileID,
+			&i.HoldMinutes,
 		); err != nil {
 			return nil, err
 		}

@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Milestone | Management, following bounded MGT-03A |
-| Status | ACTIVE; implemented on 2026-10-09; integrated isolated acceptance pending |
+| Status | ACTIVE; bounded isolated acceptance passed on 2026-10-09; local migration/live reads pending |
 | Planned | 2026-10-09, gpt-6-astra |
 | Review | 2026-10-09, gpt-6-sol; no remaining policy or static design blocker |
 | Delivery | Durable request, explicit different checker, atomic grant/revocation and audit |
@@ -13,8 +13,8 @@ The owner instructed continuation after the concrete five-role API/UI/migration-
 isolated-test scope was presented. Automatic approval review accepted the contract-first
 OpenAPI write on 2026-10-09. This scope excludes live grant changes and local migration
 application. API, persistence, UI and independent static security review are complete.
-Integrated isolated evidence is pending: twenty-nine B HTTP/database test functions and eight
-schema cases. Local frontend checks passed 754 tests/92 files and 42 intercepted mobile/
+Integrated isolated evidence passed on `9893196`: twenty-nine B HTTP/database test functions
+and eight schema cases, without skips. Local frontend checks passed 754 tests/92 files and 42 intercepted mobile/
 desktop states. No local database test or migration was run.
 
 ## 1. Outcome and scope
@@ -468,3 +468,22 @@ from natural timestamp expiry of caller/maker/revoke grants and step-up. B REVOK
 remove the last role manager when maker and checker are distinct currently authorized
 humans; each retains role.manage. Suspension and final user-manager revocation have their
 own direct isolated invariant cases. These limits must remain explicit at acceptance.
+
+
+### Bounded acceptance on `9893196`
+
+All six CI jobs passed in [run 37941918013](https://github.com/celikbros/kapsora/actions/runs/37941918013):
+29 B HTTP/PostgreSQL functions and 8 schema cases without skips, 754 frontend tests in
+92 files, and 25 mock browser smoke cases (106 opt-in live/calendar cases deliberately
+skipped). The independent Sol review found no remaining static blocker in this bounded
+scope. All five roles open ordinary target context and their actual permitted production
+read handler only after approval; TENANT_ADMIN still cannot read clinical cases. Exact
+receipt recovery, current authority, atomic rollback, first/last-manager rules and observed
+PostgreSQL command races passed. The after-claim hook proof uses a trusted isolated
+receipt fixture; it is branch coverage, not a literal process crash.
+
+The local schema read still reports 57, dirty=false. Migration 58 application was explicitly
+excluded from the implementation approval; a separate concrete application question is
+pending. No live grant or existing membership was changed. Local GET-only checks follow
+that decision and an operator-owned API restart; they cannot prove a real three-person
+role mutation. Preserve the DATE-expiry/ETag and unreachable-revoke limits above.
