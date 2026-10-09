@@ -274,9 +274,8 @@ SELECT i.room_type_id,
 
 -- name: ListAccommodationPriceCandidates :many
 -- Every contracted price that could apply to any of these room types on any night of the
--- stay, loaded once for the whole search. It is db/queries/contract.sql's
--- ListPriceCandidates widened in two ways and narrowed in none: the service date becomes a
--- half-open range, and the provider becomes a set, because a search over a region asks
+-- stay for the person's active program payers, loaded once for the whole search. It is
+-- db/queries/contract.sql's ListPriceCandidates over a date and provider range: a search asks
 -- about several hotels and thirty nights and one round trip per pair would be a thousand.
 --
 -- The version's own period comes back with the row, so the caller can decide per night
@@ -309,6 +308,7 @@ SELECT i.id AS price_item_id, i.price_list_id, l.contract_version_id,
    AND v.status = 'PUBLISHED'
    AND c.status = 'ACTIVE'
    AND c.provider_profile_id = ANY(sqlc.arg('provider_profile_ids')::uuid[])
+   AND c.payer_organization_id = ANY(sqlc.arg('payer_organization_ids')::uuid[])
    AND v.valid_from <= sqlc.arg('last_night')::date
    AND (v.valid_to IS NULL OR v.valid_to > sqlc.arg('check_in')::date)
    AND (i.service_definition_id = ANY(sqlc.arg('service_definition_ids')::uuid[])

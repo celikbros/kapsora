@@ -275,7 +275,9 @@ type AvailabilityPropertyQuery struct {
 
 // PriceCandidateQuery loads every contracted price that could bear on the search, once.
 type PriceCandidateQuery struct {
-	ProviderProfileIDs   []uuid.UUID
+	ProviderProfileIDs []uuid.UUID
+	// PayerOrganizationIDs are required: an empty set must return no prices.
+	PayerOrganizationIDs []uuid.UUID
 	ServiceDefinitionIDs []uuid.UUID
 	CategoryIDs          []uuid.UUID
 	PackageIDs           []uuid.UUID

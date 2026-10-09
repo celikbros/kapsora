@@ -48,7 +48,7 @@ jobs:
           POSTGRES_USER: kapsora_owner
           POSTGRES_PASSWORD: kapsora_owner_ci
           POSTGRES_DB: postgres
-        ports: ["5432:5432"]
+        ports: ['5432:5432']
         options: >-
           --health-cmd "pg_isready -U kapsora_owner"
           --health-interval 5s
@@ -68,10 +68,48 @@ jobs:
         env:
           KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
         run: go test -count=1 -v -timeout 30m ./internal/identity/transport/http -run '^(TestDirectory|TestInvitation)'
-      - name: accommodation HTTP and contract hold duration regression
+      - name: accommodation HTTP, contract duration and payer boundary regression
         env:
           KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
         run: go test -count=1 -v -timeout 30m ./internal/accommodation/transport/http
+      - name: accommodation payer boundary negative control
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+
+          path = Path('internal/platform/sqlcgen/accommodation.sql.go')
+          original = path.read_text()
+          predicate = 'AND c.payer_organization_id = ANY($3::uuid[])'
+          if original.count(predicate) != 1:
+              raise SystemExit('Expected exactly one accommodation price payer predicate')
+          cases = ['TestPriceCandidatesRespectProgramPayerBeforePriority',
+                   'TestWrongPayerEqualRankDoesNotCauseAmbiguity']
+          try:
+              # Preserve parameter typing while restoring the old unrestricted behavior.
+              path.write_text(original.replace(predicate,
+                  'AND ($3::uuid[] IS NULL OR $3::uuid[] IS NOT NULL)'))
+              result = subprocess.run(['go', 'test', '-count=1', '-v', '-timeout', '5m',
+                  './internal/accommodation/transport/http',
+                  '-run', '^(' + '|'.join(cases) + ')$'],
+                  capture_output=True, text=True)
+              output = result.stdout + result.stderr
+              print(output)
+              if result.returncode != 1 or '[build failed]' in output:
+                  raise SystemExit('Negative control did not fail as a compiled test')
+              for case in cases:
+                  if '--- FAIL: ' + case + ' ' not in output:
+                      raise SystemExit('Negative control did not expose ' + case)
+              for assertion in ["want payer A's 3000 despite B's priority",
+                                'wrong-payer tie changed A quote']:
+                  if assertion not in output:
+                      raise SystemExit('Negative control failed outside its payer assertion')
+              print('Both regressions detected the removed payer boundary')
+          finally:
+              path.write_text(original)
+          PY
 
   contracts:
     name: OpenAPI lint, generated code, breaking changes
@@ -121,14 +159,14 @@ jobs:
           # Allowlists for generated, high-entropy-by-construction files (see the file).
           GITLEAKS_CONFIG: .gitleaks.toml
           # Findings remain in the job summary/artifact; no PR write permission needed.
-          GITLEAKS_ENABLE_COMMENTS: "false"
+          GITLEAKS_ENABLE_COMMENTS: 'false'
       - name: trivy filesystem scan
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: .
           severity: CRITICAL,HIGH
-          exit-code: "1"
+          exit-code: '1'
           ignore-unfixed: true
 
   release-binaries:

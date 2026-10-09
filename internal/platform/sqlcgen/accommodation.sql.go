@@ -422,17 +422,19 @@ SELECT i.id AS price_item_id, i.price_list_id, l.contract_version_id,
    AND v.status = 'PUBLISHED'
    AND c.status = 'ACTIVE'
    AND c.provider_profile_id = ANY($2::uuid[])
-   AND v.valid_from <= $3::date
-   AND (v.valid_to IS NULL OR v.valid_to > $4::date)
-   AND (i.service_definition_id = ANY($5::uuid[])
-        OR i.service_category_id = ANY($6::uuid[])
-        OR i.package_definition_id = ANY($7::uuid[]))
+   AND c.payer_organization_id = ANY($3::uuid[])
+   AND v.valid_from <= $4::date
+   AND (v.valid_to IS NULL OR v.valid_to > $5::date)
+   AND (i.service_definition_id = ANY($6::uuid[])
+        OR i.service_category_id = ANY($7::uuid[])
+        OR i.package_definition_id = ANY($8::uuid[]))
  ORDER BY i.id
 `
 
 type ListAccommodationPriceCandidatesParams struct {
 	TenantID             uuid.UUID
 	ProviderProfileIds   []uuid.UUID
+	PayerOrganizationIds []uuid.UUID
 	LastNight            pgtype.Date
 	CheckIn              pgtype.Date
 	ServiceDefinitionIds []uuid.UUID
@@ -477,9 +479,8 @@ type ListAccommodationPriceCandidatesRow struct {
 }
 
 // Every contracted price that could apply to any of these room types on any night of the
-// stay, loaded once for the whole search. It is db/queries/contract.sql's
-// ListPriceCandidates widened in two ways and narrowed in none: the service date becomes a
-// half-open range, and the provider becomes a set, because a search over a region asks
+// stay for the person's active program payers, loaded once for the whole search. It is
+// db/queries/contract.sql's ListPriceCandidates over a date and provider range: a search asks
 // about several hotels and thirty nights and one round trip per pair would be a thousand.
 //
 // The version's own period comes back with the row, so the caller can decide per night
@@ -490,6 +491,7 @@ func (q *Queries) ListAccommodationPriceCandidates(ctx context.Context, arg List
 	rows, err := q.db.Query(ctx, listAccommodationPriceCandidates,
 		arg.TenantID,
 		arg.ProviderProfileIds,
+		arg.PayerOrganizationIds,
 		arg.LastNight,
 		arg.CheckIn,
 		arg.ServiceDefinitionIds,

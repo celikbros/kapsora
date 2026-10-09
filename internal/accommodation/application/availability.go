@@ -339,8 +339,9 @@ func (s *Service) loadWorld(ctx context.Context, tx pgx.Tx, rc identity.RequestC
 	}
 
 	candidates, err := s.repo.ListPriceCandidates(ctx, tx, rc.TenantID, PriceCandidateQuery{
-		ProviderProfileIDs: profileIDs, ServiceDefinitionIDs: definitionIDs,
-		CategoryIDs: categoryIDs, PackageIDs: packageIDs,
+		ProviderProfileIDs: profileIDs, PayerOrganizationIDs: payers,
+		ServiceDefinitionIDs: definitionIDs,
+		CategoryIDs:          categoryIDs, PackageIDs: packageIDs,
 		CheckIn: checkIn, LastNight: lastNight,
 	})
 	if err != nil {
