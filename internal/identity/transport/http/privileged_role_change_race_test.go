@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -23,6 +24,47 @@ type roleChangeRaceFixture struct {
 	makerCSRF, checkerCSRF     string
 	targetActor, targetMember  uuid.UUID
 	requestID, requestETag     string
+}
+
+func roleChangeRunTwoAtTenantBarrier(t *testing.T, s *authzServer, first, second func()) {
+	t.Helper()
+	ctx := context.Background()
+	block, err := s.h.Admin.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = block.Rollback(ctx) }()
+	if _, err := block.Exec(ctx, `SELECT id FROM platform.tenant WHERE id=$1 FOR UPDATE`, s.tenantA); err != nil {
+		t.Fatal(err)
+	}
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() { defer wg.Done(); first() }()
+	go func() { defer wg.Done(); second() }()
+	deadline := time.Now().Add(8 * time.Second)
+	for {
+		var waiting int
+		if err := s.h.Admin.QueryRow(ctx, `SELECT count(*) FROM pg_stat_activity WHERE datname=current_database() AND pid<>pg_backend_pid() AND wait_event_type='Lock' AND query LIKE '%platform.tenant%'`).Scan(&waiting); err != nil {
+			t.Fatal(err)
+		}
+		if waiting >= 2 {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("only %d of two role-change writers reached tenant lock", waiting)
+		}
+		time.Sleep(15 * time.Millisecond)
+	}
+	if err := block.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	done := make(chan struct{})
+	go func() { wg.Wait(); close(done) }()
+	select {
+	case <-done:
+	case <-time.After(8 * time.Second):
+		t.Fatal("role-change writers did not finish after tenant lock release")
+	}
 }
 
 func newRoleChangeRaceFixture(t *testing.T) roleChangeRaceFixture {
@@ -50,14 +92,9 @@ func TestDirectoryRoleChangeConcurrentDecisionsHaveOneTerminalEffect(t *testing.
 				body map[string]any
 			}
 			results := make([]result, 2)
-			var wg sync.WaitGroup
-			wg.Add(2)
-			go func() {
-				defer wg.Done()
+			roleChangeRunTwoAtTenantBarrier(t, f.s, func() {
 				results[0].code, results[0].body, _ = roleCall(f.s, f.checkerCookie, f.checkerCSRF, f.s.tenantA, http.MethodPost, path+"/approve", f.requestETag, "role-change-race-approve-"+uuid.NewString(), `{}`)
-			}()
-			go func() {
-				defer wg.Done()
+			}, func() {
 				cookie, csrf := f.checkerCookie, f.checkerCSRF
 				body := `{}`
 				if other == "reject" {
@@ -68,8 +105,7 @@ func TestDirectoryRoleChangeConcurrentDecisionsHaveOneTerminalEffect(t *testing.
 					body = `{"reasonCode":"WITHDRAWN"}`
 				}
 				results[1].code, results[1].body, _ = roleCall(f.s, cookie, csrf, f.s.tenantA, http.MethodPost, path+"/"+other, f.requestETag, "role-change-race-"+other+"-"+uuid.NewString(), body)
-			}()
-			wg.Wait()
+			})
 			success := 0
 			for _, r := range results {
 				if r.code == 200 {
@@ -110,14 +146,9 @@ func TestDirectoryRoleChangeApprovalRacesSuspensionAndOfflineGrant(t *testing.T)
 				err  error
 			}
 			var approval, competing result
-			var wg sync.WaitGroup
-			wg.Add(2)
-			go func() {
-				defer wg.Done()
+			roleChangeRunTwoAtTenantBarrier(t, f.s, func() {
 				approval.code, approval.body, _ = roleCall(f.s, f.checkerCookie, f.checkerCSRF, f.s.tenantA, http.MethodPost, "/api/v1/admin/role-change-requests/"+f.requestID+"/approve", f.requestETag, "role-change-race-apply-"+uuid.NewString(), `{}`)
-			}()
-			go func() {
-				defer wg.Done()
+			}, func() {
 				if other == "suspend" {
 					competing.code, competing.body, _ = suspendCall(f.s, f.makerCookie, f.makerCSRF, f.s.tenantA, f.targetMember, `"1"`, "role-change-race-suspend-"+uuid.NewString(), "ACCESS_REVIEW")
 				} else {
@@ -126,8 +157,7 @@ func TestDirectoryRoleChangeApprovalRacesSuspensionAndOfflineGrant(t *testing.T)
 						competing.code = 200
 					}
 				}
-			}()
-			wg.Wait()
+			})
 			var status string
 			var version int64
 			var grants int
@@ -170,14 +200,9 @@ func TestDirectoryRoleChangeApprovalAndSafeSyncSerializeConfiguration(t *testing
 	var approvalCode int
 	var approvalBody map[string]any
 	var syncErr error
-	var wg sync.WaitGroup
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
+	roleChangeRunTwoAtTenantBarrier(t, f.s, func() {
 		approvalCode, approvalBody, _ = roleCall(f.s, f.checkerCookie, f.checkerCSRF, f.s.tenantA, http.MethodPost, "/api/v1/admin/role-change-requests/"+f.requestID+"/approve", f.requestETag, "role-change-race-sync-approve-0001", `{}`)
-	}()
-	go func() { defer wg.Done(); _, syncErr = f.s.prov.SyncSystemRoles(ctx, f.s.tenantA) }()
-	wg.Wait()
+	}, func() { _, syncErr = f.s.prov.SyncSystemRoles(ctx, f.s.tenantA) })
 	if syncErr != nil {
 		t.Fatal(syncErr)
 	}

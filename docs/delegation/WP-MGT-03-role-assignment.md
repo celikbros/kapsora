@@ -7,7 +7,7 @@
 | Planning | gpt-6-astra |
 | First delivery | MGT-03A: activate a zero-access human membership with one supported role; revoke that supported access |
 | Later delivery | MGT-03B: privileged approval pipeline; other combinations remain conditional |
-| Migration numbers assigned | None for A. B requires a separate schema decision; current maximum is 000057, and the integrator assigns any next number at landing |
+| Migration numbers assigned | None for A. B uses integrator-allocated 000058 for isolated verification; local schema remains 57 |
 | Depends on | Directory, invitations, local sessions/step-up, transactional audit, command idempotency |
 
 ## 1. Outcome and boundaries

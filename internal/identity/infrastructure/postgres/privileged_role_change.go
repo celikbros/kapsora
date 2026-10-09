@@ -110,6 +110,24 @@ type roleChangeConfiguration struct {
 	option   application.PrivilegedRoleOption
 }
 
+// PostgreSQL jsonb normalizes the snapshot's textual representation on write.
+// Compare its JSON value, including every field, rather than its wire bytes.
+func roleChangeSnapshotEqual(stored, expected []byte) bool {
+	var storedValue, expectedValue any
+	if err := json.Unmarshal(stored, &storedValue); err != nil {
+		return false
+	}
+	if err := json.Unmarshal(expected, &expectedValue); err != nil {
+		return false
+	}
+	storedCanonical, err := json.Marshal(storedValue)
+	if err != nil {
+		return false
+	}
+	expectedCanonical, err := json.Marshal(expectedValue)
+	return err == nil && bytes.Equal(storedCanonical, expectedCanonical)
+}
+
 func loadRoleChangeConfiguration(ctx context.Context, q *sqlcgen.Queries, tenantID uuid.UUID, role sqlcgen.LockRoleAssignmentCandidateRow) (roleChangeConfiguration, bool, error) {
 	if !application.ProtectedPrivilegedRole(role.Code) || !role.IsSystemRole {
 		return roleChangeConfiguration{}, false, nil
@@ -607,7 +625,7 @@ func roleChangeApprovalRefusal(ctx context.Context, q *sqlcgen.Queries, rc ident
 	if err != nil {
 		return nil, err
 	}
-	if !valid || role.Code != row.RoleCode || !bytes.Equal(config.bytes, row.PermissionSnapshot) || !bytes.Equal(config.hash, row.ConfigurationHash) {
+	if !valid || role.Code != row.RoleCode || !roleChangeSnapshotEqual(row.PermissionSnapshot, config.bytes) || !bytes.Equal(config.hash, row.ConfigurationHash) {
 		return strptr("ROLE_CHANGE_CONFIGURATION_CHANGED"), nil
 	}
 	person, err := q.RoleChangeHasPersonHistory(ctx, sqlcgen.RoleChangeHasPersonHistoryParams{TenantID: rc.TenantID, TenantMembershipID: row.TargetMembershipID})
@@ -967,7 +985,7 @@ func (r *PrivilegedRoleChangeRepository) decide(ctx context.Context, tx pgx.Tx, 
 		if err != nil {
 			return zero, err
 		}
-		if !valid || role.Code != row.RoleCode || !bytes.Equal(config.bytes, row.PermissionSnapshot) || !bytes.Equal(config.hash, row.ConfigurationHash) {
+		if !valid || role.Code != row.RoleCode || !roleChangeSnapshotEqual(row.PermissionSnapshot, config.bytes) || !bytes.Equal(config.hash, row.ConfigurationHash) {
 			return zero, application.ErrRoleChangeConfigurationChanged
 		}
 		if row.Operation == "REVOKE" {

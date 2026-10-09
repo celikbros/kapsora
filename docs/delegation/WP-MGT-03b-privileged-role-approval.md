@@ -448,3 +448,23 @@ mixed/custom/PERSON/service/scheduled work remains conditional. Acceptance requi
 isolated/backend/UI gates, independent review, unchanged live grants/templates and preserved
 existing data. No owner policy decision currently blocks issue; migration allocation and
 review are integration gates, and live second-checker availability is a runtime limitation.
+
+## 9. Integration evidence checkpoint (2026-10-09)
+
+Implementation head `676856a` passed five of six CI jobs in
+[run 37939046798](https://github.com/celikbros/kapsora/actions/runs/37939046798).
+All eight schema cases passed without skips, including the actual 57-to-58 upgrade,
+existing IAM preservation, actor attribution and tenant RLS. The HTTP mutation step found
+that JSONB textual normalization was incorrectly treated as configuration drift. Both
+approval and detail now compare the full semantic snapshot while retaining exact hash,
+role identity and template checks; a DB-independent regression verifies representation
+changes versus real permission/sensitivity/order/field changes. Integrated runtime
+acceptance awaits the corrected head and the added authority/lock/receipt evidence.
+
+No shared local DB test, local migration or live role command was executed. Natural target
+membership expiry during a short lock wait cannot be proved deterministically with its
+DATE-range model without crossing midnight; a changed-validity-under-lock case is separate
+from natural timestamp expiry of caller/maker/revoke grants and step-up. B REVOKE cannot
+remove the last role manager when maker and checker are distinct currently authorized
+humans; each retains role.manage. Suspension and final user-manager revocation have their
+own direct isolated invariant cases. These limits must remain explicit at acceptance.
