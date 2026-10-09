@@ -344,11 +344,16 @@ func (s *Service) settleStay(ctx context.Context, tx pgx.Tx, rc identity.Request
 			return 0, 0, err
 		}
 	}
-	if authorized > used {
+	// The authorization can approve a fractional service-night quantity even though
+	// a stay fulfils only whole calendar nights. Floor the fulfilled amount above,
+	// but return the entire exact service-quantity remainder. ReleaseUnused applies
+	// the authorization item's stored entitlement factor to that remainder.
+	unused := promised.Sub(benefitdomain.MustQuantity(fmt.Sprintf("%d", used)))
+	if unused.IsPositive() {
 		if _, err := s.auths.ReleaseUnused(ctx, tx, BookingReleaseInput{
 			TenantID: rc.TenantID, ActorID: rc.Principal.ActorID,
 			AuthorizationID: *record.AuthorizationID,
-			Nights:          fmt.Sprintf("%d", authorized-used),
+			Nights:          unused.String(),
 			ReasonCode:      ReasonCheckOut,
 		}); err != nil {
 			return 0, 0, err

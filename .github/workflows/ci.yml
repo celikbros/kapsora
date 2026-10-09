@@ -43,7 +43,8 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:18
+        # Docker Official Image mirror avoids shared-runner Docker Hub pull limits.
+        image: public.ecr.aws/docker/library/postgres:18
         env:
           POSTGRES_USER: kapsora_owner
           POSTGRES_PASSWORD: kapsora_owner_ci
@@ -68,6 +69,33 @@ jobs:
         env:
           KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
         run: go test -count=1 -v -timeout 10m ./internal/accommodation/transport/http -run '^TestNightConversion'
+      - name: fractional checkout unused entitlement preflight
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: go test -count=1 -v -timeout 10m ./internal/accommodation/transport/http -run '^TestFractionalCheckout'
+      - name: booking handoff transient status retry preflight
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: go test -count=1 -v -timeout 5m ./internal/accommodation/transport/http -run '^TestBookingHandoffTransientStatusWriteRetries$'
+      - name: committed authorization cancellation race diagnostic
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+          KAPSORA_TEST_BOOKING_HANDOFF_RACE: '1'
+        run: |
+          python3 - <<'PY'
+          import subprocess
+          case = 'TestBookingHandoffReleaseAfterCommittedAuthorization'
+          result = subprocess.run(['go', 'test', '-count=1', '-v', '-timeout', '5m',
+              './internal/accommodation/transport/http', '-run', '^' + case + '$'],
+              capture_output=True, text=True)
+          output = result.stdout + result.stderr
+          print(output)
+          if result.returncode != 1 or '[build failed]' in output or '--- SKIP:' in output or \
+                  '--- FAIL: ' + case + ' ' not in output or \
+                  'HANDOFF_ORPHAN_ACTIVE_AUTHORIZATION:' not in output:
+              raise SystemExit('Handoff diagnostic failed outside the intended orphan assertion')
+          print('Committed authorization cancellation race reproduced; correction remains separate')
+          PY
       - name: eligibility selected enrollment and shared account regression
         env:
           KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
@@ -296,6 +324,37 @@ jobs:
               finally:
                   path.write_text(original)
           print('Coverage, reservation units, and adoption factor regressions detected')
+          PY
+
+      - name: fractional checkout old release ceiling negative control
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+
+          path = Path('internal/accommodation/application/stay.go')
+          original = path.read_text()
+          needle = 'unused := promised.Sub(benefitdomain.MustQuantity(fmt.Sprintf("%d", used)))'
+          replacement = 'unused := benefitdomain.MustQuantity(fmt.Sprintf("%d", authorized-used))'
+          if original.count(needle) != 1:
+              raise SystemExit('Expected exactly one exact unused checkout release ceiling')
+          case = 'TestFractionalCheckoutReleasesExactUnusedAuthorization'
+          try:
+              path.write_text(original.replace(needle, replacement))
+              result = subprocess.run(['go', 'test', '-count=1', '-v', '-timeout', '5m',
+                  './internal/accommodation/transport/http', '-run', '^' + case + '$'],
+                  capture_output=True, text=True)
+              output = result.stdout + result.stderr
+              print(output)
+              if result.returncode != 1 or '[build failed]' in output or '--- SKIP:' in output or \
+                      '--- FAIL: ' + case + ' ' not in output or \
+                      output.count('FRACTIONAL_CHECKOUT_RETAINED_RESERVED:') != 4:
+                  raise SystemExit('Fractional checkout control failed outside four retained-unit assertions')
+              print('All four fractional checkout cases detected the old floored release ceiling')
+          finally:
+              path.write_text(original)
           PY
 
   contracts:
