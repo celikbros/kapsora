@@ -221,8 +221,23 @@ func stringValue(v any) *string {
 	return nil
 }
 func uuidValue(v any) *uuid.UUID {
-	if id, ok := v.(uuid.UUID); ok {
-		return &id
+	switch value := v.(type) {
+	case uuid.UUID:
+		return &value
+	case uuid.NullUUID:
+		if value.Valid {
+			return &value.UUID
+		}
+	case string:
+		id, err := uuid.Parse(value)
+		if err == nil {
+			return &id
+		}
+	case []byte:
+		id, err := uuid.ParseBytes(value)
+		if err == nil {
+			return &id
+		}
 	}
 	return nil
 }

@@ -1265,7 +1265,7 @@ verification. Existing health/lodging financial sources remain unchanged.
 The [MGT-03 package](delegation/WP-MGT-03-role-assignment.md) is specified by Astra and
 reviewed by Sol. A activates zero-access membership with one supported non-privileged
 system role and can revoke that access. Its API, user-detail dialogs and explicit
-waiting-screen access refresh are implemented. Seventeen isolated database scenarios
+waiting-screen access refresh are implemented. Eighteen isolated database scenarios
 cover invitation-to-role lifecycle, actual rule/provider reads, scope and template
 boundaries, replay authorization, aggregate versions, audit rollback and command races.
 They compile but are deliberately skipped locally; isolated CI execution remains pending.
@@ -1282,8 +1282,13 @@ allowlists and financial-reviewer denial. Enable `E2E_REAL_API=1`,
 `E2E_EXISTING_UI_URL`; it reuses the running system and issues no grant command.
 No existing live user's permissions were changed. Schema remains 57. Last-manager
 duplicate/finite/service variants are only code-reviewed because A cannot revoke those
-privileged roles. Same-actor alternate memberships within one tenant are prevented by
-the existing uniqueness constraint. Privileged maker-checker B remains separate work
+privileged roles. The membership exclusion constraint permits nonoverlapping historical
+memberships for one actor; self-change protection compares the global actor rather than
+the membership ID. Its additional isolated case is included in the pending follow-up.
+The first role CI run passed fifteen DB scenarios and found a provider-ID projection
+defect plus a custom-role fixture error; both are corrected for the next isolated run.
+The Astra-planned, Sol-reviewed [privileged B package](delegation/WP-MGT-03b-privileged-role-approval.md)
+is ready to issue, without an implementation or migration claim. B remains separate work
 before completing MGT-03; MGT-04 typed settings follows it.
 
 ### PC-06 technical acceptance checkpoint (2026-10-03)

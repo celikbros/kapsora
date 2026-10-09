@@ -42,7 +42,7 @@ administration commands. Existing organization CRUD remains its own delivered wo
 | --- | --- | --- | --- |
 | MGT-01 | Tenant user membership directory | VERIFIED; bounded live reads passed 2026-10-08 | Real list/filter/paging and membership detail with assigned-role validity; tenant-wide permission and strict data projection |
 | MGT-02 | Account onboarding and membership lifecycle | ACTIVE; B2 code CI passed and local schema 57 clean; bounded anonymous live check awaits restart | Explicit public command contracts, validation, scoped lifecycle effects and retry/audit behavior |
-| MGT-03 | Role assignment and revocation | ACTIVE; bounded A implemented, isolated CI pending; privileged B planning follows | Step-up, privileged maker-checker rules, scoped commands and recorded history |
+| MGT-03 | Role assignment and revocation | ACTIVE; bounded A implemented, isolated CI follow-up pending; privileged B specified and reviewed | Step-up, privileged maker-checker rules, scoped commands and recorded history |
 | MGT-04 | Typed tenant settings | QUEUED | Named supported settings and validated changes; no arbitrary JSON editor |
 
 **MGT-01 first delivery:** `GET /api/v1/admin/users` and membership-ID detail, opened from
@@ -144,10 +144,12 @@ account or grant was created. [MGT-03A](../delegation/WP-MGT-03-role-assignment.
 is implemented and independently reviewed: activate a zero-access human membership with
 one supported non-privileged system role, then revoke that supported access. Mixed grant
 scopes and mutable permission templates are guarded explicitly; no grant is applied as
-live verification evidence. Seventeen DB scenarios compile and remain locally skipped;
+live verification evidence. Eighteen DB scenarios compile and remain locally skipped;
 isolated CI must execute them. The route dispatch check and 36 synthetic desktop/mobile
-views across all three waiting screens pass. Privileged maker-checker work remains a separate B specification,
-required before completing MGT-03. MGT-04 typed settings follow. Owner/calendar gates
+views across all three waiting screens pass. The first isolated CI run found two
+failures after fifteen DB passes, corrected for the follow-up. The [privileged B specification](../delegation/WP-MGT-03b-privileged-role-approval.md)
+is planned by Astra and reviewed by Sol, ready to issue and required before completing
+MGT-03. MGT-04 typed settings follow. Owner/calendar gates
 remain open.
 
 ## Current product completion roadmap (2026-09-22)

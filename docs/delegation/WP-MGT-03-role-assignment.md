@@ -404,7 +404,7 @@ TENANT authority are rechecked after lock waits immediately before the grant wri
 Permission writers share the tenant lock and refuse changing in-use candidate templates.
 
 Local Go unit/compile, scoped vet/lint and the database-independent Chi dispatch test pass.
-Seventeen new database-backed cases compile but skip locally under the mandated blank
+Eighteen new database-backed cases compile but skip locally under the mandated blank
 admin URL. They cover new/existing invitation activation, real rule/provider endpoints,
 all eleven templates, role/permission sensitivity drift, private/future/empty-access
 boundaries, provider eligibility, replay including tenant switching, offline ETag touch,
@@ -419,5 +419,10 @@ The opt-in `tests/e2e/management-role-grants-readonly.spec.ts` is ready for an o
 reload and does not perform role mutations. Schema is unchanged at 57. A cannot reach
 privileged last-manager revocation: duplicate/finite/service-manager variants remain
 code-reviewed, with their direct proof assigned to B. A distinct same-tenant membership
-for the same actor is prevented by the existing uniqueness constraint. B's two-actor
-privileged approval pipeline and MGT-04 remain separate deliveries.
+for the same actor may exist in a nonoverlapping historical period under the exclusion
+constraint; self-change compares global actor identity, with a dedicated isolated case.
+The first isolated CI run passed fifteen of the original seventeen DB cases; the
+provider-relationship ID projection and custom-role fixture failures are corrected for
+the follow-up run. The [B package](WP-MGT-03b-privileged-role-approval.md) is planned by
+Astra and independently reviewed by Sol, ready to issue. Its two-actor privileged
+approval pipeline and MGT-04 remain separate deliveries.

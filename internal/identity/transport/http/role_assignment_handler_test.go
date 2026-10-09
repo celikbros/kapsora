@@ -379,6 +379,11 @@ func TestDirectoryRoleProviderRelationshipSelectorAndScope(t *testing.T) {
 	if code != 200 || assigned["grant"].(map[string]any)["organizationRelationshipId"] != relationship.String() {
 		t.Fatalf("provider assignment: %d %v", code, assigned)
 	}
+	code, history, _ := roleCall(s, cookie, csrf, s.tenantA, http.MethodGet, path, "", "", "")
+	if code != 200 || history["items"].([]any)[0].(map[string]any)["organizationRelationshipId"] != relationship.String() ||
+		history["items"].([]any)[0].(map[string]any)["organizationDisplayName"] != "Role test hospital" {
+		t.Fatalf("provider history relationship projection: %d %v", code, history)
+	}
 	login := s.do(call{method: http.MethodPost, path: "/api/v1/session/login", body: `{"username":"role-provider-target","password":"` + testPassword + `"}`})
 	if login.Code != 200 {
 		t.Fatalf("provider login: %d", login.Code)
@@ -744,7 +749,10 @@ func TestDirectoryRoleAuthorityRequiresBothCurrentTenantPermissions(t *testing.T
 		SELECT tenant_id,id,'identity.role.manage' FROM iam.role WHERE tenant_id=$1 AND code='SPLIT_ROLE_TEST'`, s.tenantA); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.prov.GrantRole(ctx, application.GrantRoleInput{TenantID: s.tenantA, ActorID: s.actor, RoleCode: "SPLIT_ROLE_TEST"}); err != nil {
+	if _, err := s.h.Admin.Exec(ctx, `INSERT INTO iam.access_grant (tenant_id,tenant_membership_id,role_id,scope_type)
+		SELECT m.tenant_id,m.id,r.id,'TENANT' FROM iam.tenant_membership m
+		JOIN iam.role r ON r.tenant_id=m.tenant_id AND r.code='SPLIT_ROLE_TEST'
+		WHERE m.tenant_id=$1 AND m.actor_id=$2 AND m.valid_period @> clock_timestamp()::date`, s.tenantA, s.actor); err != nil {
 		t.Fatal(err)
 	}
 	cookie, csrf := directorySession(t, s)
@@ -899,6 +907,72 @@ func TestDirectoryRoleEachSupportedTemplateAssignsToZeroGrantTarget(t *testing.T
 				t.Fatalf("supported role assignment: %d %v", status, assigned)
 			}
 		})
+	}
+}
+
+func TestDirectoryRoleHistoricalSameActorMembershipSelfProtection(t *testing.T) {
+	s := newAuthzServer(t)
+	ctx := context.Background()
+	if _, err := s.prov.GrantRole(ctx, application.GrantRoleInput{TenantID: s.tenantA, ActorID: s.actor, RoleCode: "TENANT_ADMIN"}); err != nil {
+		t.Fatal(err)
+	}
+	var currentMember, historicalMember uuid.UUID
+	if err := s.h.Admin.QueryRow(ctx, `SELECT id FROM iam.tenant_membership
+		WHERE tenant_id=$1 AND actor_id=$2 AND valid_period @> clock_timestamp()::date`, s.tenantA, s.actor).Scan(&currentMember); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.h.Admin.Exec(ctx, `UPDATE iam.tenant_membership
+		SET valid_period=daterange(clock_timestamp()::date-1,NULL,'[)') WHERE tenant_id=$1 AND id=$2`, s.tenantA, currentMember); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.h.Admin.QueryRow(ctx, `INSERT INTO iam.tenant_membership (tenant_id,actor_id,membership_status,valid_period)
+		VALUES ($1,$2,'ACTIVE',daterange(clock_timestamp()::date-3,clock_timestamp()::date-1,'[)')) RETURNING id`, s.tenantA, s.actor).Scan(&historicalMember); err != nil {
+		t.Fatal(err)
+	}
+	cookie, csrf := directorySession(t, s)
+	stepUpDirectory(t, s, cookie, csrf)
+	path := "/api/v1/admin/users/" + historicalMember.String() + "/role-grants"
+	status, page, headers := roleCall(s, cookie, csrf, s.tenantA, http.MethodGet, path, "", "", "")
+	if status != 200 || page["assignmentRefusalCode"] != "SELF_ROLE_CHANGE_FORBIDDEN" || headers.Get("ETag") != `"1"` {
+		t.Fatalf("historical self page: %d %v", status, page)
+	}
+	var auditBefore int
+	if err := s.h.Admin.QueryRow(ctx, `SELECT count(*) FROM audit.event WHERE tenant_id=$1
+		AND action_code IN ('access_grant.assign','access_grant.revoke')`, s.tenantA).Scan(&auditBefore); err != nil {
+		t.Fatal(err)
+	}
+	if status, out, _ := roleCall(s, cookie, csrf, s.tenantA, http.MethodPost, path, `"1"`, "role-history-self-assign-0001",
+		`{"roleCode":"RULE_AUTHOR","scopeType":"TENANT","reasonCode":"ONBOARDING"}`); status != 409 || out["code"] != "SELF_ROLE_CHANGE_FORBIDDEN" {
+		t.Fatalf("historical self assign: %d %v", status, out)
+	}
+	var grantID uuid.UUID
+	if err := s.h.Admin.QueryRow(ctx, `INSERT INTO iam.access_grant (tenant_id,tenant_membership_id,role_id,scope_type)
+		SELECT $1,$2,id,'TENANT' FROM iam.role WHERE tenant_id=$1 AND code='RULE_AUTHOR' RETURNING id`, s.tenantA, historicalMember).Scan(&grantID); err != nil {
+		t.Fatal(err)
+	}
+	status, page, _ = roleCall(s, cookie, csrf, s.tenantA, http.MethodGet, path, "", "", "")
+	if status != 200 || page["items"].([]any)[0].(map[string]any)["revocationRefusalCode"] != "SELF_ROLE_CHANGE_FORBIDDEN" {
+		t.Fatalf("historical self revoke aid: %d %v", status, page)
+	}
+	if status, out, _ := roleCall(s, cookie, csrf, s.tenantA, http.MethodPost, path+"/"+grantID.String()+"/revoke", `"1"`, "role-history-self-revoke-0001",
+		`{"reasonCode":"ACCESS_REVIEW"}`); status != 409 || out["code"] != "SELF_ROLE_CHANGE_FORBIDDEN" {
+		t.Fatalf("historical self revoke: %d %v", status, out)
+	}
+	var version int64
+	var grants, audits int
+	if err := s.h.Admin.QueryRow(ctx, `SELECT row_version FROM iam.tenant_membership WHERE tenant_id=$1 AND id=$2`, s.tenantA, historicalMember).Scan(&version); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.h.Admin.QueryRow(ctx, `SELECT count(*) FROM iam.access_grant WHERE tenant_id=$1 AND tenant_membership_id=$2
+		AND valid_period @> clock_timestamp()`, s.tenantA, historicalMember).Scan(&grants); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.h.Admin.QueryRow(ctx, `SELECT count(*) FROM audit.event WHERE tenant_id=$1
+		AND action_code IN ('access_grant.assign','access_grant.revoke')`, s.tenantA).Scan(&audits); err != nil {
+		t.Fatal(err)
+	}
+	if version != 1 || grants != 1 || audits != auditBefore {
+		t.Fatalf("historical self commands mutated aggregate: version=%d grants=%d audits=%d before=%d", version, grants, audits, auditBefore)
 	}
 }
 

@@ -98,7 +98,7 @@ SELECT rel.id, o.display_name, rel.tenant_code
 -- name: ListTenantRoleGrantHistory :many
 SELECT g.id, g.created_at, role.code AS role_code, role.name AS role_name,
        role.is_system_role, g.scope_type, g.scope_id,
-       CASE WHEN g.scope_type = 'ORGANIZATION' AND rel.id IS NOT NULL THEN rel.id ELSE NULL END AS organization_relationship_id,
+       CASE WHEN g.scope_type = 'ORGANIZATION' AND rel.id IS NOT NULL THEN rel.id::text ELSE NULL END AS organization_relationship_id,
        CASE WHEN g.scope_type = 'ORGANIZATION' AND rel.id IS NOT NULL THEN o.display_name ELSE NULL END AS organization_display_name,
        CASE WHEN isempty(g.valid_period) OR lower_inf(g.valid_period) THEN '' ELSE
          to_char(lower(g.valid_period) AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') END AS valid_from,
@@ -120,7 +120,7 @@ SELECT g.id, g.created_at, role.code AS role_code, role.name AS role_name,
 -- name: GetTenantRoleGrant :one
 SELECT g.id, g.created_at, role.code AS role_code, role.name AS role_name,
        role.is_system_role, g.scope_type, g.scope_id, g.role_id,
-       CASE WHEN g.scope_type = 'ORGANIZATION' AND rel.id IS NOT NULL THEN rel.id ELSE NULL END AS organization_relationship_id,
+       CASE WHEN g.scope_type = 'ORGANIZATION' AND rel.id IS NOT NULL THEN rel.id::text ELSE NULL END AS organization_relationship_id,
        CASE WHEN g.scope_type = 'ORGANIZATION' AND rel.id IS NOT NULL THEN o.display_name ELSE NULL END AS organization_display_name,
        CASE WHEN isempty(g.valid_period) OR lower_inf(g.valid_period) THEN '' ELSE
          to_char(lower(g.valid_period) AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') END AS valid_from,
