@@ -471,6 +471,11 @@ func TestBookingContractHoldDurationIdempotentHTTPReplay(t *testing.T) {
 	s.clock.At(t, "2026-06-13T09:00:00Z")
 	s.grantNights(t, 10)
 	s.putLodgingTermsWithHold(t, int32Ptr(30))
+	initialHeld := make(map[string]int, 3)
+	for _, stayDate := range []string{checkIn, "2026-06-16", lastNight} {
+		_, held, _ := s.inventoryOf(t, s.roomType, stayDate)
+		initialHeld[stayDate] = held
+	}
 	body := map[string]any{
 		"roomTypeId": s.roomType.String(), "checkIn": checkIn, "checkOut": checkOut,
 		"adults": 2, "personId": s.person.String(),
@@ -532,10 +537,16 @@ func TestBookingContractHoldDurationIdempotentHTTPReplay(t *testing.T) {
 		s.tenant, booked.Id).Scan(&movements); err != nil {
 		t.Fatalf("count reservation movements: %v", err)
 	}
-	_, held, _ := s.inventoryOf(t, s.roomType, checkIn)
-	if bookings != 1 || reservations != 1 || movements != 1 || held != 1 {
-		t.Errorf("bookings/reservations/movements/held = %d/%d/%d/%d, want 1 each",
-			bookings, reservations, movements, held)
+	if bookings != 1 || reservations != 1 || movements != 1 {
+		t.Errorf("bookings/reservations/movements = %d/%d/%d, want 1 each",
+			bookings, reservations, movements)
+	}
+	for _, stayDate := range []string{checkIn, "2026-06-16", lastNight} {
+		_, held, _ := s.inventoryOf(t, s.roomType, stayDate)
+		if held != initialHeld[stayDate]+1 {
+			t.Errorf("%s held = %d, want initial %d plus one hold",
+				stayDate, held, initialHeld[stayDate])
+		}
 	}
 }
 
