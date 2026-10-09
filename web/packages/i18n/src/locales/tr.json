@@ -207,6 +207,7 @@
     "grantPages": "Rol geçmişi sayfaları",
     "searchGrantPages": "Uygun atama bu sayfada yok. Rol geçmişindeki sonraki sayfayı açın.",
     "noDecision": "Bu hesap bu talepte karar veremez.",
+    "separationNotice": "Talebi oluşturan kişi ve erişimi değişecek kişi bu talebi onaylayamaz veya reddedemez. Kararı üçüncü bir yetkili kişi vermelidir.",
     "staleProposal": "Talebin dayandığı durum değişti. Talebi açıkça reddedin veya iptal edin; yeni erişim için yeni talep oluşturun.",
     "approve": "Onayla",
     "reject": "Reddet",

@@ -26,7 +26,7 @@ type roleChangeRaceFixture struct {
 	requestID, requestETag     string
 }
 
-func roleChangeRunTwoAtTenantBarrier(t *testing.T, s *authzServer, first, second func()) {
+func roleChangeRunTwoAtTenantBarrier(t *testing.T, s *authzServer, first, second func(), allowGenericClaimWait bool) {
 	t.Helper()
 	ctx := context.Background()
 	block, err := s.h.Admin.Begin(ctx)
@@ -43,15 +43,18 @@ func roleChangeRunTwoAtTenantBarrier(t *testing.T, s *authzServer, first, second
 	go func() { defer wg.Done(); second() }()
 	deadline := time.Now().Add(8 * time.Second)
 	for {
-		var waiting int
-		if err := s.h.Admin.QueryRow(ctx, `SELECT count(*) FROM pg_stat_activity WHERE datname=current_database() AND pid<>pg_backend_pid() AND wait_event_type='Lock' AND query LIKE '%platform.tenant%'`).Scan(&waiting); err != nil {
+		var tenantWaiting, claimWaiting int
+		if err := s.h.Admin.QueryRow(ctx, `SELECT count(*) FILTER (WHERE query LIKE '%platform.tenant%'),count(*) FILTER (WHERE query LIKE '%system.idempotency_record%') FROM pg_stat_activity WHERE datname=current_database() AND pid<>pg_backend_pid() AND wait_event_type='Lock'`).Scan(&tenantWaiting, &claimWaiting); err != nil {
 			t.Fatal(err)
 		}
-		if waiting >= 2 {
+		// Directory suspension claims its generic idempotency key before entering
+		// Suspend. The claim's FK can wait on this tenant row, while B approval
+		// already waits in its preflight tenant lock. Both are actual DB barriers.
+		if tenantWaiting >= 2 || (allowGenericClaimWait && tenantWaiting >= 1 && tenantWaiting+claimWaiting >= 2) {
 			break
 		}
 		if time.Now().After(deadline) {
-			t.Fatalf("only %d of two role-change writers reached tenant lock", waiting)
+			t.Fatalf("only %d tenant-lock and %d generic-claim waiters reached the DB barrier", tenantWaiting, claimWaiting)
 		}
 		time.Sleep(15 * time.Millisecond)
 	}
@@ -105,12 +108,12 @@ func TestDirectoryRoleChangeConcurrentDecisionsHaveOneTerminalEffect(t *testing.
 					body = `{"reasonCode":"WITHDRAWN"}`
 				}
 				results[1].code, results[1].body, _ = roleCall(f.s, cookie, csrf, f.s.tenantA, http.MethodPost, path+"/"+other, f.requestETag, "role-change-race-"+other+"-"+uuid.NewString(), body)
-			})
+			}, false)
 			success := 0
 			for _, r := range results {
 				if r.code == 200 {
 					success++
-				} else if r.code != 412 && r.code != 409 {
+				} else if r.code != 412 || r.body["code"] != "ETAG_MISMATCH" {
 					t.Fatalf("unexpected competing decision: %d %v", r.code, r.body)
 				}
 			}
@@ -157,7 +160,7 @@ func TestDirectoryRoleChangeApprovalRacesSuspensionAndOfflineGrant(t *testing.T)
 						competing.code = 200
 					}
 				}
-			})
+			}, other == "suspend")
 			var status string
 			var version int64
 			var grants int
@@ -202,7 +205,7 @@ func TestDirectoryRoleChangeApprovalAndSafeSyncSerializeConfiguration(t *testing
 	var syncErr error
 	roleChangeRunTwoAtTenantBarrier(t, f.s, func() {
 		approvalCode, approvalBody, _ = roleCall(f.s, f.checkerCookie, f.checkerCSRF, f.s.tenantA, http.MethodPost, "/api/v1/admin/role-change-requests/"+f.requestID+"/approve", f.requestETag, "role-change-race-sync-approve-0001", `{}`)
-	}, func() { _, syncErr = f.s.prov.SyncSystemRoles(ctx, f.s.tenantA) })
+	}, func() { _, syncErr = f.s.prov.SyncSystemRoles(ctx, f.s.tenantA) }, false)
 	if syncErr != nil {
 		t.Fatal(syncErr)
 	}

@@ -143,7 +143,7 @@ func TestDirectoryRoleChangeAssignApproveRevokeReceiptAndSeparation(t *testing.T
 		t.Fatalf("B effects duplicated: requests=%d grants=%d", requests, grants)
 	}
 	var detailText, reason string
-	if err := s.h.Admin.QueryRow(ctx, `SELECT detail_json::text,reason_code FROM audit.event WHERE tenant_id=$1 AND resource_id=$2 AND action_code='role_change_request.approve' ORDER BY created_at DESC LIMIT 1`, s.tenantA, uuid.MustParse(revokeID)).Scan(&detailText, &reason); err != nil {
+	if err := s.h.Admin.QueryRow(ctx, `SELECT detail_json::text,reason_code FROM audit.event WHERE tenant_id=$1 AND resource_id=$2 AND action_code='role_change_request.approve' ORDER BY occurred_at DESC LIMIT 1`, s.tenantA, uuid.MustParse(revokeID)).Scan(&detailText, &reason); err != nil {
 		t.Fatal(err)
 	}
 	var detail map[string]any

@@ -1301,7 +1301,7 @@ question. The original OpenAPI write is now accepted; eight operation contracts 
 their generated bindings are present. Migration 000058 is allocated but not applied locally;
 B has no acceptance claim. Local checks pass: 754 frontend tests in 92 files, workspace
 format/type/lint, all app builds and 42 intercepted 390px/1440px visual/keyboard states
-with no real API traffic, overflow or browser errors. Sixteen new HTTP/database test
+with no real API traffic, overflow or browser errors. Twenty-nine new HTTP/database test
 functions and eight schema tests await integrated isolated CI. Existing-row preservation
 and seven schema cases passed on the initial contract/schema head; actor attribution guards
 and command mutation cases require the integrated run. Local DB tests remain disabled to

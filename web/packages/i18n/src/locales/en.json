@@ -202,6 +202,7 @@
     "grantPages": "Role history pages",
     "searchGrantPages": "The eligible grant is not on this page. Open the next role history page.",
     "noDecision": "This account cannot decide this request.",
+    "separationNotice": "The person proposing the change and the person whose access will change cannot approve or reject this request. A third authorized person must decide.",
     "staleProposal": "The underlying state changed. Explicitly reject or cancel this request and create a new proposal.",
     "approve": "Approve",
     "reject": "Reject",

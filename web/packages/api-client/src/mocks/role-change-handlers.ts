@@ -261,7 +261,7 @@ function entryDetail(
       : !pending
         ? 'ROLE_CHANGE_NOT_PENDING'
         : sameTarget
-          ? 'SELF_ROLE_CHANGE_FORBIDDEN'
+          ? 'MAKER_CHECKER_SAME_ACTOR'
           : sameMaker
             ? 'MAKER_CHECKER_SAME_ACTOR'
             : !makerValid
@@ -277,7 +277,7 @@ function entryDetail(
         : sameMaker
           ? 'MAKER_CHECKER_SAME_ACTOR'
           : sameTarget
-            ? 'SELF_ROLE_CHANGE_FORBIDDEN'
+            ? 'MAKER_CHECKER_SAME_ACTOR'
             : 'ROLE_CHANGE_NOT_PENDING',
     cancellationRefusalCode: pending && sameMaker ? null : 'ROLE_CHANGE_CANCEL_FORBIDDEN',
     checkerAvailability: availability(api, tenantId, makerActorId, targetActorId),
@@ -588,7 +588,7 @@ export function roleChangeHandlers(api: MockApi): HttpHandler[] {
             return problem(
               api,
               403,
-              'SELF_ROLE_CHANGE_FORBIDDEN',
+              'MAKER_CHECKER_SAME_ACTOR',
               'Kendi erişiminizi karara bağlayamazsınız',
             );
           const receiptKey = `${g.tenantId}:${caller.actorId}:${action}:${headers.key}`;

@@ -13,7 +13,7 @@ The owner instructed continuation after the concrete five-role API/UI/migration-
 isolated-test scope was presented. Automatic approval review accepted the contract-first
 OpenAPI write on 2026-10-09. This scope excludes live grant changes and local migration
 application. API, persistence, UI and independent static security review are complete.
-Integrated isolated evidence is pending: sixteen B HTTP/database test functions and eight
+Integrated isolated evidence is pending: twenty-nine B HTTP/database test functions and eight
 schema cases. Local frontend checks passed 754 tests/92 files and 42 intercepted mobile/
 desktop states. No local database test or migration was run.
 

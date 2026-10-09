@@ -262,7 +262,9 @@ export function RoleChangeDetailPage() {
                 <p className="text-fg-muted text-sm">
                   {t('roleChanges.noDecision')}{' '}
                   {detail?.approvalRefusalCode &&
-                    t(`problems.${detail.approvalRefusalCode}`, { defaultValue: '' })}
+                    (detail.approvalRefusalCode === 'MAKER_CHECKER_SAME_ACTOR'
+                      ? t('roleChanges.separationNotice')
+                      : t(`problems.${detail.approvalRefusalCode}`, { defaultValue: '' }))}
                 </p>
               )}
               {(detail?.approvalRefusalCode === 'ROLE_CHANGE_TARGET_CHANGED' ||
