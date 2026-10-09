@@ -10299,7 +10299,12 @@ export interface components {
              *     queue.
              */
             priority?: number;
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @description Narrows the queue entry to one program active on the first night. More than
+             *     one active enrollment within that program still refuses the entry with
+             *     ENROLLMENT_MULTIPLE.
+             */
             programId?: string;
             /** Format: uuid */
             propertyId: string;

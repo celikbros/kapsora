@@ -7981,6 +7981,7 @@ type CreateHoldRequest struct {
 
 	// ProgramId Narrows a member with two programs to one of them. It is honoured, never trusted:
 	// a program the person is not enrolled in on the first night selects nothing.
+	// More than one active enrollment in that program still refuses the hold.
 	ProgramId  *openapi_types.UUID `json:"programId,omitempty"`
 	RoomTypeId openapi_types.UUID  `json:"roomTypeId"`
 }
@@ -9783,7 +9784,11 @@ type JoinWaitlistRequest struct {
 	// Priority The desk's own ordering. A member joining for themselves is placed at zero
 	// whatever they send, because a queue a member can push themselves up is not a
 	// queue.
-	Priority   *int                `json:"priority,omitempty"`
+	Priority *int `json:"priority,omitempty"`
+
+	// ProgramId Narrows the queue entry to one program active on the first night. More than
+	// one active enrollment within that program still refuses the entry with
+	// ENROLLMENT_MULTIPLE.
 	ProgramId  *openapi_types.UUID `json:"programId,omitempty"`
 	PropertyId openapi_types.UUID  `json:"propertyId"`
 
