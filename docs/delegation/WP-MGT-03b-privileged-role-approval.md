@@ -3,11 +3,17 @@
 | Field | Value |
 | --- | --- |
 | Milestone | Management, following bounded MGT-03A |
-| Status | Independently reviewed and ready to issue; no implementation or acceptance claim |
+| Status | Independently reviewed; explicit implementation authorization pending after automatic approval-review rejection |
 | Planned | 2026-10-09, gpt-6-astra |
 | Review | 2026-10-09, gpt-6-sol; no remaining policy or static design blocker |
 | Delivery | Durable request, explicit different checker, atomic grant/revocation and audit |
-| Migration number | Unassigned; integrator assigns at landing |
+| Migration number | 000058, allocated by integrator on 2026-10-09; not applied locally |
+
+On 2026-10-09 automatic approval review rejected the initial privileged OpenAPI write,
+stating that the user's continuation messages did not explicitly authorize this new B
+scope. No B source write was applied. The owner has been asked to authorize the concrete
+five-role API/UI/migration-file and isolated-test scope above, excluding live grant changes
+and local migration application. Read-only implementation preparation can continue.
 
 ## 1. Outcome and scope
 
@@ -116,8 +122,8 @@ predicate is stricter than the separate last-manager preservation predicates.
 
 One forward migration adds two tenant-owned tables and integrity support. No existing grant
 or permission row is rewritten. Use uuidv7, composite tenant FKs, platform.enable_tenant_rls
-and app-role grants following current migrations. Do not edit existing migrations or assign
-a number before the integrator supplies the landing number.
+and app-role grants following current migrations. Use the integrator-allocated 000058;
+do not edit existing migrations. Local schema remains 57 until separate migration acceptance.
 
 ### 4.1 iam.role_change_request
 

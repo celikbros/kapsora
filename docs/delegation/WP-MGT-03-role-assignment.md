@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Milestone | Management, after MGT-01 and MGT-02 invitation acceptance |
-| Status | A implemented on 2026-10-09; isolated database and live read acceptance pending |
+| Status | A implemented with isolated database acceptance on 2026-10-09; live read acceptance awaits operator reload |
 | Planning | gpt-6-astra |
 | First delivery | MGT-03A: activate a zero-access human membership with one supported role; revoke that supported access |
 | Later delivery | MGT-03B: privileged approval pipeline; other combinations remain conditional |
@@ -386,13 +386,16 @@ B and report actual evidence, remaining gates and any normative interpretation a
 
 ## 8. Acceptance checklist
 
-- [ ] A new invited zero-grant human obtains one real supported app/task through a
+- [x] A new invited zero-grant human obtains one real supported app/task through a
       tenant-authorized, stepped-up, audited public assignment.
-- [ ] Scoped access is enforced and revocation takes effect on the next request.
-- [ ] No privileged/custom/PERSON/mixed-role bypass or template permission expansion exists.
-- [ ] History, aggregate ETags, replay, suspension races and audit rollback are verified.
-- [ ] Isolated backend and UI/mock evidence plus visual checks pass; CI includes DB cases.
-- [ ] A's delivered scope and B's pending approval pipeline are reported separately.
+- [x] Scoped access is enforced and revocation takes effect on the next request.
+- [x] No privileged/custom/PERSON/mixed-role bypass or template permission expansion exists.
+- [x] History, aggregate ETags, replay, suspension races and audit rollback are verified.
+- [x] Isolated backend and UI/mock evidence plus visual checks pass; CI includes DB cases.
+- [x] A's delivered scope and B's pending approval pipeline are reported separately.
+
+These checks refer to isolated PostgreSQL and synthetic UI evidence within A's bounded
+scope. They do not certify live grant mutation or B's privileged last-manager variants.
 
 ## 9. A implementation checkpoint (2026-10-09)
 
@@ -408,8 +411,13 @@ Eighteen new database-backed cases compile but skip locally under the mandated b
 admin URL. They cover new/existing invitation activation, real rule/provider endpoints,
 all eleven templates, role/permission sensitivity drift, private/future/empty-access
 boundaries, provider eligibility, replay including tenant switching, offline ETag touch,
-audit rollback and assign/suspend/revoke/sync races. Isolated CI must actually run them;
-compilation is not mutation evidence. The synthetic browser review passes 36 views at
+audit rollback and assign/suspend/revoke/sync races. All eighteen ran without skips and
+passed on `e26bcc8` in the PostgreSQL job of
+[CI run 37925743677](https://github.com/celikbros/kapsora/actions/runs/37925743677).
+All six CI jobs passed on that code head, including 741 frontend tests, 25 browser smoke
+tests and seven Directory/fifteen Invitation HTTP regressions without skips. Normal smoke
+skipped 104 opt-in live/calendar cases. The database-independent dispatch case also passed.
+The synthetic browser review passes 36 views at
 1440px/390px across all apps, with no overflow, page errors or real API requests.
 The full frontend suite passes 741 tests in 90 files; workspace format/type/lint and
 all app builds pass. Generated bindings regenerate unchanged, contract compatibility
@@ -421,8 +429,9 @@ privileged last-manager revocation: duplicate/finite/service-manager variants re
 code-reviewed, with their direct proof assigned to B. A distinct same-tenant membership
 for the same actor may exist in a nonoverlapping historical period under the exclusion
 constraint; self-change compares global actor identity, with a dedicated isolated case.
-The first isolated CI run passed fifteen of the original seventeen DB cases; the
-provider-relationship ID projection and custom-role fixture failures are corrected for
-the follow-up run. The [B package](WP-MGT-03b-privileged-role-approval.md) is planned by
-Astra and independently reviewed by Sol, ready to issue. Its two-actor privileged
-approval pipeline and MGT-04 remain separate deliveries.
+The provider-relationship ID is now verified in both command and history projections;
+historical same-actor membership self-protection has direct isolated coverage. The
+[B package](WP-MGT-03b-privileged-role-approval.md), planned by Astra and independently
+reviewed by Sol, is ready; explicit scope authorization is pending after an automatic
+approval-review rejection of the initial OpenAPI write. Its distinct maker/checker approval
+pipeline and MGT-04 remain separate deliveries.

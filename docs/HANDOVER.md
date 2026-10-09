@@ -46,7 +46,9 @@ is applied cleanly. Management now includes the directory, tenant-only suspensio
 existing-account invitations and new-account invitation acceptance. B2 isolated database
 proof and all six code CI checks passed; bounded anonymous live checks await the operator
 restart, as recorded below. Bounded role assignment and revocation are implemented;
-isolated database acceptance is pending. PR #11 remains
+isolated database acceptance passed on `e26bcc8`. Privileged role approval is specified
+and reviewed; explicit scope authorization is pending after automatic approval review
+rejected its initial OpenAPI write. PR #11 remains
 draft and unmerged. All six CI checks passed on
 calendar-preparation code head `5bb2349` ([run 37152681278](https://github.com/celikbros/kapsora/actions/runs/37152681278));
 current Management CI is tracked in PR #11's checks.
@@ -1268,7 +1270,12 @@ system role and can revoke that access. Its API, user-detail dialogs and explici
 waiting-screen access refresh are implemented. Eighteen isolated database scenarios
 cover invitation-to-role lifecycle, actual rule/provider reads, scope and template
 boundaries, replay authorization, aggregate versions, audit rollback and command races.
-They compile but are deliberately skipped locally; isolated CI execution remains pending.
+They compile but are deliberately skipped locally to protect the shared app-role password.
+All eighteen ran without skips and passed in the isolated PostgreSQL job on `e26bcc8`
+([run 37925743677](https://github.com/celikbros/kapsora/actions/runs/37925743677)).
+All six CI jobs passed on that code head: 741 frontend tests in 90 files, 25 browser
+smoke tests, seven Directory/fifteen Invitation HTTP cases and the real 56-to-57 upgrade.
+Normal smoke skipped 104 explicitly opt-in live/calendar cases; it is not live acceptance.
 The database-independent Chi dispatch check passes, including invitation routes. Local
 Go unit checks and scoped vet/lint pass. Synthetic browser review covers 36 views at
 1440px and 390px across all three waiting screens, with no real API calls, overflow or
@@ -1284,12 +1291,18 @@ No existing live user's permissions were changed. Schema remains 57. Last-manage
 duplicate/finite/service variants are only code-reviewed because A cannot revoke those
 privileged roles. The membership exclusion constraint permits nonoverlapping historical
 memberships for one actor; self-change protection compares the global actor rather than
-the membership ID. Its additional isolated case is included in the pending follow-up.
-The first role CI run passed fifteen DB scenarios and found a provider-ID projection
-defect plus a custom-role fixture error; both are corrected for the next isolated run.
+the membership ID. Its additional isolated case passed, as did provider-relationship ID
+checks in both command and history responses. The bounded anonymous live checker was
+retried on 2026-10-09 and still received RESOURCE_NOT_FOUND instead of the new handler's
+INVITATION_UNAVAILABLE. The operator API reload remains a separate live-read gate;
+no live account, membership or grant mutation occurred.
 The Astra-planned, Sol-reviewed [privileged B package](delegation/WP-MGT-03b-privileged-role-approval.md)
-is ready to issue, without an implementation or migration claim. B remains separate work
-before completing MGT-03; MGT-04 typed settings follows it.
+is ready for implementation. Automatic approval review rejected its initial OpenAPI
+write because the continuation messages did not explicitly authorize new privileged-role
+scope; the concrete API/UI/migration-file and isolated-test authorization question is pending.
+No B source write was applied. Migration 000058 is allocated but not applied locally;
+B has no acceptance claim. B remains separate work before completing MGT-03;
+MGT-04 typed settings follows it.
 
 ### PC-06 technical acceptance checkpoint (2026-10-03)
 
