@@ -159,10 +159,13 @@ locally. The full frontend suite passed 754 tests in 92 files; workspace checks,
 and 42 intercepted desktop/mobile states pass. Twenty-nine B HTTP/database test functions and
 eight schema cases passed without skips in [CI run 37941918013](https://github.com/celikbros/kapsora/actions/runs/37941918013); no local grant was changed. MGT-03 bounded isolated acceptance is complete; local migration and live reads remain open. The [MGT-04 plan](../delegation/WP-MGT-04-typed-tenant-settings.md) is prepared by Astra and
 reviewed by Sol; it needs explicit new read/manage authority and records the effect on
-pending booking confirmations. A reproduced contract hold-duration discrepancy must be
-resolved or the field deferred before a hold editor is enabled. No settings grant or
-implementation is included yet. Owner/calendar gates
-remain open.
+pending booking confirmations. The [contract hold-duration prerequisite](../delegation/WP-PC06-contract-hold-duration.md)
+has bounded technical acceptance on `5545c63`: all six jobs in
+[CI run 37945512490](https://github.com/celikbros/kapsora/actions/runs/37945512490) and
+53 accommodation HTTP/database functions passed without skips. No settings grant or
+implementation is included yet. The [payer-boundary correction](../delegation/WP-PC06-contract-payer-boundary.md)
+is ACTIVE under the existing selection policy; broader confirmation-contract identity and
+multi-enrollment coherence remain separate. Owner/calendar gates remain open.
 
 ## Current product completion roadmap (2026-09-22)
 

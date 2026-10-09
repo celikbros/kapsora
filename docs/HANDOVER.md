@@ -1310,11 +1310,18 @@ protect the shared application-role password. MGT-03 live reads remain separate;
 MGT-04 typed settings follows it.
 
 The Astra-planned, Sol-reviewed [contract hold-duration correction](delegation/WP-PC06-contract-hold-duration.md)
-is being verified independently. It honors the actual first-night price contract's nullable
+passed bounded isolated acceptance on `5545c63`: all six jobs in
+[CI run 37945512490](https://github.com/celikbros/kapsora/actions/runs/37945512490) and
+53 accommodation HTTP/database functions passed without skips (65.738 s), including the
+six duration cases, exact middleware replay and 500-concurrent-hold capacity check.
+It honors the actual first-night price contract's nullable
 override and retains the tenant fallback, without changing prices, public API, grants or
 schema. No live booking/payment journey is rerun. The broader confirmation-contract selector
-and statically identified multi-payer candidate filtering concern remain separately recorded;
-this correction does not certify either boundary.
+remains separately recorded. The [payer-boundary correction](delegation/WP-PC06-contract-payer-boundary.md)
+is the next bounded implementation: the existing enrollment-derived payer set must also
+filter price candidates before ranking. This duration correction does not certify either
+boundary. Local schema 58 application still requires the pending explicit approval;
+server reload remains operator-owned.
 
 ### PC-06 technical acceptance checkpoint (2026-10-03)
 

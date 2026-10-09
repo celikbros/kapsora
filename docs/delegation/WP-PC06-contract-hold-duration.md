@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Status | ACTIVE; bounded implementation and isolated evidence in progress |
+| Status | Bounded technical acceptance passed on `5545c63`; separate payer/confirmation boundaries remain open |
 | Planned | 2026-10-09, gpt-6-astra |
 | Outcome | A published contract's optional hold duration governs the room hold quoted under that contract |
 | Migration | None |
@@ -177,3 +177,22 @@ is allocated and no running database has to be modified. The integrator owns roa
 handover and MGT-04 updates; this delegate may write only this work-package file during
 planning. A later live confirmation, if separately requested, follows operator reload and
 a bounded synthetic plan rather than repeating settled financial journeys.
+
+## 7. Accepted isolated evidence — 2026-10-09
+
+The production correction is committed on `d0cd5f3`; the fixture-baseline replay assertion
+is corrected on `5545c63`. All six jobs passed in
+[CI run 37945512490](https://github.com/celikbros/kapsora/actions/runs/37945512490).
+The full accommodation HTTP suite passed 53 test functions without skips (65.738 s),
+including all six persisted expiry cases, actual middleware replay after a clock advance,
+same-key changed-body refusal and a fresh-key duplicate conflict. Each stay night gains
+exactly one held room relative to its fixture baseline, with one booking, one reservation
+and one RESERVE movement. The 500-concurrent-hold regression passed (15.33 s); existing
+release, expiry, confirmation adoption, missing-terms refusal and visibility checks passed.
+Pure selection/resolver tests, formatting, vet, lint and generated sqlc checks passed too.
+The same CI run retained all 29 privileged-role and eight associated schema cases.
+
+Local database tests were deliberately disabled to protect the shared application-role
+password; local schema remains 57. No schema, grants, server lifecycle, live booking or
+payment was changed. This closes only the selected-contract hold-duration correction,
+not the separately recorded payer boundary, confirmation selector or owner/calendar gates.
