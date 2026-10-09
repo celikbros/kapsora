@@ -196,14 +196,30 @@ Acceptance is limited to factor-1 NIGHT mappings; a plan picker, nonunit convers
 MONEY reservation semantics are not certified. The three Management live read/boundary
 probes still reach pre-feature API behavior; operator reload and migration 58 approval
 remain open. No live booking, grant or recovery was performed.
-After this bounded hold acceptance, the next independent technical step is
+After this bounded hold acceptance, the follow-up is
 [NIGHT entitlement conversion](../delegation/WP-PC06-night-entitlement-conversion.md),
 planned by Astra and reviewed by Sol. Mapping configuration permits nonunit positive
-factors; source inspection predicts incorrect covered-night/reserved-unit accounting and
-unconverted adopted authorization factors. Isolated reproduction remains pending.
-Its scope also binds the booking-held submit gate to the original enrollment/version/account;
-the current hold fixtures do not certify that later gate under newly added same-program
-enrollments. MONEY policy, historical repair and new settings permissions remain separate.
+factors. Four old-behavior failures on `5e1d0e9` are reproduced by the early diagnostic in
+[CI run 37986543854](https://github.com/celikbros/kapsora/actions/runs/37986543854):
+factor-2/fractional-factor coverage, reserved units and adopted authorization factor.
+The diagnostic requires intended compiled failures and is not corrected-behavior acceptance.
+Production correction is implemented on `89521c4`: exact whole-night coverage, mapped
+hold units, private v3 conversion evidence and factor-preserving authorization adoption.
+The booking-held submit gate follows the original enrollment/version/account despite
+a later same-program enrollment, with legitimate same-plan family sharing retained.
+Whole-night partial approval releases surplus once; approval retry proves the recorded
+authorization and deterministic release. Legacy v2 NIGHT confirmation requires original
+factor-1 evidence. Private v1/v2/v3 quotes retain the public v1 shape.
+Bounded isolated acceptance completed on 2026-10-10 (Europe/Istanbul) in final
+[CI run 37989719474](https://github.com/celikbros/kapsora/actions/runs/37989719474):
+all six jobs passed on `89521c4`, with 14 conversion, 90 full accommodation (154.808 s),
+20 eligibility and 31 authorization application functions, without skips or failures.
+All 191 schema and 70 directory/invitation functions passed. Three restored-source
+conversion controls reached four intended compiled failures; payer/policy/enrollment
+controls also passed. Web CI passed 756 tests/92 files and 25 mock smoke tests; 106
+opt-in live/calendar cases remain skipped. Fractional mapping factors are in scope; fractional service
+approvals remain an unreproduced policy concern, not certified terminal conservation.
+MONEY policy, historical repair, the external status race and new settings permissions remain separate.
 
 ## Current product completion roadmap (2026-09-22)
 

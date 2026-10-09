@@ -1,8 +1,8 @@
-﻿# WP-PC06 · Convert lodging nights to mapped entitlement units
+﻿# WP-PC06 Â· Convert lodging nights to mapped entitlement units
 
 | Field | Value |
 | --- | --- |
-| Status | REPRODUCTION IN PROGRESS; isolated CI evidence and implementation pending |
+| Status | BOUNDED ISOLATED ACCEPTANCE COMPLETE on 89521c4 in CI 37989719474 |
 | Planned | 2026-10-09, gpt-6-astra |
 | Prerequisite | Bounded factor-1 enrollment/account coherence accepted on f94c269 in CI 37984416048 |
 | Outcome | NIGHT service quantities and mapped ledger quantities remain distinct through the booking lifecycle |
@@ -92,6 +92,16 @@ outside the mapped conversion.
    adopted authorization item without creating/resolving another funded account.
    Compare reservation remaining units with approvedServiceQuantity*f, not raw nights.
    Keep approved quantity in nights; reject malformed/inconsistent conversion metadata.
+   For whole-night partial approval within this package, release unapproved surplus during NEW adoption in the
+   same authorization transaction, after identity/quantity validation and before commit.
+   Release actual remaining reservation units minus approvedServiceQuantity*f; insufficient
+   remaining units still refuse. Use an append-only RELEASE on the same reservation with
+   a deterministic adoption-scoped idempotency key and reason/provenance. Retain original
+   reservation.Quantity and its booking reference; never create a second RESERVE or alter
+   the frozen quote/request. This is returning units the new authorization did not approve,
+   not changing pricing, service approval or cancellation policy. Waiting until expiry is
+   insufficient: normal terminal release caps at approved-minus-consumed service quantity
+   and cannot account for the unapproved surplus after full approved fulfilment.
 6. Existing authorization item factor storage from migration 51 and cumulative
    entitlementConsumption should handle later conversion. Inspect fulfilment, cancellation,
    no-show and release callers before relying on that claim. Preserve their service-unit
@@ -143,7 +153,11 @@ mapping or reinterpret existing consume/release movements. New lifecycle code mu
 the historical stored factor (including the legacy default 1) and must not require new
 quote metadata merely to display, release or finish those records. Do not claim such
 preservation repairs historically undercharged nonunit bookings. Any recovery/audit of
-those bookings is separate work requiring its own scope and evidence.
+those bookings is separate work requiring its own scope and evidence. The new-adoption
+surplus release also applies to a legacy factor-1 HOLD/PENDING_APPROVAL that satisfies the
+compatibility checks above and is newly adopted after this change. It does not scan or
+release surplus from already-authorized historical rows, and replay of an already committed
+authorization must not initiate a new release. No historical recovery is authorized.
 
 Test compatibility explicitly. If safely preserving existing authorized lifecycle behavior
 requires more than this bounded dual-version handling, report the concrete issue before
@@ -180,6 +194,16 @@ path where it invokes the same evidence. Confirmation and approval must adopt th
 reservation, set the item factor, retain
 service-night approved quantity and perform no second RESERVE.
 
+Require a whole-night partial-approval scenario: hold 2 nights at factor 2 reserves 4 units; approval
+of 1 service night adopts that reservation and releases exactly 2 units once, leaving
+2 reserved; fulfilment/checkout of that 1 night consumes 2 and leaves reserved 0 without
+waiting for expiry. Repeat adoption/approval retries and terminal calls to prove no duplicate
+RELEASE/RESERVE/CONSUME. Prove transactional rollback leaves neither a partial authorization
+nor a surplus release on failed adoption. Include the corresponding factor-1 regression,
+a proven compatible legacy hold newly adopted, and an already-authorized historical replay
+that receives no retroactive surplus release. Assert original reservation quantity/reference
+and unchanged quote/request alongside available/reserved/consumed conservation.
+
 Exercise full checkout, partial checkout plus unused release, free cancellation, penalized
 cancellation and no-show consumption. Assert service counters separately from ledger
 quantities; exact available/reserved/consumed conservation must hold at every boundary.
@@ -199,6 +223,19 @@ and unchanged public contract; blank KAPSORA_TEST_ADMIN_DATABASE_URL for local G
 
 ## 5. Exclusions and gates
 
+The partial-approval and terminal conservation acceptance above is bounded to whole-night
+service decisions and penalties. Fractional mapping factors remain fully in scope: a whole
+service night may spend a fractional number of entitlement units. This does not certify
+fractional service-night approvals or penalties. Generic request approval accepts positive
+fractional quantities, whereas lodging settleStay floors total approved quantity to whole
+nights. For example, an approved 0.5 service night at factor 2 can leave 1 reserved ledger
+unit after checkout. The handling of that fractional service tail is a separate open
+source concern requiring its own isolated reproduction and explicit policy decision.
+Do not introduce a new approval restriction, public refusal, rounding rule or generic
+health/request review policy here. Do not claim all possible partial approvals conserve
+through checkout; retain the required integer partial-approval surplus release and its
+whole-night regression. Existing fractional service behavior is not accepted as corrected.
+
 No local database tests/writes, schema migration, grants, settings, server lifecycle,
 live booking, historical rewrite, compensation, unrelated financial journeys or MONEY
 conversion design. No new public field or UI flow is planned. Allocation/price formulas,
@@ -206,23 +243,97 @@ contract ranking and owner/calendar gates remain separate. An unexpected schema/
 interface requirement is a concrete review point, not permission to silently broaden scope.
 
 Enrollment/account acceptance is complete. Four focused SQL/HTTP reproduction tests
-and an early isolated CI diagnostic are prepared; production conversion code is unchanged.
-The tests are deliberately opt-in (`KAPSORA_TEST_NIGHT_CONVERSION_REPRODUCTION=1`) until
-implementation: the diagnostic requires four compiled, unskipped failures at the stated
-coverage/reserved-unit and authorization-factor assertions. Their default skips are not functional acceptance.
+and an early isolated CI diagnostic prove old behavior on `5e1d0e9`. That source commit
+does not contain the production conversion correction. At that head the reproduction tests
+were deliberately opt-in (`KAPSORA_TEST_NIGHT_CONVERSION_REPRODUCTION=1`):
+the diagnostic required four compiled, unskipped failures at the stated coverage,
+reserved-unit and authorization-factor assertions. Their default skips were not functional acceptance.
 Fixture mappings are set while DRAFT, then published; the superseded same-code account
 is frozen so it cannot mask the fractional-balance search. Isolated reproduction results
-must be recorded before implementation. Runtime verification remains operator
+are recorded below; implementation follows in section 6. Runtime verification remains operator
 controlled and separate from CI; no affected live row or rollout deadline is asserted.
 
 The three-case diagnostic on `e261d60` completed successfully in
 [CI run 37986149082](https://github.com/celikbros/kapsora/actions/runs/37986149082),
 meaning each deliberately failing regression reached its intended defect assertion.
 This is old-behavior reproduction, not passing conversion functionality or final CI
-acceptance. A fourth dedicated adoption regression is added next: it carries the old
+acceptance. The four-case diagnostic on `5e1d0e9` completed successfully in
+[CI run 37986543854](https://github.com/celikbros/kapsora/actions/runs/37986543854).
+The dedicated adoption regression carries the old
 two-unit hold through real confirmation/approval, then requires factor 2 on the item,
 two approved service nights, the original reservation and one RESERVE. It does not
 assert converted hold units early, which would hide the independent adoption defect.
+The four cases are `TestNightConversionBalance3Factor2Stay2`,
+`TestNightConversionBalance4Factor2Stay2`,
+`TestNightConversionBalanceOnePointFiveFactorHalfStay3` and
+`TestNightConversionAdoptionRetainsFactor`. The diagnostic requires their distinct
+`NIGHT_CONVERSION_BALANCE3_COVERAGE`, `NIGHT_CONVERSION_BALANCE4_UNITS`,
+`NIGHT_CONVERSION_BALANCE1_5_COVERAGE` and `NIGHT_CONVERSION_ADOPTION_FACTOR` assertions.
+Green expected-failure diagnostics certify reproduction only. The implementation and
+its final acceptance are recorded separately below.
 
+## 6. Implementation checkpoint (2026-10-09)
 
+Source `89521c4` implements exact positive NIGHT mapping conversion. Availability counts
+only whole service nights that fit the raw account balance at the selected factor.
+Private v3 quotes freeze the selected plan version, definition, account, factor and
+reserved units; all known private versions still project as public v1 without this evidence.
+MONEY retains its existing private v2 behavior and is not certified by this package.
+
+The booking-only submit allowance follows the original enrollment/version/account and
+the actual BOOKING reservation. It cannot borrow a later same-program enrollment or
+another account's units. Legitimate dependent bookings may use their selected plan's
+principal account. Authorization adoption verifies the original reservation and retains
+the factor without another RESERVE. Whole-night partial approval releases the unapproved
+units through one append-only `booking-unapproved:<bookingID>` command in the authorization
+transaction. A retry after that transaction commits proves the recorded authorization and
+release before accepting the already-adopted reservation.
+
+Original published or retired, service-date-valid plan evidence governs compatibility.
+Private v2 NIGHT holds confirm only when their original factor-1 mapping and reservation
+can be proven; nonunit or inconsistent legacy evidence refuses before new adoption.
+Malformed private v3 evidence also refuses. Actual remaining reservation units still
+allow direct hold release. Transient evidence reads propagate for worker retry rather
+than becoming permanent stale-quote decisions. Historical authorizations are not rewritten.
+
+The old diagnostic gate is removed. Fourteen `TestNightConversion*` functions now run as
+normal isolated SQL/HTTP tests, including early checkout, partial approval/retry, free and
+penalized cancellation, no-show, half-factor full checkout, legacy asynchronous refusal,
+malformed metadata and same-plan family sharing. The CI workflow also runs the full
+authorization application suite and three restored-source negative controls for coverage,
+reserved units and adoption factor.
+
+Local pure/compile, scoped vet/lint, formatting, regenerated SQL and staged secret scanning
+passed. Local PostgreSQL tests remain disabled; no local database, grants, schema, server
+lifecycle or live booking was changed. Independent Sol review found no remaining source
+blocker. The whole-night service decision limitation in section 5 remains open; fractional
+mapping factors are implemented, while fractional service approvals are not certified.
+
+## 7. Isolated acceptance (2026-10-10, Europe/Istanbul)
+
+All six jobs passed on source `89521c4f5c9625f86f7342924abc315eed0a3b61` in
+[CI run 37989719474](https://github.com/celikbros/kapsora/actions/runs/37989719474).
+Normal database steps ran sequentially against the isolated PostgreSQL 18 service:
+
+| Command after `go test -count=1 -v` | Top-level passing functions | Time | Skips / failures |
+| --- | ---: | ---: | --- |
+| `-timeout 5m ./internal/accommodation/transport/http -run '^(TestHoldAmbiguousProgramsRefuseBeforeEffects\|TestHoldExplicitProgramPinsEvaluationPriceAndAccount\|TestHoldSameProgramAmbiguityAndPinnedWaitlistContinuity\|TestPinnedEnrollmentUnavailableLeavesQueueWaiting\|TestPinnedUnfundedEnrollmentDoesNotBorrowSecondPlan\|TestPinnedHoldRejectsWrongPersonProgramAndUnknownEnrollment)$'` | 6 | 8.494 s | 0 / 0 |
+| `-timeout 10m ./internal/accommodation/transport/http -run '^TestNightConversion'` | 14 | 21.029 s | 0 / 0 |
+| `-timeout 30m ./internal/benefit/eligibility` | 20 | 15.596 s | 0 / 0 |
+| `-timeout 30m ./db/tests/...` | 191 | 180.716 s | 0 / 0 |
+| `-timeout 30m ./internal/identity/transport/http -run '^(TestDirectory\|TestInvitation)'` | 70 | 108.012 s | 0 / 0 |
+| `-timeout 30m ./internal/accommodation/transport/http` | 90 | 154.808 s | 0 / 0 |
+| `-timeout 30m ./internal/authorization/application` | 31 | 32.878 s | 0 / 0 |
+
+The three runner-only NIGHT source controls restored raw-unit coverage, unconverted
+reservation quantity and factor-1 adoption in turn. They reached the four intended
+compiled assertion failures; source was restored after each control. Existing payer,
+exact contract and four enrollment-boundary controls also detected their intended defects.
+Expected failures in these control steps are separate from the passing normal suites.
+
+Web CI passed 756 tests in 92 files and 25 mock smoke tests. The 106 opt-in live/calendar
+cases remained skipped. Go lint/race tests, security/dependency scans, generated code,
+OpenAPI compatibility and Linux/Windows binaries passed. These results certify this
+bounded synthetic implementation, not operator runtime reload, local migration 58,
+MONEY policy, fractional service approvals or owner/calendar acceptance.
 

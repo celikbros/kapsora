@@ -1374,14 +1374,36 @@ picker or certify nonunit mapping conversion: multiple plans within one program 
 refuse, and ordinary broad availability keeps its existing payer union. Pinned eligibility
 shared-account proof is separate from a complete live dependent booking journey. Nonunit
 NIGHT conversion and the existing MONEY lodging semantics remain separate review scopes.
-The next independent technical step is the Astra-planned, Sol-reviewed
+The follow-up is the Astra-planned, Sol-reviewed
 [NIGHT entitlement conversion package](delegation/WP-PC06-night-entitlement-conversion.md).
-It remains PLANNED and unreproduced: cover service nights separately from ledger units,
-bind the booking-held submission allowance to the original enrollment/version/account,
-and retain the mapped authorization factor through adoption and consumption. Current
-hold acceptance does not certify the later submission gate with a second same-program
-enrollment added after the hold. No conversion implementation or historical rewrite is
-included in this checkpoint.
+Its four old-behavior failures are reproduced on `5e1d0e9` by the early diagnostic in
+[CI run 37986543854](https://github.com/celikbros/kapsora/actions/runs/37986543854):
+balance 3/factor 2 covers too many nights, balance 4/factor 2 reserves too few units,
+balance 1.5/factor 0.5 covers too few nights, and real approval/adoption retains factor 1
+instead of 2. That diagnostic requires compiled, unskipped intended failures; it is
+not passing conversion functionality. Source `89521c4` now separates service nights from
+ledger units, binds the booking-held submission allowance to the original
+enrollment/version/account and retains the mapped authorization factor through adoption
+and consumption. Whole-night partial approval releases surplus units once inside the
+authorization transaction; approval retry proves the matching recorded authorization
+and release. Private v3 conversion evidence remains absent from the public v1 quote.
+Original-plan factor-1 proof governs legacy v2 NIGHT confirmation; unsafe legacy or
+malformed new evidence refuses before new adoption, while actual units allow hold release.
+Transient evidence reads remain retryable. The 14 normal isolated conversion functions
+include a later same-program enrollment, family principal sharing, terminal conservation
+and uncertain approval retry. Bounded isolated acceptance completed on 2026-10-10
+(Europe/Istanbul): all six jobs passed on source `89521c4` in
+[run 37989719474](https://github.com/celikbros/kapsora/actions/runs/37989719474).
+The 14 conversion functions passed in 21.029 s, full accommodation passed all 90
+functions in 154.808 s, eligibility passed 20 and authorization application passed 31;
+these normal suites had no skips or failures. All 191 schema and 70 directory/invitation
+functions passed. Three restored-source conversion controls reached their four intended
+assertion failures; existing payer/policy/enrollment controls also passed. Web CI passed
+756 tests/92 files and 25 mock smoke tests; 106 opt-in live/calendar cases remain skipped.
+No historical rewrite, local database change or live booking is included. Fractional
+mapping factors are implemented; fractional service-night approvals remain an open,
+unreproduced policy concern outside the bounded whole-night decision acceptance. MONEY
+lodging semantics, public plan choice and the external authorization/status race remain separate.
 
 A fresh app-role read-only DEMO_A/DEMO_B inventory at 2026-10-09 20:04 UTC again found
 no HOLD/PENDING_APPROVAL bookings. This is a bounded observation before operator reload,
