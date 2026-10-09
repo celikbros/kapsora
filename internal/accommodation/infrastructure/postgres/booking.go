@@ -459,6 +459,35 @@ func (Bookings) PersonEnrollmentForStay(ctx context.Context, tx pgx.Tx, tenantID
 }
 
 // EntitlementCodeForService implements application.BookingRepository.
+func (Bookings) BookingConversionEvidence(ctx context.Context, tx pgx.Tx, tenantID, evaluationID,
+	reservationID, serviceDefinitionID uuid.UUID) (application.BookingConversionEvidence, error) {
+	row, err := sqlcgen.New(tx).GetBookingConversionEvidence(ctx, sqlcgen.GetBookingConversionEvidenceParams{
+		TenantID: tenantID, EvaluationID: evaluationID, ReservationID: reservationID,
+		ServiceDefinitionID: serviceDefinitionID,
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return application.BookingConversionEvidence{}, application.ErrQuoteStale
+	}
+	if err != nil {
+		return application.BookingConversionEvidence{}, fmt.Errorf("accommodation: conversion evidence: %w", err)
+	}
+	if !row.EnrollmentID.Valid || !row.PlanVersionID.Valid || !row.ServiceDate.Valid {
+		return application.BookingConversionEvidence{}, application.ErrQuoteStale
+	}
+	return application.BookingConversionEvidence{
+		PersonID: row.PersonID, EnrollmentID: row.EnrollmentID.UUID,
+		PlanVersionID: row.PlanVersionID.UUID, ServiceDate: row.ServiceDate.Time,
+		DefinitionID: row.EntitlementDefinitionID, UnitFactor: row.UnitFactor,
+		UnitType: row.UnitType, AccountID: row.EntitlementAccountID,
+		ReferenceType: row.ReferenceType, ReferenceID: row.ReferenceID,
+		ReservedUnits: row.ReservedUnits, ConsumedUnits: row.ConsumedUnits,
+		ReleasedUnits: row.ReleasedUnits, ReservationStatus: row.ReservationStatus,
+		UnapprovedReleasedUnits: row.UnapprovedReleasedUnits,
+		PriorAuthorization:      row.PriorAuthorization,
+	}, nil
+}
+
+// EntitlementCodeForService implements application.BookingRepository.
 func (Bookings) EntitlementCodeForService(ctx context.Context, tx pgx.Tx, tenantID, enrollmentID,
 	serviceDefinitionID uuid.UUID, day time.Time,
 ) (string, error) {

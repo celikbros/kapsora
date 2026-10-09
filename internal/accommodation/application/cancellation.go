@@ -11,7 +11,6 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/celikbros/kapsora/internal/accommodation/domain"
-	benefitdomain "github.com/celikbros/kapsora/internal/benefit/domain"
 	"github.com/celikbros/kapsora/internal/benefit/ledger"
 	"github.com/celikbros/kapsora/internal/identity"
 )
@@ -368,13 +367,13 @@ func (s *Service) releaseReservationOnly(ctx context.Context, tx pgx.Tx,
 	// The room spans every booked night, but the ledger holds only the part the
 	// plan carries. Releasing the full stay would exceed a partial reservation and
 	// strand the member's balance after the booking has already been closed.
-	snapshot, err := decodeQuoteSnapshot(record.QuoteSnapshot)
+	reservation, err := s.ledger.ReadReservation(ctx, tx, rc.TenantID, *record.EntitlementReservationID)
 	if err != nil {
 		return err
 	}
-	quantity, err := benefitdomain.ParseQuantity(fmt.Sprintf("%d", snapshot.CoveredNights))
-	if err != nil {
-		return fmt.Errorf("accommodation: night quantity: %w", err)
+	quantity := reservation.Remaining()
+	if !quantity.IsPositive() {
+		return nil
 	}
 	_, err = s.ledger.Release(ctx, tx, ledger.MovementInput{
 		TenantID: rc.TenantID, ReservationID: *record.EntitlementReservationID,

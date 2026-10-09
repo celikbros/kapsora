@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -359,6 +360,7 @@ func (s *Service) loadWorld(ctx context.Context, tx pgx.Tx, rc identity.RequestC
 type eligibilityVerdict struct {
 	evaluationID uuid.UUID
 	accountIDs   map[uuid.UUID]uuid.UUID
+	conversions  map[uuid.UUID]NightConversion
 	// eligibleFor says, per service definition, whether the person is eligible at all --
 	// enrolled, on a published plan version, with the service mapped to an entitlement.
 	eligibleFor map[uuid.UUID]bool
@@ -449,6 +451,7 @@ func (s *Service) checkEligibility(ctx context.Context, rc identity.RequestConte
 	verdict := eligibilityVerdict{
 		evaluationID:    result.EvaluationID,
 		accountIDs:      make(map[uuid.UUID]uuid.UUID, len(definitionIDs)),
+		conversions:     make(map[uuid.UUID]NightConversion, len(definitionIDs)),
 		eligibleFor:     make(map[uuid.UUID]bool, len(definitionIDs)),
 		remainingNights: make(map[uuid.UUID]int, len(definitionIDs)),
 		remainingMoney:  make(map[uuid.UUID]benefitdomain.Quantity, len(definitionIDs)),
@@ -472,7 +475,15 @@ func (s *Service) checkEligibility(ctx context.Context, rc identity.RequestConte
 		code := *item.EntitlementCode
 		unit := unitByCode[code]
 		if unit == domain.UnitNight {
-			verdict.remainingNights[definitionID] = wholeNights(available)
+			if item.UnitType != domain.UnitNight || !item.UnitFactor.IsPositive() ||
+				item.DefinitionID == uuid.Nil || item.AccountID == uuid.Nil || result.PlanVersionID == nil {
+				return eligibilityVerdict{}, errors.New("accommodation: NIGHT eligibility lacks selected mapping metadata")
+			}
+			verdict.remainingNights[definitionID] = nightsFromUnits(available, item.UnitFactor, world.nights)
+			verdict.conversions[definitionID] = NightConversion{
+				PlanVersionID: *result.PlanVersionID, DefinitionID: item.DefinitionID,
+				AccountID: item.AccountID, UnitType: item.UnitType, UnitFactor: item.UnitFactor.String(),
+			}
 		} else {
 			verdict.remainingMoney[definitionID] = available
 		}
@@ -483,6 +494,23 @@ func (s *Service) checkEligibility(ctx context.Context, rc identity.RequestConte
 		}
 	}
 	return verdict, nil
+}
+
+// nightsFromUnits compares each whole service night in exact ledger units. Division at
+// six decimals can round an incomplete night up, so the stay length bounds this loop.
+func nightsFromUnits(available, factor benefitdomain.Quantity, stayNights int) int {
+	if !factor.IsPositive() || !available.IsPositive() || stayNights <= 0 {
+		return 0
+	}
+	covered := 0
+	for covered < stayNights {
+		candidate := benefitdomain.MustQuantity(strconv.Itoa(covered + 1)).Mul(factor)
+		if candidate.Cmp(available) > 0 {
+			break
+		}
+		covered++
+	}
+	return covered
 }
 
 // wholeNights is how many whole nights a balance carries. A half night is not a night

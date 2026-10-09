@@ -336,6 +336,7 @@ func (s *Service) evaluate(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
 		}
 		resolverInput.Mappings[m.ServiceDefinitionID] = Mapping{
 			EntitlementCode: m.EntitlementCode, UnitFactor: factor,
+			DefinitionID: m.EntitlementDefinitionID, UnitType: m.UnitType,
 		}
 	}
 

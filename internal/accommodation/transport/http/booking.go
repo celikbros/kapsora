@@ -351,7 +351,7 @@ func quoteSnapshotView(raw []byte) kapsorav1.BookingQuoteSnapshot {
 	}
 	// The public quote snapshot remains the v1 wire shape. Version 2 is an
 	// internal confirmation format and its metadata must not escape this projection.
-	if snapshot.Version == 1 || snapshot.Version == application.QuoteSnapshotVersion {
+	if snapshot.Version == 1 || snapshot.Version == 2 || snapshot.Version == application.QuoteSnapshotVersion {
 		out.Version = 1
 	}
 	for _, night := range snapshot.Nights {

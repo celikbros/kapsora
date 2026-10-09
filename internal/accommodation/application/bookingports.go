@@ -277,7 +277,28 @@ type ReminderRow struct {
 // the range in stay_date order with FOR UPDATE, and every command that moves a counter
 // calls it first. That single ordering is what turns concurrent holds into a queue rather
 // than a deadlock, and it is stated on the port so no adapter can quietly reorder it.
+type BookingConversionEvidence struct {
+	PersonID                uuid.UUID
+	EnrollmentID            uuid.UUID
+	PlanVersionID           uuid.UUID
+	ServiceDate             time.Time
+	DefinitionID            uuid.UUID
+	UnitFactor              string
+	UnitType                string
+	AccountID               uuid.UUID
+	ReferenceType           string
+	ReferenceID             uuid.UUID
+	ReservedUnits           string
+	ConsumedUnits           string
+	ReleasedUnits           string
+	UnapprovedReleasedUnits string
+	PriorAuthorization      bool
+	ReservationStatus       string
+}
+
 type BookingRepository interface {
+	BookingConversionEvidence(ctx context.Context, tx pgx.Tx, tenantID, evaluationID,
+		reservationID, serviceDefinitionID uuid.UUID) (BookingConversionEvidence, error)
 	// LockInventoryNights takes the nights of [from, to] FOR UPDATE **in stay_date
 	// order**. A night the provider has opened nothing on is simply absent from the
 	// result, which is how the caller tells "no allotment" from "full".
@@ -420,6 +441,7 @@ type BookingRepository interface {
 // back, and find the account to take it on. This package never writes a balance, and the
 // compiler agrees it cannot post anything else.
 type LedgerPort interface {
+	ReadReservation(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID) (ledger.Reservation, error)
 	Reserve(ctx context.Context, tx pgx.Tx, in ledger.ReserveInput) (ledger.Reservation, error)
 	Release(ctx context.Context, tx pgx.Tx, in ledger.MovementInput) (ledger.Reservation, error)
 	// ResolveAccounts lists the entitlement accounts a person may spend from on a day,
@@ -442,16 +464,17 @@ type BookingRequestInput struct {
 	// night: a reviewer decides "four of the five nights" by reducing a quantity, which is
 	// the decision WP-I4-01 already knows how to record, and five lines would put a
 	// fifteen-line request in front of anybody booking a fortnight.
-	Nights       int
-	UnitType     string
-	Amount       string
-	CurrencyCode string
-	Channel      string
-	// HeldNights is the entitlement this booking has already reserved, as an exact decimal
-	// string. The gate adds it back before it judges the line, so a member whose plan covers
-	// exactly the stay they are holding is not refused for spending what they hold. It is
-	// always the same number as Nights here: both are the covered nights of the frozen quote.
-	HeldNights string
+	Nights          int
+	UnitType        string
+	Amount          string
+	CurrencyCode    string
+	Channel         string
+	BookingID       uuid.UUID
+	ReservationID   uuid.UUID
+	NightConversion *NightConversion
+	// HeldEntitlementUnits is the exact ledger quantity already reserved by this booking.
+	// It can differ from Nights, which remains the requested service quantity.
+	HeldEntitlementUnits string
 }
 
 // BookingRequestRef is the request, as this package needs it.
@@ -486,9 +509,12 @@ type RequestPort interface {
 // BookingAuthorizationInput is the hold this package asks WP-I4-02 for when a reservation
 // request is approved.
 type BookingAuthorizationInput struct {
-	RequestID uuid.UUID
-	ValidFrom time.Time
-	ValidTo   time.Time
+	RequestID           uuid.UUID
+	BookingID           uuid.UUID
+	ServiceDefinitionID uuid.UUID
+	NightConversion     *NightConversion
+	ValidFrom           time.Time
+	ValidTo             time.Time
 	// IdempotencyKey is derived from the booking rather than from a clock, so a
 	// redelivered outbox event finds the authorization the first delivery created.
 	IdempotencyKey string

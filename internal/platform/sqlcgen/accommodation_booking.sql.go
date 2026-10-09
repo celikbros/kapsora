@@ -566,6 +566,109 @@ func (q *Queries) GetBookingByRequest(ctx context.Context, arg GetBookingByReque
 	return i, err
 }
 
+const getBookingConversionEvidence = `-- name: GetBookingConversionEvidence :one
+SELECT ee.person_id, ee.enrollment_id, ee.plan_version_id, ee.service_date,
+       m.entitlement_definition_id, m.unit_factor::text AS unit_factor,
+       d.unit_type, r.entitlement_account_id, r.reference_type, r.reference_id,
+       r.quantity::text AS reserved_units, r.consumed_quantity::text AS consumed_units,
+       r.released_quantity::text AS released_units, r.status AS reservation_status,
+       (SELECT coalesce(sum(-l.delta_reserved),0)::text
+          FROM benefit.entitlement_ledger l WHERE l.tenant_id=r.tenant_id
+           AND l.reservation_id=r.id AND l.movement_type='RELEASE'
+           AND l.idempotency_key='booking-unapproved:' || r.reference_id::text
+       ) AS unapproved_released_units,
+       EXISTS (SELECT 1 FROM service.authorization au
+         JOIN accommodation.booking b ON b.tenant_id=au.tenant_id
+          AND b.id=r.reference_id AND b.service_request_id=au.request_id
+          AND b.entitlement_reservation_id=r.id
+         JOIN service.authorization_item ai ON ai.tenant_id=au.tenant_id
+          AND ai.authorization_id=au.id AND ai.entitlement_reservation_id=r.id
+         WHERE au.tenant_id=r.tenant_id
+          AND au.idempotency_key='booking:' || r.reference_id::text
+          AND ai.service_definition_id=$1
+          AND ai.entitlement_unit_factor=m.unit_factor
+          AND ai.approved_quantity*m.unit_factor=r.quantity-r.released_quantity
+          AND NOT EXISTS (SELECT 1 FROM service.authorization_item other_item
+            WHERE other_item.tenant_id=au.tenant_id
+              AND other_item.authorization_id=au.id AND other_item.id<>ai.id)
+       ) AS prior_authorization
+  FROM benefit.eligibility_evaluation ee
+  JOIN benefit.enrollment e ON e.tenant_id = ee.tenant_id AND e.id = ee.enrollment_id
+  JOIN benefit.plan_version v ON v.tenant_id = ee.tenant_id
+    AND v.id = ee.plan_version_id AND v.plan_id = e.plan_id
+    AND v.status IN ('PUBLISHED','RETIRED') AND v.valid_period @> ee.service_date
+  JOIN benefit.service_entitlement_mapping m ON m.tenant_id = ee.tenant_id
+    AND m.plan_version_id = ee.plan_version_id
+    AND m.service_definition_id = $1
+    AND (m.valid_from IS NULL OR m.valid_from <= ee.service_date)
+    AND (m.valid_to IS NULL OR m.valid_to > ee.service_date)
+  JOIN benefit.entitlement_definition d ON d.tenant_id = m.tenant_id
+    AND d.id = m.entitlement_definition_id
+  JOIN benefit.entitlement_reservation r ON r.tenant_id = ee.tenant_id
+    AND r.id = $2
+  JOIN benefit.entitlement_account a ON a.tenant_id = r.tenant_id
+    AND a.id = r.entitlement_account_id
+    AND a.entitlement_definition_id = m.entitlement_definition_id
+ WHERE ee.tenant_id = $3 AND ee.id = $4
+`
+
+type GetBookingConversionEvidenceParams struct {
+	ServiceDefinitionID uuid.UUID
+	ReservationID       uuid.UUID
+	TenantID            uuid.UUID
+	EvaluationID        uuid.UUID
+}
+
+type GetBookingConversionEvidenceRow struct {
+	PersonID                uuid.UUID
+	EnrollmentID            uuid.NullUUID
+	PlanVersionID           uuid.NullUUID
+	ServiceDate             pgtype.Date
+	EntitlementDefinitionID uuid.UUID
+	UnitFactor              string
+	UnitType                string
+	EntitlementAccountID    uuid.UUID
+	ReferenceType           string
+	ReferenceID             uuid.UUID
+	ReservedUnits           string
+	ConsumedUnits           string
+	ReleasedUnits           string
+	ReservationStatus       string
+	UnapprovedReleasedUnits string
+	PriorAuthorization      bool
+}
+
+// Historical confirmation uses the ORIGINAL evaluation's plan version. Current
+// publication and same-program alternative enrollments must not change its meaning.
+func (q *Queries) GetBookingConversionEvidence(ctx context.Context, arg GetBookingConversionEvidenceParams) (GetBookingConversionEvidenceRow, error) {
+	row := q.db.QueryRow(ctx, getBookingConversionEvidence,
+		arg.ServiceDefinitionID,
+		arg.ReservationID,
+		arg.TenantID,
+		arg.EvaluationID,
+	)
+	var i GetBookingConversionEvidenceRow
+	err := row.Scan(
+		&i.PersonID,
+		&i.EnrollmentID,
+		&i.PlanVersionID,
+		&i.ServiceDate,
+		&i.EntitlementDefinitionID,
+		&i.UnitFactor,
+		&i.UnitType,
+		&i.EntitlementAccountID,
+		&i.ReferenceType,
+		&i.ReferenceID,
+		&i.ReservedUnits,
+		&i.ConsumedUnits,
+		&i.ReleasedUnits,
+		&i.ReservationStatus,
+		&i.UnapprovedReleasedUnits,
+		&i.PriorAuthorization,
+	)
+	return i, err
+}
+
 const getBookingEntitlementCode = `-- name: GetBookingEntitlementCode :one
 SELECT d.code AS entitlement_code
   FROM benefit.enrollment e

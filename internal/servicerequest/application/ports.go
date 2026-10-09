@@ -47,6 +47,7 @@ var (
 	ErrTransitionInvalid  = errors.New("servicerequest: this transition is not allowed")
 	ErrVersionMismatch    = errors.New("servicerequest: row version does not match If-Match")
 	ErrEnrollmentMismatch = errors.New("servicerequest: the enrollment does not belong to this person or program")
+	ErrBookingHoldInvalid = errors.New("servicerequest: booking hold evidence is inconsistent")
 	ErrProviderScope      = errors.New("servicerequest: the caller is not scoped to this provider")
 	ErrReferenceCollision = errors.New("servicerequest: could not allocate a free request reference")
 )
@@ -334,6 +335,20 @@ type EligibilityInput struct {
 	Mappings map[uuid.UUID]eligibility.Mapping
 }
 
+// BookingHold binds a booking-only gate allowance to the exact reserved account and
+// immutable selected mapping. General service requests carry no such evidence.
+type BookingHold struct {
+	BookingID           uuid.UUID
+	ReservationID       uuid.UUID
+	EnrollmentID        uuid.UUID
+	PlanVersionID       uuid.UUID
+	ServiceDefinitionID uuid.UUID
+	DefinitionID        uuid.UUID
+	AccountID           uuid.UUID
+	UnitFactor          benefitdomain.Quantity
+	Units               benefitdomain.Quantity
+}
+
 // NewEligibilityEvaluationRow is the append-only evaluation the submit gate stores, so the
 // answer the gate was given can be read again long after the balances have moved on.
 type NewEligibilityEvaluationRow struct {
@@ -435,6 +450,8 @@ type Repository interface {
 	// has to be exactly as this package found it.
 	LoadEligibility(ctx context.Context, tx pgx.Tx, tenantID, personID uuid.UUID,
 		programID *uuid.UUID, serviceDate time.Time) (EligibilityInput, error)
+	LoadBookingEligibility(ctx context.Context, tx pgx.Tx, tenantID, personID, programID uuid.UUID,
+		serviceDate time.Time, hold BookingHold) (EligibilityInput, error)
 	CreateEligibilityEvaluation(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
 		in NewEligibilityEvaluationRow) error
 

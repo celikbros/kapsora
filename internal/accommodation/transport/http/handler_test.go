@@ -131,6 +131,7 @@ type server struct {
 	h       *dbtest.Harness
 	handler http.Handler
 	svc     *application.Service
+	deps    application.Deps
 	// requests is WP-I4-01's own service, so the booking tests can decide a reservation
 	// request the way a reviewer does rather than writing its rows by hand.
 	requests *servicerequestapp.Service
@@ -217,7 +218,7 @@ func newServer(t *testing.T, withHoldIdempotency ...bool) *server {
 	// anywhere: the request really goes through WP-I4-01's gate, the authorization really
 	// adopts the hold's reservation, and the voucher's digest really lands in
 	// service.voucher — because every one of those is a link a stub would hide.
-	svc, err := application.New(application.Deps{
+	deps := application.Deps{
 		Pool: h.App, Repo: accommodationpg.New(), Bookings: accommodationpg.NewBookings(),
 		Ledger: movements, Eligibility: eligibilitySvc,
 		Requests:       accommodationgw.NewRequests(requestSvc),
@@ -225,12 +226,13 @@ func newServer(t *testing.T, withHoldIdempotency ...bool) *server {
 		Policies:       accommodationgw.NewPolicies(contractSvc),
 		WorkItems:      accommodationpg.NewWorkItems(logger),
 		Audit:          auditpg.New(), Cursors: cursors, Logger: logger, Now: clock.Now,
-	})
+	}
+	svc, err := application.New(deps)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	s := &server{h: h, svc: svc, requests: requestSvc, clock: clock}
+	s := &server{h: h, svc: svc, deps: deps, requests: requestSvc, clock: clock}
 	s.tenant = h.CreateTenant("HTTP_ACC")
 	s.actor = h.CreateActor("acc-http-clerk", "Accommodation Clerk")
 	s.membership = h.CreateMembership(s.tenant, s.actor)

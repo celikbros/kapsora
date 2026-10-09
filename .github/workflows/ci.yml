@@ -64,39 +64,10 @@ jobs:
         env:
           KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
         run: go test -count=1 -v -timeout 5m ./internal/accommodation/transport/http -run '^(TestHoldAmbiguousProgramsRefuseBeforeEffects|TestHoldExplicitProgramPinsEvaluationPriceAndAccount|TestHoldSameProgramAmbiguityAndPinnedWaitlistContinuity|TestPinnedEnrollmentUnavailableLeavesQueueWaiting|TestPinnedUnfundedEnrollmentDoesNotBorrowSecondPlan|TestPinnedHoldRejectsWrongPersonProgramAndUnknownEnrollment)$'
-      - name: NIGHT entitlement conversion reproduction (expected semantic failures)
+      - name: NIGHT entitlement conversion acceptance preflight
         env:
           KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
-          KAPSORA_TEST_NIGHT_CONVERSION_REPRODUCTION: '1'
-        run: |
-          python3 - <<'PY'
-          import subprocess
-
-          expected = {
-              'TestNightConversionBalance3Factor2Stay2': 'NIGHT_CONVERSION_BALANCE3_COVERAGE:',
-              'TestNightConversionBalance4Factor2Stay2': 'NIGHT_CONVERSION_BALANCE4_UNITS:',
-              'TestNightConversionBalanceOnePointFiveFactorHalfStay3': 'NIGHT_CONVERSION_BALANCE1_5_COVERAGE:',
-              'TestNightConversionAdoptionRetainsFactor': 'NIGHT_CONVERSION_ADOPTION_FACTOR:',
-          }
-          result = subprocess.run([
-              'go', 'test', '-count=1', '-v', '-timeout', '5m',
-              './internal/accommodation/transport/http',
-              '-run', '^(' + '|'.join(expected) + ')$',
-          ], capture_output=True, text=True)
-          output = result.stdout + result.stderr
-          print(output)
-          if result.returncode != 1 or '[build failed]' in output or '--- SKIP:' in output:
-              raise SystemExit('NIGHT reproduction did not produce compiled, unskipped test failures')
-          failures = [line for line in output.splitlines() if line.startswith('--- FAIL: ')]
-          if len(failures) != len(expected):
-              raise SystemExit('NIGHT reproduction did not fail exactly the four targeted tests')
-          for case, assertion in expected.items():
-              if not any(line.startswith('--- FAIL: ' + case + ' ') for line in failures):
-                  raise SystemExit('NIGHT reproduction did not reach ' + case)
-              if assertion not in output:
-                  raise SystemExit('NIGHT reproduction failed outside intended assertion: ' + case)
-          print('All four NIGHT conversion defects reproduced at their intended semantic assertions')
-          PY
+        run: go test -count=1 -v -timeout 10m ./internal/accommodation/transport/http -run '^TestNightConversion'
       - name: eligibility selected enrollment and shared account regression
         env:
           KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
@@ -113,6 +84,10 @@ jobs:
         env:
           KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
         run: go test -count=1 -v -timeout 30m ./internal/accommodation/transport/http
+      - name: authorization adoption and entitlement quantity regression
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: go test -count=1 -v -timeout 30m ./internal/authorization/application
       - name: accommodation payer boundary negative control
         env:
           KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
@@ -270,6 +245,57 @@ jobs:
           finally:
               for path, original in originals.items():
                   path.write_text(original)
+          PY
+
+      - name: NIGHT conversion old-behavior negative controls
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+
+          availability = Path('internal/accommodation/application/availability.go')
+          booking = Path('internal/accommodation/application/booking.go')
+          authorization = Path('internal/authorization/application/authorization.go')
+          controls = [
+              (availability,
+               'verdict.remainingNights[definitionID] = nightsFromUnits(available, item.UnitFactor, world.nights)',
+               'verdict.remainingNights[definitionID] = wholeNights(available)',
+               {'TestNightConversionBalance3Factor2Stay2': 'NIGHT_CONVERSION_BALANCE3_COVERAGE:',
+                'TestNightConversionBalanceOnePointFiveFactorHalfStay3': 'NIGHT_CONVERSION_BALANCE1_5_COVERAGE:'}),
+              (booking,
+               'quantity, err = prepared.snapshot.NightConversion.validate(prepared.snapshot.CoveredNights)',
+               'quantity, err = benefitdomain.ParseQuantity(strconv.Itoa(prepared.snapshot.CoveredNights))',
+               {'TestNightConversionBalance4Factor2Stay2': 'NIGHT_CONVERSION_BALANCE4_UNITS:'}),
+              (authorization,
+               'lines[0].factor = e.UnitFactor',
+               'lines[0].factor = benefitdomain.MustQuantity("1")',
+               {'TestNightConversionAdoptionRetainsFactor': 'NIGHT_CONVERSION_ADOPTION_FACTOR:'}),
+          ]
+          for path, needle, replacement, expected in controls:
+              original = path.read_text()
+              if original.count(needle) != 1:
+                  raise SystemExit('Expected exactly one NIGHT conversion control target in ' + str(path))
+              try:
+                  path.write_text(original.replace(needle, replacement))
+                  result = subprocess.run([
+                      'go', 'test', '-count=1', '-v', '-timeout', '5m',
+                      './internal/accommodation/transport/http',
+                      '-run', '^(' + '|'.join(expected) + ')$',
+                  ], capture_output=True, text=True)
+                  output = result.stdout + result.stderr
+                  print(output)
+                  failures = [line for line in output.splitlines() if line.startswith('--- FAIL: ')]
+                  if result.returncode != 1 or '[build failed]' in output or '--- SKIP:' in output or \
+                          len(failures) != len(expected):
+                      raise SystemExit('NIGHT control did not produce only compiled semantic failures')
+                  for case, assertion in expected.items():
+                      if not any(line.startswith('--- FAIL: ' + case + ' ') for line in failures) or assertion not in output:
+                          raise SystemExit('NIGHT control failed outside intended assertion: ' + case)
+              finally:
+                  path.write_text(original)
+          print('Coverage, reservation units, and adoption factor regressions detected')
           PY
 
   contracts:

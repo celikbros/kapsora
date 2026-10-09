@@ -33,6 +33,9 @@ type ItemView struct {
 	// AccountID is an in-process handoff to commands that reserve the evaluated
 	// balance. It is deliberately absent from public and persisted JSON snapshots.
 	AccountID         uuid.UUID         `json:"-"`
+	DefinitionID      uuid.UUID         `json:"-"`
+	UnitType          string            `json:"-"`
+	UnitFactor        domain.Quantity   `json:"-"`
 	EntitlementCode   *string           `json:"entitlementCode,omitempty"`
 	Outcome           string            `json:"outcome"`
 	RequestedQuantity json.Number       `json:"requestedQuantity"`
@@ -129,7 +132,8 @@ func newResultView(id uuid.UUID, evaluatedAt time.Time, r Result) ResultView {
 	}
 	for _, item := range r.Items {
 		view := ItemView{
-			Index: item.Index, AccountID: item.AccountID, Outcome: item.Outcome,
+			Index: item.Index, AccountID: item.AccountID, DefinitionID: item.DefinitionID,
+			UnitType: item.UnitType, UnitFactor: item.UnitFactor, Outcome: item.Outcome,
 			RequestedQuantity: json.Number(item.RequestedQuantity.String()),
 			Explanations:      explanationViews(item.Explanations),
 		}

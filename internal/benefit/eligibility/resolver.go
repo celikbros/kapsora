@@ -194,6 +194,8 @@ type Item struct {
 type Mapping struct {
 	EntitlementCode string
 	UnitFactor      domain.Quantity
+	DefinitionID    uuid.UUID
+	UnitType        string
 }
 
 // Input is everything Resolve reads. The caller loads it in one transaction.
@@ -227,6 +229,8 @@ type ItemResult struct {
 	AccountID         uuid.UUID
 	UnitType          string
 	DrawQuantity      domain.Quantity
+	UnitFactor        domain.Quantity
+	DefinitionID      uuid.UUID
 	AllowOverdraft    bool
 	Index             int
 	EntitlementCode   string
@@ -429,6 +433,10 @@ func resolveItem(item Item, accounts map[string]Account, mappings map[uuid.UUID]
 		return out
 	}
 	out.AccountID = account.ID
+	if mapping, mapped := mappings[item.ServiceDefinitionID]; mapped && mapping.EntitlementCode == code {
+		out.UnitFactor = mapping.UnitFactor
+		out.DefinitionID = mapping.DefinitionID
+	}
 	out.UnitType = account.UnitType
 	out.DrawQuantity = drawn
 	out.AllowOverdraft = account.AllowOverdraft

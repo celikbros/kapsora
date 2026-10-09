@@ -23,7 +23,9 @@ import (
 // QuoteSnapshotVersion is stamped into each new frozen quote. Display and historical
 // lifecycle readers tolerate older shapes; confirmation validates the version and its
 // selected-contract identity separately before agreeing to a policy.
-const QuoteSnapshotVersion = 2
+const QuoteSnapshotVersion = 3
+
+const quoteSnapshotLegacyContractVersion = 2
 
 var errLegacyQuoteIdentity = errors.New("accommodation: legacy quote has no selected contract identity")
 
@@ -138,7 +140,38 @@ type QuoteSnapshot struct {
 	CoveredNights int `json:"coveredNights"`
 	// FirstNightContractVersionID is internal provenance for confirmation. The public
 	// booking quote projection deliberately leaves it out.
-	FirstNightContractVersionID *uuid.UUID `json:"firstNightContractVersionId,omitempty"`
+	FirstNightContractVersionID *uuid.UUID       `json:"firstNightContractVersionId,omitempty"`
+	NightConversion             *NightConversion `json:"nightConversion,omitempty"`
+}
+
+// NightConversion is private frozen evidence. Public quote projection never includes it.
+type NightConversion struct {
+	PlanVersionID uuid.UUID `json:"planVersionId"`
+	DefinitionID  uuid.UUID `json:"definitionId"`
+	AccountID     uuid.UUID `json:"accountId"`
+	UnitType      string    `json:"unitType"`
+	UnitFactor    string    `json:"unitFactor"`
+	ReservedUnits string    `json:"reservedUnits"`
+}
+
+func (c NightConversion) validate(covered int) (benefitdomain.Quantity, error) {
+	if c.PlanVersionID == uuid.Nil || c.DefinitionID == uuid.Nil || c.AccountID == uuid.Nil ||
+		c.UnitType != domain.UnitNight || covered <= 0 {
+		return benefitdomain.Quantity{}, ErrQuoteStale
+	}
+	factor, err := benefitdomain.ParseQuantity(c.UnitFactor)
+	if err != nil || !factor.IsPositive() {
+		return benefitdomain.Quantity{}, ErrQuoteStale
+	}
+	units, err := benefitdomain.ParseQuantity(c.ReservedUnits)
+	if err != nil || !units.IsPositive() {
+		return benefitdomain.Quantity{}, ErrQuoteStale
+	}
+	nights := benefitdomain.MustQuantity(strconv.Itoa(covered))
+	if units.Cmp(nights.Mul(factor)) != 0 {
+		return benefitdomain.Quantity{}, ErrQuoteStale
+	}
+	return units, nil
 }
 
 // QuoteNight is one night of the frozen quote.
@@ -314,6 +347,18 @@ func (s *Service) prepareHold(ctx context.Context, rc identity.RequestContext, i
 	if out.accountID == uuid.Nil {
 		return preparedHold{}, ErrEntitlementAccountNotFound
 	}
+	if conversion, ok := verdict.conversions[room.ServiceDefinitionID]; ok {
+		factor, err := benefitdomain.ParseQuantity(conversion.UnitFactor)
+		if err != nil || !factor.IsPositive() {
+			return preparedHold{}, ErrQuoteStale
+		}
+		conversion.ReservedUnits = benefitdomain.MustQuantity(strconv.Itoa(out.snapshot.CoveredNights)).Mul(factor).String()
+		out.snapshot.NightConversion = &conversion
+	} else {
+		// MONEY lodging retains its prior internal contract until that unit has a
+		// separately specified reservation policy.
+		out.snapshot.Version = quoteSnapshotLegacyContractVersion
+	}
 	minutes, err := resolveHoldMinutes(out.settings.HoldMinutes, out.selection.HoldMinutes)
 	if err != nil {
 		return preparedHold{}, fmt.Errorf("accommodation: selected contract version %s: %w",
@@ -436,6 +481,15 @@ func (s *Service) reserveNights(ctx context.Context, tx pgx.Tx, rc identity.Requ
 	quantity, err := benefitdomain.ParseQuantity(fmt.Sprintf("%d", prepared.snapshot.CoveredNights))
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("accommodation: night quantity: %w", err)
+	}
+	if prepared.snapshot.NightConversion != nil {
+		quantity, err = prepared.snapshot.NightConversion.validate(prepared.snapshot.CoveredNights)
+		if err != nil {
+			return uuid.Nil, err
+		}
+		if prepared.snapshot.NightConversion.AccountID != prepared.accountID {
+			return uuid.Nil, ErrQuoteStale
+		}
 	}
 	reservation, err := s.ledger.Reserve(ctx, tx, ledger.ReserveInput{
 		TenantID: rc.TenantID, AccountID: prepared.accountID, Quantity: quantity,
@@ -726,6 +780,13 @@ func (s *Service) prepareConfirmation(ctx context.Context, rc identity.RequestCo
 		if err != nil {
 			return err
 		}
+		snapshot, err := decodeQuoteSnapshot(record.QuoteSnapshot)
+		if err != nil {
+			return err
+		}
+		if _, err := s.verifiedNightConversion(ctx, tx, rc, record, snapshot, false); err != nil {
+			return err
+		}
 		room, err := s.bookings.RoomTypeBookingContext(ctx, tx, rc.TenantID, record.RoomTypeID, nil)
 		if err != nil {
 			return err
@@ -775,6 +836,17 @@ func (s *Service) confirm(ctx context.Context, tx pgx.Tx, rc identity.RequestCon
 	if room.PropertyTimezone != prepared.timeZone {
 		return BookingView{}, errors.New("accommodation: property timezone changed during confirmation preparation")
 	}
+	if record.EntitlementReservationID == nil {
+		return BookingView{}, ErrQuoteStale
+	}
+	conversion, err := s.verifiedNightConversion(ctx, tx, rc, record, snapshot, false)
+	if err != nil {
+		return BookingView{}, err
+	}
+	heldUnits := strconv.Itoa(snapshot.CoveredNights)
+	if conversion != nil {
+		heldUnits = conversion.ReservedUnits
+	}
 	request, err := s.requests.CreateReservation(ctx, tx, rc, BookingRequestInput{
 		PersonID: record.PersonID, EnrollmentID: record.EnrollmentID,
 		ProviderOrganizationID: room.ProviderOrganizationID,
@@ -788,10 +860,12 @@ func (s *Service) confirm(ctx context.Context, tx pgx.Tx, rc identity.RequestCon
 		// authorization would then promise more than the hold it adopts actually holds.
 		Nights: snapshot.CoveredNights, UnitType: room.ServiceUnitType,
 		Amount: snapshot.PayerAmount, CurrencyCode: snapshot.CurrencyCode,
-		Channel: record.Channel,
+		Channel:   record.Channel,
+		BookingID: record.ID, NightConversion: conversion,
+		ReservationID: *record.EntitlementReservationID,
 		// What the hold already took. Without it the gate would judge this line against a
 		// balance this very booking drew down fifteen minutes ago.
-		HeldNights: strconv.Itoa(snapshot.CoveredNights),
+		HeldEntitlementUnits: heldUnits,
 	})
 	if err != nil {
 		return BookingView{}, err
@@ -834,6 +908,64 @@ func (s *Service) confirm(ctx context.Context, tx pgx.Tx, rc identity.RequestCon
 		return BookingView{}, err
 	}
 	return s.loadBooking(ctx, tx, rc.TenantID, record)
+}
+
+// verifiedNightConversion binds both modern and legacy quotes to the original immutable
+// evaluation version and the actual booking reservation. Legacy v2 NIGHT may proceed only
+// where that original mapping proves factor one; MONEY keeps its existing behavior.
+func (s *Service) verifiedNightConversion(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
+	record BookingRecord, snapshot QuoteSnapshot, approvalReplay bool) (*NightConversion, error) {
+	if snapshot.EvaluationID == nil || record.EntitlementReservationID == nil ||
+		snapshot.ServiceDefinitionID == uuid.Nil || snapshot.CoveredNights <= 0 {
+		return nil, ErrQuoteStale
+	}
+	e, err := s.bookings.BookingConversionEvidence(ctx, tx, rc.TenantID, *snapshot.EvaluationID,
+		*record.EntitlementReservationID, snapshot.ServiceDefinitionID)
+	if err != nil {
+		if errors.Is(err, ErrQuoteStale) {
+			return nil, ErrQuoteStale
+		}
+		return nil, err
+	}
+	if e.PersonID != record.PersonID || e.EnrollmentID != record.EnrollmentID ||
+		!domain.Day(e.ServiceDate).Equal(domain.Day(record.CheckIn)) ||
+		e.ReferenceType != ledger.ReferenceBooking ||
+		e.ReferenceID != record.ID || e.ReservationStatus != ledger.ReservationHeld {
+		return nil, ErrQuoteStale
+	}
+	if e.UnitType == "MONEY" && snapshot.Version == quoteSnapshotLegacyContractVersion &&
+		snapshot.Entitlement != nil && snapshot.Entitlement.Unit == "MONEY" {
+		return nil, nil
+	}
+	if e.UnitType != domain.UnitNight || snapshot.Entitlement == nil ||
+		snapshot.Entitlement.Unit != domain.UnitNight {
+		return nil, ErrQuoteStale
+	}
+	factor, fErr := benefitdomain.ParseQuantity(e.UnitFactor)
+	reserved, rErr := benefitdomain.ParseQuantity(e.ReservedUnits)
+	consumed, cErr := benefitdomain.ParseQuantity(e.ConsumedUnits)
+	released, lErr := benefitdomain.ParseQuantity(e.ReleasedUnits)
+	unapproved, uErr := benefitdomain.ParseQuantity(e.UnapprovedReleasedUnits)
+	if fErr != nil || rErr != nil || cErr != nil || lErr != nil || !factor.IsPositive() ||
+		uErr != nil || !consumed.IsZero() ||
+		reserved.Cmp(benefitdomain.MustQuantity(strconv.Itoa(snapshot.CoveredNights)).Mul(factor)) != 0 {
+		return nil, ErrQuoteStale
+	}
+	if !approvalReplay && !released.IsZero() || approvalReplay &&
+		(released.Cmp(unapproved) != 0 || released.Cmp(reserved) >= 0 ||
+			!released.IsZero() && !e.PriorAuthorization) {
+		return nil, ErrQuoteStale
+	}
+	conversion := &NightConversion{PlanVersionID: e.PlanVersionID, DefinitionID: e.DefinitionID,
+		AccountID: e.AccountID, UnitType: e.UnitType, UnitFactor: factor.String(), ReservedUnits: reserved.String()}
+	if snapshot.Version == quoteSnapshotLegacyContractVersion {
+		if factor.Cmp(benefitdomain.MustQuantity("1")) != 0 {
+			return nil, ErrQuoteStale
+		}
+	} else if snapshot.NightConversion == nil || *snapshot.NightConversion != *conversion {
+		return nil, ErrQuoteStale
+	}
+	return conversion, nil
 }
 
 // confirmableQuote preserves the command's normal status, expiry, quote TTL and step-up
@@ -1024,9 +1156,17 @@ func confirmationContractVersion(raw json.RawMessage) (uuid.UUID, QuoteSnapshot,
 	switch snapshot.Version {
 	case 1:
 		return uuid.Nil, QuoteSnapshot{}, errLegacyQuoteIdentity
-	case QuoteSnapshotVersion:
+	case quoteSnapshotLegacyContractVersion, QuoteSnapshotVersion:
 		if snapshot.FirstNightContractVersionID == nil || *snapshot.FirstNightContractVersionID == uuid.Nil {
-			return uuid.Nil, QuoteSnapshot{}, errors.New("accommodation: v2 quote has no selected contract identity")
+			return uuid.Nil, QuoteSnapshot{}, errors.New("accommodation: quote has no selected contract identity")
+		}
+		if snapshot.Version == QuoteSnapshotVersion {
+			if snapshot.NightConversion == nil {
+				return uuid.Nil, QuoteSnapshot{}, ErrQuoteStale
+			}
+			if _, err := snapshot.NightConversion.validate(snapshot.CoveredNights); err != nil {
+				return uuid.Nil, QuoteSnapshot{}, err
+			}
 		}
 		return *snapshot.FirstNightContractVersionID, snapshot, nil
 	default:

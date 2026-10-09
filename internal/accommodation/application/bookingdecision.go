@@ -159,7 +159,12 @@ func (s *Service) approveBooking(ctx context.Context, rc identity.RequestContext
 		return outbox.Permanent(fmt.Errorf("accommodation: booking %s cannot confirm: %w", record.ID, err))
 	}
 	var timeZone string
+	var conversion *NightConversion
 	err = s.withTx(ctx, rc, func(ctx context.Context, tx pgx.Tx) error {
+		conversion, err = s.verifiedNightConversion(ctx, tx, rc, record, snapshot, true)
+		if err != nil {
+			return err
+		}
 		room, err := s.bookings.RoomTypeBookingContext(ctx, tx, rc.TenantID, record.RoomTypeID, nil)
 		if err != nil {
 			return err
@@ -168,6 +173,9 @@ func (s *Service) approveBooking(ctx context.Context, rc identity.RequestContext
 		return nil
 	})
 	if err != nil {
+		if errors.Is(err, ErrQuoteStale) {
+			return outbox.Permanent(err)
+		}
 		return err
 	}
 	policy, err := s.policies.SnapshotPolicy(ctx, rc, versionID, timeZone)
@@ -176,7 +184,9 @@ func (s *Service) approveBooking(ctx context.Context, rc identity.RequestContext
 	}
 	hold, err := s.auths.CreateForRequest(ctx, rc, BookingAuthorizationInput{
 		RequestID: *record.ServiceRequestID,
-		ValidFrom: domain.Day(record.CheckIn), ValidTo: validTo,
+		BookingID: record.ID, ServiceDefinitionID: snapshot.ServiceDefinitionID,
+		NightConversion: conversion,
+		ValidFrom:       domain.Day(record.CheckIn), ValidTo: validTo,
 		IdempotencyKey:            bookingAuthorizationKey(record.ID),
 		AdoptReservationID:        record.EntitlementReservationID,
 		AdoptReservationExpiresAt: &validTo,

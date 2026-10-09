@@ -157,7 +157,8 @@ func (q *Queries) ListDraftPlanVersionsForSeed(ctx context.Context, tenantID uui
 }
 
 const listEligibilityMappings = `-- name: ListEligibilityMappings :many
-SELECT m.service_definition_id, ed.code AS entitlement_code,
+SELECT m.service_definition_id, m.entitlement_definition_id, ed.unit_type,
+       ed.code AS entitlement_code,
        m.unit_factor::text AS unit_factor
   FROM benefit.service_entitlement_mapping m
   JOIN benefit.entitlement_definition ed
@@ -175,9 +176,11 @@ type ListEligibilityMappingsParams struct {
 }
 
 type ListEligibilityMappingsRow struct {
-	ServiceDefinitionID uuid.UUID
-	EntitlementCode     string
-	UnitFactor          string
+	ServiceDefinitionID     uuid.UUID
+	EntitlementDefinitionID uuid.UUID
+	UnitType                string
+	EntitlementCode         string
+	UnitFactor              string
 }
 
 // What the eligibility resolver reads: the entitlement code a service draws from and the
@@ -192,7 +195,13 @@ func (q *Queries) ListEligibilityMappings(ctx context.Context, arg ListEligibili
 	var items []ListEligibilityMappingsRow
 	for rows.Next() {
 		var i ListEligibilityMappingsRow
-		if err := rows.Scan(&i.ServiceDefinitionID, &i.EntitlementCode, &i.UnitFactor); err != nil {
+		if err := rows.Scan(
+			&i.ServiceDefinitionID,
+			&i.EntitlementDefinitionID,
+			&i.UnitType,
+			&i.EntitlementCode,
+			&i.UnitFactor,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

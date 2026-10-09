@@ -112,9 +112,9 @@ func TestBookingContractBindingFirstNightPolicyWinsPreflightAndApproval(t *testi
 	}
 
 	quote, err := application.DecodeQuoteSnapshot(hold.Booking.QuoteSnapshot)
-	if err != nil || quote.Version != 2 || quote.FirstNightContractVersionID == nil ||
+	if err != nil || quote.Version != application.QuoteSnapshotVersion || quote.FirstNightContractVersionID == nil ||
 		*quote.FirstNightContractVersionID != s.contractVersion || quote.TotalAmount != "3000" {
-		t.Fatalf("frozen quote = %+v, %v; want v2, A and unchanged 3000", quote, err)
+		t.Fatalf("frozen quote = %+v, %v; want v3, A and unchanged 3000", quote, err)
 	}
 	public := s.do(t, http.MethodGet, "/api/v1/accommodation/bookings/"+hold.Booking.ID.String(),
 		bookerPermissions, nil, s.memberHeaders()...)
@@ -285,8 +285,8 @@ func TestBookingContractBindingAsyncMissingSelectedTermsCannotAdopt(t *testing.T
 					ServiceDate: hold.Booking.CheckIn, RequestedStartAt: hold.Booking.CheckIn,
 					RequestedEndAt: hold.Booking.CheckOut, Nights: quote.CoveredNights,
 					UnitType: "NIGHT", Amount: quote.PayerAmount, CurrencyCode: quote.CurrencyCode,
-					Channel:    accommodationdomain.ChannelMemberPortal,
-					HeldNights: strconv.Itoa(quote.CoveredNights),
+					Channel:              accommodationdomain.ChannelMemberPortal,
+					HeldEntitlementUnits: strconv.Itoa(quote.CoveredNights),
 				})
 			if err != nil {
 				return err
@@ -382,7 +382,7 @@ func TestBookingContractBindingCorruptV2NeverRaisesRequest(t *testing.T) {
 		{"missing identity", `quote_snapshot - 'firstNightContractVersionId'`},
 		{"zero identity", `jsonb_set(quote_snapshot, '{firstNightContractVersionId}', '"00000000-0000-0000-0000-000000000000"'::jsonb)`},
 		{"malformed identity", `jsonb_set(quote_snapshot, '{firstNightContractVersionId}', '"bad-uuid"'::jsonb)`},
-		{"unknown version", `jsonb_set(quote_snapshot, '{version}', '3'::jsonb)`},
+		{"unknown version", `jsonb_set(quote_snapshot, '{version}', '4'::jsonb)`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			s := newServer(t)

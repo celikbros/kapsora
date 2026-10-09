@@ -32,9 +32,21 @@ type NewAuthorizationInput struct {
 	// the authorization must have exactly one line — one hold cannot be split across two
 	// lines drawing on two accounts — and no RESERVE movement is posted at all.
 	AdoptReservationID *uuid.UUID
+	AdoptedNight       *AdoptedNightEvidence
 	// AdoptReservationExpiresAt is how far the adopted hold's deadline is moved out. It
 	// is only ever moved later, by the ledger.
 	AdoptReservationExpiresAt *time.Time
+}
+
+// AdoptedNightEvidence is the booking's private, frozen conversion, verified against
+// the existing reservation before an authorization item is written.
+type AdoptedNightEvidence struct {
+	BookingID           uuid.UUID
+	ServiceDefinitionID uuid.UUID
+	DefinitionID        uuid.UUID
+	AccountID           uuid.UUID
+	UnitFactor          benefitdomain.Quantity
+	ReservedUnits       benefitdomain.Quantity
 }
 
 // ExtendInput is the extend command.
@@ -197,6 +209,16 @@ func (s *Service) create(ctx context.Context, tx pgx.Tx, rc identity.RequestCont
 		// The caller that adopts is the one that placed the hold, and it placed one.
 		return AuthorizationView{}, ErrAdoptionNotSingleLine
 	}
+	if in.AdoptedNight != nil {
+		e := in.AdoptedNight
+		if in.AdoptReservationID == nil || len(lines) != 1 || e.BookingID == uuid.Nil ||
+			e.ServiceDefinitionID != lines[0].item.ServiceDefinitionID || e.DefinitionID == uuid.Nil ||
+			e.AccountID == uuid.Nil || !e.UnitFactor.IsPositive() || !e.ReservedUnits.IsPositive() ||
+			lines[0].quantity.Mul(e.UnitFactor).Cmp(e.ReservedUnits) > 0 {
+			return AuthorizationView{}, ErrAdoptedReservationTooSmall
+		}
+		lines[0].factor = e.UnitFactor
+	}
 	for _, line := range lines {
 		itemID, err := s.repo.CreateAuthorizationItem(ctx, tx, rc.TenantID, NewAuthorizationItemRow{
 			AuthorizationID: record.ID, RequestItemID: line.item.ID,
@@ -252,13 +274,34 @@ func (s *Service) holdFor(ctx context.Context, tx pgx.Tx, rc identity.RequestCon
 		if err != nil {
 			return uuid.Nil, err
 		}
+		if e := in.AdoptedNight; e != nil {
+			if existing.AccountID != e.AccountID || existing.ReferenceType != ledger.ReferenceBooking ||
+				existing.ReferenceID != e.BookingID || existing.Quantity.Cmp(e.ReservedUnits) != 0 {
+				return uuid.Nil, ErrAdoptedReservationTooSmall
+			}
+		}
 		// The adopted hold has to cover what this line promises. A reviewer who approved
 		// fewer nights than were held leaves the surplus on the hold, which the booking
 		// gives back at check-out; one who approved more than was ever held would be
 		// promising entitlement nobody reserved, and that is refused here rather than
 		// discovered at consumption.
-		if existing.Remaining().Cmp(line.quantity) < 0 {
+		if existing.Remaining().Cmp(line.quantity.Mul(line.factor)) < 0 {
 			return uuid.Nil, ErrAdoptedReservationTooSmall
+		}
+		if e := in.AdoptedNight; e != nil {
+			// A reviewer can approve fewer nights than the booking held. Return the
+			// unapproved entitlement units now; later lifecycle releases are bounded
+			// by the approved service quantity and cannot account for this surplus.
+			surplus := existing.Remaining().Sub(line.quantity.Mul(line.factor))
+			if surplus.IsPositive() {
+				if _, err := s.ledger.Release(ctx, tx, ledger.MovementInput{
+					TenantID: rc.TenantID, ReservationID: existing.ID, Quantity: surplus,
+					Key:        "booking-unapproved:" + e.BookingID.String(),
+					ReasonCode: "BOOKING_UNAPPROVED", ActorID: rc.Principal.ActorID,
+				}); err != nil {
+					return uuid.Nil, err
+				}
+			}
 		}
 		return existing.ID, nil
 	}

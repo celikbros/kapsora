@@ -28,6 +28,28 @@ func day(text string) time.Time {
 	return t
 }
 
+func TestMappedNightCoverageUsesExactWholeUnits(t *testing.T) {
+	for _, tc := range []struct {
+		name, balance, factor string
+		stay, want            int
+	}{
+		{"factor one", "2.9", "1", 3, 2},
+		{"less than one night", "1.999999", "2", 2, 0},
+		{"fractional residual", "3", "2", 2, 1},
+		{"fractional factor", "1.5", "0.5", 3, 3},
+		{"six-decimal incomplete", "0.999998", "0.333333", 3, 2},
+		{"six-decimal exact", "0.999999", "0.333333", 3, 3},
+		{"stay cap", "100", "0.000001", 3, 3},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := nightsFromUnits(benefitdomain.MustQuantity(tc.balance), benefitdomain.MustQuantity(tc.factor), tc.stay)
+			if got != tc.want {
+				t.Fatalf("covered nights = %d, want %d", got, tc.want)
+			}
+		})
+	}
+}
+
 // ---------------------------------------------------------------------------
 // Availability
 // ---------------------------------------------------------------------------

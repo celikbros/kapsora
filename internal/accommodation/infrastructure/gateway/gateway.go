@@ -96,9 +96,26 @@ func (r *Requests) CreateReservation(ctx context.Context, tx pgx.Tx, rc identity
 	if err != nil {
 		return accommodationapp.BookingRequestRef{}, err
 	}
+	var bookingHold *servicerequestapp.BookingHold
+	if c := in.NightConversion; c != nil {
+		factor, factorErr := benefitdomain.ParseQuantity(c.UnitFactor)
+		units, unitsErr := benefitdomain.ParseQuantity(c.ReservedUnits)
+		if factorErr != nil || unitsErr != nil {
+			return accommodationapp.BookingRequestRef{}, accommodationapp.ErrQuoteStale
+		}
+		bookingHold = &servicerequestapp.BookingHold{
+			BookingID: in.BookingID, ReservationID: in.ReservationID,
+			EnrollmentID: in.EnrollmentID, PlanVersionID: c.PlanVersionID,
+			ServiceDefinitionID: in.ServiceDefinitionID, DefinitionID: c.DefinitionID,
+			AccountID: c.AccountID, UnitFactor: factor, Units: units,
+		}
+	}
 	submitted, err := r.svc.SubmitInTxHolding(ctx, tx, rc, draft.Request.ID, nil,
-		draft.Request.RowVersion, held)
+		draft.Request.RowVersion, held, bookingHold)
 	if err != nil {
+		if errors.Is(err, servicerequestapp.ErrBookingHoldInvalid) {
+			return accommodationapp.BookingRequestRef{}, accommodationapp.ErrQuoteStale
+		}
 		return accommodationapp.BookingRequestRef{}, err
 	}
 	return accommodationapp.BookingRequestRef{
@@ -110,12 +127,18 @@ func (r *Requests) CreateReservation(ctx context.Context, tx pgx.Tx, rc identity
 // heldQuantities renders what the booking already reserved in the shape WP-I4-01's gate
 // takes: the entitlement, in its own unit, keyed by the service the line names.
 func heldQuantities(in accommodationapp.BookingRequestInput) (map[uuid.UUID]benefitdomain.Quantity, error) {
-	if in.HeldNights == "" {
+	if in.HeldEntitlementUnits == "" {
 		return nil, nil
 	}
-	quantity, err := benefitdomain.ParseQuantity(in.HeldNights)
+	quantity, err := benefitdomain.ParseQuantity(in.HeldEntitlementUnits)
 	if err != nil {
-		return nil, fmt.Errorf("accommodation: held nights %q: %w", in.HeldNights, err)
+		return nil, fmt.Errorf("accommodation: held entitlement units %q: %w", in.HeldEntitlementUnits, err)
+	}
+	if in.NightConversion != nil {
+		frozen, frozenErr := benefitdomain.ParseQuantity(in.NightConversion.ReservedUnits)
+		if frozenErr != nil || quantity.Cmp(frozen) != 0 {
+			return nil, accommodationapp.ErrQuoteStale
+		}
 	}
 	if !quantity.IsPositive() {
 		return nil, nil
@@ -151,6 +174,18 @@ func (a *Authorizations) CreateForRequest(ctx context.Context, rc identity.Reque
 		IdempotencyKey:            in.IdempotencyKey,
 		AdoptReservationID:        in.AdoptReservationID,
 		AdoptReservationExpiresAt: in.AdoptReservationExpiresAt,
+	}
+	if c := in.NightConversion; c != nil {
+		factor, factorErr := benefitdomain.ParseQuantity(c.UnitFactor)
+		units, unitsErr := benefitdomain.ParseQuantity(c.ReservedUnits)
+		if factorErr != nil || unitsErr != nil {
+			return accommodationapp.BookingAuthorizationRef{}, accommodationapp.ErrQuoteStale
+		}
+		input.AdoptedNight = &authorizationapp.AdoptedNightEvidence{
+			BookingID: in.BookingID, ServiceDefinitionID: in.ServiceDefinitionID,
+			DefinitionID: c.DefinitionID, AccountID: c.AccountID,
+			UnitFactor: factor, ReservedUnits: units,
+		}
 	}
 	if in.MemberAmount != "" {
 		// Line one, because the booking raises exactly one line. The member's share is
