@@ -1,16 +1,19 @@
 package accommodationhttp_test
 
 import (
+	"bytes"
 	"context"
-	"os"
+	"errors"
 	"sync"
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/celikbros/kapsora/internal/accommodation/application"
 	accommodationpg "github.com/celikbros/kapsora/internal/accommodation/infrastructure/postgres"
 	"github.com/celikbros/kapsora/internal/identity"
+	"github.com/celikbros/kapsora/internal/platform/db"
 	"github.com/celikbros/kapsora/internal/platform/outbox"
 	servicerequestapp "github.com/celikbros/kapsora/internal/servicerequest/application"
 	servicerequestdomain "github.com/celikbros/kapsora/internal/servicerequest/domain"
@@ -98,12 +101,12 @@ func handoffBooking(t *testing.T) (*server, application.BookingView, outbox.Deli
 }
 
 type bookingHandoffState struct {
-	bookingStatus, authorizationStatus, reservationStatus string
-	authorizationID, voucherID                            uuid.NullUUID
-	available, reserved, consumed                         string
-	reservationQuantity, reservationReleased              string
-	inventoryDays, inventoryHeld, inventoryConfirmed      int
-	reservations, reserves, releases, vouchers            int
+	bookingStatus, authorizationStatus, reservationStatus    string
+	authorizationID, voucherID                               uuid.NullUUID
+	available, reserved, consumed                            string
+	reservationQuantity, reservationReleased                 string
+	inventoryDays, inventoryHeld, inventoryConfirmed         int
+	reservations, reserves, releases, vouchers, cancelAudits int
 }
 
 func readBookingHandoffState(t *testing.T, s *server, bookingID, reservationID uuid.UUID) bookingHandoffState {
@@ -150,16 +153,19 @@ func readBookingHandoffState(t *testing.T, s *server, bookingID, reservationID u
 		Scan(&st.authorizationStatus); err != nil {
 		t.Fatal(err)
 	}
+	if err := s.h.Admin.QueryRow(ctx, `SELECT count(*) FROM audit.event
+		WHERE tenant_id=$1 AND action_code='authorization.cancel' AND resource_type='authorization'
+		AND resource_id IN (SELECT id FROM service.authorization
+		WHERE tenant_id=$1 AND idempotency_key=$2)`, s.tenant, "booking:"+bookingID.String()).
+		Scan(&st.cancelAudits); err != nil {
+		t.Fatal(err)
+	}
 	return st
 }
 
-// This source-negative-control test is opt-in until the handoff correction lands. It
-// deliberately expects the terminal booking to have no ACTIVE authorization. On the
-// current source, its failure identifies an orphan promise after a released reservation.
+// A runner-only old-source control restores the terminal cleanup no-op and requires
+// HANDOFF_ORPHAN_ACTIVE_AUTHORIZATION from this same deterministic interleaving.
 func TestBookingHandoffReleaseAfterCommittedAuthorization(t *testing.T) {
-	if os.Getenv("KAPSORA_TEST_BOOKING_HANDOFF_RACE") != "1" {
-		t.Skip("set KAPSORA_TEST_BOOKING_HANDOFF_RACE=1 in isolated CI")
-	}
 	s, hold, delivery, baselineInventory := handoffBooking(t)
 	if hold.Booking.EntitlementReservationID == nil {
 		t.Fatal("hold has no entitlement reservation")
@@ -207,7 +213,7 @@ func TestBookingHandoffReleaseAfterCommittedAuthorization(t *testing.T) {
 		before.inventoryDays != baselineInventory.days ||
 		before.inventoryHeld != baselineInventory.held+2 ||
 		before.inventoryConfirmed != baselineInventory.confirmed ||
-		before.reservations != 1 || before.reserves != 1 || before.vouchers != 0 {
+		before.reservations != 1 || before.reserves != 1 || before.vouchers != 0 || before.cancelAudits != 0 {
 		t.Fatalf("unexpected committed-authorization barrier state: %+v", before)
 	}
 	if _, err := s.svc.ReleaseHold(ctx, s.memberContext(), hold.Booking.ID); err != nil {
@@ -239,6 +245,10 @@ func TestBookingHandoffReleaseAfterCommittedAuthorization(t *testing.T) {
 	}
 	if after.authorizationStatus == "ACTIVE" {
 		t.Fatalf("HANDOFF_ORPHAN_ACTIVE_AUTHORIZATION: booking %s cancelled after authorization %s committed; reservation released and replay did not revoke promise", hold.Booking.ID, created.ID)
+	}
+	if after.authorizationStatus != "CANCELLED" || after.cancelAudits != 1 {
+		t.Fatalf("terminal handoff authorization status/audit = %s/%d, want CANCELLED/1",
+			after.authorizationStatus, after.cancelAudits)
 	}
 }
 
@@ -288,5 +298,319 @@ func TestBookingHandoffTransientStatusWriteRetries(t *testing.T) {
 		final.inventoryConfirmed != baselineInventory.confirmed+2 ||
 		final.reservations != 1 || final.reserves != 1 || final.releases != 0 {
 		t.Fatalf("status retry did not converge exactly once: %+v", final)
+	}
+}
+
+type interruptAfterAuthorizationCommit struct{ application.AuthorizationPort }
+
+func (a interruptAfterAuthorizationCommit) CreateForRequest(ctx context.Context,
+	rc identity.RequestContext, in application.BookingAuthorizationInput,
+) (application.BookingAuthorizationRef, error) {
+	created, err := a.AuthorizationPort.CreateForRequest(ctx, rc, in)
+	if err != nil {
+		return created, err
+	}
+	return created, errors.New("injected worker interruption after authorization commit")
+}
+
+func releasedInterruptedHandoff(t *testing.T) (*server, application.BookingView, outbox.Delivery, handoffInventory) {
+	t.Helper()
+	s, hold, delivery, baseline := handoffBooking(t)
+	if hold.Booking.EntitlementReservationID == nil {
+		t.Fatal("hold has no entitlement reservation")
+	}
+	deps := s.deps
+	deps.Authorizations = interruptAfterAuthorizationCommit{AuthorizationPort: deps.Authorizations}
+	var err error
+	s.svc, err = application.New(deps)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := s.h.Ctx()
+	defer cancel()
+	if err := s.svc.HandleServiceRequestDecided(ctx, delivery); err == nil {
+		t.Fatal("injected post-commit interruption did not stop the delivery")
+	}
+	if _, err := s.svc.ReleaseHold(ctx, s.memberContext(), hold.Booking.ID); err != nil {
+		t.Fatalf("release after interrupted delivery: %v", err)
+	}
+	return s, hold, delivery, baseline
+}
+
+func TestBookingHandoffInterruptedDeliveryRetiresOnReplay(t *testing.T) {
+	s, hold, delivery, baseline := releasedInterruptedHandoff(t)
+	before := readBookingHandoffState(t, s, hold.Booking.ID, *hold.Booking.EntitlementReservationID)
+	if before.bookingStatus != "CANCELLED" || before.authorizationStatus != "ACTIVE" ||
+		before.authorizationID.Valid || before.voucherID.Valid || before.cancelAudits != 0 ||
+		before.reservationStatus != "RELEASED" || before.available != "4.000000" ||
+		before.reserved != "0.000000" || before.consumed != "0.000000" ||
+		before.inventoryHeld != baseline.held || before.inventoryConfirmed != baseline.confirmed ||
+		before.reserves != 1 || before.releases != 1 || before.vouchers != 0 {
+		t.Fatalf("unexpected interrupted handoff state: %+v", before)
+	}
+	ctx, cancel := s.h.Ctx()
+	defer cancel()
+	if err := s.svc.HandleServiceRequestDecided(ctx, delivery); err != nil {
+		t.Fatalf("fresh delivery after interruption: %v", err)
+	}
+	if err := s.svc.HandleServiceRequestDecided(ctx, delivery); err != nil {
+		t.Fatalf("identical delivery after retirement: %v", err)
+	}
+	after := readBookingHandoffState(t, s, hold.Booking.ID, *hold.Booking.EntitlementReservationID)
+	if after.bookingStatus != "CANCELLED" || after.authorizationStatus != "CANCELLED" ||
+		after.authorizationID.Valid || after.voucherID.Valid || after.cancelAudits != 1 ||
+		after.reservationStatus != "RELEASED" || after.available != "4.000000" ||
+		after.reserved != "0.000000" || after.consumed != "0.000000" ||
+		after.inventoryHeld != baseline.held || after.inventoryConfirmed != baseline.confirmed ||
+		after.reserves != 1 || after.releases != 1 || after.vouchers != 0 {
+		t.Fatalf("interrupted handoff replay did not retire exactly once: %+v", after)
+	}
+}
+
+type failRetirementAfterWriteOnce struct {
+	application.AuthorizationPort
+	failed bool
+}
+
+func (a *failRetirementAfterWriteOnce) RetireBookingOrphan(ctx context.Context, tx pgx.Tx,
+	rc identity.RequestContext, in application.BookingOrphanInput,
+) error {
+	if err := a.AuthorizationPort.RetireBookingOrphan(ctx, tx, rc, in); err != nil {
+		return err
+	}
+	if !a.failed {
+		a.failed = true
+		return errors.New("injected post-retirement transaction failure")
+	}
+	return nil
+}
+
+func TestBookingHandoffRetirementFailureRollsBackAndRetries(t *testing.T) {
+	s, hold, delivery, baseline := releasedInterruptedHandoff(t)
+	deps := s.deps
+	stop := &failRetirementAfterWriteOnce{AuthorizationPort: deps.Authorizations}
+	deps.Authorizations = stop
+	var err error
+	s.svc, err = application.New(deps)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := s.h.Ctx()
+	defer cancel()
+	if err := s.svc.HandleServiceRequestDecided(ctx, delivery); err == nil || !stop.failed {
+		t.Fatalf("injected retirement transaction failure = %v", err)
+	}
+	rolledBack := readBookingHandoffState(t, s, hold.Booking.ID, *hold.Booking.EntitlementReservationID)
+	if rolledBack.authorizationStatus != "ACTIVE" || rolledBack.cancelAudits != 0 ||
+		rolledBack.bookingStatus != "CANCELLED" || rolledBack.reservationStatus != "RELEASED" ||
+		rolledBack.inventoryHeld != baseline.held || rolledBack.inventoryConfirmed != baseline.confirmed ||
+		rolledBack.reserves != 1 || rolledBack.releases != 1 || rolledBack.vouchers != 0 {
+		t.Fatalf("retirement failure did not roll back its transaction: %+v", rolledBack)
+	}
+	if err := s.svc.HandleServiceRequestDecided(ctx, delivery); err != nil {
+		t.Fatalf("retirement retry: %v", err)
+	}
+	after := readBookingHandoffState(t, s, hold.Booking.ID, *hold.Booking.EntitlementReservationID)
+	if after.authorizationStatus != "CANCELLED" || after.cancelAudits != 1 ||
+		after.bookingStatus != "CANCELLED" || after.reservationStatus != "RELEASED" ||
+		after.available != "4.000000" || after.reserved != "0.000000" || after.consumed != "0.000000" ||
+		after.inventoryHeld != baseline.held || after.inventoryConfirmed != baseline.confirmed ||
+		after.reserves != 1 || after.releases != 1 || after.vouchers != 0 {
+		t.Fatalf("retirement retry changed ledger or failed to converge: %+v", after)
+	}
+}
+
+func TestBookingHandoffProvenanceRefusesWrongEvidence(t *testing.T) {
+	s, hold, delivery, _ := releasedInterruptedHandoff(t)
+	ctx, cancel := s.h.Ctx()
+	defer cancel()
+	terminal, err := s.svc.GetBooking(ctx, s.deskContext(), hold.Booking.ID)
+	if err != nil || terminal.Booking.ServiceRequestID == nil ||
+		terminal.Booking.EntitlementReservationID == nil {
+		t.Fatalf("read terminal booking provenance: %+v %v", terminal.Booking, err)
+	}
+	snapshot, err := application.DecodeQuoteSnapshot(terminal.Booking.QuoteSnapshot)
+	if err != nil || snapshot.NightConversion == nil {
+		t.Fatalf("read frozen conversion: %+v %v", snapshot, err)
+	}
+	correct := application.BookingOrphanInput{
+		BookingID: hold.Booking.ID, RequestID: *terminal.Booking.ServiceRequestID,
+		PersonID: terminal.Booking.PersonID, ReservationID: *terminal.Booking.EntitlementReservationID,
+		ServiceDefinitionID: snapshot.ServiceDefinitionID,
+		AccountID:           snapshot.NightConversion.AccountID,
+		UnitFactor:          snapshot.NightConversion.UnitFactor,
+		ReservedUnits:       snapshot.NightConversion.ReservedUnits,
+		IdempotencyKey:      "booking:" + hold.Booking.ID.String(),
+	}
+	for _, tc := range []struct {
+		name   string
+		mutate func(*application.BookingOrphanInput)
+	}{
+		{"request", func(in *application.BookingOrphanInput) { in.RequestID = uuid.New() }},
+		{"person", func(in *application.BookingOrphanInput) { in.PersonID = uuid.New() }},
+		{"reservation", func(in *application.BookingOrphanInput) { in.ReservationID = uuid.New() }},
+		{"service", func(in *application.BookingOrphanInput) { in.ServiceDefinitionID = uuid.New() }},
+		{"key", func(in *application.BookingOrphanInput) { in.IdempotencyKey = "booking:" + uuid.NewString() }},
+		{"account", func(in *application.BookingOrphanInput) { in.AccountID = uuid.New() }},
+		{"factor", func(in *application.BookingOrphanInput) { in.UnitFactor = "1" }},
+		{"authorization", func(in *application.BookingOrphanInput) { in.ExpectedAuthorizationID = uuid.New() }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			forged := correct
+			tc.mutate(&forged)
+			err := db.WithTenantTx(ctx, s.h.App, db.TenantContext{TenantID: s.tenant},
+				func(ctx context.Context, tx pgx.Tx) error {
+					if _, err := accommodationpg.NewBookings().LockBooking(ctx, tx, s.tenant, hold.Booking.ID); err != nil {
+						return err
+					}
+					return s.deps.Authorizations.RetireBookingOrphan(ctx, tx,
+						identity.RequestContext{TenantID: s.tenant}, forged)
+				})
+			if !errors.Is(err, application.ErrBookingOrphanProvenance) {
+				t.Fatalf("wrong %s evidence = %v, want provenance refusal", tc.name, err)
+			}
+			state := readBookingHandoffState(t, s, hold.Booking.ID, *hold.Booking.EntitlementReservationID)
+			if state.authorizationStatus != "ACTIVE" || state.cancelAudits != 0 ||
+				state.reserves != 1 || state.releases != 1 || state.vouchers != 0 {
+				t.Fatalf("wrong %s evidence mutated orphan: %+v", tc.name, state)
+			}
+		})
+	}
+	if err := s.svc.HandleServiceRequestDecided(ctx, delivery); err != nil {
+		t.Fatalf("genuine redelivery after forged attempts: %v", err)
+	}
+	state := readBookingHandoffState(t, s, hold.Booking.ID, *hold.Booking.EntitlementReservationID)
+	if state.authorizationStatus != "CANCELLED" || state.cancelAudits != 1 {
+		t.Fatalf("genuine redelivery did not retire orphan: %+v", state)
+	}
+}
+
+func TestBookingHandoffTerminalWithoutAuthorizationIsBenign(t *testing.T) {
+	s, hold, delivery, baseline := handoffBooking(t)
+	if hold.Booking.EntitlementReservationID == nil {
+		t.Fatal("hold has no entitlement reservation")
+	}
+	ctx, cancel := s.h.Ctx()
+	defer cancel()
+	if _, err := s.svc.ReleaseHold(ctx, s.memberContext(), hold.Booking.ID); err != nil {
+		t.Fatalf("release before event delivery: %v", err)
+	}
+	if err := s.svc.HandleServiceRequestDecided(ctx, delivery); err != nil {
+		t.Fatalf("terminal delivery with no authorization: %v", err)
+	}
+	var authorizations int
+	if err := s.h.Admin.QueryRow(ctx, `SELECT count(*) FROM service.authorization
+		WHERE tenant_id=$1 AND idempotency_key=$2`, s.tenant, "booking:"+hold.Booking.ID.String()).
+		Scan(&authorizations); err != nil {
+		t.Fatal(err)
+	}
+	if authorizations != 0 {
+		t.Fatalf("terminal redelivery created %d authorizations", authorizations)
+	}
+	inventory := readHandoffInventory(t, s)
+	if inventory.held != baseline.held || inventory.confirmed != baseline.confirmed {
+		t.Fatalf("terminal redelivery changed inventory: before %+v after %+v", baseline, inventory)
+	}
+}
+
+type wrongOrphanPerson struct{ application.AuthorizationPort }
+
+func (a wrongOrphanPerson) RetireBookingOrphan(ctx context.Context, tx pgx.Tx,
+	rc identity.RequestContext, in application.BookingOrphanInput,
+) error {
+	in.PersonID = uuid.New()
+	return a.AuthorizationPort.RetireBookingOrphan(ctx, tx, rc, in)
+}
+
+func TestBookingHandoffBadProvenanceIsPermanent(t *testing.T) {
+	s, hold, delivery, _ := releasedInterruptedHandoff(t)
+	deps := s.deps
+	deps.Authorizations = wrongOrphanPerson{AuthorizationPort: deps.Authorizations}
+	var err error
+	s.svc, err = application.New(deps)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := s.h.Ctx()
+	defer cancel()
+	err = s.svc.HandleServiceRequestDecided(ctx, delivery)
+	if outbox.KindOf(err) != outbox.KindPermanent {
+		t.Fatalf("wrong persisted orphan provenance = %v, want permanent refusal", err)
+	}
+	state := readBookingHandoffState(t, s, hold.Booking.ID, *hold.Booking.EntitlementReservationID)
+	if state.authorizationStatus != "ACTIVE" || state.cancelAudits != 0 ||
+		state.reserves != 1 || state.releases != 1 {
+		t.Fatalf("permanent provenance refusal mutated orphan: %+v", state)
+	}
+}
+
+func TestBookingHandoffUsedPromiseIsNeverRetired(t *testing.T) {
+	for _, evidence := range []string{"consumed", "redeemed voucher"} {
+		t.Run(evidence, func(t *testing.T) {
+			s, hold, delivery, _ := releasedInterruptedHandoff(t)
+			ctx, cancel := s.h.Ctx()
+			defer cancel()
+			var authorizationID uuid.UUID
+			if err := s.h.Admin.QueryRow(ctx, `SELECT id FROM service.authorization
+				WHERE tenant_id=$1 AND idempotency_key=$2`, s.tenant,
+				"booking:"+hold.Booking.ID.String()).Scan(&authorizationID); err != nil {
+				t.Fatal(err)
+			}
+			// The terminal race itself cannot create use evidence. Inject only the
+			// conflicting persisted fact, then require the subscriber to refuse it.
+			switch evidence {
+			case "consumed":
+				if _, err := s.h.Admin.Exec(ctx, `UPDATE service.authorization
+					SET consumed_total=1 WHERE tenant_id=$1 AND id=$2`, s.tenant, authorizationID); err != nil {
+					t.Fatal(err)
+				}
+			case "redeemed voucher":
+				if _, err := s.h.Admin.Exec(ctx, `INSERT INTO service.voucher
+					(tenant_id,authorization_id,token_hash,token_masked,valid_from,valid_to,status,redeemed_at)
+					VALUES ($1,$2,$3,'***TEST','2026-06-15','2026-06-18','REDEEMED',
+					'2026-06-15T12:00:00Z')`, s.tenant, authorizationID, bytes.Repeat([]byte{7}, 32)); err != nil {
+					t.Fatal(err)
+				}
+			}
+			err := s.svc.HandleServiceRequestDecided(ctx, delivery)
+			if outbox.KindOf(err) != outbox.KindPermanent {
+				t.Fatalf("%s evidence cleanup = %v, want permanent refusal", evidence, err)
+			}
+			state := readBookingHandoffState(t, s, hold.Booking.ID, *hold.Booking.EntitlementReservationID)
+			if state.authorizationStatus != "ACTIVE" || state.cancelAudits != 0 ||
+				state.bookingStatus != "CANCELLED" || state.reservationStatus != "RELEASED" ||
+				state.reserves != 1 || state.releases != 1 {
+				t.Fatalf("%s evidence was retired or changed ledger: %+v", evidence, state)
+			}
+		})
+	}
+}
+
+func TestBookingHandoffConfirmedThenCancelledDecisionReplay(t *testing.T) {
+	s, hold, delivery, _ := handoffBooking(t)
+	ctx, cancel := s.h.Ctx()
+	defer cancel()
+	if err := s.svc.HandleServiceRequestDecided(ctx, delivery); err != nil {
+		t.Fatalf("first decision delivery: %v", err)
+	}
+	confirmed := readBookingHandoffState(t, s, hold.Booking.ID, *hold.Booking.EntitlementReservationID)
+	if confirmed.bookingStatus != "CONFIRMED" || !confirmed.authorizationID.Valid ||
+		!confirmed.voucherID.Valid || confirmed.authorizationStatus != "ACTIVE" {
+		t.Fatalf("decision did not link confirmed booking: %+v", confirmed)
+	}
+	s.clock.At(t, insideFreeWindow)
+	if _, err := s.svc.CancelBooking(ctx, s.memberContext(), hold.Booking.ID, ""); err != nil {
+		t.Fatalf("cancel confirmed booking: %v", err)
+	}
+	before := readBookingHandoffState(t, s, hold.Booking.ID, *hold.Booking.EntitlementReservationID)
+	if before.bookingStatus != "CANCELLED" || !before.authorizationID.Valid {
+		t.Fatalf("cancelled confirmed booking lost historical link: %+v", before)
+	}
+	if err := s.svc.HandleServiceRequestDecided(ctx, delivery); err != nil {
+		t.Fatalf("decision replay for previously confirmed booking: %v", err)
+	}
+	after := readBookingHandoffState(t, s, hold.Booking.ID, *hold.Booking.EntitlementReservationID)
+	if after != before {
+		t.Fatalf("decision replay changed previously confirmed/cancelled booking: before %+v after %+v", before, after)
 	}
 }

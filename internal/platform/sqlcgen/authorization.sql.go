@@ -71,6 +71,66 @@ func (q *Queries) ApplyAuthorizationConsumption(ctx context.Context, arg ApplyAu
 	return result.RowsAffected(), nil
 }
 
+const bookingOrphanEvidence = `-- name: BookingOrphanEvidence :one
+SELECT r.entitlement_account_id, r.reference_type, r.reference_id,
+       r.quantity::text AS quantity, r.consumed_quantity::text AS consumed_quantity,
+       r.released_quantity::text AS released_quantity, r.status,
+       (SELECT count(*) FROM accommodation.booking b
+         WHERE b.tenant_id = r.tenant_id AND b.authorization_id = $1) AS booking_links,
+       (SELECT count(*) FROM service.fulfilment f
+         WHERE f.tenant_id = r.tenant_id AND f.authorization_id = $1) AS fulfilments,
+       (SELECT count(*) FROM service.voucher v
+         WHERE v.tenant_id = r.tenant_id AND v.authorization_id = $1
+           AND v.status = 'REDEEMED') AS redeemed_vouchers,
+       (SELECT count(*) FROM benefit.entitlement_ledger l
+         WHERE l.tenant_id = r.tenant_id AND l.reservation_id = r.id
+           AND l.movement_type = 'CONSUME') AS consumption_movements
+  FROM benefit.entitlement_reservation r
+ WHERE r.tenant_id = $2 AND r.id = $3
+ FOR UPDATE OF r
+`
+
+type BookingOrphanEvidenceParams struct {
+	AuthorizationID uuid.NullUUID
+	TenantID        uuid.UUID
+	ReservationID   uuid.UUID
+}
+
+type BookingOrphanEvidenceRow struct {
+	EntitlementAccountID uuid.UUID
+	ReferenceType        string
+	ReferenceID          uuid.UUID
+	Quantity             string
+	ConsumedQuantity     string
+	ReleasedQuantity     string
+	Status               string
+	BookingLinks         int64
+	Fulfilments          int64
+	RedeemedVouchers     int64
+	ConsumptionMovements int64
+}
+
+// The terminal booking is already locked by the caller. Lock its original reservation
+// while checking whether the promise ever crossed into use or another booking link.
+func (q *Queries) BookingOrphanEvidence(ctx context.Context, arg BookingOrphanEvidenceParams) (BookingOrphanEvidenceRow, error) {
+	row := q.db.QueryRow(ctx, bookingOrphanEvidence, arg.AuthorizationID, arg.TenantID, arg.ReservationID)
+	var i BookingOrphanEvidenceRow
+	err := row.Scan(
+		&i.EntitlementAccountID,
+		&i.ReferenceType,
+		&i.ReferenceID,
+		&i.Quantity,
+		&i.ConsumedQuantity,
+		&i.ReleasedQuantity,
+		&i.Status,
+		&i.BookingLinks,
+		&i.Fulfilments,
+		&i.RedeemedVouchers,
+		&i.ConsumptionMovements,
+	)
+	return i, err
+}
+
 const cancelAuthorization = `-- name: CancelAuthorization :execrows
 UPDATE service.authorization
    SET status             = 'CANCELLED',

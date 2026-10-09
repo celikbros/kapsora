@@ -132,6 +132,26 @@ func (Repository) GetAuthorizationByKey(ctx context.Context, tx pgx.Tx, tenantID
 	return authorizationOf(keyedAuthorizationRow(row)), nil
 }
 
+// BookingOrphanEvidence implements application.Repository.
+func (Repository) BookingOrphanEvidence(ctx context.Context, tx pgx.Tx,
+	tenantID, authorizationID, reservationID uuid.UUID,
+) (application.BookingOrphanEvidence, error) {
+	row, err := sqlcgen.New(tx).BookingOrphanEvidence(ctx, sqlcgen.BookingOrphanEvidenceParams{
+		TenantID: tenantID, AuthorizationID: uuid.NullUUID{UUID: authorizationID, Valid: true},
+		ReservationID: reservationID,
+	})
+	if err != nil {
+		return application.BookingOrphanEvidence{}, fmt.Errorf("authorization: booking orphan evidence: %w", err)
+	}
+	return application.BookingOrphanEvidence{
+		AccountID: row.EntitlementAccountID, ReferenceType: row.ReferenceType,
+		ReferenceID: row.ReferenceID, Quantity: row.Quantity,
+		ConsumedQuantity: row.ConsumedQuantity, ReleasedQuantity: row.ReleasedQuantity,
+		Status: row.Status, BookingLinks: row.BookingLinks, Fulfilments: row.Fulfilments,
+		RedeemedVouchers: row.RedeemedVouchers, ConsumptionMovements: row.ConsumptionMovements,
+	}, nil
+}
+
 // ListAuthorizations implements application.Repository.
 func (Repository) ListAuthorizations(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID,
 	q application.AuthorizationQuery,

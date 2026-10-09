@@ -212,6 +212,24 @@ func (a *Authorizations) CreateForRequest(ctx context.Context, rc identity.Reque
 	}, nil
 }
 
+// RetireBookingOrphan implements accommodationapp.AuthorizationPort in the caller's
+// booking transaction; the authorization module owns all proof and status writes.
+func (a *Authorizations) RetireBookingOrphan(ctx context.Context, tx pgx.Tx,
+	rc identity.RequestContext, in accommodationapp.BookingOrphanInput,
+) error {
+	err := a.svc.RetireBookingOrphanInTx(ctx, tx, rc, authorizationapp.BookingOrphanInput{
+		BookingID: in.BookingID, RequestID: in.RequestID, PersonID: in.PersonID,
+		ReservationID: in.ReservationID, ServiceDefinitionID: in.ServiceDefinitionID,
+		AccountID: in.AccountID, ExpectedAuthorizationID: in.ExpectedAuthorizationID,
+		UnitFactor: in.UnitFactor, ReservedUnits: in.ReservedUnits,
+		IdempotencyKey: in.IdempotencyKey,
+	})
+	if errors.Is(err, authorizationapp.ErrBookingOrphanProvenance) {
+		return fmt.Errorf("%w: %w", accommodationapp.ErrBookingOrphanProvenance, err)
+	}
+	return err
+}
+
 // IssueVoucher implements accommodationapp.AuthorizationPort, in the caller's transaction
 // so the voucher and the `voucher_id` on the booking commit together.
 //

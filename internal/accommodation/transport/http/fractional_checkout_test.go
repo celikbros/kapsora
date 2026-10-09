@@ -386,4 +386,12 @@ func TestFractionalCheckoutStatusFailureRollsBackAndRetrySettles(t *testing.T) {
 		t.Fatalf("retry checkout RELEASE=%d/%s, want 1/1", count, units)
 	}
 	s.fractionalTerminalEvidence(t, booking, "1.000000", 1)
+	if err := s.h.Admin.QueryRow(ctx, `SELECT count(*) FROM system.outbox_event
+		WHERE tenant_id=$1 AND aggregate_id=$2 AND event_type='booking.checked_out'`,
+		s.tenant, booking.Booking.ID).Scan(&checkedOutEvents); err != nil {
+		t.Fatal(err)
+	}
+	if checkedOutEvents != 1 {
+		t.Fatalf("retry checkout outbox events=%d, want 1", checkedOutEvents)
+	}
 }

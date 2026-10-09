@@ -572,6 +572,10 @@ type IssuedBookingVoucher struct {
 type AuthorizationPort interface {
 	CreateForRequest(ctx context.Context, rc identity.RequestContext,
 		in BookingAuthorizationInput) (BookingAuthorizationRef, error)
+	// RetireBookingOrphan retires the exact unused authorization which adopted a
+	// terminal booking's released reservation, inside the booking transaction.
+	RetireBookingOrphan(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
+		in BookingOrphanInput) error
 	IssueVoucher(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
 		in BookingVoucherInput) (IssuedBookingVoucher, error)
 
@@ -602,6 +606,19 @@ type AuthorizationPort interface {
 	Lines(ctx context.Context, tx pgx.Tx, tenantID, authorizationID uuid.UUID) (
 		[]BookingAuthorizationLine, error)
 }
+
+// BookingOrphanInput carries frozen booking provenance across the module boundary.
+// ExpectedAuthorizationID is optional for redelivery after an interrupted worker.
+type BookingOrphanInput struct {
+	BookingID, RequestID, PersonID, ReservationID uuid.UUID
+	ServiceDefinitionID, AccountID                uuid.UUID
+	ExpectedAuthorizationID                       uuid.UUID
+	UnitFactor, ReservedUnits, IdempotencyKey     string
+}
+
+// ErrBookingOrphanProvenance marks a persisted authorization whose identity or use
+// history does not match the terminal booking. Redelivering cannot make it safe.
+var ErrBookingOrphanProvenance = errors.New("accommodation: booking orphan provenance mismatch")
 
 // LodgingPolicyPort is WP-I6-04's SnapshotLodgingPolicy, seen from here: the terms of the
 // contract version behind this stay, stamped with the moment and the property's zone, as
@@ -643,6 +660,12 @@ func (NoAuthorizations) CreateForRequest(context.Context, identity.RequestContex
 	BookingAuthorizationInput,
 ) (BookingAuthorizationRef, error) {
 	return BookingAuthorizationRef{}, errors.New("accommodation: this process cannot create an authorization")
+}
+
+func (NoAuthorizations) RetireBookingOrphan(context.Context, pgx.Tx, identity.RequestContext,
+	BookingOrphanInput,
+) error {
+	return errors.New("accommodation: this process cannot retire an authorization")
 }
 
 // IssueVoucher implements AuthorizationPort.

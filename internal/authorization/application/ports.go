@@ -175,6 +175,22 @@ type AuthorizationItemRecord struct {
 	RowVersion            int64
 }
 
+// BookingOrphanEvidence is the reservation and use history behind a proposed terminal
+// booking cleanup. It is read under the caller's transaction and reservation lock.
+type BookingOrphanEvidence struct {
+	AccountID            uuid.UUID
+	ReferenceType        string
+	ReferenceID          uuid.UUID
+	Quantity             string
+	ConsumedQuantity     string
+	ReleasedQuantity     string
+	Status               string
+	BookingLinks         int64
+	Fulfilments          int64
+	RedeemedVouchers     int64
+	ConsumptionMovements int64
+}
+
 // Remaining is what this line still holds: what was approved less what has been
 // delivered. It is the quantity a release gives back and the ceiling a consume may not
 // pass.
@@ -345,6 +361,7 @@ type Repository interface {
 	// serialise instead of racing each other into two different outcomes.
 	LockAuthorization(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID, scope Scope) (AuthorizationRecord, error)
 	GetAuthorizationByKey(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, key string) (AuthorizationRecord, error)
+	BookingOrphanEvidence(ctx context.Context, tx pgx.Tx, tenantID, authorizationID, reservationID uuid.UUID) (BookingOrphanEvidence, error)
 	ListAuthorizations(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, q AuthorizationQuery) ([]AuthorizationRecord, error)
 	ExtendAuthorization(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID, validTo time.Time, actorID *uuid.UUID, expected int64) error
 	CancelAuthorization(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID, reasonCode string, actorID *uuid.UUID, expected int64) error

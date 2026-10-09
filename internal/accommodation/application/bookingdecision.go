@@ -144,10 +144,10 @@ func (s *Service) bookingOfRequest(ctx context.Context, rc identity.RequestConte
 // anything else means somebody has already been here.
 func (s *Service) approveBooking(ctx context.Context, rc identity.RequestContext, record BookingRecord) error {
 	if !domain.InList(record.Status, domain.HeldBookingStatuses) {
-		// A redelivery of a decision already applied, or a booking somebody released while
-		// the event sat in the queue. Either way there is nothing to do, and doing it
-		// again would undo whatever moved it.
-		return nil
+		// A terminal release may have won after the authorization committed but before
+		// the previous delivery could attach it. Find that persisted key without making
+		// another authorization. Confirmed bookings remain ordinary replays.
+		return s.retireTerminalBookingAuthorization(ctx, rc, record.ID)
 	}
 	if record.ServiceRequestID == nil {
 		return nil
@@ -202,7 +202,7 @@ func (s *Service) approveBooking(ctx context.Context, rc identity.RequestContext
 			return err
 		}
 		if !domain.InList(current.Status, domain.HeldBookingStatuses) {
-			return nil
+			return s.retireLockedTerminalBookingAuthorization(ctx, tx, rc, current, hold.ID)
 		}
 		currentVersionID, _, err := confirmationContractVersion(current.QuoteSnapshot)
 		if err != nil {
@@ -271,6 +271,66 @@ func (s *Service) approveBooking(ctx context.Context, rc identity.RequestContext
 		}
 		return s.notifyBookingConfirmed(ctx, tx, rc.TenantID, current, room, snapshot)
 	})
+}
+
+// retireTerminalBookingAuthorization is the stable replay seam for an approval event
+// delivered after a booking was cancelled or expired. The booking row is locked before
+// authorization provenance and status are inspected in the same tenant transaction.
+func (s *Service) retireTerminalBookingAuthorization(ctx context.Context,
+	rc identity.RequestContext, bookingID uuid.UUID,
+) error {
+	return s.withTx(ctx, rc, func(ctx context.Context, tx pgx.Tx) error {
+		current, err := s.bookings.LockBooking(ctx, tx, rc.TenantID, bookingID)
+		if err != nil {
+			return err
+		}
+		return s.retireLockedTerminalBookingAuthorization(ctx, tx, rc, current, uuid.Nil)
+	})
+}
+
+func (s *Service) retireLockedTerminalBookingAuthorization(ctx context.Context, tx pgx.Tx,
+	rc identity.RequestContext, record BookingRecord, expectedAuthorizationID uuid.UUID,
+) error {
+	if record.Status != domain.BookingCancelled && record.Status != domain.BookingExpired {
+		// A confirmed or completed booking owns its authorization; redelivery is a no-op.
+		return nil
+	}
+	if record.AuthorizationID != nil {
+		// A booking cancelled after successful confirmation retains that link as
+		// history; its usual cancellation path has already settled the promise.
+		return nil
+	}
+	if record.ServiceRequestID == nil || record.EntitlementReservationID == nil {
+		return outbox.Permanent(fmt.Errorf("accommodation: terminal booking %s has incompatible authorization provenance", record.ID))
+	}
+	_, snapshot, err := confirmationContractVersion(record.QuoteSnapshot)
+	if err != nil {
+		return outbox.Permanent(fmt.Errorf("accommodation: terminal booking %s has invalid frozen service: %w", record.ID, err))
+	}
+	if snapshot.ServiceDefinitionID == uuid.Nil {
+		return outbox.Permanent(fmt.Errorf("accommodation: terminal booking %s has no frozen service", record.ID))
+	}
+	if snapshot.Version == quoteSnapshotLegacyContractVersion && snapshot.NightConversion != nil {
+		return outbox.Permanent(fmt.Errorf("accommodation: terminal booking %s has inconsistent legacy conversion", record.ID))
+	}
+	in := BookingOrphanInput{
+		BookingID: record.ID, RequestID: *record.ServiceRequestID, PersonID: record.PersonID,
+		ReservationID:           *record.EntitlementReservationID,
+		ServiceDefinitionID:     snapshot.ServiceDefinitionID,
+		ExpectedAuthorizationID: expectedAuthorizationID,
+		IdempotencyKey:          bookingAuthorizationKey(record.ID),
+		UnitFactor:              "1",
+	}
+	if conversion := snapshot.NightConversion; conversion != nil {
+		in.AccountID = conversion.AccountID
+		in.UnitFactor = conversion.UnitFactor
+		in.ReservedUnits = conversion.ReservedUnits
+	}
+	err = s.auths.RetireBookingOrphan(ctx, tx, rc, in)
+	if errors.Is(err, ErrBookingOrphanProvenance) {
+		return outbox.Permanent(err)
+	}
+	return err
 }
 
 // refuseBooking gives back the room and the nights a refused reservation was holding, once.

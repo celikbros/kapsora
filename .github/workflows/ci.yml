@@ -103,28 +103,65 @@ jobs:
           finally:
               path.write_text(original)
           PY
-      - name: booking handoff transient status retry preflight
+      - name: booking authorization handoff acceptance preflight
         env:
           KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
-        run: go test -count=1 -v -timeout 5m ./internal/accommodation/transport/http -run '^TestBookingHandoffTransientStatusWriteRetries$'
-      - name: committed authorization cancellation race diagnostic
+        run: go test -count=1 -v -timeout 10m ./internal/accommodation/transport/http -run '^TestBookingHandoff'
+      - name: booking handoff old terminal cleanup negative control
         env:
           KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
-          KAPSORA_TEST_BOOKING_HANDOFF_RACE: '1'
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          path = Path('internal/accommodation/application/bookingdecision.go')
+          original = path.read_text()
+          needle = ('err = s.auths.RetireBookingOrphan(ctx, tx, rc, in)\n'
+                    '\tif errors.Is(err, ErrBookingOrphanProvenance) {\n'
+                    '\t\treturn outbox.Permanent(err)\n'
+                    '\t}\n'
+                    '\treturn err')
+          if original.count(needle) != 1:
+              raise SystemExit('Expected exactly one terminal orphan retirement boundary')
+          case = 'TestBookingHandoffReleaseAfterCommittedAuthorization'
+          try:
+              path.write_text(original.replace(needle, 'return nil'))
+              result = subprocess.run(['go', 'test', '-count=1', '-v', '-timeout', '5m',
+                  './internal/accommodation/transport/http', '-run', '^' + case + '$'],
+                  capture_output=True, text=True)
+              output = result.stdout + result.stderr
+              print(output)
+              if result.returncode != 1 or '[build failed]' in output or '--- SKIP:' in output or \
+                      '--- FAIL: ' + case + ' ' not in output or \
+                      'HANDOFF_ORPHAN_ACTIVE_AUTHORIZATION:' not in output:
+                  raise SystemExit('Handoff control failed outside the intended orphan assertion')
+              print('Release race detected the removed terminal authorization retirement')
+          finally:
+              path.write_text(original)
+          PY
+      - name: fractional penalty policy conflict diagnostic
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+          KAPSORA_TEST_FRACTIONAL_PENALTY_REPRODUCTION: '1'
         run: |
           python3 - <<'PY'
           import subprocess
-          case = 'TestBookingHandoffReleaseAfterCommittedAuthorization'
+          expected = {
+              'TestFractionalPenaltyReproductionPenalizedCancellation': 'FRACTIONAL_PENALTY_CANCEL_REFUSAL:',
+              'TestFractionalPenaltyReproductionNoShow': 'FRACTIONAL_PENALTY_NOSHOW_REFUSAL:',
+          }
           result = subprocess.run(['go', 'test', '-count=1', '-v', '-timeout', '5m',
-              './internal/accommodation/transport/http', '-run', '^' + case + '$'],
+              './internal/accommodation/transport/http', '-run', '^(' + '|'.join(expected) + ')$'],
               capture_output=True, text=True)
           output = result.stdout + result.stderr
           print(output)
-          if result.returncode != 1 or '[build failed]' in output or '--- SKIP:' in output or \
-                  '--- FAIL: ' + case + ' ' not in output or \
-                  'HANDOFF_ORPHAN_ACTIVE_AUTHORIZATION:' not in output:
-              raise SystemExit('Handoff diagnostic failed outside the intended orphan assertion')
-          print('Committed authorization cancellation race reproduced; correction remains separate')
+          failures = [line for line in output.splitlines() if line.startswith('--- FAIL: ')]
+          if result.returncode != 1 or '[build failed]' in output or '--- SKIP:' in output or len(failures) != 2:
+              raise SystemExit('Fractional penalty diagnostic did not reach two compiled policy conflicts')
+          for case, assertion in expected.items():
+              if not any(line.startswith('--- FAIL: ' + case + ' ') for line in failures) or assertion not in output:
+                  raise SystemExit('Fractional penalty diagnostic failed outside intended assertion: ' + case)
+          print('Fractional cancellation/no-show policy conflicts reproduced; policy unchanged')
           PY
       - name: eligibility selected enrollment and shared account regression
         env:
