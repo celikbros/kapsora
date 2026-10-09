@@ -468,35 +468,6 @@ func (Bookings) EntitlementCodeForService(ctx context.Context, tx pgx.Tx, tenant
 	return code, nil
 }
 
-// ContractVersionForProperty implements application.BookingRepository.
-func (Bookings) ContractVersionForProperty(ctx context.Context, tx pgx.Tx, tenantID, propertyID uuid.UUID,
-	day time.Time,
-) (uuid.UUID, error) {
-	q := sqlcgen.New(tx)
-	profileID, err := q.GetProviderProfileForProperty(ctx, sqlcgen.GetProviderProfileForPropertyParams{
-		TenantID: tenantID, PropertyID: propertyID,
-	})
-	if errors.Is(err, pgx.ErrNoRows) {
-		return uuid.Nil, application.ErrLodgingTermsMissing
-	}
-	if err != nil {
-		return uuid.Nil, fmt.Errorf("accommodation: read provider profile: %w", err)
-	}
-	versionID, err := q.GetContractVersionForRoomType(ctx, sqlcgen.GetContractVersionForRoomTypeParams{
-		TenantID: tenantID, ProviderProfileID: profileID, ServiceDate: dateOf(day),
-	})
-	if errors.Is(err, pgx.ErrNoRows) {
-		// No published contract version covers the stay, so there are no terms to freeze.
-		// It is the same refusal as terms that were never written: the member is told the
-		// stay cannot be agreed, rather than agreeing to a policy nobody wrote.
-		return uuid.Nil, application.ErrLodgingTermsMissing
-	}
-	if err != nil {
-		return uuid.Nil, fmt.Errorf("accommodation: read contract version: %w", err)
-	}
-	return versionID, nil
-}
-
 // ---------------------------------------------------------------------------
 // The sweeps
 // ---------------------------------------------------------------------------

@@ -689,38 +689,6 @@ func (q *Queries) GetBookingRoomTypeContext(ctx context.Context, arg GetBookingR
 	return i, err
 }
 
-const getContractVersionForRoomType = `-- name: GetContractVersionForRoomType :one
-SELECT cv.id AS contract_version_id
-  FROM contract.contract_version cv
-  JOIN contract.contract c
-    ON c.tenant_id = cv.tenant_id AND c.id = cv.contract_id
- WHERE cv.tenant_id = $1
-   AND c.provider_profile_id = $2
-   AND c.status = 'ACTIVE'
-   AND cv.status = 'PUBLISHED'
-   AND cv.valid_from <= $3::date
-   AND (cv.valid_to IS NULL OR cv.valid_to > $3::date)
- ORDER BY (c.domain_code = 'ACCOMMODATION') DESC, cv.valid_from DESC, cv.id
- LIMIT 1
-`
-
-type GetContractVersionForRoomTypeParams struct {
-	TenantID          uuid.UUID
-	ProviderProfileID uuid.UUID
-	ServiceDate       pgtype.Date
-}
-
-// The contract version the room type's price came from on the first night, which is the
-// version whose lodging terms a confirmation freezes. It is read rather than passed in
-// because the terms have to be the ones behind the price the member was quoted, and a
-// caller that could name a version could freeze somebody else's policy onto this stay.
-func (q *Queries) GetContractVersionForRoomType(ctx context.Context, arg GetContractVersionForRoomTypeParams) (uuid.UUID, error) {
-	row := q.db.QueryRow(ctx, getContractVersionForRoomType, arg.TenantID, arg.ProviderProfileID, arg.ServiceDate)
-	var contract_version_id uuid.UUID
-	err := row.Scan(&contract_version_id)
-	return contract_version_id, err
-}
-
 const getPersonEnrollmentForStay = `-- name: GetPersonEnrollmentForStay :one
 SELECT e.id AS enrollment_id, pr.id AS program_id
   FROM benefit.enrollment e
@@ -762,30 +730,6 @@ func (q *Queries) GetPersonEnrollmentForStay(ctx context.Context, arg GetPersonE
 	var i GetPersonEnrollmentForStayRow
 	err := row.Scan(&i.EnrollmentID, &i.ProgramID)
 	return i, err
-}
-
-const getProviderProfileForProperty = `-- name: GetProviderProfileForProperty :one
-SELECT pp.id AS provider_profile_id
-  FROM provider.provider_profile pp
-  JOIN accommodation.property p
-    ON p.tenant_id = pp.tenant_id AND p.provider_organization_id = pp.tenant_organization_id
- WHERE pp.tenant_id = $1
-   AND p.id = $2
-   AND pp.status = 'ACTIVE'
- ORDER BY pp.id
- LIMIT 1
-`
-
-type GetProviderProfileForPropertyParams struct {
-	TenantID   uuid.UUID
-	PropertyID uuid.UUID
-}
-
-func (q *Queries) GetProviderProfileForProperty(ctx context.Context, arg GetProviderProfileForPropertyParams) (uuid.UUID, error) {
-	row := q.db.QueryRow(ctx, getProviderProfileForProperty, arg.TenantID, arg.PropertyID)
-	var provider_profile_id uuid.UUID
-	err := row.Scan(&provider_profile_id)
-	return provider_profile_id, err
 }
 
 const listBookingGuests = `-- name: ListBookingGuests :many

@@ -336,13 +336,6 @@ type BookingRepository interface {
 	// tenant that did not happen to name the two the same.
 	EntitlementCodeForService(ctx context.Context, tx pgx.Tx, tenantID, enrollmentID,
 		serviceDefinitionID uuid.UUID, day time.Time) (string, error)
-	// ContractVersionForProperty is the published version of the property's own contract
-	// covering the first night. It is read rather than passed in: the terms a booking
-	// freezes have to be the ones behind the price the member was quoted, and a caller
-	// that could name a version could freeze somebody else's policy onto this stay.
-	ContractVersionForProperty(ctx context.Context, tx pgx.Tx, tenantID, propertyID uuid.UUID,
-		day time.Time) (uuid.UUID, error)
-
 	// ListExpiredHolds takes the holds past their deadline FOR UPDATE SKIP LOCKED, so two
 	// schedulers that both believe they lead cannot expire one booking twice.
 	ListExpiredHolds(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID, before time.Time,

@@ -351,36 +351,6 @@ SELECT e.id AS enrollment_id, pr.id AS program_id
  ORDER BY e.id
  LIMIT 1;
 
--- name: GetContractVersionForRoomType :one
--- The contract version the room type's price came from on the first night, which is the
--- version whose lodging terms a confirmation freezes. It is read rather than passed in
--- because the terms have to be the ones behind the price the member was quoted, and a
--- caller that could name a version could freeze somebody else's policy onto this stay.
-SELECT cv.id AS contract_version_id
-  FROM contract.contract_version cv
-  JOIN contract.contract c
-    ON c.tenant_id = cv.tenant_id AND c.id = cv.contract_id
- WHERE cv.tenant_id = sqlc.arg('tenant_id')
-   AND c.provider_profile_id = sqlc.arg('provider_profile_id')
-   AND c.status = 'ACTIVE'
-   AND cv.status = 'PUBLISHED'
-   AND cv.valid_from <= sqlc.arg('service_date')::date
-   AND (cv.valid_to IS NULL OR cv.valid_to > sqlc.arg('service_date')::date)
- ORDER BY (c.domain_code = 'ACCOMMODATION') DESC, cv.valid_from DESC, cv.id
- LIMIT 1;
-
--- name: GetProviderProfileForProperty :one
-SELECT pp.id AS provider_profile_id
-  FROM provider.provider_profile pp
-  JOIN accommodation.property p
-    ON p.tenant_id = pp.tenant_id AND p.provider_organization_id = pp.tenant_organization_id
- WHERE pp.tenant_id = sqlc.arg('tenant_id')
-   AND p.id = sqlc.arg('property_id')
-   AND pp.status = 'ACTIVE'
- ORDER BY pp.id
- LIMIT 1;
-
-
 -- name: GetBookingEntitlementCode :one
 -- Which entitlement a room type's service draws on, under the plan version in force for
 -- this enrollment on the first night (WP-I5-05's `benefit.service_entitlement_mapping`).

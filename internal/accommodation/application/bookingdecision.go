@@ -1,6 +1,7 @@
 package application
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -130,7 +131,8 @@ func (s *Service) bookingOfRequest(ctx context.Context, rc identity.RequestConte
 // approveBooking is the whole of "the reservation was approved", in the order that survives
 // a redelivery.
 //
-// The authorization is taken first, in the authorization module's own transaction, under a
+// The selected contract's policy is checked first, outside booking and inventory locks.
+// Authorization is then taken in its own transaction, under a
 // key derived from the booking. It **adopts** the reservation the hold placed: the
 // authorization's line points at that same row and its deadline is moved out to the end of
 // the stay, so the plan is drawn down exactly once for exactly one stay. A second delivery
@@ -152,7 +154,23 @@ func (s *Service) approveBooking(ctx context.Context, rc identity.RequestContext
 	}
 
 	validTo := domain.Day(record.CheckOut).Add(voucherValidityGrace)
-	snapshot, err := decodeQuoteSnapshot(record.QuoteSnapshot)
+	versionID, snapshot, err := confirmationContractVersion(record.QuoteSnapshot)
+	if err != nil {
+		return outbox.Permanent(fmt.Errorf("accommodation: booking %s cannot confirm: %w", record.ID, err))
+	}
+	var timeZone string
+	err = s.withTx(ctx, rc, func(ctx context.Context, tx pgx.Tx) error {
+		room, err := s.bookings.RoomTypeBookingContext(ctx, tx, rc.TenantID, record.RoomTypeID, nil)
+		if err != nil {
+			return err
+		}
+		timeZone = room.PropertyTimezone
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	policy, err := s.policies.SnapshotPolicy(ctx, rc, versionID, timeZone)
 	if err != nil {
 		return err
 	}
@@ -176,13 +194,21 @@ func (s *Service) approveBooking(ctx context.Context, rc identity.RequestContext
 		if !domain.InList(current.Status, domain.HeldBookingStatuses) {
 			return nil
 		}
+		currentVersionID, _, err := confirmationContractVersion(current.QuoteSnapshot)
+		if err != nil {
+			return outbox.Permanent(fmt.Errorf("accommodation: locked booking %s cannot confirm: %w",
+				current.ID, err))
+		}
+		if currentVersionID != versionID || !bytes.Equal(current.QuoteSnapshot, record.QuoteSnapshot) ||
+			current.ServiceRequestID == nil || *current.ServiceRequestID != *record.ServiceRequestID {
+			return outbox.Permanent(fmt.Errorf("accommodation: booking %s changed after policy preparation", current.ID))
+		}
 		room, err := s.bookings.RoomTypeBookingContext(ctx, tx, rc.TenantID, current.RoomTypeID, nil)
 		if err != nil {
 			return err
 		}
-		policy, err := s.policySnapshot(ctx, tx, rc, current, room.PropertyTimezone)
-		if err != nil {
-			return err
+		if room.PropertyTimezone != timeZone {
+			return fmt.Errorf("accommodation: booking %s property timezone changed after policy preparation", current.ID)
 		}
 		// The nights, in stay_date order and under the same lock every hold takes. The
 		// room stops being held and starts being taken in one statement, so no transaction

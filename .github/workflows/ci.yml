@@ -110,6 +110,74 @@ jobs:
           finally:
               path.write_text(original)
           PY
+      - name: accommodation confirmation contract negative control
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+
+          booking = Path('internal/accommodation/application/booking.go')
+          decision = Path('internal/accommodation/application/bookingdecision.go')
+          originals = {p: p.read_text() for p in [booking, decision]}
+          helper = r'''
+          // Runner-only negative control: reproduce the old provider-wide policy lookup.
+          func (s *Service) negativeControlPolicyVersion(ctx context.Context,
+              rc identity.RequestContext, bookingID uuid.UUID) uuid.UUID {
+              var versionID uuid.UUID
+              err := s.withTx(ctx, rc, func(ctx context.Context, tx pgx.Tx) error {
+                  return tx.QueryRow(ctx, `
+                      SELECT cv.id
+                        FROM accommodation.booking b
+                        JOIN contract.contract_version cv ON cv.tenant_id = b.tenant_id
+                        JOIN contract.contract c
+                          ON c.tenant_id = cv.tenant_id AND c.id = cv.contract_id
+                       WHERE b.tenant_id = $1 AND b.id = $2
+                         AND c.provider_profile_id = (
+                             SELECT pp.id FROM provider.provider_profile pp
+                             JOIN accommodation.property p ON p.tenant_id = pp.tenant_id
+                              AND p.provider_organization_id = pp.tenant_organization_id
+                             WHERE pp.tenant_id = b.tenant_id AND p.id = b.property_id
+                               AND pp.status = 'ACTIVE' ORDER BY pp.id LIMIT 1)
+                         AND c.status = 'ACTIVE' AND cv.status = 'PUBLISHED'
+                         AND cv.valid_from <= b.check_in
+                         AND (cv.valid_to IS NULL OR cv.valid_to > b.check_in)
+                       ORDER BY (c.domain_code = 'ACCOMMODATION') DESC, cv.valid_from DESC, cv.id
+                       LIMIT 1`, rc.TenantID, bookingID).Scan(&versionID)
+              })
+              if err != nil { panic("negative control policy lookup failed") }
+              return versionID
+          }
+          '''
+          replacements = {
+              booking: ('s.policies.SnapshotPolicy(ctx, rc, prepared.contractVersionID, timeZone)',
+                  's.policies.SnapshotPolicy(ctx, rc, s.negativeControlPolicyVersion(ctx, rc, id), timeZone)'),
+              decision: ('s.policies.SnapshotPolicy(ctx, rc, versionID, timeZone)',
+                  's.policies.SnapshotPolicy(ctx, rc, s.negativeControlPolicyVersion(ctx, rc, record.ID), timeZone)')
+          }
+          case = 'TestBookingContractBindingFirstNightPolicyWinsPreflightAndApproval'
+          try:
+              for path, (needle, replacement) in replacements.items():
+                  if originals[path].count(needle) != 1:
+                      raise SystemExit('Expected one exact policy lookup in ' + str(path))
+                  mutated = originals[path].replace(needle, replacement)
+                  path.write_text(mutated + (helper if path == booking else ''))
+              result = subprocess.run(['go', 'test', '-count=1', '-v', '-timeout', '5m',
+                  './internal/accommodation/transport/http', '-run', '^' + case + '$'],
+                  capture_output=True, text=True)
+              output = result.stdout + result.stderr
+              print(output)
+              if result.returncode != 1 or '[build failed]' in output:
+                  raise SystemExit('Negative control did not fail as a compiled test')
+              if '--- FAIL: ' + case + ' ' not in output or \
+                      "want selected A's version, 48 hours and 100 percent" not in output:
+                  raise SystemExit('Negative control did not expose the wrong frozen policy')
+              print('Exact contract regression detected the old provider-wide policy lookup')
+          finally:
+              for path, original in originals.items():
+                  path.write_text(original)
+          PY
 
   contracts:
     name: OpenAPI lint, generated code, breaking changes

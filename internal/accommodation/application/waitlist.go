@@ -256,8 +256,29 @@ func (s *Service) AcceptWaitlistOffer(ctx context.Context, rc identity.RequestCo
 	if s.bookings == nil {
 		return WaitlistView{}, ErrWaitlistEntryNotFound
 	}
-	var out WaitlistView
+	var offeredBookingID uuid.UUID
 	err := s.withTx(ctx, rc, func(ctx context.Context, tx pgx.Tx) error {
+		entry, err := s.bookings.GetWaitlistEntry(ctx, tx, rc.TenantID, id, personBoundary(rc),
+			scopeOf(rc))
+		if err != nil {
+			return err
+		}
+		if entry.Status != WaitlistOffered || entry.OfferedBookingID == nil ||
+			entry.OfferExpiresAt == nil || !s.now().UTC().Before(*entry.OfferExpiresAt) {
+			return ErrWaitlistNotOffered
+		}
+		offeredBookingID = *entry.OfferedBookingID
+		return nil
+	})
+	if err != nil {
+		return WaitlistView{}, err
+	}
+	prepared, err := s.prepareConfirmation(ctx, rc, offeredBookingID)
+	if err != nil {
+		return WaitlistView{}, err
+	}
+	var out WaitlistView
+	err = s.withTx(ctx, rc, func(ctx context.Context, tx pgx.Tx) error {
 		if _, err := s.bookings.GetWaitlistEntry(ctx, tx, rc.TenantID, id, personBoundary(rc),
 			scopeOf(rc)); err != nil {
 			return err
@@ -266,10 +287,12 @@ func (s *Service) AcceptWaitlistOffer(ctx context.Context, rc identity.RequestCo
 		if err != nil {
 			return err
 		}
-		if entry.Status != WaitlistOffered || entry.OfferedBookingID == nil {
+		if entry.Status != WaitlistOffered || entry.OfferedBookingID == nil ||
+			*entry.OfferedBookingID != offeredBookingID || entry.OfferExpiresAt == nil ||
+			!s.now().UTC().Before(*entry.OfferExpiresAt) {
 			return ErrWaitlistNotOffered
 		}
-		booking, err := s.confirm(ctx, tx, rc, *entry.OfferedBookingID)
+		booking, err := s.confirm(ctx, tx, rc, offeredBookingID, prepared)
 		if err != nil {
 			return err
 		}
