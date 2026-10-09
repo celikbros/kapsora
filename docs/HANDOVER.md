@@ -1318,10 +1318,19 @@ It honors the actual first-night price contract's nullable
 override and retains the tenant fallback, without changing prices, public API, grants or
 schema. No live booking/payment journey is rerun. The broader confirmation-contract selector
 remains separately recorded. The [payer-boundary correction](delegation/WP-PC06-contract-payer-boundary.md)
-is the next bounded implementation: the existing enrollment-derived payer set must also
-filter price candidates before ranking. This duration correction does not certify either
-boundary. Local schema 58 application still requires the pending explicit approval;
-server reload remains operator-owned.
+passed bounded isolated acceptance on `2128ee6`: all six jobs in
+[CI run 37952656758](https://github.com/celikbros/kapsora/actions/runs/37952656758) and
+59 accommodation HTTP/database functions passed without skips (103.333 s). Candidate
+prices now use the enrollment-derived payer set before ranking. The isolated negative
+control restores the old unscoped behavior and both wrong-payer regressions detect it.
+Explicit-program narrowing and omitted-program union remain; full enrollment coherence
+is not certified. [Exact confirmation binding](delegation/WP-PC06-confirmation-contract-binding.md)
+is now ACTIVE: new holds retain first-night contract identity and both confirmation paths
+must read that contract's policy before new authorization adoption. Existing v1 history
+remains readable, but outstanding legacy held/pending rows require a separate rollout
+inspection/recovery decision; pending bookings do not automatically expire through the
+HOLD sweep. No live recovery action is authorized. Local schema 58 application still
+requires the pending explicit approval; server reload remains operator-owned.
 
 ### PC-06 technical acceptance checkpoint (2026-10-03)
 

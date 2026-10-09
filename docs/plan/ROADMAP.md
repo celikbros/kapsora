@@ -164,8 +164,12 @@ has bounded technical acceptance on `5545c63`: all six jobs in
 [CI run 37945512490](https://github.com/celikbros/kapsora/actions/runs/37945512490) and
 53 accommodation HTTP/database functions passed without skips. No settings grant or
 implementation is included yet. The [payer-boundary correction](../delegation/WP-PC06-contract-payer-boundary.md)
-is ACTIVE under the existing selection policy; broader confirmation-contract identity and
-multi-enrollment coherence remain separate. Owner/calendar gates remain open.
+passed bounded isolated acceptance on `2128ee6`: all six jobs in
+[CI run 37952656758](https://github.com/celikbros/kapsora/actions/runs/37952656758),
+59 accommodation test functions without skips and the intended negative-control failures.
+[Exact confirmation-contract identity](../delegation/WP-PC06-confirmation-contract-binding.md)
+is ACTIVE for source/isolated tests; legacy pending inspection/recovery remains a rollout
+gate. Multi-enrollment coherence and owner/calendar gates remain separate.
 
 ## Current product completion roadmap (2026-09-22)
 

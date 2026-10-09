@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Status | ACTIVE; implementation pending |
+| Status | Bounded isolated technical acceptance passed on `2128ee6` |
 | Planned | 2026-10-09, gpt-6-astra |
 | Outcome | Only contracts of the member's enrollment-derived payers enter accommodation price selection |
 | Migration / public API / permissions | None; no grants or role changes |
@@ -129,3 +129,27 @@ bookings have no winning identity: a current price or matching amount cannot rel
 reconstruct it. Explicitly decide legacy snapshot compatibility before implementing that
 package; do not silently reuse the broad latest-contract fallback or rewrite confirmed
 policy snapshots. This package neither changes confirmation nor certifies that boundary.
+
+## 6. Accepted evidence — 2026-10-09
+
+All six jobs passed on `2128ee6` in
+[CI run 37952656758](https://github.com/celikbros/kapsora/actions/runs/37952656758).
+The full accommodation HTTP suite passed 59 test functions without skips (103.333 s),
+including six payer regression functions. The high-priority foreign payer cannot replace
+A's 3000 TRY quote or A's 30-minute HTTP hold; booking/reservation expiries match, and one
+reservation and one RESERVE movement are recorded. Wrong-payer ties no longer create false
+ambiguity; same-payer ties and foreign-only prices still refuse without hold effects.
+Tenant-bound repository tests prove nil/empty fail closed and A/B/union filtering. Actual
+enrollment lookup and HTTP searches preserve omitted-program union and explicit-A narrowing;
+unenrolled, suspended and future program cases cannot widen scope.
+
+The isolated negative control temporarily removes only the payer predicate, retaining SQL
+parameter typing, and restores the generated file afterward. Both named regressions fail
+at their intended assertions: A-only incorrectly receives B's 12000 TRY quote, and B's
+equal rank makes A's quote unavailable. Normal production tests passed before this control;
+the expected negative-control failures are not a failing CI job.
+
+Local application/selector tests, compilation, vet, compatible scoped lint (zero issues),
+formatting and unchanged sqlc regeneration pass. Local DB tests deliberately skip; schema
+remains 57, dirty=false. No grant, migration, server lifecycle or live booking/payment
+was changed. Exact confirmation binding and multi-enrollment coherence remain separate.
