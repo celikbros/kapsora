@@ -11,6 +11,7 @@ import (
 
 	"github.com/celikbros/kapsora/api/generated/kapsorav1"
 	"github.com/celikbros/kapsora/internal/accommodation/application"
+	servicerequestdomain "github.com/celikbros/kapsora/internal/servicerequest/domain"
 )
 
 // These tests deliberately fail against the accepted factor-1 implementation. They
@@ -254,5 +255,63 @@ func TestNightConversionBalanceOnePointFiveFactorHalfStay3(t *testing.T) {
 	_, units := s.conversionReservation(t, view.Booking.ID)
 	if units != "1.500000" {
 		t.Fatalf("NIGHT_CONVERSION_BALANCE1_5_UNITS: reserved %s, want 1.500000", units)
+	}
+}
+
+func TestNightConversionAdoptionRetainsFactor(t *testing.T) {
+	requireNightConversionReproduction(t)
+	s := newServer(t)
+	s.clock.At(t, "2026-06-13T09:00:00Z")
+	s.putLodgingTerms(t)
+	s.replaceNightPlan(t, "4", "2")
+	quote := s.conversionQuote(t, "2026-06-17", "4", "2")
+	if quote == nil || conversionPayerNights(quote) != "900,900" ||
+		quote.TotalAmount != "2000" || quote.PayerAmount != "1800" || quote.MemberAmount != "200" {
+		t.Fatalf("adoption prerequisite search quote = %+v", quote)
+	}
+	view, snapshot := s.conversionHold(t, "2026-06-17")
+	if snapshot.CoveredNights != 2 || view.Booking.EntitlementReservationID == nil {
+		t.Fatalf("adoption prerequisite hold = %+v %+v", view.Booking, snapshot)
+	}
+	reservationID := *view.Booking.EntitlementReservationID
+	// Old code reserves two units rather than four. This test intentionally carries
+	// that old hold through submission to isolate the separate adoption-factor bug.
+	s.conversionReservation(t, view.Booking.ID)
+	ctx, cancel := s.h.Ctx()
+	defer cancel()
+	confirmed, err := s.svc.ConfirmBooking(ctx, s.memberContext(), view.Booking.ID)
+	if err != nil || confirmed.Booking.ServiceRequestID == nil {
+		t.Fatalf("adoption prerequisite confirmation = %+v, %v", confirmed.Booking, err)
+	}
+	requestID := *confirmed.Booking.ServiceRequestID
+	s.decideRequest(t, requestID, servicerequestdomain.StatusApproved)
+	s.deliverDecision(t, requestID)
+	final, err := s.svc.GetBooking(ctx, s.deskContext(), view.Booking.ID)
+	if err != nil || final.Booking.Status != "CONFIRMED" || final.Booking.AuthorizationID == nil {
+		t.Fatalf("adoption prerequisite booking = %+v, %v", final.Booking, err)
+	}
+	var itemReservation uuid.UUID
+	var approved, factor string
+	if err := s.h.Admin.QueryRow(ctx, `SELECT approved_quantity::text,
+		entitlement_unit_factor::text,entitlement_reservation_id
+		FROM service.authorization_item WHERE tenant_id=$1 AND authorization_id=$2`,
+		s.tenant, *final.Booking.AuthorizationID).Scan(&approved, &factor, &itemReservation); err != nil {
+		t.Fatalf("adoption prerequisite authorization item: %v", err)
+	}
+	if approved != "2.000000" || itemReservation != reservationID {
+		t.Fatalf("adoption prerequisite service quantity/reservation = %s/%s, want 2/%s",
+			approved, itemReservation, reservationID)
+	}
+	var reserveMovements int
+	if err := s.h.Admin.QueryRow(ctx, `SELECT count(*) FROM benefit.entitlement_ledger
+		WHERE tenant_id=$1 AND reference_id=$2 AND movement_type='RESERVE'`,
+		s.tenant, view.Booking.ID).Scan(&reserveMovements); err != nil {
+		t.Fatal(err)
+	}
+	if reserveMovements != 1 {
+		t.Fatalf("adoption prerequisite RESERVE movements = %d, want one", reserveMovements)
+	}
+	if factor != "2.000000" {
+		t.Fatalf("NIGHT_CONVERSION_ADOPTION_FACTOR: authorization factor = %s, want 2.000000", factor)
 	}
 }

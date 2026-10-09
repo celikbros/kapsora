@@ -205,15 +205,24 @@ conversion design. No new public field or UI flow is planned. Allocation/price f
 contract ranking and owner/calendar gates remain separate. An unexpected schema/public
 interface requirement is a concrete review point, not permission to silently broaden scope.
 
-Enrollment/account acceptance is complete. Three focused SQL/HTTP reproduction tests
+Enrollment/account acceptance is complete. Four focused SQL/HTTP reproduction tests
 and an early isolated CI diagnostic are prepared; production conversion code is unchanged.
 The tests are deliberately opt-in (`KAPSORA_TEST_NIGHT_CONVERSION_REPRODUCTION=1`) until
-implementation: the diagnostic requires three compiled, unskipped failures at the stated
-coverage/reserved-unit assertions. Their default skips are not functional acceptance.
+implementation: the diagnostic requires four compiled, unskipped failures at the stated
+coverage/reserved-unit and authorization-factor assertions. Their default skips are not functional acceptance.
 Fixture mappings are set while DRAFT, then published; the superseded same-code account
 is frozen so it cannot mask the fractional-balance search. Isolated reproduction results
 must be recorded before implementation. Runtime verification remains operator
 controlled and separate from CI; no affected live row or rollout deadline is asserted.
+
+The three-case diagnostic on `e261d60` completed successfully in
+[CI run 37986149082](https://github.com/celikbros/kapsora/actions/runs/37986149082),
+meaning each deliberately failing regression reached its intended defect assertion.
+This is old-behavior reproduction, not passing conversion functionality or final CI
+acceptance. A fourth dedicated adoption regression is added next: it carries the old
+two-unit hold through real confirmation/approval, then requires factor 2 on the item,
+two approved service nights, the original reservation and one RESERVE. It does not
+assert converted hold units early, which would hide the independent adoption defect.
 
 
 

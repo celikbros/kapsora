@@ -76,6 +76,7 @@ jobs:
               'TestNightConversionBalance3Factor2Stay2': 'NIGHT_CONVERSION_BALANCE3_COVERAGE:',
               'TestNightConversionBalance4Factor2Stay2': 'NIGHT_CONVERSION_BALANCE4_UNITS:',
               'TestNightConversionBalanceOnePointFiveFactorHalfStay3': 'NIGHT_CONVERSION_BALANCE1_5_COVERAGE:',
+              'TestNightConversionAdoptionRetainsFactor': 'NIGHT_CONVERSION_ADOPTION_FACTOR:',
           }
           result = subprocess.run([
               'go', 'test', '-count=1', '-v', '-timeout', '5m',
@@ -88,13 +89,13 @@ jobs:
               raise SystemExit('NIGHT reproduction did not produce compiled, unskipped test failures')
           failures = [line for line in output.splitlines() if line.startswith('--- FAIL: ')]
           if len(failures) != len(expected):
-              raise SystemExit('NIGHT reproduction did not fail exactly the three targeted tests')
+              raise SystemExit('NIGHT reproduction did not fail exactly the four targeted tests')
           for case, assertion in expected.items():
               if not any(line.startswith('--- FAIL: ' + case + ' ') for line in failures):
                   raise SystemExit('NIGHT reproduction did not reach ' + case)
               if assertion not in output:
                   raise SystemExit('NIGHT reproduction failed outside intended assertion: ' + case)
-          print('All three NIGHT conversion defects reproduced at their intended semantic assertions')
+          print('All four NIGHT conversion defects reproduced at their intended semantic assertions')
           PY
       - name: eligibility selected enrollment and shared account regression
         env:
