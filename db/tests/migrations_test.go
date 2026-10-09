@@ -3,14 +3,56 @@
 package dbtests
 
 import (
+	"context"
 	"testing"
+
+	"github.com/google/uuid"
 
 	"github.com/celikbros/kapsora/internal/platform/dbmigrate"
 	"github.com/celikbros/kapsora/internal/platform/dbtest"
 )
 
+func TestInvitationMigration56To57PreservesAcceptedExisting(t *testing.T) {
+	h := dbtest.NewAtVersion(t, 56)
+	ctx := context.Background()
+	tenantID := h.CreateTenant("INV_UPGRADE")
+	var actorID, memberID, invitationID uuid.UUID
+	if err := h.Admin.QueryRow(ctx, `INSERT INTO iam.actor(identity_issuer,identity_subject,actor_type,display_name,status)
+	 VALUES('kapsora','migration-existing','HUMAN','Existing','ACTIVE') RETURNING id`).Scan(&actorID); err != nil {
+		t.Fatal(err)
+	}
+	if err := h.Admin.QueryRow(ctx, `INSERT INTO iam.tenant_membership(tenant_id,actor_id,created_by)
+	 VALUES($1,$2,$2) RETURNING id`, tenantID, actorID).Scan(&memberID); err != nil {
+		t.Fatal(err)
+	}
+	proof := make([]byte, 32)
+	if err := h.Admin.QueryRow(ctx, `INSERT INTO iam.tenant_invitation(tenant_id,masked_recipient,proof_digest,
+	 expires_at,status,accepted_actor_id,accepted_membership_id,accept_key,terminal_at)
+	 VALUES($1,'e***@***',$2,clock_timestamp()+interval '1 day','ACCEPTED',$3,$4,'existing-key-0001',clock_timestamp()) RETURNING id`,
+		tenantID, proof, actorID, memberID).Scan(&invitationID); err != nil {
+		t.Fatal(err)
+	}
+	st, err := dbmigrate.Up(h.AdminURL)
+	if err != nil || st.Version != 57 || st.Dirty {
+		t.Fatalf("upgrade: %+v %v", st, err)
+	}
+	var mode string
+	var fingerprint []byte
+	var preservedActor, preservedMember uuid.UUID
+	if err := h.Admin.QueryRow(ctx, `SELECT accepted_mode,accept_new_fingerprint,accepted_actor_id,accepted_membership_id
+	 FROM iam.tenant_invitation WHERE id=$1`, invitationID).Scan(&mode, &fingerprint, &preservedActor, &preservedMember); err != nil {
+		t.Fatal(err)
+	}
+	if mode != "EXISTING" || fingerprint != nil || preservedActor != actorID || preservedMember != memberID {
+		t.Fatal("B1 accepted outcome changed by B2 migration")
+	}
+	if _, err := h.Admin.Exec(ctx, `UPDATE iam.tenant_invitation SET accepted_mode=NULL WHERE id=$1`, invitationID); err == nil {
+		t.Fatal("accepted invitation allowed a NULL acceptance mode")
+	}
+}
+
 // expectedSchemaVersion is the number of the newest migration file.
-const expectedSchemaVersion = 56
+const expectedSchemaVersion = 57
 
 func TestMigrateUpFromEmptyDatabase(t *testing.T) {
 	h := dbtest.New(t)

@@ -17,6 +17,7 @@ export type {
   CreateTenantInvitationRequest,
   InspectInvitationResponse,
   AcceptExistingInvitationResponse,
+  AcceptNewInvitationResponse,
 } from './admin';
 export type {
   CreateOrganizationRequest,

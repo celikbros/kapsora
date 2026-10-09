@@ -258,6 +258,99 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+  /api/v1/invitations/inspect-new:
+    post:
+      tags: [Identity]
+      operationId: inspectNewInvitation
+      security: []
+      description: Anonymous proof inspection for a pending invitation. Requires the configured invitation origin, JSON media type and X-Invitation-Request; all terminal outcomes are unavailable. No session is loaded and every response is no-store.
+      parameters:
+        - $ref: '#/components/parameters/InvitationRequestMarker'
+        - $ref: '#/components/parameters/InvitationOrigin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InspectInvitationRequest'
+      responses:
+        '200':
+          description: Valid pending invitation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InspectInvitationResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/invitations/accept-new:
+    post:
+      tags: [Identity]
+      operationId: acceptNewInvitation
+      security: []
+      description: Anonymous consent and chosen-password creation of one active zero-grant account and membership. Requires the configured invitation origin, JSON media type and X-Invitation-Request. Returns no session or cookie; exact retry requires the current password. Every response is no-store.
+      parameters:
+        - $ref: '#/components/parameters/InvitationRequestMarker'
+        - $ref: '#/components/parameters/InvitationOrigin'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcceptNewInvitationRequest'
+      responses:
+        '200':
+          description: New account and tenant membership awaiting role assignment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptNewInvitationResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/invitations/acceptance-receipt:
+    post:
+      tags: [Identity]
+      operationId: recoverNewInvitationAcceptance
+      security: []
+      description: Private 24-hour receipt recovery using the invitation proof and accepted actor's current password. Requires the configured invitation origin, JSON media type and X-Invitation-Request. Returns no session or cookie; every response is no-store.
+      parameters:
+        - $ref: '#/components/parameters/InvitationRequestMarker'
+        - $ref: '#/components/parameters/InvitationOrigin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvitationAcceptanceReceiptRequest'
+      responses:
+        '200':
+          description: Previously accepted new account outcome
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptNewInvitationResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /api/v1/admin/users:
     get:
       tags: [Identity]
@@ -14384,6 +14477,21 @@ components:
           scopes:
             kapsora.api: Call KAPSORA APIs
   parameters:
+    InvitationRequestMarker:
+      name: X-Invitation-Request
+      in: header
+      required: true
+      description: Must be exactly 1 on anonymous invitation requests.
+      schema:
+        type: string
+        const: '1'
+    InvitationOrigin:
+      name: Origin
+      in: header
+      required: true
+      description: Must exactly match the origin of the configured invitation link base.
+      schema:
+        type: string
     AppHeader:
       name: X-Kapsora-App
       in: header
@@ -15179,6 +15287,66 @@ components:
         accessPending:
           type: boolean
           description: True when the accepted membership currently has no effective role permissions.
+    AcceptNewInvitationRequest:
+      type: object
+      additionalProperties: false
+      required: [code, displayName, password, confirmed]
+      properties:
+        code:
+          type: string
+          minLength: 75
+          maxLength: 160
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 200
+        password:
+          type: string
+          format: password
+          minLength: 12
+          maxLength: 1024
+          writeOnly: true
+        confirmed:
+          type: boolean
+          const: true
+    InvitationAcceptanceReceiptRequest:
+      type: object
+      additionalProperties: false
+      required: [code, password]
+      properties:
+        code:
+          type: string
+          minLength: 75
+          maxLength: 160
+        password:
+          type: string
+          format: password
+          maxLength: 1024
+          writeOnly: true
+    AcceptNewInvitationResponse:
+      type: object
+      additionalProperties: false
+      required: [tenantId, tenantDisplayName, membershipId, membershipStatus, accessPending, loginHandle, recoveryExpiresAt]
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        tenantDisplayName:
+          type: string
+        membershipId:
+          type: string
+          format: uuid
+        membershipStatus:
+          type: string
+          const: ACTIVE
+        accessPending:
+          type: boolean
+        loginHandle:
+          type: string
+          pattern: '^k_[0-9a-f]{32}$'
+        recoveryExpiresAt:
+          type: string
+          format: date-time
     TenantMembershipStatus:
       type: string
       enum: [PENDING, ACTIVE, SUSPENDED, REVOKED]

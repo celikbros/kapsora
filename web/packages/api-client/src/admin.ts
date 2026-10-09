@@ -16,6 +16,13 @@ export type CreateTenantInvitationRequest = components['schemas']['CreateTenantI
 export type InspectInvitationResponse = components['schemas']['InspectInvitationResponse'];
 export type AcceptExistingInvitationResponse =
   components['schemas']['AcceptExistingInvitationResponse'];
+export type AcceptNewInvitationResponse = components['schemas']['AcceptNewInvitationResponse'];
+// Fetch supplies Origin in browsers; script cannot set this forbidden header. The assertion
+// satisfies the generated server requirement without putting a synthetic Origin on Request.
+const anonymousHeaders = { 'X-Invitation-Request': '1' } as {
+  Origin: string;
+  'X-Invitation-Request': '1';
+};
 export type TenantInvitationQuery = {
   cursor?: string;
   limit?: number;
@@ -143,6 +150,44 @@ export function adminOperations(client: KapsoraClient) {
           client.POST('/api/v1/invitations/accept-existing', {
             params: { header: { 'Idempotency-Key': idempotencyKey } },
             body: { code, confirmed: true },
+          }),
+        )
+      ).data;
+    },
+    async inspectNewInvitation(code: string): Promise<InspectInvitationResponse> {
+      return (
+        await unwrap(
+          client.POST('/api/v1/invitations/inspect-new', {
+            params: { header: anonymousHeaders },
+            body: { code },
+          }),
+        )
+      ).data;
+    },
+    async acceptNewInvitation(
+      code: string,
+      displayName: string,
+      password: string,
+      idempotencyKey: string,
+    ): Promise<AcceptNewInvitationResponse> {
+      return (
+        await unwrap(
+          client.POST('/api/v1/invitations/accept-new', {
+            params: { header: { ...anonymousHeaders, 'Idempotency-Key': idempotencyKey } },
+            body: { code, displayName, password, confirmed: true },
+          }),
+        )
+      ).data;
+    },
+    async recoverNewInvitation(
+      code: string,
+      password: string,
+    ): Promise<AcceptNewInvitationResponse> {
+      return (
+        await unwrap(
+          client.POST('/api/v1/invitations/acceptance-receipt', {
+            params: { header: anonymousHeaders },
+            body: { code, password },
           }),
         )
       ).data;

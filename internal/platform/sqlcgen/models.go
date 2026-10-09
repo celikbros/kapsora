@@ -1482,6 +1482,8 @@ type IamTenantInvitation struct {
 	ExpiresAt            time.Time
 	TerminalAt           *time.Time
 	RowVersion           int64
+	AcceptedMode         *string
+	AcceptNewFingerprint []byte
 }
 
 type IamTenantInvitationCreateReceipt struct {

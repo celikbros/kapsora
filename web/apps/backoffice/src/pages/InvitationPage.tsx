@@ -11,6 +11,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useOps } from '../api';
 import { problemOf } from '../problems';
+import { AnonymousInvitationPage } from './AnonymousInvitationPage';
 
 interface AcceptCommand {
   context: string;
@@ -32,6 +33,12 @@ function recipientContext(state: ReturnType<ReturnType<typeof useSessionStore>['
 
 /** Fixed proof-entry page, available before any tenant or application grant is selected. */
 export function InvitationPage() {
+  const status = useSession((state) => state.status);
+  if (status !== 'authenticated') return <AnonymousInvitationPage />;
+  return <ExistingInvitationPage />;
+}
+
+function ExistingInvitationPage() {
   const { t } = useTranslation();
   const store = useSessionStore();
   const ops = useOps();
@@ -181,7 +188,7 @@ export function InvitationPage() {
       <Card className="w-full max-w-xl">
         <p className="text-fg-muted text-xs font-semibold tracking-wide">KAPSORA</p>
         <h1 className="mt-2 text-2xl font-semibold">{t('invitation.title')}</h1>
-        <p className="text-fg-muted mt-2 text-sm">{t('invitation.existingOnly')}</p>
+        <p className="text-fg-muted mt-2 text-sm">{t('invitation.existingAccountIntro')}</p>
         <div className="border-line mt-5 flex flex-wrap items-center justify-between gap-2 border-y py-3 text-sm">
           <span>{t('invitation.signedInAs', { name: accountName })}</span>
           <Button

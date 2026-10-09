@@ -21,13 +21,13 @@ import (
 
 // Defines values for AcceptExistingInvitationRequestConfirmed.
 const (
-	True AcceptExistingInvitationRequestConfirmed = true
+	AcceptExistingInvitationRequestConfirmedTrue AcceptExistingInvitationRequestConfirmed = true
 )
 
 // Valid indicates whether the value is a known member of the AcceptExistingInvitationRequestConfirmed enum.
 func (e AcceptExistingInvitationRequestConfirmed) Valid() bool {
 	switch e {
-	case True:
+	case AcceptExistingInvitationRequestConfirmedTrue:
 		return true
 	default:
 		return false
@@ -43,6 +43,36 @@ const (
 func (e AcceptExistingInvitationResponseMembershipStatus) Valid() bool {
 	switch e {
 	case AcceptExistingInvitationResponseMembershipStatusACTIVE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AcceptNewInvitationRequestConfirmed.
+const (
+	AcceptNewInvitationRequestConfirmedTrue AcceptNewInvitationRequestConfirmed = true
+)
+
+// Valid indicates whether the value is a known member of the AcceptNewInvitationRequestConfirmed enum.
+func (e AcceptNewInvitationRequestConfirmed) Valid() bool {
+	switch e {
+	case AcceptNewInvitationRequestConfirmedTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AcceptNewInvitationResponseMembershipStatus.
+const (
+	AcceptNewInvitationResponseMembershipStatusACTIVE AcceptNewInvitationResponseMembershipStatus = "ACTIVE"
+)
+
+// Valid indicates whether the value is a known member of the AcceptNewInvitationResponseMembershipStatus enum.
+func (e AcceptNewInvitationResponseMembershipStatus) Valid() bool {
+	switch e {
+	case AcceptNewInvitationResponseMembershipStatusACTIVE:
 		return true
 	default:
 		return false
@@ -4627,6 +4657,21 @@ func (e AppHeader) Valid() bool {
 	}
 }
 
+// Defines values for InvitationRequestMarker.
+const (
+	InvitationRequestMarkerN1 InvitationRequestMarker = "1"
+)
+
+// Valid indicates whether the value is a known member of the InvitationRequestMarker enum.
+func (e InvitationRequestMarker) Valid() bool {
+	switch e {
+	case InvitationRequestMarkerN1:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListClaimsParamsXAccessPurpose.
 const (
 	ListClaimsParamsXAccessPurposeAUDIT            ListClaimsParamsXAccessPurpose = "AUDIT"
@@ -5590,6 +5635,51 @@ func (e PutStaySegmentsParamsXAccessProjection) Valid() bool {
 	}
 }
 
+// Defines values for AcceptNewInvitationParamsXInvitationRequest.
+const (
+	AcceptNewInvitationParamsXInvitationRequestN1 AcceptNewInvitationParamsXInvitationRequest = "1"
+)
+
+// Valid indicates whether the value is a known member of the AcceptNewInvitationParamsXInvitationRequest enum.
+func (e AcceptNewInvitationParamsXInvitationRequest) Valid() bool {
+	switch e {
+	case AcceptNewInvitationParamsXInvitationRequestN1:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RecoverNewInvitationAcceptanceParamsXInvitationRequest.
+const (
+	RecoverNewInvitationAcceptanceParamsXInvitationRequestN1 RecoverNewInvitationAcceptanceParamsXInvitationRequest = "1"
+)
+
+// Valid indicates whether the value is a known member of the RecoverNewInvitationAcceptanceParamsXInvitationRequest enum.
+func (e RecoverNewInvitationAcceptanceParamsXInvitationRequest) Valid() bool {
+	switch e {
+	case RecoverNewInvitationAcceptanceParamsXInvitationRequestN1:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InspectNewInvitationParamsXInvitationRequest.
+const (
+	InspectNewInvitationParamsXInvitationRequestN1 InspectNewInvitationParamsXInvitationRequest = "1"
+)
+
+// Valid indicates whether the value is a known member of the InspectNewInvitationParamsXInvitationRequest enum.
+func (e InspectNewInvitationParamsXInvitationRequest) Valid() bool {
+	switch e {
+	case InspectNewInvitationParamsXInvitationRequestN1:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for GetCurrentUserContextParamsXKapsoraApp.
 const (
 	GetCurrentUserContextParamsXKapsoraAppBackoffice GetCurrentUserContextParamsXKapsoraApp = "backoffice"
@@ -5818,6 +5908,31 @@ type AcceptExistingInvitationResponse struct {
 
 // AcceptExistingInvitationResponseMembershipStatus defines model for AcceptExistingInvitationResponse.MembershipStatus.
 type AcceptExistingInvitationResponseMembershipStatus string
+
+// AcceptNewInvitationRequest defines model for AcceptNewInvitationRequest.
+type AcceptNewInvitationRequest struct {
+	Code        string                              `json:"code"`
+	Confirmed   AcceptNewInvitationRequestConfirmed `json:"confirmed"`
+	DisplayName string                              `json:"displayName"`
+	Password    *string                             `json:"password,omitempty"`
+}
+
+// AcceptNewInvitationRequestConfirmed defines model for AcceptNewInvitationRequest.Confirmed.
+type AcceptNewInvitationRequestConfirmed bool
+
+// AcceptNewInvitationResponse defines model for AcceptNewInvitationResponse.
+type AcceptNewInvitationResponse struct {
+	AccessPending     bool                                        `json:"accessPending"`
+	LoginHandle       string                                      `json:"loginHandle"`
+	MembershipId      openapi_types.UUID                          `json:"membershipId"`
+	MembershipStatus  AcceptNewInvitationResponseMembershipStatus `json:"membershipStatus"`
+	RecoveryExpiresAt time.Time                                   `json:"recoveryExpiresAt"`
+	TenantDisplayName string                                      `json:"tenantDisplayName"`
+	TenantId          openapi_types.UUID                          `json:"tenantId"`
+}
+
+// AcceptNewInvitationResponseMembershipStatus defines model for AcceptNewInvitationResponse.MembershipStatus.
+type AcceptNewInvitationResponseMembershipStatus string
 
 // AddWorkItemComment defines model for AddWorkItemComment.
 type AddWorkItemComment struct {
@@ -8957,6 +9072,12 @@ type InventoryDay struct {
 	RowVersion *int64             `json:"rowVersion,omitempty"`
 	StayDate   openapi_types.Date `json:"stayDate"`
 	UpdatedAt  *time.Time         `json:"updatedAt,omitempty"`
+}
+
+// InvitationAcceptanceReceiptRequest defines model for InvitationAcceptanceReceiptRequest.
+type InvitationAcceptanceReceiptRequest struct {
+	Code     string  `json:"code"`
+	Password *string `json:"password,omitempty"`
 }
 
 // Invoice An invoice the provider raised elsewhere, as KAPSORA records it, with the claims it
@@ -13131,6 +13252,12 @@ type ImportId = openapi_types.UUID
 // ImportRowId defines model for ImportRowId.
 type ImportRowId = openapi_types.UUID
 
+// InvitationOrigin defines model for InvitationOrigin.
+type InvitationOrigin = string
+
+// InvitationRequestMarker defines model for InvitationRequestMarker.
+type InvitationRequestMarker string
+
 // InvoiceId defines model for InvoiceId.
 type InvoiceId = openapi_types.UUID
 
@@ -15376,6 +15503,45 @@ type AcceptExistingInvitationParams struct {
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
+// AcceptNewInvitationParams defines parameters for AcceptNewInvitation.
+type AcceptNewInvitationParams struct {
+	// XInvitationRequest Must be exactly 1 on anonymous invitation requests.
+	XInvitationRequest AcceptNewInvitationParamsXInvitationRequest `json:"X-Invitation-Request"`
+
+	// Origin Must exactly match the origin of the configured invitation link base.
+	Origin InvitationOrigin `json:"Origin"`
+
+	// IdempotencyKey Client-generated unique key retained for at least 24 hours.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// AcceptNewInvitationParamsXInvitationRequest defines parameters for AcceptNewInvitation.
+type AcceptNewInvitationParamsXInvitationRequest string
+
+// RecoverNewInvitationAcceptanceParams defines parameters for RecoverNewInvitationAcceptance.
+type RecoverNewInvitationAcceptanceParams struct {
+	// XInvitationRequest Must be exactly 1 on anonymous invitation requests.
+	XInvitationRequest RecoverNewInvitationAcceptanceParamsXInvitationRequest `json:"X-Invitation-Request"`
+
+	// Origin Must exactly match the origin of the configured invitation link base.
+	Origin InvitationOrigin `json:"Origin"`
+}
+
+// RecoverNewInvitationAcceptanceParamsXInvitationRequest defines parameters for RecoverNewInvitationAcceptance.
+type RecoverNewInvitationAcceptanceParamsXInvitationRequest string
+
+// InspectNewInvitationParams defines parameters for InspectNewInvitation.
+type InspectNewInvitationParams struct {
+	// XInvitationRequest Must be exactly 1 on anonymous invitation requests.
+	XInvitationRequest InspectNewInvitationParamsXInvitationRequest `json:"X-Invitation-Request"`
+
+	// Origin Must exactly match the origin of the configured invitation link base.
+	Origin InvitationOrigin `json:"Origin"`
+}
+
+// InspectNewInvitationParamsXInvitationRequest defines parameters for InspectNewInvitation.
+type InspectNewInvitationParamsXInvitationRequest string
+
 // ListInvoicesParams defines parameters for ListInvoices.
 type ListInvoicesParams struct {
 	ProviderOrganizationId *openapi_types.UUID `form:"providerOrganizationId,omitempty" json:"providerOrganizationId,omitempty"`
@@ -17551,8 +17717,17 @@ type PutStaySegmentsJSONRequestBody = PutStaySegments
 // AcceptExistingInvitationJSONRequestBody defines body for AcceptExistingInvitation for application/json ContentType.
 type AcceptExistingInvitationJSONRequestBody = AcceptExistingInvitationRequest
 
+// AcceptNewInvitationJSONRequestBody defines body for AcceptNewInvitation for application/json ContentType.
+type AcceptNewInvitationJSONRequestBody = AcceptNewInvitationRequest
+
+// RecoverNewInvitationAcceptanceJSONRequestBody defines body for RecoverNewInvitationAcceptance for application/json ContentType.
+type RecoverNewInvitationAcceptanceJSONRequestBody = InvitationAcceptanceReceiptRequest
+
 // InspectInvitationJSONRequestBody defines body for InspectInvitation for application/json ContentType.
 type InspectInvitationJSONRequestBody = InspectInvitationRequest
+
+// InspectNewInvitationJSONRequestBody defines body for InspectNewInvitation for application/json ContentType.
+type InspectNewInvitationJSONRequestBody = InspectInvitationRequest
 
 // CreateInvoiceJSONRequestBody defines body for CreateInvoice for application/json ContentType.
 type CreateInvoiceJSONRequestBody = CreateInvoice
@@ -18428,8 +18603,17 @@ type ServerInterface interface {
 	// (POST /api/v1/invitations/accept-existing)
 	AcceptExistingInvitation(w http.ResponseWriter, r *http.Request, params AcceptExistingInvitationParams)
 
+	// (POST /api/v1/invitations/accept-new)
+	AcceptNewInvitation(w http.ResponseWriter, r *http.Request, params AcceptNewInvitationParams)
+
+	// (POST /api/v1/invitations/acceptance-receipt)
+	RecoverNewInvitationAcceptance(w http.ResponseWriter, r *http.Request, params RecoverNewInvitationAcceptanceParams)
+
 	// (POST /api/v1/invitations/inspect)
 	InspectInvitation(w http.ResponseWriter, r *http.Request)
+
+	// (POST /api/v1/invitations/inspect-new)
+	InspectNewInvitation(w http.ResponseWriter, r *http.Request, params InspectNewInvitationParams)
 
 	// (GET /api/v1/invoices)
 	ListInvoices(w http.ResponseWriter, r *http.Request, params ListInvoicesParams)
@@ -19709,8 +19893,23 @@ func (_ Unimplemented) AcceptExistingInvitation(w http.ResponseWriter, r *http.R
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// (POST /api/v1/invitations/accept-new)
+func (_ Unimplemented) AcceptNewInvitation(w http.ResponseWriter, r *http.Request, params AcceptNewInvitationParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/invitations/acceptance-receipt)
+func (_ Unimplemented) RecoverNewInvitationAcceptance(w http.ResponseWriter, r *http.Request, params RecoverNewInvitationAcceptanceParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // (POST /api/v1/invitations/inspect)
 func (_ Unimplemented) InspectInvitation(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /api/v1/invitations/inspect-new)
+func (_ Unimplemented) InspectNewInvitation(w http.ResponseWriter, r *http.Request, params InspectNewInvitationParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -33780,11 +33979,238 @@ func (siw *ServerInterfaceWrapper) AcceptExistingInvitation(w http.ResponseWrite
 	handler.ServeHTTP(w, r)
 }
 
+// AcceptNewInvitation operation middleware
+func (siw *ServerInterfaceWrapper) AcceptNewInvitation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params AcceptNewInvitationParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Invitation-Request" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Invitation-Request")]; found {
+		var XInvitationRequest AcceptNewInvitationParamsXInvitationRequest
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Invitation-Request", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Invitation-Request", valueList[0], &XInvitationRequest, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Invitation-Request", Err: err})
+			return
+		}
+
+		params.XInvitationRequest = XInvitationRequest
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Invitation-Request is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Invitation-Request", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Origin" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Origin")]; found {
+		var Origin InvitationOrigin
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Origin", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Origin", valueList[0], &Origin, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Origin", Err: err})
+			return
+		}
+
+		params.Origin = Origin
+
+	} else {
+		err := fmt.Errorf("Header parameter Origin is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Origin", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AcceptNewInvitation(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RecoverNewInvitationAcceptance operation middleware
+func (siw *ServerInterfaceWrapper) RecoverNewInvitationAcceptance(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RecoverNewInvitationAcceptanceParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Invitation-Request" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Invitation-Request")]; found {
+		var XInvitationRequest RecoverNewInvitationAcceptanceParamsXInvitationRequest
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Invitation-Request", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Invitation-Request", valueList[0], &XInvitationRequest, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Invitation-Request", Err: err})
+			return
+		}
+
+		params.XInvitationRequest = XInvitationRequest
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Invitation-Request is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Invitation-Request", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Origin" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Origin")]; found {
+		var Origin InvitationOrigin
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Origin", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Origin", valueList[0], &Origin, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Origin", Err: err})
+			return
+		}
+
+		params.Origin = Origin
+
+	} else {
+		err := fmt.Errorf("Header parameter Origin is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Origin", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RecoverNewInvitationAcceptance(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // InspectInvitation operation middleware
 func (siw *ServerInterfaceWrapper) InspectInvitation(w http.ResponseWriter, r *http.Request) {
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.InspectInvitation(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// InspectNewInvitation operation middleware
+func (siw *ServerInterfaceWrapper) InspectNewInvitation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params InspectNewInvitationParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Invitation-Request" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Invitation-Request")]; found {
+		var XInvitationRequest InspectNewInvitationParamsXInvitationRequest
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Invitation-Request", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Invitation-Request", valueList[0], &XInvitationRequest, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Invitation-Request", Err: err})
+			return
+		}
+
+		params.XInvitationRequest = XInvitationRequest
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Invitation-Request is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Invitation-Request", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Origin" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Origin")]; found {
+		var Origin InvitationOrigin
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Origin", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Origin", valueList[0], &Origin, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Origin", Err: err})
+			return
+		}
+
+		params.Origin = Origin
+
+	} else {
+		err := fmt.Errorf("Header parameter Origin is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Origin", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.InspectNewInvitation(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -48165,6 +48591,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/invitations/accept-existing", wrapper.AcceptExistingInvitation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/invitations/inspect-new", wrapper.InspectNewInvitation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/invitations/accept-new", wrapper.AcceptNewInvitation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/invitations/acceptance-receipt", wrapper.RecoverNewInvitationAcceptance)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/admin/users", wrapper.ListTenantUsers)
@@ -63005,6 +63440,202 @@ func (response AcceptExistingInvitation409ApplicationProblemPlusJSONResponse) Vi
 	return err
 }
 
+type AcceptNewInvitationRequestObject struct {
+	Params AcceptNewInvitationParams
+	Body   *AcceptNewInvitationJSONRequestBody
+}
+
+type AcceptNewInvitationResponseObject interface {
+	VisitAcceptNewInvitationResponse(w http.ResponseWriter) error
+}
+
+type AcceptNewInvitation200JSONResponse AcceptNewInvitationResponse
+
+func (response AcceptNewInvitation200JSONResponse) VisitAcceptNewInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptNewInvitation400ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response AcceptNewInvitation400ApplicationProblemPlusJSONResponse) VisitAcceptNewInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptNewInvitation403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response AcceptNewInvitation403ApplicationProblemPlusJSONResponse) VisitAcceptNewInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptNewInvitation404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response AcceptNewInvitation404ApplicationProblemPlusJSONResponse) VisitAcceptNewInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptNewInvitation409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response AcceptNewInvitation409ApplicationProblemPlusJSONResponse) VisitAcceptNewInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcceptNewInvitation429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response AcceptNewInvitation429ApplicationProblemPlusJSONResponse) VisitAcceptNewInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RecoverNewInvitationAcceptanceRequestObject struct {
+	Params RecoverNewInvitationAcceptanceParams
+	Body   *RecoverNewInvitationAcceptanceJSONRequestBody
+}
+
+type RecoverNewInvitationAcceptanceResponseObject interface {
+	VisitRecoverNewInvitationAcceptanceResponse(w http.ResponseWriter) error
+}
+
+type RecoverNewInvitationAcceptance200JSONResponse AcceptNewInvitationResponse
+
+func (response RecoverNewInvitationAcceptance200JSONResponse) VisitRecoverNewInvitationAcceptanceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RecoverNewInvitationAcceptance400ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response RecoverNewInvitationAcceptance400ApplicationProblemPlusJSONResponse) VisitRecoverNewInvitationAcceptanceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RecoverNewInvitationAcceptance403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RecoverNewInvitationAcceptance403ApplicationProblemPlusJSONResponse) VisitRecoverNewInvitationAcceptanceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RecoverNewInvitationAcceptance404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response RecoverNewInvitationAcceptance404ApplicationProblemPlusJSONResponse) VisitRecoverNewInvitationAcceptanceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RecoverNewInvitationAcceptance429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response RecoverNewInvitationAcceptance429ApplicationProblemPlusJSONResponse) VisitRecoverNewInvitationAcceptanceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type InspectInvitationRequestObject struct {
 	Body *InspectInvitationJSONRequestBody
 }
@@ -63071,6 +63702,96 @@ func (response InspectInvitation404ApplicationProblemPlusJSONResponse) VisitInsp
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type InspectNewInvitationRequestObject struct {
+	Params InspectNewInvitationParams
+	Body   *InspectNewInvitationJSONRequestBody
+}
+
+type InspectNewInvitationResponseObject interface {
+	VisitInspectNewInvitationResponse(w http.ResponseWriter) error
+}
+
+type InspectNewInvitation200JSONResponse InspectInvitationResponse
+
+func (response InspectNewInvitation200JSONResponse) VisitInspectNewInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type InspectNewInvitation400ApplicationProblemPlusJSONResponse struct {
+	ValidationErrorApplicationProblemPlusJSONResponse
+}
+
+func (response InspectNewInvitation400ApplicationProblemPlusJSONResponse) VisitInspectNewInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type InspectNewInvitation403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response InspectNewInvitation403ApplicationProblemPlusJSONResponse) VisitInspectNewInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type InspectNewInvitation404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response InspectNewInvitation404ApplicationProblemPlusJSONResponse) VisitInspectNewInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type InspectNewInvitation429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response InspectNewInvitation429ApplicationProblemPlusJSONResponse) VisitInspectNewInvitationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -79618,8 +80339,17 @@ type StrictServerInterface interface {
 	// (POST /api/v1/invitations/accept-existing)
 	AcceptExistingInvitation(ctx context.Context, request AcceptExistingInvitationRequestObject) (AcceptExistingInvitationResponseObject, error)
 
+	// (POST /api/v1/invitations/accept-new)
+	AcceptNewInvitation(ctx context.Context, request AcceptNewInvitationRequestObject) (AcceptNewInvitationResponseObject, error)
+
+	// (POST /api/v1/invitations/acceptance-receipt)
+	RecoverNewInvitationAcceptance(ctx context.Context, request RecoverNewInvitationAcceptanceRequestObject) (RecoverNewInvitationAcceptanceResponseObject, error)
+
 	// (POST /api/v1/invitations/inspect)
 	InspectInvitation(ctx context.Context, request InspectInvitationRequestObject) (InspectInvitationResponseObject, error)
+
+	// (POST /api/v1/invitations/inspect-new)
+	InspectNewInvitation(ctx context.Context, request InspectNewInvitationRequestObject) (InspectNewInvitationResponseObject, error)
 
 	// (GET /api/v1/invoices)
 	ListInvoices(ctx context.Context, request ListInvoicesRequestObject) (ListInvoicesResponseObject, error)
@@ -84734,6 +85464,72 @@ func (sh *strictHandler) AcceptExistingInvitation(w http.ResponseWriter, r *http
 	}
 }
 
+// AcceptNewInvitation operation middleware
+func (sh *strictHandler) AcceptNewInvitation(w http.ResponseWriter, r *http.Request, params AcceptNewInvitationParams) {
+	var request AcceptNewInvitationRequestObject
+
+	request.Params = params
+
+	var body AcceptNewInvitationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AcceptNewInvitation(ctx, request.(AcceptNewInvitationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AcceptNewInvitation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AcceptNewInvitationResponseObject); ok {
+		if err := validResponse.VisitAcceptNewInvitationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RecoverNewInvitationAcceptance operation middleware
+func (sh *strictHandler) RecoverNewInvitationAcceptance(w http.ResponseWriter, r *http.Request, params RecoverNewInvitationAcceptanceParams) {
+	var request RecoverNewInvitationAcceptanceRequestObject
+
+	request.Params = params
+
+	var body RecoverNewInvitationAcceptanceJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RecoverNewInvitationAcceptance(ctx, request.(RecoverNewInvitationAcceptanceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RecoverNewInvitationAcceptance")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RecoverNewInvitationAcceptanceResponseObject); ok {
+		if err := validResponse.VisitRecoverNewInvitationAcceptanceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // InspectInvitation operation middleware
 func (sh *strictHandler) InspectInvitation(w http.ResponseWriter, r *http.Request) {
 	var request InspectInvitationRequestObject
@@ -84758,6 +85554,39 @@ func (sh *strictHandler) InspectInvitation(w http.ResponseWriter, r *http.Reques
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(InspectInvitationResponseObject); ok {
 		if err := validResponse.VisitInspectInvitationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// InspectNewInvitation operation middleware
+func (sh *strictHandler) InspectNewInvitation(w http.ResponseWriter, r *http.Request, params InspectNewInvitationParams) {
+	var request InspectNewInvitationRequestObject
+
+	request.Params = params
+
+	var body InspectNewInvitationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.InspectNewInvitation(ctx, request.(InspectNewInvitationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "InspectNewInvitation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(InspectNewInvitationResponseObject); ok {
+		if err := validResponse.VisitInspectNewInvitationResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

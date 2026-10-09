@@ -34,6 +34,20 @@ func Up(databaseURL string) (Status, error) {
 	return status(m)
 }
 
+// UpTo applies migrations through target. It is used to exercise forward upgrades
+// from a real earlier schema in disposable integration-test databases.
+func UpTo(databaseURL string, target uint) (Status, error) {
+	m, err := newMigrator(databaseURL)
+	if err != nil {
+		return Status{}, err
+	}
+	defer closeMigrator(m)
+	if err := m.Migrate(target); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		return Status{}, fmt.Errorf("apply migrations through %d: %w", target, err)
+	}
+	return status(m)
+}
+
 // Version reports the current schema version without changing anything.
 func Version(databaseURL string) (Status, error) {
 	m, err := newMigrator(databaseURL)

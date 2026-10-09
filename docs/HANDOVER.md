@@ -1200,15 +1200,41 @@ dirty=false. The ignored local `.env` enables only loopback Mailpit invitation d
 `.env.example` stays disabled. Existing memberships and grants were not changed.
 
 MGT-01 live reads passed 2/2 in 3.1 seconds after the operator restart on 2026-10-08, with
-no commands issued. B1 live reads await the operator's API/worker restart: the old API
-still returns 404 for the invitation route. The opt-in checker is
+no commands issued. After the operator's 2026-10-09 restart, B1's opt-in live read checker
+passed 2/2 in 2.7 seconds: admin capability and bounded invitation list, plus financial
+reviewer capability denial and list 403. It did not create, cancel or accept an invitation.
+Existing-row detail remains conditional; an empty list does not prove live detail.
+All six CI jobs also passed on documentation head `7ca6e03`
+([run 37848689285](https://github.com/celikbros/kapsora/actions/runs/37848689285)). The checker is
 `tests/e2e/management-invitations-readonly.spec.ts`; enable `E2E_REAL_API=1`,
 `E2E_MANAGEMENT_INVITATIONS_READONLY=1`, and the operator's `E2E_EXISTING_UI_URL`.
 It performs only login/tenant selection/logout and GETs; existing detail is checked only
 when the list already has a row. Do not create live invitations just to fill that list.
-Draft PR #11 remains open; do not merge or release. B2
-new-account acceptance and recovery is next; MGT-03 role assignment and MGT-04 typed settings
-remain later work. Existing product/calendar acceptance gates remain open.
+Draft PR #11 remains open; do not merge or release. B2 implementation is recorded below;
+MGT-03 role assignment and MGT-04 typed settings remain later work. Existing
+product/calendar acceptance gates remain open.
+
+### MGT-02b B2 implementation checkpoint (2026-10-09)
+
+[The B2 package](delegation/WP-MGT-02b2-new-account-invitations.md) was planned by Astra
+and implemented/reviewed by Sol. The fixed invitation page now supports explicit
+new-account consent and private username recovery. Acceptance atomically creates an
+ACTIVE actor, ordinary Argon2id credential and zero-grant membership, without a session,
+automatic tenant selection or invitation-address contact copy. Recovery requires the
+bearer proof and current password within 24 hours; account lockout also applies.
+
+Anonymous operations bypass session loading, require the configured Origin and JSON
+marker, and share a trusted-client-address limiter before body/password work. Migration
+000057 preserves accepted B1 rows as EXISTING and separates NEW replay authority. Review
+fixed a nullable CHECK loophole and overlapping router mounts before landing. The
+synthetic 1440px/390px browser review passed 14 views with no real API commands or
+overflow, including exact uncertain retry after password re-entry and direct recovery.
+Product standards and manual Playwright review were used; Impeccable was unavailable.
+
+Local isolated-DB execution remains intentionally disabled because the shared harness
+resets the application-role password. Final isolated CI and local migration 57 landing
+are pending. No live invitation, account, membership or role grant was created by B2
+verification. Existing health/lodging financial sources remain unchanged.
 
 ### PC-06 technical acceptance checkpoint (2026-10-03)
 

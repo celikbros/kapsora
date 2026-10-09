@@ -12,9 +12,42 @@ import (
 	"github.com/google/uuid"
 )
 
+const acceptNewTenantInvitation = `-- name: AcceptNewTenantInvitation :one
+UPDATE iam.tenant_invitation SET status='ACCEPTED', accepted_mode='NEW',
+ accepted_actor_id=$3,accepted_membership_id=$4,accept_key=$5,
+ accept_new_fingerprint=$6,terminal_at=clock_timestamp(),
+ contact_cipher=NULL,contact_hash=NULL,delivery_cipher=NULL,
+ delivery_status=CASE WHEN delivery_status='SENT' THEN 'SENT' ELSE 'CANCELLED' END
+ WHERE tenant_id=$1 AND id=$2
+ RETURNING terminal_at
+`
+
+type AcceptNewTenantInvitationParams struct {
+	TenantID             uuid.UUID
+	ID                   uuid.UUID
+	AcceptedActorID      uuid.NullUUID
+	AcceptedMembershipID uuid.NullUUID
+	AcceptKey            *string
+	AcceptNewFingerprint []byte
+}
+
+func (q *Queries) AcceptNewTenantInvitation(ctx context.Context, arg AcceptNewTenantInvitationParams) (*time.Time, error) {
+	row := q.db.QueryRow(ctx, acceptNewTenantInvitation,
+		arg.TenantID,
+		arg.ID,
+		arg.AcceptedActorID,
+		arg.AcceptedMembershipID,
+		arg.AcceptKey,
+		arg.AcceptNewFingerprint,
+	)
+	var terminal_at *time.Time
+	err := row.Scan(&terminal_at)
+	return terminal_at, err
+}
+
 const acceptTenantInvitation = `-- name: AcceptTenantInvitation :exec
 UPDATE iam.tenant_invitation SET status='ACCEPTED',
- accepted_actor_id=$3,accepted_membership_id=$4,accept_key=$5,terminal_at=clock_timestamp(),
+ accepted_actor_id=$3,accepted_membership_id=$4,accept_key=$5,accepted_mode='EXISTING',terminal_at=clock_timestamp(),
  contact_cipher=NULL,contact_hash=NULL,delivery_cipher=NULL,
  delivery_status=CASE WHEN delivery_status='SENT' THEN 'SENT' ELSE 'CANCELLED' END
  WHERE tenant_id=$1 AND id=$2
@@ -86,6 +119,15 @@ func (q *Queries) CancelTenantInvitation(ctx context.Context, arg CancelTenantIn
 		&i.DeliveryStatus,
 	)
 	return i, err
+}
+
+const clearInvitationCredentialFailures = `-- name: ClearInvitationCredentialFailures :exec
+UPDATE iam.credential SET failed_attempts=0,locked_until=NULL WHERE actor_id=$1
+`
+
+func (q *Queries) ClearInvitationCredentialFailures(ctx context.Context, actorID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, clearInvitationCredentialFailures, actorID)
+	return err
 }
 
 const completeInvitationDelivery = `-- name: CompleteInvitationDelivery :exec
@@ -345,7 +387,7 @@ func (q *Queries) InsertTenantInvitation(ctx context.Context, arg InsertTenantIn
 }
 
 const inspectInvitationProof = `-- name: InspectInvitationProof :one
-SELECT i.proof_digest,i.status,i.expires_at,t.display_name,i.accepted_actor_id,i.terminal_at
+SELECT i.proof_digest,i.status,i.expires_at,t.display_name,i.accepted_actor_id,i.terminal_at,i.accepted_mode
  FROM iam.tenant_invitation i JOIN platform.tenant t ON t.id=i.tenant_id
  WHERE i.tenant_id=$1 AND i.id=$2 AND t.status='ACTIVE'
 `
@@ -362,6 +404,7 @@ type InspectInvitationProofRow struct {
 	DisplayName     string
 	AcceptedActorID uuid.NullUUID
 	TerminalAt      *time.Time
+	AcceptedMode    *string
 }
 
 func (q *Queries) InspectInvitationProof(ctx context.Context, arg InspectInvitationProofParams) (InspectInvitationProofRow, error) {
@@ -374,6 +417,7 @@ func (q *Queries) InspectInvitationProof(ctx context.Context, arg InspectInvitat
 		&i.DisplayName,
 		&i.AcceptedActorID,
 		&i.TerminalAt,
+		&i.AcceptedMode,
 	)
 	return i, err
 }
@@ -498,7 +542,8 @@ func (q *Queries) LockActiveInvitationTenant(ctx context.Context, id uuid.UUID) 
 
 const lockInvitationForAccept = `-- name: LockInvitationForAccept :one
 SELECT i.proof_digest,i.status,i.expires_at,COALESCE(i.accept_key,'') AS accept_key,
- i.accepted_actor_id,i.accepted_membership_id,t.display_name,i.terminal_at
+ i.accepted_actor_id,i.accepted_membership_id,t.display_name,i.terminal_at,
+ i.accepted_mode,i.accept_new_fingerprint
  FROM iam.tenant_invitation i JOIN platform.tenant t ON t.id=i.tenant_id
  WHERE i.tenant_id=$1 AND i.id=$2 FOR UPDATE OF i
 `
@@ -517,6 +562,8 @@ type LockInvitationForAcceptRow struct {
 	AcceptedMembershipID uuid.NullUUID
 	DisplayName          string
 	TerminalAt           *time.Time
+	AcceptedMode         *string
+	AcceptNewFingerprint []byte
 }
 
 func (q *Queries) LockInvitationForAccept(ctx context.Context, arg LockInvitationForAcceptParams) (LockInvitationForAcceptRow, error) {
@@ -531,6 +578,8 @@ func (q *Queries) LockInvitationForAccept(ctx context.Context, arg LockInvitatio
 		&i.AcceptedMembershipID,
 		&i.DisplayName,
 		&i.TerminalAt,
+		&i.AcceptedMode,
+		&i.AcceptNewFingerprint,
 	)
 	return i, err
 }
@@ -588,6 +637,33 @@ func (q *Queries) LockInvitationForDelivery(ctx context.Context, arg LockInvitat
 	return i, err
 }
 
+const lockInvitationRecoveryCredential = `-- name: LockInvitationRecoveryCredential :one
+SELECT a.identity_subject,a.status,c.password_hash,c.failed_attempts,c.locked_until
+ FROM iam.actor a JOIN iam.credential c ON c.actor_id=a.id
+ WHERE a.id=$1 FOR UPDATE OF a,c
+`
+
+type LockInvitationRecoveryCredentialRow struct {
+	IdentitySubject string
+	Status          string
+	PasswordHash    string
+	FailedAttempts  int32
+	LockedUntil     *time.Time
+}
+
+func (q *Queries) LockInvitationRecoveryCredential(ctx context.Context, id uuid.UUID) (LockInvitationRecoveryCredentialRow, error) {
+	row := q.db.QueryRow(ctx, lockInvitationRecoveryCredential, id)
+	var i LockInvitationRecoveryCredentialRow
+	err := row.Scan(
+		&i.IdentitySubject,
+		&i.Status,
+		&i.PasswordHash,
+		&i.FailedAttempts,
+		&i.LockedUntil,
+	)
+	return i, err
+}
+
 const pendingInvitationExists = `-- name: PendingInvitationExists :one
 SELECT EXISTS(SELECT 1 FROM iam.tenant_invitation
  WHERE tenant_id=$1 AND contact_hash=$2 AND status='PENDING')
@@ -637,7 +713,7 @@ func (q *Queries) PurgeInvitationMaskBatch(ctx context.Context, tenantID uuid.UU
 }
 
 const purgeInvitationProofBatch = `-- name: PurgeInvitationProofBatch :execrows
-UPDATE iam.tenant_invitation AS target SET proof_digest=NULL,accept_key=NULL
+UPDATE iam.tenant_invitation AS target SET proof_digest=NULL,accept_key=NULL,accept_new_fingerprint=NULL
  WHERE target.id IN (SELECT i.id FROM iam.tenant_invitation i WHERE i.tenant_id=$1 AND i.status='ACCEPTED'
  AND i.proof_digest IS NOT NULL AND i.terminal_at<clock_timestamp()-interval '24 hours'
  ORDER BY i.terminal_at,i.id LIMIT 100 FOR UPDATE SKIP LOCKED)
@@ -649,4 +725,28 @@ func (q *Queries) PurgeInvitationProofBatch(ctx context.Context, tenantID uuid.U
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const validateInvitationAcceptedMembership = `-- name: ValidateInvitationAcceptedMembership :one
+SELECT membership_status,valid_period @> CURRENT_DATE AS valid_today
+ FROM iam.tenant_membership
+ WHERE tenant_id=$1 AND id=$2 AND actor_id=$3 FOR UPDATE
+`
+
+type ValidateInvitationAcceptedMembershipParams struct {
+	TenantID uuid.UUID
+	ID       uuid.UUID
+	ActorID  uuid.UUID
+}
+
+type ValidateInvitationAcceptedMembershipRow struct {
+	MembershipStatus string
+	ValidToday       interface{}
+}
+
+func (q *Queries) ValidateInvitationAcceptedMembership(ctx context.Context, arg ValidateInvitationAcceptedMembershipParams) (ValidateInvitationAcceptedMembershipRow, error) {
+	row := q.db.QueryRow(ctx, validateInvitationAcceptedMembership, arg.TenantID, arg.ID, arg.ActorID)
+	var i ValidateInvitationAcceptedMembershipRow
+	err := row.Scan(&i.MembershipStatus, &i.ValidToday)
+	return i, err
 }

@@ -9,12 +9,12 @@ rules:
   kapsora-tenant-header-on-api-v1:
     description: Tenant-scoped /api/v1 operations must declare the X-Tenant-ID header.
     severity: error
-    # Every /api/v1 operation except the session/account paths and the two recipient
+    # Every /api/v1 operation except the session/account paths and recipient
     # invitation-proof paths, which work before membership is created. Manager invitation
     # paths remain tenant-scoped. Enumerating the covered paths instead goes stale
     # silently every time a module is added, which is exactly what happened.
     # Single-quoted so YAML leaves the regex escapes alone.
-    given: '$.paths[?(@property.match(/^\/api\/v1\/(?!me$|tenants$|session|invitations\/(?:inspect|accept-existing)$)/))][get,post,patch,put,delete]'
+    given: '$.paths[?(@property.match(/^\/api\/v1\/(?!me$|tenants$|session|invitations\/(?:inspect|accept-existing|inspect-new|accept-new|acceptance-receipt)$)/))][get,post,patch,put,delete]'
     # Spectral resolves $refs before a rule runs, so the parameter arrives here as the
     # header object itself. Matching on the unresolved "$ref" string, as this rule did
     # until 2026-09-04, matches nothing and the rule silently checks no operation at all.

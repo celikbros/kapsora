@@ -1053,13 +1053,26 @@ export function createHandlers(api: MockApi): HttpHandler[] {
       if (!body || typeof body.username !== 'string' || typeof body.password !== 'string') {
         return problem(api, 400, 'INVALID_REQUEST_BODY', 'İstek gövdesi geçersiz');
       }
-      // Any password of 12+ characters signs in a known demo user; unknown users and
-      // short passwords answer like the real API (coarse 401).
+      // Demo accounts accept the shared demo password convention. Invitation-created
+      // accounts require their own keyed, in-memory credential proof.
       if (body.password.length < 12 || body.username === 'locked.user') {
         return body.username === 'locked.user'
           ? problem(api, 403, 'ACCOUNT_LOCKED', 'Hesap geçici olarak kilitlendi')
           : problem(api, 401, 'INVALID_CREDENTIALS', 'Kullanıcı adı veya parola hatalı');
       }
+      const requested = api.world.accounts.find(
+        (account) => account.username === body.username!.trim().toLowerCase(),
+      );
+      if (requested && api.invitations.isNewCredentialLocked(requested.actorId))
+        return problem(api, 403, 'ACCOUNT_LOCKED', 'Hesap geçici olarak kilitlendi');
+      if (
+        requested &&
+        api.invitations.newCredentials.has(requested.actorId) &&
+        !(await api.invitations.verifyNewCredential(requested.actorId, body.password))
+      )
+        return api.invitations.isNewCredentialLocked(requested.actorId)
+          ? problem(api, 403, 'ACCOUNT_LOCKED', 'Hesap geçici olarak kilitlendi')
+          : problem(api, 401, 'INVALID_CREDENTIALS', 'Kullanıcı adı veya parola hatalı');
       const session = api.signIn(body.username.trim().toLowerCase(), appOfRequest(request));
       if (!session)
         return problem(api, 401, 'INVALID_CREDENTIALS', 'Kullanıcı adı veya parola hatalı');

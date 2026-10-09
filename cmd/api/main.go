@@ -602,6 +602,20 @@ func newRouter(d routerDeps) http.Handler {
 	r.Get("/health/live", health.LiveHandler())
 	r.Get("/health/ready", health.ReadyHandler(d.checker))
 
+	// These three proof routes have no session middleware. A supplied, even stale,
+	// session cookie must never be touched or refreshed by account creation/recovery.
+	r.Group(func(anon chi.Router) {
+		anon.Use(func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				w.Header().Set("Cache-Control", "no-store")
+				next.ServeHTTP(w, req)
+			})
+		})
+		anon.Use(ratelimit.Middleware(d.limiter, ratelimit.ScopedKey("invitation.anonymous", anonymousScope),
+			ratelimit.Policy{PerMinute: 12, Burst: 5}, d.logger))
+		invitationHandler.AnonymousRecipientRoutes(anon, d.cfg.Invitations.LinkBase)
+	})
+
 	r.Route("/api/v1", func(api chi.Router) {
 		api.Use(sessions.LoadSession)
 

@@ -5,7 +5,9 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"mime"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -40,6 +42,147 @@ func (h *InvitationHandler) RecipientRoutes(r chi.Router) {
 	r.Use(invitationNoStore)
 	r.Post("/inspect", h.Inspect)
 	r.Post("/accept-existing", h.AcceptExisting)
+}
+
+// AnonymousRecipientRoutes relies on the API router to rate-limit a shared trusted
+// RemoteAddr bucket before entering these handlers. No session is loaded on this path.
+func (h *InvitationHandler) AnonymousRecipientRoutes(r chi.Router, linkBase string) {
+	base, err := url.Parse(linkBase)
+	if err != nil || base.Scheme == "" || base.Host == "" {
+		panic("invalid invitation link base")
+	}
+	origin := base.Scheme + "://" + base.Host
+	r.Use(invitationNoStore)
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			origins := req.Header.Values("Origin")
+			markers := req.Header.Values("X-Invitation-Request")
+			media := req.Header.Values("Content-Type")
+			mediaType := ""
+			if len(media) == 1 {
+				parsed, _, parseErr := mime.ParseMediaType(media[0])
+				if parseErr == nil {
+					mediaType = parsed
+				}
+			}
+			if len(origins) != 1 || origins[0] != origin || len(markers) != 1 || markers[0] != "1" ||
+				len(media) != 1 || mediaType != "application/json" ||
+				strings.EqualFold(req.Header.Get("Sec-Fetch-Site"), "cross-site") {
+				problem(w, req, http.StatusForbidden, "identity/invitation-request-forbidden", "INVITATION_REQUEST_FORBIDDEN", "Davet isteği reddedildi", "")
+				return
+			}
+			next.ServeHTTP(w, req)
+		})
+	})
+	r.Post("/api/v1/invitations/inspect-new", h.InspectNew)
+	r.Post("/api/v1/invitations/accept-new", h.AcceptNew)
+	r.Post("/api/v1/invitations/acceptance-receipt", h.AcceptanceReceipt)
+}
+
+func strictNewInvitationJSON(w http.ResponseWriter, r *http.Request, dst any) bool {
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16*1024))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(dst); err != nil {
+		problem(w, r, http.StatusBadRequest, "generic/invalid-request-body", "INVALID_REQUEST_BODY", "Geçersiz istek gövdesi", "")
+		return false
+	}
+	if err := decoder.Decode(new(any)); !errors.Is(err, io.EOF) {
+		problem(w, r, http.StatusBadRequest, "generic/invalid-request-body", "INVALID_REQUEST_BODY", "Geçersiz istek gövdesi", "")
+		return false
+	}
+	return true
+}
+
+func (h *InvitationHandler) InspectNew(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Code string `json:"code"`
+	}
+	if !strictNewInvitationJSON(w, r, &body) {
+		return
+	}
+	result, err := h.svc.InspectNew(r.Context(), body.Code)
+	if err != nil {
+		h.writeNewError(w, r, err)
+		return
+	}
+	writeJSON(w, struct {
+		TenantDisplayName string `json:"tenantDisplayName"`
+		InvitationStatus  string `json:"invitationStatus"`
+		ExpiresAt         string `json:"expiresAt"`
+	}{result.TenantDisplayName, result.Status, result.ExpiresAt.UTC().Format("2006-01-02T15:04:05.000Z")})
+}
+
+func newInvitationResponse(result application.AcceptedNewInvitation) any {
+	return struct {
+		TenantID          string `json:"tenantId"`
+		TenantDisplayName string `json:"tenantDisplayName"`
+		MembershipID      string `json:"membershipId"`
+		MembershipStatus  string `json:"membershipStatus"`
+		AccessPending     bool   `json:"accessPending"`
+		LoginHandle       string `json:"loginHandle"`
+		RecoveryExpiresAt string `json:"recoveryExpiresAt"`
+	}{result.TenantID.String(), result.TenantDisplayName, result.MembershipID.String(), "ACTIVE", result.AccessPending,
+		result.LoginHandle, result.RecoveryExpiresAt.UTC().Format("2006-01-02T15:04:05.000Z")}
+}
+
+func (h *InvitationHandler) AcceptNew(w http.ResponseWriter, r *http.Request) {
+	key, valid := invitationKey(r)
+	if !valid {
+		problem(w, r, http.StatusBadRequest, "generic/idempotency-key-required", "IDEMPOTENCY_KEY_REQUIRED", "Idempotency-Key gerekli", "")
+		return
+	}
+	var body struct {
+		Code        string `json:"code"`
+		DisplayName string `json:"displayName"`
+		Password    string `json:"password"`
+		Confirmed   bool   `json:"confirmed"`
+	}
+	if !strictNewInvitationJSON(w, r, &body) {
+		return
+	}
+	if !body.Confirmed {
+		problem(w, r, http.StatusBadRequest, "identity/invitation-confirmation-required", "INVITATION_CONFIRMATION_REQUIRED", "Katılım onayı gerekli", "")
+		return
+	}
+	result, err := h.svc.AcceptNew(r.Context(), body.Code, body.DisplayName, body.Password, key)
+	if err != nil {
+		h.writeNewError(w, r, err)
+		return
+	}
+	writeJSON(w, newInvitationResponse(result))
+}
+
+func (h *InvitationHandler) AcceptanceReceipt(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Code     string `json:"code"`
+		Password string `json:"password"`
+	}
+	if !strictNewInvitationJSON(w, r, &body) {
+		return
+	}
+	result, err := h.svc.RecoverNew(r.Context(), body.Code, body.Password)
+	if err != nil {
+		h.writeNewError(w, r, err)
+		return
+	}
+	writeJSON(w, newInvitationResponse(result))
+}
+
+func (h *InvitationHandler) writeNewError(w http.ResponseWriter, r *http.Request, err error) {
+	switch {
+	case errors.Is(err, application.ErrInvitationUnavailable):
+		problem(w, r, http.StatusNotFound, "identity/invitation-unavailable", "INVITATION_UNAVAILABLE", "Davet kullanılamıyor", "")
+	case errors.Is(err, application.ErrInvitationKeyReused):
+		problem(w, r, http.StatusConflict, "generic/idempotency-key-reused", "IDEMPOTENCY_KEY_REUSED", "Komut anahtarı değişen istekle kullanıldı", "")
+	case errors.Is(err, application.ErrInvitationInvalidDisplayName):
+		problem(w, r, http.StatusBadRequest, "identity/invitation-display-name-invalid", "INVITATION_DISPLAY_NAME_INVALID", "Geçersiz görünen ad", "")
+	case errors.Is(err, application.ErrInvitationInvalidPassword):
+		problem(w, r, http.StatusBadRequest, "identity/invitation-password-invalid", "INVITATION_PASSWORD_INVALID", "Geçersiz parola", "")
+	default:
+		// Database diagnostics may include row values. Keep them out of logs.
+		h.logger.Error("identity invitation new-account operation failed")
+		problem(w, r, http.StatusInternalServerError, "generic/internal-error", "INTERNAL_ERROR", "Beklenmeyen hata", "")
+	}
 }
 
 func invitationNoStore(next http.Handler) http.Handler {

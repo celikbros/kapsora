@@ -10,6 +10,16 @@ export interface StoredMockInvitation {
   acceptedActorId: string | null;
   acceptedKey: string | null;
   acceptedOutcome: Schemas['AcceptExistingInvitationResponse'] | null;
+  acceptedMode?: 'EXISTING' | 'NEW' | null;
+  newOutcome?: {
+    tenantId: string;
+    tenantDisplayName: string;
+    membershipId: string;
+    membershipStatus: 'ACTIVE';
+    accessPending: boolean;
+    loginHandle: string;
+    recoveryExpiresAt: string;
+  } | null;
   terminalAt: number | null;
 }
 
@@ -25,6 +35,12 @@ export class MockInvitationState {
     { version: number; summary: Schemas['TenantInvitation'] }
   >();
   readonly events: { action: 'create' | 'cancel' | 'accept'; invitationId: string }[] = [];
+  readonly newCredentials = new Map<string, string>();
+  readonly pendingAcceptances = new Set<string>();
+  private readonly credentialAttempts = new Map<
+    string,
+    { failures: number; lockedUntil: number }
+  >();
   private readonly deliveredCodes = new Map<string, string>();
   private key = crypto.getRandomValues(new Uint8Array(32));
 
@@ -34,6 +50,9 @@ export class MockInvitationState {
     this.cancelReceipts.clear();
     this.deliveredCodes.clear();
     this.events.length = 0;
+    this.newCredentials.clear();
+    this.pendingAcceptances.clear();
+    this.credentialAttempts.clear();
     this.key = crypto.getRandomValues(new Uint8Array(32));
   }
 
@@ -48,6 +67,35 @@ export class MockInvitationState {
     return hex(
       await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(JSON.stringify(value))),
     );
+  }
+
+  async credentialProof(actorId: string, password: string): Promise<string> {
+    return this.fingerprint(['credential', actorId, password]);
+  }
+
+  async verifyNewCredential(actorId: string, password: string): Promise<boolean> {
+    const expected = this.newCredentials.get(actorId);
+    if (this.isNewCredentialLocked(actorId)) return false;
+    const actual = await this.credentialProof(actorId, password);
+    if (expected && expected === actual) {
+      this.credentialAttempts.delete(actorId);
+      return true;
+    }
+    const previous = this.credentialAttempts.get(actorId);
+    const failures = (previous?.failures ?? 0) + 1;
+    this.credentialAttempts.set(actorId, {
+      failures,
+      lockedUntil: failures >= 10 ? Date.now() + 15 * 60_000 : 0,
+    });
+    return false;
+  }
+
+  isNewCredentialLocked(actorId: string): boolean {
+    const attempts = this.credentialAttempts.get(actorId);
+    if (!attempts) return false;
+    if (attempts.lockedUntil > Date.now()) return true;
+    if (attempts.lockedUntil > 0) this.credentialAttempts.delete(actorId);
+    return false;
   }
 
   /** Test/demo mail delivery is private and volatile, like the fake SMTP test adapter. */

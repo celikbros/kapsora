@@ -42,16 +42,30 @@ export function createKapsoraClient(options: ClientOptions = {}): KapsoraClient 
   const requestId = options.requestId ?? randomId;
   const middleware: Middleware = {
     onRequest({ request }) {
+      const anonymousInvitation =
+        /^\/api\/v1\/invitations\/(inspect-new|accept-new|acceptance-receipt)$/.test(
+          new URL(request.url).pathname,
+        );
       if (!request.headers.has('X-Request-ID')) {
         request.headers.set('X-Request-ID', requestId());
       }
       if (!request.headers.has('Accept')) {
         request.headers.set('Accept', 'application/json, application/problem+json');
       }
-      if (options.app && !request.headers.has('X-Kapsora-App')) {
+      if (anonymousInvitation) {
+        request.headers.set('X-Invitation-Request', '1');
+        request.headers.delete('X-Kapsora-App');
+        request.headers.delete('X-CSRF-Token');
+        request.headers.delete('X-Tenant-ID');
+      }
+      if (!anonymousInvitation && options.app && !request.headers.has('X-Kapsora-App')) {
         request.headers.set('X-Kapsora-App', options.app);
       }
-      if (!SAFE_METHODS.has(request.method) && !request.headers.has('X-CSRF-Token')) {
+      if (
+        !anonymousInvitation &&
+        !SAFE_METHODS.has(request.method) &&
+        !request.headers.has('X-CSRF-Token')
+      ) {
         const token = options.csrfToken?.();
         if (token) {
           request.headers.set('X-CSRF-Token', token);

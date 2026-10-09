@@ -43,6 +43,52 @@ function unavailable(api: MockApi) {
   return problem(api, 404, 'INVITATION_UNAVAILABLE', 'Davet kullanılamıyor');
 }
 
+function privateProblem(api: MockApi, status = 404, code = 'INVITATION_UNAVAILABLE') {
+  const response = problem(api, status, code, 'Davet kullanılamıyor');
+  response.headers.set('Cache-Control', 'no-store');
+  return response;
+}
+
+async function anonymousGate(api: MockApi, request: Request): Promise<Response | null> {
+  const origin = request.headers.get('Origin');
+  if (
+    request.headers.get('X-Invitation-Request') !== '1' ||
+    !request.headers.get('Content-Type')?.toLowerCase().startsWith('application/json') ||
+    origin !== new URL(request.url).origin ||
+    request.headers.has('X-Tenant-ID') ||
+    request.headers.has('X-Kapsora-App') ||
+    request.headers.has('X-CSRF-Token')
+  )
+    return privateProblem(api, 403, 'FORBIDDEN');
+  if ((await request.clone().arrayBuffer()).byteLength > 16 * 1024)
+    return privateProblem(api, 413, 'REQUEST_TOO_LARGE');
+  return null;
+}
+
+function privateResult(outcome: NonNullable<StoredMockInvitation['newOutcome']>) {
+  return HttpResponse.json(outcome, { headers: { 'Cache-Control': 'no-store' } });
+}
+
+async function verifyReceipt(
+  api: MockApi,
+  row: StoredMockInvitation | undefined,
+  password: unknown,
+) {
+  if (
+    !row ||
+    row.acceptedMode !== 'NEW' ||
+    !row.acceptedActorId ||
+    !row.newOutcome ||
+    typeof password !== 'string'
+  )
+    return false;
+  if (Date.parse(row.newOutcome.recoveryExpiresAt) <= Date.now()) {
+    row.proofDigest = '';
+    return false;
+  }
+  return api.invitations.verifyNewCredential(row.acceptedActorId, password);
+}
+
 function expire(api: MockApi, row: StoredMockInvitation): void {
   if (row.summary.status === 'PENDING' && Date.parse(row.summary.expiresAt) <= Date.now()) {
     row.summary.status = 'EXPIRED';
@@ -310,7 +356,8 @@ export function invitationHandlers(api: MockApi): HttpHandler[] {
         !row ||
         api.session !== session ||
         (session.account.actorStatus ?? 'ACTIVE') !== 'ACTIVE' ||
-        (row.summary.status === 'ACCEPTED' && row.acceptedActorId !== session.account.actorId)
+        (row.summary.status === 'ACCEPTED' &&
+          (row.acceptedMode === 'NEW' || row.acceptedActorId !== session.account.actorId))
       )
         return unavailable(api);
       return HttpResponse.json(
@@ -340,7 +387,8 @@ export function invitationHandlers(api: MockApi): HttpHandler[] {
         return unavailable(api);
       const key = request.headers.get('Idempotency-Key')!;
       if (row.summary.status === 'ACCEPTED') {
-        if (row.acceptedActorId !== session.account.actorId) return unavailable(api);
+        if (row.acceptedMode === 'NEW' || row.acceptedActorId !== session.account.actorId)
+          return unavailable(api);
         if (row.acceptedKey !== key)
           return problem(api, 409, 'IDEMPOTENCY_KEY_REUSED', 'Davet zaten kabul edildi');
         return HttpResponse.json(row.acceptedOutcome, { headers: { 'Cache-Control': 'no-store' } });
@@ -380,11 +428,134 @@ export function invitationHandlers(api: MockApi): HttpHandler[] {
       row.summary.rowVersion += 1;
       row.contactIndex = null;
       row.acceptedActorId = account.actorId;
+      row.acceptedMode = 'EXISTING';
       row.acceptedKey = key;
       row.acceptedOutcome = outcome;
       api.invitations.purgeDelivery(row.summary.invitationId);
       api.invitations.events.push({ action: 'accept', invitationId: row.summary.invitationId });
       return HttpResponse.json(outcome, { headers: { 'Cache-Control': 'no-store' } });
+    }),
+    http.post(`${ANY}/api/v1/invitations/inspect-new`, async ({ request }) => {
+      await wait(api);
+      const denied = await anonymousGate(api, request);
+      if (denied) return denied;
+      const body = await readJson<Record<string, unknown>>(request);
+      if (!body || Object.keys(body).some((key) => key !== 'code')) return privateProblem(api);
+      const row = await proof(api, body['code']);
+      if (!row || row.summary.status !== 'PENDING') return privateProblem(api);
+      return HttpResponse.json(
+        {
+          tenantDisplayName: api.world.tenants.find((tenant) => tenant.id === row.tenantId)!
+            .displayName,
+          invitationStatus: 'PENDING',
+          expiresAt: row.summary.expiresAt,
+        } satisfies Schemas['InspectInvitationResponse'],
+        { headers: { 'Cache-Control': 'no-store' } },
+      );
+    }),
+    http.post(`${ANY}/api/v1/invitations/accept-new`, async ({ request }) => {
+      await wait(api);
+      const denied = await anonymousGate(api, request);
+      if (denied) return denied;
+      const invalidKey = requireIdempotencyKey(api, request);
+      if (invalidKey) {
+        invalidKey.headers.set('Cache-Control', 'no-store');
+        return invalidKey;
+      }
+      const body = await readJson<Record<string, unknown>>(request);
+      if (
+        !body ||
+        body['confirmed'] !== true ||
+        Object.keys(body).some(
+          (key) => !['code', 'displayName', 'password', 'confirmed'].includes(key),
+        )
+      )
+        return privateProblem(api, 400, 'INVITATION_CONFIRMATION_REQUIRED');
+      const row = await proof(api, body['code']);
+      if (!row) return privateProblem(api);
+      const password = body['password'];
+      if (
+        typeof password !== 'string' ||
+        Array.from(password).length < 12 ||
+        new TextEncoder().encode(password).length > 1024
+      )
+        return privateProblem(api, 422, 'PASSWORD_POLICY_VIOLATION');
+      const key = request.headers.get('Idempotency-Key')!;
+      if (row.summary.status === 'ACCEPTED') {
+        if (row.acceptedMode !== 'NEW') return privateProblem(api);
+        if (!(await verifyReceipt(api, row, password))) return privateProblem(api);
+        const acceptedAccount = api.world.accounts.find(
+          (account) => account.actorId === row.acceptedActorId,
+        );
+        if (
+          row.acceptedKey !== key ||
+          !row.newOutcome ||
+          acceptedAccount?.displayName !==
+            (typeof body['displayName'] === 'string' ? body['displayName'].trim() : '')
+        )
+          return privateProblem(api, 409, 'IDEMPOTENCY_KEY_REUSED');
+        return privateResult(row.newOutcome);
+      }
+      const displayName = typeof body['displayName'] === 'string' ? body['displayName'].trim() : '';
+      if (
+        !displayName ||
+        Array.from(displayName).length > 200 ||
+        /[\p{Cc}\p{Cf}]/u.test(displayName)
+      )
+        return privateProblem(api, 422, 'INVALID_DISPLAY_NAME');
+      if (api.invitations.pendingAcceptances.has(row.summary.invitationId))
+        return privateProblem(api, 409, 'IDEMPOTENCY_IN_PROGRESS');
+      api.invitations.pendingAcceptances.add(row.summary.invitationId);
+      try {
+        const actorId = crypto.randomUUID();
+        const credential = await api.invitations.credentialProof(actorId, password);
+        if (row.summary.status !== 'PENDING' || Date.parse(row.summary.expiresAt) <= Date.now())
+          return privateProblem(api);
+        const tenant = api.world.tenants.find((item) => item.id === row.tenantId)!;
+        const account = {
+          actorId,
+          username: `k_${crypto.randomUUID().replace(/-/g, '')}`,
+          displayName,
+          email: '',
+          memberships: [{ tenantCode: tenant.code, permissions: [], membershipOnly: true }],
+        };
+        api.world.accounts.push(account);
+        api.invitations.newCredentials.set(actorId, credential);
+        const outcome: NonNullable<StoredMockInvitation['newOutcome']> = {
+          tenantId: tenant.id,
+          tenantDisplayName: tenant.displayName,
+          membershipId: api.tenantMembership(account, tenant.id).id,
+          membershipStatus: 'ACTIVE',
+          accessPending: true,
+          loginHandle: account.username,
+          recoveryExpiresAt: new Date(Date.now() + 24 * 3_600_000).toISOString(),
+        };
+        row.summary.status = 'ACCEPTED';
+        row.summary.rowVersion += 1;
+        row.contactIndex = null;
+        row.terminalAt = Date.now();
+        row.acceptedActorId = actorId;
+        row.acceptedKey = key;
+        row.acceptedMode = 'NEW';
+        row.newOutcome = outcome;
+        api.invitations.purgeDelivery(row.summary.invitationId);
+        api.invitations.events.push({ action: 'accept', invitationId: row.summary.invitationId });
+        return privateResult(outcome);
+      } finally {
+        api.invitations.pendingAcceptances.delete(row.summary.invitationId);
+      }
+    }),
+    http.post(`${ANY}/api/v1/invitations/acceptance-receipt`, async ({ request }) => {
+      await wait(api);
+      const denied = await anonymousGate(api, request);
+      if (denied) return denied;
+      const body = await readJson<Record<string, unknown>>(request);
+      if (!body || Object.keys(body).some((key) => !['code', 'password'].includes(key)))
+        return privateProblem(api);
+      const row = await proof(api, body['code']);
+      if (!(await verifyReceipt(api, row, body['password'])) || !row?.newOutcome)
+        return privateProblem(api);
+      return privateResult(row.newOutcome);
     }),
   ];
 }

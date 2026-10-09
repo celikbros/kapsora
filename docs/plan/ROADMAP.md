@@ -38,7 +38,7 @@ administration commands. Existing organization CRUD remains its own delivered wo
 | Order | Stage | Current status | Result required |
 | --- | --- | --- | --- |
 | MGT-01 | Tenant user membership directory | VERIFIED; bounded live reads passed 2026-10-08 | Real list/filter/paging and membership detail with assigned-role validity; tenant-wide permission and strict data projection |
-| MGT-02 | Account onboarding and membership lifecycle | ACTIVE; MGT-02a technical checks/live reads passed; B1 CI passed and local schema 56; B1 live reads pending | Explicit public command contracts, validation, scoped lifecycle effects and retry/audit behavior |
+| MGT-02 | Account onboarding and membership lifecycle | ACTIVE; B1 live list/denial reads passed; B2 new-account acceptance implemented, isolated verification pending | Explicit public command contracts, validation, scoped lifecycle effects and retry/audit behavior |
 | MGT-03 | Role assignment and revocation | QUEUED | Step-up, privileged maker-checker rules, scoped commands and recorded history |
 | MGT-04 | Typed tenant settings | QUEUED | Named supported settings and validated changes; no arbitrary JSON editor |
 
@@ -119,10 +119,17 @@ passes with zero errors and eleven existing warnings. All six CI jobs passed on 
 713 frontend tests in 84 files, 25 smoke tests and seven Directory/seven Invitation cases
 without skips (six Invitation cases use PostgreSQL). The ignored local configuration
 enables only Mailpit loopback delivery; `.env.example` remains disabled. B1's opt-in live
-read checker awaits the operator's API/worker restart; no live invite/join was issued.
-Draft PR #11 remains open and unmerged. Next is B2 new-account
-acceptance/recovery; MGT-03 role changes and MGT-04 typed settings follow. Owner/calendar
-gates remain open.
+read checker passed 2/2 in 2.7 seconds after the operator's 2026-10-09 restart: bounded
+admin list/capabilities and financial-reviewer denial. Existing-row detail is conditional;
+no live invite/join was issued. Documentation head `7ca6e03` also passed all six CI jobs
+([run 37848689285](https://github.com/celikbros/kapsora/actions/runs/37848689285)).
+Draft PR #11 remains open and unmerged. B2 new-account acceptance and private username
+recovery are implemented under [the Astra-planned B2 package](../delegation/WP-MGT-02b2-new-account-invitations.md).
+The synthetic browser review passed 14 states at 1440px/390px, with no overflow or real
+API commands; an aborted acceptance response retried the exact command after password
+re-entry, and direct username recovery required the current password. Isolated database
+CI, migration 57 landing and final API boundary reads remain pending. MGT-03 role changes
+and MGT-04 typed settings follow. Owner/calendar gates remain open.
 
 ## Current product completion roadmap (2026-09-22)
 

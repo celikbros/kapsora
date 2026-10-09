@@ -12,10 +12,14 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
+	"golang.org/x/text/unicode/norm"
 
 	"github.com/celikbros/kapsora/internal/identity"
+	"github.com/celikbros/kapsora/internal/identity/domain"
 )
 
 const InvitationDeliveryEvent = "identity.invitation.delivery_requested"
@@ -30,6 +34,8 @@ var (
 	ErrInvitationKeyReused          = errors.New("identity: invitation command key reused")
 	ErrInvitationInvalidEmail       = errors.New("identity: invalid invitation email")
 	ErrInvitationDeliveryDisabled   = errors.New("identity: invitation delivery disabled")
+	ErrInvitationInvalidDisplayName = errors.New("identity: invalid invitation display name")
+	ErrInvitationInvalidPassword    = errors.New("identity: invalid invitation password")
 )
 
 var invitationDomain = regexp.MustCompile(`^[A-Za-z0-9](?:[A-Za-z0-9.-]{0,251}[A-Za-z0-9])?$`)
@@ -137,6 +143,12 @@ type AcceptedInvitation struct {
 	AccessPending     bool
 }
 
+type AcceptedNewInvitation struct {
+	AcceptedInvitation
+	LoginHandle       string
+	RecoveryExpiresAt time.Time
+}
+
 type InvitationRepository interface {
 	ListInvitations(context.Context, identity.RequestContext, InvitationFilter) ([]TenantInvitation, error)
 	GetInvitation(context.Context, identity.RequestContext, uuid.UUID) (TenantInvitation, error)
@@ -145,6 +157,9 @@ type InvitationRepository interface {
 	CancelInvitation(context.Context, identity.RequestContext, uuid.UUID, int64) (TenantInvitation, error)
 	InspectInvitation(context.Context, uuid.UUID, InvitationProof) (InspectedInvitation, error)
 	AcceptExistingInvitation(context.Context, uuid.UUID, InvitationProof, string) (AcceptedInvitation, error)
+	InspectNewInvitation(context.Context, InvitationProof) (InspectedInvitation, error)
+	AcceptNewInvitation(context.Context, InvitationProof, string, string, string, string) (AcceptedNewInvitation, error)
+	RecoverNewInvitation(context.Context, InvitationProof, string) (AcceptedNewInvitation, error)
 }
 
 type InvitationService struct{ repo InvitationRepository }
@@ -191,4 +206,43 @@ func (s *InvitationService) AcceptExisting(ctx context.Context, actorID uuid.UUI
 		return AcceptedInvitation{}, ErrInvitationKeyReused
 	}
 	return s.repo.AcceptExistingInvitation(ctx, actorID, proof, key)
+}
+
+func (s *InvitationService) InspectNew(ctx context.Context, code string) (InspectedInvitation, error) {
+	proof, err := ParseInvitationCode(code)
+	if err != nil {
+		return InspectedInvitation{}, err
+	}
+	return s.repo.InspectNewInvitation(ctx, proof)
+}
+
+func (s *InvitationService) AcceptNew(ctx context.Context, code, name, password, key string) (AcceptedNewInvitation, error) {
+	proof, err := ParseInvitationCode(code)
+	if err != nil {
+		domain.BurnPasswordTime(password)
+		return AcceptedNewInvitation{}, err
+	}
+	name = norm.NFC.String(strings.TrimSpace(name))
+	if !utf8.ValidString(name) || utf8.RuneCountInString(name) < 1 || utf8.RuneCountInString(name) > 200 || strings.IndexFunc(name, unicode.IsControl) >= 0 {
+		return AcceptedNewInvitation{}, ErrInvitationInvalidDisplayName
+	}
+	if !utf8.ValidString(password) || domain.ValidatePassword(password, "") != nil {
+		return AcceptedNewInvitation{}, ErrInvitationInvalidPassword
+	}
+	if len(key) < 16 || len(key) > 128 {
+		return AcceptedNewInvitation{}, ErrInvitationKeyReused
+	}
+	return s.repo.AcceptNewInvitation(ctx, proof, name, password, key, "v1|accept-new|"+name+"|true")
+}
+
+func (s *InvitationService) RecoverNew(ctx context.Context, code, password string) (AcceptedNewInvitation, error) {
+	if !utf8.ValidString(password) || len(password) > domain.MaxPasswordSizeBytes {
+		return AcceptedNewInvitation{}, ErrInvitationUnavailable
+	}
+	proof, err := ParseInvitationCode(code)
+	if err != nil {
+		domain.BurnPasswordTime(password)
+		return AcceptedNewInvitation{}, err
+	}
+	return s.repo.RecoverNewInvitation(ctx, proof, password)
 }

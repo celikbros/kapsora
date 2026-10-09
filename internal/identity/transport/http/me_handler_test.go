@@ -94,6 +94,9 @@ func newAuthzServer(t *testing.T, recorder ...audit.Recorder) *authzServer {
 	invitationHandler := identityhttp.NewInvitationHandler(application.NewInvitationService(invitationRepo), mw, cursors, logger)
 
 	r := chi.NewRouter()
+	r.Group(func(anon chi.Router) {
+		invitationHandler.AnonymousRecipientRoutes(anon, "http://127.0.0.1:5181")
+	})
 	r.Route("/api/v1", func(api chi.Router) {
 		api.Use(mw.LoadSession)
 		api.Post("/session/login", sessionHandler.Login)

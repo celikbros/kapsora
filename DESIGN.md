@@ -875,14 +875,18 @@ directory's bounded paging, compact mobile cards and explicit loading/error/empt
 It displays only masked contact and safe status metadata. Creating or cancelling uses
 password confirmation; uncertain retries preserve the original command key, input and
 version, while cancellation conflicts require an explicit reload. The recipient enters
-the proof on a fixed page outside the tenant shell after ordinary login, including for
-an account with no application grants. The code stays in component memory and never
-appears in a URL, query key or browser storage. Consent names the signed-in account and
-institution. Acceptance leaves the current tenant unchanged and shows either the
-zero-grant waiting state or preservation of an already active membership. Switching
-accounts clears the proof and any pending result. The ordinary app chooser lists active
-memberships awaiting role assignment, including when the account already has access to
-another application. It does not send a zero-grant member to a business dashboard.
+  the proof on a fixed page outside the tenant shell. Existing-account recipients sign in
+  normally, including an account with no application grants. New-account recipients can
+  review the institution while anonymous, then provide a display name, chosen password and
+  explicit consent. The code and password stay in component memory and never appear in a
+  URL, query key or browser storage. Existing-account consent names the signed-in account
+  and institution; acceptance leaves the current tenant unchanged. New-account acceptance
+  displays a selectable generated login handle, asks the recipient to retain it, and directs
+  them to ordinary login without creating a session. A separate private receipt form asks
+  for both the code and current password within 24 hours if that result was lost. Switching
+  accounts or modes clears the proof, password and pending result. The ordinary app chooser
+  lists active memberships awaiting role assignment, including when the account already has
+  access to another application. It does not send a zero-grant member to a business dashboard.
 
 ## Motion
 

@@ -157,15 +157,11 @@ const appChooserRoute = createRoute({
   component: AppChooserPage,
 });
 
-/** The recipient enters the proof after normal sign-in, before selecting a tenant. */
+/** Fixed proof page is available before sign-in or tenant selection. */
 const invitationRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/invitation',
-  beforeLoad: ({ context, location }) =>
-    requireAuthenticated(context.services.store, {
-      pathname: location.pathname,
-      searchStr: location.searchStr,
-    }),
+  beforeLoad: ({ context }) => context.services.store.bootstrap().catch(() => undefined),
   component: InvitationPage,
 });
 

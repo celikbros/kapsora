@@ -239,6 +239,10 @@ Spectral passes with zero errors and eleven existing warnings. All six CI jobs p
 713 frontend tests, 25 smoke tests and seven Directory/seven Invitation cases without
 skips, with six Invitation cases exercising PostgreSQL. Migration 000056 is applied
 locally at schema 56, dirty=false. Only local Mailpit loopback delivery is enabled in the
-ignored `.env`; defaults remain disabled. Opt-in invitation live reads await operator
-restart; no live invitation or membership acceptance was issued. B2 new-account
-acceptance and receipt recovery is next; MGT-03 roles and MGT-04 settings remain later work.
+ignored `.env`; defaults remain disabled. After the operator's 2026-10-09 restart, the
+opt-in live checker passed 2/2 in 2.7 seconds for bounded admin list/capabilities and
+financial-reviewer denial. Existing-row detail is conditional; no live invitation or
+membership acceptance was issued. B2 new-account acceptance and private username recovery
+are implemented under [the focused B2 package](WP-MGT-02b2-new-account-invitations.md);
+isolated CI and local migration landing are pending. MGT-03 roles and MGT-04 settings
+remain later work.

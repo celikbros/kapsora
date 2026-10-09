@@ -3256,6 +3256,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/invitations/accept-new": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Anonymous consent and chosen-password creation of one active zero-grant account and membership. Requires the configured invitation origin, JSON media type and X-Invitation-Request. Returns no session or cookie; exact retry requires the current password. Every response is no-store. */
+        post: operations["acceptNewInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/invitations/acceptance-receipt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Private 24-hour receipt recovery using the invitation proof and accepted actor's current password. Requires the configured invitation origin, JSON media type and X-Invitation-Request. Returns no session or cookie; every response is no-store. */
+        post: operations["recoverNewInvitationAcceptance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/invitations/inspect": {
         parameters: {
             query?: never;
@@ -3267,6 +3301,23 @@ export interface paths {
         put?: never;
         /** @description An authenticated account proves a pasted code before any tenant details are returned. No active tenant is required. */
         post: operations["inspectInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/invitations/inspect-new": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Anonymous proof inspection for a pending invitation. Requires the configured invitation origin, JSON media type and X-Invitation-Request; all terminal outcomes are unavailable. No session is loaded and every response is no-store. */
+        post: operations["inspectNewInvitation"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6668,6 +6719,27 @@ export interface components {
             /** Format: uuid */
             tenantId: string;
         };
+        AcceptNewInvitationRequest: {
+            code: string;
+            /** @constant */
+            confirmed: true;
+            displayName: string;
+            /** Format: password */
+            password: string;
+        };
+        AcceptNewInvitationResponse: {
+            accessPending: boolean;
+            loginHandle: string;
+            /** Format: uuid */
+            membershipId: string;
+            /** @constant */
+            membershipStatus: "ACTIVE";
+            /** Format: date-time */
+            recoveryExpiresAt: string;
+            tenantDisplayName: string;
+            /** Format: uuid */
+            tenantId: string;
+        };
         AddWorkItemComment: {
             body: string;
             visibility: components["schemas"]["CommentVisibility"];
@@ -9748,6 +9820,11 @@ export interface components {
             stayDate: string;
             /** Format: date-time */
             updatedAt?: string | null;
+        };
+        InvitationAcceptanceReceiptRequest: {
+            code: string;
+            /** Format: password */
+            password: string;
         };
         /**
          * @description An invoice the provider raised elsewhere, as KAPSORA records it, with the claims it
@@ -13714,6 +13791,10 @@ export interface components {
         IfMatch: string;
         ImportId: string;
         ImportRowId: string;
+        /** @description Must exactly match the origin of the configured invitation link base. */
+        InvitationOrigin: string;
+        /** @description Must be exactly 1 on anonymous invitation requests. */
+        InvitationRequestMarker: "1";
         InvoiceId: string;
         LegalHoldId: string;
         Limit: number;
@@ -13766,6 +13847,8 @@ export interface components {
 }
 export type SchemaAcceptExistingInvitationRequest = components['schemas']['AcceptExistingInvitationRequest'];
 export type SchemaAcceptExistingInvitationResponse = components['schemas']['AcceptExistingInvitationResponse'];
+export type SchemaAcceptNewInvitationRequest = components['schemas']['AcceptNewInvitationRequest'];
+export type SchemaAcceptNewInvitationResponse = components['schemas']['AcceptNewInvitationResponse'];
 export type SchemaAddWorkItemComment = components['schemas']['AddWorkItemComment'];
 export type SchemaApprovalPolicy = components['schemas']['ApprovalPolicy'];
 export type SchemaApprovalPolicyInput = components['schemas']['ApprovalPolicyInput'];
@@ -13974,6 +14057,7 @@ export type SchemaInpatientStayStatus = components['schemas']['InpatientStayStat
 export type SchemaInspectInvitationRequest = components['schemas']['InspectInvitationRequest'];
 export type SchemaInspectInvitationResponse = components['schemas']['InspectInvitationResponse'];
 export type SchemaInventoryDay = components['schemas']['InventoryDay'];
+export type SchemaInvitationAcceptanceReceiptRequest = components['schemas']['InvitationAcceptanceReceiptRequest'];
 export type SchemaInvoice = components['schemas']['Invoice'];
 export type SchemaInvoiceAllocation = components['schemas']['InvoiceAllocation'];
 export type SchemaInvoiceAllocationInput = components['schemas']['InvoiceAllocationInput'];
@@ -14308,6 +14392,8 @@ export type ParameterIdempotencyKeyOptional = components['parameters']['Idempote
 export type ParameterIfMatch = components['parameters']['IfMatch'];
 export type ParameterImportId = components['parameters']['ImportId'];
 export type ParameterImportRowId = components['parameters']['ImportRowId'];
+export type ParameterInvitationOrigin = components['parameters']['InvitationOrigin'];
+export type ParameterInvitationRequestMarker = components['parameters']['InvitationRequestMarker'];
 export type ParameterInvoiceId = components['parameters']['InvoiceId'];
 export type ParameterLegalHoldId = components['parameters']['LegalHoldId'];
 export type ParameterLimit = components['parameters']['Limit'];
@@ -21640,6 +21726,75 @@ export interface operations {
             409: components["responses"]["Conflict"];
         };
     };
+    acceptNewInvitation: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Must exactly match the origin of the configured invitation link base. */
+                Origin: components["parameters"]["InvitationOrigin"];
+                /** @description Must be exactly 1 on anonymous invitation requests. */
+                "X-Invitation-Request": components["parameters"]["InvitationRequestMarker"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptNewInvitationRequest"];
+            };
+        };
+        responses: {
+            /** @description New account and tenant membership awaiting role assignment */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcceptNewInvitationResponse"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    recoverNewInvitationAcceptance: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Must exactly match the origin of the configured invitation link base. */
+                Origin: components["parameters"]["InvitationOrigin"];
+                /** @description Must be exactly 1 on anonymous invitation requests. */
+                "X-Invitation-Request": components["parameters"]["InvitationRequestMarker"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvitationAcceptanceReceiptRequest"];
+            };
+        };
+        responses: {
+            /** @description Previously accepted new account outcome */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcceptNewInvitationResponse"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
     inspectInvitation: {
         parameters: {
             query?: never;
@@ -21665,6 +21820,39 @@ export interface operations {
             400: components["responses"]["ValidationError"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    inspectNewInvitation: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Must exactly match the origin of the configured invitation link base. */
+                Origin: components["parameters"]["InvitationOrigin"];
+                /** @description Must be exactly 1 on anonymous invitation requests. */
+                "X-Invitation-Request": components["parameters"]["InvitationRequestMarker"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InspectInvitationRequest"];
+            };
+        };
+        responses: {
+            /** @description Valid pending invitation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspectInvitationResponse"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listInvoices: {

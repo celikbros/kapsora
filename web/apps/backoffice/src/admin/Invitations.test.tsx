@@ -23,11 +23,18 @@ function mount(path: string) {
   const services = createServices({ baseUrl: BASE });
   const history = createMemoryHistory({ initialEntries: [path] });
   render(<App services={services} history={history} />);
+  activeHistory = history;
   return { services, history };
 }
 
+let activeHistory: ReturnType<typeof createMemoryHistory>;
+
 async function login(username: string) {
   const user = userEvent.setup();
+  if (activeHistory.location.pathname === '/invitation') {
+    await screen.findByTestId('invitation-anonymous-page');
+    await user.click(screen.getByRole('link', { name: /Hesabım var/ }));
+  }
   await user.type(await screen.findByLabelText(/Kullanıcı adı/), username);
   await user.type(screen.getByLabelText(/^Parola/), PASSWORD);
   await user.click(screen.getByRole('button', { name: 'Giriş yap' }));

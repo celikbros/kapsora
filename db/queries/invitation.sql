@@ -58,7 +58,7 @@ UPDATE iam.tenant_invitation SET status='CANCELLED',terminal_at=clock_timestamp(
 SELECT EXISTS(SELECT 1 FROM iam.actor WHERE id=$1 AND status='ACTIVE');
 
 -- name: InspectInvitationProof :one
-SELECT i.proof_digest,i.status,i.expires_at,t.display_name,i.accepted_actor_id,i.terminal_at
+SELECT i.proof_digest,i.status,i.expires_at,t.display_name,i.accepted_actor_id,i.terminal_at,i.accepted_mode
  FROM iam.tenant_invitation i JOIN platform.tenant t ON t.id=i.tenant_id
  WHERE i.tenant_id=$1 AND i.id=$2 AND t.status='ACTIVE';
 
@@ -67,7 +67,8 @@ SELECT id FROM platform.tenant WHERE id=$1 AND status='ACTIVE' FOR UPDATE;
 
 -- name: LockInvitationForAccept :one
 SELECT i.proof_digest,i.status,i.expires_at,COALESCE(i.accept_key,'') AS accept_key,
- i.accepted_actor_id,i.accepted_membership_id,t.display_name,i.terminal_at
+ i.accepted_actor_id,i.accepted_membership_id,t.display_name,i.terminal_at,
+ i.accepted_mode,i.accept_new_fingerprint
  FROM iam.tenant_invitation i JOIN platform.tenant t ON t.id=i.tenant_id
  WHERE i.tenant_id=$1 AND i.id=$2 FOR UPDATE OF i;
 
@@ -89,7 +90,7 @@ SELECT EXISTS (
 
 -- name: AcceptTenantInvitation :exec
 UPDATE iam.tenant_invitation SET status='ACCEPTED',
- accepted_actor_id=$3,accepted_membership_id=$4,accept_key=$5,terminal_at=clock_timestamp(),
+ accepted_actor_id=$3,accepted_membership_id=$4,accept_key=$5,accepted_mode='EXISTING',terminal_at=clock_timestamp(),
  contact_cipher=NULL,contact_hash=NULL,delivery_cipher=NULL,
  delivery_status=CASE WHEN delivery_status='SENT' THEN 'SENT' ELSE 'CANCELLED' END
  WHERE tenant_id=$1 AND id=$2;
@@ -121,7 +122,7 @@ UPDATE iam.tenant_invitation AS target SET masked_recipient=NULL
  ORDER BY i.terminal_at,i.id LIMIT 100 FOR UPDATE SKIP LOCKED);
 
 -- name: PurgeInvitationProofBatch :execrows
-UPDATE iam.tenant_invitation AS target SET proof_digest=NULL,accept_key=NULL
+UPDATE iam.tenant_invitation AS target SET proof_digest=NULL,accept_key=NULL,accept_new_fingerprint=NULL
  WHERE target.id IN (SELECT i.id FROM iam.tenant_invitation i WHERE i.tenant_id=$1 AND i.status='ACCEPTED'
  AND i.proof_digest IS NOT NULL AND i.terminal_at<clock_timestamp()-interval '24 hours'
  ORDER BY i.terminal_at,i.id LIMIT 100 FOR UPDATE SKIP LOCKED);
@@ -132,3 +133,25 @@ DELETE FROM iam.tenant_invitation_create_receipt AS target
  SELECT i.tenant_id,i.actor_id,i.idempotency_key FROM iam.tenant_invitation_create_receipt i
  WHERE i.tenant_id=$1 AND i.created_at<clock_timestamp()-interval '24 hours'
  ORDER BY i.created_at,i.invitation_id LIMIT 100 FOR UPDATE SKIP LOCKED);
+
+-- name: AcceptNewTenantInvitation :one
+UPDATE iam.tenant_invitation SET status='ACCEPTED', accepted_mode='NEW',
+ accepted_actor_id=$3,accepted_membership_id=$4,accept_key=$5,
+ accept_new_fingerprint=$6,terminal_at=clock_timestamp(),
+ contact_cipher=NULL,contact_hash=NULL,delivery_cipher=NULL,
+ delivery_status=CASE WHEN delivery_status='SENT' THEN 'SENT' ELSE 'CANCELLED' END
+ WHERE tenant_id=$1 AND id=$2
+ RETURNING terminal_at;
+
+-- name: LockInvitationRecoveryCredential :one
+SELECT a.identity_subject,a.status,c.password_hash,c.failed_attempts,c.locked_until
+ FROM iam.actor a JOIN iam.credential c ON c.actor_id=a.id
+ WHERE a.id=$1 FOR UPDATE OF a,c;
+
+-- name: ClearInvitationCredentialFailures :exec
+UPDATE iam.credential SET failed_attempts=0,locked_until=NULL WHERE actor_id=$1;
+
+-- name: ValidateInvitationAcceptedMembership :one
+SELECT membership_status,valid_period @> CURRENT_DATE AS valid_today
+ FROM iam.tenant_membership
+ WHERE tenant_id=$1 AND id=$2 AND actor_id=$3 FOR UPDATE;

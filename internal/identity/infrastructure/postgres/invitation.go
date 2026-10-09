@@ -293,7 +293,7 @@ func (r *InvitationRepository) InspectInvitation(ctx context.Context, actorID uu
 		}
 		out.TenantDisplayName = row.DisplayName
 		out.ExpiresAt = row.ExpiresAt
-		if row.Status == "ACCEPTED" && row.AcceptedActorID.Valid && row.AcceptedActorID.UUID == actorID && row.TerminalAt != nil && time.Now().Before(row.TerminalAt.Add(24*time.Hour)) {
+		if row.Status == "ACCEPTED" && row.AcceptedMode != nil && *row.AcceptedMode == "EXISTING" && row.AcceptedActorID.Valid && row.AcceptedActorID.UUID == actorID && row.TerminalAt != nil && time.Now().Before(row.TerminalAt.Add(24*time.Hour)) {
 			out.Status = row.Status
 			return r.audit.Record(ctx, tx, audit.Event{TenantID: uuid.NullUUID{UUID: proof.TenantID, Valid: true},
 				ActorID: uuid.NullUUID{UUID: actorID, Valid: true}, Category: audit.CategorySecurity,
@@ -343,7 +343,7 @@ func (r *InvitationRepository) AcceptExistingInvitation(ctx context.Context, act
 			return application.ErrInvitationUnavailable
 		}
 		out.TenantDisplayName = row.DisplayName
-		if row.Status == "ACCEPTED" && row.AcceptedActorID.Valid && row.AcceptedActorID.UUID == actorID && row.TerminalAt != nil && time.Now().Before(row.TerminalAt.Add(24*time.Hour)) {
+		if row.Status == "ACCEPTED" && row.AcceptedMode != nil && *row.AcceptedMode == "EXISTING" && row.AcceptedActorID.Valid && row.AcceptedActorID.UUID == actorID && row.TerminalAt != nil && time.Now().Before(row.TerminalAt.Add(24*time.Hour)) {
 			if row.AcceptKey != key {
 				return application.ErrInvitationKeyReused
 			}
