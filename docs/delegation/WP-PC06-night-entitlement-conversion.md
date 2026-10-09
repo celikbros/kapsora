@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Status | PLANNED; source concern identified, isolated reproduction and implementation pending |
+| Status | REPRODUCTION IN PROGRESS; isolated CI evidence and implementation pending |
 | Planned | 2026-10-09, gpt-6-astra |
 | Prerequisite | Bounded factor-1 enrollment/account coherence accepted on f94c269 in CI 37984416048 |
 | Outcome | NIGHT service quantities and mapped ledger quantities remain distinct through the booking lifecycle |
@@ -205,8 +205,14 @@ conversion design. No new public field or UI flow is planned. Allocation/price f
 contract ranking and owner/calendar gates remain separate. An unexpected schema/public
 interface requirement is a concrete review point, not permission to silently broaden scope.
 
-This document is a plan only. First complete current enrollment acceptance, then establish
-isolated reproductions before implementation. Runtime verification remains operator
+Enrollment/account acceptance is complete. Three focused SQL/HTTP reproduction tests
+and an early isolated CI diagnostic are prepared; production conversion code is unchanged.
+The tests are deliberately opt-in (`KAPSORA_TEST_NIGHT_CONVERSION_REPRODUCTION=1`) until
+implementation: the diagnostic requires three compiled, unskipped failures at the stated
+coverage/reserved-unit assertions. Their default skips are not functional acceptance.
+Fixture mappings are set while DRAFT, then published; the superseded same-code account
+is frozen so it cannot mask the fractional-balance search. Isolated reproduction results
+must be recorded before implementation. Runtime verification remains operator
 controlled and separate from CI; no affected live row or rollout deadline is asserted.
 
 

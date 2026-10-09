@@ -64,6 +64,38 @@ jobs:
         env:
           KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
         run: go test -count=1 -v -timeout 5m ./internal/accommodation/transport/http -run '^(TestHoldAmbiguousProgramsRefuseBeforeEffects|TestHoldExplicitProgramPinsEvaluationPriceAndAccount|TestHoldSameProgramAmbiguityAndPinnedWaitlistContinuity|TestPinnedEnrollmentUnavailableLeavesQueueWaiting|TestPinnedUnfundedEnrollmentDoesNotBorrowSecondPlan|TestPinnedHoldRejectsWrongPersonProgramAndUnknownEnrollment)$'
+      - name: NIGHT entitlement conversion reproduction (expected semantic failures)
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+          KAPSORA_TEST_NIGHT_CONVERSION_REPRODUCTION: '1'
+        run: |
+          python3 - <<'PY'
+          import subprocess
+
+          expected = {
+              'TestNightConversionBalance3Factor2Stay2': 'NIGHT_CONVERSION_BALANCE3_COVERAGE:',
+              'TestNightConversionBalance4Factor2Stay2': 'NIGHT_CONVERSION_BALANCE4_UNITS:',
+              'TestNightConversionBalanceOnePointFiveFactorHalfStay3': 'NIGHT_CONVERSION_BALANCE1_5_COVERAGE:',
+          }
+          result = subprocess.run([
+              'go', 'test', '-count=1', '-v', '-timeout', '5m',
+              './internal/accommodation/transport/http',
+              '-run', '^(' + '|'.join(expected) + ')$',
+          ], capture_output=True, text=True)
+          output = result.stdout + result.stderr
+          print(output)
+          if result.returncode != 1 or '[build failed]' in output or '--- SKIP:' in output:
+              raise SystemExit('NIGHT reproduction did not produce compiled, unskipped test failures')
+          failures = [line for line in output.splitlines() if line.startswith('--- FAIL: ')]
+          if len(failures) != len(expected):
+              raise SystemExit('NIGHT reproduction did not fail exactly the three targeted tests')
+          for case, assertion in expected.items():
+              if not any(line.startswith('--- FAIL: ' + case + ' ') for line in failures):
+                  raise SystemExit('NIGHT reproduction did not reach ' + case)
+              if assertion not in output:
+                  raise SystemExit('NIGHT reproduction failed outside intended assertion: ' + case)
+          print('All three NIGHT conversion defects reproduced at their intended semantic assertions')
+          PY
       - name: eligibility selected enrollment and shared account regression
         env:
           KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
