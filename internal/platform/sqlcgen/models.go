@@ -1443,6 +1443,50 @@ type IamRole struct {
 	CreatedAt    time.Time
 }
 
+type IamRoleChangeCommandReceipt struct {
+	ID             uuid.UUID
+	TenantID       uuid.UUID
+	ActorID        uuid.UUID
+	CommandCode    string
+	KeyHash        []byte
+	RequestHash    []byte
+	RequestID      uuid.UUID
+	ResponseStatus int32
+	ResponseEtag   string
+	ResponseBody   []byte
+	CreatedAt      time.Time
+}
+
+type IamRoleChangeRequest struct {
+	ID                       uuid.UUID
+	TenantID                 uuid.UUID
+	Operation                string
+	TargetMembershipID       uuid.UUID
+	TargetActorID            uuid.UUID
+	MakerMembershipID        uuid.UUID
+	MakerActorID             uuid.UUID
+	RoleID                   uuid.UUID
+	RoleCode                 string
+	ScopeType                string
+	PermissionSnapshot       []byte
+	ConfigurationHash        []byte
+	TargetMembershipVersion  int64
+	RevokeGrantID            uuid.NullUUID
+	RevokeValidPeriod        pgtype.Range[pgtype.Timestamptz]
+	ReasonCode               string
+	Status                   string
+	DecidedByMembershipID    uuid.NullUUID
+	DecidedByActorID         uuid.NullUUID
+	DecidedAt                *time.Time
+	DecisionReasonCode       *string
+	AppliedGrantID           uuid.NullUUID
+	AppliedMembershipVersion *int64
+	AppliedValidPeriod       pgtype.Range[pgtype.Timestamptz]
+	CreatedAt                time.Time
+	UpdatedAt                time.Time
+	RowVersion               int64
+}
+
 type IamRolePermission struct {
 	TenantID       uuid.UUID
 	RoleID         uuid.UUID

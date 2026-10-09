@@ -32,7 +32,7 @@ func TestInvitationMigration56To57PreservesAcceptedExisting(t *testing.T) {
 		tenantID, proof, actorID, memberID).Scan(&invitationID); err != nil {
 		t.Fatal(err)
 	}
-	st, err := dbmigrate.Up(h.AdminURL)
+	st, err := dbmigrate.UpTo(h.AdminURL, 57)
 	if err != nil || st.Version != 57 || st.Dirty {
 		t.Fatalf("upgrade: %+v %v", st, err)
 	}
@@ -52,7 +52,7 @@ func TestInvitationMigration56To57PreservesAcceptedExisting(t *testing.T) {
 }
 
 // expectedSchemaVersion is the number of the newest migration file.
-const expectedSchemaVersion = 57
+const expectedSchemaVersion = 58
 
 func TestMigrateUpFromEmptyDatabase(t *testing.T) {
 	h := dbtest.New(t)

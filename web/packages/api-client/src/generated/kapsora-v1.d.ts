@@ -810,6 +810,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/privileged-role-assignment-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Exact configured privileged TENANT role candidates; requires current correlated tenant user.read and role.manage authority. */
+        get: operations["listPrivilegedRoleAssignmentOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/role-assignment-options": {
         parameters: {
             query?: never;
@@ -838,6 +855,91 @@ export interface paths {
         get: operations["listRoleAssignmentOrganizations"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/role-change-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Bounded request history; list rows omit permission snapshots and live action eligibility. */
+        get: operations["listRoleChangeRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/role-change-requests/{requestId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Static proposal evidence and current action eligibility; refresh before approval. */
+        get: operations["getRoleChangeRequest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/role-change-requests/{requestId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description A distinct authorized checker atomically applies the frozen proposal. */
+        post: operations["approveRoleChangeRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/role-change-requests/{requestId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description The original currently authorized maker withdraws a pending request without changing access. */
+        post: operations["cancelRoleChangeRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/role-change-requests/{requestId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description A distinct authorized checker closes a pending request without changing access. */
+        post: operations["rejectRoleChangeRequest"];
         delete?: never;
         options?: never;
         head?: never;
@@ -879,6 +981,40 @@ export interface paths {
         get: operations["getTenantUser"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{membershipId}/role-change-eligibility": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Target aggregate eligibility and eligible sole-grant revoke IDs; ETag is the membership aggregate version. */
+        get: operations["getTenantUserRoleChangeEligibility"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{membershipId}/role-change-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Propose a privileged assignment or revocation; access remains unchanged until approval by another authorized human. */
+        post: operations["createTenantUserRoleChangeRequest"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6865,6 +7001,7 @@ export interface components {
         ApprovalPolicyList: {
             items: components["schemas"]["ApprovalPolicy"][];
         };
+        ApproveRoleChangeRequest: Record<string, never>;
         /**
          * @description How work is meant to reach a person in this queue. MANUAL is the only one the
          *     commands implement today: ROUND_ROBIN and LEAST_LOADED are recorded so a queue can
@@ -7487,6 +7624,10 @@ export interface components {
             booking: components["schemas"]["Booking"];
             cancellation: components["schemas"]["Cancellation"];
             quote: components["schemas"]["CancellationQuote"];
+        };
+        CancelRoleChangeRequest: {
+            /** @enum {string} */
+            reasonCode: "WITHDRAWN";
         };
         /**
          * @description Why this settlement is being withdrawn. The code is what a report counts; the text is
@@ -8777,6 +8918,24 @@ export interface components {
             validFrom: string;
             /** Format: date */
             validTo?: string;
+        };
+        CreateRoleChangeAssignRequest: {
+            configurationHash: string;
+            /** @enum {string} */
+            operation: "ASSIGN";
+            /** @enum {string} */
+            reasonCode: "ONBOARDING" | "DUTY_ASSIGNMENT";
+            roleCode: string;
+        };
+        CreateRoleChangeRequest: components["schemas"]["CreateRoleChangeAssignRequest"] | components["schemas"]["CreateRoleChangeRevokeRequest"];
+        CreateRoleChangeRevokeRequest: {
+            configurationHash: string;
+            /** Format: uuid */
+            grantId: string;
+            /** @enum {string} */
+            operation: "REVOKE";
+            /** @enum {string} */
+            reasonCode: "ACCESS_REVIEW" | "DUTY_ENDED" | "SECURITY_CONCERN";
         };
         CreateRoomType: {
             attributes?: {
@@ -11540,6 +11699,21 @@ export interface components {
          * @enum {string}
          */
         PricingMethod: "FIXED" | "UNIT" | "PERCENT_OF_LIST" | "FORMULA";
+        PrivilegedRoleAssignmentOption: {
+            code: string;
+            configurationHash: string;
+            description: string;
+            hasSensitivePermissions: boolean;
+            name: string;
+            permissionCodes: string[];
+            /** @enum {boolean} */
+            requiresApproval: true;
+            /** @enum {string} */
+            scopeType: "TENANT";
+        };
+        PrivilegedRoleAssignmentOptions: {
+            items: components["schemas"]["PrivilegedRoleAssignmentOption"][];
+        };
         /**
          * @description RFC 9457 problem detail. Extension members are permitted and are serialised flat
          *     beside the standard members: a problem type may carry the one fact that makes it
@@ -12150,6 +12324,10 @@ export interface components {
             rejectReasonCode: string;
             reviewComment?: string | null;
         };
+        RejectRoleChangeRequest: {
+            /** @enum {string} */
+            reasonCode: "NOT_JUSTIFIED" | "INCORRECT_ACCESS" | "STALE_REQUEST";
+        };
         /**
          * @description A reason is optional here: putting work down may be nothing more than the end of a
          *     shift. A code that is given has to be one a report can group by.
@@ -12322,6 +12500,124 @@ export interface components {
         RoleAssignmentOrganizationPage: {
             items: components["schemas"]["RoleAssignmentOrganization"][];
             nextCursor: string | null;
+        };
+        RoleChangeAppliedGrant: {
+            /** Format: uuid */
+            id: string;
+            isSystemRole: boolean;
+            roleCode: string;
+            roleName: string;
+            /** @enum {string} */
+            scopeType: "TENANT";
+            /** Format: date-time */
+            validFrom: string | null;
+            validityEmpty: boolean;
+            /** Format: date-time */
+            validTo: string | null;
+        };
+        RoleChangeCommandResult: {
+            appliedGrant: components["schemas"]["RoleChangeAppliedGrant"] | null;
+            /** Format: int64 */
+            membershipRowVersion: number | null;
+            request: components["schemas"]["RoleChangeRequest"];
+        };
+        RoleChangeEligibility: {
+            assignmentRefusalCode: string | null;
+            canRequestAssignment: boolean;
+            /** @enum {string} */
+            checkerAvailability: "AVAILABLE" | "NO_ELIGIBLE_CHECKER";
+            /** Format: uuid */
+            membershipId: string;
+            /** Format: int64 */
+            membershipRowVersion: number;
+            revokeGrantIds: string[];
+        };
+        RoleChangePermission: {
+            code: string;
+            /** @enum {string} */
+            sensitivity: "NORMAL" | "SENSITIVE" | "PRIVILEGED";
+        };
+        RoleChangeRequest: {
+            /** Format: uuid */
+            appliedGrantId: string | null;
+            /** Format: int64 */
+            appliedMembershipVersion: number | null;
+            appliedValidity: components["schemas"]["RoleChangeValidity"] | null;
+            configurationHash: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            decidedAt: string | null;
+            /** Format: uuid */
+            decidedByMembershipId: string | null;
+            decisionReasonCode: string | null;
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            makerMembershipId: string;
+            /** @enum {string} */
+            operation: "ASSIGN" | "REVOKE";
+            permissionSnapshot: components["schemas"]["RoleChangePermission"][];
+            reasonCode: string;
+            /** Format: uuid */
+            revokeGrantId: string | null;
+            revokeValidity: components["schemas"]["RoleChangeValidity"] | null;
+            roleCode: string;
+            /** Format: int64 */
+            rowVersion: number;
+            /** @enum {string} */
+            scopeType: "TENANT";
+            /** @enum {string} */
+            status: "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
+            /** Format: uuid */
+            targetMembershipId: string;
+            /** Format: int64 */
+            targetMembershipVersion: number;
+        };
+        RoleChangeRequestDetail: {
+            approvalRefusalCode: string | null;
+            canApprove: boolean;
+            canCancel: boolean;
+            cancellationRefusalCode: string | null;
+            canReject: boolean;
+            /** @enum {string} */
+            checkerAvailability: "AVAILABLE" | "NO_ELIGIBLE_CHECKER";
+            rejectionRefusalCode: string | null;
+            request: components["schemas"]["RoleChangeRequest"];
+        };
+        RoleChangeRequestPage: {
+            items: components["schemas"]["RoleChangeRequestSummary"][];
+            nextCursor: string | null;
+        };
+        RoleChangeRequestSummary: {
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            decidedAt: string | null;
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            makerMembershipId: string;
+            /** @enum {string} */
+            operation: "ASSIGN" | "REVOKE";
+            reasonCode: string;
+            roleCode: string;
+            /** Format: int64 */
+            rowVersion: number;
+            /** @enum {string} */
+            scopeType: "TENANT";
+            /** @enum {string} */
+            status: "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
+            /** Format: uuid */
+            targetMembershipId: string;
+        };
+        RoleChangeValidity: {
+            /** Format: date-time */
+            from: string | null;
+            fromInclusive: boolean;
+            /** Format: date-time */
+            to: string | null;
+            toInclusive: boolean;
         };
         RoomType: {
             /**
@@ -13961,6 +14257,7 @@ export interface components {
         ReportId: string;
         RequestId: string;
         RoleAssignmentMembershipId: string;
+        RoleChangeRequestId: string;
         RoomTypeId: string;
         RuleEvaluationId: string;
         RuleSetId: string;
@@ -13998,6 +14295,7 @@ export type SchemaAddWorkItemComment = components['schemas']['AddWorkItemComment
 export type SchemaApprovalPolicy = components['schemas']['ApprovalPolicy'];
 export type SchemaApprovalPolicyInput = components['schemas']['ApprovalPolicyInput'];
 export type SchemaApprovalPolicyList = components['schemas']['ApprovalPolicyList'];
+export type SchemaApproveRoleChangeRequest = components['schemas']['ApproveRoleChangeRequest'];
 export type SchemaAssignmentPolicy = components['schemas']['AssignmentPolicy'];
 export type SchemaAssignTenantRoleGrantRequest = components['schemas']['AssignTenantRoleGrantRequest'];
 export type SchemaAuthorization = components['schemas']['Authorization'];
@@ -14033,6 +14331,7 @@ export type SchemaCancellation = components['schemas']['Cancellation'];
 export type SchemaCancellationPreview = components['schemas']['CancellationPreview'];
 export type SchemaCancellationQuote = components['schemas']['CancellationQuote'];
 export type SchemaCancellationResult = components['schemas']['CancellationResult'];
+export type SchemaCancelRoleChangeRequest = components['schemas']['CancelRoleChangeRequest'];
 export type SchemaCancelSettlement = components['schemas']['CancelSettlement'];
 export type SchemaCheckInBookingRequest = components['schemas']['CheckInBookingRequest'];
 export type SchemaCheckOutBookingRequest = components['schemas']['CheckOutBookingRequest'];
@@ -14120,6 +14419,9 @@ export type SchemaCreateProviderLocationRequest = components['schemas']['CreateP
 export type SchemaCreateProviderRequest = components['schemas']['CreateProviderRequest'];
 export type SchemaCreateReimbursement = components['schemas']['CreateReimbursement'];
 export type SchemaCreateRelationshipRequest = components['schemas']['CreateRelationshipRequest'];
+export type SchemaCreateRoleChangeAssignRequest = components['schemas']['CreateRoleChangeAssignRequest'];
+export type SchemaCreateRoleChangeRequest = components['schemas']['CreateRoleChangeRequest'];
+export type SchemaCreateRoleChangeRevokeRequest = components['schemas']['CreateRoleChangeRevokeRequest'];
 export type SchemaCreateRoomType = components['schemas']['CreateRoomType'];
 export type SchemaCreateRuleSetRequest = components['schemas']['CreateRuleSetRequest'];
 export type SchemaCreateRuleSetVersionRequest = components['schemas']['CreateRuleSetVersionRequest'];
@@ -14316,6 +14618,8 @@ export type SchemaPriceQuoteRequestItem = components['schemas']['PriceQuoteReque
 export type SchemaPriceServiceOption = components['schemas']['PriceServiceOption'];
 export type SchemaPriceServiceOptionPage = components['schemas']['PriceServiceOptionPage'];
 export type SchemaPricingMethod = components['schemas']['PricingMethod'];
+export type SchemaPrivilegedRoleAssignmentOption = components['schemas']['PrivilegedRoleAssignmentOption'];
+export type SchemaPrivilegedRoleAssignmentOptions = components['schemas']['PrivilegedRoleAssignmentOptions'];
 export type SchemaProblem = components['schemas']['Problem'];
 export type SchemaProgram = components['schemas']['Program'];
 export type SchemaProgramPage = components['schemas']['ProgramPage'];
@@ -14372,6 +14676,7 @@ export type SchemaReimbursementDecision = components['schemas']['ReimbursementDe
 export type SchemaReimbursementPage = components['schemas']['ReimbursementPage'];
 export type SchemaReimbursementStatus = components['schemas']['ReimbursementStatus'];
 export type SchemaRejectMedicalReport = components['schemas']['RejectMedicalReport'];
+export type SchemaRejectRoleChangeRequest = components['schemas']['RejectRoleChangeRequest'];
 export type SchemaReleaseWorkItem = components['schemas']['ReleaseWorkItem'];
 export type SchemaReplacePackageDefinitionsRequest = components['schemas']['ReplacePackageDefinitionsRequest'];
 export type SchemaReplacePractitionerLocationsRequest = components['schemas']['ReplacePractitionerLocationsRequest'];
@@ -14394,6 +14699,15 @@ export type SchemaRoleAssignmentOption = components['schemas']['RoleAssignmentOp
 export type SchemaRoleAssignmentOptions = components['schemas']['RoleAssignmentOptions'];
 export type SchemaRoleAssignmentOrganization = components['schemas']['RoleAssignmentOrganization'];
 export type SchemaRoleAssignmentOrganizationPage = components['schemas']['RoleAssignmentOrganizationPage'];
+export type SchemaRoleChangeAppliedGrant = components['schemas']['RoleChangeAppliedGrant'];
+export type SchemaRoleChangeCommandResult = components['schemas']['RoleChangeCommandResult'];
+export type SchemaRoleChangeEligibility = components['schemas']['RoleChangeEligibility'];
+export type SchemaRoleChangePermission = components['schemas']['RoleChangePermission'];
+export type SchemaRoleChangeRequest = components['schemas']['RoleChangeRequest'];
+export type SchemaRoleChangeRequestDetail = components['schemas']['RoleChangeRequestDetail'];
+export type SchemaRoleChangeRequestPage = components['schemas']['RoleChangeRequestPage'];
+export type SchemaRoleChangeRequestSummary = components['schemas']['RoleChangeRequestSummary'];
+export type SchemaRoleChangeValidity = components['schemas']['RoleChangeValidity'];
 export type SchemaRoomType = components['schemas']['RoomType'];
 export type SchemaRoomTypeInventoryRange = components['schemas']['RoomTypeInventoryRange'];
 export type SchemaRoomTypeList = components['schemas']['RoomTypeList'];
@@ -14570,6 +14884,7 @@ export type ParameterRelationshipId = components['parameters']['RelationshipId']
 export type ParameterReportId = components['parameters']['ReportId'];
 export type ParameterRequestId = components['parameters']['RequestId'];
 export type ParameterRoleAssignmentMembershipId = components['parameters']['RoleAssignmentMembershipId'];
+export type ParameterRoleChangeRequestId = components['parameters']['RoleChangeRequestId'];
 export type ParameterRoomTypeId = components['parameters']['RoomTypeId'];
 export type ParameterRuleEvaluationId = components['parameters']['RuleEvaluationId'];
 export type ParameterRuleSetId = components['parameters']['RuleSetId'];
@@ -15953,6 +16268,31 @@ export interface operations {
             428: components["responses"]["ValidationError"];
         };
     };
+    listPrivilegedRoleAssignmentOptions: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Privileged role candidate catalog */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrivilegedRoleAssignmentOptions"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
     listRoleAssignmentOptions: {
         parameters: {
             query?: never;
@@ -16006,6 +16346,289 @@ export interface operations {
             400: components["responses"]["ValidationError"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    listRoleChangeRequests: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                membershipId?: string;
+                status?: "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Request page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleChangeRequestPage"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getRoleChangeRequest: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                requestId: components["parameters"]["RoleChangeRequestId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Request detail */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleChangeRequestDetail"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    approveRoleChangeRequest: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                requestId: components["parameters"]["RoleChangeRequestId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApproveRoleChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Approved request and committed grant effect */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleChangeCommandResult"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description ROLE_CHANGE_NOT_PENDING, ROLE_CHANGE_TARGET_CHANGED, ROLE_CHANGE_CONFIGURATION_CHANGED, ROLE_CHANGE_MAKER_UNAUTHORIZED, EXISTING_ACCESS_CONFLICT, MEMBERSHIP_STATE_CONFLICT, LAST_TENANT_MANAGER, LAST_TENANT_ROLE_MANAGER or IDEMPOTENCY_KEY_REUSED. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description JSON content type is required */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description If-Match is required */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    cancelRoleChangeRequest: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                requestId: components["parameters"]["RoleChangeRequestId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelRoleChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Cancelled request; target access unchanged */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleChangeCommandResult"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description ROLE_CHANGE_NOT_PENDING or IDEMPOTENCY_KEY_REUSED. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description JSON content type is required */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description If-Match is required */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    rejectRoleChangeRequest: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                requestId: components["parameters"]["RoleChangeRequestId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RejectRoleChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Rejected request; target access unchanged */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleChangeCommandResult"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description ROLE_CHANGE_NOT_PENDING or IDEMPOTENCY_KEY_REUSED. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description JSON content type is required */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description If-Match is required */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
         };
     };
     listTenantUsers: {
@@ -16066,6 +16689,109 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    getTenantUserRoleChangeEligibility: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                membershipId: components["parameters"]["RoleAssignmentMembershipId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current target eligibility */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleChangeEligibility"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createTenantUserRoleChangeRequest: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                membershipId: components["parameters"]["RoleAssignmentMembershipId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRoleChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Pending request; target grant and version unchanged */
+            201: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleChangeCommandResult"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description ROLE_CHANGE_PENDING_EXISTS, ROLE_CHANGE_TARGET_CHANGED, ROLE_CHANGE_CONFIGURATION_CHANGED, SELF_ROLE_CHANGE_FORBIDDEN, ROLE_ASSIGNMENT_UNSUPPORTED, EXISTING_ACCESS_CONFLICT, MEMBERSHIP_STATE_CONFLICT or IDEMPOTENCY_KEY_REUSED. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Target membership ETag mismatch */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description JSON content type is required */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description If-Match is required */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
         };
     };
     listTenantUserRoleGrants: {
