@@ -58,12 +58,33 @@ func bookingDecisionDelivery(t *testing.T, s *server, requestID uuid.UUID) outbo
 	return outbox.Delivery{TenantID: uuid.NullUUID{UUID: s.tenant, Valid: true}, Payload: payload}
 }
 
-func handoffBooking(t *testing.T) (*server, application.BookingView, outbox.Delivery) {
+type handoffInventory struct{ days, held, confirmed int }
+
+func readHandoffInventory(t *testing.T, s *server) handoffInventory {
+	t.Helper()
+	ctx, cancel := s.h.Ctx()
+	defer cancel()
+	var inventory handoffInventory
+	if err := s.h.Admin.QueryRow(ctx, `SELECT count(*),coalesce(sum(held),0),
+		coalesce(sum(confirmed),0) FROM accommodation.inventory_day
+		WHERE tenant_id=$1 AND room_type_id=$2 AND stay_date >= $3 AND stay_date < $4`,
+		s.tenant, s.roomType, checkIn, "2026-06-17").Scan(
+		&inventory.days, &inventory.held, &inventory.confirmed); err != nil {
+		t.Fatal(err)
+	}
+	return inventory
+}
+
+func handoffBooking(t *testing.T) (*server, application.BookingView, outbox.Delivery, handoffInventory) {
 	t.Helper()
 	s := newServer(t)
 	s.clock.At(t, "2026-06-13T09:00:00Z")
 	s.putLodgingTerms(t)
 	s.replaceNightPlan(t, "4", "2")
+	baselineInventory := readHandoffInventory(t, s)
+	if baselineInventory.days != 2 {
+		t.Fatalf("handoff fixture has %d inventory days, want 2", baselineInventory.days)
+	}
 	hold, _ := s.conversionHold(t, "2026-06-17")
 	ctx, cancel := s.h.Ctx()
 	defer cancel()
@@ -73,7 +94,7 @@ func handoffBooking(t *testing.T) (*server, application.BookingView, outbox.Deli
 	}
 	requestID := *confirmed.Booking.ServiceRequestID
 	s.decideRequest(t, requestID, servicerequestdomain.StatusApproved)
-	return s, hold, bookingDecisionDelivery(t, s, requestID)
+	return s, hold, bookingDecisionDelivery(t, s, requestID), baselineInventory
 }
 
 type bookingHandoffState struct {
@@ -105,13 +126,8 @@ func readBookingHandoffState(t *testing.T, s *server, bookingID, reservationID u
 		s.tenant, s.account).Scan(&st.available, &st.reserved, &st.consumed); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.h.Admin.QueryRow(ctx, `SELECT count(*),coalesce(sum(held),0),
-		coalesce(sum(confirmed),0) FROM accommodation.inventory_day
-		WHERE tenant_id=$1 AND room_type_id=$2 AND stay_date >= $3 AND stay_date < $4`,
-		s.tenant, s.roomType, checkIn, "2026-06-17").Scan(
-		&st.inventoryDays, &st.inventoryHeld, &st.inventoryConfirmed); err != nil {
-		t.Fatal(err)
-	}
+	inventory := readHandoffInventory(t, s)
+	st.inventoryDays, st.inventoryHeld, st.inventoryConfirmed = inventory.days, inventory.held, inventory.confirmed
 	if err := s.h.Admin.QueryRow(ctx, `SELECT count(*) FROM benefit.entitlement_reservation
 		WHERE tenant_id=$1 AND reference_type='BOOKING' AND reference_id=$2`,
 		s.tenant, bookingID).Scan(&st.reservations); err != nil {
@@ -144,7 +160,7 @@ func TestBookingHandoffReleaseAfterCommittedAuthorization(t *testing.T) {
 	if os.Getenv("KAPSORA_TEST_BOOKING_HANDOFF_RACE") != "1" {
 		t.Skip("set KAPSORA_TEST_BOOKING_HANDOFF_RACE=1 in isolated CI")
 	}
-	s, hold, delivery := handoffBooking(t)
+	s, hold, delivery, baselineInventory := handoffBooking(t)
 	if hold.Booking.EntitlementReservationID == nil {
 		t.Fatal("hold has no entitlement reservation")
 	}
@@ -188,7 +204,9 @@ func TestBookingHandoffReleaseAfterCommittedAuthorization(t *testing.T) {
 	before := readBookingHandoffState(t, s, hold.Booking.ID, *hold.Booking.EntitlementReservationID)
 	if before.bookingStatus != "PENDING_APPROVAL" || before.authorizationStatus != "ACTIVE" ||
 		before.authorizationID.Valid || before.voucherID.Valid || before.reservationStatus != "HELD" ||
-		before.inventoryDays != 2 || before.inventoryHeld != 2 || before.inventoryConfirmed != 0 ||
+		before.inventoryDays != baselineInventory.days ||
+		before.inventoryHeld != baselineInventory.held+2 ||
+		before.inventoryConfirmed != baselineInventory.confirmed ||
 		before.reservations != 1 || before.reserves != 1 || before.vouchers != 0 {
 		t.Fatalf("unexpected committed-authorization barrier state: %+v", before)
 	}
@@ -210,7 +228,9 @@ func TestBookingHandoffReleaseAfterCommittedAuthorization(t *testing.T) {
 	}
 	after := readBookingHandoffState(t, s, hold.Booking.ID, *hold.Booking.EntitlementReservationID)
 	if after.bookingStatus != "CANCELLED" || after.authorizationID.Valid || after.voucherID.Valid ||
-		after.inventoryDays != 2 || after.inventoryHeld != 0 || after.inventoryConfirmed != 0 ||
+		after.inventoryDays != baselineInventory.days ||
+		after.inventoryHeld != baselineInventory.held ||
+		after.inventoryConfirmed != baselineInventory.confirmed ||
 		after.reservationStatus != "RELEASED" || after.reservationQuantity != "4.000000" ||
 		after.reservationReleased != "4.000000" || after.available != "4.000000" ||
 		after.reserved != "0.000000" || after.consumed != "0.000000" ||
@@ -225,7 +245,7 @@ func TestBookingHandoffReleaseAfterCommittedAuthorization(t *testing.T) {
 // The status write fails inside the booking transaction after authorization adoption.
 // Retrying the same event must attach that authorization and issue one voucher.
 func TestBookingHandoffTransientStatusWriteRetries(t *testing.T) {
-	s, hold, delivery := handoffBooking(t)
+	s, hold, delivery, baselineInventory := handoffBooking(t)
 	if hold.Booking.EntitlementReservationID == nil {
 		t.Fatal("hold has no entitlement reservation")
 	}
@@ -247,8 +267,9 @@ func TestBookingHandoffTransientStatusWriteRetries(t *testing.T) {
 		intermediate.authorizationID.Valid || intermediate.voucherID.Valid || intermediate.vouchers != 0 ||
 		intermediate.reservationStatus != "HELD" || intermediate.available != "0.000000" ||
 		intermediate.reserved != "4.000000" || intermediate.consumed != "0.000000" ||
-		intermediate.inventoryDays != 2 || intermediate.inventoryHeld != 2 ||
-		intermediate.inventoryConfirmed != 0 || intermediate.reservations != 1 ||
+		intermediate.inventoryDays != baselineInventory.days ||
+		intermediate.inventoryHeld != baselineInventory.held+2 ||
+		intermediate.inventoryConfirmed != baselineInventory.confirmed || intermediate.reservations != 1 ||
 		intermediate.reserves != 1 || intermediate.releases != 0 {
 		t.Fatalf("unexpected state after rolled-back status transaction: %+v", intermediate)
 	}
@@ -262,7 +283,9 @@ func TestBookingHandoffTransientStatusWriteRetries(t *testing.T) {
 		!final.authorizationID.Valid || !final.voucherID.Valid || final.vouchers != 1 ||
 		final.reservationStatus != "HELD" || final.available != "0.000000" ||
 		final.reserved != "4.000000" || final.consumed != "0.000000" ||
-		final.inventoryDays != 2 || final.inventoryHeld != 0 || final.inventoryConfirmed != 2 ||
+		final.inventoryDays != baselineInventory.days ||
+		final.inventoryHeld != baselineInventory.held ||
+		final.inventoryConfirmed != baselineInventory.confirmed+2 ||
 		final.reservations != 1 || final.reserves != 1 || final.releases != 0 {
 		t.Fatalf("status retry did not converge exactly once: %+v", final)
 	}

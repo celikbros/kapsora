@@ -73,6 +73,36 @@ jobs:
         env:
           KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
         run: go test -count=1 -v -timeout 10m ./internal/accommodation/transport/http -run '^TestFractionalCheckout'
+      - name: fractional checkout old release ceiling negative control
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+
+          path = Path('internal/accommodation/application/stay.go')
+          original = path.read_text()
+          needle = 'unused := promised.Sub(benefitdomain.MustQuantity(fmt.Sprintf("%d", used)))'
+          replacement = 'unused := benefitdomain.MustQuantity(fmt.Sprintf("%d", authorized-used))'
+          if original.count(needle) != 1:
+              raise SystemExit('Expected exactly one exact unused checkout release ceiling')
+          case = 'TestFractionalCheckoutReleasesExactUnusedAuthorization'
+          try:
+              path.write_text(original.replace(needle, replacement))
+              result = subprocess.run(['go', 'test', '-count=1', '-v', '-timeout', '5m',
+                  './internal/accommodation/transport/http', '-run', '^' + case + '$'],
+                  capture_output=True, text=True)
+              output = result.stdout + result.stderr
+              print(output)
+              if result.returncode != 1 or '[build failed]' in output or '--- SKIP:' in output or \
+                      '--- FAIL: ' + case + ' ' not in output or \
+                      output.count('FRACTIONAL_CHECKOUT_RETAINED_RESERVED:') != 4:
+                  raise SystemExit('Fractional checkout control failed outside four retained-unit assertions')
+              print('All four fractional checkout cases detected the old floored release ceiling')
+          finally:
+              path.write_text(original)
+          PY
       - name: booking handoff transient status retry preflight
         env:
           KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
@@ -326,36 +356,6 @@ jobs:
           print('Coverage, reservation units, and adoption factor regressions detected')
           PY
 
-      - name: fractional checkout old release ceiling negative control
-        env:
-          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import subprocess
-
-          path = Path('internal/accommodation/application/stay.go')
-          original = path.read_text()
-          needle = 'unused := promised.Sub(benefitdomain.MustQuantity(fmt.Sprintf("%d", used)))'
-          replacement = 'unused := benefitdomain.MustQuantity(fmt.Sprintf("%d", authorized-used))'
-          if original.count(needle) != 1:
-              raise SystemExit('Expected exactly one exact unused checkout release ceiling')
-          case = 'TestFractionalCheckoutReleasesExactUnusedAuthorization'
-          try:
-              path.write_text(original.replace(needle, replacement))
-              result = subprocess.run(['go', 'test', '-count=1', '-v', '-timeout', '5m',
-                  './internal/accommodation/transport/http', '-run', '^' + case + '$'],
-                  capture_output=True, text=True)
-              output = result.stdout + result.stderr
-              print(output)
-              if result.returncode != 1 or '[build failed]' in output or '--- SKIP:' in output or \
-                      '--- FAIL: ' + case + ' ' not in output or \
-                      output.count('FRACTIONAL_CHECKOUT_RETAINED_RESERVED:') != 4:
-                  raise SystemExit('Fractional checkout control failed outside four retained-unit assertions')
-              print('All four fractional checkout cases detected the old floored release ceiling')
-          finally:
-              path.write_text(original)
-          PY
 
   contracts:
     name: OpenAPI lint, generated code, breaking changes
