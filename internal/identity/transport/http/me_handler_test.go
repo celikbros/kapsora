@@ -25,6 +25,12 @@ import (
 	"github.com/celikbros/kapsora/internal/platform/dbtest"
 	"github.com/celikbros/kapsora/internal/platform/httpx"
 	"github.com/celikbros/kapsora/internal/platform/idempotency"
+	providerapp "github.com/celikbros/kapsora/internal/provider/application"
+	providerpg "github.com/celikbros/kapsora/internal/provider/infrastructure/postgres"
+	providerhttp "github.com/celikbros/kapsora/internal/provider/transport/http"
+	rulesapp "github.com/celikbros/kapsora/internal/rules/application"
+	rulespg "github.com/celikbros/kapsora/internal/rules/infrastructure/postgres"
+	ruleshttp "github.com/celikbros/kapsora/internal/rules/transport/http"
 )
 
 type authzServer struct {
@@ -86,12 +92,25 @@ func newAuthzServer(t *testing.T, recorder ...audit.Recorder) *authzServer {
 	}
 	directoryHandler := identityhttp.NewDirectoryHandler(
 		application.NewDirectoryService(identitypg.NewDirectoryRepository(h.App, recorder...), cursors), mw, logger)
+	roleHandler := identityhttp.NewRoleAssignmentHandler(
+		application.NewRoleAssignmentService(identitypg.NewRoleAssignmentRepository(h.App, recorder...), cursors), mw, logger)
+	ruleService, err := rulesapp.New(rulesapp.Deps{Pool: h.App, Repo: rulespg.New(), Audit: auditpg.New(), Cursors: cursors})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ruleHandler := ruleshttp.NewHandler(ruleService, mw, logger)
 	invitationKeys, err := localkey.New(bytes.Repeat([]byte{0x42}, 32))
 	if err != nil {
 		t.Fatal(err)
 	}
 	invitationRepo := identitypg.NewInvitationRepository(h.App, invitationKeys, invitationKeys, recorder...).WithDeliveryEnabled(true)
 	invitationHandler := identityhttp.NewInvitationHandler(application.NewInvitationService(invitationRepo), mw, cursors, logger)
+	providerService, err := providerapp.New(providerapp.Deps{Pool: h.App, Repo: providerpg.New(), Cipher: invitationKeys,
+		Index: invitationKeys, Audit: auditpg.New(), Cursors: cursors})
+	if err != nil {
+		t.Fatal(err)
+	}
+	providerHandler := providerhttp.NewHandler(providerService, mw, logger)
 
 	r := chi.NewRouter()
 	r.Group(func(anon chi.Router) {
@@ -121,7 +140,19 @@ func newAuthzServer(t *testing.T, recorder ...audit.Recorder) *authzServer {
 					},
 					HashHeaders: []string{"If-Match"},
 				}))
+				roleScope := func(req *http.Request) (idempotency.Scope, bool) {
+					rc, ok := identity.FromContext(req.Context())
+					return idempotency.Scope{TenantID: rc.TenantID, ActorID: rc.Principal.ActorID}, ok
+				}
+				roleHandler.UserRoutes(r,
+					idempotency.Middleware(h.App, idempotency.Options{CommandCode: "access_grant.assign", Scope: roleScope, HashHeaders: []string{"If-Match"}}),
+					idempotency.Middleware(h.App, idempotency.Options{CommandCode: "access_grant.revoke", Scope: roleScope, HashHeaders: []string{"If-Match"}}))
 			})
+			tenant.Route("/admin", func(r chi.Router) {
+				roleHandler.CatalogRoutes(r)
+			})
+			tenant.Route("/rule-sets", func(r chi.Router) { ruleHandler.RuleSetRoutes(r, ruleshttp.Middlewares{}) })
+			tenant.Route("/providers", func(r chi.Router) { providerHandler.ProviderRoutes(r, providerhttp.Middlewares{}) })
 			tenant.Route("/admin/invitations", func(r chi.Router) {
 				invitationHandler.ManagerRoutes(r, idempotency.Middleware(h.App, idempotency.Options{
 					CommandCode: "tenant_invitation.cancel",
@@ -147,6 +178,32 @@ func newAuthzServer(t *testing.T, recorder ...audit.Recorder) *authzServer {
 					return
 				}
 				w.WriteHeader(http.StatusNoContent)
+			})
+			tenant.Get("/probe-rule", func(w http.ResponseWriter, r *http.Request) {
+				if _, err := identity.Require(r.Context(), "rule.read"); err != nil {
+					mw.Deny(w, r, err, "rule.read")
+					return
+				}
+				w.WriteHeader(http.StatusNoContent)
+			})
+			tenant.Get("/probe-provider/{relationshipId}", func(w http.ResponseWriter, r *http.Request) {
+				rc, err := identity.Require(r.Context(), "provider.read")
+				if err != nil {
+					mw.Deny(w, r, err, "provider.read")
+					return
+				}
+				want, err := uuid.Parse(chi.URLParam(r, "relationshipId"))
+				if err != nil {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				for _, scope := range rc.Scopes {
+					if scope.Type == application.ScopeOrganization && scope.ID.Valid && scope.ID.UUID == want {
+						w.WriteHeader(http.StatusNoContent)
+						return
+					}
+				}
+				w.WriteHeader(http.StatusForbidden)
 			})
 		})
 	})

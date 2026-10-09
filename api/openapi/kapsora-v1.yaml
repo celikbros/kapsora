@@ -474,6 +474,204 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+  /api/v1/admin/role-assignment-options:
+    get:
+      tags: [Identity]
+      operationId: listRoleAssignmentOptions
+      description: Supported non-privileged system role candidates with exact persisted template permissions; requires current TENANT user.read and role.manage authority.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+      responses:
+        '200':
+          description: Available role candidates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleAssignmentOptions'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/v1/admin/role-assignment-organizations:
+    get:
+      tags: [Identity]
+      operationId: listRoleAssignmentOrganizations
+      description: Active in-tenant provider relationships eligible for organization-scoped role assignment.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Provider relationship page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleAssignmentOrganizationPage'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/v1/admin/users/{membershipId}/role-grants:
+    get:
+      tags: [Identity]
+      operationId: listTenantUserRoleGrants
+      description: Allowlisted grant history and current assignment eligibility, using membership aggregate ETag.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/RoleAssignmentMembershipId'
+      responses:
+        '200':
+          description: Grant history page
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantRoleGrantPage'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Identity]
+      operationId: assignTenantUserRoleGrant
+      description: Assign one supported role to an active zero-access human membership, until revoked or membership expiry. Requires fresh password step-up.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/RoleAssignmentMembershipId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignTenantRoleGrantRequest'
+      responses:
+        '200':
+          description: Committed grant and new membership version
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantRoleGrantResult'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            Named domain codes: SELF_ROLE_CHANGE_FORBIDDEN, ROLE_CONFIGURATION_UNSUPPORTED,
+            ROLE_ASSIGNMENT_UNSUPPORTED, MEMBERSHIP_STATE_CONFLICT, EXISTING_ACCESS_CONFLICT,
+            GRANT_STATE_CONFLICT, LAST_TENANT_MANAGER, LAST_TENANT_ROLE_MANAGER.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: Membership ETag no longer matches
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '428':
+          description: If-Match is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '415':
+          description: JSON content type is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/admin/users/{membershipId}/role-grants/{grantId}/revoke:
+    post:
+      tags: [Identity]
+      operationId: revokeTenantUserRoleGrant
+      description: End one current supported grant while retaining its history. Requires fresh password step-up.
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/RoleAssignmentMembershipId'
+        - name: grantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevokeTenantRoleGrantRequest'
+      responses:
+        '200':
+          description: Ended grant and new membership version
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantRoleGrantResult'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            Named domain codes: SELF_ROLE_CHANGE_FORBIDDEN, ROLE_CONFIGURATION_UNSUPPORTED,
+            ROLE_ASSIGNMENT_UNSUPPORTED, MEMBERSHIP_STATE_CONFLICT, EXISTING_ACCESS_CONFLICT,
+            GRANT_STATE_CONFLICT, LAST_TENANT_MANAGER, LAST_TENANT_ROLE_MANAGER.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: Membership ETag no longer matches
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '428':
+          description: If-Match is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '415':
+          description: JSON content type is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
   /health/live:
     get:
       tags: [Health]
@@ -14546,6 +14744,13 @@ components:
       description: Optimistic concurrency token returned as ETag.
       schema:
         type: string
+    RoleAssignmentMembershipId:
+      name: membershipId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     Cursor:
       name: cursor
       in: query
@@ -15173,6 +15378,9 @@ components:
           description: |
             True only when identity.user.manage belongs to an active TENANT-scoped grant
             in this tenant and the request uses backoffice or unrestricted app context.
+        canManageTenantRoles:
+          type: boolean
+          description: True only when current TENANT grants correlate identity.user.read and identity.role.manage on this active membership in backoffice or unrestricted app context.
         scopes:
           type: array
           items:
@@ -15391,6 +15599,150 @@ components:
         reasonCode:
           type: string
           enum: [ACCESS_REVIEW, STAFF_DEPARTURE, SECURITY_CONCERN]
+    RoleAssignmentOption:
+      type: object
+      additionalProperties: false
+      required: [code, name, description, scopeType, permissionCodes, hasSensitivePermissions]
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        scopeType:
+          type: string
+          enum: [TENANT, ORGANIZATION]
+        permissionCodes:
+          type: array
+          items:
+            type: string
+        hasSensitivePermissions:
+          type: boolean
+    RoleAssignmentOptions:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleAssignmentOption'
+    RoleAssignmentOrganization:
+      type: object
+      additionalProperties: false
+      required: [id, displayName, tenantCode]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Tenant organization relationship ID, never global organization or profile ID.
+        displayName:
+          type: string
+        tenantCode:
+          type: [string, 'null']
+    RoleAssignmentOrganizationPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleAssignmentOrganization'
+        nextCursor:
+          type: [string, 'null']
+    TenantRoleGrant:
+      type: object
+      additionalProperties: false
+      required: [id, roleCode, roleName, isSystemRole, scopeType, organizationRelationshipId, organizationDisplayName, validFrom, validTo, validityEmpty, canRevoke, revocationRefusalCode]
+      properties:
+        id:
+          type: string
+          format: uuid
+        roleCode:
+          type: string
+        roleName:
+          type: string
+        isSystemRole:
+          type: boolean
+        scopeType:
+          type: string
+        organizationRelationshipId:
+          type: [string, 'null']
+          format: uuid
+        organizationDisplayName:
+          type: [string, 'null']
+        validFrom:
+          type: [string, 'null']
+          format: date-time
+        validTo:
+          type: [string, 'null']
+          format: date-time
+        validityEmpty:
+          type: boolean
+        canRevoke:
+          type: boolean
+        revocationRefusalCode:
+          type: [string, 'null']
+    TenantRoleGrantPage:
+      type: object
+      additionalProperties: false
+      required: [membershipId, membershipRowVersion, canAssign, assignmentRefusalCode, items, nextCursor]
+      properties:
+        membershipId:
+          type: string
+          format: uuid
+        membershipRowVersion:
+          type: integer
+          format: int64
+        canAssign:
+          type: boolean
+        assignmentRefusalCode:
+          type: [string, 'null']
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TenantRoleGrant'
+        nextCursor:
+          type: [string, 'null']
+    AssignTenantRoleGrantRequest:
+      type: object
+      additionalProperties: false
+      required: [roleCode, scopeType, reasonCode]
+      properties:
+        roleCode:
+          type: string
+        scopeType:
+          type: string
+          enum: [TENANT, ORGANIZATION]
+        organizationRelationshipId:
+          type: string
+          format: uuid
+        reasonCode:
+          type: string
+          enum: [ONBOARDING, DUTY_ASSIGNMENT]
+    RevokeTenantRoleGrantRequest:
+      type: object
+      additionalProperties: false
+      required: [reasonCode]
+      properties:
+        reasonCode:
+          type: string
+          enum: [ACCESS_REVIEW, DUTY_ENDED, SECURITY_CONCERN]
+    TenantRoleGrantResult:
+      type: object
+      additionalProperties: false
+      required: [membershipId, membershipRowVersion, grant]
+      properties:
+        membershipId:
+          type: string
+          format: uuid
+        membershipRowVersion:
+          type: integer
+          format: int64
+        grant:
+          $ref: '#/components/schemas/TenantRoleGrant'
     TenantUserPage:
       type: object
       additionalProperties: false

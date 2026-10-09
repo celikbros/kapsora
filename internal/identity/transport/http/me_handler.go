@@ -44,6 +44,7 @@ type tenantContextJSON struct {
 	Tenant               tenantSummaryJSON `json:"tenant"`
 	CanReadTenantUsers   bool              `json:"canReadTenantUsers"`
 	CanManageTenantUsers bool              `json:"canManageTenantUsers"`
+	CanManageTenantRoles bool              `json:"canManageTenantRoles"`
 	// PersonID is the person a member account acts for in this tenant, null for every
 	// other actor. It is a pointer rather than an empty string so "not a member" and "a
 	// member we could not resolve" cannot be told apart by accident: there is only null.
@@ -162,6 +163,7 @@ func tenantContextBody(c application.TenantContext) tenantContextJSON {
 		Tenant:               tenantSummaryBody(c.Membership.Tenant),
 		CanReadTenantUsers:   c.CanReadTenantUsers,
 		CanManageTenantUsers: c.CanManageTenantUsers,
+		CanManageTenantRoles: c.CanManageTenantRoles,
 		Permissions:          append([]string{}, c.Permissions...),
 		Scopes:               make([]scopeJSON, 0, len(c.Scopes)),
 	}

@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Milestone | Management, after MGT-01 and MGT-02 invitation acceptance |
-| Status | Planned on 2026-10-09; specification only, no implementation or acceptance claim |
+| Status | A implemented on 2026-10-09; isolated database and live read acceptance pending |
 | Planning | gpt-6-astra |
 | First delivery | MGT-03A: activate a zero-access human membership with one supported role; revoke that supported access |
 | Later delivery | MGT-03B: privileged approval pipeline; other combinations remain conditional |
@@ -393,3 +393,31 @@ B and report actual evidence, remaining gates and any normative interpretation a
 - [ ] History, aggregate ETags, replay, suspension races and audit rollback are verified.
 - [ ] Isolated backend and UI/mock evidence plus visual checks pass; CI includes DB cases.
 - [ ] A's delivered scope and B's pending approval pipeline are reported separately.
+
+## 9. A implementation checkpoint (2026-10-09)
+
+The public role-options/provider-picker/grant-history reads and versioned assign/revoke
+commands are implemented. User detail offers confirmed role assignment/removal, exact
+uncertain retries, conflict reload and guarded late callbacks. All three waiting screens
+refresh ordinary authenticated context explicitly. Current session/step-up and correlated
+TENANT authority are rechecked after lock waits immediately before the grant write.
+Permission writers share the tenant lock and refuse changing in-use candidate templates.
+
+Local Go unit/compile, scoped vet/lint and the database-independent Chi dispatch test pass.
+Seventeen new database-backed cases compile but skip locally under the mandated blank
+admin URL. They cover new/existing invitation activation, real rule/provider endpoints,
+all eleven templates, role/permission sensitivity drift, private/future/empty-access
+boundaries, provider eligibility, replay including tenant switching, offline ETag touch,
+audit rollback and assign/suspend/revoke/sync races. Isolated CI must actually run them;
+compilation is not mutation evidence. The synthetic browser review passes 36 views at
+1440px/390px across all apps, with no overflow, page errors or real API requests.
+The full frontend suite passes 741 tests in 90 files; workspace format/type/lint and
+all app builds pass. Generated bindings regenerate unchanged, contract compatibility
+is nonbreaking and Spectral has zero errors with eleven pre-existing warnings.
+
+The opt-in `tests/e2e/management-role-grants-readonly.spec.ts` is ready for an operator
+reload and does not perform role mutations. Schema is unchanged at 57. A cannot reach
+privileged last-manager revocation: duplicate/finite/service-manager variants remain
+code-reviewed, with their direct proof assigned to B. A distinct same-tenant membership
+for the same actor is prevented by the existing uniqueness constraint. B's two-actor
+privileged approval pipeline and MGT-04 remain separate deliveries.

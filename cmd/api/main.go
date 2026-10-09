@@ -156,6 +156,7 @@ func run() error {
 		return err
 	}
 	ident.directory = application.NewDirectoryService(identitypg.NewDirectoryRepository(pool), cursors)
+	ident.roleAssignment = application.NewRoleAssignmentService(identitypg.NewRoleAssignmentRepository(pool).WithIdleTimeout(cfg.Session.IdleTimeout), cursors)
 	ident.invitations = application.NewInvitationService(identitypg.NewInvitationRepository(pool, keys, keys).WithDeliveryEnabled(cfg.Invitations.DeliveryEnabled))
 	ident.invitationCursors = cursors
 	orgSvc, err := orgapp.New(orgapp.Deps{
@@ -521,6 +522,7 @@ type identityDeps struct {
 	service           *application.Service
 	authz             *application.Authorizer
 	directory         *application.DirectoryService
+	roleAssignment    *application.RoleAssignmentService
 	invitations       *application.InvitationService
 	invitationCursors *httpx.CursorCodec
 }
@@ -585,6 +587,7 @@ func newRouter(d routerDeps) http.Handler {
 	sessionHandler := identityhttp.NewHandler(d.ident.service, cookies, signingKey, d.logger)
 	contextHandler := identityhttp.NewContextHandler(d.ident.service, d.ident.authz, d.logger)
 	directoryHandler := identityhttp.NewDirectoryHandler(d.ident.directory, sessions, d.logger)
+	roleAssignmentHandler := identityhttp.NewRoleAssignmentHandler(d.ident.roleAssignment, sessions, d.logger)
 	invitationHandler := identityhttp.NewInvitationHandler(d.ident.invitations, sessions, d.ident.invitationCursors, d.logger)
 
 	r := chi.NewRouter()
@@ -653,6 +656,12 @@ func newRouter(d routerDeps) http.Handler {
 					Scope:       idempotencyScope, Logger: d.logger,
 					HashHeaders: []string{"If-Match"},
 				}))
+				roleAssignmentHandler.UserRoutes(r,
+					idempotency.Middleware(d.pool, idempotency.Options{CommandCode: "access_grant.assign", Scope: idempotencyScope, Logger: d.logger, HashHeaders: []string{"If-Match"}}),
+					idempotency.Middleware(d.pool, idempotency.Options{CommandCode: "access_grant.revoke", Scope: idempotencyScope, Logger: d.logger, HashHeaders: []string{"If-Match"}}))
+			})
+			tenant.Route("/admin", func(r chi.Router) {
+				roleAssignmentHandler.CatalogRoutes(r)
 			})
 			tenant.Route("/admin/invitations", func(r chi.Router) {
 				invitationHandler.ManagerRoutes(r, idempotency.Middleware(d.pool, idempotency.Options{

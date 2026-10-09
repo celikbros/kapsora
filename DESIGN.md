@@ -888,6 +888,21 @@ version, while cancellation conflicts require an explicit reload. The recipient 
   lists active memberships awaiting role assignment, including when the account already has
   access to another application. It does not send a zero-grant member to a business dashboard.
 
+**Role assignment shows the actual access.** Only the server's stronger tenant-role-management
+capability mounts grant history and assignment/removal controls. Role managers see this
+history in place of the duplicate ordinary assigned-role list. Confirmation uses role names
+and plain descriptions, identifies the person and institution, and states application,
+duration and sensitive access. Organization roles require a named qualifying provider.
+Unsupported, future or ended assignments are read-only; an ineligible membership displays
+the server's refusal in plain language. Native selects have explicit labels.
+
+Commands freeze their input, ETag and key before password confirmation. Uncertain results
+retain them after closing and reopening the dialog; conflicts require an explicit reload
+and fresh confirmation. A committed result remains visible if subsequent reads fail.
+Account, session, tenant or capability changes clear the previous context's form, cache and
+busy state and suppress delayed callbacks. Waiting screens offer explicit access refresh
+with a retryable error, without polling, automatic login or automatic tenant selection.
+
 ## Motion
 
 Toasts slide up 160ms ease-out. The member surface adds the system's one authored moment:

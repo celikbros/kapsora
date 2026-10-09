@@ -1,5 +1,6 @@
 import { createKapsoraClient, createOperations } from '@kapsora/api-client';
 import { createMockServer } from '@kapsora/api-client/mocks/node';
+import type { MockAccount } from '@kapsora/api-client/mocks';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createSessionStore } from './store';
 
@@ -193,5 +194,73 @@ describe('session store', () => {
     await store.login('admin.a', 'demo parola 2026 kapsora');
     await store.stepUp('demo parola 2026 kapsora');
     expect(Date.parse(store.getState().session!.stepUpExpiresAt!)).toBeGreaterThan(Date.now());
+  });
+
+  it('refreshes a waiting membership into its new app without a new login', async () => {
+    const tenant = api.tenantByCode('DEMO_A')!;
+    const target: MockAccount = {
+      actorId: crypto.randomUUID(),
+      username: 'waiting.synthetic',
+      displayName: 'Örnek Bekleyen',
+      email: '',
+      memberships: [{ tenantCode: tenant.code, permissions: [], membershipOnly: true }],
+    };
+    api.world.accounts.push(target);
+    const store = makeStore();
+    await store.login(target.username, 'demo parola 2026 kapsora');
+    expect(store.getState().me?.tenants[0]?.apps).toEqual([]);
+    const actorId = store.getState().session?.actorId;
+    target.memberships.push({ tenantCode: tenant.code, permissions: ['rule.read'] });
+    await store.refresh();
+    expect(store.getState().session?.actorId).toBe(actorId);
+    expect(store.getState().me?.tenants[0]?.apps).toContain('backoffice');
+  });
+
+  it('retains the authenticated waiting state on a refresh network failure', async () => {
+    const ops = createOperations(
+      createKapsoraClient({
+        baseUrl: 'http://mock.test',
+        csrfToken: () => store.getState().csrfToken,
+      }),
+    );
+    const store = createSessionStore(ops);
+    await store.login('admin.a', 'demo parola 2026 kapsora');
+    const prior = store.getState();
+    vi.spyOn(ops.session, 'get').mockRejectedValueOnce(new Error('offline'));
+    await expect(store.refresh()).rejects.toThrow('offline');
+    expect(store.getState()).toMatchObject({
+      status: 'authenticated',
+      session: prior.session,
+      me: prior.me,
+      activeTenant: prior.activeTenant,
+    });
+    vi.restoreAllMocks();
+  });
+
+  it('does not let a late waiting refresh restore a previous actor after another login', async () => {
+    const ops = createOperations(
+      createKapsoraClient({
+        baseUrl: 'http://mock.test',
+        csrfToken: () => store.getState().csrfToken,
+      }),
+    );
+    const store = createSessionStore(ops);
+    await store.login('admin.a', 'demo parola 2026 kapsora');
+    const original = ops.session.me;
+    let finish!: () => void;
+    const delayed = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    vi.spyOn(ops.session, 'me').mockImplementationOnce(async () => {
+      await delayed;
+      return original();
+    });
+    const refreshing = store.refresh();
+    await vi.waitFor(() => expect(ops.session.me).toHaveBeenCalledTimes(1));
+    await store.login('reviewer.a', 'demo parola 2026 kapsora');
+    finish();
+    await refreshing;
+    expect(store.getState().me?.displayName).toBe('Refik İnceleyici');
+    vi.restoreAllMocks();
   });
 });

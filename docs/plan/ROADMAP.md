@@ -22,8 +22,8 @@ ACTIVE: its financial journeys passed local technical acceptance; formal owner a
 and retained scheduler checks remain open. PC-06 has passed live technical acceptance,
 with the same remaining gates. Schema 57 is applied cleanly. Management's invitation
 onboarding has isolated database proof and all six code CI checks passed; bounded anonymous live checks are
-tracked in the checkpoint below. The role-assignment specification is ready, with
-implementation still pending. PR #11 remains draft/unmerged;
+tracked in the checkpoint below. Bounded role assignment and revocation are implemented;
+isolated database acceptance is pending. PR #11 remains draft/unmerged;
 the recorded calendar-preparation CI baseline passed all six checks on `5bb2349`
 ([run 37152681278](https://github.com/celikbros/kapsora/actions/runs/37152681278)).
 No concrete date-independent implementation blocker remains in the completed PC review
@@ -42,7 +42,7 @@ administration commands. Existing organization CRUD remains its own delivered wo
 | --- | --- | --- | --- |
 | MGT-01 | Tenant user membership directory | VERIFIED; bounded live reads passed 2026-10-08 | Real list/filter/paging and membership detail with assigned-role validity; tenant-wide permission and strict data projection |
 | MGT-02 | Account onboarding and membership lifecycle | ACTIVE; B2 code CI passed and local schema 57 clean; bounded anonymous live check awaits restart | Explicit public command contracts, validation, scoped lifecycle effects and retry/audit behavior |
-| MGT-03 | Role assignment and revocation | READY for bounded A implementation; Astra plan reviewed by Sol | Step-up, privileged maker-checker rules, scoped commands and recorded history |
+| MGT-03 | Role assignment and revocation | ACTIVE; bounded A implemented, isolated CI pending; privileged B planning follows | Step-up, privileged maker-checker rules, scoped commands and recorded history |
 | MGT-04 | Typed tenant settings | QUEUED | Named supported settings and validated changes; no arbitrary JSON editor |
 
 **MGT-01 first delivery:** `GET /api/v1/admin/users` and membership-ID detail, opened from
@@ -141,10 +141,12 @@ dirty=false. All six code CI jobs passed on `2a7a426`
 with 102 opt-in live/calendar skips. Bounded anonymous API reads await the operator
 restart; the current API still returns RESOURCE_NOT_FOUND for inspect-new. No live
 account or grant was created. [MGT-03A](../delegation/WP-MGT-03-role-assignment.md)
-is specified and independently reviewed: activate a zero-access human membership with
+is implemented and independently reviewed: activate a zero-access human membership with
 one supported non-privileged system role, then revoke that supported access. Mixed grant
 scopes and mutable permission templates are guarded explicitly; no grant is applied as
-planning evidence. Privileged maker-checker work remains a separate B specification,
+live verification evidence. Seventeen DB scenarios compile and remain locally skipped;
+isolated CI must execute them. The route dispatch check and 36 synthetic desktop/mobile
+views across all three waiting screens pass. Privileged maker-checker work remains a separate B specification,
 required before completing MGT-03. MGT-04 typed settings follow. Owner/calendar gates
 remain open.
 
@@ -158,7 +160,7 @@ the existing work-package contracts rather than starting their implementation ag
 
 ### Baseline and delivery sequence
 
-- Local schema: 000056 (dirty=false); lodging/combined acceptance and B1 isolated checks passed. API, worker, scheduler and the three apps run through the
+- Local schema: 000057 (dirty=false); lodging/combined acceptance and B2 isolated checks passed. API, worker, scheduler and the three apps run through the
   operator's single door at `http://127.0.0.1:5181`; API port 8090. PostgreSQL, MinIO,
   ClamAV and Mailpit are the existing native dependencies.
 - PC-01 passed twice in the real browser on 2026-09-22 (15.8 s total). All six GitHub

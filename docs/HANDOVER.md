@@ -45,8 +45,8 @@ open. PC-06 has passed live technical acceptance, with the same remaining gates.
 is applied cleanly. Management now includes the directory, tenant-only suspension,
 existing-account invitations and new-account invitation acceptance. B2 isolated database
 proof and all six code CI checks passed; bounded anonymous live checks await the operator
-restart, as recorded below. The next
-role-assignment package is specified, with implementation still pending. PR #11 remains
+restart, as recorded below. Bounded role assignment and revocation are implemented;
+isolated database acceptance is pending. PR #11 remains
 draft and unmerged. All six CI checks passed on
 calendar-preparation code head `5bb2349` ([run 37152681278](https://github.com/celikbros/kapsora/actions/runs/37152681278));
 current Management CI is tracked in PR #11's checks.
@@ -1264,8 +1264,27 @@ verification. Existing health/lodging financial sources remain unchanged.
 
 The [MGT-03 package](delegation/WP-MGT-03-role-assignment.md) is specified by Astra and
 reviewed by Sol. A activates zero-access membership with one supported non-privileged
-system role and can revoke that access; implementation remains next. The separate
-privileged maker-checker B specification is still required before completing MGT-03.
+system role and can revoke that access. Its API, user-detail dialogs and explicit
+waiting-screen access refresh are implemented. Seventeen isolated database scenarios
+cover invitation-to-role lifecycle, actual rule/provider reads, scope and template
+boundaries, replay authorization, aggregate versions, audit rollback and command races.
+They compile but are deliberately skipped locally; isolated CI execution remains pending.
+The database-independent Chi dispatch check passes, including invitation routes. Local
+Go unit checks and scoped vet/lint pass. Synthetic browser review covers 36 views at
+1440px and 390px across all three waiting screens, with no real API calls, overflow or
+browser errors. The final full frontend suite passes 741 tests in 90 files. Workspace
+format/type/lint, all app builds, contract lint/compatibility and generation checks pass.
+
+The maintained `tests/e2e/management-role-grants-readonly.spec.ts` reads bounded options,
+provider relationships and grant history, checking capabilities, ETags, response
+allowlists and financial-reviewer denial. Enable `E2E_REAL_API=1`,
+`E2E_MANAGEMENT_ROLE_GRANTS_READONLY=1` and the operator's local
+`E2E_EXISTING_UI_URL`; it reuses the running system and issues no grant command.
+No existing live user's permissions were changed. Schema remains 57. Last-manager
+duplicate/finite/service variants are only code-reviewed because A cannot revoke those
+privileged roles. Same-actor alternate memberships within one tenant are prevented by
+the existing uniqueness constraint. Privileged maker-checker B remains separate work
+before completing MGT-03; MGT-04 typed settings follows it.
 
 ### PC-06 technical acceptance checkpoint (2026-10-03)
 
@@ -1312,16 +1331,20 @@ administration and integrations remain outside this pass. PR #11 is not merged o
 
 ## 3. Get it running
 
-Requirements: Go 1.27+, a local PostgreSQL 18, Node 24 + pnpm 10. No Docker, ever (§6).
+Requirements: Go 1.27.2+, a local PostgreSQL 18, Node 24 + pnpm 10. No Docker, ever (§6).
 
 ```sh
 cp .env.example .env              # fill CHANGE_ME with your local PostgreSQL credentials
 make tools                        # sqlc, oapi-codegen, oasdiff, golangci-lint, govulncheck
 make native-install && make native-up   # MinIO, ClamAV, Mailpit as native processes
 make db-init                      # role kapsora_app + database kapsora
-make migrate-up                   # schema to 000056
-make test-unit && make test-db    # should both be green before you write anything
+make migrate-up                   # schema to 000057
+make test-unit                    # clear KAPSORA_TEST_ADMIN_DATABASE_URL for local unit checks
 ```
+
+Run database integration tests in isolated CI. The shared local dbtest harness resets
+the application-role password even when it creates disposable databases; do not run
+`make test-db` or enable its admin URL against the operator's development cluster.
 
 Windows without GNU make: `.\scripts\dev.ps1 <target>` mirrors every Makefile target
 (`.\scripts\dev.ps1 migrate-up`, etc.).

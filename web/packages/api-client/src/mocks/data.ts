@@ -45,6 +45,7 @@ export function makeIdFactory(
 
 export interface MockAccount {
   actorId: string;
+  actorType?: Schemas['TenantUser']['actorType'];
   actorStatus?: Schemas['TenantUser']['actorStatus'];
   username: string;
   displayName: string;
@@ -57,6 +58,10 @@ export interface MockAccount {
    * slice is on the server.
    */
   memberships: {
+    /** IAM grant identity and system role for role-management mock projections. */
+    grantId?: string;
+    roleCode?: string;
+    isSystemRole?: boolean;
     /** Membership without any role assignment, created only by explicit invitation consent. */
     membershipOnly?: boolean;
     tenantCode: string;

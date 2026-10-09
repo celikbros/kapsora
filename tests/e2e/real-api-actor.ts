@@ -77,7 +77,12 @@ export class Actor {
       response.status(),
     );
     const data = response.status() === 204 ? null : await response.json();
-    return { data: data as T, etag: response.headers()['etag'] ?? '', status: response.status() };
+    return {
+      data: data as T,
+      etag: response.headers()['etag'] ?? '',
+      status: response.status(),
+      cacheControl: response.headers()['cache-control'] ?? '',
+    };
   }
   async login(username: string) {
     const login = await this.call<{ csrfToken: string }>('POST', '/api/v1/session/login', {

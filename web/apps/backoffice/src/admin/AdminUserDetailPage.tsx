@@ -1,4 +1,5 @@
 import { formatDate, formatDateTime, useTranslation } from '@kapsora/i18n';
+import { useSession } from '@kapsora/auth';
 import {
   Badge,
   Button,
@@ -11,12 +12,14 @@ import {
 import { Link, useParams } from '@tanstack/react-router';
 import { problemOf } from '../problems';
 import { SuspendMembership } from './SuspendMembership';
+import { RoleGrants } from './RoleGrants';
 import { useTenantUser } from './queries';
 
 export function AdminUserDetailPage() {
   const { t } = useTranslation();
   const { membershipId } = useParams({ from: '/app/admin/users/$membershipId' });
   const query = useTenantUser(membershipId);
+  const canManageRoles = useSession((s) => s.activeTenant?.canManageTenantRoles === true);
   const detail = query.data?.data;
   return (
     <section data-testid="admin-user-detail-page">
@@ -91,43 +94,57 @@ export function AdminUserDetailPage() {
             etag={query.data?.etag ?? ''}
             onReload={async () => (await query.refetch()).isSuccess}
           />
-          <h2 className="mt-6 text-lg font-semibold">{t('adminUsers.roles')}</h2>
-          <p className="text-fg-muted mb-3 text-sm">{t('adminUsers.rolesHint')}</p>
-          {detail.assignedRoles.length === 0 ? (
-            <EmptyState title={t('adminUsers.noRoles')} />
-          ) : (
-            <ul className="grid gap-2">
-              {detail.assignedRoles.map((role, index) => (
-                <li
-                  key={`${role.code}:${role.scopeType}:${role.validFrom ?? ''}:${index}`}
-                  data-testid="admin-assigned-role"
-                  className="border-line bg-surface grid min-w-0 gap-2 rounded-lg border p-4 text-sm sm:grid-cols-2"
-                >
-                  <div className="min-w-0 break-words">
-                    <strong>{role.name}</strong>{' '}
-                    <code className="text-fg-muted break-all text-xs">{role.code}</code>
-                  </div>
-                  <div className="min-w-0 break-words">
-                    {t('adminUsers.scope')}: {t(`adminUsers.scopes.${role.scopeType}`)}
-                  </div>
-                  <div className="min-w-0 break-words">
-                    {t('adminUsers.roleKind')}:{' '}
-                    {role.isSystemRole ? t('adminUsers.systemRole') : t('adminUsers.localRole')}
-                  </div>
-                  <div className="min-w-0 break-words">
-                    {t('adminUsers.validity')}:{' '}
-                    {role.validityEmpty ? (
-                      t('adminUsers.emptyValidity')
-                    ) : (
-                      <>
-                        {role.validFrom ? formatDateTime(role.validFrom) : t('adminUsers.noStart')}{' '}
-                        — {role.validTo ? formatDateTime(role.validTo) : t('adminUsers.noEnd')}
-                      </>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
+          {canManageRoles && (
+            <RoleGrants
+              key={membershipId}
+              membershipId={membershipId}
+              detail={detail}
+              onReloadDetail={async () => (await query.refetch()).isSuccess}
+            />
+          )}
+          {!canManageRoles && (
+            <>
+              <h2 className="mt-6 text-lg font-semibold">{t('adminUsers.roles')}</h2>
+              <p className="text-fg-muted mb-3 text-sm">{t('adminUsers.rolesHint')}</p>
+              {detail.assignedRoles.length === 0 ? (
+                <EmptyState title={t('adminUsers.noRoles')} />
+              ) : (
+                <ul className="grid gap-2">
+                  {detail.assignedRoles.map((role, index) => (
+                    <li
+                      key={`${role.code}:${role.scopeType}:${role.validFrom ?? ''}:${index}`}
+                      data-testid="admin-assigned-role"
+                      className="border-line bg-surface grid min-w-0 gap-2 rounded-lg border p-4 text-sm sm:grid-cols-2"
+                    >
+                      <div className="min-w-0 break-words">
+                        <strong>{role.name}</strong>{' '}
+                        <code className="text-fg-muted break-all text-xs">{role.code}</code>
+                      </div>
+                      <div className="min-w-0 break-words">
+                        {t('adminUsers.scope')}: {t(`adminUsers.scopes.${role.scopeType}`)}
+                      </div>
+                      <div className="min-w-0 break-words">
+                        {t('adminUsers.roleKind')}:{' '}
+                        {role.isSystemRole ? t('adminUsers.systemRole') : t('adminUsers.localRole')}
+                      </div>
+                      <div className="min-w-0 break-words">
+                        {t('adminUsers.validity')}:{' '}
+                        {role.validityEmpty ? (
+                          t('adminUsers.emptyValidity')
+                        ) : (
+                          <>
+                            {role.validFrom
+                              ? formatDateTime(role.validFrom)
+                              : t('adminUsers.noStart')}{' '}
+                            — {role.validTo ? formatDateTime(role.validTo) : t('adminUsers.noEnd')}
+                          </>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
           )}
         </>
       )}

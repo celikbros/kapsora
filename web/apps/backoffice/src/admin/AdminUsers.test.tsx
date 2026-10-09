@@ -42,9 +42,9 @@ it('opens a tenant membership detail with assigned roles and a working back link
   expect(page).not.toHaveTextContent('admin.a@example.invalid');
   await user.click(within(rows[0]!).getByRole('link'));
   const detail = await screen.findByTestId('admin-user-detail-page');
-  expect(within(detail).getByText('Atanmış roller')).toBeInTheDocument();
-  expect(within(detail).getAllByTestId('admin-assigned-role').length).toBeGreaterThan(0);
-  expect(detail).toHaveTextContent('erişim sağladıkları anlamına gelmez');
+  const history = await within(detail).findByTestId('role-grants');
+  expect(within(history).getByText('Rol atamaları')).toBeInTheDocument();
+  expect(history).toHaveTextContent('geçerlilikleri');
   await user.click(within(detail).getByRole('link', { name: /Kullanıcılara dön/ }));
   expect(await screen.findByTestId('admin-users-page')).toBeInTheDocument();
 });

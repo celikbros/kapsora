@@ -95,6 +95,15 @@ New-account acceptance displays a generated login handle without signing in; the
 retains it and uses ordinary login. For 24 hours, a lost acceptance result can be recovered
 privately with both the code and current password.
 
+A tenant role manager can give an ACTIVE human membership that has no current or future
+access one supported system role. The confirmation names the person, institution, role,
+application and access; provider roles also name one provider organization. Sensitive
+access is stated explicitly. Password confirmation is required. Removing the supported
+current role ends its access while retaining the account, membership and assignment
+history. Privileged roles, person binding and combined-role assignments have separate
+approval and identity requirements. A waiting user can refresh their access in any app
+after assignment without signing in again.
+
 Success is a payer operator onboarding a provider, a provider checking eligibility and
 submitting a request, and a member seeing the result, without anyone leaving the
 product or asking whose data they are looking at.

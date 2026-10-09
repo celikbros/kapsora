@@ -30,6 +30,8 @@ export function AppChooserPage() {
   const search = useSearch({ from: '/auth/apps' });
   const me = useSession((s) => s.me);
   const [signingOut, setSigningOut] = useState(false);
+  const [refreshingAccess, setRefreshingAccess] = useState(false);
+  const [refreshError, setRefreshError] = useState(false);
   const fits = appsFor((me?.tenants ?? []).filter((t) => t.tenant.status === 'ACTIVE'));
   const pendingOrganizations = pendingOrganizationNames(me?.tenants ?? []);
   const here = fits.includes('provider');
@@ -45,6 +47,19 @@ export function AppChooserPage() {
     void store.logout().finally(() => navigate({ href: '/auth/login' }));
   }
 
+  async function refreshAccess() {
+    if (refreshingAccess) return;
+    setRefreshingAccess(true);
+    setRefreshError(false);
+    try {
+      await store.refresh();
+    } catch {
+      setRefreshError(true);
+    } finally {
+      setRefreshingAccess(false);
+    }
+  }
+
   return (
     <AppChooser
       current="provider"
@@ -57,6 +72,9 @@ export function AppChooserPage() {
       onSignOut={signOut}
       signingOut={signingOut}
       pendingOrganizations={pendingOrganizations}
+      onRefreshAccess={refreshAccess}
+      refreshingAccess={refreshingAccess}
+      refreshError={refreshError}
     />
   );
 }

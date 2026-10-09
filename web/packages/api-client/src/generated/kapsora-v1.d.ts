@@ -810,6 +810,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/role-assignment-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Supported non-privileged system role candidates with exact persisted template permissions; requires current TENANT user.read and role.manage authority. */
+        get: operations["listRoleAssignmentOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/role-assignment-organizations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Active in-tenant provider relationships eligible for organization-scoped role assignment. */
+        get: operations["listRoleAssignmentOrganizations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/users": {
         parameters: {
             query?: never;
@@ -845,6 +879,41 @@ export interface paths {
         get: operations["getTenantUser"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{membershipId}/role-grants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Allowlisted grant history and current assignment eligibility, using membership aggregate ETag. */
+        get: operations["listTenantUserRoleGrants"];
+        put?: never;
+        /** @description Assign one supported role to an active zero-access human membership, until revoked or membership expiry. Requires fresh password step-up. */
+        post: operations["assignTenantUserRoleGrant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{membershipId}/role-grants/{grantId}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description End one current supported grant while retaining its history. Requires fresh password step-up. */
+        post: operations["revokeTenantUserRoleGrant"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6803,6 +6872,15 @@ export interface components {
          * @enum {string}
          */
         AssignmentPolicy: "MANUAL" | "ROUND_ROBIN" | "LEAST_LOADED";
+        AssignTenantRoleGrantRequest: {
+            /** Format: uuid */
+            organizationRelationshipId?: string;
+            /** @enum {string} */
+            reasonCode: "ONBOARDING" | "DUTY_ASSIGNMENT";
+            roleCode: string;
+            /** @enum {string} */
+            scopeType: "TENANT" | "ORGANIZATION";
+        };
         Authorization: {
             /** Format: date-time */
             approvedAt: string;
@@ -12216,6 +12294,35 @@ export interface components {
              */
             status: "CONFIRMED" | "DISPUTED" | "REJECTED";
         };
+        RevokeTenantRoleGrantRequest: {
+            /** @enum {string} */
+            reasonCode: "ACCESS_REVIEW" | "DUTY_ENDED" | "SECURITY_CONCERN";
+        };
+        RoleAssignmentOption: {
+            code: string;
+            description: string;
+            hasSensitivePermissions: boolean;
+            name: string;
+            permissionCodes: string[];
+            /** @enum {string} */
+            scopeType: "TENANT" | "ORGANIZATION";
+        };
+        RoleAssignmentOptions: {
+            items: components["schemas"]["RoleAssignmentOption"][];
+        };
+        RoleAssignmentOrganization: {
+            displayName: string;
+            /**
+             * Format: uuid
+             * @description Tenant organization relationship ID, never global organization or profile ID.
+             */
+            id: string;
+            tenantCode: string | null;
+        };
+        RoleAssignmentOrganizationPage: {
+            items: components["schemas"]["RoleAssignmentOrganization"][];
+            nextCursor: string | null;
+        };
         RoomType: {
             /**
              * @description The provider's own free-form facts about the room — bed layout, floor, view. It
@@ -13163,6 +13270,8 @@ export interface components {
              *     sign-in sends a person straight to the one app, or offers the choice.
              */
             apps: ("backoffice" | "provider" | "member")[];
+            /** @description True only when current TENANT grants correlate identity.user.read and identity.role.manage on this active membership in backoffice or unrestricted app context. */
+            canManageTenantRoles?: boolean;
             /**
              * @description True only when identity.user.manage belongs to an active TENANT-scoped grant
              *     in this tenant and the request uses backoffice or unrestricted app context.
@@ -13223,6 +13332,41 @@ export interface components {
         TenantInvitationStatus: "PENDING" | "ACCEPTED" | "CANCELLED" | "EXPIRED";
         /** @enum {string} */
         TenantMembershipStatus: "PENDING" | "ACTIVE" | "SUSPENDED" | "REVOKED";
+        TenantRoleGrant: {
+            canRevoke: boolean;
+            /** Format: uuid */
+            id: string;
+            isSystemRole: boolean;
+            organizationDisplayName: string | null;
+            /** Format: uuid */
+            organizationRelationshipId: string | null;
+            revocationRefusalCode: string | null;
+            roleCode: string;
+            roleName: string;
+            scopeType: string;
+            /** Format: date-time */
+            validFrom: string | null;
+            validityEmpty: boolean;
+            /** Format: date-time */
+            validTo: string | null;
+        };
+        TenantRoleGrantPage: {
+            assignmentRefusalCode: string | null;
+            canAssign: boolean;
+            items: components["schemas"]["TenantRoleGrant"][];
+            /** Format: uuid */
+            membershipId: string;
+            /** Format: int64 */
+            membershipRowVersion: number;
+            nextCursor: string | null;
+        };
+        TenantRoleGrantResult: {
+            grant: components["schemas"]["TenantRoleGrant"];
+            /** Format: uuid */
+            membershipId: string;
+            /** Format: int64 */
+            membershipRowVersion: number;
+        };
         TenantSummary: {
             code: string;
             defaultLocale?: string;
@@ -13816,6 +13960,7 @@ export interface components {
         RelationshipId: string;
         ReportId: string;
         RequestId: string;
+        RoleAssignmentMembershipId: string;
         RoomTypeId: string;
         RuleEvaluationId: string;
         RuleSetId: string;
@@ -13854,6 +13999,7 @@ export type SchemaApprovalPolicy = components['schemas']['ApprovalPolicy'];
 export type SchemaApprovalPolicyInput = components['schemas']['ApprovalPolicyInput'];
 export type SchemaApprovalPolicyList = components['schemas']['ApprovalPolicyList'];
 export type SchemaAssignmentPolicy = components['schemas']['AssignmentPolicy'];
+export type SchemaAssignTenantRoleGrantRequest = components['schemas']['AssignTenantRoleGrantRequest'];
 export type SchemaAuthorization = components['schemas']['Authorization'];
 export type SchemaAuthorizationItem = components['schemas']['AuthorizationItem'];
 export type SchemaAuthorizationItemInput = components['schemas']['AuthorizationItemInput'];
@@ -14243,6 +14389,11 @@ export type SchemaResolvePriceResult = components['schemas']['ResolvePriceResult
 export type SchemaReviewBatchInvoice = components['schemas']['ReviewBatchInvoice'];
 export type SchemaReviewComment = components['schemas']['ReviewComment'];
 export type SchemaReviewNoShowRequest = components['schemas']['ReviewNoShowRequest'];
+export type SchemaRevokeTenantRoleGrantRequest = components['schemas']['RevokeTenantRoleGrantRequest'];
+export type SchemaRoleAssignmentOption = components['schemas']['RoleAssignmentOption'];
+export type SchemaRoleAssignmentOptions = components['schemas']['RoleAssignmentOptions'];
+export type SchemaRoleAssignmentOrganization = components['schemas']['RoleAssignmentOrganization'];
+export type SchemaRoleAssignmentOrganizationPage = components['schemas']['RoleAssignmentOrganizationPage'];
 export type SchemaRoomType = components['schemas']['RoomType'];
 export type SchemaRoomTypeInventoryRange = components['schemas']['RoomTypeInventoryRange'];
 export type SchemaRoomTypeList = components['schemas']['RoomTypeList'];
@@ -14322,6 +14473,9 @@ export type SchemaTenantInvitationDeliveryStatus = components['schemas']['Tenant
 export type SchemaTenantInvitationPage = components['schemas']['TenantInvitationPage'];
 export type SchemaTenantInvitationStatus = components['schemas']['TenantInvitationStatus'];
 export type SchemaTenantMembershipStatus = components['schemas']['TenantMembershipStatus'];
+export type SchemaTenantRoleGrant = components['schemas']['TenantRoleGrant'];
+export type SchemaTenantRoleGrantPage = components['schemas']['TenantRoleGrantPage'];
+export type SchemaTenantRoleGrantResult = components['schemas']['TenantRoleGrantResult'];
 export type SchemaTenantSummary = components['schemas']['TenantSummary'];
 export type SchemaTenantUser = components['schemas']['TenantUser'];
 export type SchemaTenantUserDetail = components['schemas']['TenantUserDetail'];
@@ -14415,6 +14569,7 @@ export type ParameterReimbursementId = components['parameters']['ReimbursementId
 export type ParameterRelationshipId = components['parameters']['RelationshipId'];
 export type ParameterReportId = components['parameters']['ReportId'];
 export type ParameterRequestId = components['parameters']['RequestId'];
+export type ParameterRoleAssignmentMembershipId = components['parameters']['RoleAssignmentMembershipId'];
 export type ParameterRoomTypeId = components['parameters']['RoomTypeId'];
 export type ParameterRuleEvaluationId = components['parameters']['RuleEvaluationId'];
 export type ParameterRuleSetId = components['parameters']['RuleSetId'];
@@ -15798,6 +15953,61 @@ export interface operations {
             428: components["responses"]["ValidationError"];
         };
     };
+    listRoleAssignmentOptions: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Available role candidates */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleAssignmentOptions"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listRoleAssignmentOrganizations: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Provider relationship page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleAssignmentOrganizationPage"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
     listTenantUsers: {
         parameters: {
             query?: {
@@ -15856,6 +16066,197 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    listTenantUserRoleGrants: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from the previous response. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header: {
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                membershipId: components["parameters"]["RoleAssignmentMembershipId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Grant history page */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantRoleGrantPage"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    assignTenantUserRoleGrant: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                membershipId: components["parameters"]["RoleAssignmentMembershipId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignTenantRoleGrantRequest"];
+            };
+        };
+        responses: {
+            /** @description Committed grant and new membership version */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantRoleGrantResult"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /**
+             * @description Named domain codes: SELF_ROLE_CHANGE_FORBIDDEN, ROLE_CONFIGURATION_UNSUPPORTED,
+             *     ROLE_ASSIGNMENT_UNSUPPORTED, MEMBERSHIP_STATE_CONFLICT, EXISTING_ACCESS_CONFLICT,
+             *     GRANT_STATE_CONFLICT, LAST_TENANT_MANAGER, LAST_TENANT_ROLE_MANAGER.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Membership ETag no longer matches */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description JSON content type is required */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description If-Match is required */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    revokeTenantUserRoleGrant: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key retained for at least 24 hours. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Optimistic concurrency token returned as ETag. */
+                "If-Match": components["parameters"]["IfMatch"];
+                /** @description Selected tenant UUID. It must be one of the actor's active memberships. */
+                "X-Tenant-ID": components["parameters"]["TenantHeader"];
+            };
+            path: {
+                grantId: string;
+                membershipId: components["parameters"]["RoleAssignmentMembershipId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevokeTenantRoleGrantRequest"];
+            };
+        };
+        responses: {
+            /** @description Ended grant and new membership version */
+            200: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantRoleGrantResult"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /**
+             * @description Named domain codes: SELF_ROLE_CHANGE_FORBIDDEN, ROLE_CONFIGURATION_UNSUPPORTED,
+             *     ROLE_ASSIGNMENT_UNSUPPORTED, MEMBERSHIP_STATE_CONFLICT, EXISTING_ACCESS_CONFLICT,
+             *     GRANT_STATE_CONFLICT, LAST_TENANT_MANAGER, LAST_TENANT_ROLE_MANAGER.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Membership ETag no longer matches */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description JSON content type is required */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description If-Match is required */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
         };
     };
     suspendTenantUser: {

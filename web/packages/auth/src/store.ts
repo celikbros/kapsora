@@ -72,6 +72,7 @@ function stepUpContext(state: SessionState): string {
     state.activeTenant?.tenant.id,
     state.activeTenant?.canReadTenantUsers,
     state.activeTenant?.canManageTenantUsers,
+    state.activeTenant?.canManageTenantRoles,
     state.activeTenant?.permissions,
     state.activeTenant?.scopes,
   ]);
@@ -81,6 +82,7 @@ function stepUpContext(state: SessionState): string {
 export function createSessionStore(ops: Operations): SessionStore {
   const store = createStore<SessionState>(() => ({ ...initial }));
   let inflight: Promise<SessionState> | null = null;
+  let loadEpoch = 0;
   let contextRevision = 0;
   let previousStepUpContext = stepUpContext(store.getState());
   store.subscribe((state) => {
@@ -91,12 +93,22 @@ export function createSessionStore(ops: Operations): SessionStore {
   });
 
   async function load(): Promise<SessionState> {
-    store.setState({ status: 'loading', bootstrapError: null });
+    const epoch = ++loadEpoch;
+    const prior = store.getState();
+    store.setState(
+      prior.status === 'authenticated'
+        ? { bootstrapError: null }
+        : { status: 'loading', bootstrapError: null },
+    );
+    let loadRevision = contextRevision;
     try {
       const session = await ops.session.get();
+      if (epoch !== loadEpoch || contextRevision !== loadRevision) return store.getState();
       // The token must be in place before /me so a CSRF-guarded server never sees a bare call.
       store.setState({ csrfToken: session.csrfToken, session });
+      loadRevision = contextRevision;
       const me = await ops.session.me();
+      if (epoch !== loadEpoch || contextRevision !== loadRevision) return store.getState();
       const next: SessionState = {
         status: 'authenticated',
         session,
@@ -108,16 +120,20 @@ export function createSessionStore(ops: Operations): SessionStore {
       store.setState(next);
       return next;
     } catch (err) {
+      if (epoch !== loadEpoch || contextRevision !== loadRevision) return store.getState();
       if (err instanceof ApiError && err.status === 401) {
         const next: SessionState = { ...initial, status: 'anonymous' };
         store.setState(next);
         return next;
       }
-      const next: SessionState = {
-        ...initial,
-        status: 'anonymous',
-        bootstrapError: err instanceof ApiError ? err : null,
-      };
+      const next: SessionState =
+        prior.status === 'authenticated'
+          ? { ...prior, bootstrapError: err instanceof ApiError ? err : null }
+          : {
+              ...initial,
+              status: 'anonymous',
+              bootstrapError: err instanceof ApiError ? err : null,
+            };
       store.setState(next);
       throw err;
     }
@@ -145,6 +161,7 @@ export function createSessionStore(ops: Operations): SessionStore {
       return inflight;
     },
     async login(username, password) {
+      ++loadEpoch;
       const session = await ops.session.login(username, password);
       store.setState({ csrfToken: session.csrfToken, session });
       const me = await ops.session.me();
@@ -160,6 +177,7 @@ export function createSessionStore(ops: Operations): SessionStore {
       return next;
     },
     async logout() {
+      ++loadEpoch;
       try {
         await ops.session.logout();
       } finally {
@@ -191,6 +209,7 @@ export function createSessionStore(ops: Operations): SessionStore {
       store.setState({ session, csrfToken: session.csrfToken });
     },
     async switchTenant(tenantId) {
+      ++loadEpoch;
       const ctx = await ops.session.switchTenant(tenantId);
       const state = store.getState();
       store.setState({
@@ -202,6 +221,7 @@ export function createSessionStore(ops: Operations): SessionStore {
       return ctx;
     },
     invalidate() {
+      ++loadEpoch;
       store.setState({ ...initial, status: 'anonymous' });
     },
     async checkAccount() {

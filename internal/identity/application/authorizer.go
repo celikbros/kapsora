@@ -52,6 +52,10 @@ func (g Grants) CanManageTenantUsers() bool {
 	return g.hasTenantPermission("identity.user.manage")
 }
 
+func (g Grants) CanManageTenantRoles() bool {
+	return g.hasTenantPermission("identity.user.read") && g.hasTenantPermission("identity.role.manage")
+}
+
 func (g Grants) hasTenantPermission(code string) bool {
 	for _, grant := range g.Items {
 		if grant.Scope.Type != ScopeTenant {
@@ -140,6 +144,7 @@ type TenantContext struct {
 	Scopes               []identity.Scope
 	CanReadTenantUsers   bool
 	CanManageTenantUsers bool
+	CanManageTenantRoles bool
 	// PersonID is the person this account acts for in this tenant, resolved from its
 	// PERSON scope (migration 000039). It is null for every actor that is not a member, and
 	// for a member account asked about by any app but the member app. The frontend reads it
@@ -162,6 +167,7 @@ func tenantContext(m Membership, g Grants, app identity.App) TenantContext {
 		Scopes:               scopes,
 		CanReadTenantUsers:   g.CanReadTenantUsers() && (app == identity.AppAny || app == identity.AppBackoffice),
 		CanManageTenantUsers: g.CanManageTenantUsers() && (app == identity.AppAny || app == identity.AppBackoffice),
+		CanManageTenantRoles: g.CanManageTenantRoles() && (app == identity.AppAny || app == identity.AppBackoffice),
 		PersonID:             identity.PersonFromScopes(scopes),
 		Apps:                 g.Apps(),
 		SelfPersonID:         g.SelfPerson(),

@@ -7,6 +7,7 @@ import { HttpResponse, http, type HttpHandler, type PathParams } from 'msw';
 
 import { accommodationHandlers } from './accommodation-handlers';
 import { adminHandlers, hasTenantUserPermission } from './admin-handlers';
+import { roleAssignmentHandlers } from './role-assignment-handlers';
 import { invitationHandlers } from './invitation-handlers';
 import { MockInvitationState } from './invitation-state';
 import { lodgingTermsHandlers } from './lodging-terms-handlers';
@@ -110,7 +111,11 @@ export function grantsFor(
 ): { permissions: string[]; scopes: { type: string; id: string | null }[] } {
   const sets = session.account.memberships.filter(
     (m) =>
-      m.tenantCode === tenantCode && (session.app === null || appOfGrant(m.scopes) === session.app),
+      m.tenantCode === tenantCode &&
+      !m.membershipOnly &&
+      !m.validityEmpty &&
+      withinPeriod(new Date().toISOString(), m.validFrom ?? null, m.validTo ?? null) &&
+      (session.app === null || appOfGrant(m.scopes) === session.app),
   );
   return {
     permissions: [...new Set(sets.flatMap((m) => m.permissions))],
@@ -149,6 +154,17 @@ export class MockApi {
     actorId: string;
     reasonCode: string;
   }[] = [];
+  readonly roleGrantEvents: {
+    action: 'assign' | 'revoke';
+    membershipId: string;
+    grantId: string;
+  }[] = [];
+  readonly roleGrantReceipts = new Map<
+    string,
+    { fingerprint: string; result: Schemas['TenantRoleGrantResult']; etag: string }
+  >();
+  readonly rolePermissionOverrides = new Map<string, string[]>();
+  readonly privilegedRoleOverrides = new Set<string>();
   private idempotency = new Map<string, { status: number; body: unknown; etag: string | null }>();
   private traceCounter = 0;
   readonly delayMs: number;
@@ -168,6 +184,10 @@ export class MockApi {
     this.idempotency.clear();
     this.tenantMemberships.clear();
     this.membershipSuspensionEvents.length = 0;
+    this.roleGrantEvents.length = 0;
+    this.roleGrantReceipts.clear();
+    this.rolePermissionOverrides.clear();
+    this.privilegedRoleOverrides.clear();
     if (this.options.initialUser) {
       this.signIn(this.options.initialUser);
     }
@@ -238,7 +258,13 @@ export class MockApi {
       .filter((code) => this.membershipIsActive(account, this.tenantByCode(code)!.id))
       .map((code) => {
         const all = account.memberships.filter((m) => m.tenantCode === code);
-        const lens = all.filter((m) => app === null || appOfGrant(m.scopes) === app);
+        const active = all.filter(
+          (m) =>
+            !m.membershipOnly &&
+            !m.validityEmpty &&
+            withinPeriod(new Date().toISOString(), m.validFrom ?? null, m.validTo ?? null),
+        );
+        const lens = active.filter((m) => app === null || appOfGrant(m.scopes) === app);
         const scopes = lens.flatMap((m) => m.scopes ?? []);
         return {
           tenant: this.tenantByCode(code)!,
@@ -248,10 +274,10 @@ export class MockApi {
           // from the grant again on every call, so nothing trusts it back.
           personId: personOf(scopes),
           // Who the account is, whichever app asks: what marks a reviewer's own file.
-          selfPersonId: personOf(all.flatMap((m) => m.scopes ?? [])),
+          selfPersonId: personOf(active.flatMap((m) => m.scopes ?? [])),
           // The apps the account has work in here, from all of its grant sets.
           apps: MOCK_APPS.filter((a) =>
-            all.some((m) => appOfGrant(m.scopes) === a && m.permissions.length > 0),
+            active.some((m) => appOfGrant(m.scopes) === a && m.permissions.length > 0),
           ),
           permissions: [...new Set(lens.flatMap((m) => m.permissions))],
           canReadTenantUsers:
@@ -260,6 +286,10 @@ export class MockApi {
           canManageTenantUsers:
             (app === null || app === 'backoffice') &&
             hasTenantUserPermission(account, code, 'identity.user.manage'),
+          canManageTenantRoles:
+            (app === null || app === 'backoffice') &&
+            hasTenantUserPermission(account, code, 'identity.user.read') &&
+            hasTenantUserPermission(account, code, 'identity.role.manage'),
           // The access grants that narrow the permissions above. A provider-side role is an
           // ORGANIZATION grant, and it is what every provider boundary in the API is read
           // from — there is no second, client-side rule that could disagree with it.
@@ -1682,6 +1712,7 @@ export function createHandlers(api: MockApi): HttpHandler[] {
   return [
     ...sessionHandlers,
     ...adminHandlers(api),
+    ...roleAssignmentHandlers(api),
     ...invitationHandlers(api),
     ...organizationHandlers,
     ...peopleHandlers,

@@ -34,7 +34,9 @@ export function hasTenantUserPermission(
       !grant.validityEmpty &&
       withinPeriod(new Date().toISOString(), grant.validFrom ?? null, grant.validTo ?? null) &&
       ((grant.scopes?.length ?? 0) === 0 ||
-        grant.scopes?.some((scope) => scope.type === 'TENANT') === true),
+        (grant.scopes?.length === 1 &&
+          grant.scopes[0]?.type === 'TENANT' &&
+          grant.scopes[0]?.id === null)),
   );
 }
 
@@ -47,7 +49,7 @@ function projectMember(
   return {
     id: membership.id,
     displayName: account.displayName,
-    actorType: 'HUMAN',
+    actorType: account.actorType ?? 'HUMAN',
     actorStatus: account.actorStatus ?? 'ACTIVE',
     membershipStatus: membership.status,
     validFrom: membership.validFrom,
@@ -64,9 +66,13 @@ function detail(api: MockApi, account: MockAccount, tenantId: string): Schemas['
     assignedRoles: account.memberships
       .filter((grant) => grant.tenantCode === tenant.code && !grant.membershipOnly)
       .map((grant) => ({
-        code: grant.permissions.includes('identity.user.read') ? 'TENANT_ADMIN' : 'DEMO_ROLE',
-        name: grant.permissions.includes('identity.user.read') ? 'Kurum Yöneticisi' : 'Demo Rol',
-        isSystemRole: true,
+        code:
+          grant.roleCode ??
+          (grant.permissions.includes('identity.user.read') ? 'TENANT_ADMIN' : 'DEMO_ROLE'),
+        name:
+          grant.roleCode ??
+          (grant.permissions.includes('identity.user.read') ? 'Kurum Yöneticisi' : 'Demo Rol'),
+        isSystemRole: grant.isSystemRole ?? true,
         scopeType: (grant.scopes?.[0]?.type ??
           'TENANT') as Schemas['TenantAssignedRole']['scopeType'],
         validFrom: grant.validityEmpty ? null : (grant.validFrom ?? '2026-01-01T00:00:00Z'),

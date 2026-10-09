@@ -28,9 +28,95 @@ export type TenantInvitationQuery = {
   limit?: number;
   status?: TenantInvitation['status'];
 };
+export type RoleAssignmentOption = components['schemas']['RoleAssignmentOption'];
+export type RoleAssignmentOrganizationPage =
+  components['schemas']['RoleAssignmentOrganizationPage'];
+export type TenantRoleGrant = components['schemas']['TenantRoleGrant'];
+export type TenantRoleGrantPage = components['schemas']['TenantRoleGrantPage'];
+export type TenantRoleGrantResult = components['schemas']['TenantRoleGrantResult'];
+export type AssignTenantRoleGrantRequest = components['schemas']['AssignTenantRoleGrantRequest'];
+export type RevokeTenantRoleGrantRequest = components['schemas']['RevokeTenantRoleGrantRequest'];
 
 export function adminOperations(client: KapsoraClient) {
   return {
+    async roleAssignmentOptions(tenantId: string): Promise<RoleAssignmentOption[]> {
+      return (
+        await unwrap(
+          client.GET('/api/v1/admin/role-assignment-options', {
+            params: { header: { 'X-Tenant-ID': tenantId } },
+          }),
+        )
+      ).data.items;
+    },
+    async roleAssignmentOrganizations(
+      tenantId: string,
+      query: { cursor?: string; limit?: number } = {},
+    ): Promise<RoleAssignmentOrganizationPage> {
+      return (
+        await unwrap(
+          client.GET('/api/v1/admin/role-assignment-organizations', {
+            params: { header: { 'X-Tenant-ID': tenantId }, query },
+          }),
+        )
+      ).data;
+    },
+    async roleGrants(
+      tenantId: string,
+      membershipId: string,
+      query: { cursor?: string; limit?: number } = {},
+    ): Promise<Versioned<TenantRoleGrantPage>> {
+      const result = await unwrap(
+        client.GET('/api/v1/admin/users/{membershipId}/role-grants', {
+          params: { header: { 'X-Tenant-ID': tenantId }, path: { membershipId }, query },
+        }),
+      );
+      return versioned(result.data, result.response);
+    },
+    async assignRoleGrant(
+      tenantId: string,
+      membershipId: string,
+      body: AssignTenantRoleGrantRequest,
+      etag: string,
+      idempotencyKey: string,
+    ): Promise<Versioned<TenantRoleGrantResult>> {
+      const result = await unwrap(
+        client.POST('/api/v1/admin/users/{membershipId}/role-grants', {
+          params: {
+            header: {
+              'X-Tenant-ID': tenantId,
+              'If-Match': etag,
+              'Idempotency-Key': idempotencyKey,
+            },
+            path: { membershipId },
+          },
+          body,
+        }),
+      );
+      return versioned(result.data, result.response);
+    },
+    async revokeRoleGrant(
+      tenantId: string,
+      membershipId: string,
+      grantId: string,
+      body: RevokeTenantRoleGrantRequest,
+      etag: string,
+      idempotencyKey: string,
+    ): Promise<Versioned<TenantRoleGrantResult>> {
+      const result = await unwrap(
+        client.POST('/api/v1/admin/users/{membershipId}/role-grants/{grantId}/revoke', {
+          params: {
+            header: {
+              'X-Tenant-ID': tenantId,
+              'If-Match': etag,
+              'Idempotency-Key': idempotencyKey,
+            },
+            path: { membershipId, grantId },
+          },
+          body,
+        }),
+      );
+      return versioned(result.data, result.response);
+    },
     async listUsers(tenantId: string, query: TenantUserQuery = {}): Promise<TenantUserPage> {
       return (
         await unwrap(

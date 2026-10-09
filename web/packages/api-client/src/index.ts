@@ -18,6 +18,13 @@ export type {
   InspectInvitationResponse,
   AcceptExistingInvitationResponse,
   AcceptNewInvitationResponse,
+  RoleAssignmentOption,
+  RoleAssignmentOrganizationPage,
+  TenantRoleGrant,
+  TenantRoleGrantPage,
+  TenantRoleGrantResult,
+  AssignTenantRoleGrantRequest,
+  RevokeTenantRoleGrantRequest,
 } from './admin';
 export type {
   CreateOrganizationRequest,
