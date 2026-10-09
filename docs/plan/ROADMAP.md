@@ -14,7 +14,7 @@ Authoritative sources: [docs/plan/KAPSORA_Master_Plan_v2.0.md](KAPSORA_Master_Pl
 (Turkish, normative), [docs/adr](../adr/README.md), the frozen v1.2 specification under
 [docs/baseline-v1.2](../baseline-v1.2/). When they disagree, the master plan and ADRs win.
 
-## Current snapshot (2026-10-09)
+## Current snapshot (2026-10-10)
 
 This snapshot supersedes dated next-step instructions in the historical status log.
 PC-01 through PC-04 are VERIFIED locally within their defined demo scopes. PC-05 remains
@@ -27,8 +27,9 @@ isolated database acceptance passed on `e26bcc8`. Privileged role approval is au
 and has bounded isolated acceptance on `9893196`; local migration and live reads remain separate. PR #11 remains draft/unmerged;
 the recorded calendar-preparation CI baseline passed all six checks on `5bb2349`
 ([run 37152681278](https://github.com/celikbros/kapsora/actions/runs/37152681278)).
-No concrete date-independent implementation blocker remains in the completed PC review
-scope. On 2026-10-04 the owner chose to advance the product rather than investigate an
+The original PC demo review has technical acceptance. The follow-up checkout and handoff
+corrections passed isolated acceptance; the reproduced partial-approval penalty conflict
+remains decision-gated, as recorded below. On 2026-10-04 the owner chose to advance the product rather than investigate an
 unidentified defect; Management starts as the separate sequence below. Integrations,
 production release and fiscal/bank-transfer acceptance remain separate.
 
@@ -222,6 +223,34 @@ approvals remain an unreproduced policy concern, not certified terminal conserva
 MONEY policy, historical repair, the external status race and new settings permissions remain separate.
 
 ## Current product completion roadmap (2026-09-22)
+
+**Independent work (2026-10-10):**
+[fractional checkout release](../delegation/WP-PC06-fractional-checkout-release.md) uses
+the exact approved-minus-fulfilled service remainder, preserving whole-night consumption
+and review policy. All six jobs passed on `03bfa6c` in
+[CI run 37993738359](https://github.com/celikbros/kapsora/actions/runs/37993738359), with
+three checkout functions (four cases, legacy v2 and rollback/retry) and four intended old
+ceiling failures. Full accommodation passed 94 functions/one deliberate diagnostic skip;
+eligibility 20, authorization 31, schema 191 and directory/invitation 70 had no skips.
+Web passed 756 tests/92 files and 25 mock smoke cases; 106 opt-in cases remained skipped.
+The same run proved cancellation after committed authorization can leave an ACTIVE
+orphan after replay. Its [handoff correction](../delegation/WP-PC06-booking-authorization-handoff.md)
+passed all six jobs on `bda7984` in final
+[CI run 37995074957](https://github.com/celikbros/kapsora/actions/runs/37995074957).
+Nine handoff functions passed without skips (10.365 s); restoring the old terminal no-op
+reproduced the intended compiled orphan assertion. Checkout passed three functions again
+(6.468 s), and full accommodation passed 103 (148.177 s), with only the two deliberate
+penalty diagnostic skips. NIGHT 14, eligibility 20, authorization 31, schema 191 and
+directory/invitation 70 passed without skips. Web retained 756 tests/92 files and 25 mock
+smoke cases, with 106 opt-in skips. Existing source controls also passed. This final run
+separately exercised and reproduced both
+[partial-approval penalty conflicts](../delegation/PC06-fractional-penalty-decision.md).
+Exact penalty cap/reporting and preserved monetary terms await the requested explicit
+business-rule decision; no fee or approval policy changed.
+Settings permission/impact approval has been requested asynchronously; no unanswered
+question changes grants or permits local migration 58. The doc-only `9348167` CI failed at
+Docker Hub pull throttling before PostgreSQL started. CI now selects the verified Docker
+Official Image mirror for the same PostgreSQL 18 service; local runtime stays native.
 
 This is the owner's approved execution order: finish the running product, with health
 first. It takes precedence over the older "next" instructions below. The M0–M11 tables

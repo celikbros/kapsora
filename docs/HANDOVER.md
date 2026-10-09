@@ -38,7 +38,7 @@ keep them current as you build.
 The [product completion roadmap](plan/ROADMAP.md#current-product-completion-roadmap-2026-09-22)
 records the approved sequence and acceptance criteria.
 
-**Current snapshot (2026-10-09):** PC-01 through PC-04 are VERIFIED locally for their
+**Current snapshot (2026-10-10):** PC-01 through PC-04 are VERIFIED locally for their
 specified demo acceptance scopes. PC-05 remains ACTIVE: the financial journeys passed
 local technical acceptance; formal owner acceptance and retained scheduler checks remain
 open. PC-06 has passed live technical acceptance, with the same remaining gates. Schema 57
@@ -1418,6 +1418,57 @@ no explicit application approval.
 
 ### PC-06 technical acceptance checkpoint (2026-10-03)
 
+**Independent follow-up (2026-10-10):** the Astra-planned, Sol-reviewed
+[fractional checkout release package](delegation/WP-PC06-fractional-checkout-release.md)
+implements exact approved service quantity minus actually fulfilled whole nights for the
+terminal release ceiling. Whole-night consumption, overstay and reviewer admission rules
+are unchanged. Four factor/approval fixtures and an injected final status-write failure
+test original reservation conservation and atomic inventory/status/ledger rollback.
+All six jobs passed on source `03bfa6c` in
+[CI run 37993738359](https://github.com/celikbros/kapsora/actions/runs/37993738359).
+Three checkout functions passed without skips (6.322 s), covering four factor/approval
+subcases, retired-original v2 factor-one compatibility and atomic rollback/retry. The
+restored old ceiling reached all four intended retained-unit assertion failures.
+Full accommodation passed 94 functions (140.332 s) plus one deliberately gated handoff
+diagnostic skip; eligibility 20, authorization 31, schema 191 and directory/invitations 70
+passed without skips. Web CI passed 756 tests/92 files and 25 mock smoke tests, with 106
+opt-in live/calendar skips. This does not certify fractional penalty policy.
+
+A distinct deterministic post-authorization barrier test investigates cancellation between
+authorization commit and booking confirmation. The diagnostic on `03bfa6c` reached the
+intended compiled `HANDOFF_ORPHAN_ACTIVE_AUTHORIZATION` failure: cancellation released
+the room/reservation, but the unused authorization stayed ACTIVE after identical replay.
+The [handoff package](delegation/WP-PC06-booking-authorization-handoff.md) is implemented
+on `bda7984` and passed all six jobs in final
+[CI run 37995074957](https://github.com/celikbros/kapsora/actions/runs/37995074957).
+Nine handoff functions passed without skips (10.365 s); the restored old terminal no-op
+compiled and reached the intended orphan assertion. Cleanup retires only a provenance-
+checked unused orphan in the booking transaction. Linked history is preserved; confirmed-
+then-cancelled replay is explicitly tested. Malformed provenance is permanent refusal;
+database/audit failures remain retryable. Final accommodation passed 103 functions
+(148.177 s) with only the two separately exercised penalty diagnostics skipped. Checkout
+passed all three functions again (6.468 s), including successful-retry outbox uniqueness.
+NIGHT conversion 14, eligibility 20, authorization 31, schema 191 and directory/invitations
+70 passed without skips. Web retained 756 tests/92 files and 25 mock smoke cases, with 106
+opt-in live/calendar skips. Existing payer/policy/enrollment/NIGHT source controls passed.
+This is isolated source acceptance, not a local server reload or historical orphan scan.
+New settings authority was requested
+asynchronously and is not approved while unanswered. Local migration 58 and operator
+reload retain their existing separate gates. The documentation-only CI run on `9348167`
+failed before SQL at Docker Hub's unauthenticated pull limit; the CI service now uses the
+Docker Official Image mirror at `public.ecr.aws/docker/library/postgres:18` (manifest read
+verified), with no change to the local native runtime. The mirror initialized successfully
+and all required jobs passed on `03bfa6c` and final handoff source `bda7984`.
+
+The separate fractional penalty diagnostic on `bda7984` reached both intended compiled
+refusals in the successful final CI run: approved 0.5 NIGHT cannot pay a frozen one-night cancellation
+penalty, and approved 1.5 cannot pay the two-night no-show penalty. Transactions roll back;
+the booking/report and remaining reserve persist. This is reproduction, not a working
+penalty flow. The [concrete policy decision](delegation/PC06-fractional-penalty-decision.md)
+proposes exact capped entitlement consumption with truthful reporting and unchanged frozen
+money/payer/member shares. The decision was requested asynchronously and remains pending;
+no cap, rounding, fee redistribution or new approval restriction is implemented.
+
 Lodging acceptance covers fully and partly covered bookings, member contribution, free
 and penalized cancellation, check-in, early checkout, reviewed no-show and natural waitlist
 expiry. Inventory and entitlement restoration/consumption reconcile without duplicate
@@ -1448,8 +1499,9 @@ and hotel settlements, both provider statements and paid member reimbursement. T
 reads. This visual review used synthetic financial/lodging records; clinical and health
 access-log screens were excluded. Detailed fixture identifiers and images remain local.
 
-No concrete date-independent implementation blocker remains in this approved pass. Formal
-owner acceptance remains open. The retained due periods are 2026-10-14 (hotel) and
+The original approved demo pass has technical acceptance; the later reproduced partial-
+approval penalty conflict above remains a decision-gated correction. Formal owner
+acceptance remains open. The retained due periods are 2026-10-14 (hotel) and
 2026-10-29 (health). The scheduler reconciles yesterday UTC: the corresponding execution
 windows are 2026-10-15 and 2026-10-30 UTC, beginning at 03:00 Europe/Istanbul and ending
 at 03:00 the following local day. The operator-owned scheduler must actually run in those
