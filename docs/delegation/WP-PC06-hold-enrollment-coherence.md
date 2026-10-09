@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Status | Implemented; isolated PostgreSQL acceptance and negative controls pending |
+| Status | Bounded isolated acceptance complete on f94c269; runtime acceptance separate |
 | Planned | 2026-10-09, gpt-6-astra |
 | Outcome | Eligibility, pricing, booking and reservation use one validated enrollment |
 | Migration / permissions | None; no grants, role or settings changes |
@@ -162,9 +162,8 @@ repair, historical booking rewrite or unrelated eligibility cleanup. External
 authorization/status atomicity, other-tenant legacy recovery, migration 58 application,
 Management runtime reads, owner acceptance and retained calendar checks remain separate.
 
-This package is implemented with local pure/compile and mock checks; isolated acceptance
-remains pending. Runtime verification awaits a concrete tested implementation
-and the existing operator-controlled reload process; successful isolated CI must not be
+This package passed bounded isolated acceptance and local pure/compile and mock checks.
+Runtime verification awaits the existing operator-controlled reload process; successful isolated CI must not be
 reported as live acceptance. Source review alone does not establish any affected live row.
 
 ## 7. Required account-path correction discovered during review
@@ -239,3 +238,30 @@ mapping factor. That path is not reproduced or corrected here. Record it as a se
 follow-up requiring an isolated factor-greater-than-one fixture before implementation.
 Do not state that this patch establishes general mapping-factor correctness or expand it
 into a quantity/money conversion redesign. Existing factor handling elsewhere is unchanged.
+
+## 9. Isolated acceptance checkpoint — 2026-10-09
+
+All six jobs passed on final source head `f94c269b8ee43950e45ec73b327d9b01f82f80e1`
+in [CI run 37984416048](https://github.com/celikbros/kapsora/actions/runs/37984416048).
+The early enrollment preflight passed all six new SQL/HTTP functions (8.520 s), the
+eligibility suite passed 20 top-level functions (15.697 s), and the full accommodation
+suite passed 76 top-level functions (124.245 s), all without skips. The shared-account
+case `TestPinnedEligibilityUsesOnlySelectedSharedPlanAccounts` proves exact selected-plan
+principal account narrowing directly in eligibility; it is not a complete dependent
+booking/adoption journey. Frontend CI passed 756 tests in 92 files and 25 mock smoke
+tests; 106 opt-in live/calendar tests remain skipped.
+
+Four isolated runner-only negative controls compiled and failed at their required semantic
+assertions: removing ambiguity detection created an ambiguous hold (201); removing the
+exact enrollment predicate blocked the still-valid pinned same-program offer; removing
+selected-account narrowing mixed the frozen hold coverage; and that same removal borrowed
+the other principal plan's balance of 20 instead of 4. Each source mutation was restored.
+The existing payer and exact-confirmation-policy negative controls also passed their
+detection gates. Normal-source regressions ran before these controls.
+
+The first isolated run also found a real zero-ID boundary error: nullable UUID conversion
+turned a nonnil zero enrollment selection into an omitted filter. `f94c269` rejects zero
+explicit enrollment/program choices before SQL, and the final SQL regression passes.
+No local database test, live hold, waitlist mutation, migration or role grant was performed.
+Factor-1 NIGHT coverage is the acceptance boundary; the separate conversion plan and
+later booking-held submission coherence are still open.

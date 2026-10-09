@@ -174,8 +174,36 @@ six jobs, 70 accommodation functions without skips, exact-policy negative contro
 unchanged public v1 projection. The 16:15 UTC read-only DEMO_A/DEMO_B inventory found no
 HOLD/PENDING_APPROVAL booking to recover; recheck before operator reload if new v1 holds
 are created. No live compensation was performed. Other-tenant legacy recovery,
-multi-enrollment coherence, external authorization/status atomicity and owner/calendar
-gates remain separate. Migration 58 still awaits explicit local application approval.
+public lodging enrollment choice, nonunit entitlement conversion, external
+authorization/status atomicity and owner/calendar gates remain separate. Migration 58
+still awaits explicit local application approval.
+
+**Hold enrollment checkpoint (2026-10-09):** the
+[enrollment coherence correction](../delegation/WP-PC06-hold-enrollment-coherence.md) is
+accepted on final source `f94c269` in
+[CI run 37984416048](https://github.com/celikbros/kapsora/actions/runs/37984416048): all six
+jobs passed, six early enrollment SQL/HTTP functions, 20 eligibility functions and all
+76 accommodation functions passed without skips. Four isolated controls detected the
+removed enrollment/account boundaries; existing payer/policy controls also passed.
+Web CI passed 756 tests/92 files and 25 mock smoke tests, with 106 opt-in live/calendar
+skips. The isolated run found and fixed explicit zero enrollment/program IDs widening
+into an omitted filter. Ordinary holds/queue joins refuse ambiguous active enrollments. Scheduler
+offers select their saved enrollment exactly; hold pricing, evaluation and account
+reservation follow that choice. Pinned account selection uses exact selected-version
+IDs, preserving valid same-plan principal sharing without admitting other-plan balances
+under the same code. Availability's omitted-program union remains unchanged.
+Acceptance is limited to factor-1 NIGHT mappings; a plan picker, nonunit conversion and
+MONEY reservation semantics are not certified. The three Management live read/boundary
+probes still reach pre-feature API behavior; operator reload and migration 58 approval
+remain open. No live booking, grant or recovery was performed.
+After this bounded hold acceptance, the next independent technical step is
+[NIGHT entitlement conversion](../delegation/WP-PC06-night-entitlement-conversion.md),
+planned by Astra and reviewed by Sol. Mapping configuration permits nonunit positive
+factors; source inspection predicts incorrect covered-night/reserved-unit accounting and
+unconverted adopted authorization factors. Isolated reproduction remains pending.
+Its scope also binds the booking-held submit gate to the original enrollment/version/account;
+the current hold fixtures do not certify that later gate under newly added same-program
+enrollments. MONEY policy, historical repair and new settings permissions remain separate.
 
 ## Current product completion roadmap (2026-09-22)
 

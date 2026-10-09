@@ -1344,6 +1344,56 @@ by this correction. The same CI run passed 754 frontend tests/92 files, 25 mock 
 Local schema 58 application still requires the pending explicit approval; schema is 57,
 dirty=false, and server reload remains operator-owned.
 
+**Hold enrollment coherence checkpoint (2026-10-09):** the
+[bounded enrollment package](delegation/WP-PC06-hold-enrollment-coherence.md) is implemented
+on `a20343e`, with API documentation regeneration on `e28e471` and the isolated-test-found
+zero-selection refusal on final source `f94c269`. Ordinary hold and
+waitlist commands refuse ambiguous active enrollments before booking effects. A scheduler
+offer resolves its saved enrollment directly. Hold pricing uses that enrollment's program;
+eligibility is pinned to its exact ID and selected-version account IDs, including the
+legitimate same-plan principal account. The hold reserves the account actually evaluated,
+rather than another reachable account with the same entitlement code.
+
+Pure/compile checks, scoped Go vet/lint, workspace type/lint/format, all three app builds,
+contract compatibility and the 73 focused mock checks pass. The initial full local web
+run had 740 passes and 15 failures under concurrent workload; the seven affected files
+then passed all 58 cases with one worker. These reruns do not replace final isolated CI.
+PostgreSQL-backed tests remain deliberately disabled locally. All six jobs passed on
+`f94c269` in [CI run 37984416048](https://github.com/celikbros/kapsora/actions/runs/37984416048).
+The early enrollment preflight passed six SQL/HTTP functions, the eligibility suite
+passed 20 top-level functions, and full accommodation passed 76 functions (124.245 s),
+all without skips. Four isolated semantic controls detected an ambiguous 201 hold,
+an incorrectly blocked pinned offer, mixed hold coverage and a borrowed other-plan
+shared balance; source was restored after each control. Existing payer/policy controls
+also passed. Web CI passed 756 tests/92 files and 25 mock smoke tests; 106 opt-in
+live/calendar cases remain skipped. No live booking,
+waitlist entry, role grant or compensation was performed.
+
+This package covers factor-1 NIGHT mappings. It does not supply a public lodging enrollment
+picker or certify nonunit mapping conversion: multiple plans within one program still
+refuse, and ordinary broad availability keeps its existing payer union. Pinned eligibility
+shared-account proof is separate from a complete live dependent booking journey. Nonunit
+NIGHT conversion and the existing MONEY lodging semantics remain separate review scopes.
+The next independent technical step is the Astra-planned, Sol-reviewed
+[NIGHT entitlement conversion package](delegation/WP-PC06-night-entitlement-conversion.md).
+It remains PLANNED and unreproduced: cover service nights separately from ledger units,
+bind the booking-held submission allowance to the original enrollment/version/account,
+and retain the mapped authorization factor through adoption and consumption. Current
+hold acceptance does not certify the later submission gate with a second same-program
+enrollment added after the hold. No conversion implementation or historical rewrite is
+included in this checkpoint.
+
+A fresh app-role read-only DEMO_A/DEMO_B inventory at 2026-10-09 20:04 UTC again found
+no HOLD/PENDING_APPROVAL bookings. This is a bounded observation before operator reload,
+not an absence guarantee for other tenants or historical authorization effects.
+
+The three bounded Management runtime probes were retried against the running operator
+system: inspect-new still returned RESOURCE_NOT_FOUND and both role-capability checks
+received an absent canManageTenantRoles field. Those failures show the API still predates
+the new routes/capabilities; they are not current-source acceptance. The operator reload
+was requested through the existing HANDOVER section 3 rule. Local migration 58 still has
+no explicit application approval.
+
 ### PC-06 technical acceptance checkpoint (2026-10-03)
 
 Lodging acceptance covers fully and partly covered bookings, member contribution, free
