@@ -29,7 +29,10 @@ type ExplanationView struct {
 
 // ItemView is the verdict on one requested line, in request order.
 type ItemView struct {
-	Index             int               `json:"index"`
+	Index int `json:"index"`
+	// AccountID is an in-process handoff to commands that reserve the evaluated
+	// balance. It is deliberately absent from public and persisted JSON snapshots.
+	AccountID         uuid.UUID         `json:"-"`
 	EntitlementCode   *string           `json:"entitlementCode,omitempty"`
 	Outcome           string            `json:"outcome"`
 	RequestedQuantity json.Number       `json:"requestedQuantity"`
@@ -126,7 +129,7 @@ func newResultView(id uuid.UUID, evaluatedAt time.Time, r Result) ResultView {
 	}
 	for _, item := range r.Items {
 		view := ItemView{
-			Index: item.Index, Outcome: item.Outcome,
+			Index: item.Index, AccountID: item.AccountID, Outcome: item.Outcome,
 			RequestedQuantity: json.Number(item.RequestedQuantity.String()),
 			Explanations:      explanationViews(item.Explanations),
 		}

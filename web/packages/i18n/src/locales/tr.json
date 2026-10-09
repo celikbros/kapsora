@@ -711,6 +711,7 @@
     "PERSON_NOT_FOUND": "Hak sahibi bulunamadı.",
     "PLAN_NOT_FOUND": "Plan bulunamadı.",
     "ENROLLMENT_NOT_FOUND": "Programa katılım kaydı bulunamadı.",
+    "ENROLLMENT_MULTIPLE": "Bu tarihler için kullanılacak birden fazla geçerli plan kaydı var.",
     "RATE_LIMITED": "Çok sık işlem yaptınız. Bir süre bekleyip yeniden deneyin.",
     "TENANT_CODE_EXISTS": "Bu kurum kodu zaten kullanılıyor. Farklı bir kod girin.",
     "SERVICE_NOT_READY": "Hizmet şu anda kullanılamıyor. Bir süre sonra yeniden deneyin.",

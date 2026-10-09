@@ -12108,7 +12108,9 @@ paths:
         '422':
           description: |
             The dates, the party or the guest list are outside what a stay may be.
-            VALIDATION_FAILED, OCCUPANCY_EXCEEDED, ENROLLMENT_NOT_FOUND.
+            VALIDATION_FAILED, OCCUPANCY_EXCEEDED, ENROLLMENT_NOT_FOUND or
+            ENROLLMENT_MULTIPLE. The latter means more than one active enrollment matches
+            the first night and optional program, so no funding choice was made.
           content:
             application/problem+json:
               schema:
@@ -12807,7 +12809,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Problem'
         '422':
-          description: VALIDATION_FAILED, PERSON_REQUIRED or ENROLLMENT_NOT_FOUND.
+          description: |
+            VALIDATION_FAILED, PERSON_REQUIRED, ENROLLMENT_NOT_FOUND or
+            ENROLLMENT_MULTIPLE. More than one active enrollment within the optional
+            program also refuses a queue entry.
           content:
             application/problem+json:
               schema:
@@ -25454,6 +25459,7 @@ components:
           description: |
             Narrows a member with two programs to one of them. It is honoured, never trusted:
             a program the person is not enrolled in on the first night selects nothing.
+            More than one active enrollment in that program still refuses the hold.
         channel:
           $ref: '#/components/schemas/ServiceRequestChannel'
         guests:
@@ -25910,6 +25916,10 @@ components:
         programId:
           type: string
           format: uuid
+          description: |
+            Narrows the queue entry to one program active on the first night. More than
+            one active enrollment within that program still refuses the entry with
+            ENROLLMENT_MULTIPLE.
     InvoiceStatus:
       type: string
       enum:

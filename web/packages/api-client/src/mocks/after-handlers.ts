@@ -952,7 +952,7 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
         );
         if (!room) return problem(api, 404, 'ROOM_TYPE_NOT_FOUND', 'Oda tipi bulunamadı');
       }
-      const enrollment = world().enrollments.find(
+      const enrollments = world().enrollments.filter(
         (e) =>
           e.tenantId === g.tenantId &&
           e.personId === whose.personId &&
@@ -964,6 +964,13 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
             (p) => p.tenantId === g.tenantId && p.id === e.programId && p.status === 'ACTIVE',
           ),
       );
+      const enrollment = enrollments[0];
+      if (enrollments.length > 1) {
+        return problem(api, 422, 'ENROLLMENT_MULTIPLE', 'Birden fazla geçerli plan kaydı var', {
+          detail:
+            'Bu tarihler için kullanılacak plan kaydı kesinleştirilemedi. Kurum yetkilinize başvurun.',
+        });
+      }
       if (!enrollment) {
         return problem(
           api,

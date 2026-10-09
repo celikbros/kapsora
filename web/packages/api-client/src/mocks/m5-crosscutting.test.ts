@@ -180,6 +180,94 @@ describe('the check names the enrollment candidates', () => {
     expect(resolved.explanations.map((e) => e.code)).not.toContain('ENROLLMENT_MULTIPLE');
     expect(resolved.enrollmentCandidates ?? []).toHaveLength(0);
   });
+
+  it('uses only the selected plan balance, including its own shared principal holder', async () => {
+    const s = await signIn('admin.a');
+    const principalId = doublyEnrolledPerson(s.tenantId);
+    const principalEnrollments = api.world.enrollments.filter((e) => e.personId === principalId);
+    const family = principalEnrollments.find((e) => e.planCode === 'FAM-HEALTH')!;
+    const individual = principalEnrollments.find((e) => e.planCode === 'IND-HEALTH')!;
+    const familyMoney = api.world.entitlementAccounts.find(
+      (a) => a.enrollmentId === family.id && a.definition.code === 'HEALTH_MONEY',
+    )!;
+    const individualMoney = api.world.entitlementAccounts.find(
+      (a) => a.enrollmentId === individual.id && a.definition.code === 'HEALTH_MONEY',
+    )!;
+    familyMoney.available = '1.000000';
+    individualMoney.status = 'OPEN';
+    individualMoney.available = '5000.000000';
+    // Put the tempting high balance first. The selected family's definition must win.
+    api.world.entitlementAccounts.splice(api.world.entitlementAccounts.indexOf(individualMoney), 1);
+    api.world.entitlementAccounts.unshift(individualMoney);
+
+    const serviceDefinitionId = definitionByCode('LAB_PANEL_AMBIGUOUS').id;
+    const selected = await check(s, {
+      personId: principalId,
+      enrollmentId: family.id,
+      serviceDate: SERVICE_DATE,
+      serviceItems: [{ serviceDefinitionId, quantity: '2' }],
+      context: { entitlementCode: 'HEALTH_MONEY' },
+    });
+    expect(selected.enrollmentId).toBe(family.id);
+    expect(selected.items?.[0]?.outcome).toBe('INELIGIBLE');
+    expect(selected.items?.[0]?.availableQuantity).toBe('1.000000');
+    expect(selected.balances?.filter((b) => b.entitlementCode === 'HEALTH_MONEY')).toEqual([
+      { entitlementCode: 'HEALTH_MONEY', available: '1.000000', unit: 'MONEY' },
+    ]);
+
+    const spouse = api.world.enrollments.find(
+      (e) => e.planId === individual.planId && e.personId !== principalId,
+    )!;
+    const version = versionOfPlan('IND-HEALTH', 'PUBLISHED');
+    const sharedDefinition = {
+      ...version.definitions[0]!,
+      id: randomId(),
+      code: 'PINNED_SHARED_TEST',
+      familyShared: true,
+      status: 'ACTIVE' as const,
+    };
+    version.definitions.push(sharedDefinition);
+    const definition = {
+      id: sharedDefinition.id,
+      code: sharedDefinition.code,
+      name: sharedDefinition.name,
+      unitType: sharedDefinition.unitType,
+      currencyCode: sharedDefinition.currencyCode,
+      familyShared: true,
+      allowOverdraft: false,
+    };
+    const samePlanAccount = {
+      ...familyMoney,
+      id: randomId(),
+      enrollmentId: individual.id,
+      definition,
+      available: '2.000000',
+    };
+    const unrelatedDefinition = { ...sharedDefinition, id: randomId() };
+    versionOfPlan('FAM-HEALTH', 'PUBLISHED').definitions.push(unrelatedDefinition);
+    const unrelatedAccount = {
+      ...familyMoney,
+      id: randomId(),
+      enrollmentId: family.id,
+      definition: { ...definition, id: unrelatedDefinition.id },
+      available: '9.000000',
+    };
+    api.world.entitlementAccounts.unshift(unrelatedAccount, samePlanAccount);
+
+    const shared = await check(s, {
+      personId: spouse.personId,
+      enrollmentId: spouse.id,
+      serviceDate: SERVICE_DATE,
+      serviceItems: [{ serviceDefinitionId, quantity: '1' }],
+      context: { entitlementCode: 'PINNED_SHARED_TEST' },
+    });
+    expect(samePlanAccount.enrollmentId).not.toBe(spouse.id);
+    expect(shared.items?.[0]?.outcome).toBe('ELIGIBLE');
+    expect(shared.items?.[0]?.availableQuantity).toBe('2.000000');
+    expect(shared.balances?.filter((b) => b.entitlementCode === 'PINNED_SHARED_TEST')).toEqual([
+      { entitlementCode: 'PINNED_SHARED_TEST', available: '2.000000', unit: definition.unitType },
+    ]);
+  });
 });
 
 describe('the mapping endpoints', () => {

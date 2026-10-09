@@ -133,6 +133,7 @@ export interface BookingTools {
     programId: string | null,
     serviceDate: string,
     serviceDefinitionId: string,
+    enrollmentId?: string | null,
   ): { eligible: boolean; nightsCarried: number; money: bigint | null };
 }
 
@@ -351,27 +352,39 @@ export function bookingHandlers(api: MockApi, tools: BookingTools): BookingModul
         detail: 'Yetişkin, çocuk ve toplam kişi sınırlarını aşmayan bir oda tipi seçin.',
       });
     }
-    const enrollment = world().enrollments.find(
+    const stayDates = stayDatesOf(checkIn, nights);
+    const candidates = world().enrollments.filter(
       (e) =>
         e.tenantId === tenantId &&
         e.personId === personId &&
         e.status === 'ACTIVE' &&
+        e.validFrom <= checkIn &&
+        (!e.validTo || checkIn < e.validTo) &&
         (!programId || e.programId === programId) &&
-        (!expectedEnrollmentId || e.id === expectedEnrollmentId),
+        (!expectedEnrollmentId || e.id === expectedEnrollmentId) &&
+        world().programs.some(
+          (p) => p.tenantId === tenantId && p.id === e.programId && p.status === 'ACTIVE',
+        ),
     );
+    const enrollment = candidates[0];
+    if (!expectedEnrollmentId && candidates.length > 1) {
+      return problem(api, 422, 'ENROLLMENT_MULTIPLE', 'Birden fazla geçerli plan kaydı var', {
+        detail:
+          'Bu tarihler için kullanılacak plan kaydı kesinleştirilemedi. Kurum yetkilinize başvurun.',
+      });
+    }
     if (!enrollment) {
       return problem(api, 422, 'ENROLLMENT_NOT_FOUND', 'Bu tarihlerde geçerli bir plan kaydı yok', {
         detail: 'Rezervasyon, giriş tarihinde aktif bir plan kaydı üzerinden yapılır.',
       });
     }
 
-    const stayDates = stayDatesOf(checkIn, nights);
     const lastNight = stayDates[stayDates.length - 1]!;
     const reachable = tools.searchableProperties(
       session,
       tenantId,
       personId,
-      programId ?? null,
+      enrollment.programId,
       checkIn,
       lastNight,
     );
@@ -434,9 +447,10 @@ export function bookingHandlers(api: MockApi, tools: BookingTools): BookingModul
     const cover = tools.coverForService(
       tenantId,
       personId,
-      programId ?? null,
+      enrollment.programId,
       checkIn,
       room.serviceDefinitionId,
+      enrollment.id,
     );
     const priced = tools.quoteRoomType(
       tenantId,

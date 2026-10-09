@@ -433,17 +433,20 @@ func (Bookings) RoomTypeBookingContext(ctx context.Context, tx pgx.Tx, tenantID,
 
 // PersonEnrollmentForStay implements application.BookingRepository.
 func (Bookings) PersonEnrollmentForStay(ctx context.Context, tx pgx.Tx, tenantID, personID uuid.UUID,
-	day time.Time, programID *uuid.UUID,
+	day time.Time, programID, enrollmentID *uuid.UUID,
 ) (application.PersonEnrollment, error) {
 	row, err := sqlcgen.New(tx).GetPersonEnrollmentForStay(ctx, sqlcgen.GetPersonEnrollmentForStayParams{
 		TenantID: tenantID, PersonID: personID, ServiceDate: dateOf(day),
-		ProgramID: nullUUID(programID),
+		ProgramID: nullUUID(programID), EnrollmentID: nullUUID(enrollmentID),
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return application.PersonEnrollment{}, application.ErrEnrollmentNotFound
 	}
 	if err != nil {
 		return application.PersonEnrollment{}, fmt.Errorf("accommodation: read enrollment: %w", err)
+	}
+	if row.MatchingCount > 1 {
+		return application.PersonEnrollment{}, application.ErrEnrollmentMultiple
 	}
 	return application.PersonEnrollment{EnrollmentID: row.EnrollmentID, ProgramID: row.ProgramID}, nil
 }

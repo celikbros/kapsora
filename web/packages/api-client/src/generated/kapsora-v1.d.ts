@@ -8553,6 +8553,7 @@ export interface components {
              * Format: uuid
              * @description Narrows a member with two programs to one of them. It is honoured, never trusted:
              *     a program the person is not enrolled in on the first night selects nothing.
+             *     More than one active enrollment in that program still refuses the hold.
              */
             programId?: string;
             /** Format: uuid */
@@ -15543,7 +15544,9 @@ export interface operations {
             };
             /**
              * @description The dates, the party or the guest list are outside what a stay may be.
-             *     VALIDATION_FAILED, OCCUPANCY_EXCEEDED, ENROLLMENT_NOT_FOUND.
+             *     VALIDATION_FAILED, OCCUPANCY_EXCEEDED, ENROLLMENT_NOT_FOUND or
+             *     ENROLLMENT_MULTIPLE. The latter means more than one active enrollment matches
+             *     the first night and optional program, so no funding choice was made.
              */
             422: {
                 headers: {
@@ -16028,7 +16031,11 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description VALIDATION_FAILED, PERSON_REQUIRED or ENROLLMENT_NOT_FOUND. */
+            /**
+             * @description VALIDATION_FAILED, PERSON_REQUIRED, ENROLLMENT_NOT_FOUND or
+             *     ENROLLMENT_MULTIPLE. More than one active enrollment within the optional
+             *     program also refuses a queue entry.
+             */
             422: {
                 headers: {
                     [name: string]: unknown;

@@ -210,6 +210,7 @@ type preparedHold struct {
 	plan      PersonEnrollment
 	quote     QuoteView
 	selection quoteSelection
+	accountID uuid.UUID
 	snapshot  QuoteSnapshot
 	expiresAt time.Time
 }
@@ -255,18 +256,15 @@ func (s *Service) prepareHold(ctx context.Context, rc identity.RequestContext, i
 		out.room = room
 
 		plan, err := s.bookings.PersonEnrollmentForStay(ctx, tx, rc.TenantID, in.PersonID,
-			checkIn, in.ProgramID)
+			checkIn, in.ProgramID, in.ExpectedEnrollmentID)
 		if err != nil {
 			return err
-		}
-		if in.ExpectedEnrollmentID != nil && plan.EnrollmentID != *in.ExpectedEnrollmentID {
-			return ErrEnrollmentNotFound
 		}
 		out.plan = plan
 
 		world = searchWorld{nights: nights, stayDates: out.stayDates}
 		return s.loadWorld(ctx, tx, rc, SearchInput{
-			PersonID: in.PersonID, PropertyID: &room.PropertyID, ProgramID: in.ProgramID,
+			PersonID: in.PersonID, PropertyID: &room.PropertyID, ProgramID: &plan.ProgramID,
 			Adults: in.Adults, Children: in.Children,
 		}, checkIn, &world)
 	})
@@ -290,8 +288,8 @@ func (s *Service) prepareHold(ctx context.Context, rc identity.RequestContext, i
 	// opens a transaction of its own, and calling it with rows locked is what would turn
 	// concurrent holds into a pool starvation deadlock.
 	verdict, err := s.checkEligibility(ctx, rc, SearchInput{
-		PersonID: in.PersonID, ProgramID: in.ProgramID,
-	}, checkIn, world)
+		PersonID: in.PersonID, ProgramID: &out.plan.ProgramID,
+	}, checkIn, world, &out.plan.EnrollmentID)
 	if err != nil {
 		return preparedHold{}, err
 	}
@@ -301,6 +299,7 @@ func (s *Service) prepareHold(ctx context.Context, rc identity.RequestContext, i
 	}
 	out.quote = *quote
 	out.selection = selection
+	out.accountID = verdict.accountIDs[room.ServiceDefinitionID]
 	if selection.ContractVersionID == uuid.Nil {
 		return preparedHold{}, errors.New("accommodation: priced hold has no first-night contract version")
 	}
@@ -311,6 +310,9 @@ func (s *Service) prepareHold(ctx context.Context, rc identity.RequestContext, i
 	// stay would refuse exactly the booking they were quoted.
 	if out.snapshot.CoveredNights == 0 {
 		return preparedHold{}, ErrEntitlementInsufficient
+	}
+	if out.accountID == uuid.Nil {
+		return preparedHold{}, ErrEntitlementAccountNotFound
 	}
 	minutes, err := resolveHoldMinutes(out.settings.HoldMinutes, out.selection.HoldMinutes)
 	if err != nil {
@@ -425,23 +427,7 @@ func (s *Service) placeHold(ctx context.Context, tx pgx.Tx, rc identity.RequestC
 func (s *Service) reserveNights(ctx context.Context, tx pgx.Tx, rc identity.RequestContext,
 	record BookingRecord, prepared preparedHold, expiresAt time.Time,
 ) (uuid.UUID, error) {
-	code, err := s.bookings.EntitlementCodeForService(ctx, tx, rc.TenantID, record.EnrollmentID,
-		prepared.room.ServiceDefinitionID, prepared.checkIn)
-	if err != nil {
-		return uuid.Nil, err
-	}
-	accounts, err := s.ledger.ResolveAccounts(ctx, tx, rc.TenantID, record.PersonID, prepared.checkIn)
-	if err != nil {
-		return uuid.Nil, err
-	}
-	accountID := uuid.Nil
-	for _, account := range accounts {
-		if account.Definition.Code == code {
-			accountID = account.ID
-			break
-		}
-	}
-	if accountID == uuid.Nil {
+	if prepared.accountID == uuid.Nil {
 		return uuid.Nil, ErrEntitlementAccountNotFound
 	}
 	// The covered nights and never the stay's length. The frozen quote already says how many
@@ -452,7 +438,7 @@ func (s *Service) reserveNights(ctx context.Context, tx pgx.Tx, rc identity.Requ
 		return uuid.Nil, fmt.Errorf("accommodation: night quantity: %w", err)
 	}
 	reservation, err := s.ledger.Reserve(ctx, tx, ledger.ReserveInput{
-		TenantID: rc.TenantID, AccountID: accountID, Quantity: quantity,
+		TenantID: rc.TenantID, AccountID: prepared.accountID, Quantity: quantity,
 		ReferenceType: ledger.ReferenceBooking, ReferenceID: record.ID,
 		Key: bookingReserveKey(record.ID), ExpiresAt: &expiresAt,
 		ReasonCode: reasonBookingHold, ActorID: rc.Principal.ActorID,

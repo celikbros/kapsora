@@ -51,6 +51,9 @@ var (
 	// ErrEnrollmentNotFound is a person with no active enrollment covering the first
 	// night. There is no plan to book against and the hold refuses rather than guessing.
 	ErrEnrollmentNotFound = errors.New("accommodation: the person has no active enrollment for these dates")
+	// ErrEnrollmentMultiple refuses an ordinary hold or queue entry when more than one
+	// active enrollment matches the requested program and first night.
+	ErrEnrollmentMultiple = errors.New("accommodation: multiple active enrollments match this stay")
 	// ErrEntitlementAccountNotFound is a room type whose service maps onto no open
 	// entitlement account for this person. The nights cannot be reserved, so the room is
 	// not held: a hold with nothing behind it is a promise the plan cannot keep.
@@ -328,7 +331,7 @@ type BookingRepository interface {
 	RoomTypeBookingContext(ctx context.Context, tx pgx.Tx, tenantID, roomTypeID uuid.UUID,
 		scopeIDs []uuid.UUID) (RoomTypeBookingContext, error)
 	PersonEnrollmentForStay(ctx context.Context, tx pgx.Tx, tenantID, personID uuid.UUID,
-		day time.Time, programID *uuid.UUID) (PersonEnrollment, error)
+		day time.Time, programID, enrollmentID *uuid.UUID) (PersonEnrollment, error)
 	// EntitlementCodeForService is the entitlement a room type's service draws on, under
 	// the plan version in force for this enrollment on the first night. It is WP-I5-05's
 	// mapping rather than the service's own code: which balance a room night spends is the

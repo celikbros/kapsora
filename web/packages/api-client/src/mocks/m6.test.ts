@@ -14,7 +14,7 @@
  * Every one of them asserts a figure or a code. A test that only asserted "no error" would
  * pass against a handler that answered zeroes.
  */
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { createKapsoraClient, randomId, type KapsoraClient } from '../client';
 import { createOperations } from '../operations';
@@ -30,6 +30,19 @@ const DAY_MS = 86_400_000;
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
 afterEach(() => api.reset());
 afterAll(() => server.close());
+
+beforeEach(() => {
+  // Kaan's shared M6 world seed intentionally has two active health plans in one program.
+  // Most tests below exercise lodging inventory and accounting after a plan has been chosen,
+  // so suspend the alternate fixture plan for those cases. Coherence regressions add or
+  // reactivate candidates explicitly and still exercise the ambiguity refusal.
+  const person = api.world.people.find((p) => p.firstName === 'Kaan' && p.lastName === 'Aydemir');
+  if (!person) return;
+  const active = api.world.enrollments.filter(
+    (e) => e.personId === person.id && e.status === 'ACTIVE',
+  );
+  for (const enrollment of active.slice(1)) enrollment.status = 'SUSPENDED';
+});
 
 function client(): KapsoraClient {
   return createKapsoraClient({ baseUrl: BASE, csrfToken: () => api.session?.csrfToken ?? null });
@@ -653,13 +666,21 @@ function freeNight(roomTypeId: string, from = 60): string {
   throw new Error('fixture: no free three-night window');
 }
 
-function holdBody(personId: string, roomTypeId: string, checkIn: string, nights = 2, adults = 2) {
+function holdBody(
+  personId: string,
+  roomTypeId: string,
+  checkIn: string,
+  nights = 2,
+  adults = 2,
+  programId?: string,
+) {
   return {
     personId,
     roomTypeId,
     checkIn,
     checkOut: addDays(checkIn, nights),
     adults,
+    ...(programId ? { programId } : {}),
   };
 }
 
@@ -673,6 +694,50 @@ function createHold(s: Session, body: ReturnType<typeof holdBody>) {
 }
 
 describe('the hold', () => {
+  it('refuses ambiguous same-program funding before creating a hold or waitlist entry', async () => {
+    const s = await signIn('reservation.a');
+    const room = roomTypeByCode('STD_DBL');
+    const person = personByFirstName('Kaan');
+    const enrollment = api.world.enrollments.find(
+      (e) => e.tenantId === s.tenantId && e.personId === person.id && e.status === 'ACTIVE',
+    )!;
+    api.world.enrollments.push({ ...enrollment, id: api.world.nextId() });
+    const checkIn = freeNight(room.id);
+    const before = {
+      bookings: api.world.bookings.length,
+      waitlistEntries: api.world.waitlistEntries.length,
+      inventory: structuredClone(api.world.inventoryDays),
+    };
+
+    const holdRefusal = await refusal(
+      createHold(s, holdBody(person.id, room.id, checkIn, 2, 2, enrollment.programId)),
+    );
+    expect(holdRefusal.status).toBe(422);
+    expect(holdRefusal.code).toBe('ENROLLMENT_MULTIPLE');
+
+    const waitlistRefusal = await refusal(
+      unwrap(
+        s.c.POST('/api/v1/accommodation/waitlist', {
+          params: { header: { ...tenant(s), 'Idempotency-Key': key() } },
+          body: {
+            personId: person.id,
+            propertyId: room.propertyId,
+            roomTypeId: room.id,
+            checkIn,
+            checkOut: addDays(checkIn, 2),
+            adults: 2,
+            programId: enrollment.programId,
+          },
+        }),
+      ),
+    );
+    expect(waitlistRefusal.status).toBe(422);
+    expect(waitlistRefusal.code).toBe('ENROLLMENT_MULTIPLE');
+    expect(api.world.bookings).toHaveLength(before.bookings);
+    expect(api.world.waitlistEntries).toHaveLength(before.waitlistEntries);
+    expect(api.world.inventoryDays).toEqual(before.inventory);
+  });
+
   /**
    * The acceptance criterion of the package, as far as a mock can carry it: the room is set
    * aside on every night of the stay, the countdown is a real one, and the frozen quote adds

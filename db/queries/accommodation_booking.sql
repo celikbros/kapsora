@@ -335,9 +335,10 @@ SELECT rt.id AS room_type_id, rt.code AS room_type_code, rt.name AS room_type_na
 
 -- name: GetPersonEnrollmentForStay :one
 -- The enrollment the stay is booked under: the person's own active enrollment covering the
--- first night, narrowed to one program when the caller named one. A person with none has
--- no plan to book against, and the hold refuses rather than guessing.
-SELECT e.id AS enrollment_id, pr.id AS program_id
+-- first night, narrowed to one program when the caller named one. Ordinary commands refuse
+-- multiple matches; a scheduler offer selects its queued enrollment exactly. The count is
+-- over all matching rows before LIMIT, so ambiguity cannot be hidden by ID ordering.
+SELECT e.id AS enrollment_id, pr.id AS program_id, count(*) OVER () AS matching_count
   FROM benefit.enrollment e
   JOIN party.sponsor_membership m ON m.tenant_id = e.tenant_id AND m.id = e.sponsor_membership_id
   JOIN benefit.plan pl ON pl.tenant_id = e.tenant_id AND pl.id = e.plan_id
@@ -348,6 +349,7 @@ SELECT e.id AS enrollment_id, pr.id AS program_id
    AND pr.status = 'ACTIVE'
    AND e.valid_period @> sqlc.arg('service_date')::date
    AND (sqlc.narg('program_id')::uuid IS NULL OR pr.id = sqlc.narg('program_id')::uuid)
+   AND (sqlc.narg('enrollment_id')::uuid IS NULL OR e.id = sqlc.narg('enrollment_id')::uuid)
  ORDER BY e.id
  LIMIT 1;
 

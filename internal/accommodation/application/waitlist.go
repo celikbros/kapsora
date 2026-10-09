@@ -109,7 +109,7 @@ func (s *Service) JoinWaitlist(ctx context.Context, rc identity.RequestContext,
 			}
 		}
 		plan, err := s.bookings.PersonEnrollmentForStay(ctx, tx, rc.TenantID, in.PersonID,
-			checkIn, in.ProgramID)
+			checkIn, in.ProgramID, nil)
 		if err != nil {
 			return err
 		}

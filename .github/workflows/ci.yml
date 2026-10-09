@@ -68,10 +68,14 @@ jobs:
         env:
           KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
         run: go test -count=1 -v -timeout 30m ./internal/identity/transport/http -run '^(TestDirectory|TestInvitation)'
-      - name: accommodation HTTP, contract duration and payer boundary regression
+      - name: accommodation HTTP, contract and enrollment coherence regression
         env:
           KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
         run: go test -count=1 -v -timeout 30m ./internal/accommodation/transport/http
+      - name: eligibility selected enrollment and shared account regression
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: go test -count=1 -v -timeout 30m ./internal/benefit/eligibility
       - name: accommodation payer boundary negative control
         env:
           KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
@@ -174,6 +178,58 @@ jobs:
                       "want selected A's version, 48 hours and 100 percent" not in output:
                   raise SystemExit('Negative control did not expose the wrong frozen policy')
               print('Exact contract regression detected the old provider-wide policy lookup')
+          finally:
+              for path, original in originals.items():
+                  path.write_text(original)
+          PY
+
+      - name: accommodation enrollment coherence negative controls
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+
+          query = Path('internal/platform/sqlcgen/accommodation_booking.sql.go')
+          eligibility = Path('internal/benefit/eligibility/service.go')
+          originals = {p: p.read_text() for p in [query, eligibility]}
+          controls = [
+              (query, 'count(*) OVER () AS matching_count', '1::bigint AS matching_count',
+               'TestHoldAmbiguousProgramsRefuseBeforeEffects', 'ambiguous hold = 201',
+               './internal/accommodation/transport/http'),
+              (query, 'AND ($5::uuid IS NULL OR e.id = $5::uuid)',
+               'AND ($5::uuid IS NULL OR $5::uuid IS NOT NULL)',
+               'TestHoldSameProgramAmbiguityAndPinnedWaitlistContinuity',
+               'pinned same-program offer =', './internal/accommodation/transport/http'),
+              (eligibility, 'if in.EnrollmentID != nil {\n\t\t\tif _, ok := selectedAccounts[a.ID]; !ok {',
+               'if false {\n\t\t\tif _, ok := selectedAccounts[a.ID]; !ok {',
+               'TestHoldExplicitProgramPinsEvaluationPriceAndAccount', 'incoherent frozen quote:',
+               './internal/accommodation/transport/http'),
+              (eligibility, 'if in.EnrollmentID != nil {\n\t\t\tif _, ok := selectedAccounts[a.ID]; !ok {',
+               'if false {\n\t\t\tif _, ok := selectedAccounts[a.ID]; !ok {',
+               'TestPinnedEligibilityUsesOnlySelectedSharedPlanAccounts',
+               'selected A shared balance = 20', './internal/benefit/eligibility'),
+          ]
+          try:
+              for path, needle, replacement, case, assertion, package in controls:
+                  original = originals[path]
+                  if original.count(needle) != 1:
+                      raise SystemExit('Expected one enrollment control target in ' + str(path))
+                  path.write_text(original.replace(needle, replacement))
+                  try:
+                      result = subprocess.run(['go', 'test', '-count=1', '-v', '-timeout', '5m',
+                          package, '-run', '^' + case + '$'],
+                          capture_output=True, text=True)
+                      output = result.stdout + result.stderr
+                      print(output)
+                      if result.returncode != 1 or '[build failed]' in output:
+                          raise SystemExit('Enrollment control did not fail as a compiled test')
+                      if '--- FAIL: ' + case + ' ' not in output or assertion not in output:
+                          raise SystemExit('Enrollment control failed outside its intended assertion')
+                      print('Detected removed enrollment boundary: ' + case)
+                  finally:
+                      path.write_text(original)
           finally:
               for path, original in originals.items():
                   path.write_text(original)

@@ -183,7 +183,7 @@ func (s *Service) SearchAvailability(ctx context.Context, rc identity.RequestCon
 		return out, nil
 	}
 
-	verdict, err := s.checkEligibility(ctx, rc, in, checkIn, world)
+	verdict, err := s.checkEligibility(ctx, rc, in, checkIn, world, nil)
 	if err != nil {
 		return SearchResult{}, err
 	}
@@ -358,6 +358,7 @@ func (s *Service) loadWorld(ctx context.Context, tx pgx.Tx, rc identity.RequestC
 // eligibilityVerdict is the eligibility half of the answer.
 type eligibilityVerdict struct {
 	evaluationID uuid.UUID
+	accountIDs   map[uuid.UUID]uuid.UUID
 	// eligibleFor says, per service definition, whether the person is eligible at all --
 	// enrolled, on a published plan version, with the service mapped to an entitlement.
 	eligibleFor map[uuid.UUID]bool
@@ -401,7 +402,7 @@ func (v eligibilityVerdict) eligibleForWholeStay(nights int) bool {
 // stay would fold the two into one INELIGIBLE and the quote could not tell a member which
 // of their nights the plan carries.
 func (s *Service) checkEligibility(ctx context.Context, rc identity.RequestContext,
-	in SearchInput, checkIn time.Time, world searchWorld,
+	in SearchInput, checkIn time.Time, world searchWorld, enrollmentID *uuid.UUID,
 ) (eligibilityVerdict, error) {
 	definitionIDs := make([]uuid.UUID, 0, len(world.roomTypes))
 	seen := make(map[uuid.UUID]bool, len(world.roomTypes))
@@ -420,7 +421,8 @@ func (s *Service) checkEligibility(ctx context.Context, rc identity.RequestConte
 		})
 	}
 	check := eligibility.CheckInput{
-		PersonID: in.PersonID, ProgramID: in.ProgramID, ServiceDate: checkIn, Items: items,
+		PersonID: in.PersonID, ProgramID: in.ProgramID, EnrollmentID: enrollmentID,
+		ServiceDate: checkIn, Items: items,
 		Context: map[string]any{"domain": "ACCOMMODATION"},
 	}
 	// A provider-scoped caller may only ask about its own organization, and the property
@@ -435,6 +437,9 @@ func (s *Service) checkEligibility(ctx context.Context, rc identity.RequestConte
 	if err != nil {
 		return eligibilityVerdict{}, err
 	}
+	if enrollmentID != nil && (result.EnrollmentID == nil || *result.EnrollmentID != *enrollmentID) {
+		return eligibilityVerdict{}, ErrEnrollmentNotFound
+	}
 
 	unitByCode := make(map[string]string, len(result.Balances))
 	for _, balance := range result.Balances {
@@ -443,6 +448,7 @@ func (s *Service) checkEligibility(ctx context.Context, rc identity.RequestConte
 
 	verdict := eligibilityVerdict{
 		evaluationID:    result.EvaluationID,
+		accountIDs:      make(map[uuid.UUID]uuid.UUID, len(definitionIDs)),
 		eligibleFor:     make(map[uuid.UUID]bool, len(definitionIDs)),
 		remainingNights: make(map[uuid.UUID]int, len(definitionIDs)),
 		remainingMoney:  make(map[uuid.UUID]benefitdomain.Quantity, len(definitionIDs)),
@@ -453,6 +459,9 @@ func (s *Service) checkEligibility(ctx context.Context, rc identity.RequestConte
 		}
 		definitionID := definitionIDs[item.Index]
 		verdict.eligibleFor[definitionID] = item.Outcome == eligibility.ItemEligible
+		if item.Outcome == eligibility.ItemEligible && item.AccountID != uuid.Nil {
+			verdict.accountIDs[definitionID] = item.AccountID
+		}
 		if item.AvailableQuantity == nil || item.EntitlementCode == nil {
 			continue
 		}

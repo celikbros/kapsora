@@ -690,7 +690,7 @@ func (q *Queries) GetBookingRoomTypeContext(ctx context.Context, arg GetBookingR
 }
 
 const getPersonEnrollmentForStay = `-- name: GetPersonEnrollmentForStay :one
-SELECT e.id AS enrollment_id, pr.id AS program_id
+SELECT e.id AS enrollment_id, pr.id AS program_id, count(*) OVER () AS matching_count
   FROM benefit.enrollment e
   JOIN party.sponsor_membership m ON m.tenant_id = e.tenant_id AND m.id = e.sponsor_membership_id
   JOIN benefit.plan pl ON pl.tenant_id = e.tenant_id AND pl.id = e.plan_id
@@ -701,34 +701,39 @@ SELECT e.id AS enrollment_id, pr.id AS program_id
    AND pr.status = 'ACTIVE'
    AND e.valid_period @> $3::date
    AND ($4::uuid IS NULL OR pr.id = $4::uuid)
+   AND ($5::uuid IS NULL OR e.id = $5::uuid)
  ORDER BY e.id
  LIMIT 1
 `
 
 type GetPersonEnrollmentForStayParams struct {
-	TenantID    uuid.UUID
-	PersonID    uuid.UUID
-	ServiceDate pgtype.Date
-	ProgramID   uuid.NullUUID
+	TenantID     uuid.UUID
+	PersonID     uuid.UUID
+	ServiceDate  pgtype.Date
+	ProgramID    uuid.NullUUID
+	EnrollmentID uuid.NullUUID
 }
 
 type GetPersonEnrollmentForStayRow struct {
-	EnrollmentID uuid.UUID
-	ProgramID    uuid.UUID
+	EnrollmentID  uuid.UUID
+	ProgramID     uuid.UUID
+	MatchingCount int64
 }
 
 // The enrollment the stay is booked under: the person's own active enrollment covering the
-// first night, narrowed to one program when the caller named one. A person with none has
-// no plan to book against, and the hold refuses rather than guessing.
+// first night, narrowed to one program when the caller named one. Ordinary commands refuse
+// multiple matches; a scheduler offer selects its queued enrollment exactly. The count is
+// over all matching rows before LIMIT, so ambiguity cannot be hidden by ID ordering.
 func (q *Queries) GetPersonEnrollmentForStay(ctx context.Context, arg GetPersonEnrollmentForStayParams) (GetPersonEnrollmentForStayRow, error) {
 	row := q.db.QueryRow(ctx, getPersonEnrollmentForStay,
 		arg.TenantID,
 		arg.PersonID,
 		arg.ServiceDate,
 		arg.ProgramID,
+		arg.EnrollmentID,
 	)
 	var i GetPersonEnrollmentForStayRow
-	err := row.Scan(&i.EnrollmentID, &i.ProgramID)
+	err := row.Scan(&i.EnrollmentID, &i.ProgramID, &i.MatchingCount)
 	return i, err
 }
 
