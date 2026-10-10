@@ -20,11 +20,10 @@ This snapshot supersedes dated next-step instructions in the historical status l
 PC-01 through PC-04 are VERIFIED locally within their defined demo scopes. PC-05 remains
 ACTIVE: its financial journeys passed local technical acceptance; formal owner acceptance
 and retained scheduler checks remain open. PC-06's prior technical scope passed, but capped
-penalty settlement has no live acceptance. Schema 59 is applied cleanly after explicit local
-approval of migrations 58 and 59; dirty=false. The operator restarted `dev.ps1 up` at
-20:15 Istanbul; current-source bounded reads passed for Management (9/9), paid
-reimbursement layout (1/1) and shared-door provider/member flow (2/2), as detailed in the
-checkpoint below. No live suspension, invitation creation, role grant, privileged request,
+penalty settlement has no live acceptance. Schema 60 is applied cleanly after explicit local approval of migrations 58, 59 and 60;
+dirty=false. An earlier 20:15 operator checkpoint passed bounded reads for Management
+(9/9), paid reimbursement layout (1/1) and shared-door provider/member flow (2/2); the latest
+operator checkpoint is recorded below. No live suspension, invitation creation, role grant, privileged request,
 booking, payment or financial command occurred. MGT-02/03 remain ACTIVE pending local
 mutation proof; MGT-04 settings remain unapproved. The PC-06 cap policy is APPROVED; source/UI implementation and isolated technical
 validation are complete on `bcf0798`. All six jobs passed in
@@ -40,15 +39,34 @@ files), then focused 34/34 passed at `maxWorkers=1`; latest CI confirms the full
 Typecheck, scoped ESLint/Prettier, pure Go tests and vet passed. Three positive former-
 diagnostic cases and marker negative controls are implemented. Settlement consumes the
 lesser of frozen policy penalty and exact approved remainder, then releases unused mapped
-units; fees and payer/member shares remain frozen. Migration 60 adds optional exact no-show
-evidence and passed CI schema/history validation; it is not applied locally or authorized
-for local application. Final synthetic review covered 12 390/1440 views, all API calls
+units; fees and payer/member shares remain frozen. Migration 60 adds optional exact no-show evidence and is applied locally after explicit
+owner approval. Pre/post original-field hashes and row counts matched across all 15 preserved tables: accommodation.booking
+18, accommodation.cancellation 4, accommodation.no_show 1; IAM access_grant 17, actor 15,
+credential 15, permission 105, role 34, role_change_command_receipt 0, role_change_request
+0, role_permission 378, session 52, tenant_invitation 0, tenant_invitation_create_receipt
+0 and tenant_membership 15. Existing no-show exact-effect fields remain NULL; no business
+commands, fee changes, grants or history rewrites occurred. Final synthetic review covered 12 390/1440 views, all API calls
 stubbed, detector `[]`, zero errors/overflow/unknown requests, and no blockers in independent
-Sol review; this is not live settlement acceptance. Schema remains 59, dirty=false; operator
-API PID 27972 serves pre-cap compiled source from 20:15 and needs operator restart after an
-authorized migration. No live capped settlement has been accepted. MGT-04 remains
+Sol review; this is not live settlement acceptance. Schema remains 60, dirty=false; API PID 48468 and panel PID 31384 were started after the
+cap source commit, and the API binary contains `SettleBookingPenalty`. No live capped settlement has been accepted. MGT-04 remains
 unapproved; formal owner acceptance and Oct 15/30 calendar gates remain open. PC-06 is not
 fully complete.
+
+**Current operator/live checkpoint (2026-10-10 23:14 Istanbul):** migration 60 is clean;
+pre/post original-field hashes and row counts matched across the 15 preserved tables itemized above. API PID 48468
+started at 23:14:24 and panel PID 31384 at 23:14:20, after the cap source commit; the API
+binary contains `SettleBookingPenalty`, and the operator has already restarted both services.
+Thirteen unique read-only/boundary checks passed: Management 9, shared-door 2, and existing
+historical no-show GET 2. Member and tenant-admin GETs passed in 281 ms and 168 ms; exact
+no-show effect was absent as expected on the historical row, frozen fee identity remained
+unchanged, and before/after GETs matched. Shared-door member passed in 6.7 s; provider first
+hit the expected 429 banner and its isolated retry passed in 5 s. No business commands,
+grants, bookings, payments or no-show reviews ran. No new paid-layout visual test ran; the
+prior retained-record visual check remains historical evidence. No local capped-settlement
+fixture or command was available, so capped settlement has isolated-CI evidence only and no
+live acceptance. Formal owner/Oct 15/30 calendar gates remain open; MGT-04 remains
+unapproved.
+
 **Historical local migration checkpoint (2026-10-10):** migrations 58 and 59 were explicitly
 approved and applied with bounded `UpTo(59)` from schema 57. Schema was 59, dirty=false. Four nullable
 `numeric(20,6)` cancellation-effect columns and the validated all-or-none constraint are present;
@@ -76,25 +94,11 @@ administration commands. Existing organization CRUD remains its own delivered wo
 | MGT-03 | Role assignment and revocation | ACTIVE; bounded A+B isolated acceptance passed; local B migration applied; current-source role-manager reads passed 4/4; local mutation proof pending | Step-up, privileged maker-checker rules, scoped commands and recorded history |
 | MGT-04 | Typed tenant settings | PLANNED; permission/impact gate retained; contract hold prerequisite fixed | Named supported settings and validated changes; no arbitrary JSON editor |
 
-**Current operator/live checkpoint (2026-10-10 20:15 Istanbul):** after the operator restarted
-`dev.ps1 up` (API listener PID 27972), 12 unique current-source read-only cases passed:
-Management 9/9 (directory 2, invitation reads 2, anonymous new-invitation boundary 1,
-role administration reads 4 (bounded roles 2, privileged roles 2)), retained paid reimbursement layout 1/1, and shared-door
-provider/member flow 2/2. The three Management login-429 cases passed after the two
-read-only specs opted into the actor's existing bounded Retry-After retry. Paid record
-`01a0ee4d-97a9-77eb-8192-e993b3a6f955` was identical before/after, with zero blocked writes;
-390/1440 layout review looked correct. Shared-door redirects and logout in both tabs passed.
-No suspension, invitation creation, role grant, privileged request, booking, payment or
-financial command was performed. The role-request list may be empty. DEMO_A has no
-cancellable CONFIRMED/PENDING_APPROVAL row, so no live capped settlement fixture was
-available. Source/UI implementation and isolated technical validation are complete; all six CI jobs
-passed in [run 38079516012](https://github.com/celikbros/kapsora/actions/runs/38079516012).
-Schema remains 59, dirty=false. MGT-02/03 stay ACTIVE pending local mutation proof. MGT-04
-settings, formal owner acceptance, and Oct 15/30 calendar gates remain open. Migration 60
-passed CI schema/history validation but is not applied locally or authorized for local
-application. API PID 27972 serves pre-cap compiled source from 20:15 and requires operator
-restart after an authorized migration. No live capped settlement has been accepted; synthetic
-UI review is not live acceptance. PC-06 is not fully complete.
+**Historical operator/live checkpoint (2026-10-10 20:15 Istanbul):** API PID 27972
+served the pre-cap build with clean schema 59. Twelve unique read/boundary/layout cases
+passed: Management 9, retained paid reimbursement layout 1, and shared-door provider/member
+flow 2. No business command or grant was created. This checkpoint is superseded by the
+schema-60/operator checkpoint above.
 
 **MGT-01 first delivery:** `GET /api/v1/admin/users` and membership-ID detail, opened from
 Management. Require an active TENANT-scoped grant carrying `identity.user.read`, rather

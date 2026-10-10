@@ -11,10 +11,23 @@ directory/invitation 70, NIGHT 14, checkout 3, handoff 9 and enrollment 6, all w
 skips. Web passed 768 tests in 92 files plus 25 mock smoke cases; 106 opt-in live/calendar
 cases were skipped. Earlier local web execution had eight timeouts (760/768 across four
 files), followed by focused 34/34 at `maxWorkers=1`; latest CI confirms the full suite.
-Typecheck, scoped ESLint/Prettier, pure Go tests and vet passed. Migration 60 adds optional
-exact no-show evidence and passed CI schema/history validation, but is not applied locally
-and local application is not authorized. Schema remains 59, clean. API PID 27972 serves
-pre-cap compiled source from 20:15 and needs operator restart after an authorized migration.
+Typecheck, scoped ESLint/Prettier, pure Go tests and vet passed. Migration 60 adds optional exact no-show evidence and has been applied locally after explicit
+owner approval. Schema 60 is clean. Pre/post original-field hashes and row counts matched across all 15 preserved
+tables: accommodation.booking 18, cancellation 4, no_show 1; IAM access_grant 17, actor 15,
+credential 15, permission 105, role 34, role_change_command_receipt 0, role_change_request
+0, role_permission 378, session 52, tenant_invitation 0, tenant_invitation_create_receipt
+0 and tenant_membership 15. Existing no-show exact-effect fields remain NULL; no business
+commands, fee changes, grants or history rewrites occurred. Current operator checkpoint (2026-10-10 23:14 Istanbul): API PID 48468 and panel PID
+31384 were started after the cap source commit; the API binary contains `SettleBookingPenalty`,
+so the operator restart is complete. Thirteen unique read-only/boundary checks passed:
+Management 9, shared-door 2 and two historical no-show GETs. Member/tenant-admin GETs passed
+in 281/168 ms; the historical row correctly has no exact-effect evidence, frozen fee identity
+is unchanged, and before/after reads matched. Shared-door member passed in 6.7 s; provider's
+initial 429-banner attempt was followed by an isolated 5 s retry pass. No business commands,
+grants, bookings, payments or no-show reviews were performed. No new paid-layout visual test
+ran; the previous visual checkpoint is historical. No local capped-settlement fixture or
+command was available, so capped settlement remains isolated-CI evidence only; no live
+settlement is accepted.
 No live capped settlement has been accepted. Final synthetic UI review covered 12 390/1440
 views with all API calls stubbed, detector `[]`, zero errors/overflow/unknown requests, and
 no blockers in independent Sol review; this is not live settlement acceptance. MGT-04
@@ -218,10 +231,11 @@ migration-60 history preservation and constraints. Accommodation passed 120 with
 (118.066 s), including the three former diagnostics as positive cases. Authorization 31,
 eligibility 20, directory/invitation 70, NIGHT 14, checkout 3, handoff 9 and enrollment 6
 also passed without skips. Web passed 768 tests in 92 files plus 25 mock smoke cases; 106
-opt-in live/calendar cases were skipped. Migration 60 adds optional exact no-show movement
-evidence and passed CI schema/history validation, but is not applied locally or authorized
-for local application. Schema remains 59, clean. API PID 27972 serves pre-cap compiled source
-from 20:15 and needs operator restart after an authorized migration. No live capped settlement
+opt-in live/calendar cases were skipped. Migration 60 adds optional exact no-show movement evidence and is applied locally after
+explicit owner approval. Schema 60 is clean; pre/post row counts matched across all 15
+preserved tables as detailed above. Existing no-show exact-effect fields remain NULL; no
+business commands, fee changes, grants or history rewrites occurred. The latest operator restart and 13 read-only/boundary checks are recorded in the current
+status above. No live capped settlement
 has been accepted. The final synthetic UI review covered 12 390/1440 views with all API calls
 stubbed, detector `[]`, zero errors/overflow/unknown requests and no blockers in independent
 Sol review; this is not live settlement acceptance. MGT-04 settings, formal owner acceptance
@@ -256,13 +270,12 @@ evidence on confirmed no-show reports in four canonical decimal strings:
 - consumedEntitlementUnits
 - releasedEntitlementUnits
 
-Cancellation already has four nullable numeric(20,6) columns in migration 59; authored
-migration 60 adds matching no-show columns with nonnegative/all-or-none nullability.
-Cancellation effects are written on initial insertion; no-show effects are written atomically
-during confirmed review. Historical rows and undecided/rejected/disputed reports retain NULL,
-meaning no recorded exact evidence rather than zero. Do not backfill from current
-authorization state. Migration 60 is not applied locally; local application is a separate
-authorization gate.
+Cancellation has four nullable numeric(20,6) columns from migration 59; migration 60 adds
+matching no-show columns with nonnegative/all-or-none nullability. Cancellation effects are
+written on initial insertion; no-show effects are written atomically during confirmed review.
+Historical rows and undecided/rejected/disputed reports retain NULL, meaning no recorded exact
+evidence rather than zero. Do not backfill from current authorization state. Migration 60 was
+applied locally after explicit owner approval; schema 60 is clean.
 
 Keep integer penaltyNights as the frozen policy/financial charge. When exact evidence is
 present, legacy releasedNights and consumedNights represent the whole-number portion of

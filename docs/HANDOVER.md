@@ -42,9 +42,10 @@ records the approved sequence and acceptance criteria.
 specified demo acceptance scopes. PC-05 remains ACTIVE: the financial journeys passed
 local technical acceptance; formal owner acceptance and retained scheduler checks remain
 open. PC-06's prior technical scope passed, but capped penalty settlement has no live
-acceptance. Schema 59 is applied cleanly (dirty=false). The operator restarted `dev.ps1 up`
-at 20:15 Istanbul; current-source bounded live reads passed for Management (9/9), paid
-reimbursement layout (1/1), and shared-door provider/member flow (2/2), as recorded below.
+acceptance. Schema 60 is applied cleanly (dirty=false). The operator restarted `dev.ps1 up`
+at 20:15 Istanbul; that earlier checkpoint passed bounded live reads for Management (9/9),
+paid reimbursement layout (1/1), and shared-door provider/member flow (2/2). The latest
+operator checkpoint appears below.
 No suspension, invitation, role grant, privileged request, booking, payment or financial
 command was created. MGT-02/03 remain ACTIVE pending local mutation proof; MGT-04 settings
 remain unapproved. The PC-06 cap policy is APPROVED; source/UI implementation and isolated technical
@@ -61,13 +62,17 @@ across four files), followed by a focused 34/34 rerun at `maxWorkers=1`; latest 
 full-suite confirmation. Typecheck, scoped ESLint/Prettier, pure Go tests and vet passed.
 Three positive former-diagnostic cases and marker negative controls are implemented.
 Settlement consumes the lesser of frozen policy penalty and exact approved remainder, then
-releases unused mapped units; fees and payer/member shares remain frozen. Migration 60 adds
-optional exact no-show evidence and passed CI schema/history validation, but is not applied
-locally or authorized for local application. Final synthetic review covered 12 390/1440
+releases unused mapped units; fees and payer/member shares remain frozen. Migration 60 adds optional exact no-show evidence and is applied locally after the
+owner's explicit approval. Schema 60 is clean. Pre/post original-field hashes and row counts matched across all 15
+preserved tables: accommodation.booking 18, accommodation.cancellation 4,
+accommodation.no_show 1; IAM access_grant 17, actor 15, credential 15, permission 105,
+role 34, role_change_command_receipt 0, role_change_request 0, role_permission 378, session
+52, tenant_invitation 0, tenant_invitation_create_receipt 0 and tenant_membership 15. All
+existing no-show exact-effect fields remain NULL; no business commands, fee changes, grants
+or history rewrites occurred. Final synthetic review covered 12 390/1440
 views, with all API calls stubbed, detector `[]`, zero errors/overflow/unknown requests and
-no blockers in independent Sol review; this is not live settlement acceptance. Schema
-remains 59, dirty=false; operator API PID 27972 is retained from pre-cap source compiled at
-20:15 and requires operator restart after an authorized migration. No live capped settlement
+no blockers in independent Sol review; this is not live settlement acceptance. Schema remains 60, dirty=false; API PID 48468 and panel PID 31384 were started after the
+cap source commit, and the API binary contains `SettleBookingPenalty`. No live capped settlement
 has been accepted. MGT-04 settings remain unapproved; formal owner acceptance and Oct 15/30
 calendar gates remain open. PC-06 is not fully complete. PR #11 remains draft and unmerged.
 Historical calendar-preparation CI passed all six checks on head `5bb2349`
@@ -79,7 +84,22 @@ remain separate gates.
 This snapshot and the latest checkpoint below supersede dated next-step instructions in
 the historical evidence. Split-claim quantities still do not prove chronological coverage.
 
-**Local migration checkpoint (2026-10-10):** the owner explicitly approved migrations 58 and 59.
+**Current operator/live checkpoint (2026-10-10 23:14 Istanbul):** migration 60 is clean;
+the bounded helper preserved original fields and row counts across all 15 tables as detailed above. API PID
+48468 started at 23:14:24 and panel PID 31384 at 23:14:20, after the cap source commit; the
+running API binary contains `SettleBookingPenalty`. The operator has already restarted both
+services. Thirteen unique read-only/boundary checks passed: nine Management checks, two
+shared-door checks and two existing historical no-show GET checks. Member and tenant-admin
+API reads returned successfully in 281 ms and 168 ms; the exact no-show effect is absent as
+expected for the historical row, frozen fee identity is unchanged, and before/after GETs
+matched. Shared-door member passed in 6.7 s; the provider's first attempt hit the expected
+429 banner, then its isolated retry passed in 5 s. No business commands, grants, bookings,
+payments or no-show reviews were performed. No new paid-layout visual test ran in this
+checkpoint; the prior retained-record visual check remains historical evidence. There was no
+local capped-settlement fixture or command, so capped settlement remains isolated-CI evidence
+only and has no live acceptance. MGT-04, formal owner acceptance and calendar gates remain open.
+
+**Historical local migration checkpoint (schema 59, before migration 60):** the owner explicitly approved migrations 58 and 59.
 The bounded `UpTo(59)` migration from schema 57 completed successfully; schema is 59,
 dirty=false. Migration 59 contains four nullable `numeric(20,6)` cancellation-effect fields
 and a validated all-or-none constraint; both IAM role-change tables are present. Before/after
@@ -92,26 +112,12 @@ were performed. The running operator API process (PID 45580) was started 2026-10
 requested restart was pending. This is a historical local-schema checkpoint, not live API
 acceptance; at that time it did not authorize the penalty cap.
 
-**Current operator/live checkpoint (2026-10-10 20:15 Istanbul):** the operator restarted
-`dev.ps1 up`; API listener PID 27972 serves that pre-cap source. Management's current-source
-read-only group passed 9/9: directory 2, existing-account invitation reads 2, anonymous
-new-invitation boundary 1 and role administration reads 4 (bounded roles 2, privileged
-roles 2). The three login-429 checks passed after enabling the actor's existing bounded opt-in
-Retry-After handling. The paid reimbursement retained-record layout test passed 1/1 in 3.3 s for existing record
-`01a0ee4d-97a9-77eb-8192-e993b3a6f955`, with identical data before/after and zero blocked
-writes; 390/1440 views look correct. The shared-door provider/member tests passed 2/2 in
-12.1 s with correct redirects and both tabs logged out. Across 12 unique cases, no
-suspension, invitation creation, role grant, privileged request, booking, payment or
-financial command was performed. The role-request list may be empty. App-role DEMO_A
-inventory contains zero cancellable CONFIRMED/PENDING_APPROVAL rows, so no live capped
-settlement fixture was available. The source/UI implementation and isolated technical validation are complete on `bcf0798`;
-all six CI jobs passed in [run 38079516012](https://github.com/celikbros/kapsora/actions/runs/38079516012).
-Schema remains 59, dirty=false. Formal owner/Oct 15/30 calendar gates remain open. MGT-02/03
-stay ACTIVE for unclaimed local mutation proof; MGT-04 settings remain unapproved. Migration
-60 passed CI schema/history validation but is authored, not applied locally or authorized for
-local application. PID 27972 serves pre-cap compiled source from 20:15 and requires operator
-restart after an authorized migration. No live capped settlement has been accepted; synthetic
-review does not establish live settlement acceptance.
+**Historical operator/live checkpoint (2026-10-10 20:15 Istanbul):** API PID 27972
+served the pre-cap build with schema 59, clean. Twelve unique read/boundary/layout cases
+passed: Management 9, retained paid reimbursement layout 1, and shared-door provider/member
+flow 2. The paid record was `01a0ee4d-97a9-77eb-8192-e993b3a6f955`; before/after data
+matched and 390/1440 layouts passed. No business command or grant was created. This
+checkpoint is superseded by the schema-60/operator checkpoint above.
 
 The first live health checkpoint passed: provider catalog access, single-enrollment
 eligibility, insufficient-quantity refusal, request submission, medical approval and the
