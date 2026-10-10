@@ -47,7 +47,7 @@ test('tenant role manager reads bounded candidates, provider relationships and g
 }) => {
   expectLocalOperatorUrl();
   const page = await browser.newPage({ locale: 'tr-TR', timezoneId: 'Europe/Istanbul' });
-  const actor = new Actor(page.request, 'backoffice');
+  const actor = new Actor(page.request, 'backoffice', true);
   try {
     await actor.login('admin.a');
     const me = await actor.call<components['schemas']['UserContext']>('GET', '/api/v1/me');
@@ -129,7 +129,7 @@ test('financial reviewer has no tenant role-management capability or endpoint ac
 }) => {
   expectLocalOperatorUrl();
   const page = await browser.newPage({ locale: 'tr-TR', timezoneId: 'Europe/Istanbul' });
-  const actor = new Actor(page.request, 'backoffice');
+  const actor = new Actor(page.request, 'backoffice', true);
   try {
     await actor.login('financial.reviewer');
     const me = await actor.call<components['schemas']['UserContext']>('GET', '/api/v1/me');

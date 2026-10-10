@@ -42,19 +42,17 @@ records the approved sequence and acceptance criteria.
 specified demo acceptance scopes. PC-05 remains ACTIVE: the financial journeys passed
 local technical acceptance; formal owner acceptance and retained scheduler checks remain
 open. PC-06 has passed live technical acceptance, with the same remaining gates. Schema 59
-is applied cleanly after explicit approval of migrations 58 and 59 (dirty=false).
-The API restart remains pending, so no post-restart live API acceptance is claimed.
-Management now includes the directory, tenant-only suspension,
-existing-account invitations and new-account invitation acceptance. B2 isolated database
-proof and all six code CI checks passed; bounded anonymous live checks await the operator
-restart, as recorded below. Bounded role assignment and revocation are implemented;
-isolated database acceptance passed on `e26bcc8`. Privileged role approval is authorized
-and has bounded isolated acceptance on `9893196`; local migration is applied and live reads
-remain pending. PR #11 remains draft and unmerged. All six CI checks passed on
-calendar-preparation code head `5bb2349` ([run 37152681278](https://github.com/celikbros/kapsora/actions/runs/37152681278));
-current Management CI is tracked in PR #11's checks.
-The local migration checkpoint below records schema 59 and supersedes earlier pending-approval
-wording. It does not supersede the unresolved operator restart or penalty-cap business decision.
+is applied cleanly (dirty=false). The operator restarted `dev.ps1 up` at 20:15 Istanbul;
+current-source bounded live reads now pass for Management (9/9), paid reimbursement layout
+(1/1), and the shared-door provider/member journey (2/2), as recorded below. No suspension,
+invitation, role grant, privileged request, booking, payment or financial command was
+created. Management MGT-02 and MGT-03 remain ACTIVE pending local mutation proof; MGT-04
+settings and the PC-06 penalty cap remain unapproved. PR #11 remains draft and unmerged.
+All six CI checks passed on calendar-preparation code head `5bb2349`
+([run 37152681278](https://github.com/celikbros/kapsora/actions/runs/37152681278));
+current Management CI is tracked in PR #11's checks. The historical local migration
+checkpoint below records schema 59 and its earlier API process; the new restart checkpoint
+supersedes its pending-restart status, not the unresolved policy decisions.
 This snapshot and the latest checkpoint below supersede dated next-step instructions in
 the historical evidence. Split-claim quantities still do not prove chronological coverage.
 
@@ -70,6 +68,23 @@ columns remain NULL on existing cancellations. No business commands, grants or h
 were performed. The running operator API process (PID 45580) was started 2026-10-09; its
 requested restart is pending. This is local schema evidence only, not live API acceptance or
 approval of the penalty cap.
+
+**Current operator/live checkpoint (2026-10-10 20:15 Istanbul):** the operator restarted
+`dev.ps1 up`; API listener PID 27972 serves the current source. Management's current-source
+read-only group passed 9/9: directory 2, existing-account invitation reads 2, anonymous
+new-invitation boundary 1 and role administration reads 4 (bounded roles 2, privileged
+roles 2). The three login-429 checks passed after enabling the actor's existing bounded opt-in Retry-After handling. The paid
+reimbursement retained-record layout test passed 1/1 in 3.3 s for existing record
+`01a0ee4d-97a9-77eb-8192-e993b3a6f955`, with identical data before/after and zero blocked
+writes; 390/1440 views look correct. The shared-door provider/member tests passed 2/2 in
+12.1 s with correct redirects and both tabs logged out. Across 12 unique cases, no
+suspension, invitation creation, role grant, privileged request, booking, payment or
+financial command was performed. The role-request list may be empty. App-role DEMO_A
+inventory contains zero cancellable CONFIRMED/PENDING_APPROVAL rows, so no live exact-effect
+cancellation preview/settlement fixture was available; source/CI proof remains the evidence
+for that path. Schema remains 59, dirty=false. Formal owner/Oct 15/30 calendar gates remain
+open. MGT-02/03 stay ACTIVE for unclaimed local mutation proof; MGT-04 settings and the
+PC-06 penalty cap remain unapproved.
 
 The first live health checkpoint passed: provider catalog access, single-enrollment
 eligibility, insufficient-quantity refusal, request submission, medical approval and the

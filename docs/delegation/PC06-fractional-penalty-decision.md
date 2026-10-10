@@ -175,6 +175,23 @@ were performed. Operator API process 45580 was started 2026-10-09; its requested
 pending, so this checkpoint makes no live API acceptance claim. The penalty-cap decision and
 MGT-04 settings approval remain unapproved.
 
+## Post-restart bounded live checkpoint (2026-10-10 20:15 Istanbul)
+
+The operator restarted `dev.ps1 up`; current API listener PID 27972. The retained paid
+reimbursement layout check passed read-only against existing record
+`01a0ee4d-97a9-77eb-8192-e993b3a6f955` (3.3 s): identical record before/after, zero
+blocked writes, and the 390/1440 views looked correct. No payment or financial command ran.
+The shared-door provider/member journey also passed in 12.1 s, including expected redirects
+and logout in both tabs; it changed no financial state. The full bounded live set was 12
+unique current-source cases, all passing: Management 9/9, retained paid layout 1/1, and
+shared-door flow 2/2. No suspension, invitation creation, role grant, privileged request,
+booking, payment or financial command was performed. DEMO_A inventory contains no
+cancellable CONFIRMED/PENDING_APPROVAL booking, so no live exact-effect cancellation
+preview or settlement fixture was available. The three penalty-refusal diagnostics remain
+isolated source/CI evidence; no successful capped penalty settlement is claimed. Schema
+remains 59, dirty=false. The penalty-cap decision, MGT-04 settings approval, formal owner
+acceptance and Oct 15/30 calendar gates remain open.
+
 ## Conditional implementation design (Astra, reviewed by Sol, 2026-10-10)
 
 This prepares option A for review. Explicit policy approval remains pending; technical

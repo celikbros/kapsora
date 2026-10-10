@@ -21,13 +21,15 @@ PC-01 through PC-04 are VERIFIED locally within their defined demo scopes. PC-05
 ACTIVE: its financial journeys passed local technical acceptance; formal owner acceptance
 and retained scheduler checks remain open. PC-06 has passed live technical acceptance,
 with the same remaining gates. Schema 59 is applied cleanly after explicit local
-approval of migrations 58 and 59; dirty=false. The operator API restart remains pending,
-so no post-restart live API acceptance is claimed. Management's invitation
-onboarding has isolated database proof and all six code CI checks passed; bounded anonymous live checks are
-tracked in the checkpoint below. Bounded role assignment and revocation are implemented;
-isolated database acceptance passed on `e26bcc8`. Privileged role approval is authorized
-and has bounded isolated acceptance on `9893196`; local B migration is applied and live
-reads remain pending. PR #11 remains draft/unmerged;
+approval of migrations 58 and 59; dirty=false. The operator restarted `dev.ps1 up` at
+20:15 Istanbul; current-source bounded reads passed for Management (9/9), paid
+reimbursement layout (1/1) and shared-door provider/member flow (2/2), as detailed in the
+checkpoint below. No live suspension, invitation creation, role grant, privileged request,
+booking, payment or financial command occurred. MGT-02/03 remain ACTIVE pending local
+mutation proof; MGT-04 settings and the PC-06 penalty cap remain unapproved. Bounded role
+assignment and revocation are implemented; isolated database acceptance passed on
+`e26bcc8`. Privileged role approval is authorized and has bounded isolated acceptance on
+`9893196`; local B migration is applied. PR #11 remains draft/unmerged;
 the recorded calendar-preparation CI baseline passed all six checks on `5bb2349`
 ([run 37152681278](https://github.com/celikbros/kapsora/actions/runs/37152681278)).
 The original PC demo review has technical acceptance. The follow-up checkout and handoff
@@ -57,9 +59,24 @@ administration commands. Existing organization CRUD remains its own delivered wo
 | Order | Stage | Current status | Result required |
 | --- | --- | --- | --- |
 | MGT-01 | Tenant user membership directory | VERIFIED; bounded live reads passed 2026-10-08 | Real list/filter/paging and membership detail with assigned-role validity; tenant-wide permission and strict data projection |
-| MGT-02 | Account onboarding and membership lifecycle | ACTIVE; B2 code CI passed and local schema 59 clean; bounded anonymous live check awaits restart | Explicit public command contracts, validation, scoped lifecycle effects and retry/audit behavior |
-| MGT-03 | Role assignment and revocation | ACTIVE; bounded A+B isolated acceptance passed; local B migration applied; live reads pending | Step-up, privileged maker-checker rules, scoped commands and recorded history |
+| MGT-02 | Account onboarding and membership lifecycle | ACTIVE; B2 code CI and isolated DB proof passed; current-source read-only checks passed 3/3; no local suspension/invitation mutation proof | Explicit public command contracts, validation, scoped lifecycle effects and retry/audit behavior |
+| MGT-03 | Role assignment and revocation | ACTIVE; bounded A+B isolated acceptance passed; local B migration applied; current-source role-manager reads passed 4/4; local mutation proof pending | Step-up, privileged maker-checker rules, scoped commands and recorded history |
 | MGT-04 | Typed tenant settings | PLANNED; permission/impact gate retained; contract hold prerequisite fixed | Named supported settings and validated changes; no arbitrary JSON editor |
+
+**Current operator/live checkpoint (2026-10-10 20:15 Istanbul):** after the operator restarted
+`dev.ps1 up` (API listener PID 27972), 12 unique current-source read-only cases passed:
+Management 9/9 (directory 2, invitation reads 2, anonymous new-invitation boundary 1,
+role administration reads 4 (bounded roles 2, privileged roles 2)), retained paid reimbursement layout 1/1, and shared-door
+provider/member flow 2/2. The three Management login-429 cases passed after the two
+read-only specs opted into the actor's existing bounded Retry-After retry. Paid record
+`01a0ee4d-97a9-77eb-8192-e993b3a6f955` was identical before/after, with zero blocked writes;
+390/1440 layout review looked correct. Shared-door redirects and logout in both tabs passed.
+No suspension, invitation creation, role grant, privileged request, booking, payment or
+financial command was performed. The role-request list may be empty. DEMO_A has no
+cancellable CONFIRMED/PENDING_APPROVAL row, so live exact-effect cancellation preview and
+settlement remain unavailable; source/CI evidence applies. Schema remains 59, dirty=false.
+MGT-02/03 stay ACTIVE pending local mutation proof. MGT-04 settings, penalty-cap policy,
+formal owner acceptance, and Oct 15/30 calendar gates remain open.
 
 **MGT-01 first delivery:** `GET /api/v1/admin/users` and membership-ID detail, opened from
 Management. Require an active TENANT-scoped grant carrying `identity.user.read`, rather

@@ -62,7 +62,7 @@ test('tenant manager reads privileged options, target eligibility and bounded pe
   browser,
 }) => {
   const page = await browser.newPage();
-  const actor = new Actor(page.request, 'backoffice');
+  const actor = new Actor(page.request, 'backoffice', true);
   try {
     await actor.login('admin.a');
     const options = await actor.call<components['schemas']['PrivilegedRoleAssignmentOptions']>(
@@ -181,7 +181,7 @@ test('financial reviewer cannot read privileged-role administration endpoints', 
   browser,
 }) => {
   const page = await browser.newPage();
-  const actor = new Actor(page.request, 'backoffice');
+  const actor = new Actor(page.request, 'backoffice', true);
   try {
     await actor.login('financial.reviewer');
     for (const path of [
