@@ -1256,6 +1256,50 @@ async function confirmedStay(
 }
 
 describe('cancelling a stay', () => {
+  it('reports the approved half night and converted unit in preview and recorded result', async () => {
+    const s = await signIn('admin.a');
+    const booking = await confirmedStay(
+      s,
+      personByFirstName('Kaan').id,
+      roomTypeByCode('STD_DBL').id,
+      2,
+      64,
+    );
+    const stored = api.world.bookings.find((row) => row.id === booking.id)!;
+    stored.approvedServiceNights = '0.500000';
+    stored.entitlementUnitFactor = '2.000000';
+    const preview = (
+      await unwrap(
+        s.c.POST('/api/v1/accommodation/bookings/{bookingId}/cancellation-preview', {
+          params: { header: tenant(s), path: { bookingId: booking.id } },
+        }),
+      )
+    ).data;
+    expect(preview.quote.free).toBe(true);
+    expect(preview.quote.releasedNights).toBe(2);
+    expect(preview.quote.entitlementEffect).toEqual({
+      consumedServiceNights: '0.000000',
+      releasedServiceNights: '0.500000',
+      consumedEntitlementUnits: '0.000000',
+      releasedEntitlementUnits: '1.000000',
+    });
+    const result = (
+      await unwrap(
+        s.c.POST('/api/v1/accommodation/bookings/{bookingId}/cancel', {
+          params: {
+            header: { ...tenant(s), 'Idempotency-Key': key() },
+            path: { bookingId: booking.id },
+          },
+          body: {},
+        }),
+      )
+    ).data;
+    expect(result.quote.entitlementEffect).toEqual(preview.quote.entitlementEffect);
+    expect(result.cancellation.entitlementEffect).toEqual(preview.quote.entitlementEffect);
+    expect(result.quote.feeAmount).toBe('0.000000');
+    expect(result.cancellation.policySnapshot).toEqual(stored.policySnapshot);
+  });
+
   /**
    * The acceptance criterion of WP-I6-03: the fee is what the booking's own frozen policy
    * says, and the row that records it carries that policy.

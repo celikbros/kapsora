@@ -3605,10 +3605,22 @@
       "cancelFree": "Şu an iptal ücretsiz.",
       "cancelFreeUntil": "{{until}} tarihine kadar ücretsiz.",
       "cancelFee": "İptal ücreti",
-      "cancelPenaltyNights_one": "{{count}} gece hakkınızdan düşer",
-      "cancelPenaltyNights_other": "{{count}} gece hakkınızdan düşer",
-      "cancelReleased_one": "{{count}} gece hakkınıza geri döner",
-      "cancelReleased_other": "{{count}} gece hakkınıza geri döner",
+      "cancelPenaltyNights_one": "İptal koşulundaki ceza: {{count}} gece.",
+      "cancelPenaltyNights_other": "İptal koşulundaki ceza: {{count}} gece.",
+      "cancelEffectUnknown": {
+        "preview": "Hak hareketinin kesin tutarı bu ön izlemede doğrulanamıyor.",
+        "actual": "Bu iptal kaydında kesin hak hareketi gösterilemiyor."
+      },
+      "cancelEffect": {
+        "preview": {
+          "service": "İptal ederseniz konaklama hakkınızdan {{consumed}} gece kullanılır, {{released}} gece geri döner.",
+          "entitlement": "Plan hesabınızdan {{consumed}} hak birimi kullanılır, {{released}} hak birimi geri döner."
+        },
+        "actual": {
+          "service": "Konaklama hakkınızdan {{consumed}} gece kullanıldı, {{released}} gece geri döndü.",
+          "entitlement": "Plan hesabınızdan {{consumed}} hak birimi kullanıldı, {{released}} hak birimi geri döndü."
+        }
+      },
       "cancelled": "Rezervasyon iptal edildi.",
       "cancelledFee": "İptal ücreti {{amount}} olarak kaydedildi.",
       "keep": "Vazgeç",

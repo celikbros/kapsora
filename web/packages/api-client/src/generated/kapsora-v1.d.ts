@@ -7555,6 +7555,7 @@ export interface components {
             /** Format: uuid */
             cancelledBy?: string | null;
             currencyCode: string;
+            entitlementEffect?: components["schemas"]["CancellationEntitlementEffect"];
             /** @description Exact decimal as a string; nothing here passes through a float. */
             feeAmount: string;
             free: boolean;
@@ -7572,7 +7573,28 @@ export interface components {
              */
             policySnapshot?: components["schemas"]["LodgingPolicySnapshot"] | null;
             reasonCode: string;
+            /**
+             * @description Whole-number portion of exact released service nights when entitlementEffect
+             *     is present. Historical records without that field retain their legacy figure.
+             */
             releasedNights: number;
+        };
+        /**
+         * @description Exact service-night and entitlement-unit effects of this cancellation. On a
+         *     preview these are prospective under the current authorization state; the command
+         *     recomputes them in its transaction. A cancellation record carries the actual
+         *     committed effects. Absent means exact evidence is unavailable or was not recorded,
+         *     not zero. These quantities do not change the frozen policy's monetary charge.
+         */
+        CancellationEntitlementEffect: {
+            /** @description Exact units actually drawn from the original entitlement reservation. */
+            consumedEntitlementUnits: string;
+            /** @description Exact service nights consumed by this cancellation, not policy charge nights. */
+            consumedServiceNights: string;
+            /** @description Exact units actually returned from the original entitlement reservation. */
+            releasedEntitlementUnits: string;
+            /** @description Exact unused service nights returned by this cancellation. */
+            releasedServiceNights: string;
         };
         /** @description The booking, and what cancelling it now would cost. */
         CancellationPreview: {
@@ -7581,12 +7603,13 @@ export interface components {
         };
         /**
          * @description What a cancellation costs and gives back, computed from the booking's own frozen
-         *     policy and its own night amounts. Every figure is an exact decimal string: these
-         *     numbers reach a settlement, and a fee two systems disagree about by a kuruş is a fee
-         *     nobody can invoice.
+         *     policy and its own night amounts. Monetary amounts are exact decimal strings.
+         *     Optional entitlementEffect projects the current authorization's exact effects;
+         *     these prospective quantities are recomputed by the cancellation command.
          */
         CancellationQuote: {
             currencyCode: string;
+            entitlementEffect?: components["schemas"]["CancellationEntitlementEffect"];
             /** @description Exact decimal as a string; nothing here passes through a float. */
             feeAmount: string;
             /**
@@ -7612,10 +7635,10 @@ export interface components {
              */
             penaltyNights: number;
             /**
-             * @description The nights that go back to the plan: the covered nights of the frozen quote less
-             *     whatever the penalty spends. The penalty is capped at the covered nights, because
-             *     a policy charging three nights against a plan that carried two cannot take a
-             *     third from a balance it never held.
+             * @description When entitlementEffect is present, the whole-number portion of its exact
+             *     releasedServiceNights. Prefer the exact field when displaying a returned right.
+             *     Otherwise this retains the legacy frozen-quote calculation and is not newly
+             *     verified evidence of the current authorization's actual release.
              */
             releasedNights: number;
         };
@@ -14334,6 +14357,7 @@ export type SchemaBookingVoucher = components['schemas']['BookingVoucher'];
 export type SchemaCancelBookingRequest = components['schemas']['CancelBookingRequest'];
 export type SchemaCancelInpatientStay = components['schemas']['CancelInpatientStay'];
 export type SchemaCancellation = components['schemas']['Cancellation'];
+export type SchemaCancellationEntitlementEffect = components['schemas']['CancellationEntitlementEffect'];
 export type SchemaCancellationPreview = components['schemas']['CancellationPreview'];
 export type SchemaCancellationQuote = components['schemas']['CancellationQuote'];
 export type SchemaCancellationResult = components['schemas']['CancellationResult'];

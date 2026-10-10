@@ -93,22 +93,32 @@ UPDATE accommodation.inventory_day
 -- after the contract has been rewritten twice.
 INSERT INTO accommodation.cancellation (
     tenant_id, booking_id, cancelled_at, cancelled_by, reason_code, policy_snapshot, free,
-    penalty_nights, released_nights, fee_amount, payer_fee, member_fee, currency_code)
+    penalty_nights, released_nights, fee_amount, payer_fee, member_fee, currency_code,
+    consumed_service_nights, released_service_nights,
+    consumed_entitlement_units, released_entitlement_units)
 VALUES (sqlc.arg('tenant_id'), sqlc.arg('booking_id'), sqlc.arg('cancelled_at'),
         sqlc.narg('cancelled_by'), sqlc.arg('reason_code'), sqlc.arg('policy_snapshot'),
         sqlc.arg('free')::boolean, sqlc.arg('penalty_nights')::int,
         sqlc.arg('released_nights')::int, sqlc.arg('fee_amount')::text::numeric,
         sqlc.arg('payer_fee')::text::numeric, sqlc.arg('member_fee')::text::numeric,
-        sqlc.arg('currency_code'))
+        sqlc.arg('currency_code'),
+        sqlc.narg('consumed_service_nights')::text::numeric,
+        sqlc.narg('released_service_nights')::text::numeric,
+        sqlc.narg('consumed_entitlement_units')::text::numeric,
+        sqlc.narg('released_entitlement_units')::text::numeric)
 RETURNING id, booking_id, cancelled_at, cancelled_by, reason_code, policy_snapshot, free,
           penalty_nights, released_nights, fee_amount::text AS fee_amount,
           payer_fee::text AS payer_fee, member_fee::text AS member_fee, currency_code,
+          consumed_service_nights, released_service_nights,
+          consumed_entitlement_units, released_entitlement_units,
           created_at;
 
 -- name: GetCancellation :one
 SELECT id, booking_id, cancelled_at, cancelled_by, reason_code, policy_snapshot, free,
        penalty_nights, released_nights, fee_amount::text AS fee_amount,
        payer_fee::text AS payer_fee, member_fee::text AS member_fee, currency_code,
+       consumed_service_nights, released_service_nights,
+       consumed_entitlement_units, released_entitlement_units,
        created_at
   FROM accommodation.cancellation
  WHERE tenant_id = sqlc.arg('tenant_id')

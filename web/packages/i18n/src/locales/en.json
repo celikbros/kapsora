@@ -1834,10 +1834,22 @@
       "cancelFree": "Cancelling now is free.",
       "cancelFreeUntil": "Free until {{until}}.",
       "cancelFee": "Cancellation fee",
-      "cancelPenaltyNights_one": "{{count}} night is taken from your entitlement",
-      "cancelPenaltyNights_other": "{{count}} nights are taken from your entitlement",
-      "cancelReleased_one": "{{count}} night returns to your entitlement",
-      "cancelReleased_other": "{{count}} nights return to your entitlement",
+      "cancelPenaltyNights_one": "Policy cancellation charge: {{count}} night.",
+      "cancelPenaltyNights_other": "Policy cancellation charge: {{count}} nights.",
+      "cancelEffectUnknown": {
+        "preview": "The exact entitlement movement cannot be verified in this preview.",
+        "actual": "The exact entitlement movement cannot be shown for this cancellation record."
+      },
+      "cancelEffect": {
+        "preview": {
+          "service": "If you cancel, {{consumed}} lodging nights will be used and {{released}} lodging nights will return.",
+          "entitlement": "Your plan account will use {{consumed}} entitlement units and receive {{released}} entitlement units back."
+        },
+        "actual": {
+          "service": "{{consumed}} lodging nights were used and {{released}} lodging nights returned.",
+          "entitlement": "Your plan account used {{consumed}} entitlement units and received {{released}} entitlement units back."
+        }
+      },
       "cancelled": "Booking cancelled.",
       "cancelledFee": "A cancellation fee of {{amount}} was recorded.",
       "keep": "Keep it",

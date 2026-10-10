@@ -28,6 +28,7 @@ package accommodationhttp_test
 import (
 	"context"
 	"encoding/json"
+	"reflect"
 	"sync"
 	"testing"
 	"time"
@@ -300,7 +301,7 @@ func TestCancellationIsJudgedByTheFrozenPolicy(t *testing.T) {
 	}
 	// The command answers exactly what the preview did, because both run the same
 	// computation on the same document.
-	if result.Quote != preview.Quote {
+	if !reflect.DeepEqual(result.Quote, preview.Quote) {
 		t.Errorf("the command answered %+v and the preview answered %+v; a member shown one "+
 			"figure and charged another has been misled", result.Quote, preview.Quote)
 	}

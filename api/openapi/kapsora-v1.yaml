@@ -25509,13 +25509,42 @@ components:
         validTo:
           type: string
           format: date-time
+    CancellationEntitlementEffect:
+      type: object
+      description: |
+        Exact service-night and entitlement-unit effects of this cancellation. On a
+        preview these are prospective under the current authorization state; the command
+        recomputes them in its transaction. A cancellation record carries the actual
+        committed effects. Absent means exact evidence is unavailable or was not recorded,
+        not zero. These quantities do not change the frozen policy's monetary charge.
+      additionalProperties: false
+      required:
+        [consumedServiceNights, releasedServiceNights, consumedEntitlementUnits,
+         releasedEntitlementUnits]
+      properties:
+        consumedServiceNights:
+          type: string
+          pattern: '^(0|[1-9][0-9]{0,13})(\.[0-9]{1,6})?$'
+          description: Exact service nights consumed by this cancellation, not policy charge nights.
+        releasedServiceNights:
+          type: string
+          pattern: '^(0|[1-9][0-9]{0,13})(\.[0-9]{1,6})?$'
+          description: Exact unused service nights returned by this cancellation.
+        consumedEntitlementUnits:
+          type: string
+          pattern: '^(0|[1-9][0-9]{0,13})(\.[0-9]{1,6})?$'
+          description: Exact units actually drawn from the original entitlement reservation.
+        releasedEntitlementUnits:
+          type: string
+          pattern: '^(0|[1-9][0-9]{0,13})(\.[0-9]{1,6})?$'
+          description: Exact units actually returned from the original entitlement reservation.
     CancellationQuote:
       type: object
       description: |
         What a cancellation costs and gives back, computed from the booking's own frozen
-        policy and its own night amounts. Every figure is an exact decimal string: these
-        numbers reach a settlement, and a fee two systems disagree about by a kuruş is a fee
-        nobody can invoice.
+        policy and its own night amounts. Monetary amounts are exact decimal strings.
+        Optional entitlementEffect projects the current authorization's exact effects;
+        these prospective quantities are recomputed by the cancellation command.
       additionalProperties: false
       required:
         [free, penaltyNights, releasedNights, feeAmount, payerFee, memberFee, currencyCode]
@@ -25536,10 +25565,12 @@ components:
           type: integer
           minimum: 0
           description: |
-            The nights that go back to the plan: the covered nights of the frozen quote less
-            whatever the penalty spends. The penalty is capped at the covered nights, because
-            a policy charging three nights against a plan that carried two cannot take a
-            third from a balance it never held.
+            When entitlementEffect is present, the whole-number portion of its exact
+            releasedServiceNights. Prefer the exact field when displaying a returned right.
+            Otherwise this retains the legacy frozen-quote calculation and is not newly
+            verified evidence of the current authorization's actual release.
+        entitlementEffect:
+          $ref: '#/components/schemas/CancellationEntitlementEffect'
         feeAmount:
           type: string
           description: Exact decimal as a string; nothing here passes through a float.
@@ -25611,6 +25642,11 @@ components:
         releasedNights:
           type: integer
           minimum: 0
+          description: |
+            Whole-number portion of exact released service nights when entitlementEffect
+            is present. Historical records without that field retain their legacy figure.
+        entitlementEffect:
+          $ref: '#/components/schemas/CancellationEntitlementEffect'
         feeAmount:
           type: string
           description: Exact decimal as a string; nothing here passes through a float.

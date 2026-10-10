@@ -6985,6 +6985,13 @@ type Cancellation struct {
 	CancelledBy  *openapi_types.UUID `json:"cancelledBy,omitempty"`
 	CurrencyCode string              `json:"currencyCode"`
 
+	// EntitlementEffect Exact service-night and entitlement-unit effects of this cancellation. On a
+	// preview these are prospective under the current authorization state; the command
+	// recomputes them in its transaction. A cancellation record carries the actual
+	// committed effects. Absent means exact evidence is unavailable or was not recorded,
+	// not zero. These quantities do not change the frozen policy's monetary charge.
+	EntitlementEffect *CancellationEntitlementEffect `json:"entitlementEffect,omitempty"`
+
 	// FeeAmount Exact decimal as a string; nothing here passes through a float.
 	FeeAmount string             `json:"feeAmount"`
 	Free      bool               `json:"free"`
@@ -7002,7 +7009,29 @@ type Cancellation struct {
 	// owed nothing.
 	PolicySnapshot *LodgingPolicySnapshot `json:"policySnapshot,omitempty"`
 	ReasonCode     string                 `json:"reasonCode"`
-	ReleasedNights int                    `json:"releasedNights"`
+
+	// ReleasedNights Whole-number portion of exact released service nights when entitlementEffect
+	// is present. Historical records without that field retain their legacy figure.
+	ReleasedNights int `json:"releasedNights"`
+}
+
+// CancellationEntitlementEffect Exact service-night and entitlement-unit effects of this cancellation. On a
+// preview these are prospective under the current authorization state; the command
+// recomputes them in its transaction. A cancellation record carries the actual
+// committed effects. Absent means exact evidence is unavailable or was not recorded,
+// not zero. These quantities do not change the frozen policy's monetary charge.
+type CancellationEntitlementEffect struct {
+	// ConsumedEntitlementUnits Exact units actually drawn from the original entitlement reservation.
+	ConsumedEntitlementUnits string `json:"consumedEntitlementUnits"`
+
+	// ConsumedServiceNights Exact service nights consumed by this cancellation, not policy charge nights.
+	ConsumedServiceNights string `json:"consumedServiceNights"`
+
+	// ReleasedEntitlementUnits Exact units actually returned from the original entitlement reservation.
+	ReleasedEntitlementUnits string `json:"releasedEntitlementUnits"`
+
+	// ReleasedServiceNights Exact unused service nights returned by this cancellation.
+	ReleasedServiceNights string `json:"releasedServiceNights"`
 }
 
 // CancellationPreview The booking, and what cancelling it now would cost.
@@ -7019,18 +7048,25 @@ type CancellationPreview struct {
 	Booking Booking `json:"booking"`
 
 	// Quote What a cancellation costs and gives back, computed from the booking's own frozen
-	// policy and its own night amounts. Every figure is an exact decimal string: these
-	// numbers reach a settlement, and a fee two systems disagree about by a kuruş is a fee
-	// nobody can invoice.
+	// policy and its own night amounts. Monetary amounts are exact decimal strings.
+	// Optional entitlementEffect projects the current authorization's exact effects;
+	// these prospective quantities are recomputed by the cancellation command.
 	Quote CancellationQuote `json:"quote"`
 }
 
 // CancellationQuote What a cancellation costs and gives back, computed from the booking's own frozen
-// policy and its own night amounts. Every figure is an exact decimal string: these
-// numbers reach a settlement, and a fee two systems disagree about by a kuruş is a fee
-// nobody can invoice.
+// policy and its own night amounts. Monetary amounts are exact decimal strings.
+// Optional entitlementEffect projects the current authorization's exact effects;
+// these prospective quantities are recomputed by the cancellation command.
 type CancellationQuote struct {
 	CurrencyCode string `json:"currencyCode"`
+
+	// EntitlementEffect Exact service-night and entitlement-unit effects of this cancellation. On a
+	// preview these are prospective under the current authorization state; the command
+	// recomputes them in its transaction. A cancellation record carries the actual
+	// committed effects. Absent means exact evidence is unavailable or was not recorded,
+	// not zero. These quantities do not change the frozen policy's monetary charge.
+	EntitlementEffect *CancellationEntitlementEffect `json:"entitlementEffect,omitempty"`
 
 	// FeeAmount Exact decimal as a string; nothing here passes through a float.
 	FeeAmount string `json:"feeAmount"`
@@ -7055,10 +7091,10 @@ type CancellationQuote struct {
 	// PERCENT policy, which charges a share of the member's own amount instead.
 	PenaltyNights int `json:"penaltyNights"`
 
-	// ReleasedNights The nights that go back to the plan: the covered nights of the frozen quote less
-	// whatever the penalty spends. The penalty is capped at the covered nights, because
-	// a policy charging three nights against a plan that carried two cannot take a
-	// third from a balance it never held.
+	// ReleasedNights When entitlementEffect is present, the whole-number portion of its exact
+	// releasedServiceNights. Prefer the exact field when displaying a returned right.
+	// Otherwise this retains the legacy frozen-quote calculation and is not newly
+	// verified evidence of the current authorization's actual release.
 	ReleasedNights int `json:"releasedNights"`
 }
 
@@ -7082,9 +7118,9 @@ type CancellationResult struct {
 	Cancellation Cancellation `json:"cancellation"`
 
 	// Quote What a cancellation costs and gives back, computed from the booking's own frozen
-	// policy and its own night amounts. Every figure is an exact decimal string: these
-	// numbers reach a settlement, and a fee two systems disagree about by a kuruş is a fee
-	// nobody can invoice.
+	// policy and its own night amounts. Monetary amounts are exact decimal strings.
+	// Optional entitlementEffect projects the current authorization's exact effects;
+	// these prospective quantities are recomputed by the cancellation command.
 	Quote CancellationQuote `json:"quote"`
 }
 

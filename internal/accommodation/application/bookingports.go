@@ -605,6 +605,11 @@ type AuthorizationPort interface {
 	// or release computes its arithmetic on numbers nobody else can move before it commits.
 	Lines(ctx context.Context, tx pgx.Tx, tenantID, authorizationID uuid.UUID) (
 		[]BookingAuthorizationLine, error)
+	// CancellationEvidence locks the original authorization, single item and booking
+	// reservation in that order. Nil means exact reporting is unprovable.
+	CancellationEvidence(ctx context.Context, tx pgx.Tx, tenantID, authorizationID,
+		requestID, personID, bookingID, reservationID, serviceDefinitionID uuid.UUID) (
+		*BookingCancellationEvidence, error)
 }
 
 // BookingOrphanInput carries frozen booking provenance across the module boundary.
@@ -711,6 +716,12 @@ func (NoAuthorizations) Lines(context.Context, pgx.Tx, uuid.UUID, uuid.UUID) (
 	[]BookingAuthorizationLine, error,
 ) {
 	return nil, errors.New("accommodation: this process cannot read an authorization")
+}
+
+func (NoAuthorizations) CancellationEvidence(context.Context, pgx.Tx,
+	uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUID,
+) (*BookingCancellationEvidence, error) {
+	return nil, errors.New("accommodation: this process cannot read cancellation evidence")
 }
 
 // NoPolicies is the refusing LodgingPolicyPort.

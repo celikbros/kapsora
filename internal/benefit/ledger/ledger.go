@@ -405,6 +405,12 @@ func (l *Ledger) ReadReservation(ctx context.Context, tx pgx.Tx, tenantID, id uu
 	return reservationByID(ctx, tx, tenantID, id, false)
 }
 
+// LockReservation gives a caller that already locked its authorization and item a
+// stable baseline for exact movement reporting in the same transaction.
+func (l *Ledger) LockReservation(ctx context.Context, tx pgx.Tx, tenantID, id uuid.UUID) (Reservation, error) {
+	return reservationByID(ctx, tx, tenantID, id, true)
+}
+
 func (l *Ledger) AdoptReservation(ctx context.Context, tx pgx.Tx, in AdoptInput) (Reservation, error) {
 	current, err := reservationByID(ctx, tx, in.TenantID, in.ReservationID, true)
 	if err != nil {

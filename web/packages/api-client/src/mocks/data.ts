@@ -1198,6 +1198,10 @@ export interface StoredBooking {
   status: Schemas['BookingStatus'];
   holdExpiresAt: string | null;
   entitlementReservationId: string | null;
+  /** Frozen service quantity adopted by authorization; a test may set a smaller approval. */
+  approvedServiceNights?: string;
+  /** The entitlement conversion frozen when the hold was placed. */
+  entitlementUnitFactor?: string;
   serviceRequestId: string | null;
   authorizationId: string | null;
   voucherId: string | null;
@@ -1284,6 +1288,7 @@ export interface StoredCancellation {
   free: boolean;
   penaltyNights: number;
   releasedNights: number;
+  entitlementEffect?: Schemas['CancellationQuote']['entitlementEffect'];
   feeAmount: Decimal;
   payerFee: Decimal;
   memberFee: Decimal;

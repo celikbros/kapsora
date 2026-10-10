@@ -6,6 +6,7 @@ import userEvent from '@testing-library/user-event';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { createServices } from './services';
+import { cancellationEffectSentences } from './lodging/words';
 
 /**
  * The member's lodging screens against the mock world, as member.a — an account bound to
@@ -255,10 +256,89 @@ describe('the confirmed booking', () => {
     } else {
       expect(preview).toHaveTextContent(formatMoney(quote.memberFee, quote.currencyCode));
     }
+    expect(quote.entitlementEffect).toBeDefined();
+    expect(preview).toHaveTextContent(quote.entitlementEffect!.releasedServiceNights);
+    expect(preview).toHaveTextContent(quote.entitlementEffect!.releasedEntitlementUnits);
+    expect(preview).not.toHaveTextContent('gece hakkınıza geri döner');
     expect(within(preview).getByRole('button', { name: 'İptali onayla' })).toBeInTheDocument();
     await user.click(within(preview).getByRole('button', { name: 'İptali onayla' }));
     await waitFor(() =>
       expect(screen.getByTestId('booking-status')).toHaveTextContent('İptal edildi'),
     );
+    const result = await screen.findByTestId('cancellation-effect-result');
+    expect(result).toHaveTextContent(quote.entitlementEffect!.releasedServiceNights);
+    expect(result).toHaveTextContent(quote.entitlementEffect!.releasedEntitlementUnits);
+    expect(result).toHaveTextContent('geri döndü');
+    expect(screen.queryByText('Rezervasyon iptal edildi.')).toBeNull();
+  });
+
+  it('does not claim a verified entitlement return from a legacy preview or record', async () => {
+    const booking = ownBooking('CONFIRMED');
+    const { services } = mount(`/bookings/${booking.id}`);
+    const user = await login();
+    const original = services.ops.lodging.previewCancellation.bind(services.ops.lodging);
+    vi.spyOn(services.ops.lodging, 'previewCancellation').mockImplementationOnce(
+      async (...args) => {
+        const current = await original(...args);
+        const { entitlementEffect: _effect, ...quote } = current.quote;
+        return { ...current, quote };
+      },
+    );
+    await user.click(await screen.findByRole('button', { name: 'İptal edersem ne öderim?' }));
+    const preview = await screen.findByTestId('cancellation-preview');
+    expect(preview).toHaveTextContent('kesin tutarı bu ön izlemede doğrulanamıyor');
+    expect(preview).not.toHaveTextContent('gece hakkınıza geri döner');
+  });
+
+  it('shows an approved half night and one returned plan unit before and after cancellation', async () => {
+    const booking = ownBooking('CONFIRMED');
+    booking.approvedServiceNights = '0.500000';
+    booking.entitlementUnitFactor = '2.000000';
+    booking.policySnapshot!.freeCancellationHoursBefore = 0;
+    booking.checkIn = new Date(Date.now() + 64 * 86_400_000).toISOString().slice(0, 10);
+    booking.checkOut = new Date(Date.now() + 66 * 86_400_000).toISOString().slice(0, 10);
+    mount(`/bookings/${booking.id}`);
+    const user = await login();
+    await user.click(await screen.findByRole('button', { name: 'İptal edersem ne öderim?' }));
+    const preview = await screen.findByTestId('cancellation-preview');
+    expect(preview).toHaveTextContent('0.500000 gece geri döner');
+    expect(preview).toHaveTextContent('1.000000 hak birimi geri döner');
+    expect(preview).not.toHaveTextContent('2 gece hakkınıza geri döner');
+    await user.click(within(preview).getByRole('button', { name: 'İptali onayla' }));
+    const result = await screen.findByTestId('cancellation-effect-result');
+    expect(result).toHaveTextContent('0.500000 gece geri döndü');
+    expect(result).toHaveTextContent('1.000000 hak birimi geri döndü');
+  });
+
+  it('keeps six-place fractional and large exact effect strings intact', () => {
+    const t = initI18n('tr').t;
+    const lines = cancellationEffectSentences(
+      t,
+      {
+        consumedServiceNights: '0.000001',
+        releasedServiceNights: '1000000000000.000001',
+        consumedEntitlementUnits: '0.000002',
+        releasedEntitlementUnits: '2000000000000.000002',
+      },
+      'actual',
+    );
+    expect(lines[0]).toContain('0.000001');
+    expect(lines[0]).toContain('1000000000000.000001');
+    expect(lines[1]).toContain('0.000002');
+    expect(lines[1]).toContain('2000000000000.000002');
+  });
+});
+
+describe('the cancelled booking', () => {
+  it('does not infer movement or record age after a cancelled booking is reloaded', async () => {
+    const booking = ownBooking('CONFIRMED');
+    booking.status = 'CANCELLED';
+    booking.cancelReasonCode = 'MEMBER_CANCELLED';
+    mount(`/bookings/${booking.id}`);
+    await login();
+    const history = await screen.findByTestId('cancellation-effect-result');
+    expect(history).toHaveTextContent('Bu iptal kaydında kesin hak hareketi gösterilemiyor');
+    expect(history).not.toHaveTextContent('eski');
+    expect(history).not.toHaveTextContent('gece geri döndü');
   });
 });

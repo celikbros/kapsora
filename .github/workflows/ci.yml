@@ -139,6 +139,44 @@ jobs:
           finally:
               path.write_text(original)
           PY
+      - name: cancellation actual entitlement reporting acceptance
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: go test -count=1 -v -timeout 10m ./internal/accommodation/transport/http -run '^(TestCancellationEffect|TestFractionalPenaltyFreeCancellationCapsToApproved)'
+      - name: cancellation old reporting negative control
+        env:
+          KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          path = Path('internal/accommodation/application/cancellation.go')
+          original = path.read_text()
+          needle = ('\tif effect != nil {\n'
+                    '\t\tquote.EntitlementEffect = effect\n'
+                    '\t\tquote.ReleasedNights, err = wholeReleasedNights(effect)\n'
+                    '\t\tif err != nil {\n'
+                    '\t\t\treturn CancellationView{}, err\n'
+                    '\t\t}\n'
+                    '\t}\n')
+          if original.count(needle) != 1:
+              raise SystemExit('Expected exactly one actual cancellation result projection')
+          case = 'TestCancellationEffectHTTPPreviewResultAndStoredRecord'
+          try:
+              path.write_text(original.replace(needle, ''))
+              result = subprocess.run(['go', 'test', '-count=1', '-v', '-timeout', '5m',
+                  './internal/accommodation/transport/http', '-run', '^' + case + '$'],
+                  capture_output=True, text=True)
+              output = result.stdout + result.stderr
+              print(output)
+              if result.returncode != 1 or '[build failed]' in output or '--- SKIP:' in output or \
+                      '--- FAIL: ' + case + ' ' not in output or \
+                      'CANCELLATION_EFFECT_HTTP_RESULT:' not in output:
+                  raise SystemExit('Reporting control failed outside the intended public result assertion')
+              print('Truthful ledger movement detected the removed public cancellation projection')
+          finally:
+              path.write_text(original)
+          PY
       - name: partial-approval penalty policy conflict diagnostic
         env:
           KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable

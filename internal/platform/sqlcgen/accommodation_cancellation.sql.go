@@ -273,50 +273,66 @@ const createCancellation = `-- name: CreateCancellation :one
 
 INSERT INTO accommodation.cancellation (
     tenant_id, booking_id, cancelled_at, cancelled_by, reason_code, policy_snapshot, free,
-    penalty_nights, released_nights, fee_amount, payer_fee, member_fee, currency_code)
+    penalty_nights, released_nights, fee_amount, payer_fee, member_fee, currency_code,
+    consumed_service_nights, released_service_nights,
+    consumed_entitlement_units, released_entitlement_units)
 VALUES ($1, $2, $3,
         $4, $5, $6,
         $7::boolean, $8::int,
         $9::int, $10::text::numeric,
         $11::text::numeric, $12::text::numeric,
-        $13)
+        $13,
+        $14::text::numeric,
+        $15::text::numeric,
+        $16::text::numeric,
+        $17::text::numeric)
 RETURNING id, booking_id, cancelled_at, cancelled_by, reason_code, policy_snapshot, free,
           penalty_nights, released_nights, fee_amount::text AS fee_amount,
           payer_fee::text AS payer_fee, member_fee::text AS member_fee, currency_code,
+          consumed_service_nights, released_service_nights,
+          consumed_entitlement_units, released_entitlement_units,
           created_at
 `
 
 type CreateCancellationParams struct {
-	TenantID       uuid.UUID
-	BookingID      uuid.UUID
-	CancelledAt    time.Time
-	CancelledBy    uuid.NullUUID
-	ReasonCode     string
-	PolicySnapshot []byte
-	Free           bool
-	PenaltyNights  int32
-	ReleasedNights int32
-	FeeAmount      string
-	PayerFee       string
-	MemberFee      string
-	CurrencyCode   string
+	TenantID                 uuid.UUID
+	BookingID                uuid.UUID
+	CancelledAt              time.Time
+	CancelledBy              uuid.NullUUID
+	ReasonCode               string
+	PolicySnapshot           []byte
+	Free                     bool
+	PenaltyNights            int32
+	ReleasedNights           int32
+	FeeAmount                string
+	PayerFee                 string
+	MemberFee                string
+	CurrencyCode             string
+	ConsumedServiceNights    *string
+	ReleasedServiceNights    *string
+	ConsumedEntitlementUnits *string
+	ReleasedEntitlementUnits *string
 }
 
 type CreateCancellationRow struct {
-	ID             uuid.UUID
-	BookingID      uuid.UUID
-	CancelledAt    time.Time
-	CancelledBy    uuid.NullUUID
-	ReasonCode     string
-	PolicySnapshot []byte
-	Free           bool
-	PenaltyNights  int32
-	ReleasedNights int32
-	FeeAmount      string
-	PayerFee       string
-	MemberFee      string
-	CurrencyCode   string
-	CreatedAt      time.Time
+	ID                       uuid.UUID
+	BookingID                uuid.UUID
+	CancelledAt              time.Time
+	CancelledBy              uuid.NullUUID
+	ReasonCode               string
+	PolicySnapshot           []byte
+	Free                     bool
+	PenaltyNights            int32
+	ReleasedNights           int32
+	FeeAmount                string
+	PayerFee                 string
+	MemberFee                string
+	CurrencyCode             string
+	ConsumedServiceNights    pgtype.Numeric
+	ReleasedServiceNights    pgtype.Numeric
+	ConsumedEntitlementUnits pgtype.Numeric
+	ReleasedEntitlementUnits pgtype.Numeric
+	CreatedAt                time.Time
 }
 
 // ---------------------------------------------------------------------------
@@ -340,6 +356,10 @@ func (q *Queries) CreateCancellation(ctx context.Context, arg CreateCancellation
 		arg.PayerFee,
 		arg.MemberFee,
 		arg.CurrencyCode,
+		arg.ConsumedServiceNights,
+		arg.ReleasedServiceNights,
+		arg.ConsumedEntitlementUnits,
+		arg.ReleasedEntitlementUnits,
 	)
 	var i CreateCancellationRow
 	err := row.Scan(
@@ -356,6 +376,10 @@ func (q *Queries) CreateCancellation(ctx context.Context, arg CreateCancellation
 		&i.PayerFee,
 		&i.MemberFee,
 		&i.CurrencyCode,
+		&i.ConsumedServiceNights,
+		&i.ReleasedServiceNights,
+		&i.ConsumedEntitlementUnits,
+		&i.ReleasedEntitlementUnits,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -543,6 +567,8 @@ const getCancellation = `-- name: GetCancellation :one
 SELECT id, booking_id, cancelled_at, cancelled_by, reason_code, policy_snapshot, free,
        penalty_nights, released_nights, fee_amount::text AS fee_amount,
        payer_fee::text AS payer_fee, member_fee::text AS member_fee, currency_code,
+       consumed_service_nights, released_service_nights,
+       consumed_entitlement_units, released_entitlement_units,
        created_at
   FROM accommodation.cancellation
  WHERE tenant_id = $1
@@ -555,20 +581,24 @@ type GetCancellationParams struct {
 }
 
 type GetCancellationRow struct {
-	ID             uuid.UUID
-	BookingID      uuid.UUID
-	CancelledAt    time.Time
-	CancelledBy    uuid.NullUUID
-	ReasonCode     string
-	PolicySnapshot []byte
-	Free           bool
-	PenaltyNights  int32
-	ReleasedNights int32
-	FeeAmount      string
-	PayerFee       string
-	MemberFee      string
-	CurrencyCode   string
-	CreatedAt      time.Time
+	ID                       uuid.UUID
+	BookingID                uuid.UUID
+	CancelledAt              time.Time
+	CancelledBy              uuid.NullUUID
+	ReasonCode               string
+	PolicySnapshot           []byte
+	Free                     bool
+	PenaltyNights            int32
+	ReleasedNights           int32
+	FeeAmount                string
+	PayerFee                 string
+	MemberFee                string
+	CurrencyCode             string
+	ConsumedServiceNights    pgtype.Numeric
+	ReleasedServiceNights    pgtype.Numeric
+	ConsumedEntitlementUnits pgtype.Numeric
+	ReleasedEntitlementUnits pgtype.Numeric
+	CreatedAt                time.Time
 }
 
 func (q *Queries) GetCancellation(ctx context.Context, arg GetCancellationParams) (GetCancellationRow, error) {
@@ -588,6 +618,10 @@ func (q *Queries) GetCancellation(ctx context.Context, arg GetCancellationParams
 		&i.PayerFee,
 		&i.MemberFee,
 		&i.CurrencyCode,
+		&i.ConsumedServiceNights,
+		&i.ReleasedServiceNights,
+		&i.ConsumedEntitlementUnits,
+		&i.ReleasedEntitlementUnits,
 		&i.CreatedAt,
 	)
 	return i, err

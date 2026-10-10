@@ -223,6 +223,34 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
       .bookingNights.filter((n) => n.bookingId === booking.id)
       .sort((a, b) => a.stayDate.localeCompare(b.stayDate));
 
+  /** A synthetic reservation's terminal movement, in service and entitlement units. */
+  const entitlementEffect = (
+    booking: StoredBooking,
+    penaltyNights: number,
+  ): Schemas['CancellationQuote']['entitlementEffect'] => {
+    const approved = toMicros(
+      booking.approvedServiceNights ?? `${booking.quoteSnapshot.coveredNights}.000000`,
+    );
+    const consumed = BigInt(penaltyNights) * SCALE;
+    // A mock approval below the policy charge cannot prove a successful ledger movement.
+    // Keep the monetary policy quote, but omit a claim about entitlement movement.
+    if (consumed > approved) return undefined;
+    const released = approved - consumed;
+    const factor = toMicros(booking.entitlementUnitFactor ?? '1.000000');
+    const units = (service: bigint) => (service * factor + SCALE / 2n) / SCALE;
+    return {
+      consumedServiceNights: fromMicros(consumed),
+      releasedServiceNights: fromMicros(released),
+      consumedEntitlementUnits: fromMicros(units(consumed)),
+      releasedEntitlementUnits: fromMicros(units(released)),
+    };
+  };
+
+  const effectField = (booking: StoredBooking, penaltyNights: number) => {
+    const effect = entitlementEffect(booking, penaltyNights);
+    return effect ? { entitlementEffect: effect } : {};
+  };
+
   /**
    * What a cancellation now would cost and give back, from the booking's own frozen policy.
    *
@@ -242,6 +270,7 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
         free: true,
         penaltyNights: 0,
         releasedNights: covered,
+        ...effectField(booking, 0),
         feeAmount: '0.000000',
         payerFee: '0.000000',
         memberFee: '0.000000',
@@ -259,6 +288,7 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
       free: false,
       penaltyNights: 0,
       releasedNights: covered,
+      ...effectField(booking, 0),
       feeAmount: '0.000000',
       payerFee: '0.000000',
       memberFee: '0.000000',
@@ -283,6 +313,7 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
         ...base,
         penaltyNights: charged,
         releasedNights: covered - spent,
+        ...effectField(booking, spent),
         feeAmount: fromMicros(fee),
         payerFee: fromMicros(payer),
         memberFee: fromMicros(member),
@@ -325,7 +356,8 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
   };
 
   const toCancellation = (row: StoredCancellation): Schemas['Cancellation'] => {
-    const { tenantId: _tenantId, ...rest } = row;
+    const { tenantId: _tenantId, entitlementEffect: effect, ...rest } = row;
+    if (effect) return { ...rest, entitlementEffect: effect };
     return rest;
   };
 
@@ -500,6 +532,7 @@ export function afterHandlers(api: MockApi, tools: AfterTools): HttpHandler[] {
           free: quote.free,
           penaltyNights: quote.penaltyNights,
           releasedNights: quote.releasedNights,
+          ...(quote.entitlementEffect ? { entitlementEffect: quote.entitlementEffect } : {}),
           feeAmount: quote.feeAmount,
           payerFee: quote.payerFee,
           memberFee: quote.memberFee,

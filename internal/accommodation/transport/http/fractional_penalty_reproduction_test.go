@@ -90,8 +90,22 @@ func TestFractionalPenaltyFreeCancellationCapsToApproved(t *testing.T) {
 	}
 	ctx, cancel := s.h.Ctx()
 	defer cancel()
+	preview, err := s.svc.PreviewCancellation(ctx, s.memberContext(), booking.Booking.ID)
+	if err != nil || preview.Quote.EntitlementEffect == nil ||
+		preview.Quote.EntitlementEffect.ConsumedServiceNights != "0" ||
+		preview.Quote.EntitlementEffect.ReleasedServiceNights != "0.5" ||
+		preview.Quote.EntitlementEffect.ConsumedEntitlementUnits != "0" ||
+		preview.Quote.EntitlementEffect.ReleasedEntitlementUnits != "1" ||
+		preview.Quote.ReleasedNights != 0 {
+		t.Fatalf("CANCELLATION_EFFECT_PREVIEW: quote=%+v error=%v, want actual 0/.5 service and 0/1 units",
+			preview.Quote, err)
+	}
 	result, err := s.svc.CancelBooking(ctx, s.memberContext(), booking.Booking.ID, "")
-	if err != nil || !result.Quote.Free || result.Quote.ReleasedNights != 2 {
+	if err != nil || !result.Quote.Free || result.Quote.ReleasedNights != 0 ||
+		result.Quote.EntitlementEffect == nil || result.Record == nil ||
+		result.Record.EntitlementEffect == nil ||
+		*result.Quote.EntitlementEffect != *result.Record.EntitlementEffect ||
+		*result.Quote.EntitlementEffect != *preview.Quote.EntitlementEffect {
 		t.Fatalf("fractional free cancellation: quote=%+v error=%v", result.Quote, err)
 	}
 	available, reserved, consumed = s.fractionalAccountState(t)
@@ -102,6 +116,18 @@ func TestFractionalPenaltyFreeCancellationCapsToApproved(t *testing.T) {
 	if count, units := s.fractionalMovements(t, *booking.Booking.EntitlementReservationID,
 		application.ReasonCancellationRelease); count != 1 || units != "1.000000" {
 		t.Fatalf("fractional free cancellation release=%d/%s, want one actual remaining unit", count, units)
+	}
+	var releasedNights int
+	var releasedService, releasedUnits string
+	if err := s.h.Admin.QueryRow(ctx, `SELECT released_nights,
+		released_service_nights::text,released_entitlement_units::text
+		FROM accommodation.cancellation WHERE tenant_id=$1 AND booking_id=$2`,
+		s.tenant, booking.Booking.ID).Scan(&releasedNights, &releasedService, &releasedUnits); err != nil {
+		t.Fatal(err)
+	}
+	if releasedNights != 0 || releasedService != "0.500000" || releasedUnits != "1.000000" {
+		t.Fatalf("CANCELLATION_EFFECT_RECORD: released whole/service/units=%d/%s/%s, want 0/.5/1",
+			releasedNights, releasedService, releasedUnits)
 	}
 }
 
@@ -114,6 +140,12 @@ func TestFractionalPenaltyReproductionPenalizedCancellation(t *testing.T) {
 	s.clock.At(t, afterFreeWindow)
 	ctx, cancel := s.h.Ctx()
 	defer cancel()
+	preview, previewErr := s.svc.PreviewCancellation(ctx, s.memberContext(), booking.Booking.ID)
+	if previewErr != nil || preview.Quote.EntitlementEffect != nil ||
+		preview.Quote.PenaltyNights != 1 || preview.Quote.FeeAmount != "1000" {
+		t.Fatalf("fractional penalized preview policy/effect=%+v error=%v, want frozen fee and no provable effect",
+			preview.Quote, previewErr)
+	}
 	result, err := s.svc.CancelBooking(ctx, s.memberContext(), booking.Booking.ID, "")
 	if err == nil {
 		t.Fatalf("fractional penalized cancellation unexpectedly succeeded: %+v", result)

@@ -74,21 +74,25 @@ type AccommodationBookingNight struct {
 }
 
 type AccommodationCancellation struct {
-	ID             uuid.UUID
-	TenantID       uuid.UUID
-	BookingID      uuid.UUID
-	CancelledAt    time.Time
-	CancelledBy    uuid.NullUUID
-	ReasonCode     string
-	PolicySnapshot []byte
-	Free           bool
-	PenaltyNights  int32
-	ReleasedNights int32
-	FeeAmount      pgtype.Numeric
-	PayerFee       pgtype.Numeric
-	MemberFee      pgtype.Numeric
-	CurrencyCode   string
-	CreatedAt      time.Time
+	ID                       uuid.UUID
+	TenantID                 uuid.UUID
+	BookingID                uuid.UUID
+	CancelledAt              time.Time
+	CancelledBy              uuid.NullUUID
+	ReasonCode               string
+	PolicySnapshot           []byte
+	Free                     bool
+	PenaltyNights            int32
+	ReleasedNights           int32
+	FeeAmount                pgtype.Numeric
+	PayerFee                 pgtype.Numeric
+	MemberFee                pgtype.Numeric
+	CurrencyCode             string
+	CreatedAt                time.Time
+	ConsumedServiceNights    pgtype.Numeric
+	ReleasedServiceNights    pgtype.Numeric
+	ConsumedEntitlementUnits pgtype.Numeric
+	ReleasedEntitlementUnits pgtype.Numeric
 }
 
 type AccommodationInventoryDay struct {

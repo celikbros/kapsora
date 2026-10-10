@@ -505,6 +505,18 @@ export function bookingHandlers(api: MockApi, tools: BookingTools): BookingModul
       status: 'HOLD',
       holdExpiresAt: new Date(now.getTime() + DEFAULT_HOLD_MINUTES * 60_000).toISOString(),
       entitlementReservationId: world().nextId(),
+      approvedServiceNights: `${priced.coveredNights}.000000`,
+      entitlementUnitFactor:
+        world().entitlementMappings.find(
+          (mapping) =>
+            mapping.serviceDefinitionId === room.serviceDefinitionId &&
+            world().planVersions.some(
+              (version) =>
+                version.id === mapping.planVersionId &&
+                version.planId === enrollment.planId &&
+                version.status === 'PUBLISHED',
+            ),
+        )?.unitFactor ?? '1.000000',
       serviceRequestId: null,
       authorizationId: null,
       voucherId: null,
