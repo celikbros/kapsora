@@ -38,7 +38,62 @@ keep them current as you build.
 The [product completion roadmap](plan/ROADMAP.md#current-product-completion-roadmap-2026-09-22)
 records the approved sequence and acceptance criteria.
 
-**Current snapshot (2026-10-10):** PC-01 through PC-04 are VERIFIED locally for their
+**Current snapshot (2026-10-11):** PC-01 through PC-04 are verified locally for the
+specified health/hospital demo scope. PC-05 financial journeys passed local technical
+acceptance; formal owner acceptance and true October 15/30 scheduler observations remain
+open. PC-06 capped penalty settlement has isolated acceptance but no live command proof.
+MGT-02/03 source and isolated acceptance passed; local invitation/suspension/role mutation
+proof remains open. MGT-04's two-field scope and system TENANT_ADMIN authority expansion
+are approved. Source is implemented on `a6a0c79`; final CI/local rollout status is recorded
+in the checkpoint below. No external bank, fiscal or ERP acceptance is claimed.
+
+**MGT-04 approved implementation checkpoint (2026-10-11):** source `ce79523`
+implements GET/PUT `/api/v1/admin/tenant-settings/accommodation` and the capability-gated
+`/admin/tenant-settings` UI. Only `holdMinutes` and `quoteTtlMinutes` are admitted, as
+independent integers 1-1440. Current tenant/actor/session/grant checks occur inside the
+same locked transaction; direct commands require password step-up. Strong ETags, durable
+actor-bound receipts, audit rollback and context-aware frozen retries are implemented.
+Missing/invalid stored values show the consumer's defaults; sensitive rows are refused.
+The fixed provider-contract hold override remains authoritative. Existing hold expiry is
+preserved; quote lifetime applies to an existing held booking awaiting confirmation.
+Seed preserves saved admitted settings. Migration 61 versions rows, makes receipts
+append-only with forced RLS, and adds only the approved system TENANT_ADMIN permissions.
+
+All six checks passed on `ce79523` in
+[CI run 38089128497](https://github.com/celikbros/kapsora/actions/runs/38089128497).
+Isolated PostgreSQL passed schema 195/195, settings module 8/8 plus managed booking
+consumers 3/3, directory/invitation 70/70, accommodation 123/123 and authorization 31/31,
+all without skips. New-tenant provisioning and seed preservation also passed. The complete
+web suite passed 777 tests in 94 files plus 25 mock browser cases; 106 opt-in live/calendar
+cases were skipped. Contract generation/lint, Go race/unit/lint, security and Linux/Windows
+binary builds passed. The earlier failures were corrected schema expectation, import
+formatting, locale entries and test fixture/route compatibility; none remains open.
+
+The eight synthetic settings views at 390/1440 intercepted all 24 API calls, with zero
+unknown requests, browser errors or overflow. Detector output was empty; independent Sol
+review found no material blocker. One confirmation round corrected the synthetic fixture's
+quote default to the real 60 minutes. Focused directory/settings tests pass 18/18; API
+client/backoffice typecheck, scoped lint/format, database-free Go tests and vet pass.
+SQL integration was never run on the operator cluster.
+
+The approved bounded local migration from clean schema 60 to 61 completed successfully.
+Original-field SHA-256 snapshots and original row counts matched across all 16 preserved
+tables: booking 18, cancellation 4, no_show 1; IAM access_grant 17, actor 15, credential 15,
+permission 105, role 34, role_change_command_receipt 0, role_change_request 0,
+role_permission 378, session 53, tenant_invitation 0, invitation_create_receipt 0,
+tenant_membership 15; platform.tenant_setting 13. The two new permission catalog codes
+and four system TENANT_ADMIN role-permission rows are the only admitted authority expansion.
+All 13 setting row versions initialize to 1; existing values remain unchanged, and the
+new forced-RLS command receipt table is empty. Schema 61 is clean; business commands 0.
+The operator restart and subsequent bounded settings GET/denial checks are pending.
+No live settings update, grant command, booking or payment was created.
+
+Local setting commands, MGT-02 invitation/suspension and MGT-03 role mutations, capped
+penalty settlement, formal owner walkthrough and genuine October 15/30 observations
+remain separate acceptance gates. No new clinical, financial or custom-role authority
+is included. This checkpoint supersedes the historical MGT-04 approval status below.
+
+**Historical cap technical snapshot (2026-10-10):** PC-01 through PC-04 are VERIFIED locally for their
 specified demo acceptance scopes. PC-05 remains ACTIVE: the financial journeys passed
 local technical acceptance; formal owner acceptance and retained scheduler checks remain
 open. PC-06's prior technical scope passed, but capped penalty settlement has no live
@@ -84,7 +139,7 @@ remain separate gates.
 This snapshot and the latest checkpoint below supersede dated next-step instructions in
 the historical evidence. Split-claim quantities still do not prove chronological coverage.
 
-**Current operator/live checkpoint (2026-10-10 23:14 Istanbul):** migration 60 is clean;
+**Historical operator/live checkpoint (2026-10-10 23:14 Istanbul):** migration 60 is clean;
 the bounded helper preserved original fields and row counts across all 15 tables as detailed above. API PID
 48468 started at 23:14:24 and panel PID 31384 at 23:14:20, after the cap source commit; the
 running API binary contains `SettleBookingPenalty`. The operator has already restarted both

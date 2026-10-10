@@ -2,8 +2,8 @@
 
 | Field | Value |
 | --- | --- |
-| Milestone | Management, after MGT-03 acceptance |
-| Status | ACTIVE; owner approved section 3 scope on 2026-10-11 |
+| Milestone | Management; MGT-03 isolated acceptance passed, local mutation acceptance remains open |
+| Status | ACTIVE; scope approved, source/isolated proof passed, schema 61 applied; live acceptance pending |
 | Planned | 2026-10-09, gpt-6-astra |
 | Reviewed | 2026-10-09, gpt-6-sol; permission and consumer gates retained |
 | Delivery | Named operational setting view and validated, auditable changes |
@@ -22,7 +22,7 @@ value with validation and an audit record. This makes the currently offline conf
 usable without exposing an arbitrary JSON editor or silently expanding clinical or
 financial administration.
 
-Proposed initial allowlist:
+Approved initial allowlist:
 
 | Setting | Typed API field | Default | Accepted input | Operational effect |
 | --- | --- | --- | --- | --- |
@@ -45,6 +45,10 @@ time zone, currency, legal identity and branding. No feature flags, published co
 changes, clinical policy, payment authority, custom settings or generic key/value endpoints.
 
 ## 2. Verified baseline and unresolved consumer discrepancy
+
+This is the historical planning baseline from 2026-10-09. The contract hold precedence
+was fixed before the approved implementation; section 3 and the current HANDOVER
+checkpoint supersede the prerequisite and delivery status below.
 
 Read the delegate handbook, current HANDOVER Management checkpoint, PRODUCT.md and DESIGN.md;
 ROADMAP Management; Master Plan v2.0; baseline v1.2 sections 6.2–6.4, 11.11, 16.10–16.11 and
@@ -251,3 +255,7 @@ operator's reload and a separately bounded synthetic scenario. Report exact code
 commands and evidence; update handover/roadmap/product/design only at integration under
 integrator ownership. MGT-04 is complete only after its admitted read/change contract and
 consumer/security evidence pass, not when this plan or a read-only panel exists.
+
+## Delivery checkpoint (2026-10-11)
+
+Source `ce79523` passed all six jobs in [CI run 38089128497](https://github.com/celikbros/kapsora/actions/runs/38089128497): settings module 8 plus managed consumers 3, schema 195, accommodation 123 and directory/invitation 70 without skips; web 777 plus 25 mock browser cases. The approved local 60-to-61 rollout preserved original fields across 16 tables and added only the two permission codes/four system TENANT_ADMIN role-permission rows. Schema 61 is clean; existing setting values are unchanged and command receipts are empty. Operator restart, local read/denial verification and explicit setting-command acceptance remain open. See current HANDOVER for the full evidence and retained product gates.

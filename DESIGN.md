@@ -944,6 +944,16 @@ the previous tenant. Revocation uses server eligibility across the entire grant 
 bounded paging and repeat-cursor checks locate the referenced grant without treating one
 history page as complete authority.
 
+**Tenant settings expose named operational choices.** Management has a separate
+capability-gated settings entry, independent of user-directory authority. The accommodation
+page shows each duration's configured/default/invalid-fallback source and explains the
+difference between new hold expiry and quote-age checks on pending confirmation. Readers
+get values without edit controls. Editors use two labelled integer inputs and a reason;
+confirmation names the institution and before/after values before password verification.
+Uncertain saves retain the exact command. Conflicts require explicit reload. A committed
+result survives failed refresh, with editing locked until current state is loaded.
+Context changes discard pending commands and late results, including away-and-back switches.
+
 ## Motion
 
 Toasts slide up 160ms ease-out. The member surface adds the system's one authored moment:
