@@ -45,7 +45,7 @@ func TestManagedHoldMinutesAffectsNewHoldsButNotPersistedExpiry(t *testing.T) {
 	if !oldBooking.Equal(before) || !oldReservation.Equal(before) {
 		t.Fatalf("existing booking/reservation expiry changed: %v/%v, want %v", oldBooking, oldReservation, before)
 	}
-	if _, err := s.svc.CancelBooking(ctx, s.memberContext(), first.Booking.ID, ""); err != nil {
+	if _, err := s.svc.ReleaseHold(ctx, s.memberContext(), first.Booking.ID); err != nil {
 		t.Fatalf("clear first hold to permit another booking for the same member: %v", err)
 	}
 	second, err := s.svc.CreateHold(ctx, s.memberContext(), s.holdInput(s.person, s.roomType))

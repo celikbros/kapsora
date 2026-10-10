@@ -235,7 +235,9 @@ jobs:
       - name: tenant settings authority, receipt and booking consumer acceptance
         env:
           KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
-        run: go test -count=1 -v -timeout 30m ./internal/tenantsettings/...
+        run: |
+          go test -count=1 -v -timeout 30m ./internal/tenantsettings/...
+          go test -count=1 -v -timeout 10m ./internal/accommodation/transport/http -run '^TestManaged'
       - name: tenant user directory authorization and HTTP integration
         env:
           KAPSORA_TEST_ADMIN_DATABASE_URL: postgres://kapsora_owner:kapsora_owner_ci@localhost:5432/postgres?sslmode=disable
