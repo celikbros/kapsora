@@ -305,6 +305,7 @@ func newServer(t *testing.T, withHoldIdempotency ...bool) *server {
 	})
 	router.Route("/api/v1/accommodation/bookings", func(r chi.Router) {
 		handler.BookingRoutes(r, accommodationhttp.BookingMiddlewares{})
+		handler.AfterBookingRoutes(r, accommodationhttp.AfterMiddlewares{})
 	})
 	s.handler = router
 	return s
