@@ -252,6 +252,17 @@ question changes grants or permits local migration 58. The doc-only `9348167` CI
 Docker Hub pull throttling before PostgreSQL started. CI now selects the verified Docker
 Official Image mirror for the same PostgreSQL 18 service; local runtime stays native.
 
+The integer partial-approval follow-up on `56b64b8` passed all six jobs in
+[CI 38042481624](https://github.com/celikbros/kapsora/actions/runs/38042481624).
+One approved night against a frozen two-night no-show penalty reached the same refusal
+with booking/report/ledger/inventory rollback. Three policy diagnostics were separately
+exercised as expected failures; ordinary accommodation passed 103 functions with only
+those three opt-in skips. Checkout 3, handoff 9, NIGHT 14, eligibility 20, authorization 31,
+schema 191 and directory/invitations 70 passed without skips. Web retained 756 tests and
+25 mock smoke cases, with 106 opt-in skips. The reviewed conditional implementation design
+is in the existing penalty decision note; exact cap, new reporting and migration remain
+unimplemented while the owner's business-rule decision is pending.
+
 This is the owner's approved execution order: finish the running product, with health
 first. It takes precedence over the older "next" instructions below. The M0–M11 tables
 record original implementation deliveries; a historical `DONE` does not certify today's

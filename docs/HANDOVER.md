@@ -1469,6 +1469,21 @@ proposes exact capped entitlement consumption with truthful reporting and unchan
 money/payer/member shares. The decision was requested asynchronously and remains pending;
 no cap, rounding, fee redistribution or new approval restriction is implemented.
 
+**Integer partial-approval follow-up:** source `56b64b8` passed all six jobs in
+[CI 38042481624](https://github.com/celikbros/kapsora/actions/runs/38042481624).
+A two-night factor-2 booking approved for exactly one night also refuses its frozen
+two-night no-show penalty. The isolated INTEGER_PARTIAL_PENALTY_NOSHOW_REFUSAL diagnostic
+verified booking CONFIRMED, report REPORTED, account 2/2/0, original reservation remaining
+2 and confirmed inventory after rollback. All three explicit policy diagnostics reached
+their intended compiled failures; this does not accept a working penalty settlement.
+Ordinary accommodation passed 103 functions (129.473 s), with only those three opt-in
+skips. Checkout 3, handoff 9, NIGHT 14, eligibility 20, authorization 31, schema 191 and
+directory/invitations 70 passed without skips. Web retained 756 tests and 25 mock smoke
+cases, with 106 opt-in skips. The existing decision note now contains an Astra-designed,
+Sol-reviewed conditional contract for exact reporting, locked actual movement deltas,
+nullable historical evidence and unchanged financial claims. Policy approval remains
+pending; no migration, domain correction, local SQL or live business mutation was made.
+
 Lodging acceptance covers fully and partly covered bookings, member contribution, free
 and penalized cancellation, check-in, early checkout, reviewed no-show and natural waitlist
 expiry. Inventory and entitlement restoration/consumption reconcile without duplicate

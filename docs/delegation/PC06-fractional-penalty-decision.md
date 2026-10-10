@@ -1,4 +1,4 @@
-# PC06 · Fractional penalty decision gate
+# PC06 · Partial-approval penalty decision gate
 
 Status: decision required; no implementation or permission policy authorized by this note.
 Planned 2026-10-10 by gpt-6-astra. All six jobs passed in final
@@ -10,6 +10,19 @@ refusals, not a passing partial-approval penalty workflow. The normal full accom
 suite passed 103 functions and skipped only these two opt-in diagnostics; free fractional
 cancellation passed. The concrete cap/reporting decision was requested asynchronously
 and remains unanswered; this successful CI does not authorize a policy change.
+
+The subsequent integer partial-approval diagnostic is accepted as defect reproduction on
+`56b64b824cf07b843d3fa8d780dc17f2e3174c10` in
+[CI 38042481624](https://github.com/celikbros/kapsora/actions/runs/38042481624), all six jobs
+successful. TestFractionalPenaltyReproductionIntegerPartialNoShow reached its compiled
+INTEGER_PARTIAL_PENALTY_NOSHOW_REFUSAL at 2026-10-10 09:46:50 UTC: two-night factor-2 hold,
+one approved service night, frozen two-night no-show penalty, account 2/2/0, reservation
+remaining 2, booking CONFIRMED/report REPORTED and confirmed inventory after rollback.
+This proves a partial-approval conflict beyond fractional quantities; a whole-night-only
+admission policy would not resolve it. The ordinary accommodation suite passed 103
+functions (129.473 seconds), skipping only the three opt-in conflict diagnostics, which
+were separately exercised and required their exact expected failures. No domain rule,
+fee, grant, schema or operator process was changed by that test commit.
 
 ## Proven cases and policy conflict
 
@@ -76,3 +89,90 @@ conversion, unchanged preview/fees, retries, tenant/account isolation and final 
 reserved quantities. Include existing fractional bookings and integer partial approvals,
 not only freshly configured fractional fixtures. No local DB, server, migration or live
 compensation action is authorized by this planning note.
+
+## Conditional implementation design (Astra, reviewed by Sol, 2026-10-10)
+
+This prepares option A for review. Explicit policy approval remains pending; technical
+preparation does not authorize implementation.
+
+Exact capped settlement is bounded to provable NIGHT-mapped authorization quantities.
+MONEY and other entitlement-unit paths retain existing behavior and remain outside this
+package's acceptance; missing evidence cannot silently route another unit through NIGHT
+conversion.
+
+For a provable NIGHT authorization-backed confirmed booking, add a narrow authorization-
+owned settlement operation accepting the caller's tenant transaction. Lock the authorization,
+matching item and original reservation. Compute exact consumed service quantity as the
+lesser of frozen policy penalty and approved remaining quantity; then release all unused
+entitlement. Keep generic Consume's over-consumption refusal. Booking status, inventory,
+settlement evidence, audit and existing outbox effects commit or roll back together.
+
+Return actual service and entitlement-unit deltas from the locked reservation/ledger
+movements. Quantity multiplication rounds at six decimals; multiplication alone and
+ReleaseUnused's service return do not establish actual ledger effects after prior release,
+closed reservations or idempotent replay. Verify no unused reservation remainder remains
+before reporting a successful authorization-backed terminal settlement. Do not manufacture
+movements for a no-op or record policy quantities as actual ledger consumption.
+
+### Additive exact contract and persistence
+
+Add optional entitlementEffect to cancellation preview/result/record and confirmed no-show
+reports, with four canonical exact decimal strings:
+
+- consumedServiceNights
+- releasedServiceNights
+- consumedEntitlementUnits
+- releasedEntitlementUnits
+
+Add four nullable numeric(20,6) columns to each cancellation/no-show table, matching existing
+quantity precision. Enforce nonnegative and all-or-none nullability. Cancellation effects
+are written on initial insertion; no-show effects are written atomically during confirmed
+review. Historical rows and undecided/rejected/disputed reports retain NULL, meaning no
+recorded exact evidence rather than zero. Do not require historical confirmed rows to have
+new evidence or backfill them from current authorization state. A forward migration is
+needed; numbering is allocated at integration and local application remains separate.
+
+Keep integer penaltyNights as the frozen policy/financial charge. When exact evidence is
+present, legacy releasedNights and consumedNights represent the whole-number portion of
+actual service effect. This is lossy compatibility: document it explicitly in OpenAPI and
+make the exact fields authoritative in member/backoffice views and mocks. For example,
+0.5 released service night at factor 2 means one returned entitlement unit, not zero;
+the legacy integer is zero but must not drive the displayed exact return.
+
+### Preview, release compatibility and money
+
+Cancellation preview reads current tenant-scoped authorization remaining quantity, stored
+factor and reservation evidence without writing. Its exact effect is prospective; the
+command recomputes under locks. Unchanged state must match preview/result. Do not reuse
+stale preview quantities after authorization state changes or derive them from original
+coveredNights. Use exact decimal helpers in mocks rather than JavaScript floating point.
+The frozen-policy monetary preview stays unchanged.
+
+Mandatory new exact reporting is bounded to provable authorization-backed confirmed
+settlements. Pending/unfunded or unprovable legacy bookings without an adopted authorization
+retain their existing safe release path. Omit optional exact effect where exact service
+evidence cannot be established; do not invent a factor or block safe release solely to
+populate reporting. New terminal commands on existing fractional confirmed bookings use
+their persisted authorization factor; completed history is neither recalculated nor repaired.
+
+Cancellation fee/payerFee/memberFee and no-show assessed fee/payer/member amounts remain
+exactly as frozen-policy calculation produces them. GetBookingCancellationForClaim and
+GetBookingNoShowForClaim select money/status/free only; retain their projections and prove
+identical downstream claim amounts. A capped entitlement quantity must never incidentally
+reprice the charge or transfer its payer/member shares.
+
+### Bounded ownership and acceptance
+
+Implementation affects accommodation cancellation/no-show settlement and ports, the
+internal authorization settlement operation, accommodation cancellation queries/PostgreSQL
+mapping, one forward migration, OpenAPI/generated Go/TypeScript contracts, member lodging
+words, backoffice booking detail, translations and exact mocks. No new grants, public
+administrative correction tool, generic Consume rewrite or historical scan is included.
+
+Acceptance must cover both proved fractional refusals and integer partial approvals;
+factors 1/2/0.5 and cumulative six-decimal rounding; existing confirmed fractional bookings;
+free cancellation; matching prospective preview; actual movement deltas; uncertain retries,
+rollback and zero terminal reserve; historical exact-evidence omission; unchanged financial
+claim projection; and safe no-authorization release without a new factor-evidence gate.
+Run SQL only in isolated CI. Update ordinary integer projections and UI tests as contract
+changes, never by recording an invented whole night for fractional consumption.
