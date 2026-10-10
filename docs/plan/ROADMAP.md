@@ -19,40 +19,48 @@ Authoritative sources: [docs/plan/KAPSORA_Master_Plan_v2.0.md](KAPSORA_Master_Pl
 This snapshot supersedes dated next-step instructions in the historical status log.
 PC-01 through PC-04 are VERIFIED locally within their defined demo scopes. PC-05 remains
 ACTIVE: its financial journeys passed local technical acceptance; formal owner acceptance
-and retained scheduler checks remain open. PC-06 has passed live technical acceptance,
-with the same remaining gates. Schema 59 is applied cleanly after explicit local
+and retained scheduler checks remain open. PC-06's prior technical scope passed, but capped
+penalty settlement has no live acceptance. Schema 59 is applied cleanly after explicit local
 approval of migrations 58 and 59; dirty=false. The operator restarted `dev.ps1 up` at
 20:15 Istanbul; current-source bounded reads passed for Management (9/9), paid
 reimbursement layout (1/1) and shared-door provider/member flow (2/2), as detailed in the
 checkpoint below. No live suspension, invitation creation, role grant, privileged request,
 booking, payment or financial command occurred. MGT-02/03 remain ACTIVE pending local
-mutation proof; MGT-04 settings remain unapproved. The PC-06 penalty-cap policy is
-APPROVED and implementation is in progress. Its UI slice has 12 synthetic 390/1440 views
-with all API calls stubbed, zero errors/overflow/unknown requests, detector `[]`, and no
-blockers in independent Sol review; no live settlement is claimed. Backend work continues;
-migration 60 is authored but not locally applied or authorized for local application. Three
-positive former-diagnostic cases and a negative control are being added; CI is pending. Bounded role
-assignment and revocation are implemented; isolated database acceptance passed on
-`e26bcc8`. Privileged role approval is authorized and has bounded isolated acceptance on
-`9893196`; local B migration is applied. PR #11 remains draft/unmerged;
-the recorded calendar-preparation CI baseline passed all six checks on `5bb2349`
-([run 37152681278](https://github.com/celikbros/kapsora/actions/runs/37152681278)).
-The original PC demo review has technical acceptance. The follow-up checkout and handoff
-corrections passed isolated acceptance; the reproduced partial-approval penalty conflict
-remains decision-gated, as recorded below. On 2026-10-04 the owner chose to advance the product rather than investigate an
-unidentified defect; Management starts as the separate sequence below. Integrations,
-production release and fiscal/bank-transfer acceptance remain separate.
-
-**Local migration checkpoint (2026-10-10):** migrations 58 and 59 were explicitly approved and
-applied with bounded `UpTo(59)` from schema 57. Schema is 59, dirty=false. Four nullable
+mutation proof; MGT-04 settings remain unapproved. The PC-06 cap policy is APPROVED; source/UI implementation and isolated technical
+validation are complete on `bcf0798`. All six jobs passed in
+[CI run 38079516012](https://github.com/celikbros/kapsora/actions/runs/38079516012): SQL cap
+preflight 11/11 without skips (7.741 s), with restored-public-projection and cap-removal
+marker controls both passing; schema 193 without skips (110.161 s), including migration-60
+history preservation and constraints; accommodation 120 without skips (118.066 s), with the
+three former diagnostics converted to positive cases; authorization 31, eligibility 20,
+directory/invitation 70, NIGHT 14, checkout 3, handoff 9 and enrollment 6, all without
+skips. Web passed 768 tests in 92 files plus 25 mock smoke cases; 106 opt-in live/calendar
+cases were skipped. Earlier local web execution had eight timeouts (760/768 across four
+files), then focused 34/34 passed at `maxWorkers=1`; latest CI confirms the full suite.
+Typecheck, scoped ESLint/Prettier, pure Go tests and vet passed. Three positive former-
+diagnostic cases and marker negative controls are implemented. Settlement consumes the
+lesser of frozen policy penalty and exact approved remainder, then releases unused mapped
+units; fees and payer/member shares remain frozen. Migration 60 adds optional exact no-show
+evidence and passed CI schema/history validation; it is not applied locally or authorized
+for local application. Final synthetic review covered 12 390/1440 views, all API calls
+stubbed, detector `[]`, zero errors/overflow/unknown requests, and no blockers in independent
+Sol review; this is not live settlement acceptance. Schema remains 59, dirty=false; operator
+API PID 27972 serves pre-cap compiled source from 20:15 and needs operator restart after an
+authorized migration. No live capped settlement has been accepted. MGT-04 remains
+unapproved; formal owner acceptance and Oct 15/30 calendar gates remain open. PC-06 is not
+fully complete.
+**Historical local migration checkpoint (2026-10-10):** migrations 58 and 59 were explicitly
+approved and applied with bounded `UpTo(59)` from schema 57. Schema was 59, dirty=false. Four nullable
 `numeric(20,6)` cancellation-effect columns and the validated all-or-none constraint are present;
 both IAM role-change tables are present. Before/after SHA-256 snapshots matched across all 11
 existing tables (accommodation.cancellation 4; IAM access_grant 17, actor 15, credential 15,
 permission 105, role 34, role_permission 378, session 52, tenant_invitation 0,
 tenant_invitation_create_receipt 0, tenant_membership 15). All four old cancellation effects
-remain NULL. No business commands, grants or history rewrites occurred. Operator API PID 45580
-was started 2026-10-09 and still awaits the requested restart; no live API acceptance is claimed.
-The penalty-cap decision and MGT-04 settings approval remain pending.
+remain NULL. No business commands, grants or history rewrites occurred. At that checkpoint,
+operator API PID 45580 still awaited restart and no live API acceptance was claimed; the
+current restart is recorded below.
+**Historical status at this local migration checkpoint:** the penalty-cap decision and
+MGT-04 settings approval were then pending.
 
 ## Management completion sequence (2026-10-04)
 
@@ -78,15 +86,15 @@ read-only specs opted into the actor's existing bounded Retry-After retry. Paid 
 390/1440 layout review looked correct. Shared-door redirects and logout in both tabs passed.
 No suspension, invitation creation, role grant, privileged request, booking, payment or
 financial command was performed. The role-request list may be empty. DEMO_A has no
-cancellable CONFIRMED/PENDING_APPROVAL row, so live exact-effect cancellation preview and
-settlement remain unavailable; source/CI evidence applies. Schema remains 59, dirty=false.
-MGT-02/03 stay ACTIVE pending local mutation proof. MGT-04 settings, formal owner
-acceptance, and Oct 15/30 calendar gates remain open. The PC-06 penalty-cap policy is
-APPROVED and implementation is in progress. UI review is synthetic and does not establish
-live settlement acceptance. Migration 60 is authored, not applied locally or authorized for
-local application. Three positive former-diagnostic cases and a negative control are being
-added; CI is pending. Schema remains 59, dirty=false; current operator API PID 27972 is
-retained.
+cancellable CONFIRMED/PENDING_APPROVAL row, so no live capped settlement fixture was
+available. Source/UI implementation and isolated technical validation are complete; all six CI jobs
+passed in [run 38079516012](https://github.com/celikbros/kapsora/actions/runs/38079516012).
+Schema remains 59, dirty=false. MGT-02/03 stay ACTIVE pending local mutation proof. MGT-04
+settings, formal owner acceptance, and Oct 15/30 calendar gates remain open. Migration 60
+passed CI schema/history validation but is not applied locally or authorized for local
+application. API PID 27972 serves pre-cap compiled source from 20:15 and requires operator
+restart after an authorized migration. No live capped settlement has been accepted; synthetic
+UI review is not live acceptance. PC-06 is not fully complete.
 
 **MGT-01 first delivery:** `GET /api/v1/admin/users` and membership-ID detail, opened from
 Management. Require an active TENANT-scoped grant carrying `identity.user.read`, rather
@@ -286,24 +294,27 @@ directory/invitation 70 passed without skips. Web retained 756 tests/92 files an
 smoke cases, with 106 opt-in skips. Existing source controls also passed. This final run
 separately exercised and reproduced both
 [partial-approval penalty conflicts](../delegation/PC06-fractional-penalty-decision.md).
-Exact penalty cap/reporting and preserved monetary terms await the requested explicit
-business-rule decision; no fee or approval policy changed.
+**Historical status before owner approval:** exact penalty cap/reporting and preserved
+monetary terms still awaited a business-rule decision; no fee or approval policy had changed.
 Settings permission/impact approval has been requested asynchronously; no unanswered
 question changes grants or permits local migration 58. The doc-only `9348167` CI failed at
 Docker Hub pull throttling before PostgreSQL started. CI now selects the verified Docker
 Official Image mirror for the same PostgreSQL 18 service; local runtime stays native.
 
-The integer partial-approval follow-up on `56b64b8` passed all six jobs in
+**Historical defect reproduction before owner approval:** the integer partial-approval
+follow-up on `56b64b8` passed all six jobs in
 [CI 38042481624](https://github.com/celikbros/kapsora/actions/runs/38042481624).
 One approved night against a frozen two-night no-show penalty reached the same refusal
 with booking/report/ledger/inventory rollback. Three policy diagnostics were separately
 exercised as expected failures; ordinary accommodation passed 103 functions with only
 those three opt-in skips. Checkout 3, handoff 9, NIGHT 14, eligibility 20, authorization 31,
 schema 191 and directory/invitations 70 passed without skips. Web retained 756 tests and
-25 mock smoke cases, with 106 opt-in skips. The reviewed conditional implementation design
-is in the existing penalty decision note; the cap and no-show changes remain unimplemented
-while the owner's business-rule decision is pending. The independent reporting correction
-below supersedes only the earlier cancellation-reporting status.
+25 mock smoke cases, with 106 opt-in skips. At that historical run, the conditional
+implementation design was recorded, and cap/no-show changes awaited the owner's decision.
+Current source
+implementation and successful CI validation are recorded in the current snapshot above. The
+independent reporting correction below supersedes only the earlier cancellation-reporting
+status.
 
 **Historical at the time of this checkpoint:** the independent successful-cancellation
 reporting correction was implemented on `2504ff5`.
@@ -322,7 +333,8 @@ Reporting 8/8, schema upgrade 3/3, schema 192, accommodation 110 (only three sep
 exercised policy-diagnostic skips), authorization 31, eligibility 20 and directory 70
 passed. Handoff 9, checkout 3, NIGHT 14 and enrollment 6 passed without skips. Web passed
 762 tests and 25 browser smoke cases with 106 opt-in skips. The restored old reporting
-control and all three policy-refusal diagnostics reached their intended failures.
+control and all three policy-refusal diagnostics reached their intended failures in that
+historical run.
 Paid cancellation retains its recorded member fee inline; its focused member test passed.
 The existing [decision note](../delegation/PC06-fractional-penalty-decision.md) records the
 bounded package, restored-reporting control and still-pending business-rule decision.

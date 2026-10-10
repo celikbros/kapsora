@@ -1,19 +1,34 @@
 # PC06 · Partial-approval penalty decision gate
 
-Status: penalty-cap policy approved; implementation in progress. The independent
-cancellation reporting correction below is implemented; capped cancellation/no-show
-settlement and exact evidence remain in progress.
-Planned 2026-10-10 by gpt-6-astra. All six jobs passed in final
-[CI 37995074957](https://github.com/celikbros/kapsora/actions/runs/37995074957) on bda7984.
-Its separate opt-in diagnostic step reached both compiled assertions
-FRACTIONAL_PENALTY_CANCEL_REFUSAL and FRACTIONAL_PENALTY_NOSHOW_REFUSAL at
-2026-10-09 21:44:39 UTC (2026-10-10 Europe/Istanbul). These intended failures prove the
-refusals, not a passing partial-approval penalty workflow. The normal full accommodation
-suite passed 103 functions and skipped only these two opt-in diagnostics; free fractional
-cancellation passed. The concrete cap/reporting decision was requested asynchronously
-and remains unanswered; this successful CI does not authorize a policy change.
+Status: cap policy approved; cancellation/no-show source/UI implementation and isolated
+technical validation are complete on `bcf0798`. All six jobs passed in
+[CI run 38079516012](https://github.com/celikbros/kapsora/actions/runs/38079516012): SQL cap
+preflight 11/11 without skips (7.741 s), with restored-public-projection and cap-removal
+marker controls passing; schema 193 without skips (110.161 s), including migration-60
+history preservation and constraints; accommodation 120 without skips (118.066 s), including
+the three former diagnostics as positive cases; authorization 31, eligibility 20,
+directory/invitation 70, NIGHT 14, checkout 3, handoff 9 and enrollment 6, all without
+skips. Web passed 768 tests in 92 files plus 25 mock smoke cases; 106 opt-in live/calendar
+cases were skipped. Earlier local web execution had eight timeouts (760/768 across four
+files), followed by focused 34/34 at `maxWorkers=1`; latest CI confirms the full suite.
+Typecheck, scoped ESLint/Prettier, pure Go tests and vet passed. Migration 60 adds optional
+exact no-show evidence and passed CI schema/history validation, but is not applied locally
+and local application is not authorized. Schema remains 59, clean. API PID 27972 serves
+pre-cap compiled source from 20:15 and needs operator restart after an authorized migration.
+No live capped settlement has been accepted. Final synthetic UI review covered 12 390/1440
+views with all API calls stubbed, detector `[]`, zero errors/overflow/unknown requests, and
+no blockers in independent Sol review; this is not live settlement acceptance. MGT-04
+settings, formal owner acceptance and calendar gates remain separate; PC-06 is not fully
+complete.
 
-The subsequent integer partial-approval diagnostic is accepted as defect reproduction on
+**Historical defect reproduction before owner approval:** all six jobs passed on `bda7984`
+in [CI 37995074957](https://github.com/celikbros/kapsora/actions/runs/37995074957). Its opt-in
+diagnostics reached the expected FRACTIONAL_PENALTY_CANCEL_REFUSAL and
+FRACTIONAL_PENALTY_NOSHOW_REFUSAL assertions at 2026-10-09 21:44:39 UTC. Those expected
+failures proved the old refusal behavior; the decision was then unanswered. Free fractional
+cancellation passed, but no capped penalty workflow existed at that historical point.
+
+**Historical integer partial-approval defect reproduction:** the diagnostic was accepted on
 `56b64b824cf07b843d3fa8d780dc17f2e3174c10` in
 [CI 38042481624](https://github.com/celikbros/kapsora/actions/runs/38042481624), all six jobs
 successful. TestFractionalPenaltyReproductionIntegerPartialNoShow reached its compiled
@@ -26,7 +41,7 @@ functions (129.473 seconds), skipping only the three opt-in conflict diagnostics
 were separately exercised and required their exact expected failures. No domain rule,
 fee, grant, schema or operator process was changed by that test commit.
 
-## Proven cases and policy conflict
+## Historical reproduction: proven cases and policy conflict
 
 A two-night hold at factor 2, approved for 0.5 service night, retains 1 entitlement unit;
 a one-night cancellation penalty refuses and leaves the booking CONFIRMED. Approval for
@@ -54,7 +69,7 @@ assessed fee feeds later settlement. Do not proportionally reduce fees, transfer
 share to the member, alter published terms or change downstream claim/settlement amounts
 as an incidental ledger correction.
 
-## Concrete options requiring a decision
+## Historical options considered before owner approval
 
 **A — Keep fractional lodging approvals and cap entitlement penalties.** Consume the lesser
 of the policy's penalty service quantity and the authorization's exact remaining approved
@@ -74,25 +89,19 @@ existing-booking resolution/cap policy is therefore still necessary. No retroact
 round-up/down, authorization increase, automatic reserve or administrative rewrite follows
 from selecting this option.
 
-Recommended decision to present: A, with unchanged published monetary terms and exact
-reporting, because it resolves already-supported partial approvals without narrowing generic
-review. It is a recommendation, not authorization. If the owner also wants whole-night
-future approvals, that may be layered later but cannot substitute for the existing-booking
-resolution decision. Alternative fee or payer-share treatment is a distinct financial
-policy decision requiring its own specification and acceptance evidence.
+Historical recommendation: option A was recommended with unchanged monetary terms and
+exact reporting. The owner subsequently approved that option as recorded in the current
+status above. Any alternative fee or payer-share treatment remains a separate policy decision.
 
-## Work while the gate is pending
+## Historical handoff instructions before owner approval
 
-Keep the proved refusal/conservation diagnostics and complete handoff/checkout acceptance.
-Do not replace authorization Consume's over-consumption guard or add a catch-and-cap
-fallback. Once a decision arrives, Astra specifies the bounded affected API/storage/UI
-contract and Sol implements/tests real cancellation/no-show transactions, exact factor
-conversion, unchanged preview/fees, retries, tenant/account isolation and final zero
-reserved quantities. Include existing fractional bookings and integer partial approvals,
-not only freshly configured fractional fixtures. No local DB, server, migration or live
-compensation action is authorized by this planning note.
+These instructions describe the former decision-gated state and are superseded by the source
+implementation and successful CI status above. The preserved acceptance scope includes exact
+factor conversion, unchanged preview/fees, retries, tenant/account isolation, zero terminal
+reserve, existing fractional bookings and integer partial approvals. Local migration
+application and live business actions still require separate authorization.
 
-## Independent cancellation reporting correction (2026-10-10)
+## Historical independent cancellation reporting correction (2026-10-10)
 
 Astra separated a reporting defect from the pending business-rule decision. A two-night
 hold at factor 2, approved for 0.5 service night, already cancels freely and returns one
@@ -142,17 +151,18 @@ passed without skips (10.403 seconds) and covers public HTTP
 preview/result, persisted history, frozen fee shares, factors 0.5/2, six-decimal cumulative
 rounding, wrong provenance and recomputation after prior consumption/reviewer approval.
 The restored old result projection compiled and reached the expected
-CANCELLATION_EFFECT_HTTP_RESULT assertion with truthful underlying ledger movement. The three policy-refusal diagnostics
-remain required expected failures, not passing capped settlements.
+CANCELLATION_EFFECT_HTTP_RESULT assertion with truthful underlying ledger movement. At that
+historical run, the three policy-refusal diagnostics remained expected failures, not capped
+settlements.
 
 Full accommodation passed 110 functions (159.371 seconds), with only the three separately
 exercised opt-in policy diagnostics skipped. Schema passed 192, authorization application
 31, eligibility 20 and directory/invitation 70, all without skips. Handoff 9, checkout 3,
 NIGHT conversion 14 and enrollment 6 passed without skips. Web passed 762 tests in 92
 files and 25 mock browser smoke cases; 106 opt-in live/calendar cases remained skipped.
-The current CI lint, security, generated contract and static binary checks all passed.
+That historical CI run's lint, security, generated contract and static binary checks passed.
 
-The schema preflight also passes fresh version 59, the bounded 57-to-58 IAM upgrade and
+That schema preflight also passed fresh version 59, the bounded 57-to-58 IAM upgrade and
 58-to-59 cancellation history preservation. It checks complete/nonnegative evidence and
 append-only rejection of later update/delete. The older IAM test explicitly upgrades only
 to 58, retaining its original state-preservation assertion.
@@ -162,7 +172,7 @@ were awaiting separate approval. The later local migration checkpoint records th
 application; the operator API restart remains pending. No cap, no-show effect, fee redistribution,
 settings authority or historical compensation is authorized by this independent reporting correction.
 
-## Local migration checkpoint (2026-10-10)
+## Historical local migration checkpoint (2026-10-10)
 
 The owner explicitly approved local migrations 58 and 59. Bounded `UpTo(59)` from schema 57
 completed successfully; schema 59 is clean (`dirty=false`). Four nullable numeric(20,6)
@@ -173,10 +183,10 @@ iam.permission (105), iam.role (34), iam.role_permission (378), iam.session (52)
 iam.tenant_invitation (0), iam.tenant_invitation_create_receipt (0), and iam.tenant_membership
 (15). Existing cancellation effects remain NULL. No business commands, grants or history rewrites
 were performed. Operator API process 45580 was started 2026-10-09; its requested restart remains
-pending, so this checkpoint makes no live API acceptance claim. The penalty-cap decision and
-MGT-04 settings approval remain unapproved.
+pending, so this checkpoint makes no live API acceptance claim. At that checkpoint, the
+penalty-cap decision and MGT-04 settings approval were unapproved.
 
-## Post-restart bounded live checkpoint (2026-10-10 20:15 Istanbul)
+## Historical post-restart bounded live checkpoint (2026-10-10 20:15 Istanbul)
 
 The operator restarted `dev.ps1 up`; current API listener PID 27972. The retained paid
 reimbursement layout check passed read-only against existing record
@@ -188,32 +198,42 @@ unique current-source cases, all passing: Management 9/9, retained paid layout 1
 shared-door flow 2/2. No suspension, invitation creation, role grant, privileged request,
 booking, payment or financial command was performed. DEMO_A inventory contains no
 cancellable CONFIRMED/PENDING_APPROVAL booking, so no live exact-effect cancellation
-preview or settlement fixture was available. The three penalty-refusal diagnostics remain
-isolated source/CI evidence; no successful capped penalty settlement is claimed. Schema
-remains 59, dirty=false. The penalty-cap decision, MGT-04 settings approval, formal owner
-acceptance and Oct 15/30 calendar gates remain open.
+preview or settlement fixture was available. At that historical checkpoint, the three
+penalty-refusal diagnostics were isolated source/CI evidence; no successful capped
+settlement had been claimed. Schema
+remains 59, dirty=false. At that historical checkpoint, the cap decision, MGT-04 settings,
+formal owner acceptance and Oct 15/30 calendar gates were still open.
 
-## Conditional implementation design (Astra, reviewed by Sol, 2026-10-10)
+## Approved implementation and current validation (Astra, reviewed by Sol, 2026-10-10)
 
-The owner approved option A: consume only the exact remaining approved service
-quantity when it is below the frozen policy penalty, while preserving the existing
-monetary fee and payer/member split. Apply cancellation and confirmed no-show commands
-to existing confirmed and new bookings; preserve historical movements and frozen money.
-Implementation is in progress. Migration 60 is authored and has not been applied
-locally or authorized for local application. The UI slice is implemented and reviewed:
-12 synthetic 390/1440 views, all API calls stubbed, with zero errors, overflow or unknown
-requests; detector result `[]`;
-independent Sol review found no blockers. This is synthetic evidence, not live settlement
-acceptance. Three positive former-diagnostic cases and a negative control are being added;
-CI is pending, so no result is claimed yet. MGT-04 settings authority remains unapproved.
+The owner approved option A: consume the lesser of frozen policy penalty and exact approved
+remainder, then release unused mapped units. Preserve the existing monetary fee and
+payer/member split. Apply cancellation and confirmed no-show commands to existing confirmed
+and new bookings; preserve completed historical movements and frozen money. Source/UI
+implementation and isolated technical validation are complete on `bcf0798`; all six CI jobs
+passed in [run 38079516012](https://github.com/celikbros/kapsora/actions/runs/38079516012).
+The SQL cap preflight passed 11/11 without skips (7.741 s); the restored-public-projection
+and cap-removal-marker controls passed. Schema passed 193 without skips (110.161 s), including
+migration-60 history preservation and constraints. Accommodation passed 120 without skips
+(118.066 s), including the three former diagnostics as positive cases. Authorization 31,
+eligibility 20, directory/invitation 70, NIGHT 14, checkout 3, handoff 9 and enrollment 6
+also passed without skips. Web passed 768 tests in 92 files plus 25 mock smoke cases; 106
+opt-in live/calendar cases were skipped. Migration 60 adds optional exact no-show movement
+evidence and passed CI schema/history validation, but is not applied locally or authorized
+for local application. Schema remains 59, clean. API PID 27972 serves pre-cap compiled source
+from 20:15 and needs operator restart after an authorized migration. No live capped settlement
+has been accepted. The final synthetic UI review covered 12 390/1440 views with all API calls
+stubbed, detector `[]`, zero errors/overflow/unknown requests and no blockers in independent
+Sol review; this is not live settlement acceptance. MGT-04 settings, formal owner acceptance
+and calendar gates remain separate; PC-06 is not fully complete.
 
 Exact capped settlement is bounded to provable NIGHT-mapped authorization quantities.
 MONEY and other entitlement-unit paths retain existing behavior and remain outside this
 package's acceptance; missing evidence cannot silently route another unit through NIGHT
 conversion.
 
-For a provable NIGHT authorization-backed confirmed booking, add a narrow authorization-
-owned settlement operation accepting the caller's tenant transaction. Lock the authorization,
+For a provable NIGHT authorization-backed confirmed booking, the narrow authorization-
+owned settlement operation accepts the caller's tenant transaction. Lock the authorization,
 matching item and original reservation. Compute exact consumed service quantity as the
 lesser of frozen policy penalty and approved remaining quantity; then release all unused
 entitlement. Keep generic Consume's over-consumption refusal. Booking status, inventory,
@@ -228,21 +248,21 @@ movements for a no-op or record policy quantities as actual ledger consumption.
 
 ### Additive exact contract and persistence
 
-Extend the independently implemented cancellation entitlementEffect to capped settlement
-and add matching evidence to confirmed no-show reports, with four canonical decimal strings:
+The cancellation entitlementEffect is extended to capped settlement, with matching exact
+evidence on confirmed no-show reports in four canonical decimal strings:
 
 - consumedServiceNights
 - releasedServiceNights
 - consumedEntitlementUnits
 - releasedEntitlementUnits
 
-Cancellation already has four nullable numeric(20,6) columns in migration 59. Add matching
-no-show columns only after the cap decision, with nonnegative/all-or-none nullability. Cancellation effects
-are written on initial insertion; no-show effects are written atomically during confirmed
-review. Historical rows and undecided/rejected/disputed reports retain NULL, meaning no
-recorded exact evidence rather than zero. Do not require historical confirmed rows to have
-new evidence or backfill them from current authorization state. A forward migration is
-needed; numbering is allocated at integration and local application remains separate.
+Cancellation already has four nullable numeric(20,6) columns in migration 59; authored
+migration 60 adds matching no-show columns with nonnegative/all-or-none nullability.
+Cancellation effects are written on initial insertion; no-show effects are written atomically
+during confirmed review. Historical rows and undecided/rejected/disputed reports retain NULL,
+meaning no recorded exact evidence rather than zero. Do not backfill from current
+authorization state. Migration 60 is not applied locally; local application is a separate
+authorization gate.
 
 Keep integer penaltyNights as the frozen policy/financial charge. When exact evidence is
 present, legacy releasedNights and consumedNights represent the whole-number portion of
@@ -281,8 +301,9 @@ mapping, one forward migration, OpenAPI/generated Go/TypeScript contracts, membe
 words, backoffice booking detail, translations and exact mocks. No new grants, public
 administrative correction tool, generic Consume rewrite or historical scan is included.
 
-Acceptance must cover both proved fractional refusals and integer partial approvals;
-factors 1/2/0.5 and cumulative six-decimal rounding; existing confirmed fractional bookings;
+Acceptance must turn the former fractional and integer partial-approval refusal cases into
+capped settlements, with marker negative controls; cover factors 1/2/0.5 and cumulative
+six-decimal rounding; and include existing confirmed fractional bookings;
 free cancellation; matching prospective preview; actual movement deltas; uncertain retries,
 rollback and zero terminal reserve; historical exact-evidence omission; unchanged financial
 claim projection; and safe no-authorization release without a new factor-evidence gate.

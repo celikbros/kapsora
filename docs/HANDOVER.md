@@ -41,26 +41,41 @@ records the approved sequence and acceptance criteria.
 **Current snapshot (2026-10-10):** PC-01 through PC-04 are VERIFIED locally for their
 specified demo acceptance scopes. PC-05 remains ACTIVE: the financial journeys passed
 local technical acceptance; formal owner acceptance and retained scheduler checks remain
-open. PC-06 has passed live technical acceptance, with the same remaining gates. Schema 59
-is applied cleanly (dirty=false). The operator restarted `dev.ps1 up` at 20:15 Istanbul;
-current-source bounded live reads now pass for Management (9/9), paid reimbursement layout
-(1/1), and the shared-door provider/member journey (2/2), as recorded below. No suspension,
-invitation, role grant, privileged request, booking, payment or financial command was
-created. Management MGT-02 and MGT-03 remain ACTIVE pending local mutation proof; MGT-04
-settings remain unapproved. The PC-06 cap policy is APPROVED and implementation is in
-progress: consume the exact approved remainder when below the frozen penalty, preserving
-fees and payer/member shares. The UI slice is implemented and reviewed in 12 synthetic
-390/1440 views with all API calls stubbed, zero errors/overflow/unknown requests, detector
-`[]`, and no blockers in independent Sol review. This is not live settlement acceptance.
-Migration 60 is authored and not applied locally or authorized for local application.
-Backend work continues; three positive former-diagnostic cases plus a negative control are
-being added, and CI is pending. Schema remains 59, dirty=false; operator API PID 27972 is
-retained. PR #11 remains draft and unmerged.
-All six CI checks passed on calendar-preparation code head `5bb2349`
+open. PC-06's prior technical scope passed, but capped penalty settlement has no live
+acceptance. Schema 59 is applied cleanly (dirty=false). The operator restarted `dev.ps1 up`
+at 20:15 Istanbul; current-source bounded live reads passed for Management (9/9), paid
+reimbursement layout (1/1), and shared-door provider/member flow (2/2), as recorded below.
+No suspension, invitation, role grant, privileged request, booking, payment or financial
+command was created. MGT-02/03 remain ACTIVE pending local mutation proof; MGT-04 settings
+remain unapproved. The PC-06 cap policy is APPROVED; source/UI implementation and isolated technical
+validation are complete on `bcf0798`. All six jobs passed in
+[CI run 38079516012](https://github.com/celikbros/kapsora/actions/runs/38079516012): SQL cap
+preflight 11/11 without skips (7.741 s), with both restored-public-projection and
+cap-removal-marker controls passing; schema 193 without skips (110.161 s), including
+migration-60 history preservation and constraints; accommodation 120 without skips
+(118.066 s), including the three former diagnostics as positive cases; authorization 31,
+eligibility 20, directory/invitation 70, NIGHT 14, checkout 3, handoff 9 and enrollment 6,
+all without skips. Web passed 768 tests in 92 files plus 25 mock smoke cases; 106 opt-in
+live/calendar cases were skipped. The earlier local web run had eight timeouts (760/768
+across four files), followed by a focused 34/34 rerun at `maxWorkers=1`; latest CI provides
+full-suite confirmation. Typecheck, scoped ESLint/Prettier, pure Go tests and vet passed.
+Three positive former-diagnostic cases and marker negative controls are implemented.
+Settlement consumes the lesser of frozen policy penalty and exact approved remainder, then
+releases unused mapped units; fees and payer/member shares remain frozen. Migration 60 adds
+optional exact no-show evidence and passed CI schema/history validation, but is not applied
+locally or authorized for local application. Final synthetic review covered 12 390/1440
+views, with all API calls stubbed, detector `[]`, zero errors/overflow/unknown requests and
+no blockers in independent Sol review; this is not live settlement acceptance. Schema
+remains 59, dirty=false; operator API PID 27972 is retained from pre-cap source compiled at
+20:15 and requires operator restart after an authorized migration. No live capped settlement
+has been accepted. MGT-04 settings remain unapproved; formal owner acceptance and Oct 15/30
+calendar gates remain open. PC-06 is not fully complete. PR #11 remains draft and unmerged.
+Historical calendar-preparation CI passed all six checks on head `5bb2349`
 ([run 37152681278](https://github.com/celikbros/kapsora/actions/runs/37152681278));
 current Management CI is tracked in PR #11's checks. The historical local migration
-checkpoint below records schema 59 and its earlier API process; the new restart checkpoint
-supersedes its pending-restart status, not the unresolved policy decisions.
+checkpoint below records schema 59 and an earlier API process; the current restart
+checkpoint supersedes that pending-restart status. MGT-04 settings and formal acceptance
+remain separate gates.
 This snapshot and the latest checkpoint below supersede dated next-step instructions in
 the historical evidence. Split-claim quantities still do not prove chronological coverage.
 
@@ -74,29 +89,29 @@ iam.role_permission (378), iam.session (52), iam.tenant_invitation (0),
 iam.tenant_invitation_create_receipt (0), and iam.tenant_membership (15). All four effect
 columns remain NULL on existing cancellations. No business commands, grants or history rewrites
 were performed. The running operator API process (PID 45580) was started 2026-10-09; its
-requested restart is pending. This is local schema evidence only, not live API acceptance or
-approval of the penalty cap.
+requested restart was pending. This is a historical local-schema checkpoint, not live API
+acceptance; at that time it did not authorize the penalty cap.
 
 **Current operator/live checkpoint (2026-10-10 20:15 Istanbul):** the operator restarted
-`dev.ps1 up`; API listener PID 27972 serves the current source. Management's current-source
+`dev.ps1 up`; API listener PID 27972 serves that pre-cap source. Management's current-source
 read-only group passed 9/9: directory 2, existing-account invitation reads 2, anonymous
 new-invitation boundary 1 and role administration reads 4 (bounded roles 2, privileged
-roles 2). The three login-429 checks passed after enabling the actor's existing bounded opt-in Retry-After handling. The paid
-reimbursement retained-record layout test passed 1/1 in 3.3 s for existing record
+roles 2). The three login-429 checks passed after enabling the actor's existing bounded opt-in
+Retry-After handling. The paid reimbursement retained-record layout test passed 1/1 in 3.3 s for existing record
 `01a0ee4d-97a9-77eb-8192-e993b3a6f955`, with identical data before/after and zero blocked
 writes; 390/1440 views look correct. The shared-door provider/member tests passed 2/2 in
 12.1 s with correct redirects and both tabs logged out. Across 12 unique cases, no
 suspension, invitation creation, role grant, privileged request, booking, payment or
 financial command was performed. The role-request list may be empty. App-role DEMO_A
-inventory contains zero cancellable CONFIRMED/PENDING_APPROVAL rows, so no live exact-effect
-cancellation preview/settlement fixture was available; source/CI proof remains the evidence
-for that path. Schema remains 59, dirty=false. Formal owner/Oct 15/30 calendar gates remain
-open. MGT-02/03 stay ACTIVE for unclaimed local mutation proof; MGT-04 settings remain
-unapproved. The PC-06 cap policy is APPROVED and implementation is in progress. The UI
-slice has synthetic review evidence only; no live settlement was accepted. Migration 60 is
-authored, not applied locally or authorized for local application. Three positive former-
-diagnostic cases and a negative control are being added; CI is pending. Schema remains 59,
-dirty=false; current operator API PID 27972 is retained.
+inventory contains zero cancellable CONFIRMED/PENDING_APPROVAL rows, so no live capped
+settlement fixture was available. The source/UI implementation and isolated technical validation are complete on `bcf0798`;
+all six CI jobs passed in [run 38079516012](https://github.com/celikbros/kapsora/actions/runs/38079516012).
+Schema remains 59, dirty=false. Formal owner/Oct 15/30 calendar gates remain open. MGT-02/03
+stay ACTIVE for unclaimed local mutation proof; MGT-04 settings remain unapproved. Migration
+60 passed CI schema/history validation but is authored, not applied locally or authorized for
+local application. PID 27972 serves pre-cap compiled source from 20:15 and requires operator
+restart after an authorized migration. No live capped settlement has been accepted; synthetic
+review does not establish live settlement acceptance.
 
 The first live health checkpoint passed: provider catalog access, single-enrollment
 eligibility, insufficient-quantity refusal, request submission, medical approval and the
@@ -1504,16 +1519,15 @@ Docker Official Image mirror at `public.ecr.aws/docker/library/postgres:18` (man
 verified), with no change to the local native runtime. The mirror initialized successfully
 and all required jobs passed on `03bfa6c` and final handoff source `bda7984`.
 
-The separate fractional penalty diagnostic on `bda7984` reached both intended compiled
-refusals in the successful final CI run: approved 0.5 NIGHT cannot pay a frozen one-night cancellation
-penalty, and approved 1.5 cannot pay the two-night no-show penalty. Transactions roll back;
-the booking/report and remaining reserve persist. This is reproduction, not a working
-penalty flow. The [concrete policy decision](delegation/PC06-fractional-penalty-decision.md)
-proposes exact capped entitlement consumption with truthful reporting and unchanged frozen
-money/payer/member shares. The decision was requested asynchronously and remains pending;
-no cap, rounding, fee redistribution or new approval restriction is implemented.
+**Historical reproduction before owner approval:** the fractional penalty diagnostic on
+`bda7984` reached its intended compiled refusals in CI: approved 0.5 NIGHT could not pay a
+frozen one-night cancellation penalty, and approved 1.5 could not pay the two-night no-show
+penalty. Transactions rolled back with the booking/report and reserve intact. At that time,
+the cap decision was unanswered and no cap was implemented. Current source/CI status is in
+the snapshot above.
 
-**Integer partial-approval follow-up:** source `56b64b8` passed all six jobs in
+**Historical integer partial-approval follow-up before owner approval:** source `56b64b8`
+passed all six jobs in
 [CI 38042481624](https://github.com/celikbros/kapsora/actions/runs/38042481624).
 A two-night factor-2 booking approved for exactly one night also refuses its frozen
 two-night no-show penalty. The isolated INTEGER_PARTIAL_PENALTY_NOSHOW_REFUSAL diagnostic
@@ -1523,22 +1537,21 @@ their intended compiled failures; this does not accept a working penalty settlem
 Ordinary accommodation passed 103 functions (129.473 s), with only those three opt-in
 skips. Checkout 3, handoff 9, NIGHT 14, eligibility 20, authorization 31, schema 191 and
 directory/invitations 70 passed without skips. Web retained 756 tests and 25 mock smoke
-cases, with 106 opt-in skips. The existing decision note now contains an Astra-designed,
-Sol-reviewed conditional contract for exact reporting, locked actual movement deltas,
-nullable historical evidence and unchanged financial claims. Policy approval remains
-pending; no migration, domain correction, local SQL or live business mutation was made.
+cases, with 106 opt-in skips. **Historical status before owner approval:** the decision note
+held a conditional exact-reporting contract; policy approval was then pending and no local SQL
+or live business mutation had occurred.
 
-**Independent cancellation reporting correction (2026-10-10):** `2504ff5` fixes the
+**Historical independent cancellation reporting correction (2026-10-10):** `2504ff5` fixed the
 successful free-cancellation display that claimed two returned nights for a 0.5-night
 approval at factor 2. Optional exact effect reports 0.5 service night and one entitlement
 unit. Preview uses current locked evidence; command records actual service returns and
 original reservation deltas. Tenant/request/person/item/BOOKING provenance qualifies
 NIGHT evidence, while unprovable/legacy paths keep safe settlement without an invented
 projection. Frozen fees and penalty policy are unchanged; the three excessive-penalty
-diagnostics remain expected refusals. Migration 59 adds nullable cancellation evidence
-only, with no history backfill, no no-show change and no grants. At this checkpoint, local
-schema was still 57 and migrations 58/59 were pending explicit approval; this status is
-historical and is superseded by the local migration checkpoint above.
+diagnostics were expected failures at that historical stage. Migration 59 added nullable
+cancellation evidence only, with no history backfill, no no-show change and no grants. At
+this checkpoint, schema was 57 and migrations 58/59 awaited approval; the checkpoint above
+supersedes that status.
 
 Local blank-database Go compilation/pure tests, scoped vet, frontend 80/80 focused tests,
 workspace typecheck/lint/build and additive contract checks passed. Local golangci-lint
@@ -1548,15 +1561,15 @@ browser errors or overflow and keyboard focus was visible. The one detector was 
 fresh finish review resolved neutral reload wording and the mobile toast obstruction,
 disposition ship for the scored fixes. Reload has no cancellation read API, so it makes
 no exact return claim. These are synthetic captures, not operator database acceptance.
-[CI 38058250522](https://github.com/celikbros/kapsora/actions/runs/38058250522) is the
-successful isolated acceptance run on final source `3051466`, all six jobs passed.
+At that historical checkpoint, [CI 38058250522](https://github.com/celikbros/kapsora/actions/runs/38058250522)
+was the successful isolated acceptance run on source `3051466`; all six jobs passed.
 Cancellation reporting passed 8/8 (10.403 s), schema-upgrade preflight 3/3, full schema
 192, accommodation 110 (159.371 s; three separately exercised policy-diagnostic skips),
 authorization 31, eligibility 20 and directory/invitation 70. Handoff 9, checkout 3,
 NIGHT 14 and enrollment 6 remained successful without skips. Web passed 762/762 in 92
 files and 25 mock browser cases; 106 opt-in live/calendar cases were skipped. The restored
-old reporting projection reached its intended compiled failure; all three penalty-refusal
-diagnostics still reached their required assertions. A paid result retains its recorded
+old reporting projection reached its intended compiled failure; the three historical
+penalty-refusal diagnostics also reached their expected assertions. A paid result retains its recorded
 member fee inline; no additional paid visual acceptance is claimed. Details remain in the existing
 [penalty decision note](delegation/PC06-fractional-penalty-decision.md); its independent
 reporting section supersedes the preceding conditional-reporting status only.
