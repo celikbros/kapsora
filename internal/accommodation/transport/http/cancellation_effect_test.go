@@ -373,7 +373,7 @@ func TestCancellationPenaltyFullyConsumedReservationRecordsZeroActualEffect(t *t
 
 func TestCancellationPenaltyTinyServiceRemainderHasZeroRoundedUnitDelta(t *testing.T) {
 	s := newServer(t)
-	booking := s.fractionalCheckoutBooking(t, "1", "0.333333", "1.5")
+	booking := s.fractionalCheckoutBooking(t, "1", "0.5", "1.5")
 	s.clock.At(t, afterFreeWindow)
 	ctx, cancel := s.h.Ctx()
 	defer cancel()
@@ -392,7 +392,8 @@ func TestCancellationPenaltyTinyServiceRemainderHasZeroRoundedUnitDelta(t *testi
 	want := application.EntitlementEffect{ConsumedServiceNights: "0.000001", ReleasedServiceNights: "0",
 		ConsumedEntitlementUnits: "0", ReleasedEntitlementUnits: "0"}
 	if err != nil || preview.Quote.EntitlementEffect == nil || *preview.Quote.EntitlementEffect != want {
-		t.Fatalf("tiny rounded preview=%+v err=%v", preview.Quote, err)
+		t.Fatalf("tiny rounded preview=%+v effect=%+v err=%v", preview.Quote,
+			preview.Quote.EntitlementEffect, err)
 	}
 	result, err := s.svc.CancelBooking(ctx, s.memberContext(), booking.Booking.ID, "")
 	if err != nil || result.Record == nil || result.Record.EntitlementEffect == nil ||
@@ -417,10 +418,31 @@ func TestCancellationPenaltyTinyServiceRemainderHasZeroRoundedUnitDelta(t *testi
 func TestCancellationPenaltyKeepsConfirmedStoredFactorAfterPlanChange(t *testing.T) {
 	s := newServer(t)
 	booking := s.fractionalPenaltyBooking(t, beforeCheckInOpen, "0.5")
-	s.replaceNightPlan(t, "4", "1")
-	s.clock.At(t, afterFreeWindow)
 	ctx, cancel := s.h.Ctx()
 	defer cancel()
+	oldVersion := s.planVersion
+	var version, definition uuid.UUID
+	if err := s.h.Admin.QueryRow(ctx, `INSERT INTO benefit.plan_version
+		(tenant_id,plan_id,version_no,status,valid_period)
+		VALUES ($1,$2,2,'DRAFT',daterange('2026-01-01','2027-01-01','[)')) RETURNING id`,
+		s.tenant, s.plan).Scan(&version); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.h.Admin.QueryRow(ctx, `INSERT INTO benefit.entitlement_definition
+		(tenant_id,plan_version_id,code,name,unit_type,period_type,initial_quantity)
+		VALUES ($1,$2,'KONAKLAMA_GECE','Mapped nights','NIGHT','CALENDAR_YEAR',4)
+		RETURNING id`, s.tenant, version).Scan(&definition); err != nil {
+		t.Fatal(err)
+	}
+	s.h.AdminExec(`INSERT INTO benefit.service_entitlement_mapping
+		(tenant_id,plan_version_id,service_definition_id,entitlement_definition_id,unit_factor)
+		VALUES ($1,$2,$3,$4,1)`, s.tenant, version, s.definition, definition)
+	s.h.AdminExec(`UPDATE benefit.plan_version SET status='RETIRED',retire_reason_code='TEST'
+		WHERE tenant_id=$1 AND id=$2`,
+		s.tenant, oldVersion)
+	s.h.AdminExec(`UPDATE benefit.plan_version SET status='PUBLISHED',published_at=clock_timestamp(),published_by=$3
+		WHERE tenant_id=$1 AND id=$2`, s.tenant, version, s.actor)
+	s.clock.At(t, afterFreeWindow)
 	preview, err := s.svc.PreviewCancellation(ctx, s.memberContext(), booking.Booking.ID)
 	want := application.EntitlementEffect{ConsumedServiceNights: "0.5", ReleasedServiceNights: "0",
 		ConsumedEntitlementUnits: "1", ReleasedEntitlementUnits: "0"}

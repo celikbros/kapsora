@@ -46,7 +46,10 @@ func (s *Service) BookingCancellationEvidence(ctx context.Context, tx pgx.Tx,
 	if err != nil {
 		return nil, err
 	}
-	if !domain.Open(auth.Status) || auth.RequestID != in.RequestID {
+	if auth.RequestID != in.RequestID {
+		return nil, nil
+	}
+	if !domain.Open(auth.Status) && auth.Status != domain.StatusUsed {
 		return nil, nil
 	}
 	request, err := s.repo.GetRequest(ctx, tx, in.TenantID, auth.RequestID, Scope{})
@@ -91,6 +94,12 @@ func (s *Service) BookingCancellationEvidence(ctx context.Context, tx pgx.Tx,
 		// A prior release with no matching item service counter cannot be inverted
 		// reliably at six decimals. Refuse this anomalous confirmed settlement.
 		return nil, ErrBookingPenaltyEvidence
+	}
+	if auth.Status == domain.StatusUsed {
+		if approved.Cmp(consumed) != 0 || reservation.Status != ledger.ReservationConsumed ||
+			reservation.Remaining().IsPositive() {
+			return nil, nil
+		}
 	}
 	return &BookingCancellationEvidence{Approved: approved, Consumed: consumed,
 		Remaining: remaining, UnitFactor: factor, Reservation: reservation}, nil
